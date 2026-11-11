@@ -16784,6 +16784,1018 @@
         }
       }
     },
+    "/otoapp/parties/{eventId}/deposit-request": {
+      "get": {
+        "description": "OTO App server only (provisioning key): a party's deposit requests as the platform holds them — the open one (else the newest) and every one, each with its state (requested, paid, expired, cancelled), the payment link and its validity, when it was reminded, handed over or paid, the deposit figure it set and the write-back's state; and whether the party is linked to an inbox conversation the assistant can post in. Read only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "eventId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "hasConversation": {
+                      "type": "boolean"
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "cancelled"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string"
+                        },
+                        "requestedAt": {
+                          "type": "string"
+                        },
+                        "remindedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "handedOverAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closeReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "depositBeforeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "depositAfterSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "writeBack": {
+                          "type": "object",
+                          "properties": {
+                            "editId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "syncState": {
+                              "type": "string",
+                              "enum": [
+                                "synced",
+                                "pending",
+                                "failed"
+                              ]
+                            },
+                            "syncError": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "editId",
+                            "syncState",
+                            "syncError"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "eventId",
+                        "conversationId",
+                        "amountSatang",
+                        "currency",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "invoiceNo",
+                        "requestedAt",
+                        "remindedAt",
+                        "handedOverAt",
+                        "paidAt",
+                        "closedAt",
+                        "closeReason",
+                        "depositBeforeSatang",
+                        "depositAfterSatang",
+                        "writeBack"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "eventId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "conversationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "amountSatang": {
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "requested",
+                              "paid",
+                              "expired",
+                              "cancelled"
+                            ]
+                          },
+                          "paymentLink": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "linkExpiresAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "invoiceNo": {
+                            "type": "string"
+                          },
+                          "requestedAt": {
+                            "type": "string"
+                          },
+                          "remindedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "handedOverAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "paidAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "closedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "closeReason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "depositBeforeSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "depositAfterSatang": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "writeBack": {
+                            "type": "object",
+                            "properties": {
+                              "editId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "syncState": {
+                                "type": "string",
+                                "enum": [
+                                  "synced",
+                                  "pending",
+                                  "failed"
+                                ]
+                              },
+                              "syncError": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "editId",
+                              "syncState",
+                              "syncError"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "eventId",
+                          "conversationId",
+                          "amountSatang",
+                          "currency",
+                          "state",
+                          "paymentLink",
+                          "linkExpiresAt",
+                          "invoiceNo",
+                          "requestedAt",
+                          "remindedAt",
+                          "handedOverAt",
+                          "paidAt",
+                          "closedAt",
+                          "closeReason",
+                          "depositBeforeSatang",
+                          "depositAfterSatang",
+                          "writeBack"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "eventId",
+                    "hasConversation",
+                    "current",
+                    "history"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "OTO App server only (provisioning key): \"Request deposit\" from the BEO. Mints a gateway payment link for the amount (a station-less invoice on the WEB segment, the hosted page valid PARTY_DEPOSIT_LINK_VALIDITY_MIN), records the request, and has the inbox assistant post ONE message in the family's linked conversation — the amount, the party's date, the link and its validity, in the family's language — with a \"deposit requested\" pill. Idempotent on the Idempotency-Key the app sends: the same key answers the same request; a different body under it is refused 409. One open request per party (409 DEPOSIT_REQUEST_OPEN); a party with no linked conversation is refused (409 PARTY_NO_CONVERSATION).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountSatang": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 100000000
+                  },
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "amountSatang",
+                  "actorAppUserId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "cancelled"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string"
+                        },
+                        "requestedAt": {
+                          "type": "string"
+                        },
+                        "remindedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "handedOverAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closeReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "depositBeforeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "depositAfterSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "writeBack": {
+                          "type": "object",
+                          "properties": {
+                            "editId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "syncState": {
+                              "type": "string",
+                              "enum": [
+                                "synced",
+                                "pending",
+                                "failed"
+                              ]
+                            },
+                            "syncError": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "editId",
+                            "syncState",
+                            "syncError"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "eventId",
+                        "conversationId",
+                        "amountSatang",
+                        "currency",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "invoiceNo",
+                        "requestedAt",
+                        "remindedAt",
+                        "handedOverAt",
+                        "paidAt",
+                        "closedAt",
+                        "closeReason",
+                        "depositBeforeSatang",
+                        "depositAfterSatang",
+                        "writeBack"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "request",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/parties/{eventId}/deposit-request/{requestId}/resend": {
+      "post": {
+        "description": "OTO App server only (provisioning key): \"Resend\" — the open request's link posted again by the assistant, ONE line per Idempotency-Key. Refused 409 for a request that is no longer open, or whose link has run out (press Request deposit for a fresh one).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "actorAppUserId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "requestId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "cancelled"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string"
+                        },
+                        "requestedAt": {
+                          "type": "string"
+                        },
+                        "remindedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "handedOverAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closeReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "depositBeforeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "depositAfterSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "writeBack": {
+                          "type": "object",
+                          "properties": {
+                            "editId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "syncState": {
+                              "type": "string",
+                              "enum": [
+                                "synced",
+                                "pending",
+                                "failed"
+                              ]
+                            },
+                            "syncError": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "editId",
+                            "syncState",
+                            "syncError"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "eventId",
+                        "conversationId",
+                        "amountSatang",
+                        "currency",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "invoiceNo",
+                        "requestedAt",
+                        "remindedAt",
+                        "handedOverAt",
+                        "paidAt",
+                        "closedAt",
+                        "closeReason",
+                        "depositBeforeSatang",
+                        "depositAfterSatang",
+                        "writeBack"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "request",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/parties/{eventId}/deposit-request/{requestId}/cancel": {
+      "post": {
+        "description": "OTO App server only (provisioning key): \"Cancel request\" — the open request closed cancelled, its gateway attempt closed with it (the gateway told, best effort), a \"deposit cancelled\" pill on the thread; nothing is said to the family. Cancelling twice is the same act.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "actorAppUserId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "requestId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "requested",
+                            "paid",
+                            "expired",
+                            "cancelled"
+                          ]
+                        },
+                        "paymentLink": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "linkExpiresAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string"
+                        },
+                        "requestedAt": {
+                          "type": "string"
+                        },
+                        "remindedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "handedOverAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "closeReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "depositBeforeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "depositAfterSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "writeBack": {
+                          "type": "object",
+                          "properties": {
+                            "editId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "syncState": {
+                              "type": "string",
+                              "enum": [
+                                "synced",
+                                "pending",
+                                "failed"
+                              ]
+                            },
+                            "syncError": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "editId",
+                            "syncState",
+                            "syncError"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "eventId",
+                        "conversationId",
+                        "amountSatang",
+                        "currency",
+                        "state",
+                        "paymentLink",
+                        "linkExpiresAt",
+                        "invoiceNo",
+                        "requestedAt",
+                        "remindedAt",
+                        "handedOverAt",
+                        "paidAt",
+                        "closedAt",
+                        "closeReason",
+                        "depositBeforeSatang",
+                        "depositAfterSatang",
+                        "writeBack"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "request",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/parties/{eventId}/menu-link": {
+      "post": {
+        "description": "OTO App server only (provisioning key): \"Send the menu choice link\" from the BEO — the parent's set-menu selection link posted by the inbox assistant in the family's linked conversation, with the right words in their language, and a \"menu link sent\" pill. ONE line per Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "link": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2000
+                  },
+                  "actorAppUserId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "link",
+                  "actorAppUserId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "messageId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "messageId",
+                    "language",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/otoapp/parties/{eventId}/menu-received": {
+      "post": {
+        "description": "OTO App server only (provisioning key): the parent's menu choices landed in the app — the inbox assistant confirms them in the family's linked conversation, with a \"menu choices received\" pill. ONE line per Idempotency-Key (the app keys it by the submission).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "submittedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "eventId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "messageId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "messageId",
+                    "language",
+                    "replayed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/branches/{branchId}/stock/sellable": {
       "get": {
         "description": "Every stock-tracked product at the branch, each size with what the branch holds of it — the till reads this",
@@ -90490,6 +91502,38 @@
                         },
                         "beoPath": {
                           "type": "string"
+                        },
+                        "deposit": {
+                          "type": "object",
+                          "properties": {
+                            "requestId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "requested",
+                                "paid",
+                                "expired",
+                                "cancelled"
+                              ]
+                            },
+                            "amountSatang": {
+                              "type": "integer"
+                            },
+                            "overdue": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "requestId",
+                            "state",
+                            "amountSatang",
+                            "overdue"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -92117,7 +93161,12 @@
                       "closing_unclear",
                       "closing_booking",
                       "opener_birthday_advice",
-                      "opener_birthday_advice_park_known"
+                      "opener_birthday_advice_park_known",
+                      "party_deposit_request",
+                      "party_deposit_reminder",
+                      "party_deposit_received",
+                      "party_menu_link",
+                      "party_menu_received"
                     ]
                   },
                   "language": {
@@ -93899,6 +94948,38 @@
                         },
                         "beoPath": {
                           "type": "string"
+                        },
+                        "deposit": {
+                          "type": "object",
+                          "properties": {
+                            "requestId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "requested",
+                                "paid",
+                                "expired",
+                                "cancelled"
+                              ]
+                            },
+                            "amountSatang": {
+                              "type": "integer"
+                            },
+                            "overdue": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "requestId",
+                            "state",
+                            "amountSatang",
+                            "overdue"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -94637,7 +95718,12 @@
                 "closing_unclear",
                 "closing_booking",
                 "opener_birthday_advice",
-                "opener_birthday_advice_park_known"
+                "opener_birthday_advice_park_known",
+                "party_deposit_request",
+                "party_deposit_reminder",
+                "party_deposit_received",
+                "party_menu_link",
+                "party_menu_received"
               ]
             },
             "in": "query",
@@ -105231,6 +106317,52 @@
       },
       "get": {
         "description": "The same return, reached by a GET. Changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 8192
+            },
+            "in": "query",
+            "name": "paymentResponse",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/public/parties/deposit/return": {
+      "post": {
+        "description": "The hosted payment page's browser return for a party deposit (SCRUM-825). Verifies the `paymentResponse` as a DISPLAY HINT and shows a plain page; changes nothing — a deposit is paid only by the gateway's backend notification confirmed by an inquiry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "paymentResponse": {
+                    "type": "string",
+                    "maxLength": 8192
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "get": {
+        "description": "The same party-deposit return, reached by a GET. Changes nothing.",
         "parameters": [
           {
             "schema": {

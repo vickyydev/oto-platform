@@ -86,7 +86,8 @@ describe('SCRUM-823 advice opener migration', () => {
       const was = keysIn(before[table]!.checkConstraints![check]!.value);
       const now = keysIn(after[table]!.checkConstraints![check]!.value);
       expect(now, check).toEqual([...was, ...NEW_KEYS]);
-      expect(now, check).toEqual([...INBOX_TEMPLATE_KEYS]);
+      // The live list begins with this migration's: a later one (SCRUM-825's party lines) only appends.
+      expect(INBOX_TEMPLATE_KEYS.slice(0, now.length), check).toEqual(now);
     }
   });
 

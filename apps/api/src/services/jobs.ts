@@ -45,6 +45,7 @@ import {
 import { buildInboxAiRuntime, type InboxAiRuntime } from './inbox/ai-runtime';
 import { buildTranscriptionRuntime, type TranscriptionRuntime } from './inbox/transcription';
 import { INBOX_TRANSCRIBE_INTERVAL_S, INBOX_TRANSCRIBE_JOB, runInboxTranscribeJob } from './inbox/voice-notes';
+import { PARTY_DEPOSIT_FOLLOW_UP_INTERVAL_S, PARTY_DEPOSIT_FOLLOW_UP_JOB, runPartyDepositFollowUpJob } from './party-deposit';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import { HELD_SALES_MIDNIGHT_JOB, runHeldSalesMidnight } from './sale-holds';
@@ -1093,6 +1094,32 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: HANDOVER_ESCALATION_INTERVAL_S,
       graceSeconds: 300,
       run: async ({ db, now }) => ({ detail: await runHandoverEscalationJob(db, handoverNoticesOf(deps), now) }),
+    },
+    /**
+     * `job:party.deposit_follow_up` — A DEPOSIT ASKED FROM THE BEO, FOLLOWED
+     * UP (SCRUM-825; `services/party-deposit.ts`).
+     *
+     * Every minute: each open deposit request unpaid
+     * `PARTY_DEPOSIT_REMINDER_MIN` after it was made gets ONE reminder from
+     * the assistant in the family's chat; each still unpaid
+     * `PARTY_DEPOSIT_HANDOVER_MIN` after the reminder is handed to the
+     * birthday manager — the holding line, the assistant standing back, the
+     * bell through the OTO App's directory. Counts only in the detail.
+     */
+    {
+      name: PARTY_DEPOSIT_FOLLOW_UP_JOB,
+      description:
+        "Reminds a family once about a party deposit still unpaid after the reminder window, and hands the conversation to the birthday manager when it is still unpaid after the second window",
+      intervalSeconds: PARTY_DEPOSIT_FOLLOW_UP_INTERVAL_S,
+      graceSeconds: 300,
+      run: async ({ db, env, log, now }) => ({
+        detail: await runPartyDepositFollowUpJob(
+          db,
+          env,
+          { sender: { channels: inboxChannelsOf(deps), storage: deps.fileStorage ?? null }, directory: handoverNoticesOf(deps).directory, log },
+          now,
+        ),
+      }),
     },
     /**
      * `job:assistant.purge` — THE ASK-LOG'S RETENTION (SCRUM-591; plan

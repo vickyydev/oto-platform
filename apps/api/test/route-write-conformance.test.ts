@@ -487,6 +487,14 @@ const NO_DIRECT_WRITE = [
    */
   'POST /public/bookings/return',
   /**
+   * SCRUM-825 — the same return for a party deposit's hosted page
+   * (`/public/parties/deposit/return`): the signed `paymentResponse` is read
+   * as a display hint for a plain page in the family's words, and nothing is
+   * written — a deposit is paid only by the backend notification plus an
+   * inquiry, or by the poller, exactly as a booking is.
+   */
+  'POST /public/parties/deposit/return',
+  /**
    * S2-10a — what a SIMULATED card terminal will do with the next tender.
    *
    * It writes nothing on purpose. The state belongs to the simulator inside
@@ -880,6 +888,21 @@ const OUTSIDE_THE_REPLAY_STORE = [
    */
   'POST /otoapp/party-menu/products [credential:otoapp-provision]',
   /**
+   * SCRUM-825 — the OTO App's SERVER asking a party's deposit of the family
+   * from the BEO, resending or cancelling it, and posting the parent's menu
+   * link and the confirmation of their choices. The principal is the same
+   * service key, so the store cannot own its Idempotency-Key; the service
+   * honours it: the request's id is derived from the operator and the key
+   * (the same press is the same request, a different amount under it 409),
+   * and each line the assistant posts is named by the key or by the request
+   * and its state, so a retry posts nothing twice (`party-deposit.test.ts`).
+   */
+  'POST /otoapp/parties/:eventId/deposit-request [credential:otoapp-provision]',
+  'POST /otoapp/parties/:eventId/deposit-request/:requestId/cancel [credential:otoapp-provision]',
+  'POST /otoapp/parties/:eventId/deposit-request/:requestId/resend [credential:otoapp-provision]',
+  'POST /otoapp/parties/:eventId/menu-link [credential:otoapp-provision]',
+  'POST /otoapp/parties/:eventId/menu-received [credential:otoapp-provision]',
+  /**
    * S2-10a — what the card terminal did, reported by the box that drove it.
    *
    * On this list for the same reason `POST /box/v1/print-jobs/:id/result` is:
@@ -954,6 +977,12 @@ const OPEN_WITHOUT_A_KEY = [
    */
   'POST /public/bookings/:id/checkout',
   'POST /public/bookings/return',
+  /**
+   *   - **it writes nothing** — `POST /public/parties/deposit/return`
+   *     (SCRUM-825), the hosted page's browser return for a party deposit,
+   *     on the no-write list above like the booking's.
+   */
+  'POST /public/parties/deposit/return',
   /**
    *   - **bounded and single-use, as the staff code pair is** —
    *     `POST /public/saved-children/code` sends a second SMS on purpose and is

@@ -8155,6 +8155,430 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/otoapp/parties/{eventId}/deposit-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description OTO App server only (provisioning key): a party's deposit requests as the platform holds them — the open one (else the newest) and every one, each with its state (requested, paid, expired, cancelled), the payment link and its validity, when it was reminded, handed over or paid, the deposit figure it set and the write-back's state; and whether the party is linked to an inbox conversation the assistant can post in. Read only. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            eventId: string;
+                            hasConversation: boolean;
+                            current: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                eventId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                amountSatang: number;
+                                currency: string;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "cancelled";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                invoiceNo: string;
+                                requestedAt: string;
+                                remindedAt: string | null;
+                                handedOverAt: string | null;
+                                paidAt: string | null;
+                                closedAt: string | null;
+                                closeReason: string | null;
+                                depositBeforeSatang: number | null;
+                                depositAfterSatang: number | null;
+                                writeBack: {
+                                    /** Format: uuid */
+                                    editId: string;
+                                    /** @enum {string} */
+                                    syncState: "synced" | "pending" | "failed";
+                                    syncError: string | null;
+                                } | null;
+                            } | null;
+                            history: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                eventId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                amountSatang: number;
+                                currency: string;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "cancelled";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                invoiceNo: string;
+                                requestedAt: string;
+                                remindedAt: string | null;
+                                handedOverAt: string | null;
+                                paidAt: string | null;
+                                closedAt: string | null;
+                                closeReason: string | null;
+                                depositBeforeSatang: number | null;
+                                depositAfterSatang: number | null;
+                                writeBack: {
+                                    /** Format: uuid */
+                                    editId: string;
+                                    /** @enum {string} */
+                                    syncState: "synced" | "pending" | "failed";
+                                    syncError: string | null;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description OTO App server only (provisioning key): "Request deposit" from the BEO. Mints a gateway payment link for the amount (a station-less invoice on the WEB segment, the hosted page valid PARTY_DEPOSIT_LINK_VALIDITY_MIN), records the request, and has the inbox assistant post ONE message in the family's linked conversation — the amount, the party's date, the link and its validity, in the family's language — with a "deposit requested" pill. Idempotent on the Idempotency-Key the app sends: the same key answers the same request; a different body under it is refused 409. One open request per party (409 DEPOSIT_REQUEST_OPEN); a party with no linked conversation is refused (409 PARTY_NO_CONVERSATION). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        amountSatang: number;
+                        actorAppUserId: string;
+                        /** Format: uuid */
+                        conversationId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                eventId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                amountSatang: number;
+                                currency: string;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "cancelled";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                invoiceNo: string;
+                                requestedAt: string;
+                                remindedAt: string | null;
+                                handedOverAt: string | null;
+                                paidAt: string | null;
+                                closedAt: string | null;
+                                closeReason: string | null;
+                                depositBeforeSatang: number | null;
+                                depositAfterSatang: number | null;
+                                writeBack: {
+                                    /** Format: uuid */
+                                    editId: string;
+                                    /** @enum {string} */
+                                    syncState: "synced" | "pending" | "failed";
+                                    syncError: string | null;
+                                } | null;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/parties/{eventId}/deposit-request/{requestId}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): "Resend" — the open request's link posted again by the assistant, ONE line per Idempotency-Key. Refused 409 for a request that is no longer open, or whose link has run out (press Request deposit for a fresh one). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        actorAppUserId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                eventId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                amountSatang: number;
+                                currency: string;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "cancelled";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                invoiceNo: string;
+                                requestedAt: string;
+                                remindedAt: string | null;
+                                handedOverAt: string | null;
+                                paidAt: string | null;
+                                closedAt: string | null;
+                                closeReason: string | null;
+                                depositBeforeSatang: number | null;
+                                depositAfterSatang: number | null;
+                                writeBack: {
+                                    /** Format: uuid */
+                                    editId: string;
+                                    /** @enum {string} */
+                                    syncState: "synced" | "pending" | "failed";
+                                    syncError: string | null;
+                                } | null;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/parties/{eventId}/deposit-request/{requestId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): "Cancel request" — the open request closed cancelled, its gateway attempt closed with it (the gateway told, best effort), a "deposit cancelled" pill on the thread; nothing is said to the family. Cancelling twice is the same act. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        actorAppUserId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                eventId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                amountSatang: number;
+                                currency: string;
+                                /** @enum {string} */
+                                state: "requested" | "paid" | "expired" | "cancelled";
+                                paymentLink: string | null;
+                                linkExpiresAt: string | null;
+                                invoiceNo: string;
+                                requestedAt: string;
+                                remindedAt: string | null;
+                                handedOverAt: string | null;
+                                paidAt: string | null;
+                                closedAt: string | null;
+                                closeReason: string | null;
+                                depositBeforeSatang: number | null;
+                                depositAfterSatang: number | null;
+                                writeBack: {
+                                    /** Format: uuid */
+                                    editId: string;
+                                    /** @enum {string} */
+                                    syncState: "synced" | "pending" | "failed";
+                                    syncError: string | null;
+                                } | null;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/parties/{eventId}/menu-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): "Send the menu choice link" from the BEO — the parent's set-menu selection link posted by the inbox assistant in the family's linked conversation, with the right words in their language, and a "menu link sent" pill. ONE line per Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        link: string;
+                        actorAppUserId: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            messageId: string;
+                            language: string;
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/otoapp/parties/{eventId}/menu-received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description OTO App server only (provisioning key): the parent's menu choices landed in the app — the inbox assistant confirms them in the family's linked conversation, with a "menu choices received" pill. ONE line per Idempotency-Key (the app keys it by the submission). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    eventId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        submittedAt?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            messageId: string;
+                            language: string;
+                            replayed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/branches/{branchId}/stock/sellable": {
         parameters: {
             query?: never;
@@ -35216,6 +35640,14 @@ export interface paths {
                                 /** Format: uuid */
                                 bookedByAccountId: string | null;
                                 beoPath: string;
+                                deposit?: {
+                                    /** Format: uuid */
+                                    requestId: string;
+                                    /** @enum {string} */
+                                    state: "requested" | "paid" | "expired" | "cancelled";
+                                    amountSatang: number;
+                                    overdue: boolean;
+                                } | null;
                             } | null;
                             handoverNotices?: {
                                 /** Format: uuid */
@@ -35828,7 +36260,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known";
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received";
                         language: string;
                         /** @enum {string|null} */
                         channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
@@ -36548,6 +36980,14 @@ export interface paths {
                                 /** Format: uuid */
                                 bookedByAccountId: string | null;
                                 beoPath: string;
+                                deposit?: {
+                                    /** Format: uuid */
+                                    requestId: string;
+                                    /** @enum {string} */
+                                    state: "requested" | "paid" | "expired" | "cancelled";
+                                    amountSatang: number;
+                                    overdue: boolean;
+                                } | null;
                             };
                             created: boolean;
                         };
@@ -36901,7 +37341,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known";
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch" | "closing_unclear" | "closing_booking" | "opener_birthday_advice" | "opener_birthday_advice_park_known" | "party_deposit_request" | "party_deposit_reminder" | "party_deposit_received" | "party_menu_link" | "party_menu_received";
                     language?: string;
                     archived?: "true" | "false";
                 };
@@ -41979,6 +42419,68 @@ export interface paths {
         };
         put?: never;
         /** @description The hosted payment page's browser return. Verifies the `paymentResponse` and redirects to the booking site's waiting page with a DISPLAY HINT. Changes nothing: a booking is paid only by the gateway's backend notification confirmed by an inquiry. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        paymentResponse?: string;
+                    } & {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/parties/deposit/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The same party-deposit return, reached by a GET. Changes nothing. */
+        get: {
+            parameters: {
+                query?: {
+                    paymentResponse?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** @description The hosted payment page's browser return for a party deposit (SCRUM-825). Verifies the `paymentResponse` as a DISPLAY HINT and shows a plain page; changes nothing — a deposit is paid only by the gateway's backend notification confirmed by an inquiry. */
         post: {
             parameters: {
                 query?: never;

@@ -610,6 +610,26 @@ const EnvSchema = z.object({
   PGW_INQUIRY_INTERVAL_S: z.coerce.number().int().min(1).max(600).default(3),
   PGW_INQUIRY_MAX_MIN: z.coerce.number().int().min(1).max(1440).default(30),
   PAYMENT_PENDING_MIN: z.coerce.number().int().min(1).max(1440).default(10),
+  /**
+   * SCRUM-825 — A PARTY'S DEPOSIT, ASKED FROM THE BEO (`services/party-deposit.ts`).
+   * Three windows in minutes, each a deployment setting (the owner's "make it a
+   * setting"; staging proves the follow-ups by turning them down to minutes):
+   *
+   *   PARTY_DEPOSIT_LINK_VALIDITY_MIN  how long the gateway's payment link stays
+   *                                    payable — the hosted page's own expiry,
+   *                                    three days by default. It should outlast
+   *                                    the two windows below: a link that runs
+   *                                    out is closed `expired`, and the next
+   *                                    "Request deposit" re-issues one.
+   *   PARTY_DEPOSIT_REMINDER_MIN       unpaid this long after the request, the
+   *                                    assistant posts ONE reminder.
+   *   PARTY_DEPOSIT_HANDOVER_MIN       unpaid this long after the reminder, the
+   *                                    thread is handed to the birthday manager
+   *                                    with the holding line.
+   */
+  PARTY_DEPOSIT_LINK_VALIDITY_MIN: z.coerce.number().int().min(5).max(43_200).default(4_320),
+  PARTY_DEPOSIT_REMINDER_MIN: z.coerce.number().int().min(1).max(43_200).default(1_440),
+  PARTY_DEPOSIT_HANDOVER_MIN: z.coerce.number().int().min(1).max(43_200).default(1_440),
   /** The Payment ACTION host — a DIFFERENT host from `PGW_BASE_URL`, not a path on it. */
   PGW_MAINT_BASE_URL: z.string().default(''),
   /** Our RSA private key, PEM. **Secret.** Signs the JWS and decrypts their JWE. */

@@ -51,6 +51,7 @@ import {
   type BookingPaidOutcome,
 } from '../booking-payment';
 import { writeBackSalePass } from '../booking-event-passes';
+import type { PartyDepositPaidOutcome } from '../party-deposit';
 import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
@@ -1176,6 +1177,21 @@ export async function settlePaidAttempt(
       log.error({ err, bookingId: outcome.bookingPaid.bookingId }, 'after a booking was paid');
     }
   }
+  /**
+   * SCRUM-825 — a party deposit this money paid: the write-back to the OTO
+   * App, the family's confirmation and the birthday manager's bell run after
+   * the commit, and none may undo the payment. Loaded at the call, as the
+   * settlement below is: `party-deposit.ts` reaches this file through
+   * `parties.ts`, so a static import would be a load-order cycle.
+   */
+  if (outcome.partyDepositPaid) {
+    try {
+      const { afterPartyDepositPaid } = await import('../party-deposit');
+      await afterPartyDepositPaid(db, log, outcome.partyDepositPaid);
+    } catch (err) {
+      log.error({ err, requestId: outcome.partyDepositPaid.requestId }, 'after a party deposit was paid');
+    }
+  }
   // SCRUM-732 — a pass this money closed goes to the OTO App now, till or no till.
   if (outcome.finalisedSale && input.attempt.saleId) {
     await writeBackSalePass(db, log, input.attempt.saleId);
@@ -1186,7 +1202,7 @@ export async function settlePaidAttempt(
     const { writeBackPartySettlement } = await import('../party-settlement');
     await writeBackPartySettlement(db, log, input.attempt.saleId);
   }
-  const { bookingPaid, ...settled } = outcome;
+  const { bookingPaid, partyDepositPaid: _partyDepositPaid, ...settled } = outcome;
   return {
     ...settled,
     booking: bookingPaid
@@ -1200,7 +1216,7 @@ async function settleWithin(
   env: Env,
   log: FastifyBaseLogger,
   input: { attempt: AttemptRow; facts: QrPaymentFacts; source: SettleSource; requestId?: string },
-): Promise<SettleOutcome & { bookingPaid?: BookingPaidOutcome | null }> {
+): Promise<SettleOutcome & { bookingPaid?: BookingPaidOutcome | null; partyDepositPaid?: PartyDepositPaidOutcome | null }> {
   const { attempt, facts } = input;
 
   /**
@@ -1349,6 +1365,19 @@ async function settleWithin(
         requestId: input.requestId ?? null,
         gatewayLate: facts.state === 'late_paid',
       });
+      /**
+       * SCRUM-825 — A PARTY DEPOSIT'S PAYMENT, the same way: the request is
+       * marked paid, the party's deposit figure written back and the family's
+       * confirmation posted IN THIS TRANSACTION, so the money and the party's
+       * state commit together or not at all. Null for any other attempt.
+       */
+      const partyDepositPaid = bookingPaid
+        ? null
+        : await (await import('../party-deposit')).confirmPartyDepositPaid(tx, {
+            attemptId: settled.id,
+            source: input.source,
+            requestId: input.requestId ?? null,
+          });
       // Otherwise a QR minted before the cart was committed. The money is
       // recorded; the sale attaches to it when it is committed (Slice F's flow).
       return {
@@ -1357,6 +1386,7 @@ async function settleWithin(
         finalisedSale: false,
         outstandingSatang: null,
         bookingPaid,
+        partyDepositPaid,
       };
     }
 
@@ -2106,6 +2136,10 @@ async function applyNonPaidState(
         status: facts.state === 'expired' ? 'expired' : 'cancelled',
         reason: `gateway_${facts.state}`,
       });
+      // SCRUM-825 — and a party deposit link that ended without money ends
+      // its request (`expired`): the next "Request deposit" re-issues one.
+      const { closePartyDepositUnpaid } = await import('../party-deposit');
+      await closePartyDepositUnpaid(tx, { attemptId: attempt.id, state: facts.state, now });
     }
   });
 }
@@ -2311,7 +2345,7 @@ export async function pollPendingAttempts(
 
 /** Whether the tick that is running should ask about this attempt. */
 export function isInquiryDue(
-  attempt: Pick<AttemptRow, 'id' | 'createdAt' | 'expiresAt'>,
+  attempt: Pick<AttemptRow, 'id' | 'createdAt' | 'expiresAt' | 'payload'>,
   now: Date,
   env: Env,
 ): boolean {
@@ -2320,6 +2354,18 @@ export function isInquiryDue(
   if (isExhausted(attempt, now, env)) return true; // one last ask, then it is closed.
   // The first two minutes: every tick.
   if (ageMs <= 120_000) return true;
+  /**
+   * SCRUM-825 — A LONG-LIVED LINK (a party deposit hosted page, valid for
+   * days) is asked about once in every ten MINUTES after that, in its own
+   * slice of the window: the webhook is its fast path, and a family that
+   * pays on the second day is found within ten minutes without a day of
+   * inquiries for every open deposit.
+   */
+  if (isLongLived(attempt)) {
+    const since = ageMs - Math.floor(ageMs / 600_000) * 600_000;
+    const offset = jitterOffsetMs(attempt.id);
+    return since >= offset && since < offset + env.PGW_INQUIRY_INTERVAL_S * 1000;
+  }
   /**
    * After that, once in every ten seconds — and each attempt in its own slice
    * of that window, so a busy Saturday does not send fifty inquiries in the
@@ -2332,14 +2378,25 @@ export function isInquiryDue(
   return since >= offset && since < offset + env.PGW_INQUIRY_INTERVAL_S * 1000;
 }
 
-/** Past the polling window, or a minute past its own expiry. */
+/**
+ * Past the polling window, or a minute past its own expiry. A long-lived link
+ * (SCRUM-825, `payload.longLived`) has only its own expiry: the polling
+ * window is a QR on a display for twenty minutes, not a page a family has
+ * days to open.
+ */
 function isExhausted(
-  attempt: Pick<AttemptRow, 'createdAt' | 'expiresAt'>,
+  attempt: Pick<AttemptRow, 'createdAt' | 'expiresAt' | 'payload'>,
   now: Date,
   env: Env,
 ): boolean {
+  if (isLongLived(attempt)) return attempt.expiresAt !== null && now.getTime() > attempt.expiresAt.getTime() + 60_000;
   if (now.getTime() - attempt.createdAt.getTime() > env.PGW_INQUIRY_MAX_MIN * 60_000) return true;
   return attempt.expiresAt !== null && now.getTime() > attempt.expiresAt.getTime() + 60_000;
+}
+
+/** A station-less attempt whose page lives for days (a party deposit), marked so when it was opened. */
+function isLongLived(attempt: Pick<AttemptRow, 'payload'>): boolean {
+  return (attempt.payload as { longLived?: unknown } | null)?.longLived === true;
 }
 
 function jitterOffsetMs(id: string): number {

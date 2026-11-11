@@ -199,6 +199,38 @@ describe('route guards (S2-01b)', () => {
     expect(response.statusCode).toBe(401);
   });
 
+  it('binds the OTO App’s party deposit and menu doors to its operator credential, and the deposit return to no session (SCRUM-825)', async () => {
+    const doors = ctx.app.routeRegistry
+      .filter((r) => r.url.startsWith('/otoapp/parties/:eventId/') && r.url !== '/otoapp/parties/:eventId/billing' && r.method !== 'HEAD' && r.method !== 'OPTIONS')
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(doors).toEqual([
+      'GET /otoapp/parties/:eventId/deposit-request',
+      'POST /otoapp/parties/:eventId/deposit-request',
+      'POST /otoapp/parties/:eventId/deposit-request/:requestId/cancel',
+      'POST /otoapp/parties/:eventId/deposit-request/:requestId/resend',
+      'POST /otoapp/parties/:eventId/menu-link',
+      'POST /otoapp/parties/:eventId/menu-received',
+    ]);
+    for (const key of doors) {
+      const [method, url] = key.split(' ') as [string, string];
+      const route = ctx.app.routeRegistry.find((r) => r.method === method && r.url === url);
+      expect(route?.config.credential, key).toBe('otoapp-provision');
+      expect(route?.config.public, key).not.toBe(true);
+      expect(route?.config.permission, key).toBeUndefined();
+      // Refused as no key before the id is validated: an anonymous probe learns nothing of the shape.
+      const probe = url.replace(':eventId', 'not-a-uuid').replace(':requestId', 'not-a-uuid');
+      const response = await ctx.app.inject({ method: method as 'GET' | 'POST', url: probe, ...(method === 'POST' ? { payload: {} } : {}) });
+      expect(response.statusCode, key).toBe(401);
+    }
+    // The family's browser return: public by name, writes nothing (route-write-conformance pins the no-write).
+    for (const method of ['GET', 'POST'] as const) {
+      const route = ctx.app.routeRegistry.find((r) => r.method === method && r.url === '/public/parties/deposit/return');
+      expect(route?.config.public, method).toBe(true);
+      expect(route?.config.credential, method).toBeUndefined();
+    }
+  });
+
   it('the Console Teams and routing surface declares actual scoped management guards (SCRUM-626)', () => {
     const routes = ctx.app.routeRegistry.filter(r => /^\/inbox\/(teams|routing-rules)(\/|$)/.test(r.url)
       && r.method !== 'HEAD' && r.method !== 'OPTIONS');
@@ -454,6 +486,8 @@ describe('route guards (S2-01b)', () => {
        */
       'GET /public/branches/:code/parks',
       'GET /public/member-tier',
+      /** SCRUM-825 — the party deposit's browser return, reached by a GET. Writes nothing. */
+      'GET /public/parties/deposit/return',
       'GET /ready',
       /**
        * S2-12 — the SIMULATED hosted payment page, the guest's stand-in for
@@ -504,6 +538,13 @@ describe('route guards (S2-01b)', () => {
        * round, held by `route-write-conformance.test.ts`'s no-write list.
        */
       'POST /public/bookings/return',
+      /**
+       * SCRUM-825 — the same browser return for a party deposit's hosted page:
+       * a plain page in the family's words from a signed display hint, and
+       * nothing written (route-write-conformance's no-write list). The GET
+       * is the same page reached by a GET.
+       */
+      'POST /public/parties/deposit/return',
       /**
        * SCRUM-357 — a returning family's saved children on the booking site,
        * only behind a six-digit code sent to the member's phone. `code` sends

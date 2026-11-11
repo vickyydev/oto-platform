@@ -65,6 +65,12 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'closing_booking',
   'opener_birthday_advice',
   'opener_birthday_advice_park_known',
+  // SCRUM-825: the assistant's party lines from the BEO (the deposit request, its reminder and confirmation; the menu link and its confirmation).
+  'party_deposit_request',
+  'party_deposit_reminder',
+  'party_deposit_received',
+  'party_menu_link',
+  'party_menu_received',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

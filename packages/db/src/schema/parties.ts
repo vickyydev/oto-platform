@@ -267,3 +267,115 @@ export const partySettlement = pos.table(
     check('party_settlement_plan_check', sql`jsonb_typeof(${t.plan}) = 'object'`),
   ],
 );
+
+/**
+ * SCRUM-825 — where a deposit request stands. `requested` while the family can
+ * still pay its link; `paid` once the gateway's settlement confirmed the money;
+ * `expired` when the link ran out (or the gateway closed it) unpaid; `cancelled`
+ * when staff withdrew it, or the gateway refused to open the page at all.
+ */
+export const PARTY_DEPOSIT_REQUEST_STATES = ['requested', 'paid', 'expired', 'cancelled'] as const;
+export type PartyDepositRequestState = (typeof PARTY_DEPOSIT_REQUEST_STATES)[number];
+
+/**
+ * SCRUM-825 — A DEPOSIT ASKED OF THE FAMILY FROM THE BEO, paid through the
+ * gateway's hosted page and watched by the platform.
+ *
+ * Staff press "Request deposit" in the BEO's Billing section with an amount;
+ * the OTO App's server asks this platform (its provisioning key), which mints
+ * a station-less gateway attempt on the `WEB` segment — the same shape the
+ * booking site's checkout opens (`booking-checkout.ts`) — asks the gateway
+ * for its hosted page, and has the inbox assistant post the link in the
+ * family's chat (the conversation Book Date linked to the event,
+ * `inbox.conversation.event_order_ref`). The gateway's settlement marks the
+ * request paid (`confirmPartyDepositPaid`, inside the same transaction as the
+ * money) and writes the party's ONE deposit figure back to the app through
+ * the party-edit path (`write_back_edit_id`, SCRUM-804), so the BEO, the
+ * Day-of view, the Quote PDF and the till's "Deposit paid in advance" all
+ * read it at once.
+ *
+ * `id` is derived from the operator and the app's Idempotency-Key, so the
+ * same press is the same request. One open request per party
+ * (`party_deposit_request_open_unique`); a new one is made only once the
+ * earlier one is paid, expired or cancelled. The conversation and the event
+ * are soft links: the event is the app's (C10), and the inbox's conversation
+ * rows are the inbox's own to erase or purge.
+ */
+export const partyDepositRequest = pos.table(
+  'party_deposit_request',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The OTO App's party. No foreign key: the app's tables are its own (C10). */
+    otoappEventId: uuid('otoapp_event_id').notNull(),
+    /** The family's inbox thread (`inbox.conversation.id`). Soft: the inbox owns its rows. */
+    conversationId: uuid('conversation_id').notNull(),
+    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
+    currency: text('currency').notNull().default('THB'),
+    state: text('state').$type<PartyDepositRequestState>().notNull().default('requested'),
+    /** The live gateway attempt: the link's invoice. Replaced when an expired link is re-issued. */
+    paymentAttemptId: uuid('payment_attempt_id')
+      .notNull()
+      .references(() => paymentAttempt.id, { onDelete: 'restrict' }),
+    invoiceNo: text('invoice_no').notNull(),
+    /** The hosted page the family pays on; null until the gateway opened it. */
+    paymentLink: text('payment_link'),
+    linkExpiresAt: timestamp('link_expires_at', { withTimezone: true, mode: 'date' }),
+    requestedAt: timestamp('requested_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** The ONE reminder the assistant posts after the reminder window. */
+    remindedAt: timestamp('reminded_at', { withTimezone: true, mode: 'date' }),
+    /** The thread handed to a person after the second window. */
+    handedOverAt: timestamp('handed_over_at', { withTimezone: true, mode: 'date' }),
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+    /** When it became expired or cancelled, and the word for why. */
+    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
+    closeReason: text('close_reason'),
+    /** The assistant's lines in the chat (`inbox.message.id`, soft): the request, its reminder, the confirmation. */
+    requestMessageId: uuid('request_message_id'),
+    reminderMessageId: uuid('reminder_message_id'),
+    paidMessageId: uuid('paid_message_id'),
+    /** The party's deposit as the app held it when the money landed, and what it was set to. */
+    depositBeforeSatang: bigint('deposit_before_satang', { mode: 'number' }),
+    depositAfterSatang: bigint('deposit_after_satang', { mode: 'number' }),
+    /** The party edit that carries the new deposit to the OTO App (SCRUM-804's path). */
+    writeBackEditId: uuid('write_back_edit_id').references(() => partyEdit.id, { onDelete: 'restrict' }),
+    /** The platform account stamped on the app user who pressed, where this operator has one. */
+    accountId: uuid('account_id').references(() => account.id, { onDelete: 'restrict' }),
+    actorAppUserId: text('actor_app_user_id'),
+    /** The app's Idempotency-Key for the press; the row's id is derived from it. */
+    idempotencyKey: text('idempotency_key').notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('party_deposit_request_attempt_unique').on(t.paymentAttemptId),
+    /** One open request per party. */
+    uniqueIndex('party_deposit_request_open_unique')
+      .on(t.otoappEventId)
+      .where(sql`state = 'requested'`),
+    index('party_deposit_request_operator_idx').on(t.operatorId),
+    index('party_deposit_request_branch_idx').on(t.branchId, t.requestedAt),
+    /** A party's requests, newest first. */
+    index('party_deposit_request_event_idx').on(t.otoappEventId, t.requestedAt),
+    index('party_deposit_request_conversation_idx').on(t.conversationId),
+    /** The follow-up job: what is still open, oldest first. */
+    index('party_deposit_request_open_idx')
+      .on(t.requestedAt)
+      .where(sql`state = 'requested'`),
+    index('party_deposit_request_write_back_idx').on(t.writeBackEditId),
+    index('party_deposit_request_account_idx').on(t.accountId),
+    check('party_deposit_request_state_check', sql`${t.state} in ('requested','paid','expired','cancelled')`),
+    check('party_deposit_request_amount_check', sql`${t.amountSatang} > 0`),
+    check('party_deposit_request_currency_check', sql`${t.currency} ~ '^[A-Z]{3}$'`),
+    /** Paid always says when; so does a close. */
+    check('party_deposit_request_paid_check', sql`${t.state} <> 'paid' or ${t.paidAt} is not null`),
+    check(
+      'party_deposit_request_closed_check',
+      sql`${t.state} not in ('expired','cancelled') or ${t.closedAt} is not null`,
+    ),
+  ],
+);

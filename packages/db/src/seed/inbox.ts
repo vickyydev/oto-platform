@@ -14,11 +14,11 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the seventeen template keys (`handover_general` joined with SCRUM-590,
+ *   - the template keys (`handover_general` joined with SCRUM-590,
  *     `follow_up` with the SCRUM-220 test night, four `closing_*` lines
  *     with the SCRUM-220 playbook, `closing_booking` with SCRUM-677,
  *     `opener_birthday_advice` and `opener_birthday_advice_park_known` with
- *     SCRUM-823) in
+ *     SCRUM-823, the five `party_*` lines with SCRUM-825) in
  *     English, Thai and Russian, each language in its own words but for a
  *     key still waiting for its translator — and the one UPDATE this file
  *     makes: a TH or RU row that still carries the English source marked
@@ -181,6 +181,19 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   // and roughly how many people, then the warm line.
   opener_birthday_advice_park_known:
     "Amazing, thank you! We'd love to organize a party for you 🎈 What date are you thinking of, and roughly how many people? Our birthday manager will be with you shortly.",
+  // SCRUM-825 (`0115_party_deposit_request`): the party messages the assistant
+  // posts from the BEO's Billing section, ONE each, in the family's language.
+  // `{{amount}}` is the deposit as the till writes money ("฿3,000"), `{{date}}`
+  // the party's day in words, `{{link}}` the gateway's payment page or the
+  // parent's menu link, `{{validUntil}}` when the payment link runs out.
+  party_deposit_request:
+    'To confirm your party on {{date}} we kindly ask for a deposit of {{amount}}. You can pay it securely here: {{link}} (valid until {{validUntil}}). Your booking is confirmed as soon as the deposit arrives 🎈',
+  party_deposit_reminder:
+    'A gentle reminder: the deposit of {{amount}} for your party on {{date}} is still open. You can pay it here: {{link}} (valid until {{validUntil}}). Just let us know if you have any questions 😊',
+  party_deposit_received: 'Thank you! We have received your deposit of {{amount}} — your party on {{date}} is confirmed. See you then! 🎉',
+  party_menu_link:
+    'Here is the link to choose the menu for your party on {{date}}: {{link}} — pick what the children will enjoy and we will take care of the rest 🍕',
+  party_menu_received: 'Thank you! We have received your menu choices for {{date}} — the kitchen will be ready 😊',
 };
 
 /**
@@ -233,6 +246,14 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
       'ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈 สนใจจัดวันไหน ประมาณกี่ท่าน และสะดวกสาขาไหนคะ Central Floresta หรือ Robinson Chalong ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
     opener_birthday_advice_park_known:
       'ยินดีมากเลยค่ะ เรายินดีจัดปาร์ตี้ให้นะคะ 🎈 สนใจจัดวันไหน และประมาณกี่ท่านคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
+    party_deposit_request:
+      'เพื่อยืนยันการจองปาร์ตี้ในวัน{{date}} ขอความกรุณาชำระเงินมัดจำจำนวน {{amount}} นะคะ สามารถชำระได้อย่างปลอดภัยที่ลิงก์นี้ค่ะ: {{link}} (ใช้ได้ถึง {{validUntil}}) เมื่อได้รับเงินมัดจำแล้ว การจองจะได้รับการยืนยันทันทีค่ะ 🎈',
+    party_deposit_reminder:
+      'ขอแจ้งเตือนนะคะ เงินมัดจำจำนวน {{amount}} สำหรับปาร์ตี้ในวัน{{date}} ยังไม่ได้รับการชำระค่ะ สามารถชำระได้ที่ลิงก์นี้ค่ะ: {{link}} (ใช้ได้ถึง {{validUntil}}) หากมีข้อสงสัยสอบถามได้เลยนะคะ 😊',
+    party_deposit_received: 'ขอบคุณมากค่ะ เราได้รับเงินมัดจำจำนวน {{amount}} เรียบร้อยแล้ว ปาร์ตี้ในวัน{{date}} ได้รับการยืนยันแล้วค่ะ แล้วพบกันนะคะ 🎉',
+    party_menu_link:
+      'นี่คือลิงก์สำหรับเลือกเมนูอาหารของปาร์ตี้ในวัน{{date}} ค่ะ: {{link}} เลือกเมนูที่เด็ก ๆ ชอบได้เลยนะคะ ที่เหลือเราจัดการให้ค่ะ 🍕',
+    party_menu_received: 'ขอบคุณค่ะ เราได้รับเมนูที่เลือกสำหรับปาร์ตี้ในวัน{{date}} เรียบร้อยแล้ว ทางครัวจะเตรียมให้พร้อมค่ะ 😊',
   },
   ru: {
     welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
@@ -258,6 +279,14 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Tran
       'Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈 Какую дату вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее — Central Floresta или Robinson Chalong? Наш менеджер по праздникам скоро свяжется с вами.',
     opener_birthday_advice_park_known:
       'Замечательно, спасибо! Мы с радостью организуем для вас праздник 🎈 Какую дату вы рассматриваете и примерно сколько будет гостей? Наш менеджер по праздникам скоро свяжется с вами.',
+    party_deposit_request:
+      'Чтобы подтвердить ваш праздник {{date}}, просим внести депозит {{amount}}. Оплатить его можно безопасно по ссылке: {{link}} (действует до {{validUntil}}). Бронирование подтверждается, как только депозит поступит 🎈',
+    party_deposit_reminder:
+      'Небольшое напоминание: депозит {{amount}} за ваш праздник {{date}} ещё не оплачен. Оплатить его можно здесь: {{link}} (действует до {{validUntil}}). Если есть вопросы — просто напишите нам 😊',
+    party_deposit_received: 'Спасибо! Мы получили ваш депозит {{amount}} — ваш праздник {{date}} подтверждён. До встречи! 🎉',
+    party_menu_link:
+      'Вот ссылка для выбора меню на ваш праздник {{date}}: {{link}} — выберите то, что понравится детям, а об остальном позаботимся мы 🍕',
+    party_menu_received: 'Спасибо! Мы получили ваш выбор меню на {{date}} — кухня будет готова 😊',
   },
 };
 

@@ -51,6 +51,7 @@ import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { otoAppPartyMenuRoutes } from './routes/otoapp-party-menu';
 import { otoAppPartyBillingRoutes } from './routes/otoapp-party-billing';
+import { otoAppPartyDepositRoutes } from './routes/otoapp-party-deposit';
 import { stockRoutes } from './routes/stock';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
@@ -100,6 +101,7 @@ import { buildSmsSender, configureNoticeLog, noticeLogModeFor, type SmsSender } 
 import { buildOtoAppDirectory, type OtoAppDirectory } from './services/otoapp-directory';
 import { configureBookingPassDirectory } from './services/booking-event-passes';
 import { configurePartySettlementDirectory } from './services/party-settlement';
+import { configurePartyDeposit } from './services/party-deposit';
 
 /** The Fastify instance with the Zod type provider — route schemas infer req.body/params. */
 export type App = FastifyInstance<
@@ -258,6 +260,13 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // SCRUM-804 — so is a party settlement's sale id, when a terminal or the
   // gateway closes its sale.
   configurePartySettlementDirectory(() => app.otoAppDirectory);
+  // SCRUM-825 — and a paid party deposit's write-back and confirmation, from
+  // the gateway's settlement, which has no request to reach the app or the
+  // inbox's channels from.
+  configurePartyDeposit({
+    directory: () => app.otoAppDirectory,
+    sender: () => ({ channels: app.inboxChannels, storage: app.fileStorage }),
+  });
 
   await app.register(cookie);
   // First, so its onSend and onResponse hooks see every request — including
@@ -493,6 +502,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // SCRUM-822 — the OTO App server's read of a party's money from the till:
   // the quote before settlement, the sale after it (its provisioning key).
   await app.register(otoAppPartyBillingRoutes, { prefix: '/otoapp' });
+  // SCRUM-825 — the OTO App server's doors for a party's deposit request, the
+  // parent's menu link and their choices (its provisioning key).
+  await app.register(otoAppPartyDepositRoutes, { prefix: '/otoapp' });
   // S2-14b — the stock read routes the till and the stock screens read.
   await app.register(stockRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are

@@ -29,6 +29,7 @@ import {
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { ipLimited } from '../plugins/rate-limit';
+import { readBookingReturn } from '../services/payments/gateway';
 import {
   CHECKOUT_METHODS,
   bookingReturnTarget,
@@ -686,4 +687,75 @@ export async function publicRoutes(app: App): Promise<void> {
     },
     async (req, reply) => returnHandler(req.query.paymentResponse, reply),
   );
+
+  /**
+   * SCRUM-825 — WHERE A FAMILY'S BROWSER LANDS after the gateway's page for a
+   * party deposit (`services/party-deposit.ts` `PARTY_DEPOSIT_RETURN_PATH`).
+   * A plain page in the family's words: the payment is being confirmed and
+   * the chat will say so, or it did not go through. READ ONLY, as the
+   * booking's return is: the `paymentResponse` is a signed display hint and
+   * nothing else — a deposit is paid only by the gateway's backend
+   * notification confirmed by an inquiry, and a forged or missing hint is
+   * answered like an honest "unknown".
+   */
+  const depositReturnHandler = (paymentResponse: string | undefined, reply: Parameters<typeof sendHtmlPage>[0]) => {
+    const hint = paymentResponse ? readBookingReturn(app.env, paymentResponse) : null;
+    const completed = hint?.respCode === '2000' || hint?.respCode === '0000';
+    const failed = hint !== null && !completed;
+    const title = completed ? 'Thank you' : failed ? 'The payment did not go through' : 'Checking your payment';
+    const body = completed
+      ? '<p>Thank you — your deposit is being confirmed. You will get a message in the chat as soon as it is in.</p>'
+      : failed
+        ? '<p>The payment did not go through, and nothing was taken. You can open the link in the chat again, or write to us there.</p>'
+        : '<p>We are checking your payment. You will get a message in the chat as soon as it is confirmed.</p>';
+    return sendHtmlPage(reply, title, `<h1>${title}</h1>${body}<p class="muted">OTO Play Park</p>`);
+  };
+
+  app.post(
+    '/public/parties/deposit/return',
+    {
+      config: { public: true, crossSiteReturn: true, ...ipLimited },
+      schema: {
+        description:
+          "The hosted payment page's browser return for a party deposit (SCRUM-825). Verifies the `paymentResponse` as a DISPLAY HINT and shows a plain page; changes nothing — a deposit is paid only by the gateway's backend notification confirmed by an inquiry.",
+        body: z.object({ paymentResponse: z.string().max(8192).optional() }).passthrough(),
+      },
+    },
+    async (req, reply) => depositReturnHandler(req.body.paymentResponse, reply),
+  );
+
+  app.get(
+    '/public/parties/deposit/return',
+    {
+      config: { public: true, ...ipLimited },
+      schema: {
+        description: 'The same party-deposit return, reached by a GET. Changes nothing.',
+        querystring: z.object({ paymentResponse: z.string().max(8192).optional() }).passthrough(),
+      },
+    },
+    async (req, reply) => depositReturnHandler(req.query.paymentResponse, reply),
+  );
+}
+
+/** A plain page for a family's browser, and a policy that lets it load nothing. */
+function sendHtmlPage(
+  reply: { header: (k: string, v: string) => unknown; type: (t: string) => unknown; send: (b: string) => unknown },
+  title: string,
+  body: string,
+): unknown {
+  reply.header('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'");
+  reply.header('cache-control', 'no-store');
+  reply.type('text/html; charset=utf-8');
+  return reply.send(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 3rem auto; padding: 0 1rem; color: #0f172a; }
+  h1 { font-size: 1.75rem; margin: 0.5rem 0; }
+  .muted { color: #64748b; font-size: 0.875rem; }
+</style></head><body>${body}</body></html>`);
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

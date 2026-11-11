@@ -413,6 +413,22 @@ export const InboxConversationEventSchema = z.object({
   bookedByAccountId: Uuid.nullable(),
   /** Where the OTO App opens this event's BEO form: the target for the suite hand-off. */
   beoPath: z.string(),
+  /**
+   * SCRUM-825: the party's newest deposit request, as the platform holds it —
+   * `requested` while the family can pay the link, then `paid`, `expired` or
+   * `cancelled`; `overdue` is a `requested` one the thread was handed to a
+   * person for. The chip says it beside the date. Null when none was asked.
+   * Optional: an api from before SCRUM-825 sends none.
+   */
+  deposit: z
+    .object({
+      requestId: Uuid,
+      state: z.enum(['requested', 'paid', 'expired', 'cancelled']),
+      amountSatang: z.number().int(),
+      overdue: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 export type InboxConversationEvent = z.infer<typeof InboxConversationEventSchema>;
 

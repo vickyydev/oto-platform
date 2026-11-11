@@ -92,6 +92,10 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
     prefix: '/public/bookings/return',
     caller: "the payment gateway's redirect back to the booking site",
   },
+  {
+    prefix: '/public/parties/deposit/return',
+    caller: "the payment gateway's redirect of a family's browser after a party deposit's hosted page (SCRUM-825): a plain page, nothing written",
+  },
   { prefix: '/health', caller: "the host's health check" },
   {
     prefix: '/admin/apps/oto_app/suite-sign-ins',
@@ -127,6 +131,23 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
     exact: true,
     caller:
       "the OTO App's server (server/lib/tillBilling.ts, SCRUM-822), reading a party's money from the till for the BEO's Billing section, Party Details, Day-of view and Quote PDF, with the operator-bound provision key",
+  },
+  {
+    prefix: '/otoapp/parties/{eventId}/deposit-request',
+    caller:
+      "the OTO App's server (server/lib/partyDepositRequest.ts, SCRUM-825), when staff ask, resend or cancel a party's deposit from the BEO's Billing section, with the operator-bound provision key and the press's Idempotency-Key",
+  },
+  {
+    prefix: '/otoapp/parties/{eventId}/menu-link',
+    exact: true,
+    caller:
+      "the OTO App's server (server/lib/partyDepositRequest.ts, SCRUM-825), when staff press \"Send the menu choice link\" in the BEO, with the operator-bound provision key and the press's Idempotency-Key",
+  },
+  {
+    prefix: '/otoapp/parties/{eventId}/menu-received',
+    exact: true,
+    caller:
+      "the OTO App's server (server/party-deposit-routes.ts, SCRUM-825), after a parent's set-menu choices landed on the public link, with the operator-bound provision key and the submission as the Idempotency-Key",
   },
   {
     prefix: '/console/deploy-events',

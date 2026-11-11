@@ -284,7 +284,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the seventeen templates in EN, TH and RU, each language in its own words but for a key waiting for its translator', async () => {
+  it('lays every template key in EN, TH and RU, each language in its own words but for a key waiting for its translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
@@ -342,9 +342,25 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       const line = templates.find((t) => t.key === 'opener_birthday_advice_park_known' && t.language === language)!.body;
       expect(line, language).not.toMatch(/Central|Chalong|branch|สาขา|филиал/i);
     }
-    // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
+    // The follow-up is the one holding-line key with a placeholder; the party
+    // lines (SCRUM-825) carry the amount, the day, the link and its validity.
     expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
-    expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);
+    expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual([
+      'follow_up',
+      'party_deposit_request',
+      'party_deposit_reminder',
+      'party_deposit_received',
+      'party_menu_link',
+      'party_menu_received',
+    ]);
+    // SCRUM-825: the assistant's party lines, each with the placeholders the party-messages service fills and no customer's name.
+    const placeholdersOf = (body: string) => [...body.matchAll(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g)].map((m) => m[1]).sort();
+    expect(placeholdersOf(en('party_deposit_request'))).toEqual(['amount', 'date', 'link', 'validUntil']);
+    expect(placeholdersOf(en('party_deposit_reminder'))).toEqual(['amount', 'date', 'link', 'validUntil']);
+    expect(placeholdersOf(en('party_deposit_received'))).toEqual(['amount', 'date']);
+    expect(placeholdersOf(en('party_menu_link'))).toEqual(['date', 'link']);
+    expect(placeholdersOf(en('party_menu_received'))).toEqual(['date']);
+    expect(en('party_deposit_received')).toBe('Thank you! We have received your deposit of {{amount}} — your party on {{date}} is confirmed. See you then! 🎉');
   });
 
   it('an operator synced before the translations existed: the English-bodied TH and RU rows take theirs, once; an admin’s words are never overwritten', async () => {

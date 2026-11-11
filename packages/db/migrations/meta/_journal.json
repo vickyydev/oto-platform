@@ -806,6 +806,13 @@
       "when": 1794320978574,
       "tag": "0114_inbox_advice_opener",
       "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1794383162534,
+      "tag": "0115_party_deposit_request",
+      "breakpoints": true
     }
   ]
 }

@@ -198,6 +198,19 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_booking',
   'opener_birthday_advice',
   'opener_birthday_advice_park_known',
+  /**
+   * SCRUM-825 (`0115_party_deposit_request`): the party messages the assistant
+   * posts from the BEO — the deposit request with its payment link, the one
+   * reminder, the confirmation once the gateway settled it; the parent's
+   * set-menu link and the confirmation of their choices. Each carries the
+   * placeholders the party-messages service fills (`{{amount}}`, `{{date}}`,
+   * `{{link}}`, `{{validUntil}}`), never a customer's name.
+   */
+  'party_deposit_request',
+  'party_deposit_reminder',
+  'party_deposit_received',
+  'party_menu_link',
+  'party_menu_received',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 
@@ -242,6 +255,23 @@ export const INBOX_EVENT_KINDS = [
   'ai_paused',
   'ai_resumed',
   'ai_shadow',
+  /**
+   * SCRUM-825 (`0115_party_deposit_request`): a party's deposit asked from the
+   * BEO and watched by the platform — requested (the link posted), reminded,
+   * paid (the gateway settled it), expired (the link ran out unpaid),
+   * cancelled (staff withdrew it), overdue (handed to a person); and the
+   * parent's set-menu link posted and their choices received. Payloads carry
+   * the request id, the amount in satang and the link's expiry — never the
+   * link itself and never a message body.
+   */
+  'deposit_requested',
+  'deposit_reminded',
+  'deposit_paid',
+  'deposit_expired',
+  'deposit_cancelled',
+  'deposit_overdue',
+  'menu_link_sent',
+  'menu_received',
 ] as const;
 export type InboxEventKind = (typeof INBOX_EVENT_KINDS)[number];
 

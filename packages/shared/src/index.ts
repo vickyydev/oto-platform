@@ -66,6 +66,7 @@ export * from './parties';
 export * from './party-settlement';
 // SCRUM-822: the party's money as the till holds it, read by the OTO App.
 export * from './party-billing';
+export * from './party-deposit';
 export * from './event-checkin';
 export * from './booking-event-passes';
 export * from './benefit-credential';

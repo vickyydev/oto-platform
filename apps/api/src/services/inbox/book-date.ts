@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
-import { branch, conversation, inboxEvent, team, type Db } from '@oto/db';
+import { branch, conversation, inboxEvent, partyDepositRequest, team, type Db } from '@oto/db';
 import {
   beoPathOf,
   newId,
@@ -211,6 +211,21 @@ export async function conversationEventOf(
     .where(and(eq(branch.id, branchId), eq(branch.operatorId, operatorId)))
     .limit(1);
   if (park) booked.branchName = park.name;
+  // SCRUM-825: the party's newest deposit request, for the chip ("Deposit requested ฿3,000").
+  const [deposit] = await db
+    .select({
+      id: partyDepositRequest.id,
+      state: partyDepositRequest.state,
+      amountSatang: partyDepositRequest.amountSatang,
+      handedOverAt: partyDepositRequest.handedOverAt,
+    })
+    .from(partyDepositRequest)
+    .where(and(eq(partyDepositRequest.operatorId, operatorId), eq(partyDepositRequest.otoappEventId, eventId)))
+    .orderBy(desc(partyDepositRequest.requestedAt), desc(partyDepositRequest.id))
+    .limit(1);
+  booked.deposit = deposit
+    ? { requestId: deposit.id, state: deposit.state, amountSatang: deposit.amountSatang, overdue: deposit.state === 'requested' && deposit.handedOverAt !== null }
+    : null;
   // The Events module is the master: a date moved, a status confirmed or the
   // event archived there shows here. Its view is optional (a deployment
   // without the app has none, one without the grant refuses): the booking as
