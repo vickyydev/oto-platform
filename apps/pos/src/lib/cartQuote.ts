@@ -267,7 +267,9 @@ export function useCartQuote(args: {
 
   const [platform, setPlatform] = useState<{ signature: string; quote: CartQuote } | null>(null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<QuoteError | null>(null);
+  // The refusal or fault, with the cart it was about: a cart that has changed
+  // since is a question still to be asked, not one that was answered.
+  const [error, setError] = useState<{ signature: string; value: QuoteError } | null>(null);
   const seqRef = useRef(0);
 
   useEffect(() => {
@@ -296,7 +298,7 @@ export function useCartQuote(args: {
         .catch((err: unknown) => {
           if (seqRef.current !== seq) return;
           setPlatform(null);
-          setError(quoteErrorOf(err, 'The platform did not price this cart.'));
+          setError({ signature, value: quoteErrorOf(err, 'The platform did not price this cart.') });
           setPending(false);
         });
     }, QUOTE_DEBOUNCE_MS);
@@ -305,7 +307,18 @@ export function useCartQuote(args: {
   }, [signature, enabled, local.engineRefused]);
 
   const live = platform && platform.signature === signature ? platform.quote : local.quote;
-  return { totals: live.totals, quote: live, pending, error };
+  /**
+   * SCRUM-869 — THE QUESTION IS OUT FROM THE RENDER THE CART CHANGED ON. The
+   * effect above sets `pending` after that render has been committed, so for
+   * one render the figure was this till's and `pending` said nothing was in
+   * flight: the customer display's publisher and the staff layout both read
+   * that render as "the platform refused" and flipped. What the effect is
+   * about to ask is known here: a cart the platform has neither priced nor
+   * refused, on a till that asks at all.
+   */
+  const asking = enabled && !!identity && local.engineRefused === null && (lines.length > 0 || promoCodes.length > 0)
+    && platform?.signature !== signature && error?.signature !== signature;
+  return { totals: live.totals, quote: live, pending: pending || asking, error: error?.value ?? null };
 }
 
 // --- The F&B and shop orders (S2-09b) ---------------------------------------
