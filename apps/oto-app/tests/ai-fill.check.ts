@@ -43,7 +43,9 @@
 //     from the app's own naming rule as the park's default, never the model's
 //     own title; a value the form already holds is not proposed; the review
 //     keeps what the form holds and offers the chat's beside it, sends only
-//     what differs, and the approval body carries it with its sources.
+//     what differs from the SAVED BEO (text typed before the review and not
+//     yet saved is written as it stands), names the park's default as such
+//     in the offer, and the approval body carries it with its sources.
 //   - SCRUM-829: the adults eat what the kids eat unless the message says
 //     otherwise, whatever the model answers: an adults' list that only names
 //     the kids' dishes again (in the adults' headcount, noted "adults eat the
@@ -93,6 +95,7 @@ import {
   approvedMarksOf,
   approvedSectionsOf,
   chatOffered,
+  chatOfferWords,
   editedText,
   initialReviewState,
   sourceOf,
@@ -947,6 +950,10 @@ try {
     assert.equal(d.team.proposals.partyHost?.match?.label, "Nok (Siriporn)");
     assert.deepEqual(d.team.accepted, []);
     assert.equal(sourceOf(editedText(d.posNotes, "typed here")), "staff");
+    // The offer's words name where the offered text is from: the park's default is never called the chat's.
+    assert.deepEqual(chatOfferWords(d.title), { line: `The park's default is "Mali's 6th Birthday"`, button: "Use the park's default" });
+    assert.deepEqual(chatOfferWords(d.activities), { line: 'The chat says "treasure hunt"', button: "Use the chat's" });
+    assert.deepEqual(chatOfferWords({ chat: "Balloon arch", chatFrom: { source: "template", at: null, line: null } }), { line: 'The template gives "Balloon arch"', button: "Use the template's" });
 
     // What Approve and create sends: only what differs from the form, the lines kept, the team ticked.
     const ids = { conversationId: null, messageId: null };
@@ -967,6 +974,19 @@ try {
     assert.ok(untouched.sources.some((s) => s.field === "locationText" && s.source === "team"));
     assert.ok(untouched.sources.some((s) => s.field === "timeline:0" && s.source === "team"));
     assert.equal(BeoAiApproveBodySchema.safeParse(untouched).success, true, JSON.stringify(BeoAiApproveBodySchema.safeParse(untouched)));
+    // Typed before the review and not yet saved: the review keeps it, and the one Save writes it as it stands
+    // (the saved BEO holds nothing of it), with no source — it is nobody's line; a saved value is still not sent.
+    const typed = initialReviewState(review, { held, saved: { ...NOTHING_HELD, activities: "Games" }, fill });
+    assert.equal(typed.details.title.value, "ZZ typed title", "kept as typed");
+    assert.equal(typed.details.title.saved, null);
+    assert.equal(typed.details.activities.saved, "Games");
+    const written = approveBodyOf(review, typed, ids);
+    assert.equal(written.details?.title, "ZZ typed title", "unsaved typed text is written by the one Save");
+    assert.equal(written.details?.specialRequests, "No nuts\nquiet corner");
+    assert.equal(written.details?.activities, undefined, "the saved value is not written back over itself");
+    assert.ok(!written.sources.some((s) => s.field === "title"), "typed text is nobody's line: no source");
+    assert.ok(written.sources.some((s) => s.field === "specialRequests" && s.source === "family"), "the chat's words, typed before: the chat's source");
+    assert.equal(BeoAiApproveBodySchema.safeParse(written).success, true);
     // The park's default taken, the chat's activities taken, the host ticked, a note typed.
     const chosen = {
       ...state,

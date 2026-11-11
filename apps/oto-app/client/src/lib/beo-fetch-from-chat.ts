@@ -1,7 +1,7 @@
 import type { BeoAiFrom, BeoAiMenu, BeoAiReview } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
-import { thb } from "./beo-ai-review";
+import { thb, type ApprovedMarks } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826) — the diff and the memory.
@@ -22,7 +22,10 @@ import { thb } from "./beo-ai-review";
  * (the whole chat as it is now: the latest line wins, whoever wrote it —
  * `laterLineWins`) and the rest of the form's own text
  * fields from the fill; those are the fields the form types, and the only
- * ones a fetch applies. The catalogue section — the package and its add-ons,
+ * ones a fetch applies. The title is the one exception: the fill's own
+ * `event.title` is the model's guess and is never offered (SCRUM-827); the
+ * title a fetch offers is the park's default the proposal carries — the
+ * app's own naming rule from the child and the age — marked as such. The catalogue section — the package and its add-ons,
  * the set menu and its choices, the food lines, the entertainment, a line the
  * catalogue lacks — is what Create BEO's review and approval write: a fetch
  * LISTS what the chat says there against what the BEO holds
@@ -189,11 +192,15 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     changes.push({ field, label: FETCH_LABELS[field], was, now, value, from, said });
 
   // The form's text fields, from the fill (the ruling message, the form as its baseline).
-  const text = (field: Extract<FetchField, "title" | "bookingName" | "locationText" | "specialRequests" | "activities" | "decoration">, read: unknown) => {
+  const text = (field: Extract<FetchField, "bookingName" | "locationText" | "specialRequests" | "activities" | "decoration">, read: unknown) => {
     const value = str(read);
     if (value && !sameText(form[field], value)) offer(field, shownText(form[field]), value, value, ruling);
   };
-  text("title", event.title);
+  // SCRUM-827: the title is never the model's own (`event.title` is its guess): the one a
+  // fetch offers is the park's default the proposal carries — the app's naming rule from the
+  // child and the age — and only where it differs from the form, marked as the default.
+  const title = proposal?.details.title ?? null;
+  if (title && !sameText(form.title, title.value)) offer("title", shownText(form.title), title.value, title.value, title.from);
   text("bookingName", event.bookingName);
   text("locationText", event.locationText);
   text("specialRequests", event.specialRequests);
@@ -384,6 +391,47 @@ export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormVal
   const patch: Record<string, string | number> = {};
   for (const c of accepted) patch[c.field] = c.value;
   return patch as Partial<FetchFormValues>;
+}
+
+/**
+ * SCRUM-827: the mark the form wears on a field a fetch re-filled — keyed as
+ * the approval's sources key the editor's marks (`ApprovedMarks`): the cake's
+ * three fields share the kitchen plan's one mark, the deposit and its day the
+ * POS box's, the POS package its name's.
+ */
+export const FETCH_MARK_KEYS: Record<FetchField, string> = {
+  title: "title",
+  childName: "childName",
+  bookingName: "bookingName",
+  numChildren: "numChildren",
+  numAdults: "numAdults",
+  startTime: "startTime",
+  endTime: "endTime",
+  eventDate: "eventDate",
+  locationText: "locationText",
+  specialRequests: "specialRequests",
+  activities: "activities",
+  decoration: "decoration",
+  setupReadyBy: "setupReadyBy",
+  setupResponsible: "setupResponsible",
+  cakeMode: "cake",
+  cakeNotes: "cake",
+  cakeTime: "cake",
+  packageName: "posName",
+  prepaymentReceived: "deposit",
+  depositDate: "deposit",
+  packageNotes: "posNotes",
+};
+
+/**
+ * The marks the accepted changes put on the form: each field's is the line it
+ * now came from (the mark of before — another line's, or the park's default —
+ * would say where the value no longer came from).
+ */
+export function fetchedMarksOf(accepted: FetchChange[]): ApprovedMarks {
+  const marks: ApprovedMarks = {};
+  for (const c of accepted) marks[FETCH_MARK_KEYS[c.field]] = c.from?.source ?? "staff";
+  return marks;
 }
 
 /** "3 changes from the chat", "1 change from the chat". */

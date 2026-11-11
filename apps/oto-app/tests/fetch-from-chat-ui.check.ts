@@ -20,7 +20,10 @@
 //      offers to try again; Cancel applies and remembers nothing;
 //   5. what the chat says of the package, set menu, food and entertainment
 //      that the BEO lacks is listed to read, with no accept or decline and a
-//      line saying where it is chosen; it is never called "the same".
+//      line saying where it is chosen; it is never called "the same";
+//   6. the title: the fill's own `event.title` is the model's guess and is
+//      never offered; the park's default the proposal carries is, marked as
+//      the default, only where it differs from the form (SCRUM-827 review).
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/fetch-from-chat-ui.check.ts
@@ -350,6 +353,35 @@ await check("the chat names a magician the BEO lacks: listed to read beside the 
   await click("button-fetch-cancel");
 });
 
+await check("SCRUM-827: the model's own title is never offered; the park's default the proposal carries is, marked as the default, only where it differs", async () => {
+  const titled = (title: { value: string; from: { source: "default"; at: null; line: null } } | null): FetchAnswer => {
+    const a = answerAt(LINE_5, 9, "16:00");
+    // The fill's title is the model's guess; everything else reads as the form holds it.
+    a.fill = { event: { title: "Model's own title", numChildren: 12, numAdults: 9, startTime: "14:00", eventDate: "2026-11-21" }, kitchenPlan: { cakeTime: "16:00" } };
+    a.review!.proposal.details = { ...a.review!.proposal.details, title };
+    return a;
+  };
+  answer = () => Promise.resolve(titled(null));
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(byTestId("fetch-change-title"), null, "the model's title is never offered");
+  assert.equal(text("text-fetch-same"), "The chat reads the same as the form.");
+  await click("button-fetch-cancel");
+  // The park's default differs from the form: one row, marked as the default, taken as any change.
+  answer = () => Promise.resolve(titled({ value: "Emma's 6th Birthday", from: { source: "default", at: null, line: null } }));
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(text("text-fetch-count"), "1 change from the chat");
+  const title = row("title");
+  assert.equal(text("text-fetch-was", title), "ZZ TEST Emma 826");
+  assert.equal(text("text-fetch-now", title), "Emma's 6th Birthday");
+  assert.equal(text("ai-review-source", title), "the park's default");
+  await click("button-fetch-accept", title);
+  await click("button-fetch-apply");
+  assert.deepEqual(applied, [{ title: "Emma's 6th Birthday" }]);
+  assert.equal(current.title, "Emma's 6th Birthday");
+});
+
 await check("the editor mounts the dialog with its own form, read, memory and apply, behind a Fetch from chat button shown for a BEO from the inbox", () => {
   const editor = readFileSync(APP + "client/src/components/beo/beo-event-editor.tsx", "utf8");
   assert.match(editor, /data-testid="button-fetch-from-chat"/);
@@ -361,4 +393,4 @@ await check("the editor mounts the dialog with its own form, read, memory and ap
 
 await act(async () => { root.unmount(); });
 console.log(`fetch-from-chat-ui.check: ${checks} checks passed`);
-process.exit(checks === 10 ? 0 : 1);
+process.exit(checks === 11 ? 0 : 1);

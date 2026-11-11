@@ -54,6 +54,14 @@ export interface Reviewed<T> {
  */
 export interface ReviewText extends Reviewed<string> {
   held: string | null;
+  /**
+   * What the SAVED BEO holds (null when nothing): `held` is the form's live
+   * text, typed but perhaps unsaved. Approve and create writes a value that
+   * differs from the saved one — so text typed before the review is written
+   * as it stands, not lost to the read-back — and never a saved value over
+   * itself.
+   */
+  saved: string | null;
   chat: string | null;
   /** The line the chat's text is from (the latest, where several), and every line it came from (a joined field may hold the family's and the team's). */
   chatFrom: BeoAiFrom | null;
@@ -223,13 +231,19 @@ const asRecord = (v: unknown): Record<string, unknown> | null =>
 const sameText = (a: string, b: string) => a.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") === b.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
 
 /** SCRUM-827: a text field of the rest: the held value stands, else the chat's. */
-function reviewText(held: string | undefined, chat: { value: string; from: BeoAiFrom } | null, froms: BeoAiFrom[] = chat ? [chat.from] : []): ReviewText {
+function reviewText(
+  held: string | undefined,
+  chat: { value: string; from: BeoAiFrom } | null,
+  froms: BeoAiFrom[] = chat ? [chat.from] : [],
+  saved: string | undefined = held,
+): ReviewText {
   const heldText = held?.trim() ? held.trim() : null;
+  const savedText = saved?.trim() ? saved.trim() : null;
   const chatText = chat?.value.trim() ? chat.value.trim() : null;
   const value = heldText ?? chatText ?? "";
   // A held value the chat gives as well wears the chat's mark: it is that line's value.
   const isChats = chatText !== null && (heldText === null || sameText(heldText, chatText));
-  return { value, from: isChats ? chat!.from : null, changed: false, held: heldText, chat: chatText, chatFrom: chat?.from ?? null, froms };
+  return { value, from: isChats ? chat!.from : null, changed: false, held: heldText, saved: savedText, chat: chatText, chatFrom: chat?.from ?? null, froms };
 }
 const HELD_OF_KIND: Record<BeoAiRequestKind, keyof ReviewHeld> = { special_request: "specialRequests", decoration: "decoration", activity: "activities" };
 
@@ -248,10 +262,14 @@ const distinctFroms = (froms: BeoAiFrom[]): BeoAiFrom[] => {
 /**
  * The review as it opens: the proposal, every field with its source. `fill`
  * is the free-text fill read beside it (its date, SCRUM-814, and the team the
- * message named), `bookedDate` the date the form holds and `held` what the
- * form holds of the rest (SCRUM-827).
+ * message named), `bookedDate` the date the form holds, `held` what the
+ * form holds of the rest and `saved` what the saved BEO holds of it — the
+ * form's own when not given (SCRUM-827).
  */
-export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; bookedDate?: string | null; held?: ReviewHeld } = {}): BeoAiReviewState {
+export function initialReviewState(
+  review: BeoAiReview,
+  opts: { fill?: unknown; bookedDate?: string | null; held?: ReviewHeld; saved?: ReviewHeld } = {},
+): BeoAiReviewState {
   const p = review.proposal;
   const addOns: BeoAiReviewState["addOns"] = {};
   for (const a of p.addOns) addOns[a.lineId] = fresh(a.quantity, a.from);
@@ -263,9 +281,14 @@ export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; 
   }
   const sourced = <T>(f: { value: T; from: BeoAiFrom } | undefined) => (f ? fresh(f.value, f.from) : null);
   const held = opts.held ?? NOTHING_HELD;
+  // What the saved BEO holds; the form's live text when the caller gives no saved one.
+  const saved = opts.saved ?? held;
   const d = p.details;
-  const requestLine = (kind: BeoAiRequestKind) =>
-    reviewText(held[HELD_OF_KIND[kind]], requestsText(d.requests, kind), distinctFroms(d.requests.filter((r) => r.kind === kind).map((r) => r.from)));
+  const requestLine = (kind: BeoAiRequestKind) => {
+    const field = HELD_OF_KIND[kind];
+    return reviewText(held[field], requestsText(d.requests, kind), distinctFroms(d.requests.filter((r) => r.kind === kind).map((r) => r.from)), saved[field]);
+  };
+  const text = (field: keyof ReviewHeld, chat: { value: string; from: BeoAiFrom } | null) => reviewText(held[field], chat, undefined, saved[field]);
   const proposals = asRecord(asRecord(opts.fill)?.proposals);
   const teamProposals: ReviewTeamProposals = { partyHost: null, entertainmentHost: null, setupResponsible: null };
   for (const { field } of REVIEW_TEAM_FIELDS) {
@@ -312,17 +335,17 @@ export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; 
     date: aiFillDateLine(opts.fill, opts.bookedDate),
     useDate: false,
     details: {
-      title: reviewText(held.title, d.title),
-      bookingName: reviewText(held.bookingName, d.bookingName),
-      locationText: reviewText(held.locationText, d.locationText),
+      title: text("title", d.title),
+      bookingName: text("bookingName", d.bookingName),
+      locationText: text("locationText", d.locationText),
       specialRequests: requestLine("special_request"),
       activities: requestLine("activity"),
       decoration: requestLine("decoration"),
-      setupReadyBy: reviewText(held.setupReadyBy, d.setup.readyBy),
-      setupResponsible: reviewText(held.setupResponsible, d.setup.responsible),
+      setupReadyBy: text("setupReadyBy", d.setup.readyBy),
+      setupResponsible: text("setupResponsible", d.setup.responsible),
       setupTasks: d.setup.tasks.map((t) => ({ key: key("task"), label: t.itemLabel, extra: t.notes ?? "", from: t.from, changed: false })),
-      posName: reviewText(held.posName, d.pos.name),
-      posNotes: reviewText(held.posNotes, d.pos.notes),
+      posName: text("posName", d.pos.name),
+      posNotes: text("posNotes", d.pos.notes),
       posItems: d.pos.items.map((i) => ({ key: key("pos"), label: i.description, extra: i.type, from: i.from, changed: false })),
       timeline: d.timeline.map((t) => ({ key: key("step"), label: t.label, extra: t.time, from: t.from, changed: false })),
       team: { proposals: teamProposals, accepted: [] },
@@ -358,6 +381,24 @@ export function useChatText(field: ReviewText): ReviewText {
 /** Whether a text field of the rest shows the chat's text beside the held one, to take with one press. */
 export const chatOffered = (field: ReviewText): boolean =>
   field.held !== null && field.chat !== null && !sameText(field.held, field.chat) && !sameText(field.value, field.chat);
+
+/**
+ * The words the offer is made in, by where the offered text is from: the
+ * chat's lines say "The chat says …"; the park's default (the app's own
+ * naming rule, nobody's line) and a template are named as such — never
+ * called the chat's words.
+ */
+export function chatOfferWords(field: Pick<ReviewText, "chat" | "chatFrom">): { line: string; button: string } {
+  const chat = field.chat ?? "";
+  switch (field.chatFrom?.source) {
+    case "default":
+      return { line: `The park's default is "${chat}"`, button: "Use the park's default" };
+    case "template":
+      return { line: `The template gives "${chat}"`, button: "Use the template's" };
+    default:
+      return { line: `The chat says "${chat}"`, button: "Use the chat's" };
+  }
+}
 
 /** What the small mark beside a field says. */
 export function sourceOf(field: { from: BeoAiFrom | null; changed: boolean } | null): BeoAiOrigin | "staff" | null {
@@ -410,10 +451,13 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
  * SCRUM-827: the rest of the BEO as Approve and create sends it. A text field
- * is sent only when the reviewer leaves it different from what the BEO holds
- * (so nothing typed is overwritten, and a held value is never written back
- * over itself); a task, line item or step is sent while it is still in its
- * list; a team member where ticked and matched.
+ * is sent only when the reviewer leaves it different from what the SAVED BEO
+ * holds: nothing typed is overwritten (the form's own text is what the field
+ * starts at), text typed before the review and not yet saved is written as
+ * it stands — the one Save, so the read-back after the approval does not
+ * lose it — and a saved value is never written back over itself; a task,
+ * line item or step is sent while it is still in its list; a team member
+ * where ticked and matched.
  */
 export function approveDetailsOf(
   state: BeoAiReviewState,
@@ -426,11 +470,12 @@ export function approveDetailsOf(
     const value = f.value.trim();
     if (!value) return;
     if (into === "setupReadyBy" && !TIME.test(value)) return;
-    // A value the BEO holds already is not written back over itself; its source is still
-    // recorded when it is the chat's or the park's own (the mark the form wears afterwards).
-    const held = f.held !== null && sameText(value, f.held);
-    if (!held) (out as Record<string, unknown>)[into] = value;
-    if (!held || (f.from && !f.changed)) note(into, f);
+    // A value the saved BEO holds already is not written back over itself; its source is
+    // still recorded when it is the chat's or the park's own (the mark the form wears
+    // afterwards). Unsaved typed text differs from the saved value and is written.
+    const saved = f.saved !== null && sameText(value, f.saved);
+    if (!saved) (out as Record<string, unknown>)[into] = value;
+    if (!saved || (f.from && !f.changed)) note(into, f);
   };
   text("title", "title");
   text("bookingName", "bookingName");

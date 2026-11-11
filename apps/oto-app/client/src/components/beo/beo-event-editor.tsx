@@ -76,7 +76,7 @@ import {
 import { BeoTimelineEditor } from "./beo-timeline-editor";
 import { BeoAiReviewDialog, SourceMark, type BeoAiPending } from "./beo-ai-review";
 import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
-import { NO_DECLINED, type DeclinedChanges, type FetchAnswer, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
+import { NO_DECLINED, fetchedMarksOf, type DeclinedChanges, type FetchAnswer, type FetchChange, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
 import {
@@ -1385,6 +1385,33 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     posNotes: packageNotes,
   });
 
+  /**
+   * SCRUM-827: what the SAVED BEO holds of the rest. The approval writes a field
+   * that differs from this — text typed before the review and not yet saved
+   * among them, so the read-back after the approval does not lose it — and
+   * never a saved value over itself.
+   */
+  const reviewSaved = (): ReviewHeld => {
+    const rec = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
+    const s = (v: unknown) => (typeof v === "string" ? v : "");
+    const saved = rec(beoData);
+    const sp = rec(saved?.setupPlan);
+    const tasks = rec(sp?.setupTasks);
+    const pd = rec(saved?.partyDetails);
+    return {
+      title: s(saved?.title),
+      bookingName: s(saved?.bookingName) || s(saved?.parentName),
+      locationText: s(saved?.locationText),
+      specialRequests: s(saved?.specialRequests),
+      activities: s(saved?.activities),
+      decoration: s(saved?.decoration),
+      setupReadyBy: s(sp?.readyBy) || s(tasks?.readyBy),
+      setupResponsible: s(sp?.responsible) || s(tasks?.responsible),
+      posName: s(pd?.packageName),
+      posNotes: s(pd?.notes),
+    };
+  };
+
   /** AI Fill's review step on an answer the server validated: from a pasted message, or (with `source`) the inbox. */
   const openAiFillPreview = (fill: any, source: AiFillInboxSource | null) => {
     setAiFillParsed(fill);
@@ -1474,8 +1501,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     return { fill: body.fill, review: body.review ?? null, chatMark: body.chat?.newestMessageId ?? body.source?.messageId ?? null, held };
   };
 
-  /** SCRUM-826: the accepted changes into the form, as any edit — unsaved until Save. */
-  const applyFetched = (patch: Partial<FetchFormValues>) => {
+  /**
+   * SCRUM-826: the accepted changes into the form, as any edit — unsaved until
+   * Save. SCRUM-827: each re-filled field wears the line it now came from (the
+   * mark of before would say where the value no longer came from); a who
+   * fetched as text is nobody linked, so the team's mark on it is let go.
+   */
+  const applyFetched = (patch: Partial<FetchFormValues>, accepted: FetchChange[] = []) => {
     const { locationText: loc, setupReadyBy: ready, setupResponsible: who, cakeMode: mode, cakeNotes: notes, cakeTime: at, prepaymentReceived: paid, depositDate: on, packageName: pkg, packageNotes: posNotes, ...event } = patch;
     if (Object.keys(event).length > 0) setEventData((prev) => ({ ...prev, ...event }));
     if (loc !== undefined) setLocationText(loc);
@@ -1492,6 +1524,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     if (on !== undefined) setDepositDate(on);
     if (pkg !== undefined) setPackageName(pkg);
     if (posNotes !== undefined) setPackageNotes(posNotes);
+    if (accepted.length > 0) {
+      setAiMarks((m) => {
+        const next = { ...m, ...fetchedMarksOf(accepted) };
+        if (who !== undefined) delete next["team:setupResponsible"];
+        return next;
+      });
+    }
   };
 
   // SCRUM-660: once the form holds the event (the effect above filled it), Create BEO's AI Fill runs once.
@@ -4055,6 +4094,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         bookedDate={eventData.eventDate || null}
         bookedCakeMode={cakeMode}
         held={reviewHeld()}
+        saved={reviewSaved()}
         onClose={() => setAiReview(null)}
         onFallback={(pending) => {
           setAiReview(null);

@@ -258,9 +258,15 @@ async function post(path: string, body: unknown) {
 const EXISTING = { event: { title: "ZZ TEST Emma 826", numAdults: 5 }, kitchenPlan: { cakeTime: "15:30" } };
 const fillOf = (eventId: string, purpose?: string) => post(`/api/events/${eventId}/beo/ai-fill/inbox`, { existingData: EXISTING, ...(purpose ? { purpose } : {}) });
 
-/** The form as a person left it: 5 adults typed over the booked 4, the rest as booked. */
+/**
+ * The form as a person left it: 5 adults typed over the booked 4, the rest as
+ * booked. The title is the park's default for this event (the child Emma, no
+ * age on the event), as a BEO created from the chat is named: a title the form
+ * holds otherwise is offered the default beside it, as the review does
+ * (SCRUM-827) — the title cases below say so with a form named by hand.
+ */
 const FORM: FetchFormValues = {
-  title: "ZZ TEST Emma 826",
+  title: "Emma's Birthday",
   childName: "Emma",
   bookingName: "ZZ TEST Olga",
   numChildren: 12,
@@ -470,7 +476,6 @@ try {
       changes.map((c) => [c.field, c.was, c.now, c.value, c.said, c.from?.source]),
       [
         ["eventDate", "Sat 21 Nov 2026", "Sat 28 Nov 2026", "2026-11-28", "the 28th", "team"],
-        ["title", "ZZ TEST Emma 826", "Emma's 7th", "Emma's 7th", null, "team"],
         ["endTime", "—", "17:00", "17:00", null, "team"],
         ["locationText", "—", "Jungle Room", "Jungle Room", null, "team"],
         ["specialRequests", "—", "no nuts", "no nuts", null, "team"],
@@ -485,6 +490,20 @@ try {
       ],
     );
     assert.ok(!changes.some((c) => c.field === "bookingName"), "an empty value never empties a field");
+    assert.ok(!changes.some((c) => c.field === "title"), "SCRUM-827: the fill's title is the model's own guess, never offered");
+    // The title a fetch offers is the park's default the proposal carries (the app's naming rule), marked as such, only where it differs.
+    const titled = (title: { value: string; from: { source: "default"; at: null; line: null } } | null) => ({
+      ...fetched.review,
+      proposal: { ...fetched.review.proposal, details: { ...fetched.review.proposal.details, title } },
+    });
+    const named = { ...FORM, title: "ZZ TEST Emma 826" };
+    const byDefault = fetchChangesOf({ fill, review: titled({ value: "Emma's 7th Birthday", from: { source: "default", at: null, line: null } }) }, named).find((c) => c.field === "title");
+    assert.deepEqual(byDefault && [byDefault.was, byDefault.now, byDefault.value, byDefault.from?.source], ["ZZ TEST Emma 826", "Emma's 7th Birthday", "Emma's 7th Birthday", "default"]);
+    assert.ok(!fetchChangesOf({ fill, review: titled({ value: "ZZ TEST Emma 826", from: { source: "default", at: null, line: null } }) }, named).some((c) => c.field === "title"), "the form's own name already: nothing offered");
+    assert.ok(!fetchChangesOf({ fill, review: titled(null) }, named).some((c) => c.field === "title"), "no default (no child's name): nothing, never the model's");
+    // The route's own default for this event, against a form named by hand: the one title row, the park's default.
+    const routed = fetchChangesOf({ fill: fetched.fill, review: fetched.review }, { ...named, numAdults: 6, cakeTime: "16:00" });
+    assert.deepEqual(routed.map((c) => [c.field, c.was, c.now, c.from?.source, c.from?.line]), [["title", "ZZ TEST Emma 826", "Emma's Birthday", "default", null]]);
     assert.ok(!changes.some((c) => c.field === "decoration"), "the same value is no change");
     assert.ok(!changes.some((c) => c.field === "cakeTime"), "no cake time given: the form's stays");
     assert.ok(!changes.some((c) => c.field === "numAdults"), "the fill alone gives no adults here");

@@ -22,7 +22,13 @@
 //   5. a message pasted into AI Fill opens the same review and approves the
 //      same way; a park with no catalogue keeps the preview of before as its
 //      one and only step;
-//   6. an empty BEO's sections say plain words, never a placeholder.
+//   6. an empty BEO's sections say plain words, never a placeholder;
+//   7. Fetch from chat after the approval: a field re-filled from a newer line
+//      wears THAT line's mark (not the mark of before), and the fill's own
+//      title — the model's guess — is never offered (SCRUM-827 review);
+//   8. text typed before AI Fill, not yet saved, survives the approval: the
+//      review keeps it, the one Save writes it as it stands, the read-back
+//      shows it (SCRUM-827 review).
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-prefill-ui.check.ts
@@ -96,6 +102,7 @@ const E_INBOX = "11111111-1111-4111-8111-111111111827";
 const E_BARE = "22222222-2222-4222-8222-222222222827";
 const E_PLAIN = "33333333-3333-4333-8333-333333333827";
 const E_EMPTY = "44444444-4444-4444-8444-444444444827";
+const E_TYPED = "55555555-5555-4555-8555-555555555827";
 const CONV = "cccccccc-cccc-4ccc-8ccc-cccccccc0827";
 const MSG = "dddddddd-dddd-4ddd-8ddd-dddddddd0827";
 const PARK = "33333333-3333-4333-8333-333333333333";
@@ -205,7 +212,8 @@ beos.set(E_INBOX, freshBeo(E_INBOX, "Emma's 6th Birthday", { inboxConversationId
 beos.set(E_BARE, freshBeo(E_BARE, "ZZ TEST bare", { inboxConversationId: CONV }));
 beos.set(E_PLAIN, freshBeo(E_PLAIN, "ZZ TEST plain"));
 beos.set(E_EMPTY, freshBeo(E_EMPTY, "ZZ TEST empty"));
-for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY]) timelines.set(id, []);
+beos.set(E_TYPED, freshBeo(E_TYPED, "ZZ TEST typed"));
+for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY, E_TYPED]) timelines.set(id, []);
 let approvals = 0;
 
 /** The approval, as the server writes it: the event's fields, the setup plan, the POS box, the chat's step, the host, and the auto steps. */
@@ -272,6 +280,13 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
     const chat = { newestMessageId: "line-3", lines: 3 };
     // The bare event's park has no catalogue: the free-text fill alone, the preview of before.
     if (fill[1] === E_BARE) return json({ source, chat, fill: { ...FILL, event: { ...FILL.event, internalStaffNotes: RULING } } });
+    // Fetch from chat (SCRUM-826): the chat moved — the team's line 4 says 8 adults.
+    if (body.purpose === "fetch") {
+      const moved = review("inbox");
+      moved.proposal.event.numAdults = { value: 8, from: team(4) };
+      moved.transcript = { lines: 4, cut: false };
+      return json({ source, chat: { newestMessageId: "line-4", lines: 4 }, fill: { ...FILL, event: { ...FILL.event, numAdults: 8 } }, review: moved });
+    }
     return json({ source, chat, fill: { ...FILL, event: { ...FILL.event, internalStaffNotes: RULING } }, review: review("inbox") });
   }
   const approve = /^\/api\/events\/([^/]+)\/beo\/ai-fill\/approve$/.exec(url.pathname);
@@ -503,6 +518,27 @@ await check("Save sends the form once, the chat's fields in it", async () => {
   assert.equal(sent.partyDetails.packageName, "Floresta");
 });
 
+await check("Fetch from chat after the approval: a field re-filled from a newer team line wears that line's mark; the model's title is never offered", async () => {
+  // The form holds 6 adults, the family's; the chat moved and the team's line 4 says 8.
+  assert.equal(labelMark("input-num-adults"), "from the family");
+  await click("button-fetch-from-chat");
+  await click("button-fetch-read");
+  await settle(8);
+  assert.equal(byTestId("fetch-change-title"), null, "the fill's title is the model's own guess, and the park's default is the BEO's name already: nothing offered");
+  const adults = required("fetch-change-numAdults");
+  assert.equal(text("text-fetch-was", adults), "6");
+  assert.equal(text("text-fetch-now", adults), "8");
+  assert.equal(text("ai-review-source", adults), "from the team");
+  await click("button-fetch-accept", adults);
+  await click("button-fetch-apply");
+  await settle(4);
+  assert.equal(text("input-num-adults"), "8");
+  assert.equal(labelMark("input-num-adults"), "from the team", "the mark says where the value now came from");
+  assert.equal(labelMark("input-num-children"), "from the team", "the others keep theirs");
+  assert.equal(labelMark("input-event-decoration"), "from the family");
+  assert.equal(text("ai-from-chat-event-info"), "from the chat");
+});
+
 await check("a pasted message opens the same review and approves the same way; without a catalogue the preview of before is the only step", async () => {
   await open(E_PLAIN);
   await click("button-ai-fill-beo");
@@ -514,7 +550,9 @@ await check("a pasted message opens the same review and approves the same way; w
   assert.ok(required("button-ai-review-approve"), "the same review");
   assert.ok(byTestId("text-ai-review-pasted"), "read as the team's confirmation");
   assert.equal(inputValue("input-ai-review-title"), "ZZ TEST plain", "the BEO's own name stays; the park's default is offered");
-  assert.match(text("text-ai-review-chat-says-title")!, /The chat says "Emma's 6th Birthday"\s*the park's default\s*Use the chat's/);
+  // The park's default is named as such — never called the chat's words.
+  assert.match(text("text-ai-review-chat-says-title")!, /The park's default is "Emma's 6th Birthday"\s*the park's default\s*Use the park's default/);
+  assert.ok(!text("text-ai-review-chat-says-title")!.includes("The chat says"));
   assert.equal(inputValue("input-ai-review-specialRequests"), "No nuts please");
   await click("button-ai-review-approve");
   await settle(10);
@@ -534,6 +572,30 @@ await check("a pasted message opens the same review and approves the same way; w
   assert.equal(text("input-child-name"), "Emma");
 });
 
+await check("text typed before AI Fill survives the approval: the review keeps it, the one Save writes it, the read-back shows it", async () => {
+  await open(E_TYPED);
+  await typeInto("textarea-special-requests", "ZZ typed: a quiet corner, please");
+  assert.equal(text("textarea-special-requests"), "ZZ typed: a quiet corner, please");
+  await click("button-ai-fill-beo");
+  await setValue(required("textarea-ai-fill-beo") as HTMLTextAreaElement, RULING);
+  asked.length = 0;
+  await click("button-ai-parse-beo");
+  await settle(8);
+  assert.equal(inputValue("input-ai-review-specialRequests"), "ZZ typed: a quiet corner, please", "the typed text stays; the chat's is offered beside it");
+  assert.match(text("text-ai-review-chat-says-specialRequests")!, /The chat says "No nuts please"\s*from the family\s*Use the chat's/);
+  await click("button-ai-review-approve");
+  await settle(10);
+  const post = asked.find((a) => a.method === "POST" && a.path === `/api/events/${E_TYPED}/beo/ai-fill/approve`);
+  assert.ok(post, "one approval");
+  const body = post!.body as unknown as BeoAiApproveBody;
+  assert.equal(body.details?.specialRequests, "ZZ typed: a quiet corner, please", "typed and not yet saved: written by the one Save, as it stands");
+  assert.equal(body.details?.title, undefined, "the BEO's saved name is not written back over itself");
+  assert.ok(!body.sources.some((s) => s.field === "specialRequests"), "typed text is nobody's line");
+  assert.equal(byTestId("button-ai-review-approve"), null);
+  assert.equal(text("textarea-special-requests"), "ZZ typed: a quiet corner, please", "the read-back after the approval shows the typed text, not the empty saved one");
+  assert.equal(labelMark("textarea-special-requests"), null, "no mark: nobody's line");
+});
+
 await check("an empty BEO's sections say plain words, never a placeholder", async () => {
   await open(E_EMPTY);
   for (const section of ["party-host", "party-details", "setup-plan", "timeline"]) await click(`accordion-${section}`);
@@ -549,4 +611,4 @@ await check("an empty BEO's sections say plain words, never a placeholder", asyn
 
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
-process.exit(checks === 7 ? 0 : 1);
+process.exit(checks === 9 ? 0 : 1);

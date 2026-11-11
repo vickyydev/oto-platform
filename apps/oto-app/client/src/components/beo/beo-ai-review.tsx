@@ -16,6 +16,7 @@ import {
   approveBodyOf,
   approvedMarksOf,
   chatOffered,
+  chatOfferWords,
   choiceGroupsOf,
   edited,
   editedText,
@@ -130,6 +131,7 @@ function TextRow({
   testId: string;
 }) {
   const offered = chatOffered(field);
+  const offer = chatOfferWords(field);
   return (
     <div className="space-y-0.5" data-testid={`ai-review-detail-${testId}`}>
       <div className="flex items-start gap-2 text-sm flex-wrap">
@@ -157,12 +159,13 @@ function TextRow({
       </div>
       {offered && (
         <div className="pl-[7.5rem] flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid={`text-ai-review-chat-says-${testId}`}>
-          <span className="whitespace-pre-wrap">{`The chat says "${field.chat}"`}</span>
+          {/* SCRUM-827: the park's default and a template are named as such, never called the chat's words. */}
+          <span className="whitespace-pre-wrap">{offer.line}</span>
           {field.froms.map((f) => (
             <SourceMark key={f.source} field={{ from: f, changed: false }} />
           ))}
           <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => onChange(useChatText(field))} data-testid={`button-ai-review-use-chat-${testId}`}>
-            Use the chat's
+            {offer.button}
           </Button>
         </div>
       )}
@@ -800,6 +803,7 @@ export function BeoAiReviewDialog({
   bookedDate,
   bookedCakeMode,
   held,
+  saved,
   onClose,
   onFallback,
   onApproved,
@@ -812,6 +816,8 @@ export function BeoAiReviewDialog({
   bookedCakeMode?: string | null;
   /** SCRUM-827: what the form holds of the rest, so nothing typed is overwritten. */
   held?: ReviewHeld;
+  /** What the saved BEO holds of it: the approval writes what differs from this, unsaved typed text included. */
+  saved?: ReviewHeld;
   onClose: () => void;
   onFallback: (pending: BeoAiPending) => void;
   /**
@@ -829,7 +835,7 @@ export function BeoAiReviewDialog({
   if (pending !== opened) {
     // A new proposal: the review starts from it.
     setOpened(pending);
-    setState(pending ? initialReviewState(pending.review, { fill: pending.fill, bookedDate, held }) : null);
+    setState(pending ? initialReviewState(pending.review, { fill: pending.fill, bookedDate, held, saved }) : null);
     setError(null);
   }
   if (!pending || !state) return null;
