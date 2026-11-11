@@ -1,0 +1,1526 @@
+{
+  "unit": "SCRUM-824 (a) part 2: the transcription provider on — English, Thai, Russian and the too-long case",
+  "what": "Customer voice notes transcribed: staging proof with the OpenAI-compatible provider configured on oto-api-staging (the owner set the key; the api redeployed at 7d88e1945 so it started with it)",
+  "liveCommit": "7d88e1945f4859144b120a6646e4e7ab111f68cf",
+  "liveBefore": {
+    "at": "2026-11-11T06:41:34.975Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq0n8jl550s73971ea0",
+        "status": "live",
+        "sha": "7d88e1945f4859144b120a6646e4e7ab111f68cf",
+        "finishedAt": "2026-11-11T06:34:59.260888Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq0mct9el5s7391f9dg",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T06:30:24.803465Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq0mct9el5s7391f910",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T06:30:18.415837Z"
+      }
+    ],
+    "apiLiveOnSha": true,
+    "inboxLive": true,
+    "inboxCarriesSimulatorVoiceFix": true
+  },
+  "liveAfter": {
+    "at": "2026-11-11T06:46:48.533Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq0n8jl550s73971ea0",
+        "status": "live",
+        "sha": "7d88e1945f4859144b120a6646e4e7ab111f68cf",
+        "finishedAt": "2026-11-11T06:34:59.260888Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq0snm7bikc738earug",
+        "status": "live",
+        "sha": "8e4c41ee35713ac248fc087871637b8bf1c4e234",
+        "finishedAt": "2026-11-11T06:43:41.190113Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq0snm7bikc738eas1g",
+        "status": "live",
+        "sha": "8e4c41ee35713ac248fc087871637b8bf1c4e234",
+        "finishedAt": "2026-11-11T06:43:45.250004Z"
+      }
+    ],
+    "apiLiveOnSha": true,
+    "inboxLive": true,
+    "inboxCarriesSimulatorVoiceFix": true
+  },
+  "apiBootLine": {
+    "at": "2026-11-11T06:34:50Z",
+    "line": "inbox voice-note transcription enabled",
+    "provider": "openai-compatible",
+    "maxSeconds": 180,
+    "note": "read from the service log through the Render API; the model and the key are not printed here"
+  },
+  "run": {
+    "startedAt": "2026-11-11T06:41:27.449Z",
+    "endedAt": "2026-11-11T06:50:12.348Z",
+    "browser": "Chromium 153.0.8010.12 headless, 1440×900, light, en-GB, Asia/Bangkok"
+  },
+  "actor": "the staging administrator through the launcher (owner view in the inbox); name, avatar and initials masked in every picture, never kept",
+  "channel": {
+    "account": "Demo WhatsApp · Central Floresta (simulator)",
+    "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+    "aiMode": {
+      "at": "2026-11-11T06:41:51.571Z",
+      "route": "GET /api/inbox/ai/channel-accounts",
+      "status": 200,
+      "account": {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "channel": "whatsapp",
+        "aiMode": "live"
+      },
+      "keys": [
+        "id",
+        "channel",
+        "provider",
+        "displayName",
+        "branchId",
+        "status",
+        "canReply",
+        "aiMode"
+      ]
+    },
+    "categoryHint": "Birthdays & Events",
+    "sender": "four fresh ZZ TEST simulator numbers, one per thread (not kept here); nothing reaches a real phone"
+  },
+  "audioSent": {
+    "secondsToTheProvider": 31.9,
+    "note": "the English (14.6 s), Thai (14.7 s) and Russian (about 2.6 s) notes were transcribed; the 192.8 s note was refused by the length check before any provider call"
+  },
+  "checks": [
+    {
+      "check": "api live on 7d88e1945 before and after the run (the deploy that started with the key)",
+      "result": "PASS",
+      "value": "deploy dep-dbq0n8jl550s73971ea0, live 2026-11-11T06:34:59.260888Z"
+    },
+    {
+      "check": "inbox live and carrying the simulator voice fix (b73433c24)",
+      "result": "PASS",
+      "value": "inbox 3ac4658cd live"
+    },
+    {
+      "check": "assistant live on Demo WhatsApp · Central Floresta",
+      "result": "PASS",
+      "value": "aiMode live"
+    },
+    {
+      "check": "English: voice note sent from the Simulator dialog (file attached, Message empty)",
+      "result": "PASS",
+      "value": "200 processed, voice audio/wav, 1 new conversation"
+    },
+    {
+      "check": "English: transcript in English (transcriptStatus done, transcriptLanguage en)",
+      "result": "PASS",
+      "value": "done · en · 170 characters"
+    },
+    {
+      "check": "English: bubble shows the transcript under the audio with \"transcribed · English\"",
+      "result": "PASS",
+      "value": "data-state done; label \"transcribed · English\" (rendered upper-case)"
+    },
+    {
+      "check": "English: the assistant answered from the transcript, in English",
+      "result": "PASS",
+      "value": "ai_handover · birthday_details · OK; line sent"
+    },
+    {
+      "check": "English: audit row inbox.message.transcribe (done, en)",
+      "result": "PASS",
+      "value": "5 s after the message, 14.6 s of audio, attempt 1"
+    },
+    {
+      "check": "Thai: voice note sent from the Simulator dialog (file attached, Message empty)",
+      "result": "PASS",
+      "value": "200 processed, voice audio/ogg, 1 new conversation"
+    },
+    {
+      "check": "Thai: transcript in Thai (transcriptStatus done, transcriptLanguage th)",
+      "result": "PASS",
+      "value": "done · th · 143 characters"
+    },
+    {
+      "check": "Thai: bubble shows the transcript under the audio with \"transcribed · Thai\"",
+      "result": "PASS",
+      "value": "data-state done; label \"transcribed · Thai\" (rendered upper-case)"
+    },
+    {
+      "check": "Thai: the assistant answered from the transcript, in Thai",
+      "result": "PASS",
+      "value": "ai_handover · emotional_or_unclear · OK; line sent"
+    },
+    {
+      "check": "Thai: audit row inbox.message.transcribe (done, th)",
+      "result": "PASS",
+      "value": "12.9 s after the message, 14.7 s of audio, attempt 1"
+    },
+    {
+      "check": "Russian: voice note sent from the Simulator dialog (file attached, Message empty)",
+      "result": "PASS",
+      "value": "200 processed, voice audio/mpeg, 1 new conversation"
+    },
+    {
+      "check": "Russian: transcript in Russian (transcriptStatus done, transcriptLanguage ru)",
+      "result": "PASS",
+      "value": "done · ru · 50 characters"
+    },
+    {
+      "check": "Russian: bubble shows the transcript under the audio with \"transcribed · Russian\"",
+      "result": "PASS",
+      "value": "data-state done; label \"transcribed · Russian\" (rendered upper-case)"
+    },
+    {
+      "check": "Russian: the assistant answered from the transcript, in Russian",
+      "result": "PASS",
+      "value": "ai_handover · emotional_or_unclear · OK; line sent"
+    },
+    {
+      "check": "Russian: audit row inbox.message.transcribe (done, ru)",
+      "result": "PASS",
+      "value": "4 s after the message, 3 s of audio, attempt 1"
+    },
+    {
+      "check": "Too long: the 192.8 s note sent from the Simulator dialog",
+      "result": "PASS",
+      "value": "200 processed"
+    },
+    {
+      "check": "Too long: transcriptStatus too_long, no transcript, bubble \"Voice note too long to transcribe\"",
+      "result": "PASS",
+      "value": "data-state too_long; \"Voice note too long to transcribe\""
+    },
+    {
+      "check": "Too long: handed over as VOICE_UNREAD (the pill says \"voice note could not be read\")",
+      "result": "PASS",
+      "value": "ai_handover · VOICE_UNREAD · rule voice_unread · general"
+    },
+    {
+      "check": "Too long: the audit row says TOO_LONG with the length the job read; nothing was sent to the provider",
+      "result": "PASS",
+      "value": "reason TOO_LONG, 192.8 s > 180; the limit check in transcription.ts returns before the adapter is asked; the adapter's ops run lasted 289 ms"
+    },
+    {
+      "check": "clean-up: the four ZZ TEST conversations marked handled, read back",
+      "result": "PASS",
+      "value": "en 200/handled, long 200/handled, th 200/handled, ru 200/handled"
+    },
+    {
+      "check": "clean-up: signed out of the inbox, the Console and the launcher, read back 401",
+      "result": "PASS",
+      "value": "inbox 401, console 401, launcher 401"
+    }
+  ],
+  "threads": {
+    "en": {
+      "key": "en",
+      "conversationId": "01a1c957-9d85-761b-aaca-8ffcd44decd0",
+      "language": "en",
+      "categoryHint": "birthdays",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "recording": {
+        "kind": "a synthetic English voice (a text-to-speech voice, no person), 22.05 kHz mono 16-bit WAV, 645,322 bytes, 14.6 s",
+        "spokenWords": "Hi, this is a ZZ test voice note. We would like to book a birthday party for twelve kids on Saturday the twenty second of November at two pm at Central Floresta. How much is the package?",
+        "source": "made for this proof with a text-to-speech voice"
+      },
+      "expected": {
+        "transcriptStatus": "done",
+        "transcriptLanguage": "en"
+      },
+      "sent": {
+        "by": "customer",
+        "what": "voice",
+        "kind": "a synthetic English voice (a text-to-speech voice, no person), 22.05 kHz mono 16-bit WAV, 645,322 bytes, 14.6 s",
+        "text": null,
+        "at": "2026-11-11T06:42:00.681Z",
+        "respondedAt": "2026-11-11T06:42:02.829Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound), the audio file chosen in the dialog",
+        "status": 200,
+        "outcome": "processed",
+        "messages": 1,
+        "conversationsCreated": 1,
+        "reopened": 0,
+        "conversationIds": [
+          "01a1c957-9d85-761b-aaca-8ffcd44decd0"
+        ],
+        "externalMessageId": "wamid.SIM.MWBQV0LU3794C7E4.IN.000001",
+        "error": null,
+        "dialogSaid": "Received: a new conversation, routed.",
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "category": "Birthdays & Events",
+          "language": "en",
+          "message": "(empty)",
+          "fileChosen": "zz-test-824-en.wav",
+          "voiceError": null
+        },
+        "requestSent": {
+          "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "text": null,
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "voice": {
+            "contentType": "audio/wav",
+            "base64Chars": 860432,
+            "bytesAbout": 645324
+          }
+        }
+      },
+      "voiceMessage": {
+        "id": "01a1c957-9d87-7167-800d-2e4d29dab590",
+        "createdAt": "2026-11-11T06:42:04.000Z",
+        "transcriptStatus": "done",
+        "transcriptLanguage": "en",
+        "transcript": "Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+        "bubble": {
+          "state": "done",
+          "text": "TRANSCRIBED · ENGLISH Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+          "labelExpected": "transcribed · English"
+        }
+      },
+      "timing": {
+        "sendPressedAt": "2026-11-11T06:42:00.681Z",
+        "messageCreatedAt": "2026-11-11T06:42:04.000Z",
+        "transcribeAuditRowAt": "2026-11-11T06:42:08.972Z",
+        "secondsFromMessageToTranscriptRow": 5,
+        "secondsFromSendToTranscriptRow": 8.3,
+        "firstApiReadShowingItSettledAfterSendS": 8.9,
+        "assistantTurnAt": "2026-11-11T06:42:14.330Z",
+        "secondsFromSendToAssistantTurn": 13.6,
+        "transcribingSeenInUi": false,
+        "transcribingSeenInApi": false,
+        "transcribingPictured": true,
+        "durationSecondsTheJobRead": 14.6,
+        "attempts": 1
+      },
+      "assistant": {
+        "aiState": "left_for_team",
+        "turns": [
+          {
+            "kind": "ai_handover",
+            "turnId": "01a1c957-9d99-7c80-a7ba-991f06f85fe7",
+            "intent": "birthday_details",
+            "intents": [
+              "birthday_details"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "birthdays",
+            "closingKey": "closing_birthday",
+            "holdingLine": "template",
+            "droppedHoldingRule": null,
+            "at": "2026-11-11T06:42:14.330Z"
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c957-c2c9-7321-a79d-935ebc5f36ba",
+            "createdAt": "2026-11-11T06:42:14.330Z",
+            "providerStatus": "sent",
+            "body": "Thank you so much! Our birthday manager will be with you shortly."
+          }
+        ],
+        "pillLinesInTheInbox": [
+          "AI handed over to the team",
+          "AI handed over to the team · birthday details"
+        ]
+      },
+      "timeline": [
+        {
+          "at": "2026-11-11T06:42:09.601Z",
+          "sinceSendS": 8.9,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "en",
+            "transcriptChars": 170,
+            "aiPills": [],
+            "aiLines": 0,
+            "aiState": "ready"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:42:15.538Z",
+          "sinceSendS": 14.9,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "en",
+            "transcriptChars": 170,
+            "aiPills": [
+              "ai_handover:OK:birthday_details"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:42:28.975Z",
+          "sinceSendS": 28.3,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "en",
+            "transcriptChars": 170,
+            "aiPills": [
+              "ai_handover:OK:birthday_details"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": [
+              "AI handed over · Resume",
+              "AI handed over to the team"
+            ]
+          }
+        }
+      ],
+      "audit": {
+        "voiceMessage": {
+          "route": "GET /api/audit?entityType=inbox.message&entityId=:messageId",
+          "status": 200,
+          "messageId": "01a1c957-9d87-7167-800d-2e4d29dab590",
+          "rows": [
+            {
+              "id": "01a1c957-9f3a-729d-af02-124d1bd2e3f2",
+              "action": "inbox.message.media",
+              "createdAt": "2026-11-11T06:42:05.238Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c957-9d87-7167-800d-2e4d29dab590",
+              "actor": "the system",
+              "before": null,
+              "after": {
+                "messageId": "01a1c957-9d87-7167-800d-2e4d29dab590",
+                "conversationId": "01a1c957-9d85-761b-aaca-8ffcd44decd0"
+              }
+            },
+            {
+              "id": "01a1c957-adce-7f00-8a5a-260bc6e067a7",
+              "action": "inbox.message.transcribe",
+              "createdAt": "2026-11-11T06:42:08.972Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c957-9d87-7167-800d-2e4d29dab590",
+              "actor": "the system",
+              "before": {
+                "transcriptStatus": "pending"
+              },
+              "after": {
+                "reason": null,
+                "attempts": 1,
+                "language": "en",
+                "messageId": "01a1c957-9d87-7167-800d-2e4d29dab590",
+                "conversationId": "01a1c957-9d85-761b-aaca-8ffcd44decd0",
+                "durationSeconds": 14.6,
+                "transcriptStatus": "done"
+              }
+            }
+          ]
+        },
+        "conversation": {
+          "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+          "status": 200,
+          "rows": [
+            {
+              "action": "inbox.conversation.create",
+              "createdAt": "2026-11-11T06:42:04.798Z",
+              "actor": "the system",
+              "after": {
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays",
+                "language": "en"
+              }
+            },
+            {
+              "action": "inbox.conversation.read",
+              "createdAt": "2026-11-11T06:42:08.945Z",
+              "actor": "an account",
+              "after": {
+                "status": "active",
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays"
+              }
+            },
+            {
+              "action": "inbox.ai.handover",
+              "createdAt": "2026-11-11T06:42:14.330Z",
+              "actor": "the system",
+              "after": {
+                "intent": "birthday_details",
+                "turnId": "01a1c957-9d99-7c80-a7ba-991f06f85fe7",
+                "branchId": null,
+                "closingKey": "closing_birthday",
+                "destination": "birthdays"
+              }
+            }
+          ]
+        },
+        "turnWaits": {
+          "route": "GET /api/audit?action=inbox.ai.turn.wait&from=<run start>",
+          "status": 200,
+          "rowsForThisConversation": 0,
+          "rows": []
+        }
+      },
+      "pictures": [
+        "21-en-voice-note-transcribing.png",
+        "22-en-transcript-and-handover.png"
+      ]
+    },
+    "long": {
+      "key": "long",
+      "conversationId": "01a1c958-8b77-75db-8ad1-c05edf3023a4",
+      "language": "en",
+      "categoryHint": "birthdays",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "recording": {
+        "kind": "the local Windows text-to-speech voice reading a ZZ TEST text nine times, 4 kHz mono 8-bit WAV (the low rate keeps 192.8 s under the simulator's 1 MB cap), 771,178 bytes, 192.8 s by its own header",
+        "spokenWords": "(nine repeats of) This is a ZZ TEST voice note, number N. We are testing a voice note that is longer than the limit. We would like to ask about a birthday party for twelve kids on Saturday the twenty second of November at two pm at Central Floresta, and how much the package is.",
+        "source": "made for this proof with the local Windows text-to-speech voice (System.Speech)"
+      },
+      "expected": {
+        "transcriptStatus": "too_long",
+        "transcriptLanguage": null
+      },
+      "sent": {
+        "by": "customer",
+        "what": "voice",
+        "kind": "the local Windows text-to-speech voice reading a ZZ TEST text nine times, 4 kHz mono 8-bit WAV (the low rate keeps 192.8 s under the simulator's 1 MB cap), 771,178 bytes, 192.8 s by its own header",
+        "text": null,
+        "at": "2026-11-11T06:43:01.909Z",
+        "respondedAt": "2026-11-11T06:43:03.763Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound), the audio file chosen in the dialog",
+        "status": 200,
+        "outcome": "processed",
+        "messages": 1,
+        "conversationsCreated": 1,
+        "reopened": 0,
+        "conversationIds": [
+          "01a1c958-8b77-75db-8ad1-c05edf3023a4"
+        ],
+        "externalMessageId": "wamid.SIM.MWBQV0LU3794C7E4.IN.000002",
+        "error": null,
+        "dialogSaid": "Received: a new conversation, routed.",
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "category": "Birthdays & Events",
+          "language": "en",
+          "message": "(empty)",
+          "fileChosen": "zz-test-824-long.wav",
+          "voiceError": null
+        },
+        "requestSent": {
+          "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "text": null,
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "voice": {
+            "contentType": "audio/wav",
+            "base64Chars": 1028240,
+            "bytesAbout": 771180
+          }
+        }
+      },
+      "voiceMessage": {
+        "id": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+        "createdAt": "2026-11-11T06:43:05.000Z",
+        "transcriptStatus": "too_long",
+        "transcriptLanguage": null,
+        "transcript": null,
+        "bubble": {
+          "state": "too_long",
+          "text": "Voice note too long to transcribe",
+          "labelExpected": "Voice note too long to transcribe"
+        }
+      },
+      "timing": {
+        "sendPressedAt": "2026-11-11T06:43:01.909Z",
+        "messageCreatedAt": "2026-11-11T06:43:05.000Z",
+        "transcribeAuditRowAt": "2026-11-11T06:43:07.055Z",
+        "secondsFromMessageToTranscriptRow": 2.1,
+        "secondsFromSendToTranscriptRow": 5.1,
+        "firstApiReadShowingItSettledAfterSendS": 5.3,
+        "assistantTurnAt": "2026-11-11T06:43:11.788Z",
+        "secondsFromSendToAssistantTurn": 9.9,
+        "transcribingSeenInUi": false,
+        "transcribingSeenInApi": false,
+        "transcribingPictured": false,
+        "durationSecondsTheJobRead": 192.8,
+        "attempts": 1
+      },
+      "assistant": {
+        "aiState": "left_for_team",
+        "turns": [
+          {
+            "kind": "ai_handover",
+            "turnId": "01a1c958-8b8b-7d20-8e06-2b0da9e53953",
+            "intent": "other",
+            "intents": [
+              "other"
+            ],
+            "reason": "VOICE_UNREAD",
+            "rule": "voice_unread",
+            "destination": "general",
+            "closingKey": "closing_unclear",
+            "holdingLine": "template",
+            "droppedHoldingRule": null,
+            "at": "2026-11-11T06:43:11.788Z"
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c958-a339-729e-b2d8-b3ded61bdd9b",
+            "createdAt": "2026-11-11T06:43:11.788Z",
+            "providerStatus": "sent",
+            "body": "Thanks for your message! A team member will be with you shortly."
+          }
+        ],
+        "pillLinesInTheInbox": [
+          "AI handed over to Reception · Central Floresta — voice note could not be read, Reception · Central Floresta primary",
+          "AI handed over to Reception · Central Floresta · voice note could not be read"
+        ]
+      },
+      "timeline": [
+        {
+          "at": "2026-11-11T06:43:07.166Z",
+          "sinceSendS": 5.3,
+          "api": {
+            "transcriptStatus": "too_long",
+            "transcriptLanguage": null,
+            "transcriptChars": 0,
+            "aiPills": [],
+            "aiLines": 0,
+            "aiState": "ready"
+          },
+          "bubble": {
+            "state": "too_long",
+            "text": "Voice note too long to transcribe",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:43:13.121Z",
+          "sinceSendS": 11.2,
+          "api": {
+            "transcriptStatus": "too_long",
+            "transcriptLanguage": null,
+            "transcriptChars": 0,
+            "aiPills": [
+              "ai_handover:VOICE_UNREAD:other"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "too_long",
+            "text": "Voice note too long to transcribe",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:43:26.849Z",
+          "sinceSendS": 24.9,
+          "api": {
+            "transcriptStatus": "too_long",
+            "transcriptLanguage": null,
+            "transcriptChars": 0,
+            "aiPills": [
+              "ai_handover:VOICE_UNREAD:other"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "too_long",
+            "text": "Voice note too long to transcribe",
+            "pills": [
+              "AI handed over · Resume",
+              "AI handed over to Reception · Central Floresta — voice note could not be read, Reception · Central Floresta primary"
+            ]
+          }
+        }
+      ],
+      "audit": {
+        "voiceMessage": {
+          "route": "GET /api/audit?entityType=inbox.message&entityId=:messageId",
+          "status": 200,
+          "messageId": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+          "rows": [
+            {
+              "id": "01a1c958-8d3f-7b40-8a6d-c8908429d18a",
+              "action": "inbox.message.media",
+              "createdAt": "2026-11-11T06:43:06.171Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+              "actor": "the system",
+              "before": null,
+              "after": {
+                "messageId": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+                "conversationId": "01a1c958-8b77-75db-8ad1-c05edf3023a4"
+              }
+            },
+            {
+              "id": "01a1c958-90b0-7a94-a4c6-87451d324c70",
+              "action": "inbox.message.transcribe",
+              "createdAt": "2026-11-11T06:43:07.055Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+              "actor": "the system",
+              "before": {
+                "transcriptStatus": "pending"
+              },
+              "after": {
+                "reason": "TOO_LONG",
+                "attempts": 1,
+                "language": null,
+                "messageId": "01a1c958-8b79-7391-b4ca-2674180d59c7",
+                "conversationId": "01a1c958-8b77-75db-8ad1-c05edf3023a4",
+                "durationSeconds": 192.8,
+                "transcriptStatus": "too_long"
+              }
+            }
+          ]
+        },
+        "conversation": {
+          "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+          "status": 200,
+          "rows": [
+            {
+              "action": "inbox.conversation.create",
+              "createdAt": "2026-11-11T06:43:05.711Z",
+              "actor": "the system",
+              "after": {
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays",
+                "language": "en"
+              }
+            },
+            {
+              "action": "inbox.conversation.read",
+              "createdAt": "2026-11-11T06:43:09.114Z",
+              "actor": "an account",
+              "after": {
+                "status": "active",
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays"
+              }
+            },
+            {
+              "action": "inbox.ai.handover",
+              "createdAt": "2026-11-11T06:43:11.788Z",
+              "actor": "the system",
+              "after": {
+                "intent": "other",
+                "turnId": "01a1c958-8b8b-7d20-8e06-2b0da9e53953",
+                "branchId": null,
+                "closingKey": "closing_unclear",
+                "destination": "general"
+              }
+            }
+          ]
+        },
+        "turnWaits": {
+          "route": "GET /api/audit?action=inbox.ai.turn.wait&from=<run start>",
+          "status": 200,
+          "rowsForThisConversation": 0,
+          "rows": []
+        }
+      },
+      "opsRuns": {
+        "at": "2026-11-11T06:46:45.862Z",
+        "group": {
+          "fingerprint": "918f5e670fc69fb6",
+          "kind": "adapter",
+          "name": "adapter:inbox.transcription",
+          "count": 1,
+          "firstSeenAt": "2026-11-11T06:43:06.760Z",
+          "lastSeenAt": "2026-11-11T06:43:06.760Z",
+          "lastError": "TOO_LONG: inbox transcription TOO_LONG",
+          "retryable": false
+        },
+        "runs": {
+          "route": "GET /api/ops/runs?fingerprint=…",
+          "status": 200,
+          "runs": [
+            {
+              "id": "01a1c958-90a9-705f-81b5-b731bcecc328",
+              "kind": "adapter",
+              "name": "adapter:inbox.transcription",
+              "outcome": "failed",
+              "startedAt": "2026-11-11T06:43:06.760Z",
+              "finishedAt": "2026-11-11T06:43:07.049Z",
+              "durationMs": 289,
+              "errorName": "TOO_LONG: inbox transcription TOO_LONG",
+              "secondsAfterThisNoteWasSent": 4.9
+            }
+          ]
+        }
+      },
+      "opsFailureGroup": {
+        "route": "GET /api/ops/failures?windowHours=2&kind=adapter",
+        "status": 200,
+        "bodyKeys": [
+          "groups",
+          "nextCursor",
+          "ungrouped",
+          "reach"
+        ],
+        "groupKeys": [
+          "fingerprint",
+          "kind",
+          "name",
+          "count",
+          "firstSeenAt",
+          "lastSeenAt",
+          "lastError",
+          "lastRunId",
+          "retryable",
+          "branchId",
+          "stationId",
+          "actionId",
+          "requestId"
+        ],
+        "name": "adapter:inbox.transcription",
+        "fingerprint": "918f5e670fc69fb6",
+        "count": 1,
+        "errorName": null
+      },
+      "pictures": [
+        "25-long-voice-note-too-long-handed-over.png"
+      ]
+    },
+    "th": {
+      "key": "th",
+      "conversationId": "01a1c959-532f-7925-9ad0-a6f103940128",
+      "language": "th",
+      "categoryHint": "birthdays",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "recording": {
+        "kind": "a public Thai recording: Wikimedia Commons \"Th-Bangkok ceremonial name.ogg\" (Bangkok's full ceremonial name read aloud; Creative Commons licence), Ogg Vorbis mono 44.1 kHz, 152,980 bytes, 14.7 s",
+        "spokenWords": "(Thai: Bangkok's full ceremonial name, read aloud)",
+        "source": "Wikimedia Commons, \"Th-Bangkok ceremonial name.ogg\", Creative Commons licence; openly licensed test material, not a customer"
+      },
+      "expected": {
+        "transcriptStatus": "done",
+        "transcriptLanguage": "th"
+      },
+      "sent": {
+        "by": "customer",
+        "what": "voice",
+        "kind": "a public Thai recording: Wikimedia Commons \"Th-Bangkok ceremonial name.ogg\" (Bangkok's full ceremonial name read aloud; Creative Commons licence), Ogg Vorbis mono 44.1 kHz, 152,980 bytes, 14.7 s",
+        "text": null,
+        "at": "2026-11-11T06:43:53.418Z",
+        "respondedAt": "2026-11-11T06:43:54.844Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound), the audio file chosen in the dialog",
+        "status": 200,
+        "outcome": "processed",
+        "messages": 1,
+        "conversationsCreated": 1,
+        "reopened": 0,
+        "conversationIds": [
+          "01a1c959-532f-7925-9ad0-a6f103940128"
+        ],
+        "externalMessageId": "wamid.SIM.MWBQV0LU3794C7E4.IN.000003",
+        "error": null,
+        "dialogSaid": "Received: a new conversation, routed.",
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "category": "Birthdays & Events",
+          "language": "th",
+          "message": "(empty)",
+          "fileChosen": "zz-test-824-th-commons.ogg",
+          "voiceError": null
+        },
+        "requestSent": {
+          "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "text": null,
+          "hint": {
+            "category": "birthdays",
+            "language": "th"
+          },
+          "voice": {
+            "contentType": "audio/ogg",
+            "base64Chars": 203976,
+            "bytesAbout": 152982
+          }
+        }
+      },
+      "voiceMessage": {
+        "id": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+        "createdAt": "2026-11-11T06:43:56.000Z",
+        "transcriptStatus": "done",
+        "transcriptLanguage": "th",
+        "transcript": "กรุงเทพมหานคร อมรรัตนโกสินทร์ มหินทรายุธยา มหาดิลก ภพนพรัตน์ราชธานีบุรีรมย์ อุดมราชนิเวศมหาสถาน อมรพิมานอวตารสถิต สักกะทัตติยวิษณุกรรมประสิทธิ์",
+        "bubble": {
+          "state": "done",
+          "text": "TRANSCRIBED · THAI กรุงเทพมหานคร อมรรัตนโกสินทร์ มหินทรายุธยา มหาดิลก ภพนพรัตน์ราชธานีบุรีรมย์ อุดมราชนิเวศมหาสถาน อมรพิมานอวตารสถิต สักกะทัตติยวิษณุกรรมประสิทธิ์",
+          "labelExpected": "transcribed · Thai"
+        }
+      },
+      "timing": {
+        "sendPressedAt": "2026-11-11T06:43:53.418Z",
+        "messageCreatedAt": "2026-11-11T06:43:56.000Z",
+        "transcribeAuditRowAt": "2026-11-11T06:44:08.861Z",
+        "secondsFromMessageToTranscriptRow": 12.9,
+        "secondsFromSendToTranscriptRow": 15.4,
+        "firstApiReadShowingItSettledAfterSendS": 15.2,
+        "assistantTurnAt": "2026-11-11T06:44:19.961Z",
+        "secondsFromSendToAssistantTurn": 26.5,
+        "transcribingSeenInUi": true,
+        "transcribingSeenInApi": true,
+        "transcribingPictured": true,
+        "durationSecondsTheJobRead": 14.7,
+        "attempts": 1
+      },
+      "assistant": {
+        "aiState": "left_for_team",
+        "turns": [
+          {
+            "kind": "ai_handover",
+            "turnId": "01a1c959-533e-76d0-8286-7d42fa977046",
+            "intent": "emotional_or_unclear",
+            "intents": [
+              "emotional_or_unclear"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "general",
+            "closingKey": "closing_unclear",
+            "holdingLine": "template",
+            "droppedHoldingRule": null,
+            "at": "2026-11-11T06:44:19.961Z"
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c959-ad84-71e9-8a5c-79c0890c8471",
+            "createdAt": "2026-11-11T06:44:19.961Z",
+            "providerStatus": "sent",
+            "body": "ขอบคุณสำหรับข้อความนะคะ ทีมงานของเราจะมาดูแลคุณในอีกไม่นานค่ะ"
+          }
+        ],
+        "pillLinesInTheInbox": [
+          "AI handed over to Reception · Central Floresta — Reception · Central Floresta primary",
+          "AI handed over to Reception · Central Floresta · emotional or unclear"
+        ]
+      },
+      "timeline": [
+        {
+          "at": "2026-11-11T06:44:02.623Z",
+          "sinceSendS": 9.2,
+          "api": {
+            "transcriptStatus": "pending",
+            "transcriptLanguage": null,
+            "transcriptChars": 0,
+            "aiPills": [],
+            "aiLines": 0,
+            "aiState": "ready"
+          },
+          "bubble": {
+            "state": "pending",
+            "text": "Transcribing…",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:44:08.579Z",
+          "sinceSendS": 15.2,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "th",
+            "transcriptChars": 143,
+            "aiPills": [],
+            "aiLines": 0,
+            "aiState": "ready"
+          },
+          "bubble": {
+            "state": "pending",
+            "text": "Transcribing…",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:44:21.969Z",
+          "sinceSendS": 28.6,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "th",
+            "transcriptChars": 143,
+            "aiPills": [
+              "ai_handover:OK:emotional_or_unclear"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": [
+              "AI handed over · Resume",
+              "AI handed over to Reception · Central Floresta — Reception · Central Floresta primary"
+            ]
+          }
+        }
+      ],
+      "audit": {
+        "voiceMessage": {
+          "route": "GET /api/audit?entityType=inbox.message&entityId=:messageId",
+          "status": 200,
+          "messageId": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+          "rows": [
+            {
+              "id": "01a1c959-54c6-7e92-91d7-6bfb267c827b",
+              "action": "inbox.message.media",
+              "createdAt": "2026-11-11T06:43:57.250Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+              "actor": "the system",
+              "before": null,
+              "after": {
+                "messageId": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+                "conversationId": "01a1c959-532f-7925-9ad0-a6f103940128"
+              }
+            },
+            {
+              "id": "01a1c959-821f-7e54-a804-2e6d9d45c755",
+              "action": "inbox.message.transcribe",
+              "createdAt": "2026-11-11T06:44:08.861Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+              "actor": "the system",
+              "before": {
+                "transcriptStatus": "pending"
+              },
+              "after": {
+                "reason": null,
+                "attempts": 1,
+                "language": "th",
+                "messageId": "01a1c959-5331-720c-a375-e1aaf5bc4c41",
+                "conversationId": "01a1c959-532f-7925-9ad0-a6f103940128",
+                "durationSeconds": 14.7,
+                "transcriptStatus": "done"
+              }
+            }
+          ]
+        },
+        "conversation": {
+          "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+          "status": 200,
+          "rows": [
+            {
+              "action": "inbox.conversation.create",
+              "createdAt": "2026-11-11T06:43:56.842Z",
+              "actor": "the system",
+              "after": {
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays",
+                "language": "th"
+              }
+            },
+            {
+              "action": "inbox.conversation.read",
+              "createdAt": "2026-11-11T06:44:01.378Z",
+              "actor": "an account",
+              "after": {
+                "status": "active",
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays"
+              }
+            },
+            {
+              "action": "inbox.ai.handover",
+              "createdAt": "2026-11-11T06:44:19.962Z",
+              "actor": "the system",
+              "after": {
+                "intent": "emotional_or_unclear",
+                "turnId": "01a1c959-533e-76d0-8286-7d42fa977046",
+                "branchId": null,
+                "closingKey": "closing_unclear",
+                "destination": "general"
+              }
+            }
+          ]
+        },
+        "turnWaits": {
+          "route": "GET /api/audit?action=inbox.ai.turn.wait&from=<run start>",
+          "status": 200,
+          "rowsForThisConversation": 1,
+          "rows": [
+            {
+              "id": "01a1c959-66a0-74eb-adb4-c08f40041563",
+              "action": "inbox.ai.turn.wait",
+              "createdAt": "2026-11-11T06:44:01.808Z",
+              "entityType": "inbox.ai_turn",
+              "entityId": "01a1c959-533e-76d0-8286-7d42fa977046",
+              "actor": "the system",
+              "before": {
+                "state": "deciding",
+                "attempts": 1
+              },
+              "after": {
+                "dueAt": "2026-11-11T06:44:11.807Z",
+                "state": "pending",
+                "reason": "TRANSCRIPT_PENDING",
+                "turnId": "01a1c959-533e-76d0-8286-7d42fa977046",
+                "conversationId": "01a1c959-532f-7925-9ad0-a6f103940128"
+              }
+            }
+          ]
+        }
+      },
+      "pictures": [
+        "23a-th-voice-note-transcribing.png",
+        "23-th-transcript-and-reply.png"
+      ]
+    },
+    "ru": {
+      "key": "ru",
+      "conversationId": "01a1c95a-5dfe-7239-bc69-c5acda033577",
+      "language": "ru",
+      "categoryHint": "birthdays",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "recording": {
+        "kind": "a public Russian recording: Tatoeba sentence 6885057 (CC BY), \"Спасибо, что пригласили меня на ваш день рождения.\", MP3 48 kbps mono, 18,533 bytes",
+        "spokenWords": "Спасибо, что пригласили меня на ваш день рождения.",
+        "source": "Tatoeba sentence 6885057, CC BY; openly licensed test material, not a customer"
+      },
+      "expected": {
+        "transcriptStatus": "done",
+        "transcriptLanguage": "ru"
+      },
+      "sent": {
+        "by": "customer",
+        "what": "voice",
+        "kind": "a public Russian recording: Tatoeba sentence 6885057 (CC BY), \"Спасибо, что пригласили меня на ваш день рождения.\", MP3 48 kbps mono, 18,533 bytes",
+        "text": null,
+        "at": "2026-11-11T06:45:02.195Z",
+        "respondedAt": "2026-11-11T06:45:03.371Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound), the audio file chosen in the dialog",
+        "status": 200,
+        "outcome": "processed",
+        "messages": 1,
+        "conversationsCreated": 1,
+        "reopened": 0,
+        "conversationIds": [
+          "01a1c95a-5dfe-7239-bc69-c5acda033577"
+        ],
+        "externalMessageId": "wamid.SIM.MWBQV0LU3794C7E4.IN.000004",
+        "error": null,
+        "dialogSaid": "Received: a new conversation, routed.",
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "category": "Birthdays & Events",
+          "language": "ru",
+          "message": "(empty)",
+          "fileChosen": "zz-test-824-ru-tatoeba-6885057.mp3",
+          "voiceError": null
+        },
+        "requestSent": {
+          "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "text": null,
+          "hint": {
+            "category": "birthdays",
+            "language": "ru"
+          },
+          "voice": {
+            "contentType": "audio/mpeg",
+            "base64Chars": 24712,
+            "bytesAbout": 18534
+          }
+        }
+      },
+      "voiceMessage": {
+        "id": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+        "createdAt": "2026-11-11T06:45:05.000Z",
+        "transcriptStatus": "done",
+        "transcriptLanguage": "ru",
+        "transcript": "Спасибо, что пригласили меня на ваш день рождения.",
+        "bubble": {
+          "state": "done",
+          "text": "TRANSCRIBED · RUSSIAN Спасибо, что пригласили меня на ваш день рождения.",
+          "labelExpected": "transcribed · Russian"
+        }
+      },
+      "timing": {
+        "sendPressedAt": "2026-11-11T06:45:02.195Z",
+        "messageCreatedAt": "2026-11-11T06:45:05.000Z",
+        "transcribeAuditRowAt": "2026-11-11T06:45:08.995Z",
+        "secondsFromMessageToTranscriptRow": 4,
+        "secondsFromSendToTranscriptRow": 6.8,
+        "firstApiReadShowingItSettledAfterSendS": 7.5,
+        "assistantTurnAt": "2026-11-11T06:45:14.539Z",
+        "secondsFromSendToAssistantTurn": 12.3,
+        "transcribingSeenInUi": false,
+        "transcribingSeenInApi": false,
+        "transcribingPictured": true,
+        "durationSecondsTheJobRead": 3,
+        "attempts": 1
+      },
+      "assistant": {
+        "aiState": "left_for_team",
+        "turns": [
+          {
+            "kind": "ai_handover",
+            "turnId": "01a1c95a-5e0c-7e39-aff4-6c8f65998bf8",
+            "intent": "emotional_or_unclear",
+            "intents": [
+              "emotional_or_unclear"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "general",
+            "closingKey": "closing_unclear",
+            "holdingLine": "template",
+            "droppedHoldingRule": null,
+            "at": "2026-11-11T06:45:14.539Z"
+          }
+        ],
+        "lines": [
+          {
+            "id": "01a1c95a-82b6-77f6-83eb-2b286e5721ba",
+            "createdAt": "2026-11-11T06:45:14.539Z",
+            "providerStatus": "sent",
+            "body": "Спасибо за сообщение! Сотрудник нашей команды скоро свяжется с вами."
+          }
+        ],
+        "pillLinesInTheInbox": [
+          "AI handed over to Reception · Central Floresta — Reception · Central Floresta primary",
+          "AI handed over to Reception · Central Floresta · emotional or unclear"
+        ]
+      },
+      "timeline": [
+        {
+          "at": "2026-11-11T06:45:09.648Z",
+          "sinceSendS": 7.5,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "ru",
+            "transcriptChars": 50,
+            "aiPills": [],
+            "aiLines": 0,
+            "aiState": "ready"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:45:15.584Z",
+          "sinceSendS": 13.4,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "ru",
+            "transcriptChars": 50,
+            "aiPills": [
+              "ai_handover:OK:emotional_or_unclear"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": []
+          }
+        },
+        {
+          "at": "2026-11-11T06:45:28.997Z",
+          "sinceSendS": 26.8,
+          "api": {
+            "transcriptStatus": "done",
+            "transcriptLanguage": "ru",
+            "transcriptChars": 50,
+            "aiPills": [
+              "ai_handover:OK:emotional_or_unclear"
+            ],
+            "aiLines": 1,
+            "aiState": "left_for_team"
+          },
+          "bubble": {
+            "state": "done",
+            "text": "(the transcript, as above)",
+            "pills": [
+              "AI handed over · Resume",
+              "AI handed over to Reception · Central Floresta — Reception · Central Floresta primary"
+            ]
+          }
+        }
+      ],
+      "audit": {
+        "voiceMessage": {
+          "route": "GET /api/audit?entityType=inbox.message&entityId=:messageId",
+          "status": 200,
+          "messageId": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+          "rows": [
+            {
+              "id": "01a1c95a-606e-7414-a74d-58523d81665f",
+              "action": "inbox.message.media",
+              "createdAt": "2026-11-11T06:45:05.771Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+              "actor": "the system",
+              "before": null,
+              "after": {
+                "messageId": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+                "conversationId": "01a1c95a-5dfe-7239-bc69-c5acda033577"
+              }
+            },
+            {
+              "id": "01a1c95a-6d04-7e93-841c-ff4848013a01",
+              "action": "inbox.message.transcribe",
+              "createdAt": "2026-11-11T06:45:08.995Z",
+              "entityType": "inbox.message",
+              "entityId": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+              "actor": "the system",
+              "before": {
+                "transcriptStatus": "pending"
+              },
+              "after": {
+                "reason": null,
+                "attempts": 1,
+                "language": "ru",
+                "messageId": "01a1c95a-5e00-7bf6-ae78-048ac6cdd34c",
+                "conversationId": "01a1c95a-5dfe-7239-bc69-c5acda033577",
+                "durationSeconds": 3,
+                "transcriptStatus": "done"
+              }
+            }
+          ]
+        },
+        "conversation": {
+          "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+          "status": 200,
+          "rows": [
+            {
+              "action": "inbox.conversation.create",
+              "createdAt": "2026-11-11T06:45:05.146Z",
+              "actor": "the system",
+              "after": {
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays",
+                "language": "ru"
+              }
+            },
+            {
+              "action": "inbox.conversation.read",
+              "createdAt": "2026-11-11T06:45:08.882Z",
+              "actor": "an account",
+              "after": {
+                "status": "active",
+                "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+                "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+                "category": "birthdays"
+              }
+            },
+            {
+              "action": "inbox.ai.handover",
+              "createdAt": "2026-11-11T06:45:14.540Z",
+              "actor": "the system",
+              "after": {
+                "intent": "emotional_or_unclear",
+                "turnId": "01a1c95a-5e0c-7e39-aff4-6c8f65998bf8",
+                "branchId": null,
+                "closingKey": "closing_unclear",
+                "destination": "general"
+              }
+            }
+          ]
+        },
+        "turnWaits": {
+          "route": "GET /api/audit?action=inbox.ai.turn.wait&from=<run start>",
+          "status": 200,
+          "rowsForThisConversation": 0,
+          "rows": []
+        }
+      },
+      "pictures": [
+        "24a-ru-voice-note-transcribing.png",
+        "24-ru-transcript-and-reply.png"
+      ]
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T06:46:48.606Z",
+    "conversations": {
+      "en": {
+        "id": "01a1c957-9d85-761b-aaca-8ffcd44decd0",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:46:51.803Z"
+        }
+      },
+      "long": {
+        "id": "01a1c958-8b77-75db-8ad1-c05edf3023a4",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:46:52.811Z"
+        }
+      },
+      "th": {
+        "id": "01a1c959-532f-7925-9ad0-a6f103940128",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:46:54.317Z"
+        }
+      },
+      "ru": {
+        "id": "01a1c95a-5dfe-7239-bc69-c5acda033577",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:46:55.633Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T06:50:12.348Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notDone": [
+    "No setting read or changed; nothing deployed by this run; no real phone; no other conversation touched; the audio files stay out of the repository"
+  ],
+  "pictures": [
+    {
+      "file": "21-en-voice-note-transcribing.png",
+      "at": "2026-11-11T06:42:07.084Z",
+      "shows": "the English ZZ TEST voice note's bubble while it reads Transcribing… (before the job's tick)",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "23a-th-voice-note-transcribing.png",
+      "at": "2026-11-11T06:43:59.177Z",
+      "shows": "the Thai voice note's bubble while it reads Transcribing…",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "24a-ru-voice-note-transcribing.png",
+      "at": "2026-11-11T06:45:06.701Z",
+      "shows": "the Russian voice note's bubble while it reads Transcribing…",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "22-en-transcript-and-handover.png",
+      "at": "2026-11-11T06:49:55.234Z",
+      "shows": "the English ZZ TEST voice note with its transcript under the audio (transcribed · English), the assistant's birthday hand-over line and its pill",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "23-th-transcript-and-reply.png",
+      "at": "2026-11-11T06:49:59.682Z",
+      "shows": "the Thai voice note (a public Commons recording) with its transcript under the audio (transcribed · Thai), the assistant's Thai holding line and its hand-over pill",
+      "namesMasked": 34,
+      "masks": 1
+    },
+    {
+      "file": "24-ru-transcript-and-reply.png",
+      "at": "2026-11-11T06:50:04.662Z",
+      "shows": "the Russian voice note (a public Tatoeba recording) with its transcript under the audio (transcribed · Russian), the assistant's Russian holding line and its hand-over pill",
+      "namesMasked": 34,
+      "masks": 1
+    },
+    {
+      "file": "25-long-voice-note-too-long-handed-over.png",
+      "at": "2026-11-11T06:50:09.117Z",
+      "shows": "the 192.8 s ZZ TEST voice note's bubble reading Voice note too long to transcribe, the assistant's holding line and its hand-over pill (voice note could not be read)",
+      "namesMasked": 34,
+      "masks": 1
+    }
+  ],
+  "picturesNote": "The three \"Transcribing…\" pictures (21, 23a, 24a) were taken 4 to 6 s after each send at 1440×900. The four thread pictures (22, 23, 24, 25) were retaken at 1440×1400 after the clean-up, so they show the thread already marked handled; the bubble, the transcript, the assistant's line and the pills are the same rows the timeline recorded. The driver signed out again after the retakes (401 read back, recorded in signOut)."
+}
