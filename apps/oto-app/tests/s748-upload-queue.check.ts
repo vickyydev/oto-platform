@@ -13,6 +13,10 @@
 // SCRUM-855: a width, height or length goes to the server only when the
 // browser could measure it, as a whole number. A recording made in the page
 // has no length and the browser says Infinity: nothing is sent for it.
+//
+// SCRUM-856: nothing of an upload is sent until the browser has measured its
+// file, or a short limit has passed. Measuring used to race the upload, and
+// where the bucket refuses the browser the form left first, without them.
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
@@ -89,7 +93,6 @@ globalThis.fetch = (async (path: string, init: RequestInit) => {
   calls.push({ path, init });
   assert.equal(init.credentials, "include");
   assert.equal(path.endsWith("upload"), false, "the multipart route is sent with progress, not by fetch");
-  await tick(); // what the page measured is in before the file is sent
   if (small && path.endsWith(small.boundary)) return new Response(small.body, { status: small.status });
   const body = path.endsWith("presign") ? { uploadUrl: "https://bucket.invalid/zz", s3Key: "zz-direct-key" } : { attachment };
   return new Response(JSON.stringify(path.endsWith(refuse) && refuse ? { error: "ZZ TEST refused" } : body),
@@ -271,6 +274,124 @@ try {
       ["99999999999", null], ["0", null], ["0.2", null], [null, null], [undefined, null], [true, null], [[6], null], [{}, null],
     ] as const) assert.equal(wholeMeasure(value), measure, `wholeMeasure(${JSON.stringify(value) ?? String(value)})`);
   });
+
+  // SCRUM-856. The measuring itself is held here: each file's is a promise
+  // the check settles when it chooses, in the place the queue's own is made.
+  type Measure = { width: number; height: number; duration?: number };
+  const queue = uploadQueue as any;
+  const real = { video: queue.getVideoMetadataWithTimeout, image: queue.getImageDimensionsWithTimeout, limits: uploadQueue.measureLimitMs };
+  const held = new Map<string, { resolve: (measure: Measure) => void; reject: (error: Error) => void }>();
+  const hold = (file: File) => new Promise<Measure>((resolve, reject) => { held.set(file.name, { resolve, reject }); });
+  const NEVER = 3_600_000;
+  const add = (name: string, mime = "video/mp4") => uploadQueue.addUpload(new File(["ZZ TEST"], name, { type: mime }), "item",
+    { checklistTemplateItemId: "zz-item", onComplete: value => completed.push(value) });
+  const fresh = (mode: typeof direct, limits = { image: NEVER, video: NEVER }) => {
+    for (const item of uploadQueue.getItems()) uploadQueue.removeItem(item.id);
+    calls.length = 0; completed.length = 0; held.clear(); direct = mode; uploadQueue.measureLimitMs = limits;
+  };
+  const settled = async (ids: string[], withinMs = 2000) => {
+    for (const until = Date.now() + withinMs; Date.now() < until;) {
+      const items = ids.map(id => uploadQueue.getItems().find(item => item.id === id)!);
+      if (items.every(item => ["completed", "failed"].includes(item.status))) return items;
+      await wait(2);
+    }
+    throw Error("queue did not settle");
+  };
+  const quiet = async (what: string) => {
+    for (let i = 0; i < 25; i++) await tick();
+    await wait(15);
+    assert.deepEqual(calls.map(c => c.path.split("/").pop()), [], `${what}: something was sent before the file was measured`);
+  };
+  /** The measures each save carried, in the order sent: [file name, width, height, length]. */
+  const sent = (mode: typeof direct) => calls.filter(c => c.path.endsWith(mode === "ok" ? "confirm" : "upload")).map(c => {
+    const keys = ["width", "height", "durationSeconds"] as const;
+    if (mode === "ok") { const body = JSON.parse(c.init.body as string); return [body.originalFilename, ...keys.map(key => body[key])]; }
+    const form = c.init.body as FormData;
+    return [(form.get("file") as File).name, ...keys.map(key => (form.has(key) ? Number(form.get(key)) : undefined))];
+  });
+  queue.getVideoMetadataWithTimeout = hold; queue.getImageDimensionsWithTimeout = hold;
+  try {
+    await check("SCRUM-856 PIN: a photo waits up to a second and a half, a video up to three", () => {
+      assert.deepEqual(real.limits, { image: 1500, video: 3000 });
+    });
+    for (const mode of ["ok", "refused"] as const) {
+      const way = mode === "ok" ? "the confirmation" : "the multipart route";
+      await check(`SCRUM-856: nothing is sent until the video is measured, then its measures go on ${way}`, async () => {
+        fresh(mode);
+        const id = await add("ZZ TEST clip.mp4");
+        await quiet("an unmeasured video");
+        const waiting = uploadQueue.getItems().find(item => item.id === id)!;
+        assert.deepEqual([waiting.status, waiting.progress], ["uploading", 5], "the bar is where an upload starts");
+        held.get("ZZ TEST clip.mp4")!.resolve({ width: 1280, height: 720, duration: 6 });
+        const [item] = await settled([id]);
+        assert.equal(item.status, "completed"); assert.equal(completed.length, 1);
+        assert.deepEqual(sent(mode), [["ZZ TEST clip.mp4", 1280, 720, 6]]);
+        assert.deepEqual(calls.map(c => c.path.split("/").pop()), mode === "ok" ? ["presign", "confirm"] : ["presign", "upload"]);
+      });
+      await check(`SCRUM-856: a photo waits for its size the same way on ${way}`, async () => {
+        fresh(mode);
+        const id = await add("ZZ TEST photo.jpg", "image/jpeg");
+        await quiet("an unmeasured photo");
+        held.get("ZZ TEST photo.jpg")!.resolve({ width: 4032, height: 3024 });
+        assert.equal((await settled([id]))[0].status, "completed");
+        assert.deepEqual(sent(mode), [["ZZ TEST photo.jpg", 4032, 3024, undefined]]);
+      });
+    }
+    await check("SCRUM-856: a file the browser never measures goes at the limit, without measures", async () => {
+      // A photo's limit and a video's are their own: each goes at its own, never at the other's.
+      for (const [name, mime, limits] of [
+        ["ZZ TEST clip.mp4", "video/mp4", { image: NEVER, video: 250 }], ["ZZ TEST photo.jpg", "image/jpeg", { image: 250, video: NEVER }],
+      ] as const) {
+        fresh("refused", { ...limits });
+        const started = Date.now();
+        const id = await add(name, mime);
+        await quiet(`${name} inside its limit`);
+        const [item] = await settled([id]);
+        assert.equal(item.status, "completed", "a file that cannot be measured must still go");
+        assert.ok(Date.now() - started >= 240, `${name} went before its limit`);
+        assert.deepEqual(sent("refused"), [[name, undefined, undefined, undefined]]);
+      }
+    });
+    await check("SCRUM-856: a measuring that fails lets the upload go at once", async () => {
+      for (const mode of ["ok", "refused"] as const) {
+        fresh(mode);
+        const id = await add("ZZ TEST clip.mp4");
+        await quiet("an unmeasured video");
+        held.get("ZZ TEST clip.mp4")!.reject(new Error("ZZ TEST the browser cannot read this file"));
+        const [item] = await settled([id], 500);
+        assert.equal(item.status, "completed");
+        assert.deepEqual(sent(mode), [["ZZ TEST clip.mp4", undefined, undefined, undefined]]);
+      }
+    });
+    await check("SCRUM-856: two files added together each wait for their own measuring, in the order added", async () => {
+      for (const mode of ["ok", "refused"] as const) {
+        fresh(mode);
+        const first = await add("ZZ TEST first.mp4"), second = await add("ZZ TEST second.mp4");
+        // The second is measured first: it still waits its turn, and the first still waits for its own.
+        held.get("ZZ TEST second.mp4")!.resolve({ width: 640, height: 360, duration: 12 });
+        await quiet("the first of two, unmeasured");
+        assert.equal(uploadQueue.getItems().find(item => item.id === second)!.status, "pending");
+        held.get("ZZ TEST first.mp4")!.resolve({ width: 1280, height: 720, duration: 6 });
+        const items = await settled([first, second]);
+        assert.deepEqual(items.map(item => item.status), ["completed", "completed"]);
+        assert.deepEqual(sent(mode), [["ZZ TEST first.mp4", 1280, 720, 6], ["ZZ TEST second.mp4", 640, 360, 12]]);
+      }
+    });
+    await check("SCRUM-856 PIN: a retry does not wait again, and sends what was measured", async () => {
+      fresh("refused"); refuse = "upload";
+      const id = await add("ZZ TEST clip.mp4");
+      held.get("ZZ TEST clip.mp4")!.resolve({ width: 1280, height: 720, duration: 6 });
+      assert.equal((await settled([id]))[0].status, "failed");
+      refuse = ""; calls.length = 0;
+      uploadQueue.retryItem(id);
+      assert.equal((await settled([id], 500))[0].status, "completed");
+      assert.deepEqual(sent("refused"), [["ZZ TEST clip.mp4", 1280, 720, 6]]);
+    });
+  } finally {
+    queue.getVideoMetadataWithTimeout = real.video; queue.getImageDimensionsWithTimeout = real.image;
+    uploadQueue.measureLimitMs = real.limits; refuse = "";
+    for (const item of uploadQueue.getItems()) uploadQueue.removeItem(item.id);
+  }
 } finally {
   Object.assign(globalThis, { fetch: originals.fetch, XMLHttpRequest: originals.XMLHttpRequest, Image: originals.Image, document: originals.document, setTimeout: originals.setTimeout });
   console.error = originals.error; console.warn = originals.warn;

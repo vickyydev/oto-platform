@@ -67,6 +67,21 @@ class UploadQueue {
   private listeners: Set<Listener> = new Set();
   private processing = false;
 
+  /**
+   * SCRUM-856: how long an upload waits for the browser to measure its file.
+   *
+   * Measuring starts when the file is added, and used to race the upload: a
+   * six-second video takes about 200 ms to measure, and where the bucket
+   * refuses the browser the form left sooner than that, so its width, height
+   * and length were saved as not known and its thumbnail had no length label.
+   *
+   * A file is measured in a fraction of a second; the limit is for the one
+   * the browser cannot measure, which must still go. A video's is the longer:
+   * the browser has to load it, seek a second in and draw a frame.
+   */
+  measureLimitMs = { image: 1500, video: 3000 };
+  private measuring: Map<string, Promise<void>> = new Map();
+
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
     listener(this.getItems());
@@ -125,7 +140,7 @@ class UploadQueue {
     this.items.set(id, item);
     this.notify();
 
-    this.extractMetadataAsync(id, file, isImage, isVideo);
+    this.measuring.set(id, this.extractMetadataAsync(id, file, isImage, isVideo));
 
     this.processQueue();
 
@@ -151,6 +166,25 @@ class UploadQueue {
     } catch (e) {
       console.warn("[UploadQueue] Failed to extract metadata:", e);
     }
+  }
+
+  /**
+   * Wait for this item's file to be measured, or for the limit. A measuring
+   * that fails lets the upload go at once; one already finished (a retry, a
+   * file that waited its turn behind another) costs nothing.
+   */
+  private async measured(item: UploadItem): Promise<void> {
+    const measuring = this.measuring.get(item.id);
+    if (!measuring) return;
+    const limit = item.file.type.startsWith("video/") ? this.measureLimitMs.video : this.measureLimitMs.image;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      measuring.catch(() => {}),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, limit);
+      }),
+    ]);
+    clearTimeout(timer);
   }
 
   private getImageDimensionsWithTimeout(file: File, timeout = 5000): Promise<{ width: number; height: number }> {
@@ -191,6 +225,10 @@ class UploadQueue {
   private async uploadItem(item: UploadItem) {
     try {
       this.updateItem(item.id, { status: "uploading", progress: 5 });
+
+      // SCRUM-856: nothing is sent until the file has been measured, so the
+      // measures go with it whichever way it is saved.
+      await this.measured(item);
 
       const presignResponse = await fetch("/api/checklist-media/presign", {
         method: "POST",
@@ -374,6 +412,7 @@ class UploadQueue {
       }
     }
     this.items.delete(id);
+    this.measuring.delete(id);
     this.notify();
   }
 
