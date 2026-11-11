@@ -115,7 +115,9 @@ const cue = (key: FirstMessageCueKey, language: FirstMessageLanguage, re: RegExp
  *                                     them?), not a celebration;
  *   "пакет для обуви / вещей"         a plastic bag, not a package;
  *   "плохо говорю / знаю / слышно"    "I speak … badly", "hard to hear", not
- *                                     a bad experience.
+ *                                     a bad experience;
+ *   "in the event of rain", "in any    a condition, not the events team's
+ *   event", "worst case"               event or a bad experience.
  */
 const NOT_THE_SENSE: readonly RegExp[] = [
   new RegExp(`${W}part(?:y|ies)\\s+of\\s+(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve|twenty)${E}`, 'giu'),
@@ -127,6 +129,8 @@ const NOT_THE_SENSE: readonly RegExp[] = [
   new RegExp(`${W}пакет\\p{L}*\\s+(?:для|под)\\s+(?:обуви|вещей|одежды|мокр\\p{L}*|сменк\\p{L}*)${E}`, 'giu'),
   new RegExp(`${W}(?:полиэтиленов|пластиков|целлофанов)\\p{L}*\\s+пакет\\p{L}*${E}`, 'giu'),
   new RegExp(`${W}плохо\\s+(?:говор\\p{L}*|зна\\p{L}*|понима\\p{L}*|слышно|видно|ориентиру\\p{L}*)${E}`, 'giu'),
+  new RegExp(`${W}in\\s+(?:the|any|that|which)\\s+event${E}`, 'giu'),
+  new RegExp(`${W}worst[\\s-]+case${E}`, 'giu'),
 ];
 const withoutOtherSenses = (text: string) => NOT_THE_SENSE.reduce((t, re) => t.replace(re, ' '), text);
 
@@ -141,7 +145,7 @@ const withoutOtherSenses = (text: string) => NOT_THE_SENSE.reduce((t, re) => t.r
  */
 const GM_CUES: readonly Cue[] = [
   // English.
-  cue('refund', 'en', words([String.raw`refund\p{L}*`, String.raw`money\s+back`, String.raw`charge\s*back`, String.raw`charged\s+twice`, String.raw`double[\s-]+charged?`])),
+  cue('refund', 'en', words([String.raw`refund(?:s|ed|ing)?`, String.raw`money\s+back`, String.raw`charge\s*back`, String.raw`charged\s+twice`, String.raw`double[\s-]+charged?`])),
   cue(
     'complaint',
     'en',
@@ -181,7 +185,7 @@ const GM_CUES: readonly Cue[] = [
   cue('cheated', 'en', words([String.raw`scam\p{L}*`, String.raw`cheat\p{L}*`, String.raw`overcharg\p{L}*`, String.raw`rip(?:ped)?[\s-]+off`])),
   cue('compensation', 'en', words([String.raw`compensat\p{L}*`])),
   // Russian.
-  cue('refund', 'ru', words([String.raw`возврат\p{L}*`, 'верните', String.raw`вернуть\s+(?:деньги|средства|оплату)`, String.raw`деньги\s+(?:обратно|назад)`])),
+  cue('refund', 'ru', words([String.raw`возврат(?:а|у|ом|е|ы|ов)?`, 'верните', String.raw`вернуть\s+(?:деньги|средства|оплату)`, String.raw`деньги\s+(?:обратно|назад)`])),
   cue('complaint', 'ru', words([String.raw`жалоб\p{L}*`, String.raw`пожалова\p{L}*`, String.raw`претензи\p{L}*`, String.raw`недоволь\p{L}*`, String.raw`возмущ\p{L}*`, String.raw`разочарова\p{L}*`])),
   cue('rude', 'ru', words([String.raw`хам\p{L}*`, String.raw`(?:на)?груб\p{L}*`, String.raw`накричал\p{L}*`, String.raw`орал\p{L}*`])),
   cue('injury', 'ru', words([String.raw`травм\p{L}*`, String.raw`ушиб\p{L}*`, String.raw`пострада\p{L}*`, String.raw`поранил\p{L}*`])),

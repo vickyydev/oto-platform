@@ -171,6 +171,21 @@ describe('nothing to read → null, the channel’s default stands', () => {
     expect(firstMessageCategory('Hi, do you have a nanny service? I would like to book one')).toBeNull();
   });
 
+  it('no false positive on "in the event of", "refundable" or "worst case" (found on staging, 11 Nov)', () => {
+    expect(firstMessageCategory('What happens in the event of rain?')).toBeNull();
+    expect(firstMessageCategory('In any event we will be there by 2pm')).toBeNull();
+    expect(firstMessageCategory('Is the deposit refundable?')).toBeNull();
+    expect(firstMessageCategory('Is the booking non-refundable if we cancel?')).toBeNull();
+    expect(firstMessageCategory('Worst case we arrive at 6pm, still ok?')).toBeNull();
+    expect(firstMessageCategory('Депозит возвратный?')).toBeNull();
+    // The request forms still read as a refund.
+    expect(category('Can I get a refund?')).toBe('gm');
+    expect(category('Refund please, we did not come')).toBe('gm');
+    expect(category('I was charged but never refunded')).toBe('gm');
+    expect(category('Верните деньги за вчера')).toBe('gm');
+    expect(category('Хочу возврат за билеты')).toBe('gm');
+  });
+
   it('an empty, null or undefined text', () => {
     expect(firstMessageCategory('')).toBeNull();
     expect(firstMessageCategory(null)).toBeNull();
