@@ -3224,6 +3224,8 @@ export default function Till() {
     paidSatang: paidOnScreen,
     outstandingSatang: paymentStage.state.outstandingSatang,
     canHold: can('pos:sale:update'),
+    // SCRUM-853 — no sale is written while the voucher price is not in.
+    awaitingPrice: voucherPricePending,
   });
   const holdDefaultLabel =
     resumed?.held?.label ?? (customerNickname.trim() || member?.nickname || '');

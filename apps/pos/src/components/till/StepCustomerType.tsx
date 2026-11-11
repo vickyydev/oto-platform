@@ -9,6 +9,7 @@ import {
 } from '@/lib/membership';
 import { getTiers } from '@/mockApi';
 import { tierProofLabel } from '@/lib/tierProof';
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { EventPassCard } from '@/components/till/EventPassCard';
 import { Users, Globe, MapPin, BadgeCheck, ShieldQuestion, UserCircle, Ticket, type LucideIcon } from 'lucide-react';
 
@@ -68,7 +69,7 @@ export function StepCustomerType({
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-lg truncate">{member.nickname}</div>
-              <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
+              <div className="text-sm text-muted-foreground truncate">{formatStoredPhone(member.phone)}</div>
             </div>
             {verification ? (
               <>

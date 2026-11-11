@@ -79,6 +79,12 @@ export const bahtLabel = (satang: number): string =>
  * the box lane the counter's network is up while the platform cannot be
  * reached, and a sale rung up on the box is not on the platform at all until
  * the box hands it over — neither can be held, and the button says so.
+ *
+ * SCRUM-853 — while the payment step waits for a voucher price, or has said it
+ * is not coming (`awaitingPrice`), no sale is written and none is on its way,
+ * so "The sale is still being saved" would be untrue. The buttons stay shut
+ * and that one line is left out (`HOLD_SHUT_UNSAID`): the step's own line
+ * above them is the reason. Every other reason is given as before.
  */
 export function holdButtonReasons(input: {
   saleId: string | null;
@@ -92,6 +98,8 @@ export function holdButtonReasons(input: {
   paidSatang: number;
   outstandingSatang: number;
   canHold: boolean;
+  /** The voucher price is pending or unavailable (`voucherPricePending` in pages/Till.tsx). */
+  awaitingPrice?: boolean;
 }): { hold: string | null; partPaid: string | null } {
   const common = !input.canHold
     ? 'Your role cannot hold sales — ask a manager.'
@@ -102,13 +110,13 @@ export function holdButtonReasons(input: {
         : !input.online
           ? 'Holding a sale needs the connection — reconnect, or take the payment now.'
           : !input.saleId
-            ? 'The sale is still being saved — wait a moment.'
+            ? input.awaitingPrice ? HOLD_SHUT_UNSAID : 'The sale is still being saved — wait a moment.'
             : input.paymentInProgress
               ? 'A payment is in progress — finish or cancel it first.'
               : input.outstandingSatang <= 0
                 ? 'Nothing is owed on this sale — complete it instead.'
                 : null;
-  if (common) return { hold: common, partPaid: common };
+  if (common !== null) return { hold: common, partPaid: common };
   return {
     hold:
       input.paidSatang > 0
@@ -128,6 +136,11 @@ export function holdButtonReasons(input: {
 export const partPaidShown = (partial: boolean | undefined, paidSatang: number): boolean =>
   Boolean(partial) || paidSatang > 0;
 
+/**
+ * SCRUM-853 — shut, with nothing written under the button: a reason that is
+ * not null shuts it, and an empty one draws no line (`HoldSaleButtons`).
+ */
+export const HOLD_SHUT_UNSAID = '';
 export const BOX_SALE_NOT_HELD =
   'This sale was rung up on the counter box while the platform could not be reached — it cannot be held. Take the payment now.';
 export const BOX_LANE_NO_HOLD =

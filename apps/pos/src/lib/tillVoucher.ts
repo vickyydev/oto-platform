@@ -178,6 +178,11 @@ export function isMenuItemVoucher(view: VoucherView): boolean {
  *   - The platform answered and failed (a 5xx, a proxy's page): what it said.
  *   - Nothing answered, or this till knows it is offline: "Vouchers can only be
  *     redeemed online" — the one case the till speaks for itself.
+ *   - The counter's BOX answered in the platform's place (SCRUM-853): the same
+ *     "online only". The box is asked only when the platform could not be
+ *     reached (`viaLane` in lib/lane.ts) and it prices no voucher, so whatever
+ *     it refused — a member it has not heard of yet, a catalogue it has no copy
+ *     of — is about the box, never the reason this voucher has no price.
  *   - Otherwise the quote's own reason for not being the platform's (no station
  *     on this device, no pricing route on this deployment).
  */
@@ -189,7 +194,7 @@ export function voucherUnpricedReason(args: {
 }): string | null {
   const { quote, pending, error, offline } = args;
   if (quote.source === 'platform' || pending) return null;
-  if (error) return error.message;
+  if (error) return error.answeredBy === 'box' ? VOUCHER_ONLINE_ONLY : error.message;
   if (offline || quote.unanswered) return VOUCHER_ONLINE_ONLY;
   return quote.reason ?? null;
 }
