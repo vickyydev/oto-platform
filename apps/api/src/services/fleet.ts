@@ -480,12 +480,17 @@ async function assertBoothCodePrefixFree(
   }
 }
 
+/** The kinds whose prefix is a receipt series: a till and a kiosk number their own sales. */
+function numbersReceipts(kind: StationKind): boolean {
+  return kind === 'till' || kind === 'kiosk';
+}
+
 /** SCRUM-809: retiring or renaming a till does not free its receipt numbers. */
 async function assertReceiptPrefixFree(
   tx: Exec,
   input: { operatorId: string; branchId: string; kind: StationKind; codePrefix: string | null; exceptStationId?: string },
 ): Promise<void> {
-  if (!input.codePrefix || (input.kind !== 'till' && input.kind !== 'kiosk')) return;
+  if (!input.codePrefix || !numbersReceipts(input.kind)) return;
   // Serialize competing assignments, including a winner archived before the
   // next save. The live-only unique index cannot protect that case.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`receipt-prefix:${input.branchId}:${input.codePrefix}`}, 0))`);
@@ -1408,11 +1413,35 @@ export async function updateStation(
 
   try {
     return await withTx(db, ctx, 'station.update', async (tx) => {
-      await assertReceiptPrefixFree(tx, {
-        operatorId: actor.operatorId, branchId: before.branchId, kind: patch.kind ?? before.kind,
-        codePrefix: patch.codePrefix === undefined ? before.codePrefix : patch.codePrefix,
-        exceptStationId: before.id,
-      });
+      /**
+       * SCRUM-846 — the receipt prefix is checked when this save CHANGES it,
+       * or turns the station into a kind that numbers receipts. A prefix the
+       * station already holds is left alone on every other edit: a till that
+       * has shared its prefix with an archived till since before SCRUM-809 can
+       * still be renamed, given a device or re-routed. What that pair of tills
+       * does at payment is `finaliseSale`'s to refuse, and giving this one a
+       * prefix of its own is the repair.
+       *
+       * Read from the row as it stands in this transaction, locked as the
+       * UPDATE below would lock it, so "unchanged" is said about the stored
+       * prefix and not about a copy the route loaded a moment earlier.
+       */
+      const [stored] = await tx
+        .select({ kind: station.kind, codePrefix: station.codePrefix })
+        .from(station)
+        .where(eq(station.id, before.id))
+        .for('no key update')
+        .limit(1);
+      const held = stored ?? before;
+      const nextKind = patch.kind ?? held.kind;
+      const nextPrefix = patch.codePrefix === undefined ? held.codePrefix : patch.codePrefix;
+      if (nextPrefix !== held.codePrefix || !numbersReceipts(held.kind)) {
+        await assertReceiptPrefixFree(tx, {
+          operatorId: actor.operatorId, branchId: before.branchId, kind: nextKind,
+          codePrefix: nextPrefix,
+          exceptStationId: before.id,
+        });
+      }
       const set: Partial<typeof station.$inferInsert> = {};
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.kind !== undefined) set.kind = patch.kind;

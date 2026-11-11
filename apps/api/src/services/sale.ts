@@ -3307,6 +3307,57 @@ function violates(error: unknown, constraint: string): boolean {
   return false;
 }
 
+/**
+ * SCRUM-846 — WHICH RECEIPT CLASH THIS IS, read off the sale that holds the
+ * number.
+ *
+ * Two different faults end on the same two indexes, and their repairs differ:
+ *
+ *   - ANOTHER STATION at this park already issued the number: two tills saved
+ *     under one prefix before SCRUM-809 reserved a prefix for the till that
+ *     used it. The repair is a prefix of its own for this till, and the
+ *     refusal says so (`RECEIPT_PREFIX_IN_USE`).
+ *   - THIS STATION'S OWN SERIES already carries it: two allocators in one
+ *     series, a misconfigured or restored box. A different prefix is not the
+ *     cause and is not offered (`RECEIPT_NUMBER_TAKEN`, the words this
+ *     refusal had before SCRUM-809).
+ *
+ * The holder is looked up rather than inferred from which stations hold the
+ * prefix: a till that shares its prefix with an archived till can still
+ * collide with its own counter, and that is the second fault, not the first.
+ * `sale_receipt_unique` is keyed on the station, so a violation of it is the
+ * second fault by definition; `sale_receipt_number_unique` is keyed on the
+ * park, so only the sale holding the number says which station issued it.
+ *
+ * Called once the refused write's savepoint is rolled back, so the caller's
+ * transaction can still read. The caller throws what this answers, and all it
+ * wrote — the tender, the counter it advanced — rolls back with that. An error
+ * that is neither index is handed back as it came.
+ */
+async function receiptClashOf(
+  tx: Tx,
+  error: unknown,
+  scope: { branchId: string; stationId: string },
+  receipt: { series: string; number: string },
+): Promise<unknown> {
+  const ownSeries = violates(error, 'sale_receipt_unique');
+  if (!ownSeries && !violates(error, 'sale_receipt_number_unique')) return error;
+  if (!ownSeries) {
+    const [holder] = await tx
+      .select({ stationId: sale.stationId })
+      .from(sale)
+      .where(and(eq(sale.branchId, scope.branchId), eq(sale.receiptNumber, receipt.number)))
+      .limit(1);
+    if (holder && holder.stationId !== scope.stationId) {
+      return errors.conflict(
+        'RECEIPT_PREFIX_IN_USE',
+        `Receipt prefix ${receipt.series} is already in use at this park. Ask a manager to choose a different prefix for this till, then return to the order and confirm the payment again.`,
+      );
+    }
+  }
+  return errors.conflict('RECEIPT_NUMBER_TAKEN', 'That receipt number is already used at this station');
+}
+
 export interface CommitResult {
   /** The till's client reads `replay`; `replayed` is the same fact under the name the API used first. */
   replay: boolean;
@@ -3944,19 +3995,21 @@ export async function commitSale(
   };
 
   try {
-    await tx.insert(sale).values(values);
+    // A sale that closes here carries a receipt number, and is written under a
+    // savepoint so a refused number can still be traced to the sale holding it
+    // (`receiptClashOf`). Every other sale is written as it always was.
+    if (receipt) await tx.transaction((sp) => sp.insert(sale).values(values));
+    else await tx.insert(sale).values(values);
   } catch (error) {
     if (violates(error, 'sale_action_unique')) {
       throw errors.conflict('SALE_ACTION_REPLAY', 'That sale has already been recorded');
     }
-    if (violates(error, 'sale_receipt_unique') || violates(error, 'sale_receipt_number_unique')) {
-      // Two allocators in one series — a misconfigured or restored box. The
-      // sale is refused rather than printed under a number another receipt
-      // already carries.
-      throw errors.conflict(
-        'RECEIPT_PREFIX_IN_USE',
-        `Receipt prefix ${st.codePrefix} is already in use at this park. Ask a manager to choose a different prefix for this till, then return to the order and confirm the payment again.`,
-      );
+    // Two allocators in one series — a misconfigured or restored box — or,
+    // SCRUM-809, a number another till issued under the same prefix. The sale
+    // is refused rather than printed under a number another receipt already
+    // carries, and the refusal names which of the two it was.
+    if (receipt) {
+      throw await receiptClashOf(tx, error, { branchId: values.branchId, stationId: st.id }, receipt);
     }
     throw error;
   }
@@ -5096,21 +5149,24 @@ export async function finaliseSale(
     receipt.number,
   );
 
-  const updated = await tx.update(sale).set({
-    status: 'finalised',
-    finalisedAt: now,
-    receiptSeries: receipt.series,
-    receiptSeq: receipt.seq,
-    receiptNumber: receipt.number,
-  }).where(eq(sale.id, saleId)).returning().catch((error: unknown) => {
+  let updated: (typeof sale.$inferSelect)[];
+  try {
+    // Under a savepoint, so a refused number leaves this transaction able to
+    // ask which sale holds it before everything here rolls back.
+    updated = await tx.transaction((sp) => sp.update(sale).set({
+      status: 'finalised',
+      finalisedAt: now,
+      receiptSeries: receipt.series,
+      receiptSeq: receipt.seq,
+      receiptNumber: receipt.number,
+    }).where(eq(sale.id, saleId)).returning());
+  } catch (error) {
     // SCRUM-809: legacy duplicate prefixes can reach payment even after the
-    // station form is fixed. The whole tender transaction still rolls back.
-    if (violates(error, 'sale_receipt_unique') || violates(error, 'sale_receipt_number_unique')) {
-      throw errors.conflict('RECEIPT_PREFIX_IN_USE',
-        `Receipt prefix ${receipt.series} is already in use at this park. Ask a manager to choose a different prefix for this till, then return to the order and confirm the payment again.`);
-    }
-    throw error;
-  });
+    // station form is fixed. SCRUM-846: that is said only when another
+    // station's receipt holds the number; this station's own series colliding
+    // keeps its own words. Either way the whole tender transaction rolls back.
+    throw await receiptClashOf(tx, error, { branchId: row.branchId, stationId: row.stationId }, receipt);
+  }
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
   // SCRUM-774 — a sale that closes while parked leaves Held sales with its payment.
