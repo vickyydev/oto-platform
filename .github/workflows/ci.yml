@@ -923,6 +923,18 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-catalogue-fill.check.ts
+      # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
+      # BEO's review opens with every section proposed and marked (the chat's
+      # lines, the park's default for the title), a value the form holds kept
+      # with the chat's offered beside it, ONE press writing everything with no
+      # second preview, the form reading it back with its marks and the chat's
+      # sections open, a pasted message on the same review (and the preview of
+      # before without a catalogue), and the empty sections' plain wording.
+      - name: The app's BEO one-pass prefill form check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-prefill-ui.check.ts
       # SCRUM-803: the birthday packages as the park prints them (migration
       # 0041) — every new package, line item, entertainment and set-menu field
       # round-trips through the settings routes, a value out of range or

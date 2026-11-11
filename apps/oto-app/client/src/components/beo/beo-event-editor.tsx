@@ -74,12 +74,21 @@ import {
   Download,
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
-import { BeoAiReviewDialog, type BeoAiPending } from "./beo-ai-review";
+import { BeoAiReviewDialog, SourceMark, type BeoAiPending } from "./beo-ai-review";
 import { BeoFetchFromChatDialog } from "./beo-fetch-from-chat";
 import { NO_DECLINED, type DeclinedChanges, type FetchAnswer, type FetchFormValues, type FetchHeldCatalogue } from "@/lib/beo-fetch-from-chat";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown } from "@/lib/beo-ai-preview";
 import { CakeUnderNoCake } from "./beo-cake-under-no-cake";
-import { APPROVAL_WRITES } from "@/lib/beo-ai-review";
+import {
+  REVIEW_TEAM_FIELDS,
+  approvedSectionsOf,
+  reviewTeamUnmatchedText,
+  type ApprovedMarks,
+  type ReviewHeld,
+  type ReviewTeamField,
+  type ReviewTeamProposal,
+} from "@/lib/beo-ai-review";
+import { BEO_AI_FROM_THE_CHAT } from "@shared/beoAiFill";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
@@ -116,39 +125,24 @@ interface BeoEventEditorProps {
   onAutoFillTaken?: () => void;
 }
 
-/** What AI Fill proposes for a BEO field that assigns somebody (server/lib/beoTeamProposals.ts). */
-type AiTeamMatch = { kind: "employee" | "department"; id: string; label: string };
-type AiTeamProposal = {
-  asked: string;
-  match: AiTeamMatch | null;
-  why: "no_match" | "several" | "same_as_party_host" | "host_list_not_employees" | null;
-};
-type AiTeamField = "partyHost" | "entertainmentHost" | "setupResponsible";
+/** What AI Fill proposes for a BEO field that assigns somebody (server/lib/beoTeamProposals.ts); the shapes live with the review (SCRUM-827). */
+type AiTeamMatch = NonNullable<ReviewTeamProposal["match"]>;
+type AiTeamProposal = ReviewTeamProposal;
+type AiTeamField = ReviewTeamField;
 type AiTeamProposals = Record<AiTeamField, AiTeamProposal | null>;
+const AI_TEAM_FIELDS = REVIEW_TEAM_FIELDS;
+const aiTeamUnmatchedText = reviewTeamUnmatchedText;
 
-const AI_TEAM_FIELDS: Array<{ field: AiTeamField; label: string }> = [
-  { field: "partyHost", label: "Party Host" },
-  { field: "entertainmentHost", label: "Entertainment Host" },
-  { field: "setupResponsible", label: "Setup Who" },
-];
-
-/** Why a name the message gave is not proposed, in the preview's words. */
-function aiTeamUnmatchedText(field: AiTeamField, why: AiTeamProposal["why"]): string {
-  const typed = field === "setupResponsible";
-  switch (why) {
-    case "several":
-      return typed
-        ? "matches more than one person at this park: it goes in as typed text; pick the person in the form to link them."
-        : "matches more than one person at this park: choose the host in the form.";
-    case "same_as_party_host":
-      return "is the same person as the party host: choose another in the form.";
-    case "host_list_not_employees":
-      return "this park group's host list is not its employees: choose the host in the form.";
-    default:
-      return typed
-        ? "matches nobody at this park: it goes in as typed text."
-        : "matches nobody at this park: choose the host in the form.";
-  }
+/** SCRUM-827: the chip a section wears once the chat filled it. */
+function FromTheChat({ section }: { section: string }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400"
+      data-testid={`ai-from-chat-${section}`}
+    >
+      {BEO_AI_FROM_THE_CHAT}
+    </span>
+  );
 }
 
 /** The inbox message an AI Fill read (Create BEO), shown above its preview so a person can check it. */
@@ -662,8 +656,20 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const autoFillTaken = useRef(false);
   // SCRUM-815: Create BEO's AI Fill matched to the park's catalogue, reviewed in edit mode before anything is written.
   const [aiReview, setAiReview] = useState<BeoAiPending | null>(null);
-  // SCRUM-815: the preview is showing what an approval left (the rest of the same fill).
-  const [aiFillAfterApproval, setAiFillAfterApproval] = useState(false);
+  // SCRUM-827: once the review's one pass is approved, where each filled field came from — the mark
+  // it wears here until it is edited — and the sections the chat filled, which wear "from the chat".
+  const [aiMarks, setAiMarks] = useState<ApprovedMarks>({});
+  const aiSections = useMemo(() => approvedSectionsOf(aiMarks), [aiMarks]);
+  const aiMark = (field: string) => {
+    const source = aiMarks[field];
+    if (!source) return null;
+    return <SourceMark field={source === "staff" ? { from: null, changed: true } : { from: { source }, changed: false }} />;
+  };
+  /** A marked field the person edits is theirs now. */
+  const aiTouched = (field: string) => {
+    setAiMarks((m) => (m[field] && m[field] !== "staff" ? { ...m, [field]: "staff" } : m));
+  };
+  const aiSectionMark = (section: string) => (aiSections.includes(section) ? <FromTheChat section={section} /> : null);
   // SCRUM-826: "Fetch from chat" — its dialog, and the changes declined on it (held until the chat changes).
   const [fetchOpen, setFetchOpen] = useState(false);
   const [fetchDeclined, setFetchDeclined] = useState<DeclinedChanges>(NO_DECLINED);
@@ -867,6 +873,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         locationId: beoData.locationId,
         activities: beoData.activities,
         decoration: beoData.decoration,
+        // SCRUM-827: Special Requests is a field of the form now (it was written by AI Fill and never shown here).
+        specialRequests: beoData.specialRequests,
         internalStaffNotes: beoData.internalStaffNotes,
         childName: beoData.childName,
         bookingName: beoData.bookingName || beoData.parentName,
@@ -1363,10 +1371,23 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     },
   });
 
+  /** SCRUM-827: what the form holds of the rest of the BEO, so the review overwrites nothing typed. */
+  const reviewHeld = (): ReviewHeld => ({
+    title: eventData.title ?? "",
+    bookingName: eventData.bookingName ?? "",
+    locationText,
+    specialRequests: eventData.specialRequests ?? "",
+    activities: eventData.activities ?? "",
+    decoration: eventData.decoration ?? "",
+    setupReadyBy,
+    setupResponsible,
+    posName: packageName,
+    posNotes: packageNotes,
+  });
+
   /** AI Fill's review step on an answer the server validated: from a pasted message, or (with `source`) the inbox. */
   const openAiFillPreview = (fill: any, source: AiFillInboxSource | null) => {
     setAiFillParsed(fill);
-    setAiFillAfterApproval(false);
     setAiFillAccepted(new Set());
     setAiFillUseDate(false);
     setAiFillSource(source);
@@ -1916,25 +1937,26 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <CalendarDays className="h-4 w-4" />
                 <span>Event Info</span>
                 <StatusIcon status={getSectionStatus("event-info")} />
+                {aiSectionMark("event-info")}
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div className="grid gap-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Title</Label>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Title{aiMark("title")}</Label>
                     <EditableText
                       value={eventData.title || ""}
-                      onChange={(v) => setEventData({ ...eventData, title: v })}
+                      onChange={(v) => { setEventData({ ...eventData, title: v }); aiTouched("title"); }}
                       placeholder="Event title..."
                       data-testid="input-event-title"
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Activities</Label>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Activities{aiMark("activities")}</Label>
                     <EditableText
                       value={eventData.activities || ""}
-                      onChange={(v) => setEventData({ ...eventData, activities: v })}
+                      onChange={(v) => { setEventData({ ...eventData, activities: v }); aiTouched("activities"); }}
                       placeholder="e.g., Games, Face Painting"
                       data-testid="input-event-activities"
                     />
@@ -1942,30 +1964,41 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 </div>
                 <div className="grid sm:grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Decoration</Label>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Decoration{aiMark("decoration")}</Label>
                     <EditableText
                       value={eventData.decoration || ""}
-                      onChange={(v) => setEventData({ ...eventData, decoration: v })}
+                      onChange={(v) => { setEventData({ ...eventData, decoration: v }); aiTouched("decoration"); }}
                       placeholder="e.g., Balloons, Streamers, Table Setup"
                       data-testid="input-event-decoration"
+                    />
+                  </div>
+                  {/* SCRUM-827: the special requests the chat gave (and anything typed here), saved with the BEO. */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">Special Requests{aiMark("specialRequests")}</Label>
+                    <EditableText
+                      value={eventData.specialRequests || ""}
+                      onChange={(v) => { setEventData({ ...eventData, specialRequests: v }); aiTouched("specialRequests"); }}
+                      placeholder="e.g., Nut allergy, a quiet corner for grandma"
+                      multiline
+                      data-testid="textarea-special-requests"
                     />
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <MandatoryLabel>Child / Guest of Honor Name</MandatoryLabel>
+                    <MandatoryLabel>Child / Guest of Honor Name{aiMark("childName")}</MandatoryLabel>
                     <EditableText
                       value={eventData.childName || ""}
-                      onChange={(v) => setEventData({ ...eventData, childName: v })}
+                      onChange={(v) => { setEventData({ ...eventData, childName: v }); aiTouched("childName"); }}
                       placeholder="Birthday child or guest name"
                       data-testid="input-child-name"
                     />
                   </div>
                   <div className="space-y-1">
-                    <MandatoryLabel>Parent / Booking Name</MandatoryLabel>
+                    <MandatoryLabel>Parent / Booking Name{aiMark("bookingName")}</MandatoryLabel>
                     <EditableText
                       value={eventData.bookingName || ""}
-                      onChange={(v) => setEventData({ ...eventData, bookingName: v })}
+                      onChange={(v) => { setEventData({ ...eventData, bookingName: v }); aiTouched("bookingName"); }}
                       placeholder="Parent or booking contact"
                       data-testid="input-booking-name"
                     />
@@ -2030,7 +2063,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 )}
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <MandatoryLabel>Date</MandatoryLabel>
+                    <MandatoryLabel>Date{aiMark("eventDate")}</MandatoryLabel>
                     <DatePicker
                       value={eventData.eventDate ? parseISO(eventData.eventDate) : undefined}
                       onChange={(date) => setEventData({ ...eventData, eventDate: date ? format(date, "yyyy-MM-dd") : undefined })}
@@ -2038,7 +2071,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     />
                   </div>
                   <div className="space-y-2">
-                    <MandatoryLabel>Start Time</MandatoryLabel>
+                    <MandatoryLabel>Start Time{aiMark("startTime")}</MandatoryLabel>
                     <div className="flex items-center gap-1">
                       {eventData.startTime ? (
                         <>
@@ -2080,7 +2113,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>End Time</Label>
+                    <Label className="flex items-center gap-1">End Time{aiMark("endTime")}</Label>
                     <div className="flex items-center gap-1">
                       {eventData.endTime ? (
                         <>
@@ -2187,30 +2220,30 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-1">
-                    <MandatoryLabel>Location</MandatoryLabel>
+                    <MandatoryLabel>Location{aiMark("locationText")}</MandatoryLabel>
                     <EditableText
                       value={locationText}
-                      onChange={setLocationText}
+                      onChange={(v) => { setLocationText(v); aiTouched("locationText"); }}
                       placeholder="e.g., Party Room A, Outdoor Area..."
                       data-testid="input-location-text"
                     />
                   </div>
                   <div className="space-y-1">
-                    <MandatoryLabel>Expected Kids</MandatoryLabel>
+                    <MandatoryLabel>Expected Kids{aiMark("numChildren")}</MandatoryLabel>
                     <EditableText
                       type="number"
                       value={String(eventData.numChildren || "")}
-                      onChange={(v) => setEventData({ ...eventData, numChildren: parseInt(v) || 0 })}
+                      onChange={(v) => { setEventData({ ...eventData, numChildren: parseInt(v) || 0 }); aiTouched("numChildren"); }}
                       placeholder="0"
                       data-testid="input-num-children"
                     />
                   </div>
                   <div className="space-y-1">
-                    <MandatoryLabel>Expected Adults</MandatoryLabel>
+                    <MandatoryLabel>Expected Adults{aiMark("numAdults")}</MandatoryLabel>
                     <EditableText
                       type="number"
                       value={String(eventData.numAdults || "")}
-                      onChange={(v) => setEventData({ ...eventData, numAdults: parseInt(v) || 0 })}
+                      onChange={(v) => { setEventData({ ...eventData, numAdults: parseInt(v) || 0 }); aiTouched("numAdults"); }}
                       placeholder="0"
                       data-testid="input-num-adults"
                     />
@@ -2237,15 +2270,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <User className="h-4 w-4 text-pink-500" />
                 <span>Party Host</span>
                 <StatusIcon status={getSectionStatus("party-host")} />
+                {aiSectionMark("party-host")}
               </div>
             </AccordionTrigger>
             <AccordionContent className={`px-4 pb-4 overflow-visible ${readOnly ? "opacity-75 cursor-not-allowed" : ""}`}>
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <MandatoryLabel>Assigned Party Host</MandatoryLabel>
+                  <MandatoryLabel>Assigned Party Host{aiMark("team:partyHost")}</MandatoryLabel>
                   <AssignmentSearchBar
                     value={partyHostAssignmentValue}
-                    onChange={handlePartyHostChange}
+                    onChange={(values) => { handlePartyHostChange(values); aiTouched("team:partyHost"); }}
                     employees={allEmployees || []}
                     roles={allRoles || []}
                     placeholder="Search employees or roles..."
@@ -2253,10 +2287,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Entertainment Host (Optional)</Label>
+                  <Label className="flex items-center gap-1">Entertainment Host (Optional){aiMark("team:entertainmentHost")}</Label>
                   <AssignmentSearchBar
                     value={entertainmentHostAssignmentValue}
-                    onChange={handleEntertainmentHostChange}
+                    onChange={(values) => { handleEntertainmentHostChange(values); aiTouched("team:entertainmentHost"); }}
                     employees={(allEmployees || []).filter(e => e.id !== partyHost.assignedEmployeeId)}
                     placeholder="Search employees to assign as entertainment host..."
                     showEveryone={false}
@@ -2280,7 +2314,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   </div>
                   {entertainmentItems.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic" data-testid="text-no-entertainment-acts">
-                      No entertainment acts yet. Add one to auto-sync its start time to the Timeline.
+                      No entertainment acts yet. Add one and give it a time to put it on the Timeline.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -2348,6 +2382,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <div className="flex min-w-0 items-center gap-2">
                   <Gift className="h-4 w-4 shrink-0 text-indigo-500" />
                   <span>Birthday Package</span>
+                  {aiSectionMark("birthday-package")}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -2376,6 +2411,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <Gift className="h-4 w-4 text-indigo-500" />
                 <span>POS</span>
                 <StatusIcon status={getSectionStatus("party-details")} />
+                {aiSectionMark("party-details")}
                 {packageName && (
                   <Badge variant="secondary" className="ml-1 text-xs">{packageName}</Badge>
                 )}
@@ -2393,10 +2429,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     charge are the till's (the tiles below and the Billing section). */}
                 <div className="flex items-end gap-3">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs text-muted-foreground">POS Name</Label>
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Name{aiMark("posName")}</Label>
                     <EditableText
                       value={packageName}
-                      onChange={setPackageName}
+                      onChange={(v) => { setPackageName(v); aiTouched("posName"); }}
                       placeholder="e.g., Platinum POS"
                       data-testid="input-package-name"
                     />
@@ -2417,7 +2453,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       onClick={() => addPackageItem("included")}
                       data-testid="button-add-first-package-item"
                     >
-                      Click here to add first item
+                      No line items yet. Click to add the first.
                     </div>
                   ) : (
                     <>
@@ -2459,12 +2495,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                   depositUnsaved={depositUnsaved}
                   deposit={
                     <>
-                      <Label className="text-xs text-muted-foreground">Deposit</Label>
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">Deposit{aiMark("deposit")}</Label>
                       <EditableText
                         type="number"
                         className="font-mono text-lg font-bold"
                         value={String(prepaymentReceived || "")}
-                        onChange={(v) => setPrepaymentReceived(Number(v) || 0)}
+                        onChange={(v) => { setPrepaymentReceived(Number(v) || 0); aiTouched("deposit"); }}
                         placeholder="0"
                         data-testid="input-prepayment"
                       />
@@ -2482,10 +2518,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <Separator />
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">POS Notes</Label>
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">POS Notes{aiMark("posNotes")}</Label>
                   <EditableText
                     value={packageNotes}
-                    onChange={setPackageNotes}
+                    onChange={(v) => { setPackageNotes(v); aiTouched("posNotes"); }}
                     placeholder="Any notes about the POS, billing, or special arrangements..."
                     multiline
                     data-testid="textarea-package-notes"
@@ -2525,6 +2561,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <Settings className="h-4 w-4 text-orange-500" />
                 <span>Setup Plan</span>
                 <StatusIcon status={getSectionStatus("setup-plan")} />
+                {aiSectionMark("setup-plan")}
                 {setupTasks.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs">{setupTasks.length} tasks</Badge>
                 )}
@@ -2537,7 +2574,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
 
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm text-muted-foreground whitespace-nowrap">Ready by</Label>
+                    <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Ready by{aiMark("setupReadyBy")}</Label>
                     <div className="flex items-center gap-1">
                       {setupReadyBy ? (
                         <>
@@ -2579,7 +2616,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     </div>
                   </div>
                   <div className="flex items-center gap-2 relative">
-                    <Label className="text-sm text-muted-foreground whitespace-nowrap">Who</Label>
+                    <Label className="text-sm text-muted-foreground whitespace-nowrap flex items-center gap-1">Who{aiMark(aiMarks["team:setupResponsible"] ? "team:setupResponsible" : "setupResponsible")}</Label>
                     <div className="flex-1 relative">
                       {setupResponsible && !showResponsibleDropdown ? (
                         <div
@@ -2688,7 +2725,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       onChange={(e) => setTempReadyByTime(e.target.value)}
                       data-testid="input-ready-by-time"
                     />
-                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setSetupReadyBy(tempReadyByTime); setShowReadyByTimePicker(false); }} data-testid="button-confirm-ready-by-time">Confirm</Button>
+                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setSetupReadyBy(tempReadyByTime); setShowReadyByTimePicker(false); aiTouched("setupReadyBy"); }} data-testid="button-confirm-ready-by-time">Confirm</Button>
                     <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReadyByTimePicker(false)}>Cancel</Button>
                   </div>
                 )}
@@ -2699,7 +2736,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     onClick={addSetupTask}
                     data-testid="button-add-first-setup-task"
                   >
-                    Click here to add first task
+                    No setup tasks yet. Click to add the first.
                   </div>
                 ) : (
                   <>
@@ -2789,6 +2826,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <UtensilsCrossed className="h-4 w-4 text-blue-500" />
                 <span>Kitchen Plan</span>
                 <StatusIcon status={getSectionStatus("kitchen-plan")} />
+                {aiSectionMark("kitchen-plan")}
                 <BeoTaskBadge prefix="🍽️ Kitchen:" label="Mark Kitchen Done" />
               </div>
             </AccordionTrigger>
@@ -3121,7 +3159,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                           }}
                                           data-testid="button-add-first-menu-kids"
                                         >
-                                          Click here to add first item
+                                          Nothing on the kids' menu yet. Click to add the first item.
                                         </div>
                                       ) : (
                                         <>
@@ -3259,7 +3297,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                     }}
                                     data-testid="button-add-first-menu-adults"
                                   >
-                                    Click here to add first item
+                                    Nothing on the adults' menu yet. Click to add the first item.
                                   </div>
                                 ) : (
                                   <>
@@ -3317,7 +3355,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <Separator />
 
                     <div className="space-y-2">
-                      <Label>Cake</Label>
+                      <Label className="flex items-center gap-1">Cake{aiMark("cake")}</Label>
                       <div className="flex gap-2 flex-wrap">
                         {["NONE", "INTERNAL", "EXTERNAL"].map((mode) => (
                           <Button
@@ -3639,6 +3677,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 <ListTodo className="h-4 w-4 text-cyan-500" />
                 <span>Timeline</span>
                 <StatusIcon status={getSectionStatus("timeline")} />
+                {aiSectionMark("timeline")}
                 <Badge variant="secondary" className="ml-2 text-xs">{beoData?.timeline?.length || 0} steps</Badge>
               </div>
             </AccordionTrigger>
@@ -3769,16 +3808,6 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 </div>
               )}
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {/* SCRUM-815: what an approval saved, and that this is the rest of the same fill. */}
-                {aiFillAfterApproval && (
-                  <div
-                    className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-300"
-                    data-testid="text-ai-fill-after-approval"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                    <span>{`Saved: ${APPROVAL_WRITES}. Below is what the same message says of the rest: load it into the editor, then Save.`}</span>
-                  </div>
-                )}
                 {/* SCRUM-660: the inbox message Create BEO's AI Fill read, to check before loading it. */}
                 {aiFillSource && (
                   <div className="border rounded-lg p-3 space-y-1.5" data-testid="ai-fill-inbox-source">
@@ -4025,19 +4054,18 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         pending={aiReview}
         bookedDate={eventData.eventDate || null}
         bookedCakeMode={cakeMode}
+        held={reviewHeld()}
         onClose={() => setAiReview(null)}
         onFallback={(pending) => {
           setAiReview(null);
           openAiFillPreview(pending.fill, pending.source);
         }}
-        onApproved={(rest, pending) => {
+        onApproved={(marks) => {
+          // SCRUM-827: the one pass wrote everything; the form reads it back, wears each
+          // field's mark, and opens the sections the chat filled. Nothing opens after this.
           setAiReview(null);
-          // What the approval does not write opens in the preview of before, with its own
-          // rules (the team ticked to assign); Final Message to Parent is already written.
-          if (rest) {
-            openAiFillPreview(rest, pending.source ? { ...pending.source, fillsFinalMessage: false } : null);
-            setAiFillAfterApproval(true);
-          }
+          setAiMarks(marks);
+          setExpandedSections((prev) => [...new Set([...prev, ...approvedSectionsOf(marks)])]);
         }}
       />
 

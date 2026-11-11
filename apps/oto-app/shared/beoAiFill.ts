@@ -22,14 +22,31 @@ import { z } from "zod";
  *     message's own words), every field with its source.
  *   - `BeoAiApproveBodySchema` — what "Approve and create" sends: the BEO as
  *     the reviewer left it. The server checks every id again.
+ *
+ * SCRUM-827 (11 November 2026): ONE pass. The proposal carries the rest of
+ * the BEO too (`BeoAiDetails`: the title from the app's own rule, the
+ * ruling's booking name, location, setup plan and POS box, the chat's
+ * requests and timed steps with their lines), the approval body takes it,
+ * and the second preview that used to open after the approval is gone. A
+ * value's origin may now be the park's default or a template (`BeoAiOrigin`)
+ * beside the team's and the family's lines; "from the chat" is the chip a
+ * filled section wears on the form.
  */
 
 /** Who said it: the team (the ruling confirmation or another team line), or the family. */
 export type BeoAiSource = "team" | "family";
 
+/**
+ * SCRUM-827: where a value the chat did not give came from — the park's own
+ * rule ("default": the event's name from the child and the date, as the app
+ * names events), or a template of the park's ("template"). Never written on
+ * a value the chat gave: a chat value is the team's or the family's line.
+ */
+export type BeoAiOrigin = BeoAiSource | "default" | "template";
+
 /** Where a proposed value came from: who, when (the message's time), and which line of the conversation. */
 export interface BeoAiFrom {
-  source: BeoAiSource;
+  source: BeoAiOrigin;
   at: string | null;
   line: number | null;
 }
@@ -182,6 +199,72 @@ export interface BeoAiProposal {
   /** SCRUM-787: `mode` null is a cake the chat times or describes without saying who brings it ("not said"). */
   cake: { mode: BeoAiCakeMode | null; notes: string | null; time: string | null; from: BeoAiFrom } | null;
   deposit: { amount: number; paid: boolean; date: string | null; from: BeoAiFrom } | null;
+  /** SCRUM-827: the rest of the BEO, proposed in the same pass. */
+  details: BeoAiDetails;
+}
+
+/** SCRUM-827: a line of the chat that is a request of the family's or the team's, by the field it goes to. */
+export const BEO_AI_REQUEST_KINDS = ["special_request", "decoration", "activity"] as const;
+export type BeoAiRequestKind = (typeof BEO_AI_REQUEST_KINDS)[number];
+
+/**
+ * SCRUM-827 — THE REST OF THE BEO, PROPOSED IN THE SAME PASS. Until now the
+ * review proposed the catalogue sections and the counts, and the fields below
+ * opened in a second preview after the approval. Now every one is proposed
+ * here, each with where it came from:
+ *   - the title: the app's own rule for naming a party (the child and the
+ *     age, as Book Date and the Events form name it) — the park's default,
+ *     never "from the chat";
+ *   - the booking name, the location, the setup plan's ready-by and who, the
+ *     POS box's name, notes and line items: the team's confirmation (the
+ *     ruling message), read as SCRUM-660 read it;
+ *   - the requests (special requests, decoration wishes, activities) and the
+ *     timeline's steps: the chat's own lines, each with its line's author,
+ *     the latest line winning where one is repeated (SCRUM-826's rule).
+ * A value the model merely carried forward from the form is not proposed: the
+ * BEO holds it already, and it is nobody's line.
+ */
+export interface BeoAiDetails {
+  title: BeoAiSourced<string> | null;
+  bookingName: BeoAiSourced<string> | null;
+  locationText: BeoAiSourced<string> | null;
+  requests: Array<{ kind: BeoAiRequestKind; text: string; from: BeoAiFrom }>;
+  setup: {
+    readyBy: BeoAiSourced<string> | null;
+    responsible: BeoAiSourced<string> | null;
+    tasks: Array<{ itemLabel: string; notes: string | null; from: BeoAiFrom }>;
+  };
+  pos: {
+    name: BeoAiSourced<string> | null;
+    notes: BeoAiSourced<string> | null;
+    items: Array<{ description: string; type: "included" | "extra"; from: BeoAiFrom }>;
+  };
+  timeline: Array<{ time: string; label: string; from: BeoAiFrom }>;
+}
+
+/** No details at all: the shape every proposal starts from. */
+export const emptyBeoAiDetails = (): BeoAiDetails => ({
+  title: null,
+  bookingName: null,
+  locationText: null,
+  requests: [],
+  setup: { readyBy: null, responsible: null, tasks: [] },
+  pos: { name: null, notes: null, items: [] },
+  timeline: [],
+});
+
+/**
+ * SCRUM-827: the party's name as the app names one — "Mali's 6th Birthday",
+ * "Mali's Birthday" — the rule the inbox's Book Date and the Events form
+ * share. Null with no child's name: nothing is proposed, never a made-up name.
+ */
+export function beoEventTitleOf(childName: string | null | undefined, kidTurningAge: number | null | undefined): string | null {
+  const child = childName?.trim();
+  if (!child) return null;
+  const n = typeof kidTurningAge === "number" && Number.isInteger(kidTurningAge) && kidTurningAge >= 1 ? kidTurningAge : null;
+  if (n === null) return `${child}'s Birthday`;
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${child}'s ${n}${suffix} Birthday`;
 }
 
 /** A set menu's choices as the parent link records them: each group's chosen options. */
@@ -235,8 +318,14 @@ const calendarDay = z
 const text = (max: number) => z.string().trim().min(1).max(max);
 const qty = z.number().int().min(1).max(1000);
 
-/** Who a value is from, for the activity row: the chat's team or family, or the reviewer who changed it. */
-export const BEO_AI_RECORDED_SOURCES = ["team", "family", "staff"] as const;
+/**
+ * Who a value is from, for the activity row: the chat's team or family, the
+ * park's default or a template (SCRUM-827), or the reviewer who changed it.
+ */
+export const BEO_AI_RECORDED_SOURCES = ["team", "family", "default", "template", "staff"] as const;
+
+/** SCRUM-827: a team member the review proposes to assign, as the park's roster names them. */
+const teamMember = z.object({ kind: z.enum(["employee", "department"]), id: z.string().trim().min(1).max(64), label: text(200) }).strict();
 
 export const BeoAiApproveBodySchema = z
   .object({
@@ -317,6 +406,38 @@ export const BeoAiApproveBodySchema = z
       })
       .strict()
       .nullable(),
+    /**
+     * SCRUM-827: the rest of the BEO, as the reviewer left it, written in the
+     * same pass: a field left out is not written (the BEO keeps its own);
+     * tasks, line items and timeline steps are added to what the BEO holds.
+     */
+    details: z
+      .object({
+        title: text(300).optional(),
+        bookingName: text(200).optional(),
+        locationText: text(300).optional(),
+        specialRequests: text(4000).optional(),
+        activities: text(4000).optional(),
+        decoration: text(4000).optional(),
+        setupReadyBy: z.string().regex(TIME).optional(),
+        setupResponsible: text(200).optional(),
+        setupTasks: z.array(z.object({ itemLabel: text(300), notes: z.string().max(1000).nullable() }).strict()).max(50).optional(),
+        posName: text(300).optional(),
+        posNotes: text(4000).optional(),
+        posItems: z.array(z.object({ description: text(500), type: z.enum(["included", "extra"]) }).strict()).max(50).optional(),
+        timeline: z.array(z.object({ time: z.string().regex(TIME), label: text(300) }).strict()).max(60).optional(),
+        /** The park's people the reviewer ticked to assign; each checked against the park group's roster again. */
+        team: z
+          .object({
+            partyHost: teamMember.optional(),
+            entertainmentHost: teamMember.optional(),
+            setupResponsible: teamMember.optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /** Where each approved field came from: the chat's team or family, or "staff" where the reviewer changed it. */
     sources: z
       .array(
@@ -341,9 +462,23 @@ export function beoAiMatchLabel(said: string, matchedName: string | null, code: 
 }
 
 /** The small mark beside a filled field. */
-export function beoAiSourceLabel(source: BeoAiSource | "staff"): string {
-  return source === "team" ? "from the team" : source === "family" ? "from the family" : "changed here";
+export function beoAiSourceLabel(source: BeoAiOrigin | "staff"): string {
+  switch (source) {
+    case "team":
+      return "from the team";
+    case "family":
+      return "from the family";
+    case "default":
+      return "the park's default";
+    case "template":
+      return "from a template";
+    default:
+      return "changed here";
+  }
 }
+
+/** SCRUM-827: the one chip a section wears once the chat filled it. */
+export const BEO_AI_FROM_THE_CHAT = "from the chat";
 
 /** Whole baht from satang, for showing the catalogue's price beside the chat's. */
 export function bahtOfSatang(satang: number | null | undefined): number | null {

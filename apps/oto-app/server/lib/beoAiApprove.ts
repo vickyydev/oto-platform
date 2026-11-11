@@ -6,9 +6,14 @@ import {
   beoEventBilling,
   beoKitchenPlans,
   beoPackageSnapshots,
+  beoPartyHostAssignments,
   beoSetMenuSelections,
+  beoSetupPlans,
+  beoTimelineItems,
   birthdayPackageTemplates,
   coreEvents,
+  departments,
+  employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
 import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
@@ -47,6 +52,14 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  *     itself reads it (Party Details' prepayment and its date: the editor,
  *     the day-of view, the view-only page and the PDF) and, received, the
  *     event's own Prepayment the till reads (SCRUM-813's one deposit);
+ *   - SCRUM-827, the rest of the BEO in the same pass (`body.details`): the
+ *     event's title, booking name, location, special requests, activities
+ *     and decoration; the setup plan's ready-by, who and tasks; the POS box's
+ *     name, notes and line items (Party Details); the chat's timed steps as
+ *     the timeline's own lines; the party host, the entertainment host and
+ *     the setup's who, where the reviewer ticked a person of the park. A
+ *     text field is written as the reviewer left it; tasks, line items and
+ *     timeline steps are added to what the BEO holds, never replacing it;
  *   - one `beo_ai_fill` activity row naming the sources and the catalogue
  *     items matched (never the chat's words).
  * A section the reviewed BEO says nothing about is left as it is; one it
@@ -77,6 +90,29 @@ const minutes = (t: string) => {
   const [h, m] = t.split(":").map(Number);
   return h! * 60 + m!;
 };
+/** The same words, case and spacing aside (SCRUM-827: a task, a line item or a step the BEO already holds). */
+const fold = (s: unknown) => (typeof s === "string" ? s.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") : "");
+
+/** SCRUM-827: the people the reviewer ticked, as the park group's roster holds them; null names what is not there. */
+type TeamRow = { kind: "employee" | "department"; id: string; label: string };
+type ApprovedTeam = NonNullable<NonNullable<BeoAiApproveBody["details"]>["team"]>;
+async function checkTeam(db: DbExecutor, tenantId: string, team: ApprovedTeam | undefined): Promise<string | null> {
+  const members = Object.values(team ?? {}).filter((m): m is TeamRow => !!m);
+  for (const m of members) {
+    if (m.kind === "employee") {
+      const [row] = await db.select({ id: employees.id }).from(employees)
+        .where(and(eq(employees.id, m.id), eq(employees.tenantId, tenantId), eq(employees.employmentState, "ACTIVE")));
+      if (!row) return "A team member is not one of this park group's people. Choose them again in the review.";
+    } else {
+      const [row] = await db.select({ id: departments.id }).from(departments)
+        .where(and(eq(departments.id, m.id), eq(departments.tenantId, tenantId), eq(departments.isActive, true)));
+      if (!row) return "A department is not one of this park group's. Choose it again in the review.";
+    }
+  }
+  if (team?.partyHost && team.partyHost.kind !== "employee") return "The party host is a person, not a department.";
+  if (team?.entertainmentHost && team.entertainmentHost.kind !== "employee") return "The entertainment host is a person, not a department.";
+  return null;
+}
 
 /** Why the reviewed BEO cannot be written as it is, in one line; null when it can. */
 export function refuseApproval(body: BeoAiApproveBody, catalogue: BeoCatalogue, current: { startTime: string | null; endTime: string | null }): string | null {
@@ -175,6 +211,9 @@ export async function approveBeoAiFill(
     .where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
   const refused = refuseApproval(body, catalogue, { startTime: current?.startTime ?? null, endTime: current?.endTime ?? null });
   if (refused) return { ok: false, status: 400, message: refused };
+  // SCRUM-827: the people ticked for the team are the park group's, checked again here.
+  const teamRefused = await checkTeam(db, event.tenantId, body.details?.team);
+  if (teamRefused) return { ok: false, status: 400, message: teamRefused };
 
   const food = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
   const written: Record<string, number | boolean> = {};
@@ -193,10 +232,17 @@ export async function approveBeoAiFill(
     if (body.event.internalStaffNotes && !(ev?.internalStaffNotes ?? "").trim()) {
       eventUpdates.internalStaffNotes = body.event.internalStaffNotes;
     }
+    // SCRUM-827: the rest of the event's own fields, as the reviewer left them.
+    const details = body.details;
+    for (const key of ["title", "bookingName", "locationText", "activities", "decoration"] as const) {
+      const v = details?.[key];
+      if (v !== undefined) (eventUpdates as Record<string, unknown>)[key] = v;
+    }
+    const requests = details?.specialRequests !== undefined ? details.specialRequests : (ev?.specialRequests ?? "").trim();
+    if (details?.specialRequests !== undefined) eventUpdates.specialRequests = requests;
     if (body.otherLines.length > 0) {
-      const had = (ev?.specialRequests ?? "").trim();
-      const add = body.otherLines.filter((l) => !had.includes(l));
-      if (add.length > 0) eventUpdates.specialRequests = [had, ...add].filter(Boolean).join("\n");
+      const add = body.otherLines.filter((l) => !requests.includes(l));
+      if (add.length > 0) eventUpdates.specialRequests = [requests, ...add].filter(Boolean).join("\n");
       written.otherLines = add.length;
     }
     if (Object.keys(eventUpdates).length > 0) {
@@ -386,6 +432,96 @@ export async function approveBeoAiFill(
         }
       }
       written.entertainment = body.entertainment.length;
+    }
+
+    // SCRUM-827: the setup plan — ready-by, who (a person or a department of the park when
+    // ticked, else the words as typed), and the tasks added to the ones the BEO holds.
+    const team = details?.team;
+    const who = team?.setupResponsible;
+    if (details?.setupReadyBy !== undefined || details?.setupResponsible !== undefined || who || (details?.setupTasks?.length ?? 0) > 0) {
+      const [plan] = await tx.select().from(beoSetupPlans).where(eq(beoSetupPlans.eventId, event.id));
+      const stored = plan?.setupTasks;
+      const was = stored && typeof stored === "object" && !Array.isArray(stored) ? asCollection(stored) : {};
+      const held = Array.isArray(stored) ? asLines(stored) : asLines(was.simplifiedTasks);
+      const added = (details?.setupTasks ?? [])
+        .filter((t) => !held.some((h) => fold(h.itemLabel) === fold(t.itemLabel)))
+        .map((t) => ({ id: `task_${randomUUID()}`, itemLabel: t.itemLabel, notes: t.notes ?? "" }));
+      const setupTasks = {
+        ...was,
+        readyBy: details?.setupReadyBy ?? (typeof was.readyBy === "string" ? was.readyBy : ""),
+        responsible: who ? who.label : (details?.setupResponsible ?? (typeof was.responsible === "string" ? was.responsible : "")),
+        responsibleId: who ? who.id : details?.setupResponsible !== undefined ? null : (was.responsibleId ?? null),
+        responsibleType: who ? who.kind : details?.setupResponsible !== undefined ? null : (was.responsibleType ?? null),
+        simplifiedTasks: [...held, ...added],
+      };
+      const values = { setupRequired: true, setupTasks, updatedAt: input.now };
+      if (plan) await tx.update(beoSetupPlans).set(values).where(eq(beoSetupPlans.id, plan.id));
+      else await tx.insert(beoSetupPlans).values({ eventId: event.id, ...values });
+      written.setup = true;
+      written.setupTasks = added.length;
+    }
+
+    // SCRUM-827: the party host and the entertainment host, where a person of the park was ticked.
+    if (team?.partyHost || team?.entertainmentHost) {
+      const [host] = await tx.select({ id: beoPartyHostAssignments.id }).from(beoPartyHostAssignments).where(eq(beoPartyHostAssignments.eventId, event.id));
+      const values = {
+        ...(team.partyHost
+          ? { assignedEmployeeId: team.partyHost.id, assignedUserId: null, assignedRoleId: null, assignmentMode: "INDIVIDUAL" as const }
+          : {}),
+        ...(team.entertainmentHost ? { backupEmployeeId: team.entertainmentHost.id, backupUserId: null } : {}),
+        updatedAt: input.now,
+      };
+      if (host) await tx.update(beoPartyHostAssignments).set(values).where(eq(beoPartyHostAssignments.id, host.id));
+      else await tx.insert(beoPartyHostAssignments).values({ eventId: event.id, ...values });
+    }
+    const teamWritten = Object.entries(team ?? {}).filter(([, m]) => m);
+    if (teamWritten.length > 0) {
+      written.team = teamWritten.length;
+      for (const [field, m] of teamWritten) matches.push({ kind: "team", field, memberKind: m!.kind, id: m!.id });
+    }
+
+    // SCRUM-827: the POS box (Party Details): its name and notes as left, its line items added.
+    if (details?.posName !== undefined || details?.posNotes !== undefined || (details?.posItems?.length ?? 0) > 0) {
+      const [billing] = await tx.select({ id: beoEventBilling.id, addOns: beoEventBilling.addOns }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
+      const addOns = asCollection(billing?.addOns);
+      const pos = asCollection(addOns.partyDetails);
+      const heldItems = asLines(pos.items);
+      const addedItems = (details?.posItems ?? [])
+        .filter((i) => !heldItems.some((h) => fold(h.description) === fold(i.description)))
+        .map((i) => ({ id: `pi_${randomUUID()}`, description: i.description, type: i.type, price: 0, notes: "" }));
+      const partyDetails = {
+        ...pos,
+        ...(details?.posName !== undefined ? { packageName: details.posName } : {}),
+        ...(details?.posNotes !== undefined ? { notes: details.posNotes } : {}),
+        items: [...heldItems, ...addedItems],
+      };
+      const values = { addOns: { ...addOns, partyDetails }, updatedAt: input.now };
+      if (billing) await tx.update(beoEventBilling).set(values).where(eq(beoEventBilling.id, billing.id));
+      else await tx.insert(beoEventBilling).values({ eventId: event.id, ...values });
+      written.pos = true;
+      written.posItems = addedItems.length;
+    }
+
+    // SCRUM-827: the chat's timed steps as the timeline's own lines (never twice), beside the
+    // steps the BEO generates from itself after this transaction (the auto items).
+    if ((details?.timeline?.length ?? 0) > 0) {
+      const start = body.event.startTime ?? ev?.startTime ?? null;
+      const held = await tx.select({ label: beoTimelineItems.label }).from(beoTimelineItems).where(eq(beoTimelineItems.eventId, event.id));
+      const steps = (details?.timeline ?? []).filter((t) => !held.some((h) => fold(h.label) === fold(t.label)));
+      if (start && /^\d{1,2}:\d{2}/.test(start)) {
+        let sortOrder = held.length;
+        for (const step of steps) {
+          await tx.insert(beoTimelineItems).values({
+            eventId: event.id,
+            label: step.label,
+            offsetFromStartMinutes: minutes(step.time) - minutes(start.slice(0, 5)),
+            assignedToType: "PARTY_HOST",
+            isSystemGenerated: false,
+            sortOrder: ++sortOrder,
+          });
+        }
+        written.timelineLines = steps.length;
+      }
     }
 
     // The deposit, where the chat names one. Received, it is the party's one

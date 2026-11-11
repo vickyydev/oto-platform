@@ -9,16 +9,21 @@ import {
 import {
   BEO_AI_CAKE_MODES,
   BEO_AI_MENUS,
+  BEO_AI_REQUEST_KINDS,
+  beoEventTitleOf,
+  emptyBeoAiDetails,
   laterLineWins,
   type BeoAiCatalogueView,
+  type BeoAiDetails,
   type BeoAiFood,
   type BeoAiFrom,
   type BeoAiMenu,
   type BeoAiProposal,
+  type BeoAiRequestKind,
   type BeoAiSetMenuItem,
   type BeoAiSource,
 } from "@shared/beoAiFill";
-import { BeoFillSchema, parkClockAt } from "./aiFill";
+import { BeoFillSchema, parkClockAt, type BeoFill } from "./aiFill";
 import type { InboxTranscriptLine } from "./inboxConfirmation";
 import type { DbExecutor } from "./packageSnapshot";
 
@@ -357,7 +362,9 @@ export const BEO_CATALOGUE_OUTPUT_FORMAT = `"catalogue": {
     "endTime": { "value": "HH:MM", "line": 0, "source": "team | family" }
   },
   "cake": { "mode": "INTERNAL | EXTERNAL | NONE | NOT_SAID", "notes": "the conversation's words", "time": "HH:MM", "line": 0, "source": "team | family" },
-  "deposit": { "amount": 0, "paid": true, "date": "YYYY-MM-DD", "line": 0, "source": "team | family" }
+  "deposit": { "amount": 0, "paid": true, "date": "YYYY-MM-DD", "line": 0, "source": "team | family" },
+  "requests": [ { "kind": "special_request | decoration | activity", "text": "the conversation's words", "line": 0, "source": "team | family" } ],
+  "timeline": [ { "time": "HH:MM", "label": "the conversation's words for what happens then", "line": 0, "source": "team | family" } ]
 }`;
 
 /**
@@ -385,6 +392,8 @@ Matching to the catalogue:
 - Every entry carries "line": the number of the conversation line it comes from (for what the team confirmed, the team's line), and "source": "team" when that line is the team's, "family" when it is the family's
 - A deposit is "paid": true only when the conversation says it was received
 - The cake's "mode" is NOT_SAID when the conversation gives a cake time or cake details but does not say whether the park or the family brings the cake: never guess it
+- "requests": each wish or instruction the conversation gives beyond the catalogue, one entry each, in the conversation's own words — "special_request" for a request or a need (an allergy, a quiet corner, a surprise), "decoration" for a decoration wish (a theme, colours, balloons), "activity" for something planned that is not an entertainment line (games, a treasure hunt). A wish repeated or changed later is one entry, the later line's; a wish the team declined is left out
+- "timeline": each step the conversation gives a clock time for (the cake, a show, the food, the end), with that time as HH:MM and the conversation's words for it. Never invent a time or a step
 
 Add this key at the top level of the JSON object, leaving out any entry the conversation does not speak to:
 ${BEO_CATALOGUE_OUTPUT_FORMAT}`
@@ -479,6 +488,19 @@ const DepositAnswer = z.object({
   date: optDay,
   ...ref,
 });
+// SCRUM-827: the chat's requests and timed steps, each with its line.
+const RequestAnswer = z.object({
+  kind: z
+    .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase().replace(/[\s-]+/g, "_") : undefined), z.enum(BEO_AI_REQUEST_KINDS).optional())
+    .describe('one of "special_request", "decoration", "activity"'),
+  text: optStr(1000).describe("the conversation's own words for the wish or instruction"),
+  ...ref,
+});
+const TimelineAnswer = z.object({
+  time: optTime,
+  label: optStr(300).describe("the conversation's own words for what happens at that time"),
+  ...ref,
+});
 
 /**
  * SCRUM-816: the `catalogue` section as `resolveCatalogueAnswer` reads it,
@@ -500,6 +522,8 @@ export const BeoCatalogueAnswerShape = z
       .partial(),
     cake: CakeAnswer,
     deposit: DepositAnswer,
+    requests: z.array(RequestAnswer),
+    timeline: z.array(TimelineAnswer),
   })
   .partial();
 
@@ -568,6 +592,7 @@ export function resolveCatalogueAnswer(
     event: {},
     cake: null,
     deposit: null,
+    details: emptyBeoAiDetails(),
   };
   const other = (text: string | undefined, chatPrice: number | undefined, from: BeoAiFrom) => {
     if (text) proposal.otherLines.push({ text, chatPrice: chatPrice ?? null, from });
@@ -692,5 +717,99 @@ export function resolveCatalogueAnswer(
   if (deposit && deposit.amount !== undefined && deposit.amount > 0) {
     proposal.deposit = { amount: Math.round(deposit.amount), paid: deposit.paid === true, date: deposit.date ?? null, from: fromOf(deposit) };
   }
+
+  // SCRUM-827: the chat's requests, one entry each; the same words again are the later line's.
+  for (const r of readMany(RequestAnswer, answer.requests, 60)) {
+    if (!r.text) continue;
+    const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r) };
+    merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
+  }
+  // The chat's timed steps, one per step, in clock order.
+  for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
+    if (!t.time || !t.label) continue;
+    const entry = { time: t.time, label: t.label, from: fromOf(t) };
+    merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
+  }
+  proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));
   return proposal;
+}
+
+// --- SCRUM-827: the rest of the BEO from the form's own read ------------------------------
+
+const asRecord = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+const heldText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+/** The same words, case and spacing aside. */
+const sameText = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && fold(a) === fold(b);
+
+/**
+ * The rest of the BEO the form's own read gives (the ruling message, read
+ * alone with the form as its baseline), put on the proposal with its source:
+ * the booking name, the location, the setup plan and the POS box are the
+ * ruling's (`from`); the title is the app's own rule from the child's name the
+ * chat gave (else the form's) and the age the event holds — the park's
+ * default, never the chat's. A value equal to what the form already holds is
+ * the form's, carried forward by the model, and is not proposed. The requests
+ * and the timeline the conversation's read gave stand; what the form's read
+ * gives of them (its special requests, decoration, activities and timeline)
+ * joins only where the conversation's read holds no such words, so a park
+ * group whose saved format never asked for them still fills them, and a
+ * sentence the ruling repeats is not proposed twice.
+ */
+export function detailsFromFill(
+  proposal: BeoAiProposal,
+  fill: BeoFill,
+  input: { existingData: unknown; from: BeoAiFrom; event: { childName?: string | null; kidTurningAge?: number | null } | null },
+): BeoAiDetails {
+  const existing = asRecord(input.existingData);
+  const formEvent = asRecord(existing.event);
+  const formSetup = asRecord(existing.setupPlan);
+  const formPos = asRecord(existing.partyDetails);
+  const from = input.from;
+  const details: BeoAiDetails = { ...proposal.details, setup: { ...proposal.details.setup }, pos: { ...proposal.details.pos } };
+  const sourced = (value: string | undefined, held: unknown) => (value && !sameText(value, heldText(held)) ? { value, from } : null);
+
+  const child = proposal.event.childName?.value ?? fill.event?.childName ?? heldText(formEvent.childName) ?? input.event?.childName ?? null;
+  const title = beoEventTitleOf(child, input.event?.kidTurningAge ?? null);
+  details.title = title ? { value: title, from: { source: "default", at: null, line: null } } : null;
+  details.bookingName = sourced(fill.event?.bookingName, formEvent.bookingName);
+  details.locationText = sourced(fill.event?.locationText, formEvent.locationText);
+  details.setup.readyBy = sourced(fill.setupPlan?.readyBy, formSetup.readyBy);
+  details.setup.responsible = sourced(fill.setupPlan?.responsible, formSetup.responsible);
+  details.pos.name = sourced(fill.partyDetails?.packageName, formPos.packageName);
+  details.pos.notes = sourced(fill.partyDetails?.notes, formPos.notes);
+
+  const heldTasks = (Array.isArray(formSetup.simplifiedTasks) ? formSetup.simplifiedTasks : []).map((t) => heldText(asRecord(t).itemLabel));
+  details.setup.tasks = [...proposal.details.setup.tasks];
+  for (const t of fill.setupPlan?.simplifiedTasks ?? []) {
+    if (heldTasks.some((h) => sameText(h, t.itemLabel)) || details.setup.tasks.some((x) => sameText(x.itemLabel, t.itemLabel))) continue;
+    details.setup.tasks.push({ itemLabel: t.itemLabel, notes: t.notes ?? null, from });
+  }
+  const heldItems = (Array.isArray(formPos.items) ? formPos.items : []).map((i) => heldText(asRecord(i).description));
+  details.pos.items = [...proposal.details.pos.items];
+  for (const i of fill.partyDetails?.items ?? []) {
+    if (heldItems.some((h) => sameText(h, i.description)) || details.pos.items.some((x) => sameText(x.description, i.description))) continue;
+    details.pos.items.push({ description: i.description, type: i.type === "extra" ? "extra" : "included", from });
+  }
+
+  // The ruling's own request fields, only where the conversation's read holds no such words.
+  const covered = (text: string) => details.requests.some((r) => fold(r.text).includes(fold(text)) || fold(text).includes(fold(r.text)));
+  details.requests = [...proposal.details.requests];
+  for (const [kind, value, held] of [
+    ["special_request", fill.event?.specialRequests, formEvent.specialRequests],
+    ["decoration", fill.event?.decoration, formEvent.decoration],
+    ["activity", fill.event?.activities, formEvent.activities],
+  ] as const) {
+    if (!value || sameText(value, heldText(held)) || covered(value)) continue;
+    details.requests.push({ kind, text: value, from });
+  }
+  details.timeline = [...proposal.details.timeline];
+  if (details.timeline.length === 0) {
+    for (const t of fill.timeline ?? []) {
+      if (details.timeline.some((x) => sameText(x.label, t.label))) continue;
+      details.timeline.push({ time: t.time, label: t.label, from });
+    }
+    details.timeline.sort((a, b) => a.time.localeCompare(b.time));
+  }
+  return details;
 }

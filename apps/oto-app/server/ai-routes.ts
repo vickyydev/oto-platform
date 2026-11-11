@@ -36,6 +36,7 @@ import {
   CATALOGUE_ONLY_SHAPE,
   beoCatalogueSystemBlock,
   catalogueIsEmpty,
+  detailsFromFill,
   emptyCatalogue,
   loadBeoCatalogue,
   renderTranscript,
@@ -79,6 +80,9 @@ export interface BeoFillEvent {
   branchId: string | null;
   title: string;
   inboxConversationId: string | null;
+  /** SCRUM-827: what the event already holds of the child, for the party's name (the app's own rule). */
+  childName?: string | null;
+  kidTurningAge?: number | null;
 }
 
 /** What the routes reach outside themselves; a check replaces any of them. */
@@ -186,6 +190,8 @@ export const defaultAiRouteDeps: AiRouteDeps = {
         branchId: coreEvents.branchId,
         title: coreEvents.title,
         inboxConversationId: coreEvents.inboxConversationId,
+        childName: coreEvents.childName,
+        kidTurningAge: coreEvents.kidTurningAge,
       })
       .from(coreEvents)
       .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, tenantId)));
@@ -228,6 +234,11 @@ const catalogueCounts = (p: BeoAiProposal) => ({
   notInMenu: p.menuLines.filter((l) => l.notInMenu).length,
   entertainment: p.entertainment.filter((e) => !e.notInCatalogue).length,
   notInCatalogue: p.entertainment.filter((e) => e.notInCatalogue).length + p.otherLines.length,
+  // SCRUM-827: the rest of the BEO proposed in the same pass, as counts.
+  requests: p.details.requests.length,
+  timeline: p.details.timeline.length,
+  details: [p.details.title, p.details.bookingName, p.details.locationText, p.details.setup.readyBy, p.details.setup.responsible, p.details.pos.name, p.details.pos.notes].filter(Boolean).length
+    + p.details.setup.tasks.length + p.details.pos.items.length,
 });
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -305,6 +316,15 @@ export async function runBeoFill(
     run.value = fill;
     if (!conversation) proposal = resolveCatalogueAnswer(fromForm, catalogue, [], input.fallbackFrom);
     else if (catalogueRun?.ok) proposal = resolveCatalogueAnswer(catalogueRun.value.catalogue, catalogue, conversation.refs);
+    // SCRUM-827: the rest of the BEO rides on the same proposal — the ruling's fields from the
+    // form's read, the title from the app's own rule — so the review opens with everything at once.
+    if (proposal) {
+      proposal.details = detailsFromFill(proposal, fill, {
+        existingData: input.existingData,
+        from: input.fallbackFrom ?? { source: "team", at: null, line: null },
+        event: input.event,
+      });
+    }
   }
   if (catalogueRun && !catalogueRun.ok) {
     // The form's read stands: the review is the free-text preview of before.
@@ -557,6 +577,13 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
    * answer diffed against the form by the client and nothing applied but what
    * the person accepts. The activity row names the press; `chat` in the answer
    * marks the chat's newest line.
+   *
+   * SCRUM-827 — with a catalogue, the review's proposal carries the REST of
+   * the BEO too (`proposal.details`: the title from the app's own rule, the
+   * ruling's booking name, location, setup plan and POS box, the chat's
+   * requests and timed steps with their lines), so the review opens with
+   * everything in one pass and "Approve and create" writes it all at once;
+   * nothing opens after it.
    */
   app.post("/api/events/:eventId/beo/ai-fill/inbox", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     const refuse = (reason: InboxFillRefusal, eventId: string | null) => {
@@ -663,6 +690,10 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
    * deposit, and one activity row with the sources and the catalogue items
    * matched. A manager's write, on an event the caller may open, as the BEO's
    * own Save is; every id is checked again against the park's catalogue.
+   * SCRUM-827: the rest of the BEO (`body.details`) is written in the same
+   * transaction — the event's title and text fields, the setup plan, the POS
+   * box, the timeline's own lines, the team ticked — so one press is the one
+   * Save, and the ticked people are checked against the park group's roster.
    */
   app.post("/api/events/:eventId/beo/ai-fill/approve", requireAuth, requireManager, async (req: Request, res: Response, next: NextFunction) => {
     try {

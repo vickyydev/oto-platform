@@ -36,6 +36,14 @@
 //     Load into Editor applies the time and notes and leaves the form's cake
 //     type; the catalogue review proposes the cake with no type and the
 //     approval sends none; an empty Party Details box is not shown.
+//   - SCRUM-827: the rest of the BEO is proposed in the same pass, each
+//     value with its source — the conversation's requests and timed steps
+//     by their lines (the later line winning a repeated wish), the ruling's
+//     booking name, location, setup plan and POS box as the team's, the title
+//     from the app's own naming rule as the park's default, never the model's
+//     own title; a value the form already holds is not proposed; the review
+//     keeps what the form holds and offers the chat's beside it, sends only
+//     what differs, and the approval body carries it with its sources.
 //   - SCRUM-829: the adults eat what the kids eat unless the message says
 //     otherwise, whatever the model answers: an adults' list that only names
 //     the kids' dishes again (in the adults' headcount, noted "adults eat the
@@ -73,13 +81,24 @@ import {
   BEO_FILL_WITH_CATALOGUE_SHAPE,
   CATALOGUE_ONLY_SHAPE,
   beoCatalogueSystemBlock,
+  detailsFromFill,
   resolveCatalogueAnswer,
   type BeoCatalogue,
 } from "../server/lib/beoCatalogueFill";
 import { aiFillDateLine, dayLabel } from "../client/src/lib/beo-ai-date";
 import { aiFillCakeApply, aiFillCakeLine, aiFillCakeNotSaidNote, aiFillPartyDetailsShown, aiReviewCakeNotSaidNote, cakeUnderNoCakeNote } from "../client/src/lib/beo-ai-preview";
-import { approveBodyOf, initialReviewState } from "../client/src/lib/beo-ai-review";
-import { BeoAiApproveBodySchema } from "../shared/beoAiFill";
+import {
+  NOTHING_HELD,
+  approveBodyOf,
+  approvedMarksOf,
+  approvedSectionsOf,
+  chatOffered,
+  editedText,
+  initialReviewState,
+  sourceOf,
+  useChatText,
+} from "../client/src/lib/beo-ai-review";
+import { BeoAiApproveBodySchema, beoAiSourceLabel, beoEventTitleOf } from "../shared/beoAiFill";
 import { sameKitchenDishNames } from "../shared/kitchenAdults";
 
 const results: Record<string, boolean> = {};
@@ -763,6 +782,218 @@ try {
     assert.equal(BeoAiApproveBodySchema.shape.cake.safeParse({ mode: null, notes: null, time: "15:30" }).success, true);
   });
 
+  await check("theRestOfTheBeoIsProposedWithItsSource", () => {
+    // SCRUM-827: the conversation's requests and timed steps, each its line's author; the later line wins a repeated wish.
+    const refs = [1, 2, 3].map((line) => ({ line, id: `l${line}`, source: (line === 2 ? "team" : "family") as "team" | "family", at: `2026-11-0${line}T07:00:00.000Z`, ruling: line === 2 }));
+    const proposal = resolveCatalogueAnswer(
+      {
+        requests: [
+          { kind: "decoration", text: "unicorn theme", line: 1, source: "team" }, // the model calls it the team's: the line is the family's
+          { kind: "special_request", text: "no nuts", line: 2 },
+          { kind: "Special Request", text: "No nuts", line: 3 }, // the same wish again: the later line's
+          { kind: "activity", text: "treasure hunt", line: 3 },
+          { text: "quiet corner", line: 1 }, // no kind: a special request
+          { kind: "decoration", line: 2 }, // no words: dropped
+        ],
+        timeline: [
+          { time: "16.00", label: "cake", line: 2 },
+          { time: "15:00", label: "the show", line: 1 },
+          { time: "16:00", label: "Cake", line: 3 }, // the same step: the later line's
+          { label: "no time", line: 1 }, // dropped
+        ],
+      },
+      CATALOGUE,
+      refs,
+    );
+    const at = (line: number) => refs[line - 1]!.at;
+    assert.deepEqual(proposal.details.requests, [
+      { kind: "decoration", text: "unicorn theme", from: { source: "family", at: at(1), line: 1 } },
+      { kind: "special_request", text: "No nuts", from: { source: "family", at: at(3), line: 3 } },
+      { kind: "activity", text: "treasure hunt", from: { source: "family", at: at(3), line: 3 } },
+      { kind: "special_request", text: "quiet corner", from: { source: "family", at: at(1), line: 1 } },
+    ]);
+    assert.deepEqual(proposal.details.timeline, [
+      { time: "15:00", label: "the show", from: { source: "family", at: at(1), line: 1 } },
+      { time: "16:00", label: "Cake", from: { source: "family", at: at(3), line: 3 } },
+    ], "in clock order, the repeated step the later line's");
+    // The prompt asks for them, and the fields the app requires name them (SCRUM-816).
+    const block = beoCatalogueSystemBlock(CATALOGUE, { conversation: true });
+    assert.ok(block.includes('"requests": [ { "kind": "special_request | decoration | activity"') && block.includes('"timeline": [ { "time": "HH:MM"'));
+    assert.ok(block.includes("Never invent a time or a step") && block.includes("a wish the team declined is left out"));
+    const required = requiredFieldsBlock(CATALOGUE_ONLY_SHAPE);
+    assert.ok(required.includes('\n- catalogue.requests[].kind: one of "special_request", "decoration", "activity"'), required);
+    assert.ok(required.includes("\n- catalogue.timeline[].time: a time as HH:MM on the 24-hour clock"));
+    assert.ok(requiredFieldsBlock(BEO_FILL_WITH_CATALOGUE_SHAPE).includes("\n- catalogue.requests[].text: "));
+
+    // The rest from the form's own read: the ruling's, but what the form already holds; the title the app's rule.
+    const ruling = { source: "team" as const, at: at(2), line: 2 };
+    const fill = BeoFillSchema.parse({
+      event: { title: "Model's own title", childName: "Mali", bookingName: "Khun Noi", locationText: "Jungle Room", specialRequests: "no nuts please", decoration: "balloons", activities: "treasure hunt and games" },
+      setupPlan: { readyBy: "13:30", responsible: "Ying", simplifiedTasks: [{ itemLabel: "Balloon arch" }, { itemLabel: "Kids' table", notes: "12 seats" }] },
+      partyDetails: { packageName: "Floresta", notes: "pay the rest on the day", items: [{ description: "Kids' table", type: "included" }, { description: "Extra hour", type: "extra" }] },
+      timeline: [{ time: "17:00", label: "the end" }],
+    });
+    const existing = {
+      event: { childName: "Mali", bookingName: "Khun Noi", locationText: "" },
+      setupPlan: { readyBy: "", responsible: "", simplifiedTasks: [{ itemLabel: "balloon arch" }] },
+      partyDetails: { packageName: "Floresta", notes: "", items: [] },
+    };
+    const d = detailsFromFill(proposal, fill, { existingData: existing, from: ruling, event: { childName: null, kidTurningAge: 6 } });
+    assert.deepEqual(d.title, { value: "Mali's 6th Birthday", from: { source: "default", at: null, line: null } }, "the title: the app's rule, the park's default, never the model's");
+    assert.equal(d.bookingName, null, "carried forward from the form: not proposed");
+    assert.deepEqual(d.locationText, { value: "Jungle Room", from: ruling });
+    assert.deepEqual(d.setup.readyBy, { value: "13:30", from: ruling });
+    assert.deepEqual(d.setup.responsible, { value: "Ying", from: ruling });
+    assert.deepEqual(d.setup.tasks, [{ itemLabel: "Kids' table", notes: "12 seats", from: ruling }], "a task the form holds (case aside) is not proposed again");
+    assert.equal(d.pos.name, null, "the POS name the form holds");
+    assert.deepEqual(d.pos.notes, { value: "pay the rest on the day", from: ruling });
+    assert.deepEqual(d.pos.items.map((i) => [i.description, i.type, i.from]), [["Kids' table", "included", ruling], ["Extra hour", "extra", ruling]]);
+    assert.deepEqual(
+      d.requests.map((r) => [r.kind, r.text, r.from.source]),
+      [["decoration", "unicorn theme", "family"], ["special_request", "No nuts", "family"], ["activity", "treasure hunt", "family"], ["special_request", "quiet corner", "family"], ["decoration", "balloons", "team"]],
+      "the ruling's own words join only where the conversation holds no such words",
+    );
+    assert.deepEqual(d.timeline.map((t) => [t.time, t.label]), [["15:00", "the show"], ["16:00", "Cake"]], "the conversation's steps stand; the ruling's are not added beside them");
+    // No conversation read (the ruling alone): the ruling's requests and steps, all the team's; the title without an age.
+    const bare = detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), fill, { existingData: {}, from: ruling, event: null });
+    assert.deepEqual(bare.title, { value: "Mali's Birthday", from: { source: "default", at: null, line: null } });
+    assert.deepEqual(bare.bookingName, { value: "Khun Noi", from: ruling });
+    assert.deepEqual(bare.requests.map((r) => [r.kind, r.text, r.from]), [["special_request", "no nuts please", ruling], ["decoration", "balloons", ruling], ["activity", "treasure hunt and games", ruling]]);
+    assert.deepEqual(bare.timeline, [{ time: "17:00", label: "the end", from: ruling }]);
+    assert.equal(bare.setup.tasks.length, 2);
+    assert.equal(detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), BeoFillSchema.parse({}), { existingData: {}, from: ruling, event: { childName: "  ", kidTurningAge: 5 } }).title, null, "no child's name: no title, never a made-up one");
+    // The naming rule, as Book Date and the Events form name a party.
+    assert.equal(beoEventTitleOf("Mali", 1), "Mali's 1st Birthday");
+    assert.equal(beoEventTitleOf("Mali", 2), "Mali's 2nd Birthday");
+    assert.equal(beoEventTitleOf("Mali", 3), "Mali's 3rd Birthday");
+    assert.equal(beoEventTitleOf("Mali", 11), "Mali's 11th Birthday");
+    assert.equal(beoEventTitleOf("Mali", 12), "Mali's 12th Birthday");
+    assert.equal(beoEventTitleOf("Mali", 13), "Mali's 13th Birthday");
+    assert.equal(beoEventTitleOf("Mali", 21), "Mali's 21st Birthday");
+    assert.equal(beoEventTitleOf("Mali", 0), "Mali's Birthday");
+    assert.equal(beoEventTitleOf("Mali", null), "Mali's Birthday");
+    assert.equal(beoEventTitleOf(null, 6), null);
+    // The marks' words.
+    assert.equal(beoAiSourceLabel("default"), "the park's default");
+    assert.equal(beoAiSourceLabel("template"), "from a template");
+    assert.equal(beoAiSourceLabel("team"), "from the team");
+  });
+
+  await check("theReviewKeepsWhatIsHeldAndSendsTheRest", () => {
+    // SCRUM-827: the review opens with the rest; a value the form holds stays, the chat's offered beside it.
+    const refs = [1, 2, 3].map((line) => ({ line, id: `l${line}`, source: (line === 2 ? "team" : "family") as "team" | "family", at: `2026-11-0${line}T07:00:00.000Z`, ruling: line === 2 }));
+    const ruling = { source: "team" as const, at: refs[1]!.at, line: 2 };
+    const proposal = resolveCatalogueAnswer(
+      {
+        event: { childName: { value: "Mali", line: 1 } },
+        requests: [
+          { kind: "decoration", text: "unicorn theme", line: 1 },
+          { kind: "special_request", text: "No nuts", line: 3 },
+          { kind: "special_request", text: "quiet corner", line: 1 },
+          { kind: "activity", text: "treasure hunt", line: 3 },
+        ],
+        timeline: [{ time: "16:00", label: "Cake", line: 2 }],
+      },
+      CATALOGUE,
+      refs,
+    );
+    proposal.details = detailsFromFill(
+      proposal,
+      BeoFillSchema.parse({
+        event: { locationText: "Jungle Room", decoration: "balloons" },
+        setupPlan: { readyBy: "13:30", responsible: "Ying", simplifiedTasks: [{ itemLabel: "Kids' table", notes: "12 seats" }] },
+        partyDetails: { notes: "pay the rest on the day", items: [{ description: "Extra hour", type: "extra" }] },
+      }),
+      { existingData: {}, from: ruling, event: { childName: null, kidTurningAge: 6 } },
+    );
+    const review = {
+      origin: "inbox" as const, proposal, catalogue: CATALOGUE, finalMessage: null, ruling, transcript: { lines: 3, cut: false }, replaces: [], parentSelection: null,
+    };
+    const held = { ...NOTHING_HELD, title: "ZZ typed title", specialRequests: "No nuts\nquiet corner", activities: "Games" };
+    const fill = {
+      proposals: {
+        partyHost: { asked: "Nok", match: { kind: "employee", id: "emp-1", label: "Nok (Siriporn)" }, why: null },
+        entertainmentHost: null,
+        setupResponsible: { asked: "Ying", match: null, why: "no_match" },
+      },
+    };
+    const state = initialReviewState(review, { held, fill });
+    const d = state.details;
+    // The typed title stays, nobody's line; the park's default is offered beside it.
+    assert.equal(d.title.value, "ZZ typed title");
+    assert.equal(d.title.from, null);
+    assert.equal(d.title.chat, "Mali's 6th Birthday");
+    assert.equal(chatOffered(d.title), true);
+    // A held value the chat gives as well wears the chat's marks (the latest line's, every line shown).
+    assert.equal(d.specialRequests.value, "No nuts\nquiet corner");
+    assert.deepEqual(d.specialRequests.from, { source: "family", at: refs[2]!.at, line: 3 });
+    assert.deepEqual(d.specialRequests.froms.map((f) => f.source), ["family"]);
+    assert.equal(chatOffered(d.specialRequests), false);
+    // Typed activities stay; the chat's is offered and taken with one press.
+    assert.equal(d.activities.value, "Games");
+    assert.equal(chatOffered(d.activities), true);
+    const taken = useChatText(d.activities);
+    assert.equal(taken.value, "treasure hunt");
+    assert.equal(sourceOf(taken), "family");
+    // A field the form holds nothing of starts at the chat's, with both lines' marks on a joined one.
+    assert.equal(d.locationText.value, "Jungle Room");
+    assert.equal(sourceOf(d.locationText), "team");
+    assert.equal(d.decoration.value, "unicorn theme\nballoons");
+    assert.deepEqual(d.decoration.froms.map((f) => f.source), ["family", "team"]);
+    assert.equal(d.setupReadyBy.value, "13:30");
+    assert.deepEqual(d.setupTasks.map((t) => [t.label, t.extra, t.from?.source]), [["Kids' table", "12 seats", "team"]]);
+    assert.deepEqual(d.posItems.map((i) => [i.label, i.extra]), [["Extra hour", "extra"]]);
+    assert.deepEqual(d.timeline.map((s) => [s.extra, s.label, s.from?.source]), [["16:00", "Cake", "team"]]);
+    assert.equal(d.team.proposals.partyHost?.match?.label, "Nok (Siriporn)");
+    assert.deepEqual(d.team.accepted, []);
+    assert.equal(sourceOf(editedText(d.posNotes, "typed here")), "staff");
+
+    // What Approve and create sends: only what differs from the form, the lines kept, the team ticked.
+    const ids = { conversationId: null, messageId: null };
+    const untouched = approveBodyOf(review, state, ids);
+    assert.equal(untouched.details?.title, undefined, "a held title is not sent: nothing typed is overwritten");
+    assert.equal(untouched.details?.specialRequests, undefined, "the held special requests are the chat's already: nothing to write");
+    assert.equal(untouched.details?.activities, undefined);
+    assert.equal(untouched.details?.locationText, "Jungle Room");
+    assert.equal(untouched.details?.decoration, "unicorn theme\nballoons");
+    assert.equal(untouched.details?.setupReadyBy, "13:30");
+    assert.equal(untouched.details?.setupResponsible, "Ying");
+    assert.deepEqual(untouched.details?.setupTasks, [{ itemLabel: "Kids' table", notes: "12 seats" }]);
+    assert.deepEqual(untouched.details?.posItems, [{ description: "Extra hour", type: "extra" }]);
+    assert.deepEqual(untouched.details?.timeline, [{ time: "16:00", label: "Cake" }]);
+    assert.equal(untouched.details?.team, undefined, "nobody ticked: nobody assigned");
+    assert.ok(!untouched.sources.some((s) => s.field === "title"), "a typed title is nobody's line: no source");
+    assert.ok(untouched.sources.some((s) => s.field === "specialRequests" && s.source === "family"), "held and the chat's: its source is recorded though nothing is written");
+    assert.ok(untouched.sources.some((s) => s.field === "locationText" && s.source === "team"));
+    assert.ok(untouched.sources.some((s) => s.field === "timeline:0" && s.source === "team"));
+    assert.equal(BeoAiApproveBodySchema.safeParse(untouched).success, true, JSON.stringify(BeoAiApproveBodySchema.safeParse(untouched)));
+    // The park's default taken, the chat's activities taken, the host ticked, a note typed.
+    const chosen = {
+      ...state,
+      details: { ...d, title: useChatText(d.title), activities: taken, posNotes: editedText(d.posNotes, "typed here"), team: { ...d.team, accepted: ["partyHost" as const, "setupResponsible" as const] } },
+    };
+    const body = approveBodyOf(review, chosen, ids);
+    assert.equal(body.details?.title, "Mali's 6th Birthday");
+    assert.equal(body.details?.activities, "treasure hunt");
+    assert.equal(body.details?.posNotes, "typed here");
+    assert.deepEqual(body.details?.team, { partyHost: { kind: "employee", id: "emp-1", label: "Nok (Siriporn)" } }, "an unmatched name is never assigned, ticked or not");
+    const source = (field: string) => body.sources.find((s) => s.field === field)?.source;
+    assert.equal(source("title"), "default");
+    assert.equal(source("activities"), "family");
+    assert.equal(source("posNotes"), "staff");
+    assert.equal(source("team:partyHost"), "team");
+    assert.equal(source("childName"), "family");
+    assert.equal(BeoAiApproveBodySchema.safeParse(body).success, true);
+    assert.equal(BeoAiApproveBodySchema.safeParse({ ...body, sources: [{ field: "title", source: "model", at: null }] }).success, false, "a source the row does not know is refused");
+    // The marks the form wears afterwards, by field, and the sections they open.
+    const marks = approvedMarksOf(body.sources);
+    assert.equal(marks.title, "default");
+    assert.equal(marks["team:partyHost"], "team");
+    assert.equal(marks.posNotes, "staff");
+    assert.deepEqual(approvedSectionsOf(marks).sort(), ["event-info", "party-details", "party-host", "setup-plan", "timeline"]);
+    assert.deepEqual(approvedSectionsOf({}), []);
+  });
+
   await check("theAdultsListFoldsIntoTheKidsUnlessItIsTheirOwn", async () => {
     // SCRUM-829: the model is told the adults eat what the kids eat unless the message says
     // otherwise, and on staging it still split the lists — the kids' dishes again as adultsMenu,
@@ -827,4 +1058,4 @@ try {
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 15) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 17) process.exit(1);

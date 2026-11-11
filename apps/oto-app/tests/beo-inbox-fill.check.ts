@@ -30,7 +30,9 @@
 //   - SCRUM-814: the prompt ends with today at the event's park (or, for a
 //     pasted message on no event, the person's own park), and an answer whose
 //     party date differs from the booked one comes back as read, shown beside
-//     it and marked, with nothing written.
+//     it and marked, with nothing written;
+//   - SCRUM-827: a park with no catalogue still opens the free-text preview as
+//     its one and only step (no review, so no second pass).
 //
 // Run from apps/oto-app: DATABASE_URL=<migrated scratch> npx tsx tests/beo-inbox-fill.check.ts
 import assert from "node:assert/strict";
@@ -301,6 +303,8 @@ try {
       });
       // The form's Final Message to Parent was empty: the message goes there as read.
       assert.equal(res.body.fill.event.internalStaffNotes, MESSAGES[lang], `${lang}: the final message, word for word`);
+      // SCRUM-827: a park with no catalogue has no review — the preview of before is the one and only step, never a second.
+      assert.equal(res.body.review, undefined, `${lang}: no catalogue, no review`);
       assert.equal(modelCalls.length, before + 1, `${lang}: one model call`);
       const call = modelCalls.at(-1)!;
       assert.ok(call.user.includes(MESSAGES[lang]), `${lang}: the model reads the message`);

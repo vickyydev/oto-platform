@@ -155,7 +155,7 @@ export function BeoTimelineEditor({ eventId, startTime }: BeoTimelineEditorProps
           onClick={handleAddInline}
           data-testid="button-add-first-timeline-item"
         >
-          Click here to add first timeline step
+          No timeline steps yet. Click to add the first.
         </div>
       ) : (
         <>

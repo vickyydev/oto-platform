@@ -51,7 +51,16 @@
 //     proposed with no type, the review says so, and approving it writes the
 //     time and notes and keeps the BEO's own cake type; when that type is No
 //     cake the review says so and what to choose to keep the time, and the
-//     editor's Cake block shows the time and notes under No Cake.
+//     editor's Cake block shows the time and notes under No Cake;
+//   - SCRUM-827: the rest of the BEO rides on the same proposal — the
+//     conversation's requests and timed steps by their lines, the ruling's
+//     setup plan, POS box and location as the team's, the title from the
+//     app's naming rule as the park's default — the review renders it with
+//     its marks, and ONE Approve and create writes it all (the event's
+//     fields, the setup plan, Party Details, the timeline's own lines) in
+//     the same transaction: nothing opens after it; a title the BEO holds is
+//     not overwritten unless the chat's is taken; a pasted message fills the
+//     same way.
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-catalogue-fill.check.ts
@@ -83,7 +92,7 @@ const { laterLineWins } = await import("../shared/beoAiFill");
 const { REQUIRED_FIELDS_HEADING } = await import("../server/lib/aiFill");
 const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, undecidedLines, fillBeyondApproval } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, undecidedLines, NOTHING_HELD, useChatText } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { CakeUnderNoCake } = await import("../client/src/components/beo/beo-cake-under-no-cake");
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
@@ -160,9 +169,9 @@ const CONVERSATIONS: Record<"ru" | "th" | "en", Line[]> = {
   ],
 };
 const WORDS = {
-  ru: { pkg: "пакет Флореста", pizza: "пицца Маргарита", fries: "картошка фри", sushi: "суши", bubble: "Бабл-шоу", face: "аквагрим", child: "Маша", date: "21 ноября", activities: "Бабл-шоу и игры" },
-  th: { pkg: "แพ็กเกจฟลอเรสต้า", pizza: "พิซซ่ามาร์การิต้า", fries: "เฟรนช์ฟรายส์", sushi: "ซูชิ", bubble: "บับเบิ้ลโชว์", face: "ระบายสีหน้า", child: "น้องมะลิ", date: "21 พฤศจิกายน", activities: "บับเบิ้ลโชว์" },
-  en: { pkg: "Floresta package", pizza: "Margherita pizza", fries: "extra fries", sushi: "sushi", bubble: "bubble show", face: "face painting", child: "Emma", date: "21 November", activities: "Bubble show and games" },
+  ru: { pkg: "пакет Флореста", pizza: "пицца Маргарита", fries: "картошка фри", sushi: "суши", bubble: "Бабл-шоу", face: "аквагрим", child: "Маша", date: "21 ноября", activities: "Бабл-шоу и игры", deco: "единороги", cakeStep: "торт" },
+  th: { pkg: "แพ็กเกจฟลอเรสต้า", pizza: "พิซซ่ามาร์การิต้า", fries: "เฟรนช์ฟรายส์", sushi: "ซูชิ", bubble: "บับเบิ้ลโชว์", face: "ระบายสีหน้า", child: "น้องมะลิ", date: "21 พฤศจิกายน", activities: "บับเบิ้ลโชว์", deco: "ธีมยูนิคอร์น", cakeStep: "เค้ก" },
+  en: { pkg: "Floresta package", pizza: "Margherita pizza", fries: "extra fries", sushi: "sushi", bubble: "bubble show", face: "face painting", child: "Emma", date: "21 November", activities: "Bubble show and games", deco: "unicorn theme", cakeStep: "the cake" },
 };
 const at = (i: number) => new Date(Date.UTC(2026, 10, 3, 7, i * 7)).toISOString();
 const transcriptOf = (lang: "ru" | "th" | "en", ids: string[]) => CONVERSATIONS[lang].map((l, i) => ({ id: ids[i]!, author: l.author, at: at(i), text: l.text }));
@@ -213,6 +222,12 @@ function answerFor(lang: "ru" | "th" | "en") {
       },
       cake: { mode: "internal", notes: "ice-cream cake", line: 4, source: "team" },
       deposit: { amount: "5,000", paid: true, date: "2026-11-03", line: 4, source: "team" },
+      // SCRUM-827: the family's decoration wish (line 3), the team's request and timed step (the ruling).
+      requests: [
+        { kind: "decoration", text: w.deco, line: 3, source: "team" },
+        { kind: "special_request", text: "ZZ no nuts", line: 4, source: "team" },
+      ],
+      timeline: [{ time: "16:00", label: w.cakeStep, line: 4, source: "team" }],
     },
   };
 }
@@ -557,6 +572,23 @@ try {
       assert.deepEqual(p.deposit, { amount: 5000, paid: true, date: "2026-11-03", from: ruling });
       assert.deepEqual(p.cake, { mode: "INTERNAL", notes: "ice-cream cake", time: null, from: ruling });
       assert.deepEqual(reviews[lang]!.replaces, [], `${lang}: an empty BEO replaces nothing`);
+      // SCRUM-827: the rest of the BEO on the same proposal, each with its source.
+      const d = p.details;
+      assert.deepEqual(d.title, { value: `${WORDS[lang].child}'s Birthday`, from: { source: "default", at: null, line: null } }, `${lang}: the title is the app's rule, the park's default`);
+      assert.deepEqual(
+        d.requests.map((r) => [r.kind, r.text, r.from]),
+        [
+          ["decoration", WORDS[lang].deco, { source: "family", at: at(2), line: 3 }],
+          ["special_request", "ZZ no nuts", ruling],
+          ["activity", WORDS[lang].activities, ruling],
+        ],
+        `${lang}: the family's wish is the family's whatever the model says; the ruling's request once; its activities the team's`,
+      );
+      assert.deepEqual(d.timeline, [{ time: "16:00", label: WORDS[lang].cakeStep, from: ruling }], `${lang}: the chat's timed step`);
+      assert.deepEqual(d.setup, { readyBy: { value: "13:30", from: ruling }, responsible: null, tasks: [] }, `${lang}: the setup plan from the ruling`);
+      assert.deepEqual(d.pos, { name: { value: WORDS[lang].pkg, from: ruling }, notes: null, items: [] }, `${lang}: the POS box from the ruling`);
+      assert.equal(d.bookingName, null);
+      assert.equal(d.locationText, null);
     }
     const ru = reviews.ru!.proposal;
     assert.deepEqual(ru.addOns, [{ lineId: cat.reservedTable, quantity: 1, said: "Стол для взрослых", chatPrice: null, from: { source: "team", at: at(3), line: 4 } }]);
@@ -591,7 +623,8 @@ try {
       const meta = JSON.parse(rows.activity[0]!.metadata_json);
       assert.equal(meta.transcriptLines, 4);
       assert.equal(meta.catalogueRead.outcome, "filled");
-      assert.deepEqual(meta.catalogue, { package: true, addOns: lang === "ru" ? 1 : 0, setMenu: true, choices: 1, menuLines: 1, notInMenu: 1, entertainment: 2, notInCatalogue: 0 });
+      // SCRUM-827: the rest, as counts too — the requests, the steps, and the details the ruling gave (the title, the ready-by, the POS name).
+      assert.deepEqual(meta.catalogue, { package: true, addOns: lang === "ru" ? 1 : 0, setMenu: true, choices: 1, menuLines: 1, notInMenu: 1, entertainment: 2, notInCatalogue: 0, requests: 3, timeline: 1, details: 3 });
       assert.equal(rows.activity[0]!.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 ${lang}"`);
       for (const word of Object.values(WORDS[lang])) assert.ok(!rows.activity[0]!.metadata_json.includes(word), `${lang}: no "${word}" in the activity row`);
     }
@@ -611,6 +644,17 @@ try {
     assert.ok(html.includes('data-testid="ai-review-not-in-menu"'), "the dish the menu lacks is highlighted");
     assert.ok(html.includes("Keep as a free line") && html.includes("Leave out"));
     assert.equal(undecidedLines(state), 1, "Approve and create waits for the sushi decision");
+    // SCRUM-827: the rest of the BEO in the same review, each with its mark.
+    assert.ok(html.includes('data-source="default"') && html.includes("the park&#x27;s default"), "the title wears the park's default");
+    assert.ok(html.includes('data-testid="input-ai-review-title"') && html.includes(`value="${WORDS.ru.child}&#x27;s Birthday"`), "the title, as the app names a party");
+    assert.ok(html.includes('data-testid="ai-review-detail-specialRequests"') && html.includes(">ZZ no nuts</textarea>"), "the special requests");
+    assert.ok(html.includes('data-testid="ai-review-detail-decoration"') && html.includes(`>${WORDS.ru.deco}</textarea>`), "the family's decoration wish");
+    assert.ok(html.includes('data-testid="ai-review-timeline-step"') && html.includes(`value="${WORDS.ru.cakeStep}"`), "the chat's step");
+    assert.ok(html.includes('data-testid="input-ai-review-setupReadyBy"') && html.includes('value="13:30"'), "the setup plan");
+    assert.ok(html.includes('data-testid="input-ai-review-posName"') && html.includes(`value="${WORDS.ru.pkg}"`), "the POS box");
+    assert.ok(html.includes('data-testid="text-ai-review-no-team"'), "nobody named for the team: said in words");
+    assert.ok(html.includes("from a template"), "the BEO's own timeline steps are a template's");
+    for (const section of ["Team", "POS", "Setup Plan", "Timeline"]) assert.ok(html.includes(`${section}</div>`), `the ${section} section`);
     // SCRUM-814: the date the confirmation names beside the booked one, marked, applied only when ticked.
     assert.ok(html.includes('data-testid="ai-review-event-date"'), "the Date row");
     assert.ok(html.includes("Sat 21 Nov 2026") && html.includes("21 ноября"), "the read date and the message's words for it");
@@ -626,9 +670,12 @@ try {
   await check("approvalWritesTheBeo", async () => {
     // Russian: everything as proposed, the sushi kept as a free line, the read date ticked.
     const review = reviews.ru!;
-    const state = initialReviewState(review, { fill: fills.ru, bookedDate: BOOKED });
+    const state = initialReviewState(review, { fill: fills.ru, bookedDate: BOOKED, held: { ...NOTHING_HELD, title: "ZZ TEST 815 ru" } });
     state.menuLines = state.menuLines.map((l) => (l.notInMenu ? { ...l, decision: "keep" as const } : l));
     state.useDate = true;
+    // SCRUM-827: the BEO's own title stays unless the park's default is taken — here it is.
+    assert.equal(state.details.title.value, "ZZ TEST 815 ru");
+    state.details.title = useChatText(state.details.title);
     const body = approveBodyOf(review, state, { conversationId: conv.ru, messageId: sources.ru.messageId });
     assert.equal(body.event.eventDate, "2026-11-21", "a ticked date is sent");
     ruApproved = body;
@@ -660,6 +707,16 @@ try {
     assert.equal(rows.event.event_date, "2026-11-21", "the ticked date is the event's");
     assert.equal(rows.event.child_name, "Маша");
     assert.equal(rows.event.internal_staff_notes, CONVERSATIONS.ru[3]!.text);
+    // SCRUM-827: the rest, written in the same pass: the event's fields, the setup plan, Party Details, the chat's step.
+    assert.equal(rows.event.title, "Маша's Birthday", "the park's default, taken");
+    assert.equal(rows.event.activities, WORDS.ru.activities);
+    assert.equal(rows.event.special_requests, "ZZ no nuts", "the chat's request (the sushi is a kitchen line, not a free line of Special Requests)");
+    const [setup] = await q("select setup_required, setup_tasks from beo_setup_plans where event_id = $1", [ev.ru]);
+    assert.equal(setup?.setup_required, true);
+    assert.equal(setup?.setup_tasks?.readyBy, "13:30");
+    assert.deepEqual(setup?.setup_tasks?.simplifiedTasks, []);
+    const step = (await q("select label, offset_from_start_minutes, is_system_generated from beo_timeline_items where event_id = $1 and label = $2", [ev.ru, WORDS.ru.cakeStep]))[0];
+    assert.deepEqual(step, { label: WORDS.ru.cakeStep, offset_from_start_minutes: 120, is_system_generated: false }, "the chat's 16:00 step, two hours after the 14:00 start, the timeline's own line");
     assert.equal(rows.billing.deposit_paid, true);
     assert.equal(rows.billing.deposit_paid_amount, 5000);
     // The deposit where the BEO itself reads it: its GET's Party Details (editor, badge, day-of view, PDF).
@@ -667,6 +724,8 @@ try {
     assert.equal(beo.status, 200, JSON.stringify(beo.body));
     assert.equal(beo.body.partyDetails?.prepaymentReceived, 5000, "the BEO shows the prepayment received");
     assert.equal(beo.body.partyDetails?.depositDate, "2026-11-03");
+    assert.equal(beo.body.partyDetails?.packageName, WORDS.ru.pkg, "SCRUM-827: the POS name, written by the same approval");
+    assert.equal(beo.body.decoration, WORDS.ru.deco, "the family's decoration wish");
     // One activity row for the approval: sources and matches, never the chat's words.
     const approved = rows.activity.map((r) => JSON.parse(r.metadata_json)).filter((m) => m.step === "approved");
     assert.equal(approved.length, 1);
@@ -675,6 +734,12 @@ try {
     assert.equal(meta.written.eventDate, true);
     assert.ok(meta.sources.some((s: any) => s.field === "package" && s.source === "team"));
     assert.ok(meta.sources.some((s: any) => s.field === "eventDate" && s.source === "team"), "the date is the team's confirmation's");
+    assert.ok(meta.sources.some((s: any) => s.field === "title" && s.source === "default"), "SCRUM-827: the title is the park's default");
+    assert.ok(meta.sources.some((s: any) => s.field === "decoration" && s.source === "family"), "the decoration is the family's line");
+    assert.ok(meta.sources.some((s: any) => s.field === "timeline:0" && s.source === "team"));
+    assert.equal(meta.written.setup, true);
+    assert.equal(meta.written.pos, true);
+    assert.equal(meta.written.timelineLines, 1);
     assert.ok(meta.sources.some((s: any) => s.field.startsWith("entertainment:") && s.source === "family"), "the family's wish is recorded as the family's");
     assert.ok(meta.matches.some((m: any) => m.kind === "choice" && m.option === "Margherita" && m.code === "CF-24"));
     assert.ok(meta.matches.some((m: any) => m.kind === "package" && m.id === cat.floresta));
@@ -689,18 +754,33 @@ try {
     assert.deepEqual(again.body.review.replaces, ["package", "kitchen plan", "entertainment", "deposit"]);
   });
 
-  await check("theRestOfTheFillAfterApproval", async () => {
-    // What the approval does not write: the rest of the same fill, read from the ruling message.
-    const rest = fillBeyondApproval(fills.ru, ruApproved?.otherLines ?? []) as any;
-    assert.ok(rest, "the fill holds more than the approval writes");
-    assert.deepEqual(rest.event, { title: "ZZ party ru", activities: WORDS.ru.activities, specialRequests: "ZZ no nuts" });
-    assert.deepEqual(rest.setupPlan, { readyBy: "13:30" });
-    assert.deepEqual(rest.partyDetails, { packageName: WORDS.ru.pkg }, "Party Details but the deposit the approval wrote");
-    for (const owned of ["kitchenPlan"]) assert.equal(rest[owned], undefined, `${owned} is the approval's`);
-    // The free lines the approval added to Special Requests ride after the message's own.
-    assert.equal((fillBeyondApproval(fills.ru, ["суши"]) as any).event.specialRequests, "ZZ no nuts\nсуши");
-    assert.equal(fillBeyondApproval({ event: { childName: "x", numChildren: 3 }, kitchenPlan: { kidsMenu: [] } }), null, "nothing left: no second step");
-    // Approving and then the editor's Save with the rest loaded keeps both.
+  await check("theRestIsWrittenInTheSamePass", async () => {
+    // SCRUM-827: no second step. The approval's body carried the rest, and the rows hold it;
+    // the model's own title ("ZZ party ru") was never proposed — the park's default was.
+    assert.ok(ruApproved?.details, "the approval body carries the rest");
+    assert.deepEqual(
+      { title: ruApproved!.details!.title, activities: ruApproved!.details!.activities, specialRequests: ruApproved!.details!.specialRequests, decoration: ruApproved!.details!.decoration },
+      { title: "Маша's Birthday", activities: WORDS.ru.activities, specialRequests: "ZZ no nuts", decoration: WORDS.ru.deco },
+    );
+    assert.equal(ruApproved!.details!.setupReadyBy, "13:30");
+    assert.equal(ruApproved!.details!.posName, WORDS.ru.pkg);
+    assert.deepEqual(ruApproved!.details!.timeline, [{ time: "16:00", label: WORDS.ru.cakeStep }]);
+    assert.ok(!fills.ru.event?.title || fills.ru.event.title === "ZZ party ru", "the free-text fill still carries the model's title, for Load into Editor instead");
+    const written = await beoRows(ev.ru);
+    assert.equal(written.event.title, "Маша's Birthday");
+    assert.equal(written.event.special_requests, "ZZ no nuts");
+    // Approving again, with a free line kept in Special Requests this time, adds that line after the chat's
+    // request and no second copy of a task, a line item or a step (SCRUM-827: added, never twice).
+    const again = await approve(ev.ru, { ...ruApproved!, otherLines: ["суши"] });
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    assert.equal((await beoRows(ev.ru)).event.special_requests, "ZZ no nuts\nсуши", "the free line after the chat's request");
+    const once = await approve(ev.ru, { ...ruApproved!, otherLines: ["суши"] });
+    assert.equal(once.status, 200);
+    const steps = await q("select label from beo_timeline_items where event_id = $1 and label = $2", [ev.ru, WORDS.ru.cakeStep]);
+    assert.equal(steps.length, 1, "the chat's step once");
+    assert.equal((await beoRows(ev.ru)).event.special_requests, "ZZ no nuts\nсуши", "the free line once");
+    // The editor's Save after the approval keeps both: what it wrote, and what the form sends again.
+    const rest = { event: { title: "ZZ party ru", activities: WORDS.ru.activities, specialRequests: "ZZ no nuts\nсуши" }, setupPlan: { readyBy: "13:30" }, partyDetails: { packageName: WORDS.ru.pkg } };
     const beo = (await readBeo(ev.ru)).body;
     const kp = beo.kitchenPlan;
     const save = await send("PUT", `/api/events/${ev.ru}/beo`, {
@@ -735,7 +815,7 @@ try {
   await check("reviewerEditsAreWhatIsWritten", async () => {
     // Thai: the reviewer leaves out the family's wish and the sushi, and changes the adults; the date is left unticked.
     const review = reviews.th!;
-    const state = initialReviewState(review, { fill: fills.th, bookedDate: BOOKED });
+    const state = initialReviewState(review, { fill: fills.th, bookedDate: BOOKED, held: { ...NOTHING_HELD, title: "ZZ TEST 815 th" } });
     state.entertainment = state.entertainment.filter((e) => e.templateId !== cat.face);
     state.menuLines = state.menuLines.map((l) => (l.notInMenu ? { ...l, decision: "drop" as const } : l));
     state.numAdults = { value: 8, from: state.numAdults!.from, changed: true };
@@ -750,6 +830,9 @@ try {
     assert.equal(rows.event.num_adults, 8);
     assert.equal(rows.event.event_date, BOOKED, "an unticked date leaves the booked one");
     assert.deepEqual(rows.snapshotItems.map((i) => i.qty), [1, 0, 0], "no add-on bought");
+    assert.equal(rows.event.title, "ZZ TEST 815 th", "SCRUM-827: a title the BEO holds is not overwritten unless the park's default is taken");
+    assert.equal(rows.event.special_requests, "ZZ no nuts", "the rest is written all the same");
+    assert.equal(body.details?.title, undefined);
   });
 
   await check("approvalRefusesWhatTheCatalogueLacks", async () => {
@@ -844,6 +927,9 @@ try {
       [cat.zombie, "Zombie game", "Зомби-игра", 4000, false, team],
     ], "the Zombie game, the chat's price beside the catalogue's");
     assert.deepEqual(p.event.numChildren, { value: 10, from: team });
+    // SCRUM-827: the rest from the one line — the activities the team's, the title the park's default.
+    assert.deepEqual(p.details.requests, [{ kind: "activity", text: "Зомби-игра", from: team }]);
+    assert.deepEqual(p.details.title, { value: "Петя's Birthday", from: { source: "default", at: null, line: null } });
     const froms = [p.package!.from, p.setMenu!.from, ...p.setMenu!.choices.map((c) => c.from), ...p.entertainment.map((e) => e.from), ...Object.values(p.event).map((f) => f!.from)];
     assert.ok(froms.every((f) => f.source === "team"), "every value of a pasted message is the team's");
     assert.deepEqual(review.catalogue.packages.map((x) => x.id), [cat.floresta], "the event's park's catalogue");
@@ -855,7 +941,7 @@ try {
     assert.equal(row?.summary_text, `AI Fill read a pasted message for the BEO of "ZZ TEST 815 paste"`);
     const meta = JSON.parse(row!.metadata_json);
     assert.equal(meta.source, "pasted");
-    assert.deepEqual(meta.catalogue, { package: true, addOns: 0, setMenu: true, choices: 1, menuLines: 0, notInMenu: 0, entertainment: 1, notInCatalogue: 0 });
+    assert.deepEqual(meta.catalogue, { package: true, addOns: 0, setMenu: true, choices: 1, menuLines: 0, notInMenu: 0, entertainment: 1, notInCatalogue: 0, requests: 1, timeline: 0, details: 1 });
     assert.ok(!row!.metadata_json.includes("Петя") && !row!.metadata_json.includes("Зомби"), "none of the pasted words in the activity row");
 
     // The review in edit mode: the team's marks, the matches, the chat's price beside the catalogue's.
@@ -869,7 +955,8 @@ try {
 
     // "Approve and create" through the same route as the inbox's review.
     const body = approveBodyOf(review, state, { conversationId: null, messageId: null });
-    assert.ok(body.sources.length > 0 && body.sources.every((s) => s.source === "team"));
+    // SCRUM-827: every value of a pasted message is the team's, but the title, which is the park's own rule.
+    assert.ok(body.sources.length > 0 && body.sources.every((s) => s.source === "team" || (s.field === "title" && s.source === "default")), JSON.stringify(body.sources));
     const approved = await approve(ev.paste, body);
     assert.equal(approved.status, 200, JSON.stringify(approved.body));
     const rows = await beoRows(ev.paste);
@@ -878,6 +965,8 @@ try {
     assert.deepEqual(rows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[cat.zombie, "Zombie game", 400000]], "the catalogue's price, never the chat's");
     assert.equal(rows.event.num_children, 10);
     assert.equal(rows.event.internal_staff_notes, null, "Final Message to Parent is not written from a pasted text");
+    assert.equal(rows.event.title, "Петя's Birthday", "SCRUM-827: the pasted message fills the rest in the same pass too");
+    assert.equal(rows.event.activities, "Зомби-игра");
     const approvedMeta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.equal(approvedMeta?.source, "pasted");
 

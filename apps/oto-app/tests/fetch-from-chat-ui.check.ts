@@ -30,6 +30,7 @@ import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { JSDOM } from "jsdom";
+import { emptyBeoAiDetails } from "../shared/beoAiFill";
 
 const APP = fileURLToPath(new URL("../", import.meta.url));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/studio/events", pretendToBeVisual: true });
@@ -105,6 +106,7 @@ const answerAt = (chatMark: string, adults = 6, cakeTime = "16:00", entertainmen
       event: { numChildren: { value: 12, from: from(2) }, numAdults: { value: adults, from: from(4) }, startTime: { value: "14:00", from: from(2) } },
       cake: { mode: null, notes: null, time: cakeTime, from: from(4) },
       deposit: null,
+      details: emptyBeoAiDetails(),
     },
     catalogue: { packages: [], setMenus: [], entertainment: [{ id: MAGICIAN, name: "ZZ TEST Magician", category: null, durationMinutes: 30, price: 350000, unit: null, priceIsFrom: false }], food: [] },
     finalMessage: null,

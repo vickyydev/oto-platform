@@ -4,7 +4,9 @@ import {
   type BeoAiCakeMode,
   type BeoAiFrom,
   type BeoAiMenu,
+  type BeoAiOrigin,
   type BeoAiPackage,
+  type BeoAiRequestKind,
   type BeoAiReview,
   type BeoAiSetMenuItem,
 } from "@shared/beoAiFill";
@@ -22,9 +24,17 @@ import { aiFillDateLine, type AiFillDateLine } from "./beo-ai-date";
  * catalogue lacks waits for a decision (keep it as a free line, or leave it
  * out) before "Approve and create" can be pressed; nothing is written before
  * it is. The date the confirmation names sits beside the booked one and is
- * applied only when ticked (SCRUM-814). What Approve and create does not
- * write — the form's other fields the same fill read — opens next in the
- * preview of before (`fillBeyondApproval`). Pure, so the app's check holds it.
+ * applied only when ticked (SCRUM-814).
+ *
+ * SCRUM-827 — ONE PASS. The rest of the BEO (the title, the booking name and
+ * location, the special requests, decoration and activities, the setup plan,
+ * the POS box, the timeline's steps and the team) used to open in a second
+ * preview after the approval. It is in this review now (`details`), each
+ * field with its source, and Approve and create writes it all at once.
+ * Nothing typed is overwritten (SCRUM-826's rule): a text field the BEO
+ * already holds keeps its value, with the chat's offered beside it to take
+ * with one press; only a field the reviewer leaves different from what the
+ * BEO holds is sent. Pure, so the app's check holds it.
  */
 
 export type BeoAiDecision = "keep" | "drop" | null;
@@ -34,6 +44,20 @@ export interface Reviewed<T> {
   value: T;
   from: BeoAiFrom | null;
   changed: boolean;
+}
+
+/**
+ * SCRUM-827: a text field of the rest of the BEO. `held` is what the BEO
+ * holds now (null when nothing), `chat` what the fill proposed (null when it
+ * proposed nothing). The value starts at the held text when there is one,
+ * else at the chat's; "Use the chat's" puts the chat's in.
+ */
+export interface ReviewText extends Reviewed<string> {
+  held: string | null;
+  chat: string | null;
+  /** The line the chat's text is from (the latest, where several), and every line it came from (a joined field may hold the family's and the team's). */
+  chatFrom: BeoAiFrom | null;
+  froms: BeoAiFrom[];
 }
 
 export interface ReviewMenuLine {
@@ -72,6 +96,70 @@ export interface ReviewOtherLine {
   decision: BeoAiDecision;
 }
 
+/** SCRUM-827: a setup task, a POS line item or a timeline step the chat gave; removed from the list when left out. */
+export interface ReviewLine {
+  key: string;
+  label: string;
+  /** A task's notes; a line item's kind ("included" | "extra"); a step's time (HH:MM). */
+  extra: string;
+  from: BeoAiFrom | null;
+  changed: boolean;
+}
+
+/** What AI Fill proposes for a BEO field that assigns somebody (server/lib/beoTeamProposals.ts). */
+export type ReviewTeamMatch = { kind: "employee" | "department"; id: string; label: string };
+export interface ReviewTeamProposal {
+  asked: string;
+  match: ReviewTeamMatch | null;
+  why: "no_match" | "several" | "same_as_party_host" | "host_list_not_employees" | null;
+}
+export type ReviewTeamField = "partyHost" | "entertainmentHost" | "setupResponsible";
+export type ReviewTeamProposals = Record<ReviewTeamField, ReviewTeamProposal | null>;
+
+export const REVIEW_TEAM_FIELDS: Array<{ field: ReviewTeamField; label: string }> = [
+  { field: "partyHost", label: "Party Host" },
+  { field: "entertainmentHost", label: "Entertainment Host" },
+  { field: "setupResponsible", label: "Setup Who" },
+];
+
+/** Why a name the message gave is not proposed, in the review's words. */
+export function reviewTeamUnmatchedText(field: ReviewTeamField, why: ReviewTeamProposal["why"]): string {
+  const typed = field === "setupResponsible";
+  switch (why) {
+    case "several":
+      return typed
+        ? "matches more than one person at this park: it goes in as typed text; pick the person in the form to link them."
+        : "matches more than one person at this park: choose the host in the form.";
+    case "same_as_party_host":
+      return "is the same person as the party host: choose another in the form.";
+    case "host_list_not_employees":
+      return "this park group's host list is not its employees: choose the host in the form.";
+    default:
+      return typed
+        ? "matches nobody at this park: it goes in as typed text."
+        : "matches nobody at this park: choose the host in the form.";
+  }
+}
+
+/** SCRUM-827: the rest of the BEO, as the review holds it. */
+export interface ReviewDetails {
+  title: ReviewText;
+  bookingName: ReviewText;
+  locationText: ReviewText;
+  specialRequests: ReviewText;
+  activities: ReviewText;
+  decoration: ReviewText;
+  setupReadyBy: ReviewText;
+  setupResponsible: ReviewText;
+  setupTasks: ReviewLine[];
+  posName: ReviewText;
+  posNotes: ReviewText;
+  posItems: ReviewLine[];
+  timeline: ReviewLine[];
+  /** The people the message named, matched to the park's roster; assigned only where ticked. */
+  team: { proposals: ReviewTeamProposals; accepted: ReviewTeamField[] };
+}
+
 export interface BeoAiReviewState {
   packageId: Reviewed<string | null>;
   /** Quantities of the chosen package's add-ons, by line id. */
@@ -97,18 +185,73 @@ export interface BeoAiReviewState {
   date: AiFillDateLine | null;
   /** The read date replaces the booked one only when this is ticked (and they differ). */
   useDate: boolean;
+  /** SCRUM-827: the rest of the BEO, in the same pass. */
+  details: ReviewDetails;
 }
+
+/** SCRUM-827: what the BEO's form holds now of the rest, so nothing typed is overwritten. */
+export interface ReviewHeld {
+  title: string;
+  bookingName: string;
+  locationText: string;
+  specialRequests: string;
+  activities: string;
+  decoration: string;
+  setupReadyBy: string;
+  setupResponsible: string;
+  posName: string;
+  posNotes: string;
+}
+export const NOTHING_HELD: ReviewHeld = {
+  title: "",
+  bookingName: "",
+  locationText: "",
+  specialRequests: "",
+  activities: "",
+  decoration: "",
+  setupReadyBy: "",
+  setupResponsible: "",
+  posName: "",
+  posNotes: "",
+};
 
 let seq = 0;
 const key = (prefix: string) => `${prefix}_${++seq}`;
 const fresh = <T>(value: T, from: BeoAiFrom | null): Reviewed<T> => ({ value, from, changed: false });
+const asRecord = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+const sameText = (a: string, b: string) => a.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") === b.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+
+/** SCRUM-827: a text field of the rest: the held value stands, else the chat's. */
+function reviewText(held: string | undefined, chat: { value: string; from: BeoAiFrom } | null, froms: BeoAiFrom[] = chat ? [chat.from] : []): ReviewText {
+  const heldText = held?.trim() ? held.trim() : null;
+  const chatText = chat?.value.trim() ? chat.value.trim() : null;
+  const value = heldText ?? chatText ?? "";
+  // A held value the chat gives as well wears the chat's mark: it is that line's value.
+  const isChats = chatText !== null && (heldText === null || sameText(heldText, chatText));
+  return { value, from: isChats ? chat!.from : null, changed: false, held: heldText, chat: chatText, chatFrom: chat?.from ?? null, froms };
+}
+const HELD_OF_KIND: Record<BeoAiRequestKind, keyof ReviewHeld> = { special_request: "specialRequests", decoration: "decoration", activity: "activities" };
+
+/** The chat's requests of one kind, joined one per line, with every line they came from. */
+function requestsText(requests: BeoAiReview["proposal"]["details"]["requests"], kind: BeoAiRequestKind): { value: string; from: BeoAiFrom } | null {
+  const lines = requests.filter((r) => r.kind === kind);
+  if (lines.length === 0) return null;
+  return { value: lines.map((r) => r.text).join("\n"), from: lines.reduce((a, r) => (laterLineWins(r.from, a) ? r.from : a), lines[0]!.from) };
+}
+const distinctFroms = (froms: BeoAiFrom[]): BeoAiFrom[] => {
+  const out: BeoAiFrom[] = [];
+  for (const f of froms) if (!out.some((o) => o.source === f.source)) out.push(f);
+  return out;
+};
 
 /**
  * The review as it opens: the proposal, every field with its source. `fill`
- * is the free-text fill read beside it (its date, SCRUM-814) and `bookedDate`
- * the date the form holds.
+ * is the free-text fill read beside it (its date, SCRUM-814, and the team the
+ * message named), `bookedDate` the date the form holds and `held` what the
+ * form holds of the rest (SCRUM-827).
  */
-export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; bookedDate?: string | null } = {}): BeoAiReviewState {
+export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; bookedDate?: string | null; held?: ReviewHeld } = {}): BeoAiReviewState {
   const p = review.proposal;
   const addOns: BeoAiReviewState["addOns"] = {};
   for (const a of p.addOns) addOns[a.lineId] = fresh(a.quantity, a.from);
@@ -119,6 +262,16 @@ export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; 
     choices[c.itemId] = had && !had.value.includes(c.option) ? fresh([...had.value, c.option], laterFrom(had.from, c.from)) : had ?? fresh([c.option], c.from);
   }
   const sourced = <T>(f: { value: T; from: BeoAiFrom } | undefined) => (f ? fresh(f.value, f.from) : null);
+  const held = opts.held ?? NOTHING_HELD;
+  const d = p.details;
+  const requestLine = (kind: BeoAiRequestKind) =>
+    reviewText(held[HELD_OF_KIND[kind]], requestsText(d.requests, kind), distinctFroms(d.requests.filter((r) => r.kind === kind).map((r) => r.from)));
+  const proposals = asRecord(asRecord(opts.fill)?.proposals);
+  const teamProposals: ReviewTeamProposals = { partyHost: null, entertainmentHost: null, setupResponsible: null };
+  for (const { field } of REVIEW_TEAM_FIELDS) {
+    const t = asRecord(proposals?.[field]);
+    if (t && typeof t.asked === "string") teamProposals[field] = t as unknown as ReviewTeamProposal;
+  }
   return {
     packageId: fresh(p.package?.templateId ?? null, p.package?.from ?? null),
     addOns,
@@ -158,6 +311,22 @@ export function initialReviewState(review: BeoAiReview, opts: { fill?: unknown; 
     deposit: p.deposit ? fresh({ amount: p.deposit.amount, paid: p.deposit.paid, date: p.deposit.date ?? "" }, p.deposit.from) : null,
     date: aiFillDateLine(opts.fill, opts.bookedDate),
     useDate: false,
+    details: {
+      title: reviewText(held.title, d.title),
+      bookingName: reviewText(held.bookingName, d.bookingName),
+      locationText: reviewText(held.locationText, d.locationText),
+      specialRequests: requestLine("special_request"),
+      activities: requestLine("activity"),
+      decoration: requestLine("decoration"),
+      setupReadyBy: reviewText(held.setupReadyBy, d.setup.readyBy),
+      setupResponsible: reviewText(held.setupResponsible, d.setup.responsible),
+      setupTasks: d.setup.tasks.map((t) => ({ key: key("task"), label: t.itemLabel, extra: t.notes ?? "", from: t.from, changed: false })),
+      posName: reviewText(held.posName, d.pos.name),
+      posNotes: reviewText(held.posNotes, d.pos.notes),
+      posItems: d.pos.items.map((i) => ({ key: key("pos"), label: i.description, extra: i.type, from: i.from, changed: false })),
+      timeline: d.timeline.map((t) => ({ key: key("step"), label: t.label, extra: t.time, from: t.from, changed: false })),
+      team: { proposals: teamProposals, accepted: [] },
+    },
   };
 }
 
@@ -167,63 +336,31 @@ function laterFrom(a: BeoAiFrom | null, b: BeoAiFrom): BeoAiFrom {
   return laterLineWins(b, a) ? b : a;
 }
 
-/** What Approve and create writes, in the words the review says it. */
-export const APPROVAL_WRITES = "the child's name, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment and the deposit";
-/** What it leaves for the preview of before, in the same words. */
-export const APPROVAL_LEAVES =
-  "the title, the booking name, the location, the special requests, the activities, the decoration, the setup plan, the party details, the timeline and the team";
-
-const asRecord = (v: unknown): Record<string, unknown> | null =>
-  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-const filled = (v: unknown) => v !== undefined && v !== null && !(typeof v === "string" && v.trim() === "");
-
-/**
- * The part of the free-text fill (read from the ruling message) that Approve
- * and create does not write: the event's title, booking name, location,
- * special requests, activities and decoration, the setup plan, Party Details
- * (but its prepayment and deposit date, which the approval writes), the
- * timeline and the team the message names (assigned only where ticked). It
- * opens in the preview of before once the approval is saved, so Load into
- * Editor applies it with the preview's own rules; null when the fill holds
- * none of it. `keptLines` are the free lines the approval added to Special
- * Requests: the message's special requests carry them after its own, so
- * loading one never drops the other.
- */
-export function fillBeyondApproval(fill: unknown, keptLines: string[] = []): Record<string, unknown> | null {
-  const f = asRecord(fill);
-  if (!f) return null;
-  const rest: Record<string, unknown> = {};
-  const ev = asRecord(f.event) ?? {};
-  const event: Record<string, unknown> = {};
-  for (const k of ["title", "bookingName", "locationText", "activities", "decoration"]) if (filled(ev[k])) event[k] = ev[k];
-  if (typeof ev.specialRequests === "string" && ev.specialRequests.trim()) {
-    const own = ev.specialRequests.trim();
-    event.specialRequests = [own, ...keptLines.filter((l) => !own.includes(l))].join("\n");
-  }
-  if (Object.keys(event).length > 0) rest.event = event;
-  const setup = asRecord(f.setupPlan);
-  if (setup && Object.values(setup).some((v) => (Array.isArray(v) ? v.length > 0 : filled(v)))) rest.setupPlan = setup;
-  const party = asRecord(f.partyDetails);
-  if (party) {
-    const { prepaymentReceived: _paid, depositDate: _on, ...others } = party;
-    if (Object.values(others).some((v) => (Array.isArray(v) ? v.length > 0 : filled(v)))) rest.partyDetails = others;
-  }
-  if (Array.isArray(f.timeline) && f.timeline.length > 0) rest.timeline = f.timeline;
-  const proposals = asRecord(f.proposals);
-  const team = proposals && Object.values(proposals).some(Boolean) ? proposals : null;
-  if (Object.keys(rest).length === 0 && !team) return null;
-  if (team) rest.proposals = team;
-  if (filled(f.summary)) rest.summary = f.summary;
-  return rest;
-}
+/** What Approve and create writes, in the words the review says it (SCRUM-827: everything, in one pass). */
+export const APPROVAL_WRITES =
+  "the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit";
 
 /** A field the reviewer set: their value, marked as changed here. */
 export function edited<T>(field: Reviewed<T> | null, value: T): Reviewed<T> {
   return { value, from: field?.from ?? null, changed: true };
 }
 
+/** SCRUM-827: a text field of the rest the reviewer typed into: theirs now. */
+export function editedText(field: ReviewText, value: string): ReviewText {
+  return { ...field, value, changed: true };
+}
+
+/** SCRUM-827: "Use the chat's" — the chat's text in place of the held one, with the chat's mark. */
+export function useChatText(field: ReviewText): ReviewText {
+  return { ...field, value: field.chat ?? field.value, changed: false, from: field.chatFrom ?? field.from };
+}
+
+/** Whether a text field of the rest shows the chat's text beside the held one, to take with one press. */
+export const chatOffered = (field: ReviewText): boolean =>
+  field.held !== null && field.chat !== null && !sameText(field.held, field.chat) && !sameText(field.value, field.chat);
+
 /** What the small mark beside a field says. */
-export function sourceOf(field: { from: BeoAiFrom | null; changed: boolean } | null): "team" | "family" | "staff" | null {
+export function sourceOf(field: { from: BeoAiFrom | null; changed: boolean } | null): BeoAiOrigin | "staff" | null {
   if (!field) return null;
   if (field.changed || !field.from) return field.changed ? "staff" : null;
   return field.from.source;
@@ -268,6 +405,75 @@ export const thb = (baht: number) => `฿${baht.toLocaleString("en", { maximumFr
 
 /** The add-on, entertainment or package price the catalogue holds, in satang, for `priceBeside`. */
 export const packagePrices = (pkg: BeoAiPackage) => [pkg.priceWeekday ?? pkg.basePrice, pkg.priceWeekend ?? pkg.basePrice];
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * SCRUM-827: the rest of the BEO as Approve and create sends it. A text field
+ * is sent only when the reviewer leaves it different from what the BEO holds
+ * (so nothing typed is overwritten, and a held value is never written back
+ * over itself); a task, line item or step is sent while it is still in its
+ * list; a team member where ticked and matched.
+ */
+export function approveDetailsOf(
+  state: BeoAiReviewState,
+  note: (field: string, f: { from: BeoAiFrom | null; changed: boolean } | null) => void,
+): NonNullable<BeoAiApproveBody["details"]> {
+  const d = state.details;
+  const out: NonNullable<BeoAiApproveBody["details"]> = {};
+  const text = (field: keyof ReviewHeld, into: keyof NonNullable<BeoAiApproveBody["details"]>) => {
+    const f = d[field];
+    const value = f.value.trim();
+    if (!value) return;
+    if (into === "setupReadyBy" && !TIME.test(value)) return;
+    // A value the BEO holds already is not written back over itself; its source is still
+    // recorded when it is the chat's or the park's own (the mark the form wears afterwards).
+    const held = f.held !== null && sameText(value, f.held);
+    if (!held) (out as Record<string, unknown>)[into] = value;
+    if (!held || (f.from && !f.changed)) note(into, f);
+  };
+  text("title", "title");
+  text("bookingName", "bookingName");
+  text("locationText", "locationText");
+  text("specialRequests", "specialRequests");
+  text("activities", "activities");
+  text("decoration", "decoration");
+  text("setupReadyBy", "setupReadyBy");
+  text("setupResponsible", "setupResponsible");
+  text("posName", "posName");
+  text("posNotes", "posNotes");
+  const tasks = d.setupTasks.filter((t) => t.label.trim());
+  if (tasks.length > 0) {
+    out.setupTasks = tasks.map((t, i) => {
+      note(`setupTask:${i}`, t);
+      return { itemLabel: t.label.trim(), notes: t.extra.trim() || null };
+    });
+  }
+  const items = d.posItems.filter((i) => i.label.trim());
+  if (items.length > 0) {
+    out.posItems = items.map((i, n) => {
+      note(`posItem:${n}`, i);
+      return { description: i.label.trim(), type: i.extra === "extra" ? "extra" : "included" };
+    });
+  }
+  const steps = d.timeline.filter((s) => s.label.trim() && TIME.test(s.extra));
+  if (steps.length > 0) {
+    out.timeline = steps.map((s, i) => {
+      note(`timeline:${i}`, s);
+      return { time: s.extra, label: s.label.trim() };
+    });
+  }
+  const team: NonNullable<NonNullable<BeoAiApproveBody["details"]>["team"]> = {};
+  for (const { field } of REVIEW_TEAM_FIELDS) {
+    const proposal = d.team.proposals[field];
+    if (!proposal?.match || !d.team.accepted.includes(field)) continue;
+    team[field] = { kind: proposal.match.kind, id: proposal.match.id, label: proposal.match.label };
+    // The name is the message's: the team's confirmation named them.
+    note(`team:${field}`, { from: { source: "team", at: null, line: null }, changed: false });
+  }
+  if (Object.keys(team).length > 0) out.team = team;
+  return out;
+}
 
 /**
  * What "Approve and create" sends: the BEO as the reviewer left it. Kept free
@@ -348,7 +554,7 @@ export function approveBodyOf(
   }
   for (const k of ["startTime", "endTime"] as const) {
     const f = state[k];
-    if (f && /^([01]\d|2[0-3]):[0-5]\d$/.test(f.value)) {
+    if (f && TIME.test(f.value)) {
       event[k] = f.value;
       note(k, f);
     }
@@ -364,7 +570,7 @@ export function approveBodyOf(
     ? {
         mode: state.cake.value.mode,
         notes: state.cake.value.notes.trim() || null,
-        time: /^([01]\d|2[0-3]):[0-5]\d$/.test(state.cake.value.time) ? state.cake.value.time : null,
+        time: TIME.test(state.cake.value.time) ? state.cake.value.time : null,
       }
     : null;
   // SCRUM-787: a cake whose type is not said is sent for its time and notes only; with neither, nothing.
@@ -381,6 +587,9 @@ export function approveBodyOf(
       : null;
   if (deposit) note("deposit", state.deposit);
 
+  // SCRUM-827: the rest of the BEO, in the same pass.
+  const details = approveDetailsOf(state, note);
+
   return {
     conversationId: ids.conversationId,
     messageId: ids.messageId,
@@ -392,6 +601,36 @@ export function approveBodyOf(
     event,
     cake,
     deposit,
+    details,
     sources,
   };
+}
+
+/**
+ * SCRUM-827: the sources the approval recorded, by the editor's field, for
+ * the marks the form wears once the BEO opens filled: `team:partyHost` →
+ * "team", and so on. "staff" is a value the reviewer changed.
+ */
+export type ApprovedMarks = Record<string, BeoAiOrigin | "staff">;
+export function approvedMarksOf(sources: BeoAiApproveBody["sources"]): ApprovedMarks {
+  const marks: ApprovedMarks = {};
+  for (const s of sources) marks[s.field] = s.source;
+  return marks;
+}
+
+/** The editor's sections, and the approved fields each one wears the "from the chat" chip for. */
+export const APPROVED_SECTIONS: Record<string, (field: string) => boolean> = {
+  "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration"].includes(f),
+  "party-host": (f) => f.startsWith("team:partyHost") || f.startsWith("team:entertainmentHost"),
+  "birthday-package": (f) => f === "package" || f.startsWith("addOn:") || f.startsWith("entertainment:"),
+  "party-details": (f) => f.startsWith("pos") || f === "deposit",
+  "setup-plan": (f) => f.startsWith("setup") || f === "team:setupResponsible",
+  "kitchen-plan": (f) => f === "setMenu" || f === "cake" || f.startsWith("choice:") || f.startsWith("menu:"),
+  timeline: (f) => f.startsWith("timeline:"),
+};
+
+/** The sections the approval filled, for the chip and for opening them. */
+export function approvedSectionsOf(marks: ApprovedMarks): string[] {
+  const fields = Object.keys(marks);
+  return Object.entries(APPROVED_SECTIONS).filter(([, has]) => fields.some(has)).map(([section]) => section);
 }

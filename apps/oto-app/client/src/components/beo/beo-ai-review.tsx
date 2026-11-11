@@ -5,27 +5,36 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, Loader2, MessageSquare, Music, Sparkles, Trash2, Utensils, Wallet } from "lucide-react";
-import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, ListTodo, Loader2, MessageSquare, Music, Settings, Sparkles, Trash2, Users, Utensils, Wallet } from "lucide-react";
+import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
 import { dayLabel } from "@/lib/beo-ai-date";
 import { aiReviewCakeNotSaidNote } from "@/lib/beo-ai-preview";
 import {
-  APPROVAL_LEAVES,
   APPROVAL_WRITES,
+  REVIEW_TEAM_FIELDS,
   addOnLinesOf,
   approveBodyOf,
+  approvedMarksOf,
+  chatOffered,
   choiceGroupsOf,
   edited,
-  fillBeyondApproval,
+  editedText,
   initialReviewState,
   packageOf,
   packagePrices,
   priceBeside,
+  reviewTeamUnmatchedText,
   sourceOf,
   thb,
   undecidedLines,
+  useChatText,
+  type ApprovedMarks,
   type BeoAiDecision,
   type BeoAiReviewState,
+  type ReviewDetails,
+  type ReviewHeld,
+  type ReviewLine,
+  type ReviewText,
   type Reviewed,
 } from "@/lib/beo-ai-review";
 
@@ -40,6 +49,15 @@ import {
  * catalogue lacks is highlighted until the reviewer keeps it as a free line
  * or leaves it out. Nothing is written until "Approve and create"; "Load into
  * Editor" (the free-text fill of before) stays as the fallback.
+ *
+ * SCRUM-827 — ONE PASS: the rest of the BEO (the title, the booking name and
+ * location, the special requests, decoration and activities, the setup plan,
+ * the POS box, the timeline's steps and the team) is in this review too, each
+ * value with its mark — the team's line, the family's line, the park's
+ * default (the title, as the app names a party) — and Approve and create
+ * writes it all at once; nothing opens after it. A text field the BEO
+ * already holds keeps its value, with the chat's offered beside it to take
+ * with one press (nothing typed is overwritten, SCRUM-826's rule).
  */
 
 /** What Create BEO's AI Fill answered when the park has a catalogue. */
@@ -55,7 +73,7 @@ const CAKE_LABEL: Record<BeoAiCakeMode, string> = { INTERNAL: "The park's cake",
 const SELECT = "h-8 rounded-md border border-input bg-background px-2 text-sm";
 
 /** The small mark beside a filled field. */
-export function SourceMark({ field }: { field: { from: { source: "team" | "family" } | null; changed: boolean } | null }) {
+export function SourceMark({ field }: { field: { from: Pick<BeoAiFrom, "source"> & Partial<BeoAiFrom> | null; changed: boolean } | null }) {
   const source = sourceOf(field as Parameters<typeof sourceOf>[0]);
   if (!source) return null;
   return (
@@ -64,6 +82,9 @@ export function SourceMark({ field }: { field: { from: { source: "team" | "famil
         "inline-flex shrink-0 items-center rounded-full border px-1.5 text-[10px] font-medium",
         source === "team" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
         source === "family" && "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400",
+        // SCRUM-827: a value the chat did not give — the park's own rule, or a template of the park's.
+        source === "default" && "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400",
+        source === "template" && "border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-400",
         source === "staff" && "border-border bg-muted text-muted-foreground",
       )}
       data-source={source}
@@ -71,6 +92,113 @@ export function SourceMark({ field }: { field: { from: { source: "team" | "famil
     >
       {beoAiSourceLabel(source)}
     </span>
+  );
+}
+
+/** SCRUM-827: the marks a text field of the rest wears: every line it came from, or "changed here". */
+function TextMarks({ field }: { field: ReviewText }) {
+  if (field.changed) return <SourceMark field={{ from: null, changed: true }} />;
+  if (!field.from) return null;
+  const froms = field.froms.length > 0 ? field.froms : [field.from];
+  return (
+    <>
+      {froms.map((f) => (
+        <SourceMark key={f.source} field={{ from: f, changed: false }} />
+      ))}
+    </>
+  );
+}
+
+/**
+ * SCRUM-827: a text field of the rest of the BEO. What the BEO holds stays
+ * in the field; the chat's text, where it differs, is offered under it with
+ * its marks and taken with one press.
+ */
+function TextRow({
+  label,
+  field,
+  onChange,
+  multiline,
+  type,
+  testId,
+}: {
+  label: string;
+  field: ReviewText;
+  onChange: (next: ReviewText) => void;
+  multiline?: boolean;
+  type?: "text" | "time";
+  testId: string;
+}) {
+  const offered = chatOffered(field);
+  return (
+    <div className="space-y-0.5" data-testid={`ai-review-detail-${testId}`}>
+      <div className="flex items-start gap-2 text-sm flex-wrap">
+        <span className="text-muted-foreground w-28 shrink-0 pt-1.5">{label}:</span>
+        {multiline ? (
+          <textarea
+            className="flex-1 min-w-[10rem] rounded-md border border-input bg-background px-2 py-1 text-sm"
+            rows={2}
+            value={field.value}
+            onChange={(e) => onChange(editedText(field, e.target.value))}
+            data-testid={`input-ai-review-${testId}`}
+          />
+        ) : (
+          <Input
+            type={type ?? "text"}
+            className={cn("h-8", type === "time" ? "w-28" : "flex-1 min-w-[10rem]")}
+            value={field.value}
+            onChange={(e) => onChange(editedText(field, e.target.value))}
+            data-testid={`input-ai-review-${testId}`}
+          />
+        )}
+        <span className="inline-flex items-center gap-1 pt-1.5">
+          <TextMarks field={field} />
+        </span>
+      </div>
+      {offered && (
+        <div className="pl-[7.5rem] flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid={`text-ai-review-chat-says-${testId}`}>
+          <span className="whitespace-pre-wrap">{`The chat says "${field.chat}"`}</span>
+          {field.froms.map((f) => (
+            <SourceMark key={f.source} field={{ from: f, changed: false }} />
+          ))}
+          <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => onChange(useChatText(field))} data-testid={`button-ai-review-use-chat-${testId}`}>
+            Use the chat's
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** SCRUM-827: one line the chat gave (a task, a POS line item, a timeline step), with its mark, removable. */
+function LineRow({ line, onChange, onRemove, extraLabel, testId }: {
+  line: ReviewLine;
+  onChange: (next: ReviewLine) => void;
+  onRemove: () => void;
+  /** What `extra` is, for its control: a task's notes, an item's kind, a step's time. */
+  extraLabel: "notes" | "kind" | "time";
+  testId: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm flex-wrap" data-testid={testId}>
+      {extraLabel === "time" && (
+        <Input type="time" className="h-8 w-28" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
+      )}
+      {extraLabel === "kind" && (
+        <select className={cn(SELECT, "w-24")} value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })}>
+          <option value="included">Included</option>
+          <option value="extra">Extra</option>
+        </select>
+      )}
+      <Input className="h-8 flex-1 min-w-[8rem]" value={line.label} onChange={(e) => onChange({ ...line, label: e.target.value, changed: true })} />
+      {extraLabel === "notes" && (
+        <Input className="h-8 w-40" placeholder="Notes" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
+      )}
+      <SourceMark field={line} />
+      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onRemove} aria-label="Remove the line">
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
   );
 }
 
@@ -156,6 +284,27 @@ export function BeoAiReviewBody({
   bookedCakeMode?: string | null;
 }) {
   const set = (patch: Partial<BeoAiReviewState>) => onChange({ ...state, ...patch });
+  // SCRUM-827: the rest of the BEO, in the same review.
+  const d = state.details;
+  const setDetails = (patch: Partial<ReviewDetails>) => set({ details: { ...d, ...patch } });
+  const textRow = (field: keyof ReviewHeld, label: string, opts: { multiline?: boolean; type?: "text" | "time" } = {}) => (
+    <TextRow label={label} field={d[field]} onChange={(next) => setDetails({ [field]: next } as Partial<ReviewDetails>)} testId={field} {...opts} />
+  );
+  const lines = (field: "setupTasks" | "posItems" | "timeline", extraLabel: "notes" | "kind" | "time", testId: string) =>
+    d[field].map((line, i) => (
+      <LineRow
+        key={line.key}
+        line={line}
+        extraLabel={extraLabel}
+        testId={testId}
+        onChange={(next) => {
+          const list = [...d[field]];
+          list[i] = next;
+          setDetails({ [field]: list } as Partial<ReviewDetails>);
+        }}
+        onRemove={() => setDetails({ [field]: d[field].filter((_, j) => j !== i) } as Partial<ReviewDetails>)}
+      />
+    ));
   const pkg = packageOf(review, state.packageId.value);
   const proposedPkg = review.proposal.package;
   const groups = choiceGroupsOf(review, state.setMenuId.value);
@@ -186,6 +335,8 @@ export function BeoAiReviewBody({
   return (
     <div className="space-y-3">
       <Section title="Event Info" icon={<CalendarDays className="h-4 w-4" />}>
+        {/* SCRUM-827: the party's name, as the app names one from the child and the age — the park's default. */}
+        {textRow("title", "Title")}
         <Row label="Child" field={state.childName}>
           <Input
             className="h-8 flex-1 min-w-[10rem]"
@@ -242,6 +393,59 @@ export function BeoAiReviewBody({
         {count(state.numAdults, "numAdults", "Adults")}
         {time(state.startTime, "startTime", "Start")}
         {time(state.endTime, "endTime", "End")}
+        {/* SCRUM-827: the rest of Event Info: the ruling's fields, and the chat's requests with their lines. */}
+        {textRow("bookingName", "Booking name")}
+        {textRow("locationText", "Location")}
+        {textRow("activities", "Activities", { multiline: true })}
+        {textRow("decoration", "Decoration", { multiline: true })}
+        {textRow("specialRequests", "Special requests", { multiline: true })}
+      </Section>
+
+      {/* SCRUM-827: whom the message names, matched to this park's people; assigned only when ticked. */}
+      <Section title="Team" icon={<Users className="h-4 w-4" />}>
+        {REVIEW_TEAM_FIELDS.every(({ field }) => !d.team.proposals[field]) && (
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-no-team">
+            The chat names nobody for the team. Choose the hosts in the form.
+          </p>
+        )}
+        {REVIEW_TEAM_FIELDS.map(({ field, label }) => {
+          const proposal = d.team.proposals[field];
+          if (!proposal) return null;
+          if (proposal.match) {
+            const ticked = d.team.accepted.includes(field);
+            return (
+              <label key={field} className="flex items-start gap-2 text-sm cursor-pointer" data-testid={`ai-review-team-${field}`}>
+                <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+                <input
+                  type="checkbox"
+                  className="mt-1 shrink-0"
+                  checked={ticked}
+                  onChange={(e) =>
+                    setDetails({
+                      team: { ...d.team, accepted: e.target.checked ? [...d.team.accepted, field] : d.team.accepted.filter((f) => f !== field) },
+                    })
+                  }
+                  data-testid={`checkbox-ai-review-team-${field}`}
+                />
+                <span className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium">{proposal.match.label}</span>
+                  <span className="text-xs text-muted-foreground">{` — the message says "${proposal.asked}". Tick to assign.`}</span>
+                  <SourceMark field={{ from: { source: "team", at: null, line: null }, changed: false }} />
+                </span>
+              </label>
+            );
+          }
+          return (
+            <div key={field} className="flex items-start gap-2 text-sm" data-testid={`ai-review-team-${field}`}>
+              <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+              <span>
+                <span className="font-medium">{`"${proposal.asked}"`}</span>
+                <span className="text-xs text-amber-700 dark:text-amber-300">{` ${reviewTeamUnmatchedText(field, proposal.why)}`}</span>
+              </span>
+            </div>
+          );
+        })}
       </Section>
 
       <Section title="Package" icon={<Gift className="h-4 w-4" />}>
@@ -294,6 +498,25 @@ export function BeoAiReviewBody({
             </div>
           );
         })}
+      </Section>
+
+      {/* SCRUM-827: the POS box (Party Details) and the setup plan, from the team's confirmation. */}
+      <Section title="POS" icon={<Gift className="h-4 w-4" />}>
+        {textRow("posName", "POS name")}
+        {d.posItems.length === 0 && !d.posName.value && !d.posNotes.value && (
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-no-pos">The chat names nothing for the POS box.</p>
+        )}
+        {lines("posItems", "kind", "ai-review-pos-item")}
+        {textRow("posNotes", "POS notes", { multiline: true })}
+      </Section>
+
+      <Section title="Setup Plan" icon={<Settings className="h-4 w-4" />}>
+        {textRow("setupReadyBy", "Ready by", { type: "time" })}
+        {textRow("setupResponsible", "Who")}
+        {d.setupTasks.length === 0 && !d.setupReadyBy.value && !d.setupResponsible.value && (
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-no-setup">The chat names no setup.</p>
+        )}
+        {lines("setupTasks", "notes", "ai-review-setup-task")}
       </Section>
 
       <Section title="Kitchen Plan" icon={<Utensils className="h-4 w-4" />}>
@@ -523,6 +746,16 @@ export function BeoAiReviewBody({
         </Section>
       )}
 
+      {/* SCRUM-827: the chat's timed steps; the BEO's own steps are added from itself on approval. */}
+      <Section title="Timeline" icon={<ListTodo className="h-4 w-4" />}>
+        {d.timeline.length === 0 && <p className="text-xs text-muted-foreground" data-testid="text-ai-review-no-timeline">The chat gives no timed steps.</p>}
+        {lines("timeline", "time", "ai-review-timeline-step")}
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap" data-testid="text-ai-review-timeline-auto">
+          The park's own steps (guests arrive, the setup, the cake, the food) are added from the BEO when you approve.
+          <SourceMark field={{ from: { source: "template", at: null, line: null }, changed: false }} />
+        </p>
+      </Section>
+
       {state.deposit && (
         <Section title="Deposit" icon={<Wallet className="h-4 w-4" />}>
           <Row label={state.deposit.value.paid ? "Deposit paid" : "Deposit asked"} field={state.deposit}>
@@ -566,6 +799,7 @@ export function BeoAiReviewDialog({
   pending,
   bookedDate,
   bookedCakeMode,
+  held,
   onClose,
   onFallback,
   onApproved,
@@ -576,14 +810,16 @@ export function BeoAiReviewDialog({
   bookedDate: string | null;
   /** SCRUM-787: the cake type the form holds, which a cake whose type is not said keeps. */
   bookedCakeMode?: string | null;
+  /** SCRUM-827: what the form holds of the rest, so nothing typed is overwritten. */
+  held?: ReviewHeld;
   onClose: () => void;
   onFallback: (pending: BeoAiPending) => void;
   /**
-   * After Approve and create is saved and the BEO read again: the part of the
-   * same fill the approval does not write (`fillBeyondApproval`), for the
-   * preview of before; null when there is none.
+   * SCRUM-827: after Approve and create is saved and the BEO read again — the
+   * sources the approval recorded, by field, for the marks the form wears.
+   * Nothing opens after this: the one pass wrote everything.
    */
-  onApproved: (rest: Record<string, unknown> | null, pending: BeoAiPending) => void;
+  onApproved: (marks: ApprovedMarks, pending: BeoAiPending) => void;
 }) {
   const { toast } = useToast();
   const [state, setState] = useState<BeoAiReviewState | null>(null);
@@ -593,13 +829,12 @@ export function BeoAiReviewDialog({
   if (pending !== opened) {
     // A new proposal: the review starts from it.
     setOpened(pending);
-    setState(pending ? initialReviewState(pending.review, { fill: pending.fill, bookedDate }) : null);
+    setState(pending ? initialReviewState(pending.review, { fill: pending.fill, bookedDate, held }) : null);
     setError(null);
   }
   if (!pending || !state) return null;
   const { review, source } = pending;
   const undecided = undecidedLines(state);
-  const rest = fillBeyondApproval(pending.fill);
   // SCRUM-818: a message pasted into AI Fill, read as one line of the team's.
   const pasted = review.origin === "pasted";
 
@@ -616,8 +851,7 @@ export function BeoAiReviewDialog({
       return;
     }
     try {
-      // The form reads the BEO again before the rest of the fill opens, so loading
-      // the rest lands on what was approved, never under it.
+      // The form reads the BEO again, so what it shows is what was approved.
       await Promise.all(
         [
           ["/api/events", eventId, "beo"],
@@ -633,7 +867,8 @@ export function BeoAiReviewDialog({
     }
     toast({ title: `BEO created from the ${pasted ? "pasted message" : "conversation"}`, description: `Saved: ${APPROVAL_WRITES}.` });
     setApproving(false);
-    onApproved(fillBeyondApproval(pending.fill, body.otherLines), pending);
+    // SCRUM-827: one pass — nothing opens after this; the form wears the sources' marks.
+    onApproved(approvedMarksOf(body.sources), pending);
   };
 
   return (
@@ -663,9 +898,10 @@ export function BeoAiReviewDialog({
               </p>
             )}
             <p className="flex items-center gap-1.5 flex-wrap">
-              {pasted ? "Every field it fills is the team's:" : "Every field is the family's or the team's:"}
+              {pasted ? "Every field it fills is the team's, or the park's own:" : "Every field is the family's, the team's, or the park's own:"}
               <SourceMark field={{ from: { source: "team" }, changed: false }} />
               {!pasted && <SourceMark field={{ from: { source: "family" }, changed: false }} />}
+              <SourceMark field={{ from: { source: "default" }, changed: false }} />
               <SourceMark field={{ from: null, changed: true }} />
               {pasted ? "— a field you change is marked as changed here." : "— the family's are defaults for you to check."}
             </p>
@@ -676,10 +912,8 @@ export function BeoAiReviewDialog({
               Approve and create also puts the team's confirmation, word for word, in Final Message to Parent.
             </p>
           )}
-          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-leaves">
-            {rest
-              ? `Approve and create writes ${APPROVAL_WRITES}. It does not write ${APPROVAL_LEAVES}: what the ${pasted ? "pasted message" : "team's confirmation"} says of those opens next, to load into the editor as before and save.`
-              : `Approve and create writes ${APPROVAL_WRITES}.`}
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-writes">
+            {`Approve and create writes ${APPROVAL_WRITES} — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.`}
           </p>
         </div>
         {review.replaces.length > 0 && (
