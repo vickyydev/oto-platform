@@ -1,0 +1,778 @@
+{
+  "ticket": "SCRUM-853",
+  "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+  "till": "https://oto-pos-web-staging.onrender.com",
+  "deployments": {
+    "before": {
+      "oto-pos-staging": {
+        "id": "dep-dbq9vs0n74is73cip1jg",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "createdAt": "2026-11-11T17:03:44.306316Z",
+        "finishedAt": "2026-11-11T17:04:48.985179Z",
+        "readAt": "2026-11-11T17:04:54.526Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq9vs95efls738cppp0",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "createdAt": "2026-11-11T17:03:45.82363Z",
+        "finishedAt": "2026-11-11T17:06:48.86406Z",
+        "readAt": "2026-11-11T17:07:55.697Z"
+      }
+    },
+    "after": {
+      "oto-pos-staging": {
+        "id": "dep-dbq9vs0n74is73cip1jg",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "finishedAt": "2026-11-11T17:04:48.985179Z",
+        "readAt": "2026-11-11T17:24:05.965Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq9vs95efls738cppp0",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "finishedAt": "2026-11-11T17:06:48.86406Z",
+        "readAt": "2026-11-11T17:24:06.347Z"
+      }
+    }
+  },
+  "ci": {
+    "run": 43064423930,
+    "status": "in_progress when the proof finished; not waited for"
+  },
+  "result": {
+    "step1_boxAnswered": "pass",
+    "step2_pricePending": "pass",
+    "step3_refused": "pass",
+    "step4_plainSale": "recorded (control)",
+    "step5_memberCard": "pass"
+  },
+  "steps": {
+    "1": {
+      "pass": true,
+      "seen": {
+        "staffBox": "The voucher price could not be fetched: Vouchers can only be redeemed online. Go Back to change the order, or Cancel the sale.",
+        "amountDue": "Amount Due —",
+        "holdArea": {
+          "present": 1,
+          "holdSaleDisabled": true,
+          "holdSaleReasonCount": 1,
+          "holdSaleReason": "This till is working through its counter box while the platform cannot be reached — holding a sale needs the platform. Take the payment now, or wait for the connection.",
+          "partPaidButtonShown": false,
+          "partPaidDisabled": null,
+          "partPaidReason": null,
+          "stillBeingSavedAnywhereOnPage": 0,
+          "text": "Hold sale This till is working through its counter box while the platform cannot be reached — holding a sale needs the platform. Take the payment now, or wait for the connection."
+        },
+        "memberNotFoundOnPage": false,
+        "confirmDisabled": true,
+        "quotePostsAfterTheAbort": 0,
+        "redemptionSalesWritten": 0,
+        "afterCancel": {
+          "newSales": [],
+          "registration": {
+            "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+            "children": [
+              {
+                "id": "01a1cb9b-06a4-74cb-850d-2d15b63fa566",
+                "name": "ZZ TEST SCRUM-853 child",
+                "status": "registered"
+              }
+            ]
+          }
+        }
+      },
+      "quoteAbortedByTest": {
+        "at": "2026-11-11T17:14:58.351Z"
+      }
+    },
+    "2": {
+      "pending": {
+        "pass": true,
+        "seen": {
+          "staffLine": "Waiting for the voucher price...",
+          "amountDue": "Amount Due —",
+          "confirmDisabled": true,
+          "salesWrittenWhileWaiting": 0,
+          "customerHalf": "English Customer ZZ TEST SCRUM-853 guardian Waiting for the cashier to confirm…",
+          "holdArea": {
+            "present": 1,
+            "holdSaleDisabled": true,
+            "holdSaleReasonCount": 0,
+            "holdSaleReason": null,
+            "partPaidButtonShown": false,
+            "partPaidDisabled": null,
+            "partPaidReason": null,
+            "stillBeingSavedAnywhereOnPage": 0,
+            "text": "Hold sale"
+          },
+          "inPicture": {
+            "waitingLine": true,
+            "holdSaleRow": true
+          }
+        },
+        "heldQuotes": [
+          {
+            "status": 200,
+            "heldAt": "2026-11-11T17:15:12.217Z"
+          }
+        ]
+      },
+      "released": {
+        "pass": true,
+        "seen": {
+          "amountDue": "Amount Due ฿0",
+          "savedSale": {
+            "id": "01a1cb9b-2f76-7d57-800f-9649a5f544fa",
+            "status": "tendering",
+            "totalSatang": 0
+          },
+          "holdAreaAfterPrice": {
+            "present": 1,
+            "holdSaleDisabled": true,
+            "holdSaleReasonCount": 1,
+            "holdSaleReason": "Nothing is owed on this sale — complete it instead.",
+            "partPaidButtonShown": false,
+            "partPaidDisabled": null,
+            "partPaidReason": null,
+            "stillBeingSavedAnywhereOnPage": 0,
+            "text": "Hold sale Nothing is owed on this sale — complete it instead."
+          },
+          "completed": {
+            "saleId": "01a1cb9b-2f76-7d57-800f-9649a5f544fa",
+            "status": "finalised",
+            "totalSatang": 0,
+            "child": "in_park"
+          },
+          "voucherAfter": {
+            "status": "redeemed"
+          }
+        }
+      }
+    },
+    "3": {
+      "pass": true,
+      "seen": {
+        "staffBox": "The voucher price could not be fetched: Scan the voucher at this till first — it is not held for this sale. Go Back to change the order, or Cancel the sale.",
+        "amountDue": "Amount Due —",
+        "confirmDisabled": true,
+        "customerHalf": "English Customer ZZ TEST SCRUM-853 guardian Waiting for the cashier to confirm…",
+        "holdArea": {
+          "present": 1,
+          "holdSaleDisabled": true,
+          "holdSaleReasonCount": 0,
+          "holdSaleReason": null,
+          "partPaidButtonShown": false,
+          "partPaidDisabled": null,
+          "partPaidReason": null,
+          "stillBeingSavedAnywhereOnPage": 0,
+          "text": "Hold sale"
+        },
+        "redemptionSalesWritten": 0,
+        "inPicture": {
+          "amberBox": true,
+          "holdSaleRow": true
+        },
+        "afterCancel": {
+          "newSales": [],
+          "registration": {
+            "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+            "children": [
+              {
+                "id": "01a1cb9a-cb21-7a3d-8e76-991db6d7226d",
+                "name": "ZZ TEST SCRUM-853 child",
+                "status": "registered"
+              }
+            ]
+          }
+        }
+      },
+      "quoteAnsweredByTest": {
+        "status": 409,
+        "code": "VOUCHER_NOT_HELD",
+        "at": "2026-11-11T17:14:43.145Z"
+      }
+    },
+    "4": {
+      "pass": true,
+      "seen": {
+        "atOpen": {
+          "readAt": "2026-11-11T17:15:22.182Z",
+          "salesWritten": 0,
+          "holdArea": {
+            "present": 1,
+            "holdSaleDisabled": true,
+            "holdSaleReasonCount": 1,
+            "holdSaleReason": "The sale is still being saved — wait a moment.",
+            "partPaidButtonShown": false,
+            "partPaidDisabled": null,
+            "partPaidReason": null,
+            "stillBeingSavedAnywhereOnPage": 1,
+            "text": "Hold sale The sale is still being saved — wait a moment."
+          }
+        },
+        "amountDue": "Amount Due ฿1040",
+        "saleWritten": {
+          "id": "01a1cb9b-688c-7214-9991-a78cfb2f7d19",
+          "status": "tendering"
+        },
+        "afterSaved": {
+          "readAt": "2026-11-11T17:15:28.874Z",
+          "holdArea": {
+            "present": 1,
+            "holdSaleDisabled": false,
+            "holdSaleReasonCount": 0,
+            "holdSaleReason": null,
+            "partPaidButtonShown": false,
+            "partPaidDisabled": null,
+            "partPaidReason": null,
+            "stillBeingSavedAnywhereOnPage": 0,
+            "text": "Hold sale"
+          }
+        },
+        "customerHalf": "English Please pay ฿1040.00 to our staff",
+        "afterCancel": {
+          "id": "01a1cb9b-688c-7214-9991-a78cfb2f7d19",
+          "status": "voided"
+        }
+      },
+      "saleWriteDelayedByTest": [
+        {
+          "ms": 4000,
+          "seenAt": "2026-11-11T17:15:22.158Z"
+        }
+      ]
+    },
+    "5": {
+      "pass": true,
+      "seen": {
+        "memberOnPlatform": {
+          "id": "01a1cb9d-7136-7f3d-a4f5-9eaa96a0a5f5",
+          "nickname": "ZZ TEST SCRUM-853 guardian",
+          "phoneStored": "+66898020058"
+        },
+        "visitingDialog": "shown; \"Skip for now\" pressed (it only closes the dialog)",
+        "memberCard": "Z ZZ TEST SCRUM-853 guardian +66 89 802 0058 No verified rate",
+        "expected": "+66 89 802 0058",
+        "nonGetRequestsDuringThePass": [
+          "PUT /api/me/session/station",
+          "POST /api/me/station/heartbeat"
+        ],
+        "salesWritten": 0,
+        "memberAfter": {
+          "id": "01a1cb9d-7136-7f3d-a4f5-9eaa96a0a5f5",
+          "same": true,
+          "updatedAtSame": true
+        }
+      },
+      "savedByPass": "p"
+    }
+  },
+  "pictures": {
+    "1": [
+      "SCRUM-853-1-box-answered-online-only.png"
+    ],
+    "2": [
+      "SCRUM-853-2-price-pending-no-saving-line.png",
+      "SCRUM-853-2b-price-arrived-zero.png"
+    ],
+    "3": [
+      "SCRUM-853-3-refused-platform-words-no-saving-line.png"
+    ],
+    "4": [
+      "SCRUM-853-4a-plain-sale-step-opens.png",
+      "SCRUM-853-4b-plain-sale-saved.png"
+    ],
+    "5": [
+      "SCRUM-853-5-member-card-spaced-number.png"
+    ]
+  },
+  "runs": {
+    "run-01": {
+      "startedAt": "2026-11-11T17:14:21.837Z",
+      "finishedAt": "2026-11-11T17:16:09.285Z",
+      "stepsRun": [
+        "r",
+        "o",
+        "p",
+        "e",
+        "m"
+      ],
+      "numbers": {
+        "r": "0898020052",
+        "o": "0898020053",
+        "p": "0898020054",
+        "e": "0898020055"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb9a-8ee3-725d-8bad-afdc7ba1d443",
+          "name": "ZZ TEST SCRUM-853 proof till 1794417261847",
+          "prefix": "Z85301"
+        },
+        {
+          "kind": "voucher-sale",
+          "id": "01a1cb9a-9e4d-70c4-adbb-fb350e8d61e3",
+          "paidBy": "cash"
+        },
+        {
+          "kind": "voucher",
+          "id": "01a1cb9a-abd2-7e52-a926-878afe85fddb"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9a-b3b7-7361-a4e9-c39f229f8fc4"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+          "step": "r"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9a-efb8-7474-98c3-a0a8ff851f56"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+          "step": "o"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9b-2923-75f9-b29f-d1602d90110c"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb9b-3c57-725f-855d-4f25766895af",
+          "step": "p"
+        },
+        {
+          "kind": "redemption-sale",
+          "id": "01a1cb9b-2f76-7d57-800f-9649a5f544fa"
+        },
+        {
+          "kind": "plain-ticket-sale",
+          "id": "01a1cb9b-688c-7214-9991-a78cfb2f7d19"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "display",
+          "id": "01a1cb9a-b3b7-7361-a4e9-c39f229f8fc4",
+          "revoked": true
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9a-efb8-7474-98c3-a0a8ff851f56",
+          "revoked": true
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9b-2923-75f9-b29f-d1602d90110c",
+          "revoked": true
+        },
+        {
+          "kind": "sale",
+          "id": "01a1cb9b-688c-7214-9991-a78cfb2f7d19",
+          "status": "voided",
+          "by": "Cancel on the till"
+        },
+        {
+          "kind": "registration",
+          "step": "r",
+          "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+          "children": [
+            {
+              "id": "01a1cb9a-cb21-7a3d-8e76-991db6d7226d",
+              "name": "ZZ TEST SCRUM-853 child",
+              "status": "registered"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "registration",
+          "step": "o",
+          "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+          "children": [
+            {
+              "id": "01a1cb9b-06a4-74cb-850d-2d15b63fa566",
+              "name": "ZZ TEST SCRUM-853 child",
+              "status": "registered"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "registration",
+          "step": "p",
+          "id": "01a1cb9b-3c57-725f-855d-4f25766895af",
+          "children": [
+            {
+              "id": "01a1cb9b-3c57-725f-855d-4f26cc6ab1da",
+              "name": "ZZ TEST SCRUM-853 child",
+              "status": "out"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb9b-2f76-7d57-800f-9649a5f544fa",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb9b-60e7-72ec-a56a-7c5731aec977",
+              "status": "printed"
+            },
+            {
+              "id": "01a1cb9b-5e98-79c8-92dc-8c6c209fc02e",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb9a-9e4d-70c4-adbb-fb350e8d61e3",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb9a-abe5-7471-be17-3857aba9e287",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb9b-688c-7214-9991-a78cfb2f7d19",
+              "status": "voided",
+              "grossSatang": 104000
+            },
+            {
+              "id": "01a1cb9b-2f76-7d57-800f-9649a5f544fa",
+              "status": "finalised",
+              "grossSatang": 0
+            },
+            {
+              "id": "01a1cb9a-9e4d-70c4-adbb-fb350e8d61e3",
+              "status": "finalised",
+              "grossSatang": 150000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb9a-8ee3-725d-8bad-afdc7ba1d443",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "member",
+          "key": "r",
+          "id": "01a1cb9a-c957-7268-aa82-509992300202",
+          "archived": true
+        },
+        {
+          "kind": "member",
+          "key": "o",
+          "id": "01a1cb9b-04e1-78a7-b2fc-444473480df7",
+          "archived": true
+        },
+        {
+          "kind": "member",
+          "key": "p",
+          "id": "01a1cb9b-3a93-7894-82bd-45bd6990b994",
+          "archived": true
+        },
+        {
+          "kind": "test-number",
+          "key": "e",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": true,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [
+        {
+          "key": "m",
+          "failedAt": "m: a pass on a number whose ZZ TEST guardian this run saved",
+          "failure": "Error: expect(locator).toBeVisible() failed"
+        }
+      ],
+      "requestCount": 71,
+      "refusedRequests": [],
+      "note": "Steps 3, 1, 2 and 4 in that order, all passed. Step 5 stopped in the harness: it waited for the heading \"Select Customer Type\" by role while the \"Who is visiting today?\" dialog stood over it. The stopped picture already showed the card reading +66 89 802 0052. Nothing was written by the stopped step.",
+      "stoppedStep5": {
+        "pass": false,
+        "seen": {
+          "memberOnPlatform": {
+            "id": "01a1cb9a-c957-7268-aa82-509992300202",
+            "nickname": "ZZ TEST SCRUM-853 guardian",
+            "phoneStored": "+66898020052"
+          }
+        },
+        "savedByPass": "r"
+      }
+    },
+    "run-02": {
+      "startedAt": "2026-11-11T17:17:14.626Z",
+      "finishedAt": "2026-11-11T17:18:12.135Z",
+      "stepsRun": [
+        "p",
+        "m"
+      ],
+      "numbers": {
+        "r": "0898020056",
+        "o": "0898020057",
+        "p": "0898020058",
+        "e": "0898020059"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb9d-3356-73ea-ab21-826abc8f80ce",
+          "name": "ZZ TEST SCRUM-853 proof till 1794417434633",
+          "prefix": "Z85302"
+        },
+        {
+          "kind": "voucher-sale",
+          "id": "01a1cb9d-41ae-7bdd-be28-39e371f51078",
+          "paidBy": "cash"
+        },
+        {
+          "kind": "voucher",
+          "id": "01a1cb9d-4f43-7f5c-874f-156e13066a94"
+        },
+        {
+          "kind": "display",
+          "id": "01a1cb9d-5ad9-7145-bcf0-8c24c1bac46e"
+        },
+        {
+          "kind": "registration",
+          "id": "01a1cb9d-730c-77af-b526-7ec1971cb311",
+          "step": "p"
+        },
+        {
+          "kind": "redemption-sale",
+          "id": "01a1cb9d-61e0-72c7-8a23-2a3e164f94f5"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "display",
+          "id": "01a1cb9d-5ad9-7145-bcf0-8c24c1bac46e",
+          "revoked": true
+        },
+        {
+          "kind": "registration",
+          "step": "p",
+          "id": "01a1cb9d-730c-77af-b526-7ec1971cb311",
+          "children": [
+            {
+              "id": "01a1cb9d-730c-77af-b526-7ec2661db876",
+              "name": "ZZ TEST SCRUM-853 child",
+              "status": "out"
+            }
+          ],
+          "inPark": 0
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb9d-61e0-72c7-8a23-2a3e164f94f5",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb9d-9fdc-7d55-afbf-73f5b4efd5c1",
+              "status": "printed"
+            },
+            {
+              "id": "01a1cb9d-9d52-7aa1-82f8-853476db5c58",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "finalised-test-sale",
+          "id": "01a1cb9d-41ae-7bdd-be28-39e371f51078",
+          "retained": true,
+          "printJobs": [
+            {
+              "id": "01a1cb9d-4f62-7cb4-89b6-12a9861d584f",
+              "status": "printed"
+            }
+          ]
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb9d-61e0-72c7-8a23-2a3e164f94f5",
+              "status": "finalised",
+              "grossSatang": 0
+            },
+            {
+              "id": "01a1cb9d-41ae-7bdd-be28-39e371f51078",
+              "status": "finalised",
+              "grossSatang": 150000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb9d-3356-73ea-ab21-826abc8f80ce",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "test-number",
+          "key": "r",
+          "member": null
+        },
+        {
+          "kind": "test-number",
+          "key": "o",
+          "member": null
+        },
+        {
+          "kind": "member",
+          "key": "p",
+          "id": "01a1cb9d-7136-7f3d-a4f5-9eaa96a0a5f5",
+          "archived": true
+        },
+        {
+          "kind": "test-number",
+          "key": "e",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": true,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [],
+      "requestCount": 46,
+      "refusedRequests": [],
+      "note": "A second Golden Ticket bought for cash, one more held-price pass (same result as run 01) to save a guardian, then step 5 on that number.",
+      "repeatOfStep2": {
+        "pending": {
+          "pass": true,
+          "seen": {
+            "staffLine": "Waiting for the voucher price...",
+            "amountDue": "Amount Due —",
+            "confirmDisabled": true,
+            "salesWrittenWhileWaiting": 0,
+            "customerHalf": "English Customer ZZ TEST SCRUM-853 guardian Waiting for the cashier to confirm…",
+            "holdArea": {
+              "present": 1,
+              "holdSaleDisabled": true,
+              "holdSaleReasonCount": 0,
+              "holdSaleReason": null,
+              "partPaidButtonShown": false,
+              "partPaidDisabled": null,
+              "partPaidReason": null,
+              "stillBeingSavedAnywhereOnPage": 0,
+              "text": "Hold sale"
+            },
+            "inPicture": {
+              "waitingLine": true,
+              "holdSaleRow": true
+            }
+          },
+          "heldQuotes": [
+            {
+              "status": 200,
+              "heldAt": "2026-11-11T17:17:37.568Z"
+            }
+          ]
+        },
+        "released": {
+          "pass": true,
+          "seen": {
+            "amountDue": "Amount Due ฿0",
+            "savedSale": {
+              "id": "01a1cb9d-61e0-72c7-8a23-2a3e164f94f5",
+              "status": "tendering",
+              "totalSatang": 0
+            },
+            "holdAreaAfterPrice": {
+              "present": 1,
+              "holdSaleDisabled": true,
+              "holdSaleReasonCount": 1,
+              "holdSaleReason": "Nothing is owed on this sale — complete it instead.",
+              "partPaidButtonShown": false,
+              "partPaidDisabled": null,
+              "partPaidReason": null,
+              "stillBeingSavedAnywhereOnPage": 0,
+              "text": "Hold sale Nothing is owed on this sale — complete it instead."
+            },
+            "completed": {
+              "saleId": "01a1cb9d-61e0-72c7-8a23-2a3e164f94f5",
+              "status": "finalised",
+              "totalSatang": 0,
+              "child": "in_park"
+            },
+            "voucherAfter": {
+              "status": "redeemed"
+            }
+          }
+        }
+      }
+    }
+  },
+  "leftOnStaging": [
+    "two Golden Ticket purchases (cash, finalised, ZZ TEST tills): 01a1cb9a-9e4d-70c4-adbb-fb350e8d61e3 and 01a1cb9d-41ae-7bdd-be28-39e371f51078; both vouchers read redeemed",
+    "two zero-total redemption sales, finalised: 01a1cb9b-2f76-7d57-800f-9649a5f544fa and 01a1cb9d-61e0-72c7-8a23-2a3e164f94f5",
+    "plain ticket sale 01a1cb9b-688c-7214-9991-a78cfb2f7d19, voided by Cancel on the till",
+    "registrations of steps 3 and 1 with the ZZ TEST child still \"registered\" (never checked in; the platform has no call that removes a registration); registrations of the two held-price passes with the ZZ TEST child \"out\" (picked up)",
+    "four ZZ TEST guardian members, archived; two ZZ TEST tills, archived with no devices; four displays, revoked"
+  ]
+}

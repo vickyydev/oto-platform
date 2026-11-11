@@ -1,0 +1,661 @@
+{
+  "ticket": "SCRUM-854",
+  "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+  "till": "https://oto-pos-web-staging.onrender.com",
+  "deployments": {
+    "before": {
+      "oto-pos-staging": {
+        "id": "dep-dbq9vs0n74is73cip1jg",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "createdAt": "2026-11-11T17:03:44.306316Z",
+        "finishedAt": "2026-11-11T17:04:48.985179Z",
+        "readAt": "2026-11-11T17:04:54.526Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq9vs95efls738cppp0",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "createdAt": "2026-11-11T17:03:45.82363Z",
+        "finishedAt": "2026-11-11T17:06:48.86406Z",
+        "readAt": "2026-11-11T17:07:55.697Z"
+      }
+    },
+    "after": {
+      "oto-pos-staging": {
+        "id": "dep-dbq9vs0n74is73cip1jg",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "finishedAt": "2026-11-11T17:04:48.985179Z",
+        "readAt": "2026-11-11T17:24:05.965Z"
+      },
+      "oto-pos-web-staging": {
+        "id": "dep-dbq9vs95efls738cppp0",
+        "status": "live",
+        "sha": "9ca26f4d4499fb8a9a2933249d2673b7fc96df58",
+        "finishedAt": "2026-11-11T17:06:48.86406Z",
+        "readAt": "2026-11-11T17:24:06.347Z"
+      }
+    }
+  },
+  "ci": {
+    "run": 43064423930,
+    "status": "in_progress when the proof finished; not waited for"
+  },
+  "result": {
+    "a": "pass",
+    "b": "pass",
+    "c": "pass",
+    "d": "pass",
+    "e": "pass"
+  },
+  "accounts": {
+    "first": "the reception-type ZZ TEST login the till harness uses (STAGING_RECEPTION_*)",
+    "second": "the staging administrator (STAGING_ADMIN_*), signed in on the same till screen after the hand-over"
+  },
+  "voucher": {
+    "how": "POST /api/voucher-definitions + POST /api/voucher-campaigns as the staging administrator",
+    "type": "ZZ TEST SCRUM-854 150 THB Voucher (zz-test-s854-150-off), money off a ticket order",
+    "campaign": {
+      "kind": "voucher-campaign",
+      "id": "01a1cba2-6201-722c-8430-a9b38e456874",
+      "quantity": 1
+    }
+  },
+  "counts": {
+    "leftUnpaidNoticesWhenTheTillOpened": 1,
+    "beforeThePress": 1,
+    "afterThePress": 0
+  },
+  "steps": {
+    "a": {
+      "pass": true,
+      "seen": {
+        "payButton": "Pay ฿890",
+        "amountDue": "Amount Due ฿890",
+        "leftSale": {
+          "id": "01a1cba2-8213-726a-af1d-74f1bf410b57",
+          "status": "tendering"
+        },
+        "handOverButton": "Sign out and hand over the till",
+        "firstAccountSessionAfterHandOver": {
+          "status": 401,
+          "reads": 1,
+          "withinMs": 109
+        },
+        "leftSaleAfterHandOver": "tendering"
+      }
+    },
+    "b": {
+      "pass": true,
+      "seen": {
+        "signIn": {
+          "stationPickerShown": false
+        },
+        "secondAccountIsAnotherAccount": true,
+        "noticeShown": "on the till as it opened",
+        "noticeCount": 1,
+        "notice": "A sale rung up at this till was left unpaid Unpaid sale at ZZ TEST SCRUM-854 proof till 1794417774776 · rung up 12 Nov 2026 00:23 · ฿890 Rung up less than a minute ago — if it is being paid for on another screen, finish it there instead. Void that unpaid sale"
+      }
+    },
+    "c": {
+      "pass": true,
+      "seen": {
+        "refusal": "This voucher is on a sale already rung up at ZZ TEST SCRUM-854 proof till 1794417774776 — pay or void that sale first [voucher] Unpaid sale at ZZ TEST SCRUM-854 proof till 1794417774776 · rung up 12 Nov 2026 00:23 · ฿890 Rung up less than a minute ago — if it is being paid for on another screen, finish it there instead. Void that unpaid sale and use the voucher here",
+        "noticesBefore": 1,
+        "notice": "A sale rung up at this till was left unpaid Unpaid sale at ZZ TEST SCRUM-854 proof till 1794417774776 · rung up 12 Nov 2026 00:23 · ฿890 Rung up less than a minute ago — if it is being paid for on another screen, finish it there instead. Void that unpaid sale",
+        "voucherCardShown": false,
+        "leftSaleBeforeThePress": "tendering",
+        "inPicture": {
+          "refusal": true,
+          "leftUnpaidNotice": true
+        }
+      }
+    },
+    "d": {
+      "pass": true,
+      "seen": {
+        "button": "Void that unpaid sale and use the voucher here",
+        "voucherCardShown": true,
+        "refusalCount": 0,
+        "leftSaleAfterThePress": "voided",
+        "noticesBefore": 1,
+        "noticesAfter": 0,
+        "leftUnpaidWordsOnPage": 0
+      }
+    },
+    "e": {
+      "pass": true,
+      "seen": {
+        "leftSale": {
+          "id": "01a1cba2-8213-726a-af1d-74f1bf410b57",
+          "status": "voided",
+          "voidReason": "Rung up and left unpaid; voided at the till to use its voucher on a new sale"
+        },
+        "afterCancel": {
+          "newSales": []
+        },
+        "voucherAfter": {
+          "status": "issued"
+        }
+      }
+    }
+  },
+  "pictures": {
+    "a": [
+      "SCRUM-854-a-first-account-sale-rung-up-unpaid.png"
+    ],
+    "b": [
+      "SCRUM-854-b-second-account-left-unpaid-notice.png"
+    ],
+    "c": [
+      "SCRUM-854-c-refusal-and-left-unpaid-notice.png"
+    ],
+    "d": [
+      "SCRUM-854-d-voided-voucher-on-notice-gone.png"
+    ]
+  },
+  "runs": {
+    "run-01": {
+      "startedAt": "2026-11-11T17:18:26.652Z",
+      "finishedAt": "2026-11-11T17:18:45.008Z",
+      "stepsRun": [
+        "854"
+      ],
+      "numbers": {
+        "h": "0898020060"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "voucherIssued": {
+          "via": "POST /api/voucher-definitions + POST /api/voucher-campaigns as the staging administrator",
+          "statusBefore": "issued"
+        },
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb9e-48e6-7e78-9e97-0f7688d79f30",
+          "name": "ZZ TEST SCRUM-854 proof till 1794417506660",
+          "prefix": "Z85401"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "code": "zz-test-s854-150-off",
+          "name": "ZZ TEST SCRUM-854 150 THB Voucher",
+          "how": "created"
+        },
+        {
+          "kind": "voucher-campaign",
+          "id": "01a1cb9e-4c69-7a5f-9fd3-1e2193500542",
+          "quantity": 1
+        },
+        {
+          "kind": "left-unpaid-sale",
+          "id": "01a1cb9e-64e3-76c9-8007-d76ac894acfc"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "sale",
+          "id": "01a1cb9e-64e3-76c9-8007-d76ac894acfc",
+          "status": "voided",
+          "by": "cleanup"
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb9e-64e3-76c9-8007-d76ac894acfc",
+              "status": "voided",
+              "grossSatang": 89000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb9e-48e6-7e78-9e97-0f7688d79f30",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "voucher",
+          "campaign": "01a1cb9e-4c69-7a5f-9fd3-1e2193500542",
+          "status": "issued"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "archived": "not listed any more"
+        },
+        {
+          "kind": "test-number",
+          "key": "h",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": false,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [
+        {
+          "key": "854",
+          "failedAt": "a: lock, then \"Sign out and hand over the till\"",
+          "failure": "AssertionError: Expected values to be strictly equal:"
+        }
+      ],
+      "requestCount": 20,
+      "refusedRequests": [],
+      "note": "Harness stop: the session of the first account was read in the same instant the till showed its lock screen and still answered 200; the till ends the session just behind the screen (401 at clean-up). The harness now reads until 401.",
+      "stepA": {
+        "pass": false,
+        "seen": {
+          "payButton": "Pay ฿890",
+          "amountDue": "Amount Due ฿890",
+          "leftSale": {
+            "id": "01a1cb9e-64e3-76c9-8007-d76ac894acfc",
+            "status": "tendering"
+          },
+          "handOverButton": "Sign out and hand over the till",
+          "firstAccountSessionAfterHandOver": 200
+        }
+      }
+    },
+    "run-02": {
+      "startedAt": "2026-11-11T17:19:23.496Z",
+      "finishedAt": "2026-11-11T17:20:29.137Z",
+      "stepsRun": [
+        "854"
+      ],
+      "numbers": {
+        "h": "0898020061"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "voucherIssued": {
+          "via": "POST /api/voucher-definitions + POST /api/voucher-campaigns as the staging administrator",
+          "statusBefore": "issued"
+        },
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cb9f-2699-783d-87c1-4af6cd568a2a",
+          "name": "ZZ TEST SCRUM-854 proof till 1794417563507",
+          "prefix": "Z85402"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "code": "zz-test-s854-150-off",
+          "name": "ZZ TEST SCRUM-854 150 THB Voucher",
+          "how": "restored"
+        },
+        {
+          "kind": "voucher-campaign",
+          "id": "01a1cb9f-27e6-7957-9d49-404c8b7f7e2a",
+          "quantity": 1
+        },
+        {
+          "kind": "left-unpaid-sale",
+          "id": "01a1cb9f-3e19-7908-b7d6-17f9a27ce183"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "sale",
+          "id": "01a1cb9f-3e19-7908-b7d6-17f9a27ce183",
+          "status": "voided",
+          "by": "cleanup"
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cb9f-3e19-7908-b7d6-17f9a27ce183",
+              "status": "voided",
+              "grossSatang": 89000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cb9f-2699-783d-87c1-4af6cd568a2a",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "voucher",
+          "campaign": "01a1cb9f-27e6-7957-9d49-404c8b7f7e2a",
+          "status": "issued"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "archived": true,
+          "inTheLiveList": false
+        },
+        {
+          "kind": "test-number",
+          "key": "h",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": true,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [
+        {
+          "key": "854",
+          "failedAt": "b: second account signs in at the same till",
+          "failure": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded."
+        }
+      ],
+      "requestCount": 22,
+      "refusedRequests": [],
+      "note": "Harness stop at the second sign-in: the till opened straight at its remembered station, and the harness pressed the header button carrying the name of the station, which opens the station picker.",
+      "stepA": {
+        "pass": true,
+        "seen": {
+          "payButton": "Pay ฿890",
+          "amountDue": "Amount Due ฿890",
+          "leftSale": {
+            "id": "01a1cb9f-3e19-7908-b7d6-17f9a27ce183",
+            "status": "tendering"
+          },
+          "handOverButton": "Sign out and hand over the till",
+          "firstAccountSessionAfterHandOver": {
+            "status": 401,
+            "reads": 1,
+            "withinMs": 124
+          },
+          "leftSaleAfterHandOver": "tendering"
+        }
+      }
+    },
+    "run-03": {
+      "startedAt": "2026-11-11T17:20:54.811Z",
+      "finishedAt": "2026-11-11T17:21:40.748Z",
+      "stepsRun": [
+        "854"
+      ],
+      "numbers": {
+        "h": "0898020062"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "voucherIssued": {
+          "via": "POST /api/voucher-definitions + POST /api/voucher-campaigns as the staging administrator",
+          "statusBefore": "issued"
+        },
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cba0-8b76-7faf-a45c-31b856756914",
+          "name": "ZZ TEST SCRUM-854 proof till 1794417654820",
+          "prefix": "Z85403"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "code": "zz-test-s854-150-off",
+          "name": "ZZ TEST SCRUM-854 150 THB Voucher",
+          "how": "restored"
+        },
+        {
+          "kind": "voucher-campaign",
+          "id": "01a1cba0-8cbf-7b9f-b840-4f64b4ebdeb5",
+          "quantity": 1
+        },
+        {
+          "kind": "left-unpaid-sale",
+          "id": "01a1cba0-9c97-7c08-b46c-2eb8c58ef2e3"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "sale",
+          "id": "01a1cba0-9c97-7c08-b46c-2eb8c58ef2e3",
+          "status": "voided",
+          "by": "cleanup"
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cba0-9c97-7c08-b46c-2eb8c58ef2e3",
+              "status": "voided",
+              "grossSatang": 89000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cba0-8b76-7faf-a45c-31b856756914",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "voucher",
+          "campaign": "01a1cba0-8cbf-7b9f-b840-4f64b4ebdeb5",
+          "status": "issued"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "archived": true,
+          "inTheLiveList": false
+        },
+        {
+          "kind": "test-number",
+          "key": "h",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": true,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [
+        {
+          "key": "854",
+          "failedAt": "b: second account signs in at the same till",
+          "failure": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded."
+        }
+      ],
+      "requestCount": 22,
+      "refusedRequests": [],
+      "note": "The same harness stop as run 02 (the first correction was not enough).",
+      "stepA": {
+        "pass": true,
+        "seen": {
+          "payButton": "Pay ฿890",
+          "amountDue": "Amount Due ฿890",
+          "leftSale": {
+            "id": "01a1cba0-9c97-7c08-b46c-2eb8c58ef2e3",
+            "status": "tendering"
+          },
+          "handOverButton": "Sign out and hand over the till",
+          "firstAccountSessionAfterHandOver": {
+            "status": 401,
+            "reads": 2,
+            "withinMs": 444
+          },
+          "leftSaleAfterHandOver": "tendering"
+        }
+      }
+    },
+    "run-04": {
+      "startedAt": "2026-11-11T17:22:54.754Z",
+      "finishedAt": "2026-11-11T17:23:29.230Z",
+      "stepsRun": [
+        "854"
+      ],
+      "numbers": {
+        "h": "0898020063"
+      },
+      "checks": {
+        "testNumbersUnusedBefore": true,
+        "voucherIssued": {
+          "via": "POST /api/voucher-definitions + POST /api/voucher-campaigns as the staging administrator",
+          "statusBefore": "issued"
+        },
+        "bundle": {
+          "files": 1,
+          "names": [
+            "index-BvRFNP6d.js"
+          ],
+          "onlineOnlySentence": true,
+          "holdSaleReason": true,
+          "leftBehindSale": true,
+          "stillBeingSaved": true
+        }
+      },
+      "created": [
+        {
+          "kind": "station",
+          "id": "01a1cba2-60a2-76dc-8289-9d4fa751a439",
+          "name": "ZZ TEST SCRUM-854 proof till 1794417774776",
+          "prefix": "Z85404"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "code": "zz-test-s854-150-off",
+          "name": "ZZ TEST SCRUM-854 150 THB Voucher",
+          "how": "restored"
+        },
+        {
+          "kind": "voucher-campaign",
+          "id": "01a1cba2-6201-722c-8430-a9b38e456874",
+          "quantity": 1
+        },
+        {
+          "kind": "left-unpaid-sale",
+          "id": "01a1cba2-8213-726a-af1d-74f1bf410b57"
+        }
+      ],
+      "cleanup": [
+        {
+          "kind": "sale",
+          "id": "01a1cba2-8213-726a-af1d-74f1bf410b57",
+          "status": "voided",
+          "by": "the refusal's void, pressed by the second account"
+        },
+        {
+          "kind": "sales-read-back",
+          "sales": [
+            {
+              "id": "01a1cba2-8213-726a-af1d-74f1bf410b57",
+              "status": "voided",
+              "grossSatang": 89000
+            }
+          ]
+        },
+        {
+          "kind": "station",
+          "id": "01a1cba2-60a2-76dc-8289-9d4fa751a439",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "kind": "voucher",
+          "campaign": "01a1cba2-6201-722c-8430-a9b38e456874",
+          "status": "issued"
+        },
+        {
+          "kind": "voucher-definition",
+          "id": "01a1cb9e-4b9f-79d5-b652-b17b4a6e7730",
+          "archived": true,
+          "inTheLiveList": false
+        },
+        {
+          "kind": "test-number",
+          "key": "h",
+          "member": null
+        },
+        {
+          "kind": "till-session",
+          "signedInBefore": true,
+          "signedOut": true,
+          "me": 401
+        },
+        {
+          "kind": "admin-session",
+          "signedOut": true,
+          "me": 401
+        }
+      ],
+      "cleanupFailures": [],
+      "failures": [],
+      "requestCount": 24,
+      "refusedRequests": [],
+      "note": "The proof: steps a to e passed."
+    }
+  },
+  "harness": "../../SCRUM-853/staging/proof.mjs and flow.mjs (stepLeftUnpaid); run as: node proof.mjs <sha> <out> 854",
+  "leftOnStaging": [
+    "four unpaid ticket sales of 890 baht, all voided: 01a1cb9e-64e3-76c9-8007-d76ac894acfc, 01a1cb9f-3e19-7908-b7d6-17f9a27ce183, 01a1cba0-9c97-7c08-b46c-2eb8c58ef2e3 (by the clean-up, after a harness stop) and 01a1cba2-8213-726a-af1d-74f1bf410b57 (by the press in the refusal, the proof)",
+    "four ZZ TEST tills, archived with no devices",
+    "the ZZ TEST voucher type zz-test-s854-150-off, archived (not in the live list)",
+    "four ZZ TEST campaigns of one code each; the four codes read \"issued\" and unused, expire in 14 days, and were kept nowhere (the platform has no call that voids a campaign or a code)"
+  ]
+}
