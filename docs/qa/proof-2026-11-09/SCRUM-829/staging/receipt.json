@@ -1,0 +1,3705 @@
+{
+  "unit": "SCRUM-829 the adults' menu starts from the kids' chosen items in the BEO form — staging proof",
+  "ran": {
+    "firstRunFrom": "2026-11-10T23:02:31.794Z",
+    "firstRunTo": "2026-11-10T23:27:00.000Z",
+    "recheckFrom": "2026-11-11T05:30:11.109Z",
+    "to": "2026-11-11T05:33:23.189Z",
+    "timezone": "Asia/Bangkok",
+    "browser": "Chromium 153.0.8010.12",
+    "viewport": "1440×900 (the editor and day-of pictures 1440×1100; the inbox 1440×1500), light, en-GB"
+  },
+  "code": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+  "deploys": {
+    "liveBefore": {
+      "at": "2026-11-10T23:02:47.267Z",
+      "deploys": {
+        "oto-api-staging": [
+          {
+            "id": "dep-dbpq48ss728c738mesp0",
+            "status": "build_in_progress",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": null
+          },
+          {
+            "id": "dep-dbppvnon74is738mh9cg",
+            "status": "update_failed",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:55:00.997762Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6o30",
+            "status": "update_failed",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:59:08.176904Z"
+          }
+        ],
+        "oto-app-staging": [
+          {
+            "id": "dep-dbppvoei0phs739ao6eg",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:53:57.446679Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6pqg",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:57:23.728348Z"
+          },
+          {
+            "id": "dep-dbpor9p5efls738ic5s0",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:36:22.372805Z"
+          }
+        ],
+        "oto-pos-staging": [
+          {
+            "id": "dep-dbppvogn74is738mhbp0",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:05.159698Z"
+          },
+          {
+            "id": "dep-dbppnbbl550s738hj5bg",
+            "status": "deactivated",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": "2026-11-10T22:34:16.539102Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6pbg",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:56:06.344126Z"
+          }
+        ],
+        "oto-pos-web-staging": [
+          {
+            "id": "dep-dbppvot6e07s73b4gaeg",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:54:00.076582Z"
+          },
+          {
+            "id": "dep-dbppnbjl550s738hj6i0",
+            "status": "deactivated",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": "2026-11-10T22:36:08.443556Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6p40",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:57:49.951154Z"
+          }
+        ],
+        "oto-console-staging": [
+          {
+            "id": "dep-dbppvp8n74is738mhe20",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:06.05289Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6peg",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:56:00.370557Z"
+          },
+          {
+            "id": "dep-dbpoutijnfac739citig",
+            "status": "deactivated",
+            "sha": "ba104804d9b0e6b319237ef73d81f60952d96370",
+            "finishedAt": "2026-11-10T21:42:19.945984Z"
+          }
+        ]
+      }
+    },
+    "apiDuringTheFirstRun": {
+      "deploy": "dep-dbpoutijnfac739cisb0",
+      "sha": "ba104804",
+      "note": "every api deploy after it failed at start until the voice-note setting was reverted at 12:25 Bangkok; SCRUM-829's api commits (0de088d73, f4174a80d) were not live"
+    },
+    "liveBeforeRecheck": {
+      "at": "2026-11-11T05:30:11.109Z",
+      "deploys": {
+        "oto-api-staging": [
+          {
+            "id": "dep-dbpvpq3d642c73aa4q70",
+            "status": "build_in_progress",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": null
+          },
+          {
+            "id": "dep-dbpvo3gn74is7398qan0",
+            "status": "live",
+            "sha": "c554fac85642f296437f44c8e276c199fa0a9881",
+            "finishedAt": "2026-11-11T05:28:49.035265Z"
+          },
+          {
+            "id": "dep-dbpqhgvf3r2c73at1eog",
+            "status": "update_failed",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:33:56.688982Z"
+          },
+          {
+            "id": "dep-dbpq48ss728c738mesp0",
+            "status": "update_failed",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": "2026-11-10T23:05:16.881307Z"
+          }
+        ],
+        "oto-app-staging": [
+          {
+            "id": "dep-dbpqhgff3r2c73at1crg",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:31:53.056489Z"
+          },
+          {
+            "id": "dep-dbppvoei0phs739ao6eg",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:53:57.446679Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6pqg",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:57:23.728348Z"
+          },
+          {
+            "id": "dep-dbpor9p5efls738ic5s0",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:36:22.372805Z"
+          }
+        ],
+        "oto-pos-staging": [
+          {
+            "id": "dep-dbpvptoae00c73cs8cu0",
+            "status": "live",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:29:18.560606Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1dig",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:30:16.463764Z"
+          },
+          {
+            "id": "dep-dbppvogn74is738mhbp0",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:05.159698Z"
+          },
+          {
+            "id": "dep-dbppnbbl550s738hj5bg",
+            "status": "deactivated",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": "2026-11-10T22:34:16.539102Z"
+          }
+        ],
+        "oto-pos-web-staging": [
+          {
+            "id": "dep-dbpvpuajnfac73el2q9g",
+            "status": "build_in_progress",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": null
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1cng",
+            "status": "live",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:31:57.557407Z"
+          },
+          {
+            "id": "dep-dbppvot6e07s73b4gaeg",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:54:00.076582Z"
+          },
+          {
+            "id": "dep-dbppnbjl550s738hj6i0",
+            "status": "deactivated",
+            "sha": "3f0bc5ddd04ccd609d901d540955ce74de09c1ae",
+            "finishedAt": "2026-11-10T22:36:08.443556Z"
+          }
+        ],
+        "oto-console-staging": [
+          {
+            "id": "dep-dbpvpt8ae00c73cs8bm0",
+            "status": "live",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:29:14.674384Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1df0",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:30:13.121898Z"
+          },
+          {
+            "id": "dep-dbppvp8n74is738mhe20",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:06.05289Z"
+          },
+          {
+            "id": "dep-dbpp5al9el5s738o6peg",
+            "status": "deactivated",
+            "sha": "463fac2a6af36a79c93fe23413bd2ff2549aafe8",
+            "finishedAt": "2026-11-10T21:56:00.370557Z"
+          }
+        ]
+      }
+    }
+  },
+  "money": "satang unless written with ฿",
+  "party": {
+    "eventId": ":eventId",
+    "title": "ZZ TEST 829 Floresta",
+    "date": "2026-11-18",
+    "weekday": "Wednesday",
+    "time": "13:00–16:00",
+    "children": 10,
+    "adults": 4,
+    "create": {
+      "route": "POST /api/admin/events",
+      "status": 201
+    },
+    "package": {
+      "route": "POST /api/beo/events/:eventId/package-snapshot",
+      "status": 201,
+      "packageName": "Birthday package, Central Floresta",
+      "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4"
+    },
+    "beoOpen": {
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "headerPaymentBadge": "No Deposit",
+      "kitchenAccordionState": "open",
+      "menusVisible": true,
+      "setMenuSwitch": "checked",
+      "setMenuTemplate": "Birthday set menu, Central Floresta",
+      "saveButton": 1,
+      "tabs": [
+        "Kids Menu (3)",
+        "Adults Menu (4)"
+      ]
+    }
+  },
+  "kidsLines": {
+    "nuggets": {
+      "asked": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 nuggets",
+        "station": "kitchen",
+        "price": null,
+        "free": true
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productCode": "PARTY-CCFACA10",
+      "line": {
+        "id": "party_c5317afa-d870-4a4f-beb4-70104c000b78",
+        "itemName": "ZZ TEST 829 nuggets",
+        "quantity": 1,
+        "included": true,
+        "price": 0,
+        "productCode": "PARTY-CCFACA10",
+        "source": "additional"
+      },
+      "tabsAfter": [
+        "Kids Menu (1)",
+        "Adults Menu (1)"
+      ]
+    },
+    "juice": {
+      "asked": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 juice",
+        "station": "bar",
+        "price": null,
+        "free": true
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productCode": "PARTY-2F15AC99",
+      "line": {
+        "id": "party_288cf4b9-eeda-44f4-a3c0-7f0fb5b75652",
+        "itemName": "ZZ TEST 829 juice",
+        "quantity": 1,
+        "included": true,
+        "price": 0,
+        "productCode": "PARTY-2F15AC99",
+        "source": "additional"
+      },
+      "tabsAfter": [
+        "Kids Menu (2)",
+        "Adults Menu (2)"
+      ]
+    },
+    "tea": {
+      "asked": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 bubble tea",
+        "station": "bar",
+        "price": 125,
+        "free": false
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productCode": "PARTY-CBB7D66D",
+      "line": {
+        "id": "party_e494fd94-7190-4911-8f5c-25ba3035c624",
+        "itemName": "ZZ TEST 829 bubble tea",
+        "quantity": 1,
+        "included": false,
+        "price": 125,
+        "productCode": "PARTY-CBB7D66D",
+        "source": "additional"
+      },
+      "tabsAfter": [
+        "Kids Menu (3)",
+        "Adults Menu (3)"
+      ]
+    },
+    "coffee": {
+      "asked": {
+        "menu": "adults",
+        "name": "ZZ TEST 829 coffee",
+        "station": "bar",
+        "price": 60,
+        "free": false
+      },
+      "route": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "productCode": "PARTY-BCA4EB4E",
+      "line": {
+        "id": "party_8a2bb296-afd7-473b-b4e0-75d64d97fcbd",
+        "itemName": "ZZ TEST 829 coffee",
+        "quantity": 1,
+        "included": false,
+        "price": 60,
+        "productCode": "PARTY-BCA4EB4E",
+        "source": "additional"
+      },
+      "tabsAfter": [
+        "Kids Menu (3)",
+        "Adults Menu (4)"
+      ]
+    }
+  },
+  "step1_adultsSameAsKids": {
+    "beforeSave": {
+      "kids": {
+        "tab": "Kids Menu (3)",
+        "rows": [
+          "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+          "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+          "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+        ]
+      },
+      "adults": {
+        "tab": "Adults Menu (3)",
+        "switch": "unchecked",
+        "mirror": {
+          "text": "Same as the kids' menu",
+          "items": [
+            "1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+            "1 ZZ TEST 829 juice PARTY-2F15AC99",
+            "1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+          ]
+        },
+        "editableRows": [],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 0,
+          "newItem": 0,
+          "nameInputs": 0,
+          "removeButtons": 0
+        },
+        "clickHereToAddFirst": false
+      }
+    },
+    "save": {
+      "route": "PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": []
+      },
+      "toasts": [
+        "BEO data saved successfully"
+      ]
+    },
+    "afterReload": {
+      "kids": {
+        "tab": "Kids Menu (3)",
+        "rows": [
+          "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+          "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+          "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+        ]
+      },
+      "adults": {
+        "tab": "Adults Menu (3)",
+        "switch": "unchecked",
+        "mirror": {
+          "text": "Same as the kids' menu",
+          "items": [
+            "1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+            "1 ZZ TEST 829 juice PARTY-2F15AC99",
+            "1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+          ]
+        },
+        "editableRows": [],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 0,
+          "newItem": 0,
+          "nameInputs": 0,
+          "removeButtons": 0
+        },
+        "clickHereToAddFirst": false
+      }
+    },
+    "kitchenPlanRead": {
+      "route": "GET /api/events/:eventId/beo/kitchen-plan",
+      "status": 200,
+      "adultsDiffer": false,
+      "kids": [
+        [
+          "ZZ TEST 829 nuggets",
+          1,
+          "PARTY-CCFACA10",
+          0
+        ],
+        [
+          "ZZ TEST 829 juice",
+          1,
+          "PARTY-2F15AC99",
+          0
+        ],
+        [
+          "ZZ TEST 829 bubble tea",
+          1,
+          "PARTY-CBB7D66D",
+          125
+        ]
+      ],
+      "adults": []
+    }
+  },
+  "step2_differentForAdults": {
+    "switchOn": {
+      "result": {
+        "changed": true,
+        "state": "checked",
+        "dialogText": null
+      },
+      "copy": [
+        "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+        "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+        "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+      ],
+      "buttons": {
+        "addFirst": 0,
+        "extra": 1,
+        "newItem": 1,
+        "nameInputs": 3,
+        "removeButtons": 3
+      }
+    },
+    "changes": [
+      {
+        "action": "remove:0",
+        "rowText": "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10"
+      },
+      {
+        "action": "extra:pasta",
+        "idx": 2,
+        "rowText": "EXTRA 1 pasta"
+      },
+      {
+        "action": "plus:0",
+        "qtyAfter": "2"
+      }
+    ],
+    "adultsAfterChanges": {
+      "tab": "Adults Menu (3)",
+      "switch": "checked",
+      "mirror": null,
+      "editableRows": [
+        "EXTRA 2 ZZ TEST 829 juice PARTY-2F15AC99",
+        "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D",
+        "EXTRA 1 pasta"
+      ],
+      "buttons": {
+        "addFirst": 0,
+        "extra": 1,
+        "newItem": 1,
+        "nameInputs": 3,
+        "removeButtons": 3
+      },
+      "clickHereToAddFirst": false
+    },
+    "kidsUntouched": {
+      "tab": "Kids Menu (3)",
+      "rows": [
+        "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+        "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+        "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+      ]
+    },
+    "save": {
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ]
+        ]
+      },
+      "toasts": [
+        "BEO data saved successfully"
+      ]
+    },
+    "afterReload": {
+      "tab": "Adults Menu (3)",
+      "switch": "checked",
+      "mirror": null,
+      "editableRows": [
+        "EXTRA 2 ZZ TEST 829 juice PARTY-2F15AC99",
+        "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D",
+        "EXTRA 1 pasta"
+      ],
+      "buttons": {
+        "addFirst": 0,
+        "extra": 1,
+        "newItem": 1,
+        "nameInputs": 3,
+        "removeButtons": 3
+      },
+      "clickHereToAddFirst": false
+    },
+    "kitchenPlanRead": {
+      "route": "GET /api/events/:eventId/beo/kitchen-plan",
+      "status": 200,
+      "adultsDiffer": true,
+      "kids": [
+        [
+          "ZZ TEST 829 nuggets",
+          1,
+          "PARTY-CCFACA10",
+          0
+        ],
+        [
+          "ZZ TEST 829 juice",
+          1,
+          "PARTY-2F15AC99",
+          0
+        ],
+        [
+          "ZZ TEST 829 bubble tea",
+          1,
+          "PARTY-CBB7D66D",
+          125
+        ]
+      ],
+      "adults": [
+        [
+          "ZZ TEST 829 juice",
+          2,
+          "PARTY-2F15AC99",
+          0
+        ],
+        [
+          "ZZ TEST 829 bubble tea",
+          1,
+          "PARTY-CBB7D66D",
+          125
+        ],
+        [
+          "pasta",
+          1,
+          null,
+          0
+        ]
+      ]
+    },
+    "toggleOffThenOn": {
+      "actions": [
+        {
+          "action": "off",
+          "result": {
+            "changed": true,
+            "state": "unchecked",
+            "dialogText": "Turning this off makes the adults' menu the kids' menu again: the adults' own changes are dropped. Continue?"
+          },
+          "rowsAfter": []
+        },
+        {
+          "action": "on",
+          "result": {
+            "changed": true,
+            "state": "checked",
+            "dialogText": null
+          },
+          "rowsAfter": [
+            "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+            "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+            "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+          ]
+        }
+      ],
+      "adultsAfter": {
+        "tab": "Adults Menu (3)",
+        "switch": "checked",
+        "mirror": null,
+        "editableRows": [
+          "EXTRA 1 ZZ TEST 829 nuggets PARTY-CCFACA10",
+          "EXTRA 1 ZZ TEST 829 juice PARTY-2F15AC99",
+          "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D"
+        ],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 1,
+          "newItem": 1,
+          "nameInputs": 3,
+          "removeButtons": 3
+        },
+        "clickHereToAddFirst": false
+      }
+    },
+    "reloadDiscardingTheToggle": {
+      "adults": {
+        "tab": "Adults Menu (3)",
+        "switch": "checked",
+        "mirror": null,
+        "editableRows": [
+          "EXTRA 2 ZZ TEST 829 juice PARTY-2F15AC99",
+          "EXTRA 1 ZZ TEST 829 bubble tea PARTY-CBB7D66D",
+          "EXTRA 1 pasta"
+        ],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 1,
+          "newItem": 1,
+          "nameInputs": 3,
+          "removeButtons": 3
+        },
+        "clickHereToAddFirst": false
+      },
+      "kitchenPlanRead": {
+        "route": "GET /api/events/:eventId/beo/kitchen-plan",
+        "status": 200,
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10",
+            0
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99",
+            0
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D",
+            125
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99",
+            0
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D",
+            125
+          ],
+          [
+            "pasta",
+            1,
+            null,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "adultsOnlyCodedLine": {
+    "asked": {
+      "menu": "adults",
+      "name": "ZZ TEST 829 coffee",
+      "station": "bar",
+      "price": 60,
+      "free": false
+    },
+    "answer": {
+      "status": 200,
+      "productCode": "PARTY-BCA4EB4E"
+    },
+    "save": {
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ],
+          [
+            "ZZ TEST 829 coffee",
+            1,
+            "PARTY-BCA4EB4E"
+          ]
+        ]
+      }
+    },
+    "kitchenPlanRead": {
+      "route": "GET /api/events/:eventId/beo/kitchen-plan",
+      "status": 200,
+      "adultsDiffer": true,
+      "kids": [
+        [
+          "ZZ TEST 829 nuggets",
+          1,
+          "PARTY-CCFACA10",
+          0
+        ],
+        [
+          "ZZ TEST 829 juice",
+          1,
+          "PARTY-2F15AC99",
+          0
+        ],
+        [
+          "ZZ TEST 829 bubble tea",
+          1,
+          "PARTY-CBB7D66D",
+          125
+        ]
+      ],
+      "adults": [
+        [
+          "ZZ TEST 829 juice",
+          2,
+          "PARTY-2F15AC99",
+          0
+        ],
+        [
+          "ZZ TEST 829 bubble tea",
+          1,
+          "PARTY-CBB7D66D",
+          125
+        ],
+        [
+          "pasta",
+          1,
+          null,
+          0
+        ],
+        [
+          "ZZ TEST 829 coffee",
+          1,
+          "PARTY-BCA4EB4E",
+          60
+        ]
+      ]
+    }
+  },
+  "step3_till_firstRun_oldApi": {
+    "note": "the api was live at ba104804 (before SCRUM-829's api commits) during the first run: the view's one list came through but its audience marks were stripped",
+    "station": {
+      "id": "01a1c7b3-5d3b-7953-a4ba-a528128059e9",
+      "name": "ZZ TEST SCRUM-829 till",
+      "prefix": "Z829X",
+      "box": "Virtual box 1",
+      "devices": [
+        "adult_band:Band Printer (adults)",
+        "kids_band:Band Printer (kids)",
+        "receipt:Receipt Printer 1"
+      ]
+    },
+    "signedInAs": "the staging reception account",
+    "eventsDayShown": "Wednesday, 18 Nov 2026",
+    "headerButtons": [
+      "Settle party",
+      "Add F&B to party",
+      "Fully paid",
+      "Print party slips now"
+    ],
+    "planWithPasta": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "counts": {
+        "kidsExpected": 10,
+        "adultsExpected": 4
+      },
+      "lines": [
+        {
+          "name": "ZZ TEST 829 nuggets",
+          "qty": 1,
+          "code": "PARTY-CCFACA10",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 1,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 bubble tea",
+          "qty": 1,
+          "code": "PARTY-CBB7D66D",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 2,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "pasta",
+          "qty": 1,
+          "code": null,
+          "audience": null,
+          "adultsNote": null
+        }
+      ],
+      "marksOnPage": {
+        "kidsOnly": 0,
+        "adults": 0
+      },
+      "kitchenCard": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers Drinks pitcher ZZ TEST 829 nuggets ×1 ZZ TEST 829 juice ×1 ZZ TEST 829 bubble tea ×1 ZZ TEST 829 juice ×2 pasta ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "slipsStation": null,
+      "slipRecords": []
+    },
+    "previewWithPasta": {
+      "route": {
+        "method": "POST",
+        "path": "/api/parties/:id/settle/preview",
+        "status": 200,
+        "calls": 1
+      },
+      "counts": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "totalSatang": 1702500,
+      "depositSatang": 0,
+      "balanceSatang": 1702500,
+      "lines": [
+        {
+          "role": "package",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "totalSatang": 1690000
+        },
+        {
+          "role": "included",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Adults (in the package)",
+          "quantity": 4,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 nuggets",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 juice",
+          "quantity": 3,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "totalSatang": 12500
+        }
+      ],
+      "formLines": {
+        "package": "Birthday package, Central Floresta · weekday ฿16,900",
+        "socks": "Socks · 10 free ฿0",
+        "addOns": "Add-ons ฿125",
+        "total": "Total ฿17,025",
+        "balance": "Balance ฿17,025"
+      },
+      "closedWithoutConfirm": true,
+      "writesDuring": []
+    },
+    "planWithCoffee": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "counts": {
+        "kidsExpected": 10,
+        "adultsExpected": 4
+      },
+      "lines": [
+        {
+          "name": "ZZ TEST 829 nuggets",
+          "qty": 1,
+          "code": "PARTY-CCFACA10",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 1,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 bubble tea",
+          "qty": 1,
+          "code": "PARTY-CBB7D66D",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 2,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "pasta",
+          "qty": 1,
+          "code": null,
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 coffee",
+          "qty": 1,
+          "code": "PARTY-BCA4EB4E",
+          "audience": null,
+          "adultsNote": null
+        }
+      ],
+      "marksOnPage": {
+        "kidsOnly": 0,
+        "adults": 0
+      },
+      "kitchenCard": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers Drinks pitcher ZZ TEST 829 nuggets ×1 ZZ TEST 829 juice ×1 ZZ TEST 829 bubble tea ×1 ZZ TEST 829 juice ×2 pasta ×1 ZZ TEST 829 coffee ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "slipsStation": null,
+      "slipRecords": []
+    },
+    "previewWithCoffee": {
+      "route": {
+        "method": "POST",
+        "path": "/api/parties/:id/settle/preview",
+        "status": 200,
+        "calls": 1
+      },
+      "counts": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "totalSatang": 1708500,
+      "depositSatang": 0,
+      "balanceSatang": 1708500,
+      "lines": [
+        {
+          "role": "package",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "totalSatang": 1690000
+        },
+        {
+          "role": "included",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Adults (in the package)",
+          "quantity": 4,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 nuggets",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 juice",
+          "quantity": 3,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "totalSatang": 12500
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 coffee",
+          "quantity": 1,
+          "unitSatang": 6000,
+          "totalSatang": 6000
+        }
+      ],
+      "formLines": {
+        "package": "Birthday package, Central Floresta · weekday ฿16,900",
+        "socks": "Socks · 10 free ฿0",
+        "addOns": "Add-ons ฿185",
+        "total": "Total ฿17,085",
+        "balance": "Balance ฿17,085"
+      },
+      "closedWithoutConfirm": true,
+      "writesDuring": []
+    }
+  },
+  "step3_till_recheck_newApi": {
+    "note": "the api live at c554fac8 (dep-dbpvo3gn74is7398qan0, carrying fcd1a08b3) for the whole re-check; the till signed in again on the same ZZ TEST station",
+    "eventsDayShown": "Wednesday, 18 Nov 2026",
+    "headerButtons": [
+      "Settle party",
+      "Add F&B to party",
+      "Fully paid",
+      "Print party slips now"
+    ],
+    "planWithCoffee": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "counts": {
+        "kidsExpected": 10,
+        "adultsExpected": 4
+      },
+      "lines": [
+        {
+          "name": "ZZ TEST 829 nuggets",
+          "qty": 1,
+          "code": "PARTY-CCFACA10",
+          "audience": "kids",
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 1,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 bubble tea",
+          "qty": 1,
+          "code": "PARTY-CBB7D66D",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 2,
+          "code": "PARTY-2F15AC99",
+          "audience": "adults",
+          "adultsNote": null
+        },
+        {
+          "name": "pasta",
+          "qty": 1,
+          "code": null,
+          "audience": "adults",
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 coffee",
+          "qty": 1,
+          "code": "PARTY-BCA4EB4E",
+          "audience": "adults",
+          "adultsNote": null
+        }
+      ],
+      "marksOnPage": {
+        "kidsOnly": 1,
+        "adults": 3
+      },
+      "kitchenCard": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers Drinks pitcher ZZ TEST 829 nuggets · kids only ×1 ZZ TEST 829 juice ×1 ZZ TEST 829 bubble tea ×1 ZZ TEST 829 juice · adults ×2 pasta · adults ×1 ZZ TEST 829 coffee · adults ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "slipsStation": null,
+      "slipRecords": []
+    },
+    "previewWithCoffee": {
+      "route": {
+        "method": "POST",
+        "path": "/api/parties/:id/settle/preview",
+        "status": 200,
+        "calls": 1
+      },
+      "counts": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "totalSatang": 1708500,
+      "depositSatang": 0,
+      "balanceSatang": 1708500,
+      "lines": [
+        {
+          "role": "package",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "totalSatang": 1690000
+        },
+        {
+          "role": "included",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Adults (in the package)",
+          "quantity": 4,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 nuggets",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 juice",
+          "quantity": 3,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "totalSatang": 12500
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 coffee",
+          "quantity": 1,
+          "unitSatang": 6000,
+          "totalSatang": 6000
+        }
+      ],
+      "formLines": {
+        "package": "Birthday package, Central Floresta · weekday ฿16,900",
+        "socks": "Socks · 10 free ฿0",
+        "addOns": "Add-ons ฿185",
+        "total": "Total ฿17,085",
+        "balance": "Balance ฿17,085"
+      },
+      "closedWithoutConfirm": true,
+      "writesDuring": []
+    },
+    "coffeeRemoved": {
+      "save": {
+        "status": 200,
+        "sent": {
+          "adultsDiffer": true,
+          "kids": [
+            [
+              "ZZ TEST 829 nuggets",
+              1,
+              "PARTY-CCFACA10"
+            ],
+            [
+              "ZZ TEST 829 juice",
+              1,
+              "PARTY-2F15AC99"
+            ],
+            [
+              "ZZ TEST 829 bubble tea",
+              1,
+              "PARTY-CBB7D66D"
+            ]
+          ],
+          "adults": [
+            [
+              "ZZ TEST 829 juice",
+              2,
+              "PARTY-2F15AC99"
+            ],
+            [
+              "ZZ TEST 829 bubble tea",
+              1,
+              "PARTY-CBB7D66D"
+            ],
+            [
+              "pasta",
+              1,
+              null
+            ]
+          ]
+        }
+      },
+      "kitchenPlanRead": {
+        "route": "GET /api/events/:eventId/beo/kitchen-plan",
+        "status": 200,
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10",
+            0
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99",
+            0
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D",
+            125
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99",
+            0
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D",
+            125
+          ],
+          [
+            "pasta",
+            1,
+            null,
+            0
+          ]
+        ]
+      }
+    },
+    "planWithoutCoffee": {
+      "route": "GET /api/parties/:id?branchId=…",
+      "status": 200,
+      "planStatus": "ready",
+      "counts": {
+        "kidsExpected": 10,
+        "adultsExpected": 4
+      },
+      "lines": [
+        {
+          "name": "ZZ TEST 829 nuggets",
+          "qty": 1,
+          "code": "PARTY-CCFACA10",
+          "audience": "kids",
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 1,
+          "code": "PARTY-2F15AC99",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 bubble tea",
+          "qty": 1,
+          "code": "PARTY-CBB7D66D",
+          "audience": null,
+          "adultsNote": null
+        },
+        {
+          "name": "ZZ TEST 829 juice",
+          "qty": 2,
+          "code": "PARTY-2F15AC99",
+          "audience": "adults",
+          "adultsNote": null
+        },
+        {
+          "name": "pasta",
+          "qty": 1,
+          "code": null,
+          "audience": "adults",
+          "adultsNote": null
+        }
+      ],
+      "marksOnPage": {
+        "kidsOnly": 1,
+        "adults": 2
+      },
+      "kitchenCard": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers Drinks pitcher ZZ TEST 829 nuggets · kids only ×1 ZZ TEST 829 juice ×1 ZZ TEST 829 bubble tea ×1 ZZ TEST 829 juice · adults ×2 pasta · adults ×1 Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "slipsStation": null,
+      "slipRecords": []
+    },
+    "previewWithoutCoffee": {
+      "route": {
+        "method": "POST",
+        "path": "/api/parties/:id/settle/preview",
+        "status": 200,
+        "calls": 1
+      },
+      "counts": {
+        "children": 10,
+        "adults": 4,
+        "socksGiven": 10
+      },
+      "totalSatang": 1702500,
+      "depositSatang": 0,
+      "balanceSatang": 1702500,
+      "lines": [
+        {
+          "role": "package",
+          "label": "Birthday package, Central Floresta",
+          "quantity": 1,
+          "unitSatang": 1690000,
+          "totalSatang": 1690000
+        },
+        {
+          "role": "included",
+          "label": "Kids' table reserved for 3 hours",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Special birthday set menu",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Interactive birthday animation program, 30 minutes",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Ice-cream cake with candles and birthday song",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Entry for 4 accompanying adults",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "Socks for all children",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Children (in the package)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "guests",
+          "label": "Adults (in the package)",
+          "quantity": 4,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "socks",
+          "label": "Regular Socks (free)",
+          "quantity": 10,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 nuggets",
+          "quantity": 1,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "included",
+          "label": "ZZ TEST 829 juice",
+          "quantity": 3,
+          "unitSatang": 0,
+          "totalSatang": 0
+        },
+        {
+          "role": "add_on",
+          "label": "ZZ TEST 829 bubble tea",
+          "quantity": 1,
+          "unitSatang": 12500,
+          "totalSatang": 12500
+        }
+      ],
+      "formLines": {
+        "package": "Birthday package, Central Floresta · weekday ฿16,900",
+        "socks": "Socks · 10 free ฿0",
+        "addOns": "Add-ons ฿125",
+        "total": "Total ฿17,025",
+        "balance": "Balance ฿17,025"
+      },
+      "closedWithoutConfirm": true,
+      "writesDuring": []
+    }
+  },
+  "step4_beoPdf": {
+    "press": {
+      "route": "GET /api/events/:eventId/beo/pdf (Download PDF button)",
+      "status": 302,
+      "contentType": "text/plain; charset=utf-8",
+      "download": null
+    },
+    "route": "GET /api/events/:eventId/beo/pdf",
+    "status": 200,
+    "contentType": "application/pdf",
+    "file": "beo-zz-test-829.pdf",
+    "bytes": 92263,
+    "pages": 1,
+    "foodPage": 1,
+    "marks": {
+      "kidsOnly": 1,
+      "adultsOnly": 2,
+      "counts": [
+        "kids 1 · adults 2"
+      ],
+      "adultsLine": "Adults: 4 PARTY HOST POS: BIRTHDAY PACKAGE, CENTRAL FLORESTA Expected total (from the ti",
+      "secondAdultsTable": false
+    },
+    "text": [
+      "ZZ TEST 829 Floresta 18 November '26 • 13:00 – 16:00 UPCOMING Oto Play Park, Central Floresta 199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000, Thailand EVENT DETAILS Date: 18 November '26 Time: 13:00 – 16:00 Children: 10 Adults: 4 PARTY HOST POS: BIRTHDAY PACKAGE, CENTRAL FLORESTA Expected total (from the till): ฿ 17,085 Deposit paid: ฿ 0 Outstanding: ฿ 17,085 SETUP PLAN KITCHEN PLAN Kids Menu SET MENU Birthday set menu, Central Floresta Awaiting parent selections No selections yet — parent link sent Additional Items 1x ZZ TEST 829 nuggets — kids only EXTRA 1x ZZ TEST 829 juice — kids 1 · adults 2 EXTRA 1x ZZ TEST 829 bubble tea EXTRA 125 ฿ 1x pasta — adults only EXTRA 1x ZZ TEST 829 coffee — adults only EXTRA 60 ฿ Adults: different for adults — their changes are marked above TIMELINE TIME ACTIVITY 13:00 Guests arrive Generated 11/11/2026 • Banquet Event Order"
+    ]
+  },
+  "step5_dayOf": {
+    "switchOn": {
+      "title": "ZZ TEST 829 Floresta",
+      "kidsTab": "Kids Menu (3)",
+      "adults": {
+        "tab": "Adults Menu (4)",
+        "switch": "checked",
+        "mirror": null,
+        "editableRows": [
+          "EXTRA 2 ZZ TEST 829 juice",
+          "EXTRA 1 ZZ TEST 829 bubble tea",
+          "EXTRA 1 pasta",
+          "EXTRA 1 ZZ TEST 829 coffee"
+        ],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 1,
+          "newItem": 0,
+          "nameInputs": 4,
+          "removeButtons": 0
+        },
+        "clickHereToAddFirst": false
+      }
+    },
+    "secondParty": {
+      "eventId": ":eventId",
+      "title": "ZZ TEST 829 same menu",
+      "create": {
+        "route": "POST /api/admin/events",
+        "status": 201
+      },
+      "package": 201,
+      "kidsExtra": [
+        {
+          "idx": 0,
+          "rowText": "EXTRA 1 ZZ TEST 829 sandwich",
+          "tabs": [
+            "Kids Menu (1)",
+            "Adults Menu (1)"
+          ]
+        },
+        {
+          "idx": 1,
+          "rowText": "EXTRA 1 ZZ TEST 829 apple juice",
+          "tabs": [
+            "Kids Menu (2)",
+            "Adults Menu (2)"
+          ]
+        }
+      ],
+      "save": {
+        "status": 200,
+        "sent": {
+          "adultsDiffer": false,
+          "kids": [
+            [
+              "ZZ TEST 829 sandwich",
+              1,
+              null
+            ],
+            [
+              "ZZ TEST 829 apple juice",
+              1,
+              null
+            ]
+          ],
+          "adults": []
+        }
+      },
+      "editorAfterReload": {
+        "tab": "Adults Menu (2)",
+        "switch": "unchecked",
+        "mirror": {
+          "text": "Same as the kids' menu",
+          "items": [
+            "1 ZZ TEST 829 sandwich",
+            "1 ZZ TEST 829 apple juice"
+          ]
+        },
+        "editableRows": [],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 0,
+          "newItem": 0,
+          "nameInputs": 0,
+          "removeButtons": 0
+        },
+        "clickHereToAddFirst": false
+      },
+      "kitchenPlanRead": {
+        "route": "GET /api/events/:eventId/beo/kitchen-plan",
+        "status": 200,
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "ZZ TEST 829 sandwich",
+            1,
+            null,
+            0
+          ],
+          [
+            "ZZ TEST 829 apple juice",
+            1,
+            null,
+            0
+          ]
+        ],
+        "adults": []
+      }
+    },
+    "switchOff": {
+      "title": "ZZ TEST 829 same menu",
+      "kidsTab": "Kids Menu (2)",
+      "adults": {
+        "tab": "Adults Menu (2)",
+        "switch": "unchecked",
+        "mirror": {
+          "text": "Same as the kids' menu",
+          "items": [
+            "1 ZZ TEST 829 sandwich EXTRA",
+            "1 ZZ TEST 829 apple juice EXTRA"
+          ]
+        },
+        "editableRows": [],
+        "buttons": {
+          "addFirst": 0,
+          "extra": 0,
+          "newItem": 0,
+          "nameInputs": 0,
+          "removeButtons": 0
+        },
+        "clickHereToAddFirst": false
+      }
+    }
+  },
+  "step6_aiFill": {
+    "threads": {
+      "same": {
+        "conversationId": "01a1c7be-d09c-739f-8bd1-c8fca7767b6c",
+        "lines": [
+          {
+            "n": 1,
+            "by": "customer",
+            "text": "Hi! A party for ZZ Test Child turning 6 on Wednesday 25 November at 1pm: 10 kids and 4 adults, nuggets and juice for the kids, and the adults will eat the same (ZZ TEST)",
+            "status": 200,
+            "outcome": "processed"
+          },
+          {
+            "n": 2,
+            "by": "team",
+            "text": "Confirmed: ZZ Test Child's 6th birthday party on Wednesday 25 November 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets and juice for the kids, and the adults eat the same. (ZZ TEST)",
+            "status": 200,
+            "outcome": null
+          }
+        ]
+      },
+      "same2": {
+        "conversationId": "01a1c7c2-6412-7a9e-bc7a-8bf94e19c79d",
+        "lines": [
+          {
+            "n": 1,
+            "by": "customer",
+            "text": "Hi! A party for ZZ Test Child turning 6 on Friday 27 November at 1pm: party for 10 kids and 4 adults, nuggets and juice for the kids, and the adults will eat the same (ZZ TEST)",
+            "status": 200,
+            "outcome": "processed"
+          },
+          {
+            "n": 2,
+            "by": "team",
+            "text": "Confirmed: ZZ Test Child's 6th birthday party on Friday 27 November 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets and juice for the kids, and the adults will eat the same. (ZZ TEST)",
+            "status": 200,
+            "outcome": null
+          }
+        ]
+      },
+      "differ": {
+        "conversationId": "01a1c7c6-4326-726c-9166-6f153ca7698e",
+        "lines": [
+          {
+            "n": 1,
+            "by": "customer",
+            "text": "Hi! A party for ZZ Test Child turning 6 on Thursday 26 November at 1pm: 10 kids and 4 adults, nuggets for the kids, pasta for the adults (ZZ TEST)",
+            "status": 200,
+            "outcome": "processed"
+          },
+          {
+            "n": 2,
+            "by": "team",
+            "text": "Confirmed: ZZ Test Child's 6th birthday party on Thursday 26 November 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets for the kids, pasta for the adults. (ZZ TEST)",
+            "status": 200,
+            "outcome": null
+          }
+        ]
+      }
+    },
+    "book": {
+      "same": {
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "dialog": {
+          "date": "2026-11-25",
+          "startTime": "13:00",
+          "park": "Central Floresta",
+          "kids": "10",
+          "adults": "4",
+          "childAge": "6",
+          "childNameIsZz": true,
+          "bookingNameIsZz": true
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "event": {
+            "id": ":eventId",
+            "title": "ZZ Test Child's 6th Birthday",
+            "date": "2026-11-25",
+            "startTime": "13:00",
+            "kids": 10,
+            "adults": 4
+          }
+        }
+      },
+      "same2": {
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "dialog": {
+          "date": "2026-11-27",
+          "startTime": "13:00",
+          "park": "Central Floresta",
+          "kids": "10",
+          "adults": "4",
+          "childAge": "6",
+          "childNameIsZz": true,
+          "bookingNameIsZz": true
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "event": {
+            "id": ":eventId",
+            "title": "ZZ Test Child's 6th Birthday",
+            "date": "2026-11-27",
+            "startTime": "13:00",
+            "kids": 10,
+            "adults": 4
+          }
+        }
+      },
+      "differ": {
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "dialog": {
+          "date": "2026-11-26",
+          "startTime": "13:00",
+          "park": "Central Floresta",
+          "kids": "10",
+          "adults": "4",
+          "childAge": "6",
+          "childNameIsZz": true,
+          "bookingNameIsZz": true
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "event": {
+            "id": ":eventId",
+            "title": "ZZ Test Child's 6th Birthday",
+            "date": "2026-11-26",
+            "startTime": "13:00",
+            "kids": 10,
+            "adults": 4
+          }
+        }
+      }
+    },
+    "fills": {
+      "same": {
+        "conversationId": "01a1c7be-d09c-739f-8bd1-c8fca7767b6c",
+        "eventId": ":eventId",
+        "openBeo": {
+          "route": "POST /api/inbox/conversations/:id/open-beo",
+          "status": 200
+        },
+        "aiFill": {
+          "route": "POST /api/events/:id/beo/ai-fill/inbox",
+          "status": 200,
+          "seconds": 10.1,
+          "shape": "free-text preview (Review & Confirm, Load into Editor)",
+          "error": null
+        },
+        "confirm": {
+          "kitchenPlanProposed": "Kitchen Plan Kids Menu: 10x Nuggets 10x Juice Adults Menu: 4x Nuggets — Adults eat the same as the kids 4x Juice — Adults eat the same as the kids ",
+          "summaryLine": "Confirmed 6th birthday party for ZZ Test Child on Wednesday 25 November 2026 at 13:00 with 10 children and 4 adults, using the Birthday package at Central Floresta, with nuggets and juice served to both kids and adults.",
+          "editorAfterLoad": {
+            "kids": {
+              "tab": "Kids Menu (2)",
+              "rows": [
+                "EXTRA 10 Nuggets",
+                "EXTRA 10 Juice"
+              ]
+            },
+            "adults": {
+              "tab": "Adults Menu (2)",
+              "switch": "checked",
+              "mirror": null,
+              "editableRows": [
+                "EXTRA 4 Nuggets Adults eat the same as the kids",
+                "EXTRA 4 Juice Adults eat the same as the kids"
+              ],
+              "buttons": {
+                "addFirst": 0,
+                "extra": 1,
+                "newItem": 1,
+                "nameInputs": 2,
+                "removeButtons": 2
+              },
+              "clickHereToAddFirst": false
+            }
+          },
+          "save": {
+            "status": 200,
+            "sent": {
+              "adultsDiffer": true,
+              "kids": [
+                [
+                  "Nuggets",
+                  10,
+                  null
+                ],
+                [
+                  "Juice",
+                  10,
+                  null
+                ]
+              ],
+              "adults": [
+                [
+                  "Nuggets",
+                  4,
+                  null
+                ],
+                [
+                  "Juice",
+                  4,
+                  null
+                ]
+              ]
+            }
+          },
+          "kitchenPlanRead": {
+            "route": "GET /api/events/:eventId/beo/kitchen-plan",
+            "status": 200,
+            "adultsDiffer": true,
+            "kids": [
+              [
+                "Nuggets",
+                10,
+                null,
+                null
+              ],
+              [
+                "Juice",
+                10,
+                null,
+                null
+              ]
+            ],
+            "adults": [
+              [
+                "Nuggets",
+                4,
+                null,
+                null
+              ],
+              [
+                "Juice",
+                4,
+                null,
+                null
+              ]
+            ]
+          }
+        }
+      },
+      "same2": {
+        "conversationId": "01a1c7c2-6412-7a9e-bc7a-8bf94e19c79d",
+        "eventId": ":eventId",
+        "openBeo": {
+          "route": "POST /api/inbox/conversations/:id/open-beo",
+          "status": 200
+        },
+        "aiFill": {
+          "route": "POST /api/events/:id/beo/ai-fill/inbox",
+          "status": 200,
+          "seconds": 10.7,
+          "shape": "catalogue review (Review, edit and approve)",
+          "error": null
+        },
+        "review": {
+          "notInMenu": [
+            {
+              "i": 0,
+              "menuChosen": "Kids",
+              "text": "Kids Adults Bar from the team Not in the menu: keep it as a free line in the conversation's words, or leave it out. Keep as a free line Leave out"
+            },
+            {
+              "i": 1,
+              "menuChosen": "Bar",
+              "text": "Kids Adults Bar from the team Not in the menu: keep it as a free line in the conversation's words, or leave it out. Keep as a free line Leave out"
+            }
+          ],
+          "approve": {
+            "route": "POST /api/events/:id/beo/ai-fill/approve",
+            "status": 200,
+            "sent": {
+              "menuLines": [
+                {
+                  "menu": "kids",
+                  "itemName": "nuggets",
+                  "quantity": 1,
+                  "decision": null
+                },
+                {
+                  "menu": "bar",
+                  "itemName": "juice",
+                  "quantity": 1,
+                  "decision": null
+                }
+              ],
+              "keys": [
+                "conversationId",
+                "messageId",
+                "package",
+                "setMenu",
+                "menuLines",
+                "entertainment",
+                "otherLines",
+                "event",
+                "cake",
+                "deposit",
+                "sources"
+              ]
+            },
+            "keys": [
+              "written"
+            ]
+          },
+          "restKitchenPlan": null,
+          "kitchenPlanRead": {
+            "route": "GET /api/events/:eventId/beo/kitchen-plan",
+            "status": 200,
+            "adultsDiffer": false,
+            "kids": [
+              [
+                "French fries",
+                1,
+                null,
+                null
+              ],
+              [
+                "Veggie sticks",
+                1,
+                null,
+                null
+              ],
+              [
+                "Fruit skewers",
+                1,
+                null,
+                null
+              ],
+              [
+                "nuggets",
+                1,
+                null,
+                null
+              ]
+            ],
+            "adults": []
+          },
+          "editor": {
+            "kids": {
+              "tab": "Kids Menu (4)",
+              "rows": [
+                "EXTRA 1 nuggets Not in the menu"
+              ]
+            },
+            "adults": {
+              "tab": "Adults Menu (4)",
+              "switch": "unchecked",
+              "mirror": {
+                "text": "Same as the kids' menu",
+                "items": [
+                  "1 French fries",
+                  "1 Veggie sticks",
+                  "1 Fruit skewers",
+                  "1 nuggets Not in the menu"
+                ]
+              },
+              "editableRows": [],
+              "buttons": {
+                "addFirst": 0,
+                "extra": 0,
+                "newItem": 0,
+                "nameInputs": 0,
+                "removeButtons": 0
+              },
+              "clickHereToAddFirst": false
+            }
+          }
+        },
+        "confirm": {
+          "kitchenPlanProposed": "Kitchen Plan Set menu: No set menu Set Central Set at Robinson Cake (under 10 kids) Cake (over 10 kids) After school 10 kids chalong After school central 20pax Birthday set menu, Central Floresta After School food set (10 kids) After School food set (20 kids) from the team Pizza: Not chosen yet Margherita Hawaiian Pepperoni Hot dish: Not chosen yet Chicken schnitzel Fish fingers Waffles or pancakes: Not chosen yet Waffles Pancakes Fried rice: Not chosen yet Veggie Chicken Shrimp Drinks pitcher: Not chosen yet Juice Mors Kids Adults Bar from the team Not in the menu: keep it as a free line in t",
+          "summaryLine": ""
+        }
+      },
+      "differ": {
+        "conversationId": "01a1c7c6-4326-726c-9166-6f153ca7698e",
+        "eventId": ":eventId",
+        "openBeo": {
+          "route": "POST /api/inbox/conversations/:id/open-beo",
+          "status": 200
+        },
+        "aiFill": {
+          "route": "POST /api/events/:id/beo/ai-fill/inbox",
+          "status": 200,
+          "seconds": 8.3,
+          "shape": "free-text preview (Review & Confirm, Load into Editor)",
+          "error": null
+        },
+        "confirm": {
+          "kitchenPlanProposed": "Kitchen Plan Kids Menu: 1x Nuggets Adults Menu: 1x Pasta ",
+          "summaryLine": "Confirmed 6th birthday party for ZZ Test Child on Thursday 26 November 2026 at 13:00 with 10 children and 4 adults, using the Birthday package at Central Floresta with nuggets for the kids and pasta for the adults.",
+          "editorAfterLoad": {
+            "kids": {
+              "tab": "Kids Menu (1)",
+              "rows": [
+                "EXTRA 1 Nuggets"
+              ]
+            },
+            "adults": {
+              "tab": "Adults Menu (1)",
+              "switch": "checked",
+              "mirror": null,
+              "editableRows": [
+                "EXTRA 1 Pasta"
+              ],
+              "buttons": {
+                "addFirst": 0,
+                "extra": 1,
+                "newItem": 1,
+                "nameInputs": 1,
+                "removeButtons": 1
+              },
+              "clickHereToAddFirst": false
+            }
+          },
+          "save": {
+            "status": 200,
+            "sent": {
+              "adultsDiffer": true,
+              "kids": [
+                [
+                  "Nuggets",
+                  1,
+                  null
+                ]
+              ],
+              "adults": [
+                [
+                  "Pasta",
+                  1,
+                  null
+                ]
+              ]
+            }
+          },
+          "kitchenPlanRead": {
+            "route": "GET /api/events/:eventId/beo/kitchen-plan",
+            "status": 200,
+            "adultsDiffer": true,
+            "kids": [
+              [
+                "Nuggets",
+                1,
+                null,
+                null
+              ]
+            ],
+            "adults": [
+              [
+                "Pasta",
+                1,
+                null,
+                null
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "pasteFillSecondSample": {
+      "eventKey": "ai_same2",
+      "route": {
+        "route": "POST /api/ai/parse-beo",
+        "status": 200
+      },
+      "kitchenPlanInAnswer": {
+        "kids": [
+          {
+            "itemName": "French fries",
+            "quantity": 1,
+            "included": true,
+            "price": 0
+          },
+          {
+            "itemName": "Veggie sticks",
+            "quantity": 1,
+            "included": true,
+            "price": 0
+          },
+          {
+            "itemName": "Fruit skewers",
+            "quantity": 1,
+            "included": true,
+            "price": 0
+          },
+          {
+            "itemName": "Nuggets",
+            "quantity": 1,
+            "notes": "Not in the menu",
+            "included": false,
+            "price": 0
+          },
+          {
+            "itemName": "Juice",
+            "quantity": 1,
+            "included": false,
+            "price": 0
+          }
+        ],
+        "adults": [
+          {
+            "itemName": "Nuggets",
+            "quantity": 1,
+            "notes": "Adults eat the same as the kids",
+            "included": false,
+            "price": 0
+          },
+          {
+            "itemName": "Juice",
+            "quantity": 1,
+            "notes": "Adults eat the same as the kids",
+            "included": false,
+            "price": 0
+          }
+        ],
+        "adultsDiffer": "(no key)"
+      },
+      "dialogClosedWithoutLoading": "closed without loading (the step timed out waiting for the free-text preview; the catalogue review stood on top of it)"
+    }
+  },
+  "step7_savedBefore": {
+    "rule": "adultsDifferOf: on when saved on; with no key, on only when the adults' list holds lines and is not line for line the kids' list",
+    "zzTestEventsAtCentralFloresta": 9,
+    "kitchenPlans": [
+      {
+        "title": "ZZ TEST 829 same menu",
+        "archived": false,
+        "hasKey": true,
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "ZZ TEST 829 sandwich",
+            1,
+            null
+          ],
+          [
+            "ZZ TEST 829 apple juice",
+            1,
+            null
+          ]
+        ],
+        "adults": [],
+        "identical": false,
+        "opens": "off (no adults' list)"
+      },
+      {
+        "title": "ZZ TEST 829 Floresta",
+        "archived": false,
+        "hasKey": true,
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ],
+          [
+            "ZZ TEST 829 coffee",
+            1,
+            "PARTY-BCA4EB4E"
+          ]
+        ],
+        "identical": false,
+        "opens": "on (saved on)"
+      },
+      {
+        "title": "ZZ TEST 822 Floresta",
+        "archived": true,
+        "hasKey": false,
+        "adultsDiffer": "(no key)",
+        "kids": [],
+        "adults": [
+          [
+            "ZZ TEST 822 bubble tea",
+            1,
+            "PARTY-B73D36CC"
+          ]
+        ],
+        "identical": false,
+        "opens": "on (adults' list differs)"
+      },
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "archived": true,
+        "hasKey": false,
+        "adultsDiffer": "(no key)",
+        "kids": [
+          [
+            "French fries",
+            1,
+            null
+          ],
+          [
+            "Veggie sticks",
+            1,
+            null
+          ],
+          [
+            "Fruit skewers",
+            1,
+            null
+          ]
+        ],
+        "adults": [],
+        "identical": false,
+        "opens": "off (no adults' list)"
+      },
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "archived": true,
+        "hasKey": false,
+        "adultsDiffer": "(no key)",
+        "kids": [
+          [
+            "French fries",
+            1,
+            null
+          ],
+          [
+            "Veggie sticks",
+            1,
+            null
+          ],
+          [
+            "Fruit skewers",
+            1,
+            null
+          ]
+        ],
+        "adults": [],
+        "identical": false,
+        "opens": "off (no adults' list)"
+      },
+      {
+        "title": "ZZ Test Child's 6th Birthday",
+        "archived": false,
+        "hasKey": true,
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "Nuggets",
+            10,
+            null
+          ],
+          [
+            "Juice",
+            10,
+            null
+          ]
+        ],
+        "adults": [
+          [
+            "Nuggets",
+            4,
+            null
+          ],
+          [
+            "Juice",
+            4,
+            null
+          ]
+        ],
+        "identical": false,
+        "opens": "on (saved on)"
+      },
+      {
+        "title": "ZZ Test Child's 6th Birthday",
+        "archived": false,
+        "hasKey": true,
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "Nuggets",
+            1,
+            null
+          ]
+        ],
+        "adults": [
+          [
+            "Pasta",
+            1,
+            null
+          ]
+        ],
+        "identical": false,
+        "opens": "on (saved on)"
+      },
+      {
+        "title": "ZZ Test Child's 6th Birthday",
+        "archived": false,
+        "hasKey": true,
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "French fries",
+            1,
+            null
+          ],
+          [
+            "Veggie sticks",
+            1,
+            null
+          ],
+          [
+            "Fruit skewers",
+            1,
+            null
+          ],
+          [
+            "nuggets",
+            1,
+            null
+          ]
+        ],
+        "adults": [],
+        "identical": false,
+        "opens": "off (no adults' list)"
+      }
+    ],
+    "byId": {
+      "scrum828": {
+        "title": "ZZ TEST 828 party",
+        "status": 404,
+        "hasKey": false,
+        "kids": [],
+        "adults": [],
+        "opens": null
+      },
+      "scrum822": {
+        "title": "ZZ TEST 822 Floresta",
+        "status": 200,
+        "hasKey": false,
+        "kids": [],
+        "adults": [
+          [
+            "ZZ TEST 822 bubble tea",
+            1,
+            "PARTY-B73D36CC"
+          ]
+        ],
+        "opens": "on (adults' list differs)"
+      }
+    },
+    "editorReads": {
+      "scrum822": {
+        "opened": true,
+        "title": "ZZ TEST 822 Floresta",
+        "kids": {
+          "tab": "Kids Menu (0)",
+          "rows": []
+        },
+        "adults": {
+          "tab": "Adults Menu (1)",
+          "switch": "checked",
+          "mirror": null,
+          "editableRows": [
+            "EXTRA 1 ZZ TEST 822 bubble tea PARTY-B73D36CC"
+          ],
+          "buttons": {
+            "addFirst": 0,
+            "extra": 1,
+            "newItem": 1,
+            "nameInputs": 1,
+            "removeButtons": 1
+          },
+          "clickHereToAddFirst": false
+        }
+      },
+      "pre7th": {
+        "opened": true,
+        "title": "ZZ Test Child's 7th Birthday",
+        "kids": {
+          "tab": "Kids Menu (3)",
+          "rows": []
+        },
+        "adults": {
+          "tab": "Adults Menu (3)",
+          "switch": "unchecked",
+          "mirror": {
+            "text": "Same as the kids' menu",
+            "items": [
+              "1 French fries",
+              "1 Veggie sticks",
+              "1 Fruit skewers"
+            ]
+          },
+          "editableRows": [],
+          "buttons": {
+            "addFirst": 0,
+            "extra": 0,
+            "newItem": 0,
+            "nameInputs": 0,
+            "removeButtons": 0
+          },
+          "clickHereToAddFirst": false
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "actions": [
+      {
+        "at": "2026-11-11T05:32:57.450Z",
+        "what": "till sign-out (reception, its own session route)",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-11T05:32:57.614Z",
+        "what": "unassign printers on ZZ TEST SCRUM-829 till",
+        "status": 200,
+        "code": null
+      },
+      {
+        "at": "2026-11-11T05:32:57.694Z",
+        "what": "archive station ZZ TEST SCRUM-829 till",
+        "status": 200,
+        "code": null
+      }
+    ],
+    "events": [
+      {
+        "key": "party1",
+        "title": "ZZ TEST 829 Floresta",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T05:32:59.013Z"
+        }
+      },
+      {
+        "key": "party2",
+        "title": "ZZ TEST 829 same menu",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T05:32:59.170Z"
+        }
+      },
+      {
+        "key": "ai_same",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T05:32:59.320Z"
+        }
+      },
+      {
+        "key": "ai_same2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T05:32:59.476Z"
+        }
+      },
+      {
+        "key": "ai_differ",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T05:32:59.626Z"
+        }
+      }
+    ],
+    "conversations": {
+      "same": {
+        "id": "01a1c7be-d09c-739f-8bd1-c8fca7767b6c",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:33:22.311Z",
+          "handled": true
+        }
+      },
+      "same2": {
+        "id": "01a1c7c2-6412-7a9e-bc7a-8bf94e19c79d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:33:23.794Z",
+          "handled": true
+        }
+      },
+      "differ": {
+        "id": "01a1c7c6-4326-726c-9166-6f153ca7698e",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:33:24.803Z",
+          "handled": true
+        }
+      }
+    },
+    "salesOnTheTill": [],
+    "tillMeAfterSignOut": 401,
+    "tillReadBack": {
+      "id": "01a1c7b3-5d3b-7953-a4ba-a528128059e9",
+      "name": "ZZ TEST SCRUM-829 till",
+      "prefix": "Z829X",
+      "archived": true,
+      "devices": 0
+    },
+    "untouched": [
+      {
+        "name": "FWBooth1",
+        "archived": false,
+        "devices": 1
+      },
+      {
+        "name": "Reception Till 1",
+        "archived": false,
+        "devices": 7
+      },
+      {
+        "name": "Till 1 (Pi)",
+        "archived": false,
+        "devices": 4
+      },
+      {
+        "name": "Till 2 (test)",
+        "archived": false,
+        "devices": 4
+      }
+    ],
+    "otherZzTestTillsLeftAlone": [
+      "ZZ TEST SCRUM-710 display",
+      "ZZ TEST SCRUM-718 path",
+      "ZZ TEST setup traps 20261102"
+    ],
+    "finishedAt": "2026-11-11T05:33:23.189Z"
+  },
+  "signOuts": {
+    "at": "2026-11-11T05:33:26.593Z",
+    "appUserBefore": 200,
+    "appLogout": 200,
+    "launcherSignOut": 200,
+    "appUserAfter": 401,
+    "launcherMeAfter": 401,
+    "inboxMeBefore": 200,
+    "inboxAppLogout": 200,
+    "inboxLauncherSignOut": 200,
+    "inboxMeAfter": 401,
+    "inboxLauncherMeAfter": 401,
+    "beoPopupUserAfter": null,
+    "tillMeAfter": 401,
+    "adminApi": {
+      "status": 200,
+      "meAfter": 401,
+      "at": "2026-11-11T05:33:26.783Z"
+    }
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c7b3-5d3b-7953-a4ba-a528128059e9",
+      "name": "ZZ TEST SCRUM-829 till",
+      "box": "Virtual box 1",
+      "prefix": "Z829X",
+      "at": "2026-11-10T23:03:02.160Z"
+    },
+    {
+      "kind": "oto-app event",
+      "id": ":eventId",
+      "title": "ZZ TEST 829 Floresta",
+      "at": "2026-11-10T23:03:12.624Z"
+    },
+    {
+      "kind": "BEO-only till product",
+      "id": "01a0bbdc-8c41-7721-a89b-bd73ccfaca10",
+      "code": "PARTY-CCFACA10",
+      "name": "ZZ TEST 829 nuggets",
+      "at": "2026-11-10T23:03:32.283Z"
+    },
+    {
+      "kind": "BEO-only till product",
+      "id": "01a0bbdc-8c41-7ff2-bc60-d9372f15ac99",
+      "code": "PARTY-2F15AC99",
+      "name": "ZZ TEST 829 juice",
+      "at": "2026-11-10T23:03:35.761Z"
+    },
+    {
+      "kind": "BEO-only till product",
+      "id": "01a0bbdc-8c41-7dcf-bf63-8dd0cbb7d66d",
+      "code": "PARTY-CBB7D66D",
+      "name": "ZZ TEST 829 bubble tea",
+      "at": "2026-11-10T23:03:39.090Z"
+    },
+    {
+      "kind": "BEO-only till product",
+      "id": "01a0bbdc-8c41-7094-a087-8444bca4eb4e",
+      "code": "PARTY-BCA4EB4E",
+      "name": "ZZ TEST 829 coffee",
+      "at": "2026-11-10T23:07:04.566Z"
+    },
+    {
+      "kind": "oto-app event",
+      "id": ":eventId",
+      "title": "ZZ TEST 829 same menu",
+      "at": "2026-11-10T23:12:59.575Z"
+    },
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-10T23:16:05.918Z"
+    },
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-10T23:19:40.793Z"
+    },
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-10T23:23:53.382Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-10T23:03:02.160Z",
+      "by": "admin (the Console's station route)",
+      "what": "POST /branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:03:11.794Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (oto_app)",
+      "status": null,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:03:12.624Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/admin/events",
+      "status": 201,
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 829 Floresta",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-18",
+        "startTime": "13:00",
+        "endTime": "16:00",
+        "durationMinutes": 180,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      }
+    },
+    {
+      "at": "2026-11-10T23:03:12.717Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/beo/events/:id/package-snapshot",
+      "status": 201,
+      "sent": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+      }
+    },
+    {
+      "at": "2026-11-10T23:03:32.283Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "sent": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 nuggets",
+        "station": "kitchen",
+        "price": null,
+        "free": true
+      }
+    },
+    {
+      "at": "2026-11-10T23:03:35.761Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "sent": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 juice",
+        "station": "bar",
+        "price": null,
+        "free": true
+      }
+    },
+    {
+      "at": "2026-11-10T23:03:39.090Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "sent": {
+        "menu": "kids",
+        "name": "ZZ TEST 829 bubble tea",
+        "station": "bar",
+        "price": 125,
+        "free": false
+      }
+    },
+    {
+      "at": "2026-11-10T23:03:54.636Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": []
+      }
+    },
+    {
+      "at": "2026-11-10T23:04:30.204Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-10T23:06:04.677Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "status": null,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:07:04.566Z",
+      "by": "OTO App (admin), BEO New item",
+      "what": "POST /api/events/:eventId/beo/party-menu-items",
+      "status": 200,
+      "sent": {
+        "menu": "adults",
+        "name": "ZZ TEST 829 coffee",
+        "station": "bar",
+        "price": 60,
+        "free": false
+      }
+    },
+    {
+      "at": "2026-11-10T23:07:10.632Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ],
+          [
+            "ZZ TEST 829 coffee",
+            1,
+            "PARTY-BCA4EB4E"
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-10T23:12:59.575Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/admin/events",
+      "status": 201,
+      "sent": {
+        "eventType": "birthday",
+        "title": "ZZ TEST 829 same menu",
+        "branchId": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+        "eventDate": "2026-11-18",
+        "startTime": "10:00",
+        "endTime": "12:00",
+        "durationMinutes": 120,
+        "numChildren": 10,
+        "numAdults": 4,
+        "status": "upcoming"
+      }
+    },
+    {
+      "at": "2026-11-10T23:12:59.661Z",
+      "by": "OTO App (admin)",
+      "what": "POST /api/beo/events/:id/package-snapshot",
+      "status": 201,
+      "sent": {
+        "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+      }
+    },
+    {
+      "at": "2026-11-10T23:13:09.951Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "ZZ TEST 829 sandwich",
+            1,
+            null
+          ],
+          [
+            "ZZ TEST 829 apple juice",
+            1,
+            null
+          ]
+        ],
+        "adults": []
+      }
+    },
+    {
+      "at": "2026-11-10T23:15:30.952Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (inbox)",
+      "status": null,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:16:05.918Z",
+      "by": "inbox (admin), Book date",
+      "what": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+      "status": 200,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:18:38.052Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "Nuggets",
+            10,
+            null
+          ],
+          [
+            "Juice",
+            10,
+            null
+          ]
+        ],
+        "adults": [
+          [
+            "Nuggets",
+            4,
+            null
+          ],
+          [
+            "Juice",
+            4,
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-10T23:19:40.793Z",
+      "by": "inbox (admin), Book date",
+      "what": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+      "status": 200,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:22:44.897Z",
+      "by": "OTO App (admin), Create BEO › Approve and create",
+      "what": "POST /api/events/:id/beo/ai-fill/approve",
+      "status": 200,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:23:53.382Z",
+      "by": "inbox (admin), Book date",
+      "what": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+      "status": 200,
+      "sent": null
+    },
+    {
+      "at": "2026-11-10T23:24:55.294Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "Nuggets",
+            1,
+            null
+          ]
+        ],
+        "adults": [
+          [
+            "Pasta",
+            1,
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-11T05:25:29.354Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (oto_app)",
+      "status": null,
+      "sent": null
+    },
+    {
+      "at": "2026-11-11T05:30:14.372Z",
+      "by": "till (reception)",
+      "what": "POST /auth/sign-in + station pick",
+      "status": null,
+      "sent": null
+    },
+    {
+      "at": "2026-11-11T05:31:15.375Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "ZZ TEST 829 nuggets",
+            1,
+            "PARTY-CCFACA10"
+          ],
+          [
+            "ZZ TEST 829 juice",
+            1,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ]
+        ],
+        "adults": [
+          [
+            "ZZ TEST 829 juice",
+            2,
+            "PARTY-2F15AC99"
+          ],
+          [
+            "ZZ TEST 829 bubble tea",
+            1,
+            "PARTY-CBB7D66D"
+          ],
+          [
+            "pasta",
+            1,
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-11T05:33:19.451Z",
+      "by": "launcher",
+      "what": "POST /api/auth/sign-in + POST /api/auth/handoff (inbox)",
+      "status": null,
+      "sent": null
+    }
+  ],
+  "pageErrors": [],
+  "images": [
+    {
+      "file": "01-beo-adults-same-as-kids.png",
+      "at": "2026-11-10T23:03:47.735Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "BEO editor, Kitchen Plan, Adults tab with Different for adults off: Same as the kids' menu, the three kids' lines read-only, no option list",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "02-beo-adults-same-after-reload.png",
+      "at": "2026-11-10T23:04:05.434Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "After Save and a reload: the Adults tab still reads Same as the kids' menu with the switch off",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "03-beo-adults-copy-changed.png",
+      "at": "2026-11-10T23:04:25.433Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "Switch on: the adults' copy changed for the adults before Save — nuggets removed, juice count 2, pasta added",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "04-beo-adults-copy-after-reload.png",
+      "at": "2026-11-10T23:04:41.132Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "After Save and a reload: the switch is on and the adults' changes kept (juice x2, bubble tea, pasta; no nuggets)",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the BEO sheet hidden (customer names); the signed-in user's names covered by solid boxes"
+      }
+    },
+    {
+      "file": "05-till-party-plan-marks.png",
+      "at": "2026-11-10T23:06:22.754Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till, the party's page, Kitchen plan: one list with the adults' changes marked",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "06-till-settle-preview.png",
+      "at": "2026-11-10T23:06:50.046Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till, Settle party at 10 children / 4 adults: the package, the socks, the add-ons and the total — closed without confirming",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "07-till-settle-preview-adults-coded.png",
+      "at": "2026-11-10T23:09:45.320Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Settle preview after an adults-only coded line (ZZ TEST 829 coffee ฿60): Add-ons ฿185, Total ฿17,085",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "08-beo-pdf-one-food-list.png",
+      "at": "2026-11-10T23:11:33.046Z",
+      "page": "PDF",
+      "url": "GET /api/events/:eventId/beo/pdf",
+      "viewport": {
+        "width": 954,
+        "height": 1348
+      },
+      "shows": "The BEO PDF's food section: ONE list with the adults' changes marked beside the kids' lines and their own dishes after, marked adults only",
+      "masked": {
+        "note": "drawn by pdf.js from the saved file, page 1; the PDF names no person (checked in its text)"
+      }
+    },
+    {
+      "file": "09-dayof-adults-switch-on.png",
+      "at": "2026-11-10T23:12:39.393Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/core/events/:eventId",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "Day-of view, Kitchen Plan, Adults tab with the switch on: the adults' own list as saved",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "10-dayof-adults-same-as-kids.png",
+      "at": "2026-11-10T23:13:32.132Z",
+      "page": "APP",
+      "url": "https://oto-app-staging.onrender.com/core/events/:eventId",
+      "viewport": {
+        "width": 1440,
+        "height": 1100
+      },
+      "shows": "Day-of view, Kitchen Plan, Adults tab with the switch off: Same as the kids' menu, the kids' lines mirrored, no Click here to add first item",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "11-ai-fill-same-loaded.png",
+      "at": "2026-11-10T23:18:37.799Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from the chat \"the adults will eat the same\", the fill loaded into the editor: the Adults tab as it stands",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the sheet hidden; the signed-in user's names covered"
+      }
+    },
+    {
+      "file": "11-ai-fill-same-one-list.png",
+      "at": "2026-11-10T23:22:56.396Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from the chat \"the adults will eat the same\" (second sample, the catalogue review): after Approve and create the Adults tab reads Same as the kids' menu, the switch off",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the sheet hidden; the signed-in user's names covered"
+      }
+    },
+    {
+      "file": "12-ai-fill-differ-adults-own.png",
+      "at": "2026-11-10T23:24:55.137Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from the chat \"nuggets for the kids, pasta for the adults\", the fill loaded: the Adults tab holds the pasta with the switch on",
+      "masked": {
+        "names": {
+          "occurrences": 0,
+          "boxes": 0
+        },
+        "note": "the events board behind the sheet hidden; the signed-in user's names covered"
+      }
+    },
+    {
+      "file": "05b-till-party-plan-marks-recheck.png",
+      "at": "2026-11-11T05:30:43.904Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "The ZZ TEST till on the api at c554fac8: the party's Kitchen plan, one list with the adults' changes marked",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "06b-till-settle-preview-recheck.png",
+      "at": "2026-11-11T05:30:50.754Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Settle preview on the api at c554fac8 with the adults-only coded coffee: Add-ons ฿185, Total ฿17,085 — closed without confirming",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    },
+    {
+      "file": "07b-till-settle-preview-one-list-recheck.png",
+      "at": "2026-11-11T05:31:58.919Z",
+      "page": "T",
+      "url": "https://oto-pos-web-staging.onrender.com/parties",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "shows": "Settle preview on the api at c554fac8 without the coffee: the bubble tea charged once, pasta adds nothing, Total ฿17,025 — closed without confirming",
+      "masked": {
+        "names": {
+          "occurrences": 1,
+          "boxes": 1
+        },
+        "note": "real names covered by solid boxes; phone and password fields and toasts masked"
+      }
+    }
+  ]
+}
