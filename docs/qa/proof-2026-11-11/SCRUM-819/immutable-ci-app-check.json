@@ -1,0 +1,11 @@
+{
+  "run": 43007759803,
+  "sha": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "jobId": 130479406568,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/immutable-ci-app-typecheck.log",
+  "sha256": "6bd3925c6107946b340660072c5f041b9bee1585e1d287fab6039eae40ea3dcf"
+}
