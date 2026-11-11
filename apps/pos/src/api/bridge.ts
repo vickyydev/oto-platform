@@ -35,6 +35,14 @@ let origin: string | null = null;
 let boxSession: string | null = null;
 let sessionRevision = 0;
 const sessionListeners = new Set<() => void>();
+/**
+ * SCRUM-780 — the unlocks on the wire. An online unlock opens the till on the
+ * platform's answer and proves itself to the box beside it, so for a moment
+ * the till is open and the box session is still being made. A read that
+ * carries that session waits here for the box's answer instead of going out
+ * without it and being told to unlock a till that is unlocking.
+ */
+const unlocksOnTheWire = new Set<Promise<void>>();
 
 /**
  * SCRUM-503 — the refusals the BOX answered, so a note can name who said no.
@@ -174,22 +182,36 @@ export interface BridgeIntentAnswer<R = Record<string, unknown>> {
 export const bridgeApi = {
   status: (stationId: string, signal?: AbortSignal) =>
     request<BridgeStatus>('GET', stationId, 'status', undefined, { signal }),
-  displays: (stationId: string) => request<ApiResponse<'/box/v1/station/{stationId}/displays', 'get'>>(
-    'GET', stationId, 'displays'),
+  displays: async (stationId: string) => {
+    // SCRUM-780 — this waits no longer than the unlock itself: the one sent
+    // beside an online unlock gives up after two seconds, and the box-lane
+    // one is answered before the till opens. A box that refused the unlock,
+    // or never answered, still refuses this read: a till that is not
+    // unlocked on its box is told so.
+    while (unlocksOnTheWire.size > 0) await Promise.all(unlocksOnTheWire);
+    return request<ApiResponse<'/box/v1/station/{stationId}/displays', 'get'>>('GET', stationId, 'displays');
+  },
   /**
    * Unlock through the box (OD-2). The answer's session is held for the
    * calls that follow, which is what a Pi needs; a virtual box also accepts
    * the platform cookie.
    */
-  unlock: async (stationId: string, body: BridgeUnlockRequest, signal?: AbortSignal): Promise<BridgeUnlockResponse> => {
+  unlock: (stationId: string, body: BridgeUnlockRequest, signal?: AbortSignal): Promise<BridgeUnlockResponse> => {
     const revision = sessionRevision;
-    const answer = await request<BridgeUnlockResponse>('POST', stationId, 'unlock', body, {
-      bearer: null,
-      signal,
-    });
-    // A lock, sign-out, station change or timeout can overtake this response.
-    if (revision === sessionRevision && !signal?.aborted) holdBoxSession(answer.session);
-    return answer;
+    const asked = (async () => {
+      const answer = await request<BridgeUnlockResponse>('POST', stationId, 'unlock', body, {
+        bearer: null,
+        signal,
+      });
+      // A lock, sign-out, station change or timeout can overtake this response.
+      if (revision === sessionRevision && !signal?.aborted) holdBoxSession(answer.session);
+      return answer;
+    })();
+    // Settled either way, and only after the session is held (SCRUM-780).
+    const settled: Promise<void> = asked.then(() => undefined, () => undefined)
+      .finally(() => { unlocksOnTheWire.delete(settled); });
+    unlocksOnTheWire.add(settled);
+    return asked;
   },
   lock: async (stationId: string): Promise<void> => {
     const held = boxSession;

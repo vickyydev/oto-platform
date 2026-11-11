@@ -541,6 +541,10 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   useEffect(() => { wake.current?.(true); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // SCRUM-780 — on a counter box a lock ends the box session and the unlock
+  // makes a new one. What the box said to the ended session is not news about
+  // the next: the first read after the unlock says it again if it still holds.
+  useEffect(() => { if (!active && hasBridgeOrigin()) setError(null); }, [active]);
   useEffect(() => {
     setConnected([]);
     setError(null);
@@ -673,7 +677,13 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         if (paused()) return;
         followStream(seen === 'unknown' || seen.length > 0);
         setConnected(seen === 'unknown' ? [] : seen);
-        if (seen !== 'unknown' && !seen.length) return;
+        if (seen !== 'unknown' && !seen.length) {
+          // SCRUM-780 — the read was answered and no display is watching:
+          // nothing is wrong with the link, so what an earlier read left (the
+          // box refused it, or did not answer) must not stay on the screen.
+          setError(null);
+          return;
+        }
         // The lease, the document and the publish go to the BOX through the
         // station bridge (offline plan Round 3): the same session manager on a
         // virtual box, and the one a Pi serves on the counter's LAN.
