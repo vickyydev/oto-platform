@@ -738,7 +738,7 @@ export async function publicRoutes(app: App): Promise<void> {
 }
 
 /** A plain page for a family's browser, and a policy that lets it load nothing. */
-function sendHtmlPage(
+export function sendHtmlPage(
   reply: { header: (k: string, v: string) => unknown; type: (t: string) => unknown; send: (b: string) => unknown },
   title: string,
   body: string,

@@ -6,11 +6,13 @@ import { formatTHB } from '@oto/shared';
 import {
   gatewayStatus,
   handleNotification,
+  hostedLinkStanding,
   pressSimulatorHostedPage,
   simulateGatewayEvent,
   simulatorHostedPage,
 } from '../services/payments/gateway';
 import { errors } from '../lib/errors';
+import { sendHtmlPage } from './public';
 
 /**
  * WHAT THE PAYMENT GATEWAY POSTS TO US, and the panel that pretends to be it
@@ -249,14 +251,25 @@ export function webhookRoutes(app: App): Promise<void> {
       config: { public: true, ...ipLimited },
       schema: {
         description:
-          "The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
-        params: z.object({ attemptId: z.string().uuid() }),
+          "The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. A browser (Accept: text/html) that opens a link with nothing to pay is shown a plain page — 410 for a link that was closed, 404 for one that never existed — and every other client the JSON error.",
+        // Not `.uuid()`: a link cut short in a chat is "no such page" to a family, not a validation error.
+        params: z.object({ attemptId: z.string().max(64) }),
       },
     },
     async (req, reply) => {
+      const browser = wantsHtml(req.headers.accept);
       // SCRUM-607 — only where the simulator is switched on by name.
-      if (app.env.PAYMENTS_SIMULATOR !== 'on') throw errors.notFound('No such payment page');
+      if (app.env.PAYMENTS_SIMULATOR !== 'on' || !z.string().uuid().safeParse(req.params.attemptId).success) {
+        if (browser) return sendLinkOver(reply, 'unknown');
+        throw errors.notFound('No such payment page');
+      }
       const page = await simulatorHostedPage(app.db, app.env, req.params.attemptId);
+      // SCRUM-841 — a family's browser is never shown the bare error, and a
+      // deposit link that was closed never shows the simulator's own words.
+      if (browser && (!page || page.state !== 'pending')) {
+        const standing = await hostedLinkStanding(app.db, req.params.attemptId, page?.state ?? null);
+        if (standing !== 'open') return sendLinkOver(reply, standing);
+      }
       if (!page) throw errors.notFound('No such payment page');
       const open = page.state === 'pending';
       const body = `
@@ -281,13 +294,17 @@ export function webhookRoutes(app: App): Promise<void> {
       config: { public: true, rateLimit: { max: 30, timeWindow: 60_000 } },
       schema: {
         description:
-          "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise.",
+          "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise — to a browser (Accept: text/html) as the same plain page the GET shows, 410 or 404.",
         params: z.object({ attemptId: z.string().uuid() }),
         body: z.object({ action: z.enum(['pay', 'fail', 'return']) }).passthrough(),
       },
     },
     async (req, reply) => {
-      if (app.env.PAYMENTS_SIMULATOR !== 'on') throw errors.notFound('No such payment page');
+      const browser = wantsHtml(req.headers.accept);
+      if (app.env.PAYMENTS_SIMULATOR !== 'on') {
+        if (browser) return sendLinkOver(reply, 'unknown');
+        throw errors.notFound('No such payment page');
+      }
       const pressed = await pressSimulatorHostedPage(app.db, app.env, req.log, {
         attemptId: req.params.attemptId,
         action: req.body.action === 'pay' ? 'pay' : 'fail',
@@ -296,7 +313,14 @@ export function webhookRoutes(app: App): Promise<void> {
         sourceIp: req.ip,
         requestId: req.id,
       });
-      if (!pressed) throw errors.notFound('No such payment page');
+      if (!pressed) {
+        // SCRUM-841 — nothing was pressed: the page is gone, so the browser gets the plain page.
+        if (browser) {
+          const standing = await hostedLinkStanding(app.db, req.params.attemptId, null);
+          return sendLinkOver(reply, standing === 'open' ? 'closed' : standing);
+        }
+        throw errors.notFound('No such payment page');
+      }
       const body = `
         <p>Returning to the booking…</p>
         <form method="post" action="${escapeHtml(pressed.frontendReturnUrl)}">
@@ -309,6 +333,43 @@ export function webhookRoutes(app: App): Promise<void> {
   );
 
   return Promise.resolve();
+}
+
+/** A browser asks for a page; everything else (an API client, a bare request) is answered in JSON. */
+function wantsHtml(accept: string | string[] | undefined): boolean {
+  return /text\/html/i.test(headerOf(accept) ?? '');
+}
+
+/**
+ * SCRUM-841 — THE PAGE A FAMILY SEES when the link in their chat has nothing
+ * to pay: a few plain lines in English, Thai and Russian, no ids, no amounts,
+ * no form. 410 for a link that existed and is over, 404 for one that never
+ * did. With the real gateway the link is 2C2P's own page, which this does not
+ * reach: this is the simulator's page and any link of ours.
+ */
+function sendLinkOver(
+  reply: Parameters<typeof sendHtmlPage>[0] & { code: (status: number) => unknown },
+  standing: 'unknown' | 'paid' | 'closed',
+): unknown {
+  reply.code(standing === 'unknown' ? 404 : 410);
+  const lines =
+    standing === 'paid'
+      ? [
+          ['en', 'This payment link is no longer active.', 'This payment has already been received. Thank you.'],
+          ['th', 'ลิงก์ชำระเงินนี้ใช้งานไม่ได้แล้ว', 'เราได้รับการชำระเงินนี้แล้ว ขอบคุณค่ะ'],
+          ['ru', 'Эта ссылка для оплаты больше не действует.', 'Этот платёж уже получен. Спасибо.'],
+        ]
+      : [
+          ['en', 'This payment link is no longer active.', 'Please contact the park and we will send you a new one.'],
+          ['th', 'ลิงก์ชำระเงินนี้ใช้งานไม่ได้แล้ว', 'กรุณาติดต่อเรา แล้วเราจะส่งลิงก์ใหม่ให้ค่ะ'],
+          ['ru', 'Эта ссылка для оплаты больше не действует.', 'Пожалуйста, свяжитесь с парком, и мы отправим вам новую.'],
+        ];
+  const [en, ...others] = lines as [string[], ...string[][]];
+  const body =
+    `<h1>${escapeHtml(en[1]!)}</h1><p>${escapeHtml(en[2]!)}</p>` +
+    others.map((l) => `<p lang="${l[0]}">${escapeHtml(l[1]!)}<br>${escapeHtml(l[2]!)}</p>`).join('') +
+    '<p class="muted">OTO Play Park</p>';
+  return sendHtmlPage(reply, en[1]!, body);
 }
 
 /** The whole page, and a policy that lets it run its one inline script and nothing else. */

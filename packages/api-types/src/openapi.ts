@@ -21207,7 +21207,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. */
+        /** @description The simulated gateway's hosted payment page for a booking: pay or fail. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. A browser (Accept: text/html) that opens a link with nothing to pay is shown a plain page — 410 for a link that was closed, 404 for one that never existed — and every other client the JSON error. */
         get: {
             parameters: {
                 query?: never;
@@ -21229,7 +21229,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise. */
+        /** @description A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while PAYMENTS_SIMULATOR=on and no PGW_* credentials are set; 404 otherwise — to a browser (Accept: text/html) as the same plain page the GET shows, 410 or 404. */
         post: {
             parameters: {
                 query?: never;

@@ -1379,3 +1379,122 @@ describe('a party removed in the Events module closes its open deposit request (
     }
   });
 });
+
+describe('a link with nothing to pay is a plain page to a family, never raw code (SCRUM-841)', () => {
+  const HTML = { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' };
+  const JSON_ONLY = { accept: 'application/json' };
+  const open = (attemptId: string, headers: Record<string, string> = {}) => ctx.app.inject({ method: 'GET', url: `/webhooks/2c2p/hosted/${attemptId}`, headers });
+  /** The process that minted the page restarts: the simulator holds it no more. */
+  const forget = (invoiceNo: string) => (gatewayFor(ctx.app.env).qr as unknown as { payments: Map<string, unknown> }).payments.delete(invoiceNo);
+  const plainClosed = (res: { statusCode: number; headers: Record<string, unknown>; body: string }, id: string, invoiceNo: string) => {
+    expect(res.statusCode, res.body).toBe(410);
+    expect(String(res.headers['content-type'])).toContain('text/html');
+    expect(res.body).toContain('This payment link is no longer active.');
+    expect(res.body).toContain('Please contact the park and we will send you a new one.');
+    expect(res.body).toContain('ลิงก์ชำระเงินนี้ใช้งานไม่ได้แล้ว');
+    expect(res.body).toContain('Эта ссылка для оплаты больше не действует.');
+    // Nothing payable, no code, no ids, no amount.
+    expect(res.body).not.toContain('<form');
+    expect(res.body).not.toContain('<button');
+    expect(res.body).not.toContain('NOT_FOUND');
+    expect(res.body).not.toContain('"error"');
+    expect(res.body).not.toContain(id);
+    expect(res.body).not.toContain(invoiceNo);
+    expect(res.body).not.toContain('3,000');
+  };
+
+  it('an OPEN link is the payment page as before, to a browser and to anything else', async () => {
+    const { eventId } = await party();
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    for (const headers of [HTML, {}]) {
+      const page = await open(row.paymentAttemptId, headers);
+      expect(page.statusCode, page.body).toBe(200);
+      expect(page.body).toContain('value="pay"');
+      expect(page.body).toContain('value="fail"');
+      expect(page.body).not.toContain('no longer active');
+    }
+  });
+
+  it('a CANCELLED link: 410 and the plain words to a browser, whether or not the page is still held; other clients as before', async () => {
+    const { eventId } = await party();
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    expect((await act(eventId, made.request.id, 'cancel')).statusCode).toBe(200);
+
+    // The page is still held by this process: a browser reads the plain page, not the simulator's words.
+    plainClosed(await open(row.paymentAttemptId, HTML), row.paymentAttemptId, row.invoiceNo);
+    // A client that did not ask for a page gets what it always got.
+    const bare = await open(row.paymentAttemptId);
+    expect(bare.statusCode).toBe(200);
+    expect(bare.body).toContain('This payment is cancelled');
+
+    // After a restart the page is gone: the browser still reads the plain page …
+    forget(row.invoiceNo);
+    plainClosed(await open(row.paymentAttemptId, HTML), row.paymentAttemptId, row.invoiceNo);
+    // … a press of the old form is answered the same way, and moves nothing …
+    const pressed = await ctx.app.inject({
+      method: 'POST',
+      url: `/webhooks/2c2p/hosted/${row.paymentAttemptId}`,
+      headers: { 'content-type': 'application/x-www-form-urlencoded', ...HTML },
+      payload: 'action=pay',
+    });
+    plainClosed(pressed, row.paymentAttemptId, row.invoiceNo);
+    expect((await attemptRow(row.paymentAttemptId)).status).toBe('cancelled');
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'cancelled', paidAt: null });
+    // … and an API client keeps the JSON error.
+    for (const headers of [JSON_ONLY, {}]) {
+      const api = await open(row.paymentAttemptId, headers);
+      expect(api.statusCode).toBe(404);
+      expect(api.json()).toEqual({ error: { code: 'NOT_FOUND', message: 'No such payment page' } });
+    }
+  });
+
+  it('an open request whose page was lost in a restart reads closed too: there is nothing to pay on it', async () => {
+    const { eventId } = await party();
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    forget(row.invoiceNo);
+    plainClosed(await open(row.paymentAttemptId, HTML), row.paymentAttemptId, row.invoiceNo);
+  });
+
+  it('a link that ran out on the gateway before the follow-up closed the request reads closed, not the simulator’s words', async () => {
+    const { eventId } = await party();
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    simulator().apply(row.invoiceNo, 'expire');
+    expect((await requestRow(made.request.id)).state).toBe('requested');
+    plainClosed(await open(row.paymentAttemptId, HTML), row.paymentAttemptId, row.invoiceNo);
+  });
+
+  it('a PAID link says the payment was received, and never offers a new one', async () => {
+    const { eventId } = await party();
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    expect((await press(row.paymentAttemptId, 'pay')).statusCode).toBe(200);
+    expect((await requestRow(made.request.id)).state).toBe('paid');
+    for (const held of [true, false]) {
+      if (!held) forget(row.invoiceNo);
+      const page = await open(row.paymentAttemptId, HTML);
+      expect(page.statusCode, page.body).toBe(410);
+      expect(page.body).toContain('This payment has already been received. Thank you.');
+      expect(page.body).not.toContain('send you a new one');
+      expect(page.body).not.toContain('<form');
+    }
+  });
+
+  it('an UNKNOWN link, and one cut short: 404 and the plain words to a browser, the JSON error to an API client', async () => {
+    for (const id of [newId(), 'not-a-link']) {
+      const page = await open(id, HTML);
+      expect(page.statusCode, page.body).toBe(404);
+      expect(String(page.headers['content-type'])).toContain('text/html');
+      expect(page.body).toContain('This payment link is no longer active.');
+      expect(page.body).not.toContain('NOT_FOUND');
+      expect(page.body).not.toContain('<form');
+      expect(page.body).not.toContain(id);
+      const api = await open(id, JSON_ONLY);
+      expect(api.statusCode).toBe(404);
+      expect(api.json()).toEqual({ error: { code: 'NOT_FOUND', message: 'No such payment page' } });
+    }
+  });
+});

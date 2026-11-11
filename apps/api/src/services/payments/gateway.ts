@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
-import { paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
+import { partyDepositRequest, paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   WEB_INVOICE_STATION_CODE,
@@ -2803,6 +2803,42 @@ export async function simulatorHostedPage(
   const attempt = await hostedAttemptById(db, attemptId);
   if (!attempt?.invoiceNo) return null;
   return sim.hostedPage(attempt.invoiceNo);
+}
+
+/**
+ * SCRUM-841 — WHERE A HOSTED LINK STANDS when its page is not one to pay on,
+ * for the page a family's browser is shown in place of a bare error or the
+ * simulator's own words. `pageState` is what this process still holds of the
+ * simulated page, or null when it holds nothing (a restart, or never opened).
+ *
+ *   `unknown`  no hosted attempt carries this id.
+ *   `paid`     the money is in: the link is over, and nothing is owed on it.
+ *   `closed`   a party deposit's link that was cancelled, ran out or lost its
+ *              party — and any hosted attempt whose page is no longer held,
+ *              which can take no payment either.
+ *   `open`     the page speaks for itself: one still waiting to be paid, and
+ *              a BOOKING's page in any state — that one keeps its own words
+ *              and its "Back to the booking" button.
+ *
+ * Read only.
+ */
+export type HostedLinkStanding = 'unknown' | 'paid' | 'closed' | 'open';
+
+export async function hostedLinkStanding(
+  db: Db,
+  attemptId: string,
+  pageState: SimulatedHostedPage['state'] | null,
+): Promise<HostedLinkStanding> {
+  const attempt = await hostedAttemptById(db, attemptId);
+  if (!attempt) return 'unknown';
+  const [deposit] = await db
+    .select({ state: partyDepositRequest.state })
+    .from(partyDepositRequest)
+    .where(eq(partyDepositRequest.paymentAttemptId, attempt.id))
+    .limit(1);
+  if (!deposit && pageState) return 'open';
+  if (attempt.status === 'approved' || deposit?.state === 'paid' || pageState === 'paid') return 'paid';
+  return pageState === 'pending' ? 'open' : 'closed';
 }
 
 export interface HostedPress {
