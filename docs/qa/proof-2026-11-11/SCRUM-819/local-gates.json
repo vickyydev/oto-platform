@@ -36,7 +36,7 @@
     "session": 38357
   },
   "landed": false,
-  "proofCommit": "0087b6c6506396d5d8b7982a303f4d74e31e568c",
+  "proofCommit": "1c12a343427ef0b20056cecc5a9d875f5eb8bd0b",
   "workspaceTypecheck": {
     "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-typecheck.log",
     "sha256": "e9a9543e863113fce46ea36b3017c548870e129beca7378c2e5b2996d741c387",
@@ -74,5 +74,15 @@
       "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-tests-serial.log",
       "sharedPackagePassed": true
     }
+  },
+  "readOnlyStagingPreflight": {
+    "openAlerts": 29,
+    "displayOfflineAlerts": 0,
+    "watchdogAgeSeconds": 33,
+    "alertEvidence": "ok",
+    "signOut": 200,
+    "me": 401,
+    "fixtureCreated": false,
+    "notFeatureProof": true
   }
 }
