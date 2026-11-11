@@ -1,0 +1,42 @@
+{
+  "sha": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "candidate": "d269ed7b284861fe31635b9f13a32d6ed6794fe3",
+  "worktree": "C:\\oto-lanes\\codex-display-release-20261111",
+  "install": {
+    "path": "C:/oto-lanes/s819-release-install.log",
+    "sha256": "6f56f02d5e409715d427ca39ce35630e72d47fd593b2109d8d1e3dc6a128dfa7",
+    "exitCode": 0
+  },
+  "review": {
+    "path": "C:/oto-lanes/s819-release-review.log",
+    "sha256": "6e361726511df36cdf745f8b9344e89aae8ce0d243a9de279d8ef2a4f7ad5ef7",
+    "exitCode": 0,
+    "files": 3,
+    "tests": 35
+  },
+  "typecheck": {
+    "path": "docs/qa/proof-2026-11-11/SCRUM-819/local/release-api-typecheck.log",
+    "sha256": "1837150a23c4ee48739d416f32458b6d2f1794ed73144a857099c11ec583e245",
+    "exitCode": 0,
+    "readWhole": true,
+    "apiDiagnostics": 0
+  },
+  "lint": {
+    "path": "docs/qa/proof-2026-11-11/SCRUM-819/local/release-lint.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0
+  },
+  "finalRebaseRuntimeUnchanged": true,
+  "originalFullApi": {
+    "session": 38357,
+    "state": "running",
+    "worktree": "C:/oto-lanes/codex-display-presence-20261111",
+    "sha": "1c12a343427ef0b20056cecc5a9d875f5eb8bd0b"
+  },
+  "deployment": {
+    "service": "oto-api-staging",
+    "id": "dep-dbq4d03rjlhs73b7cdp0",
+    "stateAtRequest": "build_in_progress"
+  },
+  "ownerDirection": "STATUS 11 November 2026 17:32: deploy and prove while long checks continue"
+}
