@@ -1,0 +1,2746 @@
+{
+  "unit": "SCRUM-830 staging proof: the first message decides the inbox queue (3ac4658cd)",
+  "commit": "3ac4658cdd5f00a965c004db027cfac775495a19",
+  "runWindowUtc": {
+    "start": "2026-11-11T05:49:06.738Z",
+    "end": "2026-11-11T05:58:19.318Z"
+  },
+  "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-11T05:49:23.398Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq00eou01pc739e56q0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:46:29.189073Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq00f6k1f9s73d6j4l0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:43:11.967543Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpvpt8ae00c73cs8bm0",
+        "status": "live",
+        "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+        "finishedAt": "2026-11-11T05:29:14.674384Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-11T05:58:08.192Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq00eou01pc739e56q0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:46:29.189073Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq00f6k1f9s73d6j4l0",
+        "status": "live",
+        "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+        "finishedAt": "2026-11-11T05:43:11.967543Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbpvpt8ae00c73cs8bm0",
+        "status": "live",
+        "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+        "finishedAt": "2026-11-11T05:29:14.674384Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox and the Console (staging administrator)"
+  },
+  "assistant": {
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-677e-728c-acc3-35daa8e43d0b",
+      "displayName": "Demo Instagram",
+      "channel": "instagram",
+      "aiMode": "live"
+    }
+  },
+  "threads": {
+    "S1": {
+      "key": "S1",
+      "expect": "Birthdays & Events at once, before any assistant turn; the pill \"Routed to Birthdays & Events · from the message\"; the classify audit row with cue birthday; no extra move after the assistant",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c927-d28b-7e23-94de-7f0862bff1c3",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "I want to book a birthday party (ZZ TEST)",
+          "sentAt": "2026-11-11T05:49:50.303Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "I want to book a birthday party (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 6350,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c927-d29f-7591-b251-1ff1f9e501f2",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:49:51.267Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 3,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:49:52.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:50:23.765Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 5,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:49:52.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:49:52.000Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:49:52.000Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:50:02.265Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:50:02.265Z",
+            "actorKind": "ai",
+            "turnId": "01a1c927-d29f-7591-b251-1ff1f9e501f2",
+            "intent": "birthday_party",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c927-f825-7ba5-b195-32eb1889a15e"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:50:38.753Z",
+          "closed": [
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+            "AI · Language: EN · Intent: birthday_party"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more"
+          ],
+          "open": [
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+            "Language: EN · Routed to Birthdays & Events · from the message",
+            "Assigned Demo Anya (Birthdays EN/RU) as primary",
+            "Assigned Demo Vera (Birthdays EN/RU backup) as support",
+            "AI · Language: EN · Intent: birthday_party"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "birthday",
+              "source": "message",
+              "category": "birthdays",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "birthdays",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ],
+        "afterAssistant": [
+          "inbox.ai.open_question",
+          "inbox.conversation.classify",
+          "inbox.conversation.create"
+        ]
+      }
+    },
+    "S2a": {
+      "key": "S2a",
+      "expect": "the GM at once; the pill \"Routed to GM · from the message\"; cue refund",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c928-ada6-7947-9518-4751057f4763",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "I want a refund, the staff were rude (ZZ TEST)",
+          "sentAt": "2026-11-11T05:50:46.408Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "I want a refund, the staff were rude (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 6276,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c928-adb2-7fd2-9ae2-1733248de1f3",
+                "intent": "refund_request",
+                "intents": [
+                  "refund_request",
+                  "complaint_onsite"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_gm"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:50:47.783Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:50:48.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:51:08.353Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 4,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:50:48.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:50:48.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:50:58.893Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:50:58.893Z",
+            "actorKind": "ai",
+            "turnId": "01a1c928-adb2-7fd2-9ae2-1733248de1f3",
+            "intent": "refund_request",
+            "intents": [
+              "refund_request",
+              "complaint_onsite"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "gm",
+            "reroutedTeamId": null,
+            "templateKey": "closing_gm",
+            "closingKey": "closing_gm",
+            "silent": false,
+            "messageIds": [
+              "01a1c928-d558-7c14-9224-0d9fb5bed029"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:51:46.538Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "Language: EN · Routed to GM · from the message",
+            "Assigned GM as primary",
+            "AI handed over to the team",
+            "AI · Language: EN · Intent: refund_request",
+            "AI handed over to the team · refund request"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "refund",
+              "source": "message",
+              "category": "gm",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "gm",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ]
+      }
+    },
+    "S2b": {
+      "key": "S2b",
+      "expect": "the GM: the complaint wins over the birthday word",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c929-1f6e-7d37-9330-698f96ef94de",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "The birthday party yesterday was terrible, your staff were rude (ZZ TEST)",
+          "sentAt": "2026-11-11T05:51:15.517Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "The birthday party yesterday was terrible, your staff were rude (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5865,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c929-1f84-7f20-8866-aa15372bfcf2",
+                "intent": "complaint_onsite",
+                "intents": [
+                  "complaint_onsite"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              },
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c929-1f84-7f20-8866-aa15372bfcf2",
+                "intent": "complaint_onsite",
+                "intents": [
+                  "complaint_onsite"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_gm"
+              }
+            ],
+            "assistantBubbles": 2,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:51:16.870Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:51:17.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "rude",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:51:35.887Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 5,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:51:17.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "rude",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:51:17.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:51:29.985Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:51:29.985Z",
+            "actorKind": "ai",
+            "turnId": "01a1c929-1f84-7f20-8866-aa15372bfcf2",
+            "intent": "complaint_onsite",
+            "intents": [
+              "complaint_onsite"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c929-4ecd-7c14-89b1-82772a5d35b5",
+              "01a1c929-4ecd-7c14-89b1-8278b1542ade"
+            ]
+          },
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:51:29.985Z",
+            "actorKind": "ai",
+            "turnId": "01a1c929-1f84-7f20-8866-aa15372bfcf2",
+            "intent": "complaint_onsite",
+            "intents": [
+              "complaint_onsite"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "gm",
+            "reroutedTeamId": null,
+            "templateKey": "closing_gm",
+            "closingKey": "closing_gm",
+            "silent": false,
+            "messageIds": [
+              "01a1c929-4ecd-7c14-89b1-82772a5d35b5",
+              "01a1c929-4ecd-7c14-89b1-8278b1542ade"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:57:15.854Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "Language: EN · Routed to GM · from the message",
+            "Assigned GM as primary",
+            "AI handed over to the team",
+            "AI · Language: EN · Intent: complaint_onsite",
+            "AI handed over to the team · complaint onsite"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "rude",
+              "source": "message",
+              "category": "gm",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "gm",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ]
+      }
+    },
+    "S3": {
+      "key": "S3",
+      "expect": "the channel default (General); the pill with NO \"from the message\"; no classify row",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c929-b571-7972-bd99-e0928868e38f",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "What time do you open? (ZZ TEST)",
+          "sentAt": "2026-11-11T05:51:53.899Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "What time do you open? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5883,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c929-b57e-7c24-9f5b-c067b1c3edf5",
+                "intent": "hours",
+                "intents": [
+                  "hours"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:51:54.870Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:51:56.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:52:15.728Z",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 4,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:51:56.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:51:56.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:52:01.879Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:52:01.879Z",
+            "actorKind": "ai",
+            "turnId": "01a1c929-b57e-7c24-9f5b-c067b1c3edf5",
+            "intent": "hours",
+            "intents": [
+              "hours"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c929-cb60-7ad0-8b9b-4c07bdb234ac"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:53:13.612Z",
+          "closed": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI · Language: EN · Intent: hours"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more"
+          ],
+          "open": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "Language: EN · Routed to Reception · Central Floresta",
+            "Assigned Reception · Central Floresta as primary",
+            "AI · Language: EN · Intent: hours"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "general",
+              "categorySource": "default",
+              "language": "en"
+            }
+          }
+        ],
+        "classifyRow": "none"
+      }
+    },
+    "S4a": {
+      "key": "S4a",
+      "expect": "Birthdays & Events; the thread language th; cue language th",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92a-2fb9-72ec-9f96-40a28027fc99",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายค่ะ (ZZ TEST)",
+          "sentAt": "2026-11-11T05:52:25.217Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายค่ะ (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5903,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c92a-2fc6-7318-a627-78adbf6843d0",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:52:26.215Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "th",
+          "aiState": "ready",
+          "eventCount": 3,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:52:27.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "th",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-baeb62a271d6",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "th",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:52:49.840Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "th",
+          "aiState": "ready",
+          "eventCount": 5,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:52:27.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "th",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-baeb62a271d6",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "th",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:52:27.000Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:52:27.000Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:52:37.407Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:52:37.407Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92a-2fc6-7318-a627-78adbf6843d0",
+            "intent": "birthday_party",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c92a-5629-789d-acfc-966a67a251a2"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:54:29.164Z",
+          "closed": [
+            "Language: TH · Routed to Birthdays & Events · from the message · 2 more",
+            "AI · Language: TH · Intent: birthday_party"
+          ],
+          "groupSummaries": [
+            "Language: TH · Routed to Birthdays & Events · from the message · 2 more"
+          ],
+          "open": [
+            "Language: TH · Routed to Birthdays & Events · from the message · 2 more",
+            "Language: TH · Routed to Birthdays & Events · from the message",
+            "Assigned Demo Fon (Birthdays TH) as primary",
+            "Assigned Demo Pim (Birthdays TH backup) as support",
+            "AI · Language: TH · Intent: birthday_party"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "birthday",
+              "source": "message",
+              "category": "birthdays",
+              "cueLanguage": "th"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "birthdays",
+              "categorySource": "message",
+              "language": "th"
+            }
+          }
+        ]
+      }
+    },
+    "S4b": {
+      "key": "S4b",
+      "expect": "Birthdays & Events; the thread language ru; cue language ru",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92a-40d3-7fd7-9cab-ac70d32361c7",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "Хотим отметить день рождения сына у вас (ZZ TEST)",
+          "sentAt": "2026-11-11T05:52:29.594Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Хотим отметить день рождения сына у вас (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5869,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c92a-40e1-793b-abc3-c7b373049c0d",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:52:30.966Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "ru",
+          "aiState": "ready",
+          "eventCount": 3,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:52:31.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "ru",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-baea15510693",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "ru",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:53:03.052Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "ru",
+          "aiState": "ready",
+          "eventCount": 5,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:52:31.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "ru",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-baea15510693",
+            "fallback": false,
+            "source": "message",
+            "cue": "birthday",
+            "cueLanguage": "ru",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:52:31.000Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:52:31.000Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:52:41.546Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:52:41.546Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92a-40e1-793b-abc3-c7b373049c0d",
+            "intent": "birthday_party",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c92a-6653-7a93-b5d8-abea7f22faae"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:54:37.970Z",
+          "closed": [
+            "Language: RU · Routed to Birthdays & Events · from the message · 2 more",
+            "AI · Language: RU · Intent: birthday_party"
+          ],
+          "groupSummaries": [
+            "Language: RU · Routed to Birthdays & Events · from the message · 2 more"
+          ],
+          "open": [
+            "Language: RU · Routed to Birthdays & Events · from the message · 2 more",
+            "Language: RU · Routed to Birthdays & Events · from the message",
+            "Assigned Demo Anya (Birthdays EN/RU) as primary",
+            "Assigned Demo Vera (Birthdays EN/RU backup) as support",
+            "AI · Language: RU · Intent: birthday_party"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "birthday",
+              "source": "message",
+              "category": "birthdays",
+              "cueLanguage": "ru"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "birthdays",
+              "categorySource": "message",
+              "language": "ru"
+            }
+          }
+        ]
+      }
+    },
+    "S5": {
+      "key": "S5",
+      "expect": "stays on the default (the hint wins; no classify row); the assistant hands over and moves it to Birthdays & Events",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92b-07ac-7a58-b054-c7113c9bf79d",
+      "categoryHint": "general",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "I want to book a birthday party (ZZ TEST)",
+          "sentAt": "2026-11-11T05:53:20.496Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "General",
+            "categoryValue": "general",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "I want to book a birthday party (ZZ TEST)"
+          },
+          "hintSent": {
+            "category": "general"
+          },
+          "hintPresent": true,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 6199,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c92b-07b8-7ea9-a9a0-691a5b2ed3ae",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        },
+        {
+          "n": 2,
+          "text": "Saturday 22 November, 12 kids, Central Floresta (ZZ TEST)",
+          "sentAt": "2026-11-11T05:54:44.647Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "General",
+            "categoryValue": "general",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Saturday 22 November, 12 kids, Central Floresta (ZZ TEST)"
+          },
+          "hintSent": {
+            "category": "general"
+          },
+          "hintPresent": true,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "dialogSaid": "Received into the existing conversation.",
+          "afterAssistantTurn": {
+            "waitedMs": 5883,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c92c-5072-7885-96d0-04792b0e80c0",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:53:21.451Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:53:22.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "hint",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:55:03.910Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 12,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:53:22.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "hint",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          },
+          {
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "actorKind": "ai",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": null,
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:53:22.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:53:31.795Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z"
+          },
+          {
+            "kind": "branch_set",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z"
+          },
+          {
+            "kind": "released",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "fromTeamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "toTeamId": "01a1562e-64eb-77d2-9a87-cc57f6806498"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:53:31.795Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92b-07b8-7ea9-a9a0-691a5b2ed3ae",
+            "intent": "birthday_party",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c92b-2a9f-705e-af6c-421522a94dd5"
+            ]
+          },
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:54:56.363Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92c-5072-7885-96d0-04792b0e80c0",
+            "intent": "birthday_details",
+            "intents": [
+              "birthday_details"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "birthdays",
+            "reroutedTeamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "templateKey": "closing_birthday",
+            "closingKey": "closing_birthday",
+            "silent": false,
+            "messageIds": [
+              "01a1c92c-74fa-7d51-894a-12f893a0688e"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:55:36.830Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI · Language: EN · Intent: birthday_party",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "Language: EN · Routed to Reception · Central Floresta",
+            "Assigned Reception · Central Floresta as primary",
+            "AI · Language: EN · Intent: birthday_party",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support",
+            "AI · Language: EN · Intent: birthday_details",
+            "Moved from Reception · Central Floresta → Birthdays & Events by AI",
+            "Language: EN · Routed to Birthdays & Events",
+            "Assigned Demo Anya (Birthdays EN/RU) as primary",
+            "Assigned Demo Vera (Birthdays EN/RU backup) as support",
+            "AI handed over to Birthdays & Events · birthday details"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "general",
+              "categorySource": "hint",
+              "language": "en"
+            }
+          }
+        ],
+        "classifyRow": "none",
+        "afterAssistant": [
+          "inbox.ai.handover",
+          "inbox.ai.open_question",
+          "inbox.ai.open_question",
+          "inbox.conversation.create"
+        ]
+      }
+    },
+    "S6": {
+      "key": "S6",
+      "expect": "stays on the default (only the first message is read); the assistant turn is what moves it",
+      "verdict": "PASS",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92c-3ffc-7d28-9926-279a4400a574",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "Hi there! (ZZ TEST)",
+          "sentAt": "2026-11-11T05:54:40.457Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Hi there! (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5871,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c92c-400d-7259-afb6-dea0fcc90af4",
+                "intent": "greeting",
+                "intents": [
+                  "greeting"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        },
+        {
+          "n": 2,
+          "text": "I want to book a birthday party (ZZ TEST)",
+          "sentAt": "2026-11-11T05:55:44.240Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "I want to book a birthday party (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "dialogSaid": "Received into the existing conversation.",
+          "afterAssistantTurn": {
+            "waitedMs": 5878,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_replied",
+                "turnId": "01a1c92d-3937-7b23-b0ec-5f3b521588a9",
+                "intent": "birthday_party",
+                "intents": [
+                  "birthday_party"
+                ],
+                "reason": null,
+                "rule": null,
+                "closingKey": null
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "ready"
+          }
+        },
+        {
+          "n": 3,
+          "text": "Saturday 22 November, 12 kids, Central Floresta (ZZ TEST)",
+          "sentAt": "2026-11-11T05:57:10.521Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Saturday 22 November, 12 kids, Central Floresta (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "dialogSaid": "Received into the existing conversation.",
+          "afterAssistantTurn": {
+            "waitedMs": 5852,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c92e-8a37-7d60-93d6-3c9521a2e998",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:54:41.538Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "general",
+          "teamName": "Reception · Central Floresta",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:54:42.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:57:30.339Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 14,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:54:42.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "language": "en",
+            "branchId": null,
+            "ruleId": null,
+            "fallback": true,
+            "source": "default",
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          },
+          {
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "actorKind": "ai",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": null,
+            "cue": null,
+            "cueLanguage": null,
+            "payloadKeys": [
+              "ruleId",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:54:42.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:54:51.943Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:55:51.897Z"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z"
+          },
+          {
+            "kind": "branch_set",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z"
+          },
+          {
+            "kind": "released",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "moved_team",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "fromTeamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "toTeamId": "01a1562e-64eb-77d2-9a87-cc57f6806498"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:54:51.943Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92c-400d-7259-afb6-dea0fcc90af4",
+            "intent": "greeting",
+            "intents": [
+              "greeting"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c92c-63b2-7591-b12f-f2f09d2768a6"
+            ]
+          },
+          {
+            "kind": "ai_replied",
+            "createdAt": "2026-11-11T05:55:51.897Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92d-3937-7b23-b0ec-5f3b521588a9",
+            "intent": "birthday_party",
+            "intents": [
+              "birthday_party"
+            ],
+            "reason": null,
+            "rule": null,
+            "destination": null,
+            "reroutedTeamId": null,
+            "templateKey": null,
+            "closingKey": null,
+            "silent": null,
+            "messageIds": [
+              "01a1c92d-4de4-7c99-a00f-50d411d889d2"
+            ]
+          },
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:57:21.487Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92e-8a37-7d60-93d6-3c9521a2e998",
+            "intent": "birthday_details",
+            "intents": [
+              "birthday_details"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "birthdays",
+            "reroutedTeamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "templateKey": "closing_birthday",
+            "closingKey": "closing_birthday",
+            "silent": false,
+            "messageIds": [
+              "01a1c92e-abdc-7028-8f1b-a0ddfbe45eab"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:57:34.423Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI · Language: EN · Intent: greeting",
+            "AI · Language: EN · Intent: birthday_party",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Reception · Central Floresta · 1 more",
+            "Language: EN · Routed to Reception · Central Floresta",
+            "Assigned Reception · Central Floresta as primary",
+            "AI · Language: EN · Intent: greeting",
+            "AI · Language: EN · Intent: birthday_party",
+            "AI handed over to Birthdays & Events — Demo Anya (Birthdays EN/RU) primary, Demo Vera (Birthdays EN/RU backup) support",
+            "AI · Language: EN · Intent: birthday_details",
+            "Moved from Reception · Central Floresta → Birthdays & Events by AI",
+            "Language: EN · Routed to Birthdays & Events",
+            "Assigned Demo Anya (Birthdays EN/RU) as primary",
+            "Assigned Demo Vera (Birthdays EN/RU backup) as support",
+            "AI handed over to Birthdays & Events · birthday details"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "general",
+              "categorySource": "default",
+              "language": "en"
+            }
+          }
+        ],
+        "classifyRow": "none (the second line did not add one)",
+        "afterAssistant": [
+          "inbox.ai.handover",
+          "inbox.ai.open_question",
+          "inbox.ai.open_question",
+          "inbox.conversation.create"
+        ]
+      }
+    },
+    "S7a": {
+      "key": "S7a",
+      "expect": "the brief expects the default (not Birthdays)",
+      "verdict": "FAIL: routed to birthdays on the cue \"event\" (\"in the event of rain\")",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92d-4923-7310-841c-110d79071b76",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "What happens in the event of rain? (ZZ TEST)",
+          "sentAt": "2026-11-11T05:55:48.336Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "What happens in the event of rain? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 8854,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c92d-4930-74d1-8bde-b219d1d3d52f",
+                "intent": "birthday_advice",
+                "intents": [
+                  "birthday_advice"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_birthday"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:55:49.313Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 3,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:55:50.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": "message",
+            "cue": "event",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:56:35.947Z",
+        "conversation": {
+          "category": "birthdays",
+          "teamName": "Birthdays & Events",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 5,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:55:50.000Z",
+            "actorKind": "system",
+            "teamId": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+            "category": "birthdays",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1562e-64fc-7846-8131-bae9854d2b95",
+            "fallback": false,
+            "source": "message",
+            "cue": "event",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:55:50.000Z",
+            "slot": "primary",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:55:50.000Z",
+            "slot": "support",
+            "assigneeKind": "account"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:55:56.306Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:55:56.306Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92d-4930-74d1-8bde-b219d1d3d52f",
+            "intent": "birthday_advice",
+            "intents": [
+              "birthday_advice"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "birthdays",
+            "reroutedTeamId": null,
+            "templateKey": "closing_birthday",
+            "closingKey": "closing_birthday",
+            "silent": false,
+            "messageIds": [
+              "01a1c92d-5f1b-7f9a-b0fc-ebaee05d1efe"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:57:19.727Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+            "AI handed over to the team — manager not notified (no contact)"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+            "AI handed over to the team — manager not notified (no contact)"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to Birthdays & Events · from the message · 2 more",
+            "Language: EN · Routed to Birthdays & Events · from the message",
+            "Assigned Demo Anya (Birthdays EN/RU) as primary",
+            "Assigned Demo Vera (Birthdays EN/RU backup) as support",
+            "AI handed over to the team — manager not notified (no contact)",
+            "AI · Language: EN · Intent: birthday_advice",
+            "AI handed over to the team · birthday advice · manager not notified (no contact)"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "event",
+              "source": "message",
+              "category": "birthdays",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "birthdays",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ]
+      }
+    },
+    "S7b": {
+      "key": "S7b",
+      "expect": "the brief expects the default (not the GM)",
+      "verdict": "FAIL: routed to gm on the cue \"refund\" (\"refundable\")",
+      "sender": "its own fresh ZZ TEST simulator number (not kept)",
+      "simulatorAccount": "Demo Instagram (simulator, no park; default category general)",
+      "conversationId": "01a1c92d-5937-707c-b2e6-c41b3aee5171",
+      "categoryHint": "none (\"As the channel routes it\")",
+      "languageHint": "none (\"Not given\")",
+      "lines": [
+        {
+          "n": 1,
+          "text": "Is the deposit refundable? (ZZ TEST)",
+          "sentAt": "2026-11-11T05:55:52.448Z",
+          "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+          "status": 200,
+          "formState": {
+            "account": "Demo Instagram · Instagram",
+            "category": "As the channel routes it",
+            "categoryValue": "",
+            "language": "Not given",
+            "languageValue": "",
+            "message": "Is the deposit refundable? (ZZ TEST)"
+          },
+          "hintSent": null,
+          "hintPresent": false,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "dialogSaid": "Received: a new conversation, routed.",
+          "afterAssistantTurn": {
+            "waitedMs": 5869,
+            "turnShown": true,
+            "aiTurns": [
+              {
+                "kind": "ai_handover",
+                "turnId": "01a1c92d-5944-7a49-b1f2-5aba15f68b5a",
+                "intent": "refund_request",
+                "intents": [
+                  "refund_request"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "closingKey": "closing_gm"
+              }
+            ],
+            "assistantBubbles": 1,
+            "aiState": "left_for_team"
+          }
+        }
+      ],
+      "atSend": {
+        "readAt": "2026-11-11T05:55:53.415Z",
+        "route": "GET /api/inbox/conversations/:id",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "ready",
+          "eventCount": 2,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:55:54.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "aiPillsThen": 0,
+        "messagesThen": 1
+      },
+      "final": {
+        "readAt": "2026-11-11T05:56:51.798Z",
+        "conversation": {
+          "category": "gm",
+          "teamName": "GM",
+          "language": "en",
+          "aiState": "left_for_team",
+          "eventCount": 4,
+          "status": 200
+        },
+        "routed": [
+          {
+            "createdAt": "2026-11-11T05:55:54.000Z",
+            "actorKind": "system",
+            "teamId": "01a1824e-b6b9-7fd3-85b6-c10bfaf747be",
+            "category": "gm",
+            "language": "en",
+            "branchId": null,
+            "ruleId": "01a1824e-b6c5-7a7d-8156-fe7b885c00c3",
+            "fallback": false,
+            "source": "message",
+            "cue": "refund",
+            "cueLanguage": "en",
+            "payloadKeys": [
+              "cue",
+              "ruleId",
+              "source",
+              "teamId",
+              "branchId",
+              "category",
+              "fallback",
+              "language",
+              "cueLanguage"
+            ]
+          }
+        ],
+        "otherPills": [
+          {
+            "kind": "assigned",
+            "actorKind": "system",
+            "createdAt": "2026-11-11T05:55:54.000Z",
+            "slot": "primary",
+            "assigneeKind": "team"
+          },
+          {
+            "kind": "classified",
+            "actorKind": "ai",
+            "createdAt": "2026-11-11T05:56:01.384Z"
+          }
+        ],
+        "aiPills": [
+          {
+            "kind": "ai_handover",
+            "createdAt": "2026-11-11T05:56:01.384Z",
+            "actorKind": "ai",
+            "turnId": "01a1c92d-5944-7a49-b1f2-5aba15f68b5a",
+            "intent": "refund_request",
+            "intents": [
+              "refund_request"
+            ],
+            "reason": "OK",
+            "rule": null,
+            "destination": "gm",
+            "reroutedTeamId": null,
+            "templateKey": "closing_gm",
+            "closingKey": "closing_gm",
+            "silent": false,
+            "messageIds": [
+              "01a1c92d-72f0-7130-8a4c-3e57d5956815"
+            ]
+          }
+        ]
+      },
+      "pillWords": {
+        "final": {
+          "at": "2026-11-11T05:57:23.060Z",
+          "closed": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "groupSummaries": [
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "AI handed over to the team"
+          ],
+          "open": [
+            "AI handed over · Resume",
+            "Language: EN · Routed to GM · from the message · 1 more",
+            "Language: EN · Routed to GM · from the message",
+            "Assigned GM as primary",
+            "AI handed over to the team",
+            "AI · Language: EN · Intent: refund_request",
+            "AI handed over to the team · refund request"
+          ]
+        }
+      },
+      "audit": {
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:id",
+        "status": 200,
+        "atSend": [
+          {
+            "action": "inbox.conversation.classify",
+            "after": {
+              "cue": "refund",
+              "source": "message",
+              "category": "gm",
+              "cueLanguage": "en"
+            }
+          },
+          {
+            "action": "inbox.conversation.create",
+            "after": {
+              "category": "gm",
+              "categorySource": "message",
+              "language": "en"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "01-step1-birthday-routed-from-the-message.png",
+      "shows": "Step 1: the birthday opener on Demo Instagram with no hint is in Birthdays and Events at once; the routing pill reads Routed to Birthdays and Events, from the message; the assistant then replied without moving it",
+      "at": "2026-11-11T05:50:44.383Z",
+      "namesMasked": 41,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    },
+    {
+      "file": "02-step2-refund-rude-routed-to-gm.png",
+      "shows": "Step 2: the refund and rude-staff opener with no hint is with the GM at once; the pill reads Routed to GM, from the message; the assistant then handed over to the GM without moving it",
+      "at": "2026-11-11T05:51:52.118Z",
+      "namesMasked": 30,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    },
+    {
+      "file": "03-step3-plain-question-default-no-from-the-message.png",
+      "shows": "Step 3: a plain opening-hours question with no hint stays on the channel default (General, seated with Reception Central Floresta); the routing pill has no from the message; the assistant answered the hours",
+      "at": "2026-11-11T05:53:18.717Z",
+      "namesMasked": 32,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    },
+    {
+      "file": "04-step4-thai-birthday-routed-from-the-message-language-th.png",
+      "shows": "Step 4: a Thai birthday opener with no language hint is in Birthdays and Events at once, the thread language TH read from the script; the pill reads Language TH, Routed to Birthdays and Events, from the message",
+      "at": "2026-11-11T05:54:34.267Z",
+      "namesMasked": 42,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    },
+    {
+      "file": "05-step5-hint-general-stays-then-assistant-moves-it.png",
+      "shows": "Step 5: the same birthday opener with the simulator Category hint General stays on the default (Reception Central Floresta, no from the message, no classify row); after the customer answers, the assistant hands over and moves it to Birthdays and Events",
+      "at": "2026-11-11T05:55:42.468Z",
+      "namesMasked": 45,
+      "regionMasks": 1,
+      "note": "list of other conversations masked; phone-like numbers, names and initials masked"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T05:57:45.265Z",
+    "conversations": {
+      "S1": {
+        "id": "01a1c927-d28b-7e23-94de-7f0862bff1c3",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:48.103Z"
+        }
+      },
+      "S2a": {
+        "id": "01a1c928-ada6-7947-9518-4751057f4763",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:49.084Z"
+        }
+      },
+      "S2b": {
+        "id": "01a1c929-1f6e-7d37-9330-698f96ef94de",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:50.029Z"
+        }
+      },
+      "S3": {
+        "id": "01a1c929-b571-7972-bd99-e0928868e38f",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:50.943Z"
+        }
+      },
+      "S4a": {
+        "id": "01a1c92a-2fb9-72ec-9f96-40a28027fc99",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:51.883Z"
+        }
+      },
+      "S4b": {
+        "id": "01a1c92a-40d3-7fd7-9cab-ac70d32361c7",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:52.819Z"
+        }
+      },
+      "S5": {
+        "id": "01a1c92b-07ac-7a58-b054-c7113c9bf79d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:53.765Z"
+        }
+      },
+      "S6": {
+        "id": "01a1c92c-3ffc-7d28-9926-279a4400a574",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:54.700Z"
+        }
+      },
+      "S7a": {
+        "id": "01a1c92d-4923-7310-841c-110d79071b76",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:55.629Z"
+        }
+      },
+      "S7b": {
+        "id": "01a1c92d-5937-707c-b2e6-c41b3aee5171",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T05:57:56.548Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T05:58:19.318Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone or a page: the simulator account is internal."
+}
