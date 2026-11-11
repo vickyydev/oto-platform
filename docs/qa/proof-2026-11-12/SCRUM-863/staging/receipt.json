@@ -1,0 +1,1067 @@
+{
+  "ticket": "SCRUM-863",
+  "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+  "startedAt": "2026-11-11T21:14:31.540Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqdbhbbc2fs73d2bbu0",
+        "status": "deactivated",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:25.029045Z",
+        "finishedAt": "2026-11-11T20:54:19.501159Z"
+      },
+      "serving": {
+        "id": "dep-dbqddc3rjlhs73fvdt3g",
+        "status": "live",
+        "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+        "createdAt": "2026-11-11T20:57:20.224181Z",
+        "finishedAt": "2026-11-11T20:58:19.99278Z"
+      },
+      "readAt": "2026-11-11T21:14:29.207Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqdbhmi0phs73cbd8pg",
+        "status": "deactivated",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:26.894646Z",
+        "finishedAt": "2026-11-11T20:56:29.222365Z"
+      },
+      "serving": {
+        "id": "dep-dbqddcei0phs73cbh7eg",
+        "status": "live",
+        "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+        "createdAt": "2026-11-11T20:57:21.652304Z",
+        "finishedAt": "2026-11-11T21:00:37.896531Z"
+      },
+      "readAt": "2026-11-11T21:14:29.799Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqdbi6i0phs73cbda6g",
+        "status": "live",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:28.292513Z",
+        "finishedAt": "2026-11-11T20:57:41.24884Z"
+      },
+      "serving": {
+        "id": "dep-dbqdbi6i0phs73cbda6g",
+        "status": "live",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:28.292513Z",
+        "finishedAt": "2026-11-11T20:57:41.24884Z"
+      },
+      "readAt": "2026-11-11T21:14:30.354Z"
+    }
+  },
+  "passes": [
+    "s",
+    "n",
+    "d",
+    "e",
+    "o"
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01-first-screen-number-a-telegram-no-skip.png",
+      "shows": "Customer half of the till: number A typed, Telegram chosen, no Skip button",
+      "seen": {
+        "typed": "+66 0898630041",
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "Telegram"
+          ]
+        },
+        "skipButtons": 0,
+        "skipWordAnywhere": false,
+        "buttons": [
+          "English",
+          "🇹🇭 +66",
+          "Clear",
+          "WhatsApp",
+          "Telegram",
+          "LINE",
+          "Continue"
+        ]
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02-dropoff-form-number-a-telegram.png",
+      "shows": "Drop-off age (6): the parent's block on the customer half holds number A with WhatsApp / Telegram / LINE, Telegram chosen, and no \"number you gave at the start\" line",
+      "seen": {
+        "requirement": "Drop-off supervision needed Required for this age — ฿225 one-time ",
+        "phoneNumberLabel": true,
+        "field": {
+          "kind": "typed field",
+          "national": "0898630041",
+          "leadingZeroShown": true
+        },
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "Telegram"
+          ]
+        },
+        "storedAs": "+66898630041",
+        "keptLineTestId": 0,
+        "keptSentence": false
+      }
+    },
+    "3": {
+      "pass": true,
+      "picture": "03-dropoff-form-changed-to-b-line.png",
+      "shows": "The form now holds number B and LINE; the split view has no \"Private child details\" button (it is offered only while a separate display is paired), so staff's copy is proved at point 7 and what the till kept at point 4",
+      "seen": {
+        "phoneNumberLabel": true,
+        "field": {
+          "kind": "typed field",
+          "national": "898630042",
+          "leadingZeroShown": false
+        },
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "LINE"
+          ]
+        },
+        "storedAs": "+66898630042",
+        "keptLineTestId": 0,
+        "keptSentence": false,
+        "privateChildDetailsButtonOnStaffSide": 0
+      }
+    },
+    "4": {
+      "pass": true,
+      "picture": "04-dropoff-paid-cash.png",
+      "shows": "Cash sale completed; read back: the registration's guardian number is B in +66 form with channel LINE; the till wrote the sale itself with number A",
+      "seen": {
+        "sentByTheTill": {
+          "guardianPhone": "+66898630042",
+          "contactChannel": "line"
+        },
+        "sentIsB": true,
+        "registration": {
+          "id": "01a1cc76-9446-7e5e-ab52-e494dfda407d",
+          "guardianName": "ZZ TEST SCRUM-863 guardian s04",
+          "guardianPhone": "+66898630042",
+          "contactChannel": "line",
+          "children": [
+            {
+              "name": "ZZ TEST SCRUM-863 child s04",
+              "service": "drop_off",
+              "status": "registered"
+            }
+          ]
+        },
+        "sale": {
+          "id": "01a1cc76-975b-7699-8024-32770c8ce207",
+          "status": "finalised",
+          "receipt": "Z86304-000001",
+          "grossSatang": 91500,
+          "numberTheTillSentWithTheSale": "+660898630041",
+          "numberTheTillSentWithTheSaleStoredForm": "+66898630041",
+          "saleReadReturnsItsOwnNumber": false,
+          "filedUnderMember": {
+            "nickname": "ZZ TEST SCRUM-863 guardian s04",
+            "phone": "+66898630042"
+          }
+        },
+        "tillWrites": [
+          {
+            "at": "s: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/members",
+            "phone": "+66898630042",
+            "preferredChannel": "line"
+          },
+          {
+            "at": "s: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/checkin/registrations",
+            "guardianPhone": "+66898630042",
+            "contactChannel": "line",
+            "memberIdSent": true
+          },
+          {
+            "at": "s: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/sales",
+            "customerPhone": "+660898630041",
+            "memberIdSent": true
+          }
+        ],
+        "after": {
+          "checkedIn": true,
+          "board": "ZZ TEST SCRUM-863 guardian s04 +66898630042 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in LINE. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898630042 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST SCRUM-863 child s04 6 yrs DROP-OFF 1h 00m left Check Out"
+        }
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05-nanny-form-number-a-telegram.png",
+      "shows": "Nanny age (3): the same block — number A, the three channels, Telegram chosen, no fixed line",
+      "seen": {
+        "phoneNumberLabel": true,
+        "field": {
+          "kind": "typed field",
+          "national": "898630043",
+          "leadingZeroShown": false
+        },
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "Telegram"
+          ]
+        },
+        "storedAs": "+66898630043",
+        "keptLineTestId": 0,
+        "keptSentence": false,
+        "nannyRequirementShown": true
+      }
+    },
+    "6": {
+      "pass": true,
+      "picture": "06-display-agreements-number-a-three-channels.png",
+      "shows": "Paired display, agreements step: the number field holds A with WhatsApp / Telegram / LINE, Telegram chosen",
+      "seen": {
+        "phoneNumberLabel": true,
+        "field": {
+          "kind": "typed field",
+          "national": "0898630044",
+          "leadingZeroShown": true
+        },
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "Telegram"
+          ]
+        },
+        "storedAs": "+66898630044",
+        "keptLineTestId": 0,
+        "keptSentence": false,
+        "firstScreen": {
+          "typed": "+66 0898630044",
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "Telegram"
+            ]
+          },
+          "skipButtons": 0,
+          "skipWordAnywhere": false,
+          "buttons": [
+            "English",
+            "🇹🇭 +66",
+            "Clear",
+            "WhatsApp",
+            "Telegram",
+            "LINE",
+            "Continue"
+          ]
+        }
+      }
+    },
+    "7": {
+      "pass": true,
+      "picture": "07-staff-private-child-details-b-line.png",
+      "shows": "After Continue on the display, staff's Private child details shows number B and LINE; the display then offers Done; cash sale completed and the registration reads back B / LINE while the till wrote the sale with A",
+      "seen": {
+        "displayAfterChange": {
+          "phoneNumberLabel": true,
+          "field": {
+            "kind": "typed field",
+            "national": "898630045",
+            "leadingZeroShown": false
+          },
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "LINE"
+            ]
+          },
+          "storedAs": "+66898630045",
+          "keptLineTestId": 0,
+          "keptSentence": false,
+          "numberEnteredBy": "typed"
+        },
+        "staffDialog": {
+          "phoneNumberLabel": true,
+          "field": {
+            "kind": "typed field",
+            "national": "898630045",
+            "leadingZeroShown": false
+          },
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "LINE"
+            ]
+          },
+          "storedAs": "+66898630045",
+          "keptLineTestId": 0,
+          "keptSentence": false
+        },
+        "displayOffersDone": true,
+        "displayAtDone": {
+          "phoneNumberLabel": true,
+          "field": {
+            "kind": "typed field",
+            "national": "898630045"
+          },
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "LINE"
+            ]
+          },
+          "storedAs": "+66898630045",
+          "keptLineTestId": 0,
+          "keptSentence": false
+        },
+        "sentByTheTill": {
+          "guardianPhone": "+66898630045",
+          "contactChannel": "line"
+        },
+        "sentIsB": true,
+        "registration": {
+          "id": "01a1cc77-1c12-742c-9f47-579a4c1c772b",
+          "guardianName": "ZZ TEST SCRUM-863 guardian d04",
+          "guardianPhone": "+66898630045",
+          "contactChannel": "line",
+          "children": [
+            {
+              "name": "ZZ TEST SCRUM-863 child d04",
+              "service": "drop_off",
+              "status": "registered"
+            }
+          ]
+        },
+        "sale": {
+          "id": "01a1cc77-1f3b-7ec5-8152-590919cf0297",
+          "status": "finalised",
+          "receipt": "Z86304-000002",
+          "grossSatang": 91500,
+          "numberTheTillSentWithTheSale": "+660898630044",
+          "numberTheTillSentWithTheSaleStoredForm": "+66898630044",
+          "saleReadReturnsItsOwnNumber": false,
+          "filedUnderMember": {
+            "nickname": "ZZ TEST SCRUM-863 guardian d04",
+            "phone": "+66898630045"
+          }
+        },
+        "tillWrites": [
+          {
+            "at": "d: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/members",
+            "phone": "+66898630045",
+            "preferredChannel": "line"
+          },
+          {
+            "at": "d: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/checkin/registrations",
+            "guardianPhone": "+66898630045",
+            "contactChannel": "line",
+            "memberIdSent": true
+          },
+          {
+            "at": "d: Continue to payment (the registration is written)",
+            "method": "POST",
+            "path": "/api/sales",
+            "customerPhone": "+660898630044",
+            "memberIdSent": true
+          }
+        ],
+        "after": {
+          "checkedIn": true,
+          "board": "ZZ TEST SCRUM-863 guardian d04 +66898630045 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in LINE. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898630045 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST SCRUM-863 child d04 6 yrs DROP-OFF 1h 00m left Check Out"
+        }
+      }
+    },
+    "8": {
+      "pass": true,
+      "picture": "08-ordinary-sale-payment-number-not-asked-again.png",
+      "shows": "One adult and one child: straight from the ticket to payment, the number is not asked again; paid in cash (08b)",
+      "seen": {
+        "childrenPlayingAloneShown": 0,
+        "customerHalf": "English Please pay ฿1040.00 to our staff",
+        "numberFieldsOnCustomerHalf": 0,
+        "keypadOnCustomerHalf": 0,
+        "channelPillsOnCustomerHalf": 0,
+        "staffDialogs": 0,
+        "sale": {
+          "id": "01a1cc77-6792-72b1-83d1-2ef7e0f2b694",
+          "status": "finalised",
+          "receipt": "Z86304-000003",
+          "grossSatang": 104000,
+          "numberTheTillSentWithTheSale": "+660898630046",
+          "numberTheTillSentWithTheSaleStoredForm": "+66898630046"
+        },
+        "tillWrites": [
+          {
+            "at": "e: ordinary sale — number on the first screen, one adult and one child",
+            "method": "POST",
+            "path": "/api/sales",
+            "customerPhone": "+660898630046",
+            "memberIdSent": false
+          }
+        ],
+        "registrationsWritten": 0
+      }
+    },
+    "x1": {
+      "pass": true,
+      "picture": "x1-display-child-of-10-alone-same-form.png",
+      "shows": "Extra: a child of 10 with no adult is registered for drop-off at no fee, so the display shows the same form with the number field and the three channels",
+      "seen": {
+        "keptLine": 0,
+        "keptText": null,
+        "numberFields": 1,
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "WhatsApp"
+          ]
+        },
+        "consentTickAsked": 1,
+        "requirementOnTheTill": "Registered for drop-off — no fee"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc76-975b-7699-8024-32770c8ce207",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1cc76-6e5e-79b4-9669-6c214d1bb2dd/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc77-1f3b-7ec5-8152-590919cf0297",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1cc77-0228-7004-8410-9cc39b777044/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc77-6792-72b1-83d1-2ef7e0f2b694",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1cc76-6e5e-79b4-9669-6c214d1bb2dd/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1cc77-8bd4-78a3-9b49-e04e5a2ac6f9/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1cc76-6e5e-79b4-9669-6c214d1bb2dd",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/01a1cc77-aea7-7ba3-8faa-f80cc39b04ad/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/01a1cc76-9446-7e5e-ab52-e495baf9a872/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/01a1cc77-b179-7164-928d-98f27f579ecc/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/01a1cc77-1c12-742c-9f47-579b5048df02/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc77-6792-72b1-83d1-2ef7e0f2b694",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc77-1f3b-7ec5-8152-590919cf0297",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc76-975b-7699-8024-32770c8ce207",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1cc76-6e5e-79b4-9669-6c214d1bb2dd",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1cc76-6e5e-79b4-9669-6c214d1bb2dd",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1cc76-92d4-7cc4-b90f-80e7830f6f47",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1cc77-1b23-79eb-8d10-e62255d7403e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cc76-6e5e-79b4-9669-6c214d1bb2dd",
+      "name": "ZZ TEST SCRUM-863 proof till 1794431671555",
+      "prefix": "Z86304"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "pass": "s"
+    },
+    {
+      "kind": "dropoff-ticket-sale",
+      "id": "01a1cc76-975b-7699-8024-32770c8ce207"
+    },
+    {
+      "kind": "display",
+      "id": "01a1cc77-0228-7004-8410-9cc39b777044"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "pass": "d"
+    },
+    {
+      "kind": "dropoff-ticket-sale",
+      "id": "01a1cc77-1f3b-7ec5-8152-590919cf0297"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1cc77-6792-72b1-83d1-2ef7e0f2b694"
+    },
+    {
+      "kind": "display",
+      "id": "01a1cc77-8bd4-78a3-9b49-e04e5a2ac6f9"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": 1,
+      "names": [
+        "index-SvJD9S7p.js"
+      ],
+      "keptPhoneMarkers": 1,
+      "keptSentence": true
+    },
+    "firstScreenReadout": {
+      "typed": "+66 0898630041",
+      "boxHeight": 62,
+      "contentHeight": 67,
+      "lines": 2,
+      "overflowsItsBox": true,
+      "picture": "09a-first-screen-readout-ten-digits.png",
+      "size": {
+        "width": 307,
+        "height": 64
+      }
+    },
+    "beforePaymentList": {
+      "colours": {
+        "text": "oklab(0.924 -0.0120142 0.119397 / 0.9)",
+        "box": "oklab(0.769 0.0640531 0.176752 / 0.1)",
+        "page": "rgb(251, 245, 239)",
+        "htmlClass": "light"
+      },
+      "picture": "09b-before-payment-list-staff-side.png",
+      "size": {
+        "width": 790,
+        "height": 150
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1cc77-0228-7004-8410-9cc39b777044",
+      "revoked": true
+    },
+    {
+      "kind": "display",
+      "id": "01a1cc77-8bd4-78a3-9b49-e04e5a2ac6f9",
+      "revoked": true
+    },
+    {
+      "kind": "registration",
+      "pass": "s",
+      "id": "01a1cc76-9446-7e5e-ab52-e494dfda407d",
+      "children": [
+        {
+          "id": "01a1cc76-9446-7e5e-ab52-e495baf9a872",
+          "name": "ZZ TEST SCRUM-863 child s04",
+          "status": "out"
+        }
+      ],
+      "stillWaiting": 0,
+      "inPark": 0
+    },
+    {
+      "kind": "registration",
+      "pass": "d",
+      "id": "01a1cc77-1c12-742c-9f47-579a4c1c772b",
+      "children": [
+        {
+          "id": "01a1cc77-1c12-742c-9f47-579b5048df02",
+          "name": "ZZ TEST SCRUM-863 child d04",
+          "status": "out"
+        }
+      ],
+      "stillWaiting": 0,
+      "inPark": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc77-6792-72b1-83d1-2ef7e0f2b694",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc77-7c6f-74c9-93e9-d1d0d129b799",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc77-7c6a-71ad-9b8c-ff948485f45d",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc77-7c65-7f62-b99b-a47ed9c6e3e8",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc77-1f3b-7ec5-8152-590919cf0297",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc77-37f6-7a94-b3f5-02ffeae54a3a",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc77-2f59-75ac-ba0f-f41f795c8744",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc76-975b-7699-8024-32770c8ce207",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc76-afe3-7e94-b40e-b12ddab9b53e",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc76-a7ad-739b-8bec-0404350bb502",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cc77-6792-72b1-83d1-2ef7e0f2b694",
+          "status": "finalised",
+          "grossSatang": 104000
+        },
+        {
+          "id": "01a1cc77-1f3b-7ec5-8152-590919cf0297",
+          "status": "finalised",
+          "grossSatang": 91500
+        },
+        {
+          "id": "01a1cc76-975b-7699-8024-32770c8ce207",
+          "status": "finalised",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cc76-6e5e-79b4-9669-6c214d1bb2dd",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "sA",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "sB",
+      "id": "01a1cc76-92d4-7cc4-b90f-80e7830f6f47",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "nA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dA",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "dB",
+      "id": "01a1cc77-1b23-79eb-8d10-e62255d7403e",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "eA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "oA",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "sA": "0898630041",
+    "sB": "0898630042",
+    "nA": "0898630043",
+    "dA": "0898630044",
+    "dB": "0898630045",
+    "eA": "0898630046",
+    "oA": "0898630047"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-11T21:15:58.859Z"
+}

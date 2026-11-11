@@ -1,0 +1,381 @@
+{
+  "ticket": "SCRUM-863",
+  "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+  "startedAt": "2026-11-11T21:17:55.617Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqdbhbbc2fs73d2bbu0",
+        "status": "deactivated",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:25.029045Z",
+        "finishedAt": "2026-11-11T20:54:19.501159Z"
+      },
+      "serving": {
+        "id": "dep-dbqddc3rjlhs73fvdt3g",
+        "status": "live",
+        "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+        "createdAt": "2026-11-11T20:57:20.224181Z",
+        "finishedAt": "2026-11-11T20:58:19.99278Z"
+      },
+      "readAt": "2026-11-11T21:14:29.207Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqdbhmi0phs73cbd8pg",
+        "status": "deactivated",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:26.894646Z",
+        "finishedAt": "2026-11-11T20:56:29.222365Z"
+      },
+      "serving": {
+        "id": "dep-dbqddcei0phs73cbh7eg",
+        "status": "live",
+        "sha": "0a7a9c7ceedf3184477c55096c4ec11c880083bd",
+        "createdAt": "2026-11-11T20:57:21.652304Z",
+        "finishedAt": "2026-11-11T21:00:37.896531Z"
+      },
+      "readAt": "2026-11-11T21:14:29.799Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqdbi6i0phs73cbda6g",
+        "status": "live",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:28.292513Z",
+        "finishedAt": "2026-11-11T20:57:41.24884Z"
+      },
+      "serving": {
+        "id": "dep-dbqdbi6i0phs73cbda6g",
+        "status": "live",
+        "sha": "b0b6459392dc672ecb3cfbcb3bcf39384be7cdc7",
+        "createdAt": "2026-11-11T20:53:28.292513Z",
+        "finishedAt": "2026-11-11T20:57:41.24884Z"
+      },
+      "readAt": "2026-11-11T21:14:30.354Z"
+    }
+  },
+  "passes": [
+    "e"
+  ],
+  "points": {
+    "8": {
+      "pass": true,
+      "picture": "08-ordinary-sale-payment-number-not-asked-again.png",
+      "shows": "One adult and one child: straight from the ticket to payment, the number is not asked again; paid in cash (08b)",
+      "seen": {
+        "childrenPlayingAloneShown": 0,
+        "customerHalf": "English Please pay ฿1040.00 to our staff",
+        "numberFieldsOnCustomerHalf": 0,
+        "keypadOnCustomerHalf": 0,
+        "channelPillsOnCustomerHalf": 0,
+        "staffDialogs": 0,
+        "sale": {
+          "id": "01a1cc79-9c1c-7d59-a608-7f038ea740f9",
+          "status": "finalised",
+          "receipt": "Z86305-000001",
+          "grossSatang": 104000,
+          "numberTheTillSentWithTheSale": "+660898630056",
+          "numberTheTillSentWithTheSaleStoredForm": "+66898630056"
+        },
+        "tillWrites": [
+          {
+            "at": "e: ordinary sale — number on the first screen, one adult and one child",
+            "method": "POST",
+            "path": "/api/sales",
+            "customerPhone": "+660898630056",
+            "memberIdSent": false
+          }
+        ],
+        "registrationsWritten": 0
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc79-9c1c-7d59-a608-7f038ea740f9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1cc79-8b89-798a-945c-79c9ee3b107a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cc79-9c1c-7d59-a608-7f038ea740f9",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1cc79-8b89-798a-945c-79c9ee3b107a",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1cc79-8b89-798a-945c-79c9ee3b107a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cc79-8b89-798a-945c-79c9ee3b107a",
+      "name": "ZZ TEST SCRUM-863 proof till 1794431875628",
+      "prefix": "Z86305"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1cc79-9c1c-7d59-a608-7f038ea740f9"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": 1,
+      "names": [
+        "index-SvJD9S7p.js"
+      ],
+      "keptPhoneMarkers": 1,
+      "keptSentence": true
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cc79-9c1c-7d59-a608-7f038ea740f9",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cc79-b191-7a40-9143-57be7b7805e0",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc79-b18d-7733-af74-0ad45f0ed431",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cc79-b189-774d-92f9-7f2197823c0d",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cc79-9c1c-7d59-a608-7f038ea740f9",
+          "status": "finalised",
+          "grossSatang": 104000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cc79-8b89-798a-945c-79c9ee3b107a",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "sA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sB",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "nA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dB",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "eA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "oA",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "sA": "0898630051",
+    "sB": "0898630052",
+    "nA": "0898630053",
+    "dA": "0898630054",
+    "dB": "0898630055",
+    "eA": "0898630056",
+    "oA": "0898630057"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-11T21:18:11.144Z"
+}
