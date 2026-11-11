@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-11T12:49:13.523Z",
+  "rows": [
+    {
+      "key": "SCRUM-784",
+      "attachments": [
+        {
+          "id": "13119",
+          "name": "s784-login-created.png"
+        }
+      ],
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-785",
+      "attachments": [
+        {
+          "id": "13120",
+          "name": "s785-sop-result.png"
+        },
+        {
+          "id": "13121",
+          "name": "s785-sop-steps.png"
+        }
+      ],
+      "status": "Deployed"
+    }
+  ]
+}
