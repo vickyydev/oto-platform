@@ -1,0 +1,99 @@
+{
+  "sourceBeforeFinalFix": "a05c83c858cd26b6c6dac037b443341723e64ef1",
+  "checkedAt": "2026-11-11T11:43:44.702Z",
+  "logs": [
+    {
+      "file": "C:/oto-lanes/s778-adversarial-before.log",
+      "scope": "initial expected findings",
+      "exitCode": 0,
+      "sha256": "f49ed000039fcd56e2c64a1a8a34c74699d56edb5809d1602ab9eced8e3571d1"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-focused-first.log",
+      "scope": "first focused API run",
+      "exitCode": 0,
+      "sha256": "a3067886e5cc5d5529d231853c016f2beaab56a040a2c2f1229221fa2482da48"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-typecheck-first.log",
+      "scope": "preserved fixture type failure",
+      "exitCode": 2,
+      "sha256": "d88d9645e01ef3c8d5ce0e946a33d0f2d5f72b1a461ec918672ad911306ff002"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-typecheck-fixed.log",
+      "scope": "corrected API types",
+      "exitCode": 0,
+      "sha256": "dab963d7151d1ddeaaecf5d2367c548124474bcd92fff19568f48df5751ce6cb"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-focused-migration.log",
+      "scope": "required app text pins plus original review: 78 tests in three actual files",
+      "exitCode": 0,
+      "sha256": "8106c794d9cdbd8cfccbabcbd31601c6bff1aa26c3dde548b5db5449ce20d7ef"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-final-focused.log",
+      "scope": "expanded adversarial review: 8 tests in one actual file; nonexistent named filters selected no additional files",
+      "exitCode": 0,
+      "sha256": "46a7e8f94dd6f15b1764e70f3c91cffc76aa191aa651980378e993a4c6a1fff8"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-lifecycle-battery.log",
+      "scope": "four existing lifecycle files: 26 tests",
+      "exitCode": 0,
+      "sha256": "144717a6e2f8f88a475cc180fafaaef495983be3ae9d50382a416507526b8013"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-final-typecheck.log",
+      "scope": "whole API typecheck, zero diagnostics",
+      "exitCode": 0,
+      "sha256": "dab963d7151d1ddeaaecf5d2367c548124474bcd92fff19568f48df5751ce6cb"
+    },
+    {
+      "file": "C:/oto-lanes/s778-app-typecheck.log",
+      "scope": "whole 661-line app output read: 418/418 in 54 files",
+      "exitCode": 0,
+      "sha256": "e82667f66a29b114007278836bda6d6623e1d1b3185a8f0e513c68ee8098dd2a"
+    },
+    {
+      "file": "C:/oto-lanes/s778-app-build.log",
+      "scope": "app production build",
+      "exitCode": 0,
+      "sha256": "60ec6fabe23394f330733116ceeca7aae867ae1b5bb6c97b2f7d4d413d7316a8"
+    },
+    {
+      "file": "C:/oto-lanes/s778-api-types-check.log",
+      "scope": "generated API contracts match",
+      "exitCode": 0,
+      "sha256": "e0ad769d5cc3e899557a3af7f421992b0381d0f9d7534bda2e547896ef179c36"
+    },
+    {
+      "file": "C:/oto-lanes/s778-eslint-final.log",
+      "scope": "all five touched platform TypeScript files",
+      "exitCode": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "C:/oto-lanes/s778-app-suite.log",
+      "scope": "original guarded suite failed 3/4 privilege checks; outer helper exit was misleading; failure retained",
+      "exitCode": null,
+      "sha256": "786885265b7accba7c29a1cd9a1f7fd1fe4671037dec0e7df3a6b128822340e9"
+    },
+    {
+      "file": "C:/oto-lanes/s778-app-suite-fixed.log",
+      "scope": "guarded app suite: 51/51, own database removed",
+      "exitCode": 0,
+      "sha256": "c87be1898a899bcf5fed956c0ae8c4e38b8e5cbe6256cb70ab4a6b4abf68e510"
+    }
+  ],
+  "fullApiLocal": "Not run for this unit; full exact-source CI will run and remains a separately tracked release check under the 17:32 owner direction.",
+  "migration": {
+    "number": "0049",
+    "provisional": true,
+    "priorMainTag": "0048_otoapp_v_event_packages_adults_mirror",
+    "generatedInIsolatedScratchBecauseHistoricalSnapshotsHaveParentCollisions": true,
+    "historicalMigrationsChanged": false
+  },
+  "staging": "not run"
+}
