@@ -1,0 +1,49 @@
+{
+  "ticket": "SCRUM-807",
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "originalRun": 42992278433,
+  "originalAttempt": 1,
+  "originalFailure": "page-state-candidates.spec.ts:154; first synthetic park fleet row absent within five seconds",
+  "worktree": "C:/oto-lanes/codex-s807-ci-repro-20261111",
+  "wholeSpec": "apps/console/e2e/page-state-candidates.spec.ts",
+  "tests": 4,
+  "passed": 4,
+  "exitCode": 0,
+  "builtApps": true,
+  "browser": "msedge",
+  "embeddedPostgres": true,
+  "databaseDropped": true,
+  "serverStopped": true,
+  "log": {
+    "path": "C:/oto-lanes/s807-exact-console.log",
+    "sha256": "e31ed28c70772bd414a2d7a9cb0543af2ca7a9266e4158ea58ab8836608b9847"
+  },
+  "install": {
+    "exitCode": 0,
+    "log": {
+      "path": "C:/oto-lanes/s807-exact-install-complete.log",
+      "sha256": "c056e1c6c6737b48b33c2555f2dd5bf1a6ebf57665843d4c76aebeab111a4aba"
+    },
+    "prematureInstall": {
+      "exitCode": 1,
+      "reason": "checkout had not finished; no package manifest yet",
+      "log": {
+        "path": "C:/oto-lanes/s807-exact-install.log",
+        "sha256": "c9abc972d4f8a60e5da8401b608818136b03542eb8aa61a1c0bd53d5c620862a"
+      }
+    }
+  },
+  "hostedRetry": {
+    "attempt": 2,
+    "requestedAt": "2026-11-11T10:07:44.977Z",
+    "maxRetries": 1,
+    "state": "running",
+    "watchLog": "C:/oto-lanes/s807-exact-retry-watch.log"
+  },
+  "workspaceTypecheck": {
+    "readWhole": true,
+    "tasks": 16,
+    "apiDiagnostics": 0,
+    "appPathSkipped": true
+  }
+}
