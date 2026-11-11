@@ -1,0 +1,275 @@
+{
+  "ticket": "SCRUM-846",
+  "sha": "4d45c4d2adf7db4b4762dbdfb1e039f3b426e7ea",
+  "apiDeploy": {
+    "service": "oto-api-staging",
+    "id": "dep-dbq8vpd6e07s73fesr0g",
+    "status": "live",
+    "finishedAt": "2026-11-11T15:59:32Z"
+  },
+  "startedAt": "2026-11-11T16:03:40.043Z",
+  "requests": [
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "id": "01a1cb59-ed07-7268-88b4-e951864f69b4"
+    },
+    {
+      "via": "form",
+      "method": "DELETE",
+      "path": "/stations/01a1cb59-ed07-7268-88b4-e951864f69b4",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "id": "01a1cb59-f8f8-7938-8269-63b1cc1ad84f"
+    },
+    {
+      "via": "form",
+      "method": "PATCH",
+      "path": "/stations/01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "status": 200,
+      "change": "name"
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "PATCH",
+      "path": "/stations/01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "status": 200,
+      "change": "paymentRouting"
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "PATCH",
+      "path": "/stations/01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "status": 409,
+      "change": "codePrefix -> P",
+      "code": "STATION_CODE_PREFIX_TAKEN"
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "PATCH",
+      "path": "/stations/01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "status": 200,
+      "change": "codePrefix -> R"
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "DELETE",
+      "path": "/stations/01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/me",
+      "status": 401
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cb59-ed07-7268-88b4-e951864f69b4",
+      "name": "ZZ TEST SCRUM-846 till A 1794413025829"
+    },
+    {
+      "kind": "station",
+      "id": "01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "name": "ZZ TEST SCRUM-846 till B 1794413025829"
+    }
+  ],
+  "steps": {
+    "step1": {
+      "pass": true,
+      "tillA": "01a1cb59-ed07-7268-88b4-e951864f69b4",
+      "prefix": "Z84603",
+      "create": 200,
+      "archive": 200,
+      "readBackArchived": true
+    },
+    "step2": {
+      "pass": true,
+      "tillB": "01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "prefix": "Z84604",
+      "create": 200
+    },
+    "step3rename": {
+      "pass": true,
+      "status": 200,
+      "readBack": {
+        "name": "ZZ TEST SCRUM-846 till B renamed 1794413025829",
+        "codePrefix": "Z84604",
+        "paymentRouting": {},
+        "configVersion": 2,
+        "archived": false
+      }
+    },
+    "step3routing": {
+      "pass": true,
+      "status": 200,
+      "readBack": {
+        "name": "ZZ TEST SCRUM-846 till B renamed 1794413025829",
+        "codePrefix": "Z84604",
+        "paymentRouting": {
+          "qr": "none",
+          "card": "manual"
+        },
+        "configVersion": 3,
+        "archived": false
+      }
+    },
+    "step4": {
+      "pass": true,
+      "status": 409,
+      "code": "STATION_CODE_PREFIX_TAKEN",
+      "namesTillA": true,
+      "words": "Receipt prefix Z84603 was already used by ZZ TEST SCRUM-846 till A 1794413025829 at this park. Choose a different prefix; archiving a till does not free its receipt numbers.",
+      "tillBUnchanged": true,
+      "readBack": {
+        "name": "ZZ TEST SCRUM-846 till B renamed 1794413025829",
+        "codePrefix": "Z84604",
+        "paymentRouting": {
+          "qr": "none",
+          "card": "manual"
+        },
+        "configVersion": 3,
+        "archived": false
+      }
+    },
+    "step5": {
+      "pass": true,
+      "status": 200,
+      "readBack": {
+        "name": "ZZ TEST SCRUM-846 till B renamed 1794413025829",
+        "codePrefix": "Z84605",
+        "paymentRouting": {
+          "qr": "none",
+          "card": "manual"
+        },
+        "configVersion": 4,
+        "archived": false
+      }
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "station",
+      "id": "01a1cb59-ed07-7268-88b4-e951864f69b4",
+      "name": "ZZ TEST SCRUM-846 till A 1794413025829",
+      "archived": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1cb59-f8f8-7938-8269-63b1cc1ad84f",
+      "name": "ZZ TEST SCRUM-846 till B renamed 1794413025829",
+      "archived": true
+    },
+    {
+      "kind": "session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "phase": "steps complete",
+  "prefixes": {
+    "P": "Z84603",
+    "Q": "Z84604",
+    "R": "Z84605"
+  },
+  "names": {
+    "nameA": "ZZ TEST SCRUM-846 till A 1794413025829",
+    "nameB": "ZZ TEST SCRUM-846 till B 1794413025829",
+    "nameB2": "ZZ TEST SCRUM-846 till B renamed 1794413025829"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-11T16:04:04.212Z"
+}

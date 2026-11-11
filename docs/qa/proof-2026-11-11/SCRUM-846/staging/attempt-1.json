@@ -1,0 +1,189 @@
+{
+  "ticket": "SCRUM-846",
+  "sha": "4d45c4d2adf7db4b4762dbdfb1e039f3b426e7ea",
+  "apiDeploy": {
+    "service": "oto-api-staging",
+    "id": "dep-dbq8vpd6e07s73fesr0g",
+    "status": "live",
+    "finishedAt": "2026-11-11T15:59:32Z"
+  },
+  "startedAt": "2026-11-11T16:01:32.052Z",
+  "requests": [
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "id": "01a1cb58-04b1-794e-a765-b8a2305eaebb"
+    },
+    {
+      "via": "form",
+      "method": "DELETE",
+      "path": "/stations/01a1cb58-04b1-794e-a765-b8a2305eaebb",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "form",
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200,
+      "id": "01a1cb58-105d-769b-96bf-bb4fa44c9568"
+    },
+    {
+      "via": "form",
+      "method": "PATCH",
+      "path": "/stations/01a1cb58-105d-769b-96bf-bb4fa44c9568",
+      "status": 200,
+      "change": "name"
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "DELETE",
+      "path": "/stations/01a1cb58-105d-769b-96bf-bb4fa44c9568",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations?includeArchived=true",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "status": 200
+    },
+    {
+      "via": "api",
+      "method": "GET",
+      "path": "/me",
+      "status": 401
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cb58-04b1-794e-a765-b8a2305eaebb",
+      "name": "ZZ TEST SCRUM-846 till A 1794412900427"
+    },
+    {
+      "kind": "station",
+      "id": "01a1cb58-105d-769b-96bf-bb4fa44c9568",
+      "name": "ZZ TEST SCRUM-846 till B 1794412900427"
+    }
+  ],
+  "steps": {
+    "step1": {
+      "pass": true,
+      "tillA": "01a1cb58-04b1-794e-a765-b8a2305eaebb",
+      "prefix": "Z84601",
+      "create": 200,
+      "archive": 200,
+      "readBackArchived": true
+    },
+    "step2": {
+      "pass": true,
+      "tillB": "01a1cb58-105d-769b-96bf-bb4fa44c9568",
+      "prefix": "Z84602",
+      "create": 200
+    },
+    "step3rename": {
+      "pass": true,
+      "status": 200,
+      "readBack": {
+        "name": "ZZ TEST SCRUM-846 till B renamed 1794412900427",
+        "codePrefix": "Z84602",
+        "paymentRouting": {},
+        "configVersion": 2,
+        "archived": false
+      }
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "station",
+      "id": "01a1cb58-04b1-794e-a765-b8a2305eaebb",
+      "name": "ZZ TEST SCRUM-846 till A 1794412900427",
+      "archived": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1cb58-105d-769b-96bf-bb4fa44c9568",
+      "name": "ZZ TEST SCRUM-846 till B renamed 1794412900427",
+      "archived": true
+    },
+    {
+      "kind": "session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "phase": "step 3b: change till B payment routing, prefix untouched",
+  "prefixes": {
+    "P": "Z84601",
+    "Q": "Z84602",
+    "R": "Z84603"
+  },
+  "names": {
+    "nameA": "ZZ TEST SCRUM-846 till A 1794412900427",
+    "nameB": "ZZ TEST SCRUM-846 till B 1794412900427",
+    "nameB2": "ZZ TEST SCRUM-846 till B renamed 1794412900427"
+  },
+  "failure": {
+    "kind": "Error",
+    "callsite": [
+      "    at C:\\Users\\waqar\\AppData\\Local\\Temp\\claude\\9d4c56906b777e8e\\317fcfce-2754-44c9-bec5-9a762ab18d03\\scratchpad\\s846p\\proof.mjs:157:36"
+    ]
+  },
+  "passed": false,
+  "finishedAt": "2026-11-11T16:01:54.083Z"
+}
