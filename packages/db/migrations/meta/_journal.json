@@ -813,6 +813,13 @@
       "when": 1794383162534,
       "tag": "0115_party_deposit_request",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1794430226214,
+      "tag": "0116_stay_cancelled",
+      "breakpoints": true
     }
   ]
 }

@@ -45,8 +45,13 @@ import { band, refund, sale } from './sales';
 export const SUPERVISION_SERVICES = ['none', 'drop_off', 'nanny'] as const;
 export type SupervisionService = (typeof SUPERVISION_SERVICES)[number];
 
-/** A stay's life: registered at the till, in the park, collected. */
-export const CHECKIN_STATUSES = ['registered', 'in_park', 'out'] as const;
+/**
+ * A stay's life: registered at the till, in the park, collected — or, for a
+ * waiting booking nobody paid for, cancelled by staff (SCRUM-862). A cancelled
+ * stay keeps its row, its registration and the signed consent; it is never on
+ * a sale, a board or the till's waiting-bookings picker again.
+ */
+export const CHECKIN_STATUSES = ['registered', 'in_park', 'out', 'cancelled'] as const;
 export type CheckinStatus = (typeof CHECKIN_STATUSES)[number];
 
 /** Where a registration was taken. */
@@ -482,6 +487,10 @@ export const checkin = pos.table(
     photoFileId: uuid('photo_file_id').references(() => fileObject.id, { onDelete: 'restrict' }),
     /** Written on a box with no internet (round 4). */
     offline: boolean('offline').notNull().default(false),
+    /** SCRUM-862 — a waiting booking cancelled by staff: when, by whom, and the reason they gave. */
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
+    cancelledByAccountId: uuid('cancelled_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    cancelReason: text('cancel_reason'),
     ...timestamps,
   },
   (t) => [
@@ -497,14 +506,17 @@ export const checkin = pos.table(
     index('checkin_checked_in_by_idx').on(t.checkedInByAccountId),
     index('checkin_checked_out_by_idx').on(t.checkedOutByAccountId),
     index('checkin_scheduled_idx').on(t.branchId, t.scheduledFor),
+    index('checkin_cancelled_by_idx').on(t.cancelledByAccountId),
     check('checkin_service_check', sql`${t.service} in ('none','drop_off','nanny')`),
-    check('checkin_status_check', sql`${t.status} in ('registered','in_park','out')`),
+    check('checkin_status_check', sql`${t.status} in ('registered','in_park','out','cancelled')`),
     check('checkin_age_check', sql`${t.childAgeYears} >= 0 and ${t.childAgeYears} <= 17`),
     check('checkin_booked_minutes_check', sql`${t.bookedMinutes} is null or ${t.bookedMinutes} > 0`),
     /** Only a nanny-service child names a nanny. */
     check('checkin_nanny_service_check', sql`${t.nannyId} is null or ${t.service} = 'nanny'`),
     /** In the park means it was checked in, and when. */
-    check('checkin_in_park_check', sql`${t.status} = 'registered' or ${t.checkedInAt} is not null`),
+    check('checkin_in_park_check', sql`${t.status} in ('registered','cancelled') or ${t.checkedInAt} is not null`),
+    /** Cancelled means staff cancelled it, and when. */
+    check('checkin_cancelled_check', sql`${t.status} <> 'cancelled' or ${t.cancelledAt} is not null`),
   ],
 );
 

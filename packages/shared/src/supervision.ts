@@ -541,6 +541,22 @@ export const LeaveAsBookedSchema = z
   .strict();
 export type LeaveAsBookedInput = z.infer<typeof LeaveAsBookedSchema>;
 
+/** SCRUM-862 — the reason the counter gives when cancelling a waiting booking; the till's Void asks the same way. */
+export const CANCEL_REASON_MAX_LENGTH = 120;
+
+/**
+ * SCRUM-862 — cancel a waiting booking (`POST /checkin/registrations/:id/cancel`):
+ * every still-waiting, unpaid, not-checked-in child on the registration is
+ * moved to `cancelled`. A paid or checked-in child refuses the whole press —
+ * that is the sale's refund or void path, never this one.
+ */
+export const CancelRegistrationSchema = z
+  .object({
+    reason: z.string().trim().min(1, 'A reason is required.').max(CANCEL_REASON_MAX_LENGTH),
+  })
+  .strict();
+export type CancelRegistrationInput = z.infer<typeof CancelRegistrationSchema>;
+
 export const AttachRegistrationPhotoSchema = z
   .object({
     fileId: uuid,
