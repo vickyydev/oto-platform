@@ -1,0 +1,20 @@
+{
+  "run": 42990578676,
+  "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+  "jobId": 130422195921,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/landed-validation-app-typecheck.log",
+  "sha256": "b17d2f794403e158e67cc874ca0ddd02d6aacbdc50e9c8921a29ebd905e63310",
+  "readLineRanges": [
+    "1-100",
+    "101-200",
+    "201-300",
+    "301-400",
+    "401-500",
+    "501-600",
+    "601-667"
+  ]
+}

@@ -15,7 +15,21 @@
   "localReproduction": {
     "worktree": "C:/oto-lanes/codex-s783-ci-repro-20261111",
     "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
-    "state": "installing dependencies; complete built smoke next"
+    "state": "passed all seven journeys; disposable database removed",
+    "command": "POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/smoke.spec.ts",
+    "browser": "msedge",
+    "log": "C:/oto-lanes/s783-exact-smoke.log",
+    "sha256": "67a055b019e6bd8214e0cc5d719f5234692bb49c6e61c8a01abaf98654eeba1e",
+    "tests": 7
   },
-  "retried": false
+  "retried": false,
+  "types": {
+    "workspaceLines": 141,
+    "workspaceReadWhole": true,
+    "apiDiagnostics": 0,
+    "appLines": 667,
+    "appReadWhole": true,
+    "appErrors": 418,
+    "appBaseline": 418
+  }
 }

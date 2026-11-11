@@ -1,0 +1,164 @@
+{
+  "tickets": [
+    "SCRUM-807"
+  ],
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42992278433,
+    "headSha": "7a1e2aada300f544d182a5991397800a311bc3db",
+    "status": "pending"
+  },
+  "localGates": "../local-gates.json",
+  "startedAt": "2026-11-11T09:20:45.002Z",
+  "phase": "buy a Golden Ticket on the own test till",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/sales/01a1c9e8-ffa6-78ab-a7b1-43e5649aff90/void",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9e8-ffa6-78ab-a7b1-43e5649aff90",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1c9e9-0682-7e4e-b278-0442fe3da1de/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c9e9-0682-7e4e-b278-0442fe3da1de"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "sale",
+      "id": "01a1c9e8-ffa6-78ab-a7b1-43e5649aff90",
+      "status": "voided"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c9e9-0682-7e4e-b278-0442fe3da1de",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1c9e8-f8a1-7542-8fb8-4c7f7be1d286",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "apiRuntimeDifferences": [],
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbq2vurrjlhs73b32kf0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq2vvd6e07s73bvstt0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq2ov3rjlhs73b2e6a0",
+      "status": "live",
+      "sha": "11cfd393486375ff7cf57cb9a74ef5aa2a679ac6"
+    }
+  },
+  "passed": false,
+  "failure": {
+    "phase": "buy a Golden Ticket on the own test till",
+    "kind": "Error",
+    "frames": [
+      "flow.mjs:9:49",
+      "proof.mjs:117:3"
+    ]
+  },
+  "finishedAt": "2026-11-11T09:20:54.109Z"
+}

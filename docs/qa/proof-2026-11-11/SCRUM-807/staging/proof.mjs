@@ -54,7 +54,7 @@ let failed = false;
 const shot = async (page, name) => {
   await page.screenshot({ path: resolve(out, name), animations: 'disabled',
     mask: [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
-      page.getByTestId('display-pairing-code'), page.locator('svg:not(.lucide), canvas'), page.getByTestId('voucher-card'), page.getByTestId('voucher-used'), page.getByText(/^QR-[A-Z0-9]+$/)] });
+      page.getByTestId('display-pairing-code'), page.locator('svg:not(.lucide), canvas'), page.getByTestId('voucher-card'), page.getByTestId('voucher-used'), page.getByTestId('sold-voucher-codes'), page.getByText(/^QR-[A-Z0-9]+$/)] });
 };
 const keypad = async (page, digits) => { for (const digit of digits) await page.getByRole('button', { name: digit, exact: true }).last().click(); };
 const identify = async index => {
@@ -113,12 +113,13 @@ try {
   const paired = await call('POST', `/stations/${station.id}/displays/claim`, { pairingCode, name: fixtureName });
   assert.equal(paired.status, 200); displayId = paired.body.device.id;
   receipt.created.push({ kind: 'display', id: displayId }); save();
+  await display.locator('[data-testid="language-choice"],[data-testid="identify-safety"]').first().waitFor();
 
   await prove({ till, display, call, expect, phase, shot, identify, receipt, save, branchId, station, prefix });
   receipt.deploymentsAfter = await deployments();
   receipt.passed = true;
 } catch (error) {
-  failed = true; receipt.passed = false; receipt.failure = { phase: receipt.phase, kind: error.name, frames: (error.stack ?? '').split('\n').filter(l => l.includes('proof.mjs:')).map(l => l.match(/proof.mjs:\d+:\d+/)?.[0]) };
+  failed = true; receipt.passed = false; receipt.failure = { phase: receipt.phase, kind: error.name, frames: (error.stack ?? '').split('\n').filter(l => /(?:proof|flow)\.mjs:/.test(l)).map(l => l.match(/(?:proof|flow)\.mjs:\d+:\d+/)?.[0]) };
   // No exception text: a browser call log can include the value being typed.
   if (till) await shot(till, 'failed-attempt.png').catch(() => {});
   if (display) await shot(display, 'failed-display.png').catch(() => {});

@@ -6,7 +6,7 @@ export async function prove({ till, display, call, expect, phase, shot, identify
   await till.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
   await till.getByRole('button', { name: /Golden Ticket/ }).click();
   await till.getByRole('button', { name: /^Charge/ }).click();
-  await till.getByText('Cash', { exact: true }).click();
+  await till.getByRole('button', { name: /^Cash Collect/ }).click();
   await till.getByRole('button', { name: 'Record cash', exact: true }).click();
   await till.getByRole('heading', { name: 'Sale Confirmed', exact: true }).waitFor();
   const sold = (await call('GET', `/sales?branchId=${branchId}&stationId=${station.id}&limit=50`)).body.sales.find(s => s.status === 'finalised');
