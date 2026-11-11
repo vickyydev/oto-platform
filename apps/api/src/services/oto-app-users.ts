@@ -293,6 +293,7 @@ export type OtoAppLifecycleEvent = {
   platformAccountId: string;
   state: OtoAppLifecycleEventState;
   kind: OtoAppLifecycleEventKind;
+  tenantId: string | null;
 };
 
 export interface OtoAppLifecycleUser {
@@ -319,7 +320,8 @@ export async function readOtoAppLifecycleEvent(
   // app whose own migrator has not added the column yet (0044).
   const row = (await exec.execute<OtoAppLifecycleEvent>(sql`
     select e.id::text as id, e.user_id as "userId", e.platform_account_id::text as "platformAccountId", e.state,
-      coalesce(to_jsonb(e)->>'kind', 'deactivate') as kind
+      coalesce(to_jsonb(e)->>'kind', 'deactivate') as kind,
+      to_jsonb(e)->>'tenant_id' as "tenantId"
     from otoapp.login_lifecycle_events e where e.id=${eventId}
     ${opts.lock ? sql`for update` : sql``}
   `)).rows[0];
@@ -344,12 +346,14 @@ export async function lockOtoAppLifecycleUser(exec: Exec, userId: string): Promi
  */
 export async function otoAppLifecycleUserIsOperators(
   exec: Exec,
-  opts: { operatorId: string; accountId: string; user: OtoAppLifecycleUser },
+  opts: { operatorId: string; accountId: string; user: OtoAppLifecycleUser; accountMissing?: boolean },
 ): Promise<boolean> {
   const [identity] = await exec.select({ id: appIdentity.id }).from(appIdentity)
     .where(and(eq(appIdentity.app, 'oto_app'), eq(appIdentity.accountId, opts.accountId), eq(appIdentity.externalUserId, opts.user.id)))
     .limit(1);
-  if (!identity) return false;
+  // SCRUM-781: only a caller that proved the account absent may use the
+  // surviving app tenant instead of an identity whose account FK is gone.
+  if (!identity && !opts.accountMissing) return false;
   const place = (await placeAppUsers(exec, [opts.user])).get(opts.user.id);
   if (!place?.tenantId) return false;
   const anchors = (await appTenantAnchors(exec)).get(place.tenantId);
@@ -361,6 +365,13 @@ export async function otoAppLifecycleUserIsOperators(
     if (entity?.tenant_id !== place.tenantId) return false;
   }
   return true;
+}
+
+/** SCRUM-781: a deleted login/account can retain an app-owned tenant snapshot. */
+export async function otoAppLifecycleTenantIsOperators(exec: Exec, tenantId: string | null, operatorId: string): Promise<boolean> {
+  if (!tenantId) return false;
+  const anchors = (await appTenantAnchors(exec)).get(tenantId);
+  return anchors?.length === 1 && anchors[0] === operatorId;
 }
 
 /** Settle only the locked pending event; the app pump owns attempt counting. */

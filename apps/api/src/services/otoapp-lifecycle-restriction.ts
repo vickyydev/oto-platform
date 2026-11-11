@@ -7,7 +7,7 @@ import { audit } from './audit';
 import { invalidateAllSessions } from './auth';
 import { appAccessPermission } from './handoff';
 import {
-  lockOtoAppLifecycleUser, otoAppLifecycleUserIsOperators, readOtoAppLifecycleEvent, settleOtoAppLifecycleEvent,
+  lockOtoAppLifecycleUser, otoAppLifecycleTenantIsOperators, otoAppLifecycleUserIsOperators, readOtoAppLifecycleEvent, settleOtoAppLifecycleEvent,
 } from './oto-app-users';
 import { withTx, type Exec, type OpContext } from './tx';
 
@@ -162,29 +162,32 @@ export async function consumeLifecycleRestriction(
   const snapshot = await readOtoAppLifecycleEvent(db, input.eventId);
   if (!snapshot || snapshot.kind !== 'restrict') throw missing();
 
-  return withTx(db, { ...ctx, operatorId: input.operatorId, actorAccountId: null, branchId: null },
+  return withTx(db, { ...ctx, operatorId: input.operatorId, actorAccountId: null, branchId: null, failureEventId: input.eventId },
     'app_identity.lifecycle_restriction', async (tx) => {
       // The switch-off's order: operator, platform account, app user, then its event.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${input.operatorId}, 633))`);
       const [target] = await tx.select({ id: account.id, operatorId: account.operatorId, status: account.status })
         .from(account).where(and(eq(account.id, snapshot.platformAccountId), eq(account.operatorId, input.operatorId))).for('no key update');
-      if (!target) throw missing();
+      if (!target && (await tx.select({ id: account.id }).from(account)
+        .where(eq(account.id, snapshot.platformAccountId)).limit(1))[0]) throw missing();
       const user = await lockOtoAppLifecycleUser(tx, snapshot.userId);
-      if (!user) throw missing();
       const event = await readOtoAppLifecycleEvent(tx, input.eventId, { lock: true });
       if (!event || event.kind !== 'restrict' || event.userId !== snapshot.userId
         || event.platformAccountId !== snapshot.platformAccountId) throw missing();
-      if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId, accountId: target.id, user }))) throw missing();
+      if (user) {
+        if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId,
+          accountId: snapshot.platformAccountId, user, accountMissing: !target }))) throw missing();
+      } else if (!target && !(await otoAppLifecycleTenantIsOperators(tx, event.tenantId, input.operatorId))) throw missing();
 
       if (event.state !== 'pending') {
         return { ok: true as const, eventId: event.id, state: event.state, replayed: true };
       }
-      const superseded = user.platformUserId !== target.id || (await accessModeOf(tx, user.id)) !== PAY_ONLY;
+      const superseded = !target || !user || user.platformUserId !== target.id || (await accessModeOf(tx, user.id)) !== PAY_ONLY;
       const state = superseded ? 'superseded' as const : 'delivered' as const;
       let withdrawn: HeldAssignment[] = [];
       let roadGranted: AppAccessBranches | 'none' = 'none';
       let sessionsEnded = 0;
-      if (!superseded) {
+      if (!superseded && target && user) {
         const held = await heldAssignments(tx, target.id);
         withdrawn = held.filter((h) => !isOtoAppRoad(h, input.operatorId));
         if (withdrawn.length > 0) {
@@ -214,12 +217,12 @@ export async function consumeLifecycleRestriction(
         entityId: event.id,
         actionId: event.id,
         before: {
-          status: target.status,
+          status: target?.status ?? null,
           roles: withdrawn.map((h) => ({ id: h.id, roleId: h.roleId, roleName: h.roleName, scopeType: h.scopeType, scopeId: h.scopeId })),
         },
         after: {
-          sourceApp: 'oto_app', accountId: target.id, externalUserId: user.id, state,
-          accountStatus: target.status, rolesWithdrawn: withdrawn.length, sessionsEnded,
+          sourceApp: 'oto_app', accountId: snapshot.platformAccountId, externalUserId: snapshot.userId, state,
+          accountStatus: target?.status ?? null, rolesWithdrawn: withdrawn.length, sessionsEnded,
           otoAppRoadGranted: roadGranted === 'none' ? null : { branches: roadGranted },
         },
         requestId: ctx.requestId,

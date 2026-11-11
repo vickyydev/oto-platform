@@ -8,7 +8,7 @@ import { audit } from './audit';
 import { ensureAppAccessRole, grantAppAccess } from './app-identity';
 import {
   deactivateOtoAppUser, findOtoAppUser, linkOtoAppUser, lockOtoAppLifecycleUser,
-  otoAppLifecycleUserIsOperators, otoAppUserIsOperators, readOtoAppLifecycleEvent,
+  otoAppLifecycleTenantIsOperators, otoAppLifecycleUserIsOperators, otoAppUserIsOperators, readOtoAppLifecycleEvent,
   reconcileOtoAppRole, resolveOtoAppRoleContext, settleOtoAppLifecycleEvent,
 } from './oto-app-users';
 import { assertNotLastOperatorAdmin } from './access-control';
@@ -284,7 +284,7 @@ export async function consumeLifecycleDeactivation(
   const snapshot = await readOtoAppLifecycleEvent(db, input.eventId);
   if (!snapshot) throw missing();
 
-  return withTx(db, { ...ctx, operatorId: input.operatorId, actorAccountId: null, branchId: null },
+  return withTx(db, { ...ctx, operatorId: input.operatorId, actorAccountId: null, branchId: null, failureEventId: input.eventId },
     'app_identity.lifecycle_deactivation', async tx => {
       // Shared with account PATCH and assignment removal. Keep the order:
       // operator, platform account, app user, then its event.
@@ -293,24 +293,28 @@ export async function consumeLifecycleDeactivation(
       // SHARE lock: linking already holds the app user before that FK check.
       const [target] = await tx.select({ id: account.id, operatorId: account.operatorId, status: account.status })
         .from(account).where(and(eq(account.id, snapshot.platformAccountId), eq(account.operatorId, input.operatorId))).for('no key update');
-      if (!target) throw missing();
+      // An account outside this operator is never treated as a missing login.
+      if (!target && (await tx.select({ id: account.id }).from(account)
+        .where(eq(account.id, snapshot.platformAccountId)).limit(1))[0]) throw missing();
       const user = await lockOtoAppLifecycleUser(tx, snapshot.userId);
-      if (!user) throw missing();
       const event = await readOtoAppLifecycleEvent(tx, input.eventId, { lock: true });
       if (!event || event.userId !== snapshot.userId || event.platformAccountId !== snapshot.platformAccountId) throw missing();
       // SCRUM-769: a restriction is consumed on its own door and never switches the account off.
       if (event.kind !== 'deactivate') throw missing();
-      if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId, accountId: target.id, user }))) throw missing();
+      if (user) {
+        if (!(await otoAppLifecycleUserIsOperators(tx, { operatorId: input.operatorId,
+          accountId: snapshot.platformAccountId, user, accountMissing: !target }))) throw missing();
+      } else if (!target && !(await otoAppLifecycleTenantIsOperators(tx, event.tenantId, input.operatorId))) throw missing();
 
       // Ownership is checked on every replay, but a settled event never changes
       // the current account or user, including after a later reactivation.
       if (event.state !== 'pending') {
         return { ok: true as const, eventId: event.id, state: event.state, replayed: true };
       }
-      const superseded = user.isActive || user.platformUserId !== target.id;
+      const superseded = !target || !user || user.isActive || user.platformUserId !== target.id;
       const state = superseded ? 'superseded' as const : 'delivered' as const;
       let otoApp = { userIds: [] as string[], sessionsEnded: 0 };
-      if (!superseded) {
+      if (!superseded && target && user) {
         await assertNotLastOperatorAdmin(tx as Db, input.operatorId, { accountId: target.id });
         if (target.status !== 'inactive') {
           await tx.update(account).set({ status: 'inactive' }).where(eq(account.id, target.id));
@@ -326,9 +330,9 @@ export async function consumeLifecycleDeactivation(
         entityType: 'app_identity',
         entityId: event.id,
         actionId: event.id,
-        before: { status: target.status },
-        after: { sourceApp: 'oto_app', accountId: target.id, externalUserId: user.id, state,
-          accountDeactivated: !superseded && target.status !== 'inactive', otoApp },
+        before: { status: target?.status ?? null },
+        after: { sourceApp: 'oto_app', accountId: snapshot.platformAccountId, externalUserId: snapshot.userId, state,
+          accountDeactivated: !superseded && target?.status !== 'inactive', otoApp },
         requestId: ctx.requestId,
       });
       return { ok: true as const, eventId: event.id, state, replayed: false };
