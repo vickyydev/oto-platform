@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-807",
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "ci": { "run": 42992278433, "attempt": 2, "conclusion": "success", "apiTests": 6821, "posTests": 2336, "consoleBrowserTests": 357 },
+  "ciReceipt": "main-attempt-two-ci.json",
+  "workspaceTypecheckReadWhole": true,
+  "apiDiagnostics": 0,
+  "appTypecheck": { "state": "path-skipped", "notRerun": true },
+  "proof": "staging/proof-result.json",
+  "pictures": [
+    { "id": "13057", "filename": "s807-waiting-for-voucher-price.png" },
+    { "id": "13058", "filename": "s807-priced-payment-zero.png" },
+    { "id": "13059", "filename": "s807-completed-zero-sale.png" }
+  ],
+  "picturesInspected": true,
+  "cleanupComplete": true,
+  "jiraStatusReadBack": "Deployed",
+  "ownerAcceptancePending": true,
+  "originalFailuresPreserved": ["main-attempt-one-ci.json", "staging/attempt-02/receipt.json"],
+  "limitations": ["Customer mirror retains its local estimate during the artificial quote delay; the staff screen blocks acceptance.", "Order total zero was asserted in the DOM and saved sale, below the picture viewport."]
+}

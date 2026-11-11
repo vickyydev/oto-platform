@@ -69,9 +69,12 @@
       "failure": "test/inbox.test.ts:221 dynamic import timed out after 5000 ms"
     },
     "serialAttempt": {
-      "state": "running",
-      "session": 71345,
-      "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-tests-serial.log",
+      "state": "passed",
+      "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-tests-serial.log",
+      "sha256": "1156ffeed4b7cc6b527a87d0e8914daa51da96edae49d017904e4d558ed83e4c",
+      "exitCode": 0,
+      "tasks": 15,
+      "cached": 2,
       "sharedPackagePassed": true
     }
   },
