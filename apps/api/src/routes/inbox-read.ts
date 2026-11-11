@@ -76,7 +76,9 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'every other view all three), every team of the operator with theirs marked, the people who can hold a slot, ' +
           'and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only ' +
           'where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator ' +
-          'channel accounts, and (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null. ' +
+          'channel accounts, (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null, ' +
+          'and (SCRUM-834) `dictation`: whether the composer’s microphone is offered on this deployment (a transcription ' +
+          'provider is on) and the ceiling, in seconds, a clip stops at (TRANSCRIPTION_MAX_SECONDS). ' +
           'Needs app:inbox:access.',
         response: { 200: InboxMeSchema },
       },
@@ -86,7 +88,13 @@ export async function inboxReadRoutes(app: App): Promise<void> {
       const me = await inboxMe(app.db, viewer, effective, { simulatorEnabled: app.inboxChannels.simulatorEnabled });
       // SCRUM-648 — the Inbox reads no /me of its own, so the view-as mark rides here.
       const marks = await impersonationMarksOf(app.db, req.requireAuth());
-      return { ...me, impersonation: marks.impersonation ? bannerOf(marks.impersonation) : null };
+      // SCRUM-834 — the composer's microphone: offered only where a provider is on, with the clip ceiling.
+      const transcription = app.inboxTranscription;
+      return {
+        ...me,
+        impersonation: marks.impersonation ? bannerOf(marks.impersonation) : null,
+        dictation: { available: transcription.adapter !== null, maxSeconds: transcription.maxSeconds },
+      };
     },
   );
 

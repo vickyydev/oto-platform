@@ -691,6 +691,18 @@ export const InboxMeSchema = z.object({
     ai: z.boolean(),
   }),
   /**
+   * Dictation (SCRUM-834): whether the composer's microphone is offered —
+   * this deployment has a transcription provider on — and the ceiling, in
+   * seconds, a clip stops at (`TRANSCRIPTION_MAX_SECONDS`). Absent from an
+   * api that predates it: the composer then falls back to its own default.
+   */
+  dictation: z
+    .object({
+      available: z.boolean(),
+      maxSeconds: z.number().int().positive(),
+    })
+    .optional(),
+  /**
    * The simulator panel (I3b): non-null only when this deployment runs the
    * inbox simulator (`INBOX_SIMULATOR=on`, never production) AND the viewer
    * holds `inbox:channel:manage` somewhere — the two things the

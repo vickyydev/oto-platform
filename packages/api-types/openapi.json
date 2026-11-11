@@ -89304,7 +89304,7 @@
     },
     "/inbox/me": {
       "get": {
-        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts, and (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null. Needs app:inbox:access.",
+        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts, (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null, and (SCRUM-834) `dictation`: whether the composer’s microphone is offered on this deployment (a transcription provider is on) and the ceiling, in seconds, a clip stops at (TRANSCRIPTION_MAX_SECONDS). Needs app:inbox:access.",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -89465,6 +89465,24 @@
                         "templates",
                         "kb",
                         "ai"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "dictation": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean"
+                        },
+                        "maxSeconds": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "available",
+                        "maxSeconds"
                       ],
                       "additionalProperties": false
                     },
@@ -95203,7 +95221,7 @@
     },
     "/inbox/conversations/{id}/dictation": {
       "post": {
-        "description": "Transcribe a reply the person dictated into the composer (SCRUM-834): the request body is the browser’s recording as its own bytes under its audio content type (audio/webm, audio/ogg, audio/mp4, audio/mpeg, audio/wav, audio/flac; a `;codecs=…` parameter is allowed), at most 25 MB and no longer than the deployment’s voice-note ceiling (TRANSCRIPTION_MAX_SECONDS). The same provider, model and limits as a customer’s voice note. Answers the words and the language heard (ISO 639-1, or null) for the composer to show; NO message is written, and the audio is dropped after the call. Refusals, each in a plain sentence: 409 DICTATION_NOT_AVAILABLE (no provider on this deployment), 413 DICTATION_TOO_LONG (details: maxSeconds, maxBytes, durationSeconds), 415 DICTATION_UNSUPPORTED_FORMAT, 422 DICTATION_NOTHING_HEARD, 502 DICTATION_FAILED (details: reason, retryable). Needs inbox:conversation:reply at a scope covering the conversation — the same check as replying in it; a conversation the caller cannot see is 404. Audited as inbox.dictation (ids, length, bytes, language, outcome — never the words); the answer is not kept for replay, so no Idempotency-Key is taken.",
+        "description": "Transcribe a reply the person dictated into the composer (SCRUM-834): the request body is the browser’s recording as its own bytes under its audio content type — one of the audio types the provider takes: audio/ogg, audio/opus, audio/mpeg, audio/mp3, audio/mp4, audio/m4a, audio/x-m4a, audio/wav, audio/wave, audio/x-wav, audio/webm, audio/flac, audio/x-flac (a `;codecs=…` parameter is allowed; never a video container) — at most 25 MB and no longer than the deployment’s voice-note ceiling (TRANSCRIPTION_MAX_SECONDS, read by the composer from GET /inbox/me as `dictation.maxSeconds`). The same provider, model and limits as a customer’s voice note. Answers the words and the language heard (ISO 639-1, or null) for the composer to show; NO message is written, and the audio is dropped after the call. Refusals, each in a plain sentence: 409 DICTATION_NOT_AVAILABLE (no provider on this deployment), 413 DICTATION_TOO_LONG (details: maxSeconds, maxBytes, durationSeconds), 415 DICTATION_UNSUPPORTED_FORMAT, 422 DICTATION_NOTHING_HEARD, 429 DICTATION_RATE_LIMITED (more than 20 in a minute from one caller; details: retryAfterSeconds), 502 DICTATION_FAILED (details: reason, retryable). Needs inbox:conversation:reply at a scope covering the conversation — the same check as replying in it; a conversation the caller cannot see is 404. Audited as inbox.dictation (ids, length, bytes, language, outcome — never the words); the answer is not kept for replay, so no Idempotency-Key is taken.",
         "requestBody": {
           "required": true,
           "content": {

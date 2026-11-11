@@ -121,8 +121,13 @@ const FORMATS: Readonly<Record<string, string>> = {
   'audio/x-flac': 'flac',
 };
 
-/** Every content type the OpenAI-shaped endpoint takes: what a route that receives a recording accepts (SCRUM-834). */
-export const TRANSCRIBABLE_CONTENT_TYPES: readonly string[] = Object.keys(FORMATS);
+/**
+ * The audio content types the OpenAI-shaped endpoint takes: what a route that
+ * receives a browser's recording accepts (SCRUM-834). The provider takes a
+ * video container too (`video/mp4`, `video/webm`), but a dictation is a
+ * microphone's recording and nothing else, so those stay outside the door.
+ */
+export const TRANSCRIBABLE_AUDIO_CONTENT_TYPES: readonly string[] = Object.keys(FORMATS).filter((type) => type.startsWith('audio/'));
 
 /** `audio/ogg; codecs=opus` → `audio/ogg`. */
 export function baseContentType(contentType: string): string {

@@ -765,6 +765,8 @@ describe('the viewer and the templates', () => {
       ['gm', false],
     ]);
     expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false, kb: false, ai: false });
+    // SCRUM-834 — no transcription provider under test: the composer's microphone is not offered; the ceiling is the env default.
+    expect(me.dictation).toEqual({ available: false, maxSeconds: 180 });
     // No simulator panel for an agent: the suite runs the simulator, but they hold no inbox:channel:manage.
     expect(me.simulator).toBeNull();
     expect(me.defaultReceptionBranchId).toBe(central);

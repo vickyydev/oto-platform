@@ -38,6 +38,7 @@ import {
  *   DICTATION_TOO_LONG            413  over the ceiling or the byte limit
  *   DICTATION_UNSUPPORTED_FORMAT  415  a format no provider takes
  *   DICTATION_NOTHING_HEARD       422  the provider heard no words
+ *   DICTATION_RATE_LIMITED        429  more than twenty in a minute from one caller
  *   DICTATION_FAILED              502  the provider did not answer, or refused
  *
  * THE RECORD: one audit row per request that passed the check
@@ -96,6 +97,19 @@ export const dictationTooLong = (
 
 export const dictationUnsupportedFormat = (): AppError =>
   new AppError(415, 'DICTATION_UNSUPPORTED_FORMAT', 'The recording is in a format the transcription provider does not take.');
+
+/**
+ * How many dictations one caller may send in a minute: a provider call each,
+ * so a bound a person speaking replies never meets and a script does. Spent
+ * from the api's own bucket (`plugins/rate-limit.ts`: the account, or the
+ * station its session sits at), refused before the handler runs.
+ */
+export const DICTATION_RATE = { max: 20, timeWindow: 60_000 } as const;
+
+export const dictationRateLimited = (retryAfterSeconds: number): AppError =>
+  new AppError(429, 'DICTATION_RATE_LIMITED', `Too many dictations in a minute. Try again in ${retryAfterSeconds}s.`, {
+    retryAfterSeconds,
+  });
 
 /** The refusal a failed transcription is answered with, in the composer's codes. */
 export function dictationRefusal(

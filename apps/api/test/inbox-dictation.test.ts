@@ -2,8 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { schema as s } from '@oto/db';
 import { newId } from '@oto/shared';
-import { INBOX_DICTATION_ACTION } from '../src/services/inbox/dictation';
-import { FakeTranscriber, TRANSCRIPTION_LANGUAGE_HINTS } from '../src/services/inbox/transcription';
+import { DICTATION_RATE, INBOX_DICTATION_ACTION } from '../src/services/inbox/dictation';
+import { FakeTranscriber, TRANSCRIBABLE_AUDIO_CONTENT_TYPES, TRANSCRIPTION_LANGUAGE_HINTS } from '../src/services/inbox/transcription';
 import { RECEPTION, SECOND_OPERATOR_ADMIN, signInAs, teardownAll } from './helpers';
 import { ON_DEFAULT_QUEUE, aiWorld, customer, nextPhone, simAccount, staff, teamOf, type AiWorld } from './inbox-ai-support';
 import { NO_LEAKS, sentinelLeaks } from './inbox-sentinel';
@@ -22,6 +22,9 @@ import { NO_LEAKS, sentinelLeaks } from './inbox-sentinel';
  *   - a format no provider takes, a provider that heard nothing, a provider
  *     that did not answer: each its own code;
  *   - the provider off answers DICTATION_NOT_AVAILABLE;
+ *   - a video container is refused at the door: the parsers take audio only;
+ *   - GET /inbox/me says whether dictation is offered here and the ceiling;
+ *   - twenty a minute per caller, the next 429, another caller unaffected;
  *   - the check is the reply's: no inbox grant 403, read without reply 403,
  *     another team 404, another operator 404, no session 401;
  *   - no message row is written, the audit row carries no words, and the
@@ -151,6 +154,8 @@ describe('the dictation route (SCRUM-834)', () => {
     expect(route!.config.secretResponse).toBe(true);
     expect(route!.config.public).not.toBe(true);
     expect(route!.config.credential).toBeUndefined();
+    // Twenty a minute per caller, said as the route's own code (the test at the end spends it).
+    expect((route!.config as { rateLimit?: unknown }).rateLimit).toMatchObject({ max: 20, timeWindow: 60_000 });
     expect((await dictate(null, webmClip())).status).toBe(401);
   });
 
@@ -241,11 +246,19 @@ describe('the dictation route (SCRUM-834)', () => {
     expect(adapter.requests).toHaveLength(0);
   });
 
-  it('refuses a format no provider takes, a parsed non-audio body, and an empty body', async () => {
+  it('refuses a format no provider takes, a video container, a parsed non-audio body, and an empty body', async () => {
     const adapter = fake();
     const amr = await dictate(cookies.agent!, webmClip(), 'audio/amr');
     expect(amr.status).toBe(415);
     expect(amr.body.error!.code).toBe('DICTATION_UNSUPPORTED_FORMAT');
+    // The provider takes a video container; a dictation is a microphone's recording, so the door does not.
+    expect(TRANSCRIBABLE_AUDIO_CONTENT_TYPES.every((type) => type.startsWith('audio/'))).toBe(true);
+    expect(TRANSCRIBABLE_AUDIO_CONTENT_TYPES).toEqual(expect.arrayContaining(['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/flac']));
+    for (const video of ['video/mp4', 'video/webm']) {
+      const res = await dictate(cookies.agent!, webmClip(), video);
+      expect(res.status, video).toBe(415);
+      expect(res.body.error!.code).toBe('DICTATION_UNSUPPORTED_FORMAT');
+    }
     const json = await dictate(cookies.agent!, Buffer.from('{"text":"ZZ TEST typed"}'), 'application/json');
     expect(json.status).toBe(415);
     expect(json.body.error!.code).toBe('DICTATION_UNSUPPORTED_FORMAT');
@@ -284,6 +297,20 @@ describe('the dictation route (SCRUM-834)', () => {
     expect((await dictationAudits(conv)).at(-1)!.after).toMatchObject({ outcome: 'NOT_CONFIGURED', model: null });
   });
 
+  it('GET /inbox/me says whether dictation is offered here and the ceiling, as the provider stands', async () => {
+    const dictationOf = async () => {
+      const res = await w.ctx.app.inject({ method: 'GET', url: '/inbox/me', headers: { cookie: cookies.agent! } });
+      expect(res.statusCode).toBe(200);
+      return (res.json() as { dictation?: { available: boolean; maxSeconds: number } }).dictation;
+    };
+    const { maxSeconds } = w.ctx.app.inboxTranscription;
+    expect(maxSeconds).toBe(180);
+    fake();
+    expect(await dictationOf()).toEqual({ available: true, maxSeconds });
+    providerOff();
+    expect(await dictationOf()).toEqual({ available: false, maxSeconds });
+  });
+
   it('is the reply’s check: no inbox grant 403; read without reply 403; another team 404; another operator 404', async () => {
     const adapter = fake().always({ ok: true, text: 'ZZ TEST never', language: 'en', durationSeconds: 1 });
     const before = (await dictationAudits(conv)).length;
@@ -296,5 +323,37 @@ describe('the dictation route (SCRUM-834)', () => {
     expect((await dictate(cookies.agent!, webmClip(), VOICE_TYPE, newId())).status).toBe(404);
     expect(adapter.requests).toHaveLength(0);
     expect((await dictationAudits(conv)).length).toBe(before);
+  });
+
+  it('takes twenty a minute from one caller: the next is 429 DICTATION_RATE_LIMITED, before the handler; another caller dictates on', async () => {
+    const adapter = fake().always({ ok: true, text: 'ZZ TEST counted', language: 'en', durationSeconds: 1 });
+    // A fresh agent at the same desk, so the count starts at nothing.
+    const reception = await teamOf(w, 'reception', w.central);
+    const [, cookie] = await staff(w, '+66810008344', 'ZZ TEST Counted Agent', 'inbox_agent', {
+      scopeType: 'department',
+      scopeId: reception.departmentId!,
+    });
+    const before = (await dictationAudits(conv)).length;
+    for (let n = 1; n <= DICTATION_RATE.max; n += 1) {
+      expect((await dictate(cookie, webmClip())).status, `dictation ${n}`).toBe(200);
+    }
+    const res = await w.ctx.app.inject({
+      method: 'POST',
+      url: `/inbox/conversations/${conv}/dictation`,
+      headers: { cookie, 'content-type': VOICE_TYPE },
+      payload: webmClip(),
+    });
+    expect(res.statusCode).toBe(429);
+    const body = res.json() as { error: { code: string; message: string; details?: { retryAfterSeconds?: number } } };
+    expect(body.error.code).toBe('DICTATION_RATE_LIMITED');
+    expect(body.error.message).toMatch(/Too many dictations in a minute/);
+    expect(body.error.details?.retryAfterSeconds).toBeGreaterThan(0);
+    expect(String(res.headers['retry-after'])).toBe(String(body.error.details!.retryAfterSeconds));
+    expect(String(res.headers['x-ratelimit-limit'])).toBe(String(DICTATION_RATE.max));
+    // Refused before the handler: no provider call, no audit row for it.
+    expect(adapter.requests).toHaveLength(DICTATION_RATE.max);
+    expect((await dictationAudits(conv)).length).toBe(before + DICTATION_RATE.max);
+    // The bucket is the caller's own: the desk's other agent dictates on.
+    expect((await dictate(cookies.agent!, webmClip())).status).toBe(200);
   });
 });

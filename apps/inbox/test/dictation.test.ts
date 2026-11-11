@@ -21,6 +21,8 @@ import {
   DICTATION_PRIVACY_LINE,
   DICTATION_TOOLTIP,
   clockOf,
+  dictationAvailable,
+  dictationCeilingOf,
   dictationErrorLine,
   dictationSupported,
   insertAtCaret,
@@ -42,6 +44,8 @@ const me: InboxMe = {
   people: [],
   defaultReceptionBranchId: CENTRAL,
   capabilities: { writes: true, dashboard: true, assign: true, move: true, reopen: true, templates: true, kb: true, ai: true },
+  // What a current api says: a provider on, at its default ceiling.
+  dictation: { available: true, maxSeconds: 180 },
   simulator: null,
 };
 
@@ -109,6 +113,23 @@ describe('the pure rules', () => {
     expect(dictationSupported({ MediaRecorder: class {}, navigator: { mediaDevices: { getUserMedia: () => undefined } } })).toBe(true);
   });
 
+  it('reads the ceiling and the offer from /inbox/me; an api that has not said is the default, offered', () => {
+    expect(dictationCeilingOf(me)).toBe(180);
+    expect(dictationCeilingOf({ dictation: { available: true, maxSeconds: 60 } })).toBe(60);
+    expect(dictationCeilingOf({ dictation: { available: true, maxSeconds: 45.9 } })).toBe(45);
+    expect(dictationCeilingOf({ dictation: { available: true, maxSeconds: 0 } })).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationCeilingOf({ dictation: { available: true, maxSeconds: Number.NaN } })).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationCeilingOf({})).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationCeilingOf({ dictation: null })).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationCeilingOf(null)).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationCeilingOf(undefined)).toBe(DICTATION_MAX_SECONDS);
+    expect(dictationAvailable(me)).toBe(true);
+    expect(dictationAvailable({ dictation: { available: false, maxSeconds: 180 } })).toBe(false);
+    expect(dictationAvailable({})).toBe(true);
+    expect(dictationAvailable({ dictation: null })).toBe(true);
+    expect(dictationAvailable(undefined)).toBe(true);
+  });
+
   it('says each refusal in the composer’s own words, and the privacy line names the provider', () => {
     expect(dictationErrorLine({ code: 'DICTATION_NOT_AVAILABLE', message: 'x' })).toBe('Dictation is not available on this deployment.');
     expect(dictationErrorLine({ code: 'DICTATION_TOO_LONG', message: 'x', details: { maxSeconds: 180 } })).toBe(
@@ -118,6 +139,7 @@ describe('the pure rules', () => {
     expect(dictationErrorLine({ code: 'DICTATION_UNSUPPORTED_FORMAT', message: 'x' })).toMatch(/format/);
     expect(dictationErrorLine({ code: 'DICTATION_NOTHING_HEARD', message: 'x' })).toBe('Nothing was heard. Try again, closer to the microphone.');
     expect(dictationErrorLine({ code: 'DICTATION_FAILED', message: 'x' })).toBe('The transcription did not come back. Try again.');
+    expect(dictationErrorLine({ code: 'DICTATION_RATE_LIMITED', message: 'x' })).toBe('Too many dictations in a minute. Wait a moment and try again.');
     expect(dictationErrorLine({ code: 'FORBIDDEN', message: 'x' })).toBe('You cannot reply in this conversation.');
     expect(dictationErrorLine({ code: 'CONVERSATION_HANDLED', message: 'This conversation is handled.' })).toBe('This conversation is handled.');
     expect(dictationErrorLine(new TypeError('network'))).toBe('network');
@@ -211,12 +233,12 @@ describe('the composer’s microphone', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
   };
-  const render = () =>
+  const render = (viewer: InboxMe = me) =>
     act(async () => {
       root!.render(
         createElement(Composer, {
           conv,
-          me,
+          me: viewer,
           inserted: null,
           onOpenTemplates: () => undefined,
           onSent: sent,
@@ -357,6 +379,42 @@ describe('the composer’s microphone', () => {
     expect(button('dictation-start')).toBeNull();
     expect(button('dictation-stop')).toBeNull();
     expect(line()).toBeNull();
+    expect(document.querySelector('button[aria-label="Templates"]')).not.toBeNull();
+    expect(document.querySelector('button[aria-label="Send"]')).not.toBeNull();
+    expect(input()).not.toBeNull();
+  });
+
+  it('reads the clock’s ceiling from /inbox/me and stops there, not at the default', async () => {
+    vi.useFakeTimers();
+    try {
+      await render({ ...me, dictation: { available: true, maxSeconds: 20 } });
+      await click('dictation-start');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(FakeRecorder.instances[0]!.state).toBe('recording');
+      expect(line()!.textContent).toContain('Recording · 0:00 / 0:20');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(19_000);
+      });
+      expect(FakeRecorder.instances[0]!.state).toBe('recording');
+      expect(line()!.textContent).toContain('Recording · 0:19 / 0:20');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(FakeRecorder.instances[0]!.state).toBe('inactive');
+      expect(fetched).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('where the deployment has no transcription provider on, the microphone is not shown; the rest of the composer is', async () => {
+    await render({ ...me, dictation: { available: false, maxSeconds: 180 } });
+    expect(button('dictation-start')).toBeNull();
+    expect(button('dictation-stop')).toBeNull();
+    expect(line()).toBeNull();
+    expect(getUserMedia).not.toHaveBeenCalled();
     expect(document.querySelector('button[aria-label="Templates"]')).not.toBeNull();
     expect(document.querySelector('button[aria-label="Send"]')).not.toBeNull();
     expect(input()).not.toBeNull();

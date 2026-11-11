@@ -12,10 +12,12 @@
 import type { ApiError } from '@/api/client';
 
 /**
- * The ceiling the recorder stops at: `TRANSCRIPTION_MAX_SECONDS`' default on
- * the api. A deployment with a lower ceiling refuses a longer clip with
- * DICTATION_TOO_LONG, whose details carry its own value, and the composer
- * says so.
+ * The ceiling the recorder stops at when the api has not said its own:
+ * `TRANSCRIPTION_MAX_SECONDS`' default. The deployment's value rides on
+ * `GET /inbox/me` (`dictationCeilingOf`); this is the fallback before it has
+ * answered, or from an api that predates the field. A deployment with a
+ * lower ceiling refuses a longer clip with DICTATION_TOO_LONG, whose details
+ * carry its own value, and the composer says so.
  */
 export const DICTATION_MAX_SECONDS = 180;
 
@@ -73,6 +75,26 @@ export function reachedCeiling(seconds: number, maxSeconds = DICTATION_MAX_SECON
   return seconds >= maxSeconds;
 }
 
+/** What `GET /inbox/me` says of dictation on this deployment; absent from an api that predates it. */
+export interface DictationOffer {
+  dictation?: { available: boolean; maxSeconds: number } | null;
+}
+
+/** The clock's ceiling: the deployment's (`TRANSCRIPTION_MAX_SECONDS`, on `/inbox/me`), else the api's default. */
+export function dictationCeilingOf(me: DictationOffer | null | undefined): number {
+  const max = me?.dictation?.maxSeconds;
+  return typeof max === 'number' && Number.isFinite(max) && max > 0 ? Math.floor(max) : DICTATION_MAX_SECONDS;
+}
+
+/**
+ * Whether the microphone is offered at all: hidden where the deployment has
+ * no transcription provider on (the api would refuse every clip with
+ * DICTATION_NOT_AVAILABLE); shown where the api has not said.
+ */
+export function dictationAvailable(me: DictationOffer | null | undefined): boolean {
+  return me?.dictation?.available ?? true;
+}
+
 /**
  * The words placed into the composer at the caret: a selection is replaced,
  * a space is added on either side where the words would otherwise touch
@@ -127,6 +149,8 @@ export function dictationErrorLine(err: unknown): string {
       return 'This browser records in a format the transcription provider does not take.';
     case 'DICTATION_NOTHING_HEARD':
       return 'Nothing was heard. Try again, closer to the microphone.';
+    case 'DICTATION_RATE_LIMITED':
+      return 'Too many dictations in a minute. Wait a moment and try again.';
     case 'DICTATION_FAILED':
       return 'The transcription did not come back. Try again.';
     case 'FORBIDDEN':

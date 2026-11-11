@@ -7,7 +7,7 @@ import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, 
 import { TranslationNote } from '@/components/atoms';
 import { DictateButton, DictationLine, useDictation } from '@/components/Dictation';
 import { PendingControl } from '@/components/writes';
-import { insertAtCaret } from '@/lib/dictation';
+import { dictationAvailable, dictationCeilingOf, insertAtCaret } from '@/lib/dictation';
 import { COMPOSER_EXTRAS_REASON, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
 
 /** A template the composer holds: from the templates dialog, or offered by a refusal. */
@@ -87,15 +87,21 @@ export function Composer({
 
   // The dictated words land at the caret of the input as it stands (the DOM
   // value is the controlled value), and the caret follows them once rendered.
+  // The deployment says whether the microphone is offered and the ceiling
+  // (`/inbox/me`): no provider on, no button.
   const inputRef = useRef<HTMLInputElement>(null);
   const caretAfter = useRef<number | null>(null);
-  const dictation = useDictation(conv.id, (words) => {
-    const input = inputRef.current;
-    const placed = insertAtCaret(input?.value ?? '', input?.selectionStart ?? null, input?.selectionEnd ?? null, words);
-    caretAfter.current = placed.caret;
-    touch();
-    setText(placed.text);
-  });
+  const dictation = useDictation(
+    conv.id,
+    (words) => {
+      const input = inputRef.current;
+      const placed = insertAtCaret(input?.value ?? '', input?.selectionStart ?? null, input?.selectionEnd ?? null, words);
+      caretAfter.current = placed.caret;
+      touch();
+      setText(placed.text);
+    },
+    { available: dictationAvailable(me), maxSeconds: dictationCeilingOf(me) },
+  );
   useEffect(() => {
     const caret = caretAfter.current;
     const input = inputRef.current;

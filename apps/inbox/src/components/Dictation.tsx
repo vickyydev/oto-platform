@@ -31,24 +31,40 @@ import {
  * states; `DictationLine` is the line under it — the red dot and the clock
  * with the privacy words while recording, "Transcribing…" after, or the
  * refusal in the composer's own words.
+ *
+ * The deployment has the last word on both (`offer`, from `GET /inbox/me`):
+ * the clock's ceiling is its `TRANSCRIPTION_MAX_SECONDS`, and where no
+ * transcription provider is on the microphone is not shown at all — every
+ * clip would be refused. Either unsaid is read as the default: offered, at
+ * the api's default ceiling.
  */
 
 export interface Dictation {
-  /** False where the browser cannot record: the button is not shown. */
+  /** False where the browser cannot record, or the deployment has no provider on: the button is not shown. */
   supported: boolean;
   phase: DictationPhase;
   /** Whole seconds recorded so far. */
   seconds: number;
+  /** The ceiling the clip stops at, in seconds: the deployment's, else the api's default. */
+  maxSeconds: number;
   error: string | null;
   start: () => void;
   stop: () => void;
   dismissError: () => void;
 }
 
+/** What the deployment offers, as `GET /inbox/me` said it; a part unsaid is the default. */
+export interface DictationOfferOptions {
+  available?: boolean;
+  maxSeconds?: number;
+}
+
 /** How often the clock ticks while recording. */
 const TICK_MS = 250;
 
-export function useDictation(conversationId: string, onWords: (words: string) => void): Dictation {
+export function useDictation(conversationId: string, onWords: (words: string) => void, offer: DictationOfferOptions = {}): Dictation {
+  const maxSeconds = offer.maxSeconds ?? DICTATION_MAX_SECONDS;
+  const available = offer.available ?? true;
   const [phase, setPhase] = useState<DictationPhase>('idle');
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +73,15 @@ export function useDictation(conversationId: string, onWords: (words: string) =>
   const chunks = useRef<Blob[]>([]);
   const ticker = useRef<ReturnType<typeof setInterval> | null>(null);
   const mounted = useRef(true);
-  // The latest callback and conversation, read when the words land.
+  // The latest callback, conversation and ceiling, read when the words land and as the clock ticks.
   const onWordsRef = useRef(onWords);
   const conversationRef = useRef(conversationId);
+  const ceilingRef = useRef(maxSeconds);
   useEffect(() => {
     onWordsRef.current = onWords;
     conversationRef.current = conversationId;
-  }, [onWords, conversationId]);
+    ceilingRef.current = maxSeconds;
+  }, [onWords, conversationId, maxSeconds]);
 
   const release = useCallback(() => {
     if (ticker.current !== null) {
@@ -176,14 +194,15 @@ export function useDictation(conversationId: string, onWords: (words: string) =>
     ticker.current = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
       setSeconds(elapsed);
-      if (reachedCeiling(elapsed)) stop();
+      if (reachedCeiling(elapsed, ceilingRef.current)) stop();
     }, TICK_MS);
   }, [release, send, stop]);
 
   return {
-    supported: dictationSupported(),
+    supported: available && dictationSupported(),
     phase,
     seconds,
+    maxSeconds,
     error,
     start: () => void start(),
     stop,
@@ -235,7 +254,7 @@ export function DictationLine({ dictation }: { dictation: Dictation }) {
       >
         <span aria-hidden="true" className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-rose-500" />
         <span className="shrink-0 font-medium tabular-nums text-rose-600 dark:text-rose-400">
-          Recording · {clockOf(dictation.seconds)} / {clockOf(DICTATION_MAX_SECONDS)}
+          Recording · {clockOf(dictation.seconds)} / {clockOf(dictation.maxSeconds)}
         </span>
         <span className="min-w-0 truncate">— {DICTATION_PRIVACY_LINE}</span>
       </p>
