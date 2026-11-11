@@ -95,7 +95,7 @@ Jira. Never start the next unit's landing while the previous one's proof is open
   stayed off. The till moved to payment before the re-priced total came back and did not
   re-read it. Wanted: the payment screen waits for the voucher pricing (or re-reads the total
   when it arrives) so the amount shown is the amount due. Pictures 05e/05f in
-  `docs/qa/proof-2026-11-09/SCRUM-805/staging` (read them).
+  `docs/qa/proof-2026-11-09/SCRUM-798/staging` (05e/05f; verified path on 11 November).
 - **Tests:** pos vitest with a delayed pricing answer: the payment screen shows the re-priced
   total and Confirm enables only then.
 - **Proof:** a ZZ TEST Golden Ticket drop-off on a ZZ TEST till; the payment screen's amount

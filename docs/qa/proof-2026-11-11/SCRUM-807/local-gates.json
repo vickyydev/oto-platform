@@ -1,0 +1,87 @@
+{
+  "checkedAt": "2026-11-11T09:04:43.358Z",
+  "pos": {
+    "files": 170,
+    "tests": 2336,
+    "exitCode": 0
+  },
+  "review": {
+    "pins": 4,
+    "exitCode": 0,
+    "findings": "Two expected failures first observed; amount visibility and pending-zero wording fixed and pins flipped."
+  },
+  "typechecks": {
+    "pos": {
+      "diagnostics": 0,
+      "readWhole": true
+    },
+    "api": {
+      "diagnostics": 0,
+      "readWhole": true
+    }
+  },
+  "lint": {
+    "files": 4,
+    "exitCode": 0
+  },
+  "build": {
+    "exitCode": 0,
+    "warning": "Existing large bundle warning"
+  },
+  "previousAttempt": {
+    "pos": "One source text pin failed on the combined guard; resumed guard preserved and the new guard split into its own line. Full rerun passed.",
+    "sharedBuild": "No build script exists in shared; it exports TypeScript sources. POS build passed."
+  },
+  "logs": [
+    {
+      "path": "local/install.log",
+      "sha256": "ef5fcb52d86a072a4a411506801240aa13a50913076abff6c5a5429b2059f6b6",
+      "bytes": 5662
+    },
+    {
+      "path": "local/review-findings.log",
+      "sha256": "01d44109e37a43f9fe12cf5a192571ba8598343ac336d7956228a6c7db320880",
+      "bytes": 636
+    },
+    {
+      "path": "local/pricing-tests-r3.log",
+      "sha256": "254aa8bec6fb586881cbb858385a218148c02aab1b1cf05db8013a68ee7c5be6",
+      "bytes": 626
+    },
+    {
+      "path": "local/pos-tests.log",
+      "sha256": "d6ab84289e0e9d026ff93ddf0ab3228f6356035fddd5903a27982b7c7ee22def",
+      "bytes": 501892
+    },
+    {
+      "path": "local/pos-tests-r2.log",
+      "sha256": "2b4b99aa1aaad0a932013fd7a4d0932c629afb6067c68d34061ccee7d6f1b46a",
+      "bytes": 52188
+    },
+    {
+      "path": "local/pos-typecheck-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "local/api-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "local/lint-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "local/review.log",
+      "sha256": "9ca4d1c4eb09d8e219d4a98fc6939f2380c859e357b305a3d17e1eaecfdda8bb",
+      "bytes": 636
+    },
+    {
+      "path": "local/build.log",
+      "sha256": "48da76038cf537d2d94deae7375544b4dfad98b7be1ab5bfff4c3f300fb64e80",
+      "bytes": 8216
+    }
+  ]
+}

@@ -40,6 +40,8 @@ interface StepPaymentProps {
    * carts (the party tab) leave it unset and nothing changes for them.
    */
   unpriced?: boolean;
+  /** SCRUM-807: the voucher price is not back; no amount may be collected yet. */
+  pricePending?: boolean;
   /**
    * THE SALE OWES NOTHING (L38) — a voucher took it to ฿0, or it is a hand-over
    * prize or a free item on its own. There is no tender to choose, so the
@@ -95,7 +97,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, pricePending, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   if (paymentStage) {
     selectedMethod = paymentStage.state.method;
@@ -105,13 +107,14 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
   const isQrPending = !!selectedMethod && paymentMethodKind(selectedMethod) === 'qr';
   // Only a priced ฿0 owes nothing: an unpriced cart's ฿0 stands in for a
   // missing price and keeps Confirm shut.
-  const free = Boolean(paymentStage ? total === 0 : nothingToPay) && !unpriced && total === 0;
+  const amountUnavailable = unpriced || pricePending;
+  const free = Boolean(paymentStage ? total === 0 : nothingToPay) && !amountUnavailable && total === 0;
 
   return (
     <div data-testid="payment-step" className="flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
-        <div className="text-5xl sm:text-6xl break-words font-black text-primary">{unpriced ? '—' : `฿${total}`}</div>
+        <div className="text-5xl sm:text-6xl break-words font-black text-primary">{amountUnavailable ? '—' : `฿${total}`}</div>
       </div>
 
       {free ? (
@@ -146,8 +149,8 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                     'relative min-w-0 flex flex-col items-center justify-center p-3 sm:p-6 cursor-pointer transition-all',
                     selected ? style.ring : style.hover
                   )}
-                  onClick={() => { if (paymentStage?.locked) return; paymentStage?.selectMethod(m.id); onSelectMethod(m.id); }}
-                  aria-disabled={paymentStage?.locked || busy}
+                  onClick={() => { if (paymentStage?.locked || amountUnavailable) return; paymentStage?.selectMethod(m.id); onSelectMethod(m.id); }}
+                  aria-disabled={paymentStage?.locked || busy || amountUnavailable}
                 >
                   {selected && (
                     <div className={cn('absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-foreground', style.accent)}>
@@ -172,8 +175,9 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         </>
       )}
 
+      {pricePending && <p role="status" className="mb-4 text-sm text-muted-foreground">Waiting for the voucher price...</p>}
       {notice}
-      {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
+      {paymentStage && !amountUnavailable && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
       {holdControls}
 
       <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
@@ -187,7 +191,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         <Button
           size="lg"
           className="min-w-0 sm:flex-1 min-h-16 h-auto py-3 whitespace-normal text-lg sm:text-xl font-bold"
-          disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || unpriced}
+          disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || amountUnavailable}
           onClick={paymentStage ? () => { void paymentStage.submit(); } : onComplete}
         >
           {paymentStage ? paymentSubmitLabel(paymentStage, 'Confirm Payment Received') : busy

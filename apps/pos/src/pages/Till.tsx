@@ -800,6 +800,9 @@ export default function Till() {
     promoCodes: voucherCodes,
   });
   const cart: CartQuoteState = resumed?.cart ?? liveCart;
+  // SCRUM-807: a converted drop-off line needs a fresh platform voucher price.
+  // The local estimate cannot be offered as money to take while it is pending.
+  const voucherPricePending = voucher.held !== null && cart.quote.source !== 'platform';
 
   /**
    * L38 — THIS SALE OWES NOTHING: a voucher took it to ฿0, a hand-over prize or
@@ -2982,9 +2985,10 @@ export default function Till() {
   useEffect(() => {
     // A resumed sale was rung up before the reload: the platform holds it.
     if (locked || step !== 5 || resumed) return;
+    if (voucherPricePending) return;
     void recordSaleOnPlatform(saleEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on entering the payment screen: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
-  }, [step, locked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- enter once the voucher price is ready; the callback changes on every render
+  }, [step, locked, voucherPricePending]);
 
   /** Only a finalised platform sale can issue this order's receipt and bands. */
   const completeSale = (recorded: ApiSale, settlements: readonly PaymentSettlement[]) => {
@@ -3169,7 +3173,7 @@ export default function Till() {
     scope: paymentScope,
     isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope &&
       paymentScopeRef.current.epoch === saleEpochRef.current,
-    active: step === 5 && completionRetry === null,
+    active: step === 5 && completionRetry === null && !voucherPricePending,
     paused: locked,
     totalSatang: toSatang(cart.totals.total),
     // A resumed sale: the money already taken on it is read from the platform
@@ -3720,6 +3724,7 @@ export default function Till() {
             {!completionRetry && <StepPayment
               total={total}
               unpriced={unpricedCartLines(lines).length > 0}
+              pricePending={voucherPricePending}
               nothingToPay={saleOwesNothing}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={handleSelectPaymentMethod}
