@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OneDeposit } from "./partyDeposit";
 
 /**
  * THE BEO FILLED FROM THE WHOLE CONVERSATION, MATCHED TO THE PARK'S CATALOGUE
@@ -299,6 +300,13 @@ export interface BeoAiReview {
    * on that same set menu keeps its choice when approved.
    */
   parentSelection: BeoAiSetMenuChoices | null;
+  /**
+   * SCRUM-843: the party's one deposit (SCRUM-813) as it stood when this
+   * review was read. "Approve and create" sends it back (`expectedDeposit`),
+   * so a deposit that moved while the review was open (the family paid
+   * through the chat) is kept. Absent from a server before this rule.
+   */
+  oneDeposit?: OneDeposit;
 }
 
 // --- Approve and create -----------------------------------------------------------------
@@ -406,6 +414,17 @@ export const BeoAiApproveBodySchema = z
       })
       .strict()
       .nullable(),
+    /**
+     * SCRUM-843: the party's one deposit as the review was read with
+     * (`BeoAiReview.oneDeposit`), in whole baht. A received deposit is written
+     * under the Save's rule (server/lib/depositSaveGuard.ts): one that moved
+     * since stays as stored; a page from before this rule sends none, and may
+     * not lower a deposit.
+     */
+    expectedDeposit: z
+      .object({ amountThb: z.number().int().min(0).max(100_000_000), date: z.string().regex(DAY).nullable() })
+      .strict()
+      .optional(),
     /**
      * SCRUM-827: the rest of the BEO, as the reviewer left it, written in the
      * same pass: a field left out is not written (the BEO keeps its own);

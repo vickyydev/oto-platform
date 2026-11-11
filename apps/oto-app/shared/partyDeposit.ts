@@ -238,3 +238,27 @@ export const depositWordsOf = (amountThb: number): string => (amountThb > 0 ? ba
  */
 export const depositMovedWords = (amountThb: number, screen: "BEO" | "event" = "BEO", saved = false): string =>
   `The deposit changed while this ${screen} was open (now ${depositWordsOf(amountThb)}).${saved ? " Your other changes were saved." : ""}`;
+
+// --- An approval that did not write the deposit it carried (SCRUM-843) ---------------------
+
+/**
+ * Why the AI Fill's "Approve and create" left the party's deposit as it was
+ * stored, in the words its result reads after "Not written: the deposit — ".
+ * The approval follows the Save's rule (server/lib/depositSaveGuard.ts): a
+ * deposit that moved since the review was read stays, and so does one the
+ * approval would lower below what the family paid through the chat
+ * (`paidThroughChatThb`), or lower with nobody to ask.
+ */
+export function depositNotApprovedWords(reason: DepositSaveReason, staysThb: number, paidThroughChatThb = 0): string {
+  const stays = depositWordsOf(staysThb);
+  switch (reason) {
+    case "moved":
+      return `it changed while this review was open (now ${stays})`;
+    case "unconfirmed":
+      return `it was not lowered (it stays ${stays}): this page is out of date. Reload it, then run AI Fill again`;
+    case "gateway":
+      return `${depositWordsOf(paidThroughChatThb)} of it was paid through the chat, so the approval does not lower it below that (it stays ${stays}). A paid deposit is corrected in the BEO's Billing section (Deposit Paid)`;
+    default:
+      return `it was not lowered (it stays ${stays}): the till could not be asked whether it was paid through the chat. Try again in a moment`;
+  }
+}

@@ -363,6 +363,39 @@ function laterFrom(a: BeoAiFrom | null, b: BeoAiFrom): BeoAiFrom {
 export const APPROVAL_WRITES =
   "the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit";
 
+/**
+ * SCRUM-843: the approval's answer as the review's result reads it — what it
+ * could not write. The timeline's steps on a party with no start time yet
+ * (SCRUM-827), and the deposit, kept as stored because it changed while the
+ * review was open or would have gone below what the family paid through the chat.
+ */
+export interface ApproveAnswer {
+  notWritten?: {
+    timeline?: { message: string; steps: Array<{ time: string; label: string }> };
+    deposit?: { reason?: string; message: string; amountThb?: number; date?: string | null };
+  };
+}
+
+/** The result's words after an approval: what was saved, then each thing that was not, and why. */
+export function approvalResultWords(answer: ApproveAnswer): string {
+  const missing = answer.notWritten?.timeline;
+  const kept = answer.notWritten?.deposit;
+  // A deposit that was kept is not among what was saved.
+  const saved = kept ? APPROVAL_WRITES.replace(", the team you ticked and the deposit", " and the team you ticked") : APPROVAL_WRITES;
+  const steps = missing
+    ? ` Not written: ${missing.steps.length === 1 ? "the timeline's step" : `the timeline's ${missing.steps.length} steps`} (${missing.steps.map((s) => `${s.time} ${s.label}`).join(", ")}) — ${missing.message}. Set the start time, then add them to the Timeline.`
+    : "";
+  const deposit = kept ? ` Not written: the deposit — ${kept.message}.` : "";
+  return `Saved: ${saved}.${steps}${deposit}`;
+}
+
+/** The sources whose marks the form wears after an approval: not a step's, nor the deposit's, that was not written. */
+export function writtenSourcesOf(sources: BeoAiApproveBody["sources"], answer: ApproveAnswer): BeoAiApproveBody["sources"] {
+  const noSteps = !!answer.notWritten?.timeline;
+  const noDeposit = !!answer.notWritten?.deposit;
+  return sources.filter((s) => !(noSteps && s.field.startsWith("timeline:")) && !(noDeposit && s.field === "deposit"));
+}
+
 /** A field the reviewer set: their value, marked as changed here. */
 export function edited<T>(field: Reviewed<T> | null, value: T): Reviewed<T> {
   return { value, from: field?.from ?? null, changed: true };
@@ -646,6 +679,8 @@ export function approveBodyOf(
     event,
     cake,
     deposit,
+    // SCRUM-843: the party's deposit as this review was read with, so one that moved since is kept.
+    ...(review.oneDeposit ? { expectedDeposit: { amountThb: review.oneDeposit.amountThb, date: review.oneDeposit.date } } : {}),
     details,
     sources,
   };

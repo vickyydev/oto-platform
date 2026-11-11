@@ -33,9 +33,12 @@ import { dayOf, sameDeposit, wholeBahtOf, type PartyDeposit } from "./partyDepos
  *      (`unchecked`): money is never lowered on a guess.
  *
  * Not ruled here: the Billing section's own Deposit Paid field (rule 1 only,
- * server/beo-routes.ts), a till's party edit and the platform's facts
- * (server/directory/eventWrites.ts) and the AI fill's reviewed approval
- * (server/lib/beoAiApprove.ts): each is a deliberate write of the deposit.
+ * server/beo-routes.ts) and a till's party edit and the platform's facts
+ * (server/directory/eventWrites.ts): each is a deliberate write of the deposit.
+ *
+ * SCRUM-843: the AI fill's reviewed approval (server/lib/beoAiApprove.ts) is
+ * ruled here too, rules 1 to 3: its review carries the deposit it was read
+ * with, and a received deposit it names is decided as a Save's is.
  */
 
 /** What the family paid through the chat for a party, as far as it could be read. */

@@ -44,7 +44,9 @@ import {
   type BeoCatalogue,
   type TranscriptRef,
 } from "./lib/beoCatalogueFill";
-import { approveBeoAiFill, parentSelectionOf, sectionsHeld } from "./lib/beoAiApprove";
+import { approveBeoAiFill, depositHeld, parentSelectionOf, sectionsHeld } from "./lib/beoAiApprove";
+import { oneDepositOf, type GatewayFloor } from "./lib/depositSaveGuard";
+import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DbExecutor } from "./lib/packageSnapshot";
 import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview } from "@shared/beoAiFill";
 
@@ -110,6 +112,11 @@ export interface AiRouteDeps {
   catalogue: (event: BeoFillEvent) => Promise<BeoCatalogue>;
   /** SCRUM-815: after an approval is written, the BEO's timeline is generated again, as the BEO's own Save does. */
   afterApprove: (eventId: string) => Promise<void>;
+  /**
+   * SCRUM-843: what the family paid through the chat for the event, as the
+   * platform holds it: asked before an approval may lower a received deposit.
+   */
+  gatewayFloor: (event: BeoFillEvent, requestId?: string) => Promise<GatewayFloor>;
 }
 
 const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
@@ -211,6 +218,11 @@ export const defaultAiRouteDeps: AiRouteDeps = {
     const { generateTimelineFromBeo } = await import("./beo-routes");
     await generateTimelineFromBeo(eventId);
   },
+  // An event whose kind is not known here is not guessed to be unpaid: the amount is not known.
+  gatewayFloor: async (event, requestId) =>
+    event.eventType
+      ? gatewayDepositFloor({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
+      : { known: false },
 };
 
 /** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */
@@ -554,6 +566,8 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               transcript: { lines: 1, cut: false },
               replaces: await sectionsHeld(db, event.id),
               parentSelection: await parentSelectionOf(db, event.id),
+              // SCRUM-843: the deposit this review was read with; the approval sends it back.
+              oneDeposit: oneDepositOf(await depositHeld(db, event.id)),
             }
           : null;
       res.setHeader("Cache-Control", "no-store");
@@ -658,6 +672,8 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
             transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
             parentSelection: await parentSelectionOf(db, event.id),
+            // SCRUM-843: the deposit this review was read with; the approval sends it back.
+            oneDeposit: oneDepositOf(await depositHeld(db, event.id)),
           }
         : null;
       res.setHeader("Cache-Control", "no-store");
@@ -697,6 +713,10 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
    * transaction — the event's title and text fields, the setup plan, the POS
    * box, the timeline's own lines, the team ticked — so one press is the one
    * Save, and the ticked people are checked against the park group's roster.
+   * SCRUM-843: a received deposit follows the Save's rule: one that moved since
+   * the review was read (`expectedDeposit`), or that the approval would lower
+   * below what the family paid through the chat, stays as stored; the rest is
+   * written and the answer names the deposit under `notWritten`.
    */
   app.post("/api/events/:eventId/beo/ai-fill/approve", requireAuth, requireManager, async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -710,6 +730,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         body: body.data,
         now: new Date(),
         recordActivity: (entry, executor) => deps.recordActivity(entry, executor),
+        gatewayFloor: () => deps.gatewayFloor(event, req.requestId),
       });
       if (!outcome.ok) return res.status(outcome.status).json({ message: outcome.message });
       try {
@@ -720,7 +741,10 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       }
       // SCRUM-827 review: what could not be written rides in the answer, so the review can say so.
       const notWritten = Object.keys(outcome.notWritten).length > 0 ? outcome.notWritten : undefined;
-      log().info({ eventId: event.id, written: outcome.written, notWrittenSteps: notWritten?.timeline?.steps.length ?? 0 }, "ai fill approved");
+      log().info(
+        { eventId: event.id, written: outcome.written, notWrittenSteps: notWritten?.timeline?.steps.length ?? 0, depositKept: notWritten?.deposit?.reason ?? null },
+        "ai fill approved",
+      );
       res.json({ written: outcome.written, ...(notWritten ? { notWritten } : {}) });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill approval failed");

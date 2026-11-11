@@ -18,11 +18,13 @@ import {
 } from "@shared/schema";
 import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
+import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
 import { applyPackageSnapshot, type DbExecutor } from "./packageSnapshot";
-import { writePartyDeposit } from "./partyDeposit";
+import { decideDepositSave, expectedDepositOf, lowersDeliberately, noDepositDay, type GatewayFloor } from "./depositSaveGuard";
+import { currentDeposit, writePartyDeposit, type PartyDeposit } from "./partyDeposit";
 import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
 
 /**
@@ -51,7 +53,9 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  *   - the deposit, where the chat names one: in billing, where the BEO
  *     itself reads it (Party Details' prepayment and its date: the editor,
  *     the day-of view, the view-only page and the PDF) and, received, the
- *     event's own Prepayment the till reads (SCRUM-813's one deposit);
+ *     event's own Prepayment the till reads (SCRUM-813's one deposit). A
+ *     received deposit follows the Save's rule (SCRUM-843, below); one the
+ *     chat only ASKS for is billing's deposit required, never money received;
  *   - SCRUM-827, the rest of the BEO in the same pass (`body.details`): the
  *     event's title, booking name, location, special requests, activities
  *     and decoration; the setup plan's ready-by, who and tasks; the POS box's
@@ -67,6 +71,23 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  * the chat's own prices are shown beside them in the review and never
  * written over them. Every id is checked again against the park's catalogue:
  * one it does not hold refuses the whole approval, and nothing is written.
+ *
+ * SCRUM-843 — THE DEPOSIT FOLLOWS THE SAVE'S RULE (server/lib/depositSaveGuard.ts).
+ * A review read before the family paid through the chat and approved after
+ * wrote the chat's figure over the paid deposit. Now the review carries the
+ * party's one deposit as it was read (`BeoAiReview.oneDeposit`), the approval
+ * sends it back (`expectedDeposit`), and the received deposit is read, decided
+ * (`decideDepositSave`) and written while the event's row is held FOR UPDATE,
+ * as the platform's gateway fact holds it: a deposit that moved since the
+ * review was read stays as stored; an approval that names no `expectedDeposit`
+ * (a page from before this rule) may raise a deposit and may not lower it; a
+ * deliberate lowering goes only down to what the family paid through the chat,
+ * and not at all when the platform cannot be asked. Everything else in the
+ * approval is written, and the answer says the deposit was kept
+ * (`notWritten.deposit`), as it says a timeline step with no place. An
+ * approval that names the amount the party already holds and no day (the chat
+ * gave none) names the stored deposit: its day is kept, and there is nothing
+ * to say.
  */
 
 export interface ApproveEvent {
@@ -84,6 +105,12 @@ export interface ApproveEvent {
  */
 export interface NotWritten {
   timeline?: { reason: "no_start_time"; message: string; steps: Array<{ time: string; label: string }> };
+  /**
+   * SCRUM-843: the received deposit the approval carried was not written; the
+   * deposit as it stays, and why, in the words the review's result reads after
+   * "Not written: the deposit — ".
+   */
+  deposit?: { reason: DepositSaveReason; message: string; amountThb: number; date: string | null };
 }
 
 export type ApproveOutcome =
@@ -179,8 +206,31 @@ export async function sectionsHeld(db: DbExecutor, eventId: string): Promise<str
     .select({ paid: beoEventBilling.depositPaidAmount, required: beoEventBilling.depositAmount, addOns: beoEventBilling.addOns })
     .from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
   const prepayment = Number(asCollection(asCollection(billing?.addOns).partyDetails).prepaymentReceived) || 0;
-  if ((billing?.paid ?? 0) > 0 || (billing?.required ?? 0) > 0 || prepayment > 0) held.push("deposit");
+  // SCRUM-843: and the event's own Prepayment, where a deposit paid through the chat lands on a
+  // party the BEO was never saved on (no billing row): the party's one deposit, wherever it is kept.
+  const one = (await depositHeld(db, eventId)).amountThb;
+  if ((billing?.paid ?? 0) > 0 || (billing?.required ?? 0) > 0 || prepayment > 0 || one > 0) held.push("deposit");
   return held;
+}
+
+/**
+ * SCRUM-843: the party's one deposit (SCRUM-813) as the app reads it now, in
+ * the order every reader reads it (`currentDeposit`): what a review is read
+ * with, and what an approval's deposit is decided against.
+ */
+export async function depositHeld(db: DbExecutor, eventId: string): Promise<PartyDeposit> {
+  const [billing] = await db
+    .select({
+      depositPaid: beoEventBilling.depositPaid,
+      depositPaidAmount: beoEventBilling.depositPaidAmount,
+      depositPaidAt: beoEventBilling.depositPaidAt,
+      addOns: beoEventBilling.addOns,
+    })
+    .from(beoEventBilling).where(eq(beoEventBilling.eventId, eventId));
+  const [event] = await db
+    .select({ prepaymentAmount: coreEvents.prepaymentAmount, prepaymentDate: coreEvents.prepaymentDate })
+    .from(coreEvents).where(eq(coreEvents.id, eventId));
+  return noDepositDay(currentDeposit(billing, event));
 }
 
 /** The set-menu choices recorded as received (the parent link, or an earlier approval); null while none are. */
@@ -211,6 +261,13 @@ export async function approveBeoAiFill(
     body: BeoAiApproveBody;
     now: Date;
     recordActivity: (entry: ActivityLogInput, executor: DbExecutor) => Promise<unknown>;
+    /**
+     * SCRUM-843: what the family paid through the chat for this party, as the
+     * platform holds it. Asked only when the approval deliberately lowers a
+     * received deposit, and before the event's row is held; with nobody to
+     * ask, such a lowering is not written.
+     */
+    gatewayFloor?: () => Promise<GatewayFloor>;
   },
 ): Promise<ApproveOutcome> {
   const { event, body } = input;
@@ -225,6 +282,16 @@ export async function approveBeoAiFill(
   const teamRefused = await checkTeam(db, event.tenantId, body.details?.team);
   if (teamRefused) return { ok: false, status: 400, message: teamRefused };
 
+  // SCRUM-843: the received deposit the approval names, and the deposit its review was read
+  // with. What the family paid through the chat is asked of the platform only when the approval
+  // deliberately lowers the deposit, and before the event's row is held (as the BEO's Save asks).
+  const depositSaid = body.deposit?.paid ? noDepositDay({ amountThb: body.deposit.amount, date: body.deposit.date }) : null;
+  const depositExpected = expectedDepositOf(body.expectedDeposit);
+  const depositFloor: GatewayFloor | undefined =
+    depositSaid && input.gatewayFloor && lowersDeliberately(await depositHeld(db, event.id), depositSaid, depositExpected)
+      ? await input.gatewayFloor()
+      : undefined;
+
   const food = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
   const written: Record<string, number | boolean> = {};
   const notWritten: NotWritten = {};
@@ -232,7 +299,9 @@ export async function approveBeoAiFill(
 
   await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${event.id}))`);
-    const [ev] = await tx.select().from(coreEvents).where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
+    // SCRUM-843: the event's row is held from here to the commit, as the platform's gateway fact
+    // and the BEO's Save hold it, so the deposit decided below is the deposit that is stored.
+    const [ev] = await tx.select().from(coreEvents).where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId))).for("update");
 
     // The event's own fields.
     const eventUpdates: Partial<typeof coreEvents.$inferInsert> = {};
@@ -547,18 +616,48 @@ export async function approveBeoAiFill(
     // Party Details' prepayment and its date (which the BEO's editor, badge,
     // outstanding balance, day-of view, view-only page and PDF read; its other
     // keys kept) and the event's own Prepayment (which the till and the Events
-    // page read). Asked and not yet received, it is billing's deposit required.
+    // page read). Asked and not yet received, it is billing's deposit required:
+    // an amount REQUESTED, which none of the paid deposit's three places takes.
+    //
+    // SCRUM-843: a received deposit is decided as a Save's is, against the
+    // deposit stored now (the event's row is held): one that moved since the
+    // review was read, or that this approval would lower below what the family
+    // paid through the chat, stays as stored and the answer says so.
     if (body.deposit) {
       const d = body.deposit;
-      if (d.paid) {
-        await writePartyDeposit(tx, { eventId: event.id, deposit: { amountThb: d.amount, date: d.date }, now: input.now, userId: input.userId });
+      if (depositSaid) {
+        const [billing] = await tx
+          .select({
+            depositPaid: beoEventBilling.depositPaid,
+            depositPaidAmount: beoEventBilling.depositPaidAmount,
+            depositPaidAt: beoEventBilling.depositPaidAt,
+            addOns: beoEventBilling.addOns,
+          })
+          .from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
+        const was = noDepositDay(currentDeposit(billing, ev));
+        // The stored amount with no day of the chat's own is the stored deposit, day and all.
+        const said = depositSaid.date === null && depositSaid.amountThb === was.amountThb ? was : depositSaid;
+        const decision = decideDepositSave({ was, said, expected: depositExpected, floor: depositFloor });
+        if (decision.note) {
+          const kept = decision.note;
+          notWritten.deposit = {
+            reason: kept.reason,
+            message: depositNotApprovedWords(kept.reason, kept.amountThb, depositFloor?.known ? depositFloor.amountThb : 0),
+            amountThb: kept.amountThb,
+            date: kept.date,
+          };
+        } else {
+          // The approval's own figure: new, or the one the party already holds (written to every place, as before).
+          await writePartyDeposit(tx, { eventId: event.id, deposit: said, now: input.now, userId: input.userId });
+          written.deposit = true;
+        }
       } else {
         const [billing] = await tx.select({ id: beoEventBilling.id }).from(beoEventBilling).where(eq(beoEventBilling.eventId, event.id));
         const values = { depositRequired: true, depositAmount: d.amount, updatedAt: input.now };
         if (billing) await tx.update(beoEventBilling).set(values).where(eq(beoEventBilling.id, billing.id));
         else await tx.insert(beoEventBilling).values({ eventId: event.id, ...values });
+        written.deposit = true;
       }
-      written.deposit = true;
     }
 
     await input.recordActivity(
@@ -577,7 +676,15 @@ export async function approveBeoAiFill(
           matches,
           written,
           // What could not be written, counted: never the chat's words.
-          ...(notWritten.timeline ? { notWritten: { timeline: { reason: notWritten.timeline.reason, steps: notWritten.timeline.steps.length } } } : {}),
+          ...(notWritten.timeline || notWritten.deposit
+            ? {
+                notWritten: {
+                  ...(notWritten.timeline ? { timeline: { reason: notWritten.timeline.reason, steps: notWritten.timeline.steps.length } } : {}),
+                  // SCRUM-843: that the deposit was kept, and why; never an amount.
+                  ...(notWritten.deposit ? { deposit: { reason: notWritten.deposit.reason } } : {}),
+                },
+              }
+            : {}),
         }),
       },
       tx,

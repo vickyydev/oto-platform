@@ -1107,6 +1107,22 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/deposit-save-ui.check.ts
+      # SCRUM-843: the AI Fill's "Approve and create" follows the same rule —
+      # a review read with no deposit, the gateway fact lands, the review is
+      # approved: the deposit stays in every place, the rest of the approval
+      # is written and the answer names the deposit as not written; a deposit
+      # the chat only asks for is never money received; a fresh review's
+      # higher figure is written, a page from before the rule cannot lower,
+      # a lowering only down to what the chat paid; then the review under
+      # jsdom: what it sends back and the words its result shows.
+      - name: The app's AI fill approval deposit checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/ai-approve-deposit.check.ts
+      - name: The app's AI fill approval deposit result check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/ai-approve-deposit-ui.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data
