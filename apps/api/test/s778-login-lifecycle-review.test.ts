@@ -144,4 +144,43 @@ describe('SCRUM-778/781/810 adversarial lifecycle review', () => {
     expect(rows.filter(row => row.entityId === first)).toHaveLength(2);
     expect(rows.filter(row => row.entityId === second)).toHaveLength(1);
   });
+
+  // SCRUM-852: the OTO App's transport parks an event only on a 4xx that carries
+  // this door's own error code (apps/oto-app/server/lib/platformLifecycle.ts,
+  // classifyLifecycleRefusal); a refused key (401), a missing door (404
+  // ROUTE_NOT_FOUND) and every 5xx keep retrying.
+  // These are the answers that rule reads. Changing a status or a code here
+  // changes which switch-offs wait for an administrator: change both together.
+  it('SCRUM-852 pin: the answers the app classifies, one failure audit through a long refusal, and a stale event sent again', async () => {
+    // The last administrator's switch-off: the one an earlier case left pending, or a new one when run alone.
+    const waiting = (await ctx.db.execute<{ id: string }>(sql`select e.id from otoapp.login_lifecycle_events e
+      join otoapp.users u on u.id=e.user_id where u.platform_user_id=${adminId} and e.state='pending' limit 1`)).rows[0];
+    const lastAdmin = { eventId: waiting?.id ?? (await fixture(adminId)).eventId };
+    const unknownKey = await consume(lastAdmin.eventId, randomBytes(32).toString('hex'));
+    expect([unknownKey.statusCode, unknownKey.json().error.code]).toEqual([401, 'OTOAPP_PROVISION_UNAUTHORIZED']);
+    const foreign = await consume(lastAdmin.eventId, foreignKey);
+    expect([foreign.statusCode, foreign.json().error.code]).toEqual([404, 'NOT_FOUND']);
+    // A door that is not there answers differently from an event that is not this operator's.
+    const noDoor = await ctx.app.inject({ method: 'POST', url: '/admin/apps/oto_app/lifecycle-nothing',
+      headers: { authorization: `Bearer ${key}` }, payload: { eventId: lastAdmin.eventId } });
+    expect([noDoor.statusCode, noDoor.json().error.code]).toEqual([404, 'ROUTE_NOT_FOUND']);
+    // Twenty tries of a refusal the platform keeps giving: the same answer, one audit row.
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const refusedAgain = await consume(lastAdmin.eventId);
+      expect([refusedAgain.statusCode, refusedAgain.json().error.code]).toEqual([409, 'LAST_OPERATOR_ADMIN']);
+    }
+    expect(await audits(lastAdmin.eventId, true)).toHaveLength(1);
+    expect(await audits(lastAdmin.eventId)).toHaveLength(0);
+    expect((await readEvent(lastAdmin.eventId)).state).toBe('pending');
+
+    // An event sent again after its login was switched back on (the app settles
+    // it itself; this is the door's own guard): superseded, the account untouched.
+    const stale = await fixture();
+    await ctx.db.update(otoappUsers).set({ isActive: true }).where(eq(otoappUsers.id, stale.userId));
+    expect((await readEvent(stale.eventId)).state).toBe('superseded');
+    await ctx.db.execute(sql`update otoapp.login_lifecycle_events set state='pending',settled_at=null,attempt_count=0,next_attempt_at=now() where id=${stale.eventId}`);
+    expect((await consume(stale.eventId)).json()).toMatchObject({ ok: true, state: 'superseded', replayed: false });
+    expect((await ctx.db.select().from(account).where(eq(account.id, stale.accountId)))[0]!.status).toBe('active');
+    expect(await ctx.db.select().from(roleAssignment).where(eq(roleAssignment.accountId, stale.accountId))).toHaveLength(1);
+  });
 });
