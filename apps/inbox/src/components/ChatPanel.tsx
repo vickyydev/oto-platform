@@ -34,6 +34,7 @@ import { openBlankTab, openConversationBeo } from '@/api/otoApp';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, StatusBadge } from '@/components/atoms';
 import { BookDateDialog, type BookDateValues } from '@/components/BookDateDialog';
 import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
+import { ContactNameDialog } from '@/components/ContactDialogs';
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
 import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
 import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
@@ -41,6 +42,7 @@ import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { OpenQuestionLine } from '@/components/OpenQuestionLine';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
+import { EDIT_NAME_LABEL } from '@/lib/contacts';
 import { sourceLabel } from '@/lib/inboxes';
 import { openQuestionsByMessage } from '@/lib/open-question';
 import { PARTY_REMOVED_LABEL, bookDateDraft, eventChipLabel, eventLinkOf, parseBeoFromConversation } from '@/lib/beo';
@@ -188,6 +190,8 @@ export function ChatPanel({
   const [correcting, setCorrecting] = useState<CorrectionTarget | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
+  /** SCRUM-860: the header's pencil — the name the inbox shows for this contact. */
+  const [editingName, setEditingName] = useState(false);
 
   // A refusal belongs to the conversation it was said about.
   useEffect(() => {
@@ -198,6 +202,7 @@ export function ChatPanel({
     setCorrecting(null);
     setBooking(null);
     setBookError(null);
+    setEditingName(false);
   }, [conv.id]);
 
   // SCRUM-821: the model reads the whole chat for Book Date. The read starts as
@@ -480,6 +485,18 @@ export function ChatPanel({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <div className="truncate text-[14px] font-semibold text-slate-900 dark:text-slate-100">{name}</div>
+            {/* SCRUM-860: the name staff set shows here, in the list and in the search; an erased contact has no name to edit. */}
+            {live && !conv.contact.erased && (
+              <button
+                type="button"
+                onClick={() => setEditingName(true)}
+                aria-label={EDIT_NAME_LABEL}
+                title={EDIT_NAME_LABEL}
+                className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                <PenLine className="h-3.5 w-3.5" />
+              </button>
+            )}
             <span className="text-[11px] text-slate-400">·</span>
             {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
             <span className="min-w-0 truncate text-[11px] text-slate-500 dark:text-slate-400" title={CHANNEL_LABEL[conv.channel]}>
@@ -1056,6 +1073,7 @@ export function ChatPanel({
           onFetch={fetchBookDate}
         />
       )}
+      <ContactNameDialog open={editingName} onClose={() => setEditingName(false)} row={conv} now={now} onChanged={onChanged} />
       <DetailsDialog
         open={detailsOpen}
         onClose={onCloseDetails}

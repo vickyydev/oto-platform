@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, Search, X } from 'lucide-react';
+import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, Search, UserPlus, X } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList as ListPage, ConversationRow, InboxMe } from '@/api/inbox';
 import { Avatar, CategoryBadge, ChannelDot, ChipView, EmptyState, PILL, PILL_OFF, PILL_ON, StatusBadge } from '@/components/atoms';
 import { PendingControl } from '@/components/writes';
+import { NEW_CONTACT_LABEL } from '@/lib/contacts';
 import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import { activeFilterCount, filterPills, type Filters } from '@/lib/query';
 import { TAB_ICON } from '@/components/Rail';
@@ -55,6 +56,7 @@ export function ConversationList({
   onSelect,
   onAskHandle,
   onMore,
+  onNewContact,
 }: {
   me: InboxMe;
   tab: InboxTab;
@@ -79,6 +81,8 @@ export function ConversationList({
   /** The row's hover "Mark handled" (:1610-1620): opens the confirmation. */
   onAskHandle: (id: string) => void;
   onMore: () => void;
+  /** SCRUM-860: "New contact" beside the search, for a viewer the api lets create one; absent otherwise. */
+  onNewContact?: () => void;
 }) {
   const filterCount = activeFilterCount(filters);
   const hasStrip = strip !== undefined && strip !== null;
@@ -124,6 +128,18 @@ export function ConversationList({
               className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 pl-8 pr-3 text-[13px] placeholder:text-slate-400 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
             />
           </div>
+          {onNewContact && (
+            <button
+              type="button"
+              onClick={onNewContact}
+              aria-label={NEW_CONTACT_LABEL}
+              title={NEW_CONTACT_LABEL}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-2 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">New</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onOpenFilters}

@@ -44,6 +44,12 @@ export type BookDateResult = ApiResponse<'/inbox/conversations/{id}/book-date', 
 export type BookDateProposal = ApiResponse<'/inbox/conversations/{id}/book-date-proposal', 'get'>;
 /** A conversation's event in the Events module (SCRUM-775), on its detail. */
 export type ConversationEvent = NonNullable<ConversationDetail['event']>;
+/** The contact behind a conversation, with the channel's own profile name (SCRUM-860). */
+export type ContactView = ApiResponse<'/inbox/conversations/{id}/contact', 'get'>;
+export type ContactCreateBody = ApiBody<'/inbox/contacts', 'post'>;
+export type ContactCreated = ApiResponse<'/inbox/contacts', 'post'>;
+/** A number or account a staff-made contact can be put on (`me.contactChannels`). */
+export type ContactChannel = NonNullable<InboxMe['contactChannels']>[number];
 
 const at = (id: string) => `/inbox/conversations/${encodeURIComponent(id)}`;
 
@@ -238,6 +244,23 @@ export const inboxApi = {
       undefined,
       { idempotencyKey: idemKey() },
     ),
+
+  // --- Contacts (SCRUM-860) -------------------------------------------------------------
+
+  /** The contact behind a conversation, with the channel's own profile name and whether staff set the shown name. */
+  contact: (id: string) => api.get<ContactView>(`${at(id)}/contact`),
+
+  /** Set the shown name, or clear it (null) back to the channel's profile name. */
+  renameContact: (id: string, displayName: string | null) =>
+    api.patch<ContactView>(`${at(id)}/contact`, { displayName }, { idempotencyKey: idemKey() }),
+
+  /**
+   * A new contact and its conversation on one of `me.contactChannels`.
+   * 409 CONTACT_EXISTS, with the existing contact in `details`, for a number
+   * or handle already on that channel.
+   */
+  createContact: (body: ContactCreateBody) =>
+    api.post<ContactCreated>('/inbox/contacts', body, { idempotencyKey: idemKey() }),
 
   // --- The simulator (local and staging only; `me.simulator` says when) ----------------
 

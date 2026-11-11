@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/atoms';
 import { ChatPanel, type Thread } from '@/components/ChatPanel';
 import { composerTemplate, type InsertedTemplate } from '@/components/Composer';
 import { HandleConfirm } from '@/components/confirms';
+import { NewContactDialog } from '@/components/ContactDialogs';
 import { ConversationList } from '@/components/ConversationList';
 import { Dashboard, DashboardStrip } from '@/components/Dashboard';
 import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
@@ -225,6 +226,8 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
+  /** SCRUM-860: the "New contact" dialog, offered when the api lists a channel to put one on. */
+  const [newContactOpen, setNewContactOpen] = useState(false);
   // Temporary testing aid (Tom, 2026-10-28): the simulator pinned beside the
   // inbox so a test message is one click away. Per-browser convenience only.
   const [simPane, setSimPane] = useState(() => {
@@ -546,6 +549,12 @@ export function Workspace({ me }: { me: InboxMe }) {
     setShowChatMobile(true);
   };
 
+  /** SCRUM-860: open a conversation that may not be on the list's page (a contact just made, a duplicate's thread). */
+  const openConversation = (id: string) => {
+    select(id);
+    if (!latest.current.rows.some((c) => c.id === id)) void pin(id);
+  };
+
   // The phone's back arrow: when the thread was opened from the list, it is
   // the browser's Back, so the two never disagree about where "back" is.
   const closeChat = () => {
@@ -753,6 +762,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               onSelect={select}
               onAskHandle={askHandle}
               onMore={() => void loadMore()}
+              onNewContact={me.contactChannels && me.contactChannels.length > 0 ? () => setNewContactOpen(true) : undefined}
             />
           </section>
 
@@ -804,6 +814,18 @@ export function Workspace({ me }: { me: InboxMe }) {
         onCancel={() => setConfirmHandleId(null)}
         onConfirm={() => void confirmHandle()}
       />
+      {me.contactChannels && me.contactChannels.length > 0 && (
+        <NewContactDialog
+          open={newContactOpen}
+          onClose={() => setNewContactOpen(false)}
+          channels={me.contactChannels}
+          onCreated={async (r) => {
+            await refresh();
+            if (r.visible) openConversation(r.conversationId);
+          }}
+          onOpen={openConversation}
+        />
+      )}
       {me.simulator && (
         <SimulatorDialog
           open={simulatorOpen}
