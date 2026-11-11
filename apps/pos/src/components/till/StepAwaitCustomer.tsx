@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { Smartphone, User, Loader2 } from 'lucide-react';
 
 interface StepAwaitCustomerProps {
@@ -35,7 +36,7 @@ export function StepAwaitCustomer({ phone, nickname, onBack }: StepAwaitCustomer
             <div className="min-w-0">
               <div className="text-sm text-muted-foreground">Phone</div>
               <div className="text-xl font-bold truncate">
-                {phone || <span className="text-muted-foreground/50">—</span>}
+                {formatStoredPhone(phone) || <span className="text-muted-foreground/50">—</span>}
               </div>
             </div>
           </Card>

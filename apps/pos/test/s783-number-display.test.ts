@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatStoredPhone, storedPhoneHint, composePhone } from '@/lib/phoneUtils';
 import { DEFAULT_COUNTRY } from '@/data/countries';
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
+import { StepAwaitCustomer } from '@/components/till/StepAwaitCustomer';
+import { StepIdentify } from '@/components/till/StepIdentify';
 import type { ConsentPrompt } from '@oto/shared';
 import { renderHook } from './support/hooks';
 
@@ -20,6 +22,17 @@ const words = (node: unknown): string => typeof node === 'string' || typeof node
 describe('SCRUM-783 display-only phone correction', () => {
   const local = '0898020001'; // ZZ TEST number used only by this fixture.
   const raw = '+660898020001';
+  it('staff mirrors format the entered number while keeping the empty phone placeholder', () => {
+    for (const render of [
+      (phone: string) => StepAwaitCustomer({ phone, nickname: 'ZZ TEST guardian', onBack: vi.fn() }),
+      (phone: string) => StepIdentify({ phone, nickname: 'ZZ TEST guardian', member: null }),
+    ]) {
+      expect(words(render(raw))).toContain('+66 89 802 0001');
+      expect(words(render(raw))).not.toContain(raw);
+      expect(words(render(''))).toContain('—');
+    }
+  });
+
   it('uses the stored normalization and international grouping without changing input composition', () => {
     expect(composePhone(DEFAULT_COUNTRY, local)).toBe(raw);
     expect(storedPhoneHint(raw)).toBe('+66898020001');

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Member, OtoEvent } from '@/types';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { EventPassCard } from '@/components/till/EventPassCard';
 import { Smartphone, User, Loader2, IdCard, QrCode, Ticket, BadgeCheck, Baby, Monitor } from 'lucide-react';
 
@@ -126,7 +127,7 @@ export function StepIdentify({
                 <div className="min-w-0">
                   <div className="text-sm text-muted-foreground">Phone</div>
                   <div className="text-xl font-bold truncate">
-                    {phone || <span className="text-muted-foreground/50">—</span>}
+                    {formatStoredPhone(phone) || <span className="text-muted-foreground/50">—</span>}
                   </div>
                 </div>
               </Card>
