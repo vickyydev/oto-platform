@@ -25,7 +25,8 @@ import { uuidv7 } from '../src/signing';
 import { BridgeError, type BridgeTillCaller, type StationBridge } from '../src/station-bridge';
 import type { BoxStore, CachedBundle } from '../src/store';
 import { prepareSqliteBoxStore } from '../src/store-sqlite';
-import { BOX_ID, BRANCH_ID, STATION_ID, fakeBoxCloud, openTestStore, tillBundle, type TestStore } from './_support';
+import type { BoxConfigBundle } from '../src/protocol';
+import { BOX_ID, BRANCH_ID, STATION_ID, TILL_KIDS_BAND_PRINTER, fakeBoxCloud, openTestStore, tillBundle, type TestStore } from './_support';
 
 /**
  * S2-13 ROUND 4 — CHECK-IN ON THE BOX LANE, ON THE PI'S OWN STORE.
@@ -115,9 +116,9 @@ interface CheckinBox {
 }
 
 async function openCheckinBox(
-  opts: { photosEnabled?: boolean; photoStore?: () => BlobStore; harness?: TestStore } = {},
+  opts: { photosEnabled?: boolean; photoStore?: () => BlobStore; harness?: TestStore; bundle?: BoxConfigBundle } = {},
 ): Promise<CheckinBox> {
-  const cloud = fakeBoxCloud(tillBundle());
+  const cloud = fakeBoxCloud(opts.bundle ?? tillBundle());
   const harness = opts.harness ?? openTestStore(new Date().toISOString());
   await harness.store.init(BOX_ID);
   const store = opts.photoStore?.() ?? memoryBlobStore();
@@ -700,4 +701,35 @@ test('a Pi’s card from before this round: its overlay table is widened at boot
   prepareSqliteBoxStore(db);
   assert.equal((db.prepare('select count(*) as n from box_overlay').all()[0] as { n: number }).n, 2);
   db.close();
+});
+
+/**
+ * SCRUM-861 — the band an offline "Check in now" prints goes where the
+ * platform would send it online: a dropped-off child's to the station's
+ * drop-off band printer when the bundle has one, and to the kids band printer
+ * when it has none (`bandRoleFor`). The paper is the same either way.
+ */
+test('an offline "Check in now" prints a drop-off band on the drop-off band printer when the station has one, else on the kids printer', async () => {
+  const DROPOFF_PRINTER = '018f0000-0000-7000-8000-00000000de04';
+  const withPrinter = tillBundle();
+  const station = withPrinter.stations[0]!;
+  const kids = station.devices.find((d) => d.id === TILL_KIDS_BAND_PRINTER)!;
+  station.devices = [...station.devices, { ...kids, id: DROPOFF_PRINTER, role: 'dropoff_band', label: 'dropoff_band printer', address: '10.0.0.14:9100' }];
+  const cases: Array<[BoxConfigBundle, string, string]> = [
+    [withPrinter, DROPOFF_PRINTER, TILL_KIDS_BAND_PRINTER],
+    [tillBundle(), TILL_KIDS_BAND_PRINTER, DROPOFF_PRINTER],
+  ];
+  for (const [bundle, printsOn, staysQuiet] of cases) {
+    const box = await openCheckinBox({ bundle });
+    try {
+      const { saleId, checkinId } = await registeredAndPaid(box);
+      const now = await ask(box, 'checkin.update', { event: 'check_in_now', saleId, entries: [{ checkinId }], staffName: 'Nok' });
+      assert.deepEqual(now.printJobs.map((j: { kind: string; status: string }) => [j.kind, j.status]), [['kids_wristband', 'printed']]);
+      const printing = box.agent.printing()!;
+      assert.equal(printing.printouts(printsOn).filter((p) => !p.truncated).length, 1, `one band on ${printsOn}`);
+      assert.equal(printing.printouts(staysQuiet).length, 0, `nothing on ${staysQuiet}`);
+    } finally {
+      box.close();
+    }
+  }
 });
