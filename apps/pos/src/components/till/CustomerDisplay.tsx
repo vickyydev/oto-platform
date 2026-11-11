@@ -147,6 +147,15 @@ interface CustomerDisplayProps {
    * staff". Only the ticket till sets it; every other caller keeps the stage.
    */
   nothingToPay?: boolean;
+  /**
+   * SCRUM-847 — THE VOUCHER PRICE IS NOT BACK, as the staff half's payment step
+   * says ("Amount Due —", `StepPayment`). The figure on the sale is this till's
+   * own estimate, so the payment stage asks for nothing while this holds: the
+   * same frame with "Waiting for the cashier to confirm…" and no amount. Only
+   * the ticket till's own customer half is told; a separate display is sent no
+   * sale for the wait and shows its "Please follow the staff screen".
+   */
+  pricePending?: boolean;
   payment?: PaymentDisplayState;
   /** Captured till rows, so a separate display never reads its own catalog. */
   lineBreakdowns?: Record<string, DisplayLineBreakdown>;
@@ -300,6 +309,7 @@ export function CustomerDisplay({
   totals,
   voucherPrize,
   nothingToPay,
+  pricePending = false,
   payment,
   lineBreakdowns,
   showGrantQr = true,
@@ -766,6 +776,26 @@ export function CustomerDisplay({
      * here because this is where the figure is printed and nothing at this
      * stage checks it — not because a way through is known.
      */
+    if (pricePending) {
+      // The price is not back (SCRUM-847): the payment frame, and no figure
+      // and no request for money until the platform has said what is owed.
+      return (
+        <Shell customerName={displayName}>
+          <div
+            className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500"
+            data-testid="customer-price-pending"
+          >
+            <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8">
+              <Wallet className="w-12 h-12" />
+            </div>
+            <div className="flex items-center gap-3 text-foreground/70 text-2xl">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              {t('common.waitingForStaff')}
+            </div>
+          </div>
+        </Shell>
+      );
+    }
     const unpriced = lineBreakdowns ? sale.lines.filter(line => !lineBreakdowns[line.id]?.priced) : unpricedCartLines(sale.lines);
     if (nothingToPay && unpriced.length === 0 && sale.total === 0) {
       // Nothing to pay (L38): the prize by its name, in Thai where it has one,

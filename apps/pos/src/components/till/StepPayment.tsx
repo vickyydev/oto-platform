@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { getEnabledPaymentMethods, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import type { PaymentMethodKind } from '@/types';
 import type { PaymentStageController } from '@/lib/usePaymentStage';
+import { voucherPriceUnavailableLine } from '@/lib/tillVoucher';
 import { PaymentTenderPanel, paymentSubmitLabel } from './PaymentTenderPanel';
 
 interface StepPaymentProps {
@@ -42,6 +43,17 @@ interface StepPaymentProps {
   unpriced?: boolean;
   /** SCRUM-807: the voucher price is not back; no amount may be collected yet. */
   pricePending?: boolean;
+  /**
+   * SCRUM-847 — WHY THE VOUCHER PRICE IS NOT COMING, when nothing is on its
+   * way: the platform's own refusal, what it said when it failed, or "Vouchers
+   * can only be redeemed online" when nothing answered (`voucherUnpricedReason`,
+   * the sentence the voucher's card carries). Null or unset while the platform
+   * is still being asked, and the line then says the step is waiting.
+   *
+   * The price is asked again when the order changes, never on a timer and not
+   * by coming back to this step, so the line names the two ways out.
+   */
+  priceUnavailable?: string | null;
   /**
    * THE SALE OWES NOTHING (L38) — a voucher took it to ฿0, or it is a hand-over
    * prize or a free item on its own. There is no tender to choose, so the
@@ -97,7 +109,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, pricePending, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, pricePending, priceUnavailable, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   if (paymentStage) {
     selectedMethod = paymentStage.state.method;
@@ -175,7 +187,9 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         </>
       )}
 
-      {pricePending && <p role="status" className="mb-4 text-sm text-muted-foreground">Waiting for the voucher price...</p>}
+      {pricePending && (priceUnavailable
+        ? <div role="alert" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" data-testid="voucher-price-unavailable">{voucherPriceUnavailableLine(priceUnavailable)}</div>
+        : <p role="status" className="mb-4 text-sm text-muted-foreground">Waiting for the voucher price...</p>)}
       {notice}
       {paymentStage && !amountUnavailable && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
       {holdControls}

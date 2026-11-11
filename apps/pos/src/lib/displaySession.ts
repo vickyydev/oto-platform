@@ -51,6 +51,13 @@ export interface TicketDisplayState {
   payment?: DisplayPayment;
   voucherPrize?: { nameEn: string; nameTh: string | null } | null;
   nothingToPay?: boolean;
+  /**
+   * SCRUM-847 — the voucher on this sale has no platform price yet, so the
+   * figure this till holds is its own estimate and not what the family owes.
+   * While it holds at the payment stage nothing of the sale is published: the
+   * display shows its own "Please follow the staff screen" until the price is in.
+   */
+  pricePending?: boolean;
   childReview?: Omit<ChildReviewPrompt, 'kind' | 'requestId'>;
   reviewRevision?: number;
   consent?: Omit<ConsentPrompt, 'kind' | 'requestId'>;
@@ -74,9 +81,24 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
   const consent = state.step === 7 && state.stage === 'input' && state.online === true && state.consent
     ? ConsentPromptSchema.safeParse({ ...state.consent, kind: 'consent', requestId: requestId || 'pending' }) : null;
   const allowed = (state.step !== 7 || consent?.success === true) && (state.step !== 8 || childReview?.success === true);
-  const supported = allowed && (earlyStages.includes(state.stage)
+  /**
+   * SCRUM-847 — THE PAYMENT SCREEN ASKS FOR NO MONEY THE PLATFORM HAS NOT
+   * PRICED. While the voucher price is pending the staff step shows a dash for
+   * the amount (SCRUM-807); the family's screen was still sent this till's own
+   * estimate and read "Please pay ฿1315" for a sale that came to ฿0. So for
+   * that wait the sale, its totals and the payment are all left out — no
+   * figure leaves the till — and the cart goes as the tier-only shape marked
+   * unsupported, which every display already answers with its own waiting
+   * screen ("Please follow the staff screen"). The box takes that shape at
+   * this stage only when it is marked unsupported.
+   *
+   * Only the payment stage is held: Back leaves it, and the price arriving
+   * clears `pricePending`; either way the next presentation is the full one.
+   */
+  const awaitingPrice = state.pricePending === true && state.stage === 'payment';
+  const supported = !awaitingPrice && allowed && (earlyStages.includes(state.stage)
     || state.online === true && !!state.sale && !!state.totals && (state.stage !== 'payment' || !!state.payment));
-  const sale = state.sale;
+  const sale = awaitingPrice ? undefined : state.sale;
   const cart: DisplayCart | { supported: boolean; sale: { tier: string } } = sale ? {
     supported, nickname: state.nickname,
     sale: {
@@ -112,7 +134,7 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
     },
     voucherPrize: state.voucherPrize ?? null, nothingToPay: state.nothingToPay ?? false,
   } : { supported, sale: { tier: state.tier } };
-  const totals = state.totals ? {
+  const totals = state.totals && !awaitingPrice ? {
     manualAmounts: Object.fromEntries(Object.entries(state.totals.manualAmounts).map(([key, amount]) => [key, roundMoney(amount)])),
     discountAmount: roundMoney(state.totals.discountAmount), total: roundMoney(state.totals.total),
     taxBreakdown: { serviceChargeTotal: roundMoney(state.totals.taxBreakdown.serviceChargeTotal),
@@ -128,7 +150,7 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
     cart,
     member: state.member ? { id: state.member.id, nickname: state.member.nickname, tier: state.tier } : null,
     totals,
-    payment: state.payment ? {
+    payment: state.payment && !awaitingPrice ? {
       saleId: state.payment.saleId, amountSatang: state.payment.amountSatang,
       qrPayload: state.payment.qrPayload, qrImageUrl: state.payment.qrImageUrl, expiresAt: state.payment.expiresAt,
       status: state.payment.status, offline: state.payment.offline, online: state.payment.online,
@@ -503,11 +525,24 @@ export type StationDisplayHandoff = (state: StationDisplayState) => () => void;
 const clearedHandoff: StationDisplayState = { key: 'tender:finished', supported: false,
   presentation: () => ({ stage: 'welcome', step: null, cart: null, member: null, totals: null, payment: null, prompt: null }) };
 
+/**
+ * Whether a separate display has this moment of the sale covered, so the till
+ * need not draw the customer half itself (`inlineDisplay`, `pages/Till.tsx`).
+ *
+ * SCRUM-847 — the wait for a voucher price is covered: the display's own
+ * waiting screen is what the family is meant to see for it, so the till's
+ * layout does not jump to the split view and back for the length of a quote.
+ * What is published for that wait is still marked unsupported.
+ */
+export function ticketDisplayCovers(state: TicketDisplayState): boolean {
+  return ticketDisplayPresentation(state.pricePending ? { ...state, pricePending: false } : state, '').cart.supported;
+}
+
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
   const refreshingInput = state.quoteRefreshing === true && (state.step === 7 || state.step === 8);
   return useStationDisplay(stationId, {
     key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}:${state.answerRevision ?? 0}`,
-    supported: ticketDisplayPresentation(state, '').cart.supported,
+    supported: ticketDisplayCovers(state),
     presentation: requestId => ticketDisplayPresentation(state, requestId),
   }, active, onAnswer, refreshingInput);
 }

@@ -3538,6 +3538,7 @@ export default function Till() {
     online: displayOnline,
     quoteRefreshing: reviewOnline && cart.pending,
     payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
+    pricePending: voucherPricePending,
     childReview, reviewRevision, consent, consentRevision: `${consentSignature}:${consentCandidate.completed}:${consentStaffOnly}`,
     answerRevision: displayAnswerRevision,
   }, async answer => {
@@ -3725,6 +3726,7 @@ export default function Till() {
               total={total}
               unpriced={unpricedCartLines(lines).length > 0}
               pricePending={voucherPricePending}
+              priceUnavailable={voucherUnpriced}
               nothingToPay={saleOwesNothing}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={handleSelectPaymentMethod}
@@ -4081,6 +4083,7 @@ export default function Till() {
               totals={saleResult ? undefined : cart.totals}
               voucherPrize={voucher.held?.view.prize ?? null}
               nothingToPay={saleOwesNothing}
+              pricePending={voucherPricePending}
               chooseLanguage={customerLanguage.open}
               onLanguageChosen={customerLanguage.choose}
             />

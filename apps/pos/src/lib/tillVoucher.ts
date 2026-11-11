@@ -194,6 +194,21 @@ export function voucherUnpricedReason(args: {
   return quote.reason ?? null;
 }
 
+/**
+ * SCRUM-847 — WHAT THE PAYMENT STEP SAYS WHEN THE VOUCHER PRICE WILL NOT ARRIVE
+ * BY WAITING: that it could not be fetched, why, and the two buttons that are
+ * still there. The reason is `voucherUnpricedReason`'s sentence — the
+ * platform's own words, or the till's "online only" — taken with or without
+ * its full stop.
+ *
+ * It says "change the order" and not "try again": the platform is asked again
+ * when the cart changes (a line edited, the voucher taken off and scanned
+ * again), never on a timer and not by leaving the payment step and returning.
+ */
+export function voucherPriceUnavailableLine(reason: string): string {
+  return `The voucher price could not be fetched: ${reason.trim().replace(/[.\s]+$/, '')}. Go Back to change the order, or Cancel the sale.`;
+}
+
 /** A voucher held for this cart. */
 export interface HeldVoucher {
   /** The platform's answer to the hold: what it is, where and when it was printed. */
