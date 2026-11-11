@@ -735,7 +735,26 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { target, checklistTemplateId, checklistTemplateItemId, width, height, durationSeconds } = req.body;
+    // SCRUM-748: validate multipart targets before writing a stored object.
+    const parsed = presignRequestSchema.safeParse({
+      ...req.body,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      pendingItemIndex: req.body.pendingItemIndex === undefined ? undefined
+        : typeof req.body.pendingItemIndex === "string" && /^\d+$/.test(req.body.pendingItemIndex)
+          ? Number(req.body.pendingItemIndex) : NaN,
+    });
+    if (!parsed.success) return res.status(400).json({ error: "Invalid upload target" });
+    const { target, checklistTemplateId, checklistTemplateItemId, pendingChecklistId, pendingItemIndex } = parsed.data;
+    const { width, height, durationSeconds } = req.body;
+    const isPending = !!pendingChecklistId;
+    if (isPending && (checklistTemplateId || checklistTemplateItemId)) {
+      return res.status(400).json({ error: "Pending and saved targets cannot be combined" });
+    }
+    if (isPending && target === "item" && pendingItemIndex === undefined) {
+      return res.status(400).json({ error: "pendingItemIndex required for pending item target" });
+    }
 
     const mimeType = file.mimetype;
     const size = file.size;
@@ -762,10 +781,10 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
       });
     }
 
-    if (target === "checklist" && !checklistTemplateId) {
+    if (!isPending && target === "checklist" && !checklistTemplateId) {
       return res.status(400).json({ error: "checklistTemplateId required for checklist target" });
     }
-    if (target === "item" && !checklistTemplateItemId) {
+    if (!isPending && target === "item" && !checklistTemplateItemId) {
       return res.status(400).json({ error: "checklistTemplateItemId required for item target" });
     }
 
@@ -790,7 +809,10 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
     const uuid = randomUUID();
     
     let s3Key: string;
-    if (target === "checklist") {
+    if (isPending) {
+      const destination = target === "checklist" ? "header" : `items/pending-item-${pendingItemIndex}`;
+      s3Key = `checklists/pending-${pendingChecklistId}/${destination}/${uuid}.${fileExt}`;
+    } else if (target === "checklist") {
       s3Key = `checklists/${checklistTemplateId}/header/${uuid}.${fileExt}`;
     } else {
       const item = await db.select().from(checklistTemplateItems).where(eq(checklistTemplateItems.id, checklistTemplateItemId!)).limit(1);
@@ -819,6 +841,8 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
         tenantId,
         checklistTemplateId: target === "checklist" ? checklistTemplateId : null,
         checklistTemplateItemId: target === "item" ? checklistTemplateItemId : null,
+        pendingChecklistId: pendingChecklistId ?? null,
+        pendingItemIndex: isPending && target === "item" ? pendingItemIndex : null,
         type,
         s3Key,
         mimeType,

@@ -1,0 +1,22 @@
+{
+  "source": "1c12a343427ef0b20056cecc5a9d875f5eb8bd0b",
+  "original": {
+    "passed": false,
+    "filesPassed": 483,
+    "filesFailed": 1,
+    "filesSkipped": 8,
+    "testsPassed": 6824,
+    "testsSkipped": 401,
+    "todo": 4,
+    "cause": "s494-checkin-sync suite teardown: Windows EBUSY removing owned temporary database directory",
+    "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/api-full-tests.log",
+    "sha256": "d05e2ff3c94316ba51e40adf6aea75fd587166124147cb0bb516d78235bfa5c6"
+  },
+  "wholeFileRecheck": {
+    "passed": true,
+    "tests": 2,
+    "log": "C:/oto-lanes/s819-s494-teardown-recheck.log",
+    "sha256": "9a9869eda9527b115be2bbfc62369986c096f584da6f250509e370ead852ca65"
+  },
+  "landedSourceCI": "43007759803 success remains independent"
+}

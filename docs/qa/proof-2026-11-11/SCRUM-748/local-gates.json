@@ -1,0 +1,92 @@
+{
+  "recordedAt": "2026-11-11T13:04:29.408Z",
+  "queue": {
+    "beforePassed": 3,
+    "afterPassed": 8,
+    "total": 8
+  },
+  "routes": {
+    "passed": 45,
+    "firstAttempt": "Existing recurring-date assertion failed with Bangkok runner; owned database removed. UTC runner passed entire file."
+  },
+  "media": 55,
+  "editor": 17,
+  "apiPins": 73,
+  "appBuild": true,
+  "apiTypes": {
+    "bytes": 0,
+    "readWhole": true
+  },
+  "contracts": true,
+  "appTypes": {
+    "errors": 418,
+    "baseline": 418,
+    "files": 54,
+    "lines": 661,
+    "readWhole": true,
+    "method": "All 661 prior Unit7 lines read; current lines 1-160 read again, exact line comparison found only lines397/627 changed due to worktree paths and truncation, both read whole. Other659 lines identical."
+  },
+  "eslint": "Invoked on all four touched app files; root config ignores apps/oto-app, four ignored warnings; no platform source touched.",
+  "logs": {
+    "queue-before": {
+      "path": "C:/oto-lanes/s748-queue-before.log",
+      "sha256": "8da86276aa96990e56dbca705d0c19d0fa07b611b695217f8608dd673ec5d2dd",
+      "bytes": 1744
+    },
+    "queue-after": {
+      "path": "C:/oto-lanes/s748-queue-after.log",
+      "sha256": "7f7b797955bd1a4cfe62f1f93fdcd62716e3ae3d997fc1df9a9538496fef475b",
+      "bytes": 1168
+    },
+    "routes": {
+      "path": "C:/oto-lanes/s748-routes.log",
+      "sha256": "4b32283411b3a1e64f4d1baff6ba1da22bdace10310de6ee56ffb3d80f548237",
+      "bytes": 19738
+    },
+    "routes-utc": {
+      "path": "C:/oto-lanes/s748-routes-utc.log",
+      "sha256": "384f2855da31e703ac2017befdf15301b59c3037ab7d94a9524f8bc7026d5239",
+      "bytes": 21538
+    },
+    "media": {
+      "path": "C:/oto-lanes/s748-media.log",
+      "sha256": "7447aa8e8281d744ef95b36f20c971806ec38b9df4cff76da7bf63186e54935b",
+      "bytes": 11270
+    },
+    "editor": {
+      "path": "C:/oto-lanes/s748-editor.log",
+      "sha256": "9f0ac515e37571d5ee613b4b5c89949c197d086ab142fa1c067d1cbc3036e074",
+      "bytes": 146280
+    },
+    "app-typecheck": {
+      "path": "C:/oto-lanes/s748-app-typecheck.log",
+      "sha256": "d9e22e1b7e26711df08ffb5b312d001998e11f428316c1b4d158e5d3d20de609",
+      "bytes": 270020
+    },
+    "app-build": {
+      "path": "C:/oto-lanes/s748-app-build.log",
+      "sha256": "24cf024e7461b23a01e032e16a04207d3c065374b59d9ff361c3015dfd6a1ca7",
+      "bytes": 65584
+    },
+    "api-pins": {
+      "path": "C:/oto-lanes/s748-api-pins.log",
+      "sha256": "79a9d44bff0697dbdfe99e1a610c3d440e4bdc740d63be5579e1f63a3f29239e",
+      "bytes": 77932
+    },
+    "api-typecheck": {
+      "path": "C:/oto-lanes/s748-api-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "contracts": {
+      "path": "C:/oto-lanes/s748-contracts.log",
+      "sha256": "7e74a0cf588443ae2bd62a501e118f99a7ba8fe64fe7d6360a4aa85fd52d4611",
+      "bytes": 2010
+    },
+    "eslint": {
+      "path": "C:/oto-lanes/s748-eslint.log",
+      "sha256": "a6ffffb28c618d9aaf98a48a366ac6337052a39c41720bc90be5e0fa899dd632",
+      "bytes": 2194
+    }
+  }
+}
