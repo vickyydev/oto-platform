@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AiDecision } from '../src/decision';
 import { applyGates } from '../src/gate';
-import { ASK_FIRST_IGNORED_INTENTS } from '../src/intents';
+import { ASK_FIRST_IGNORED_INTENTS, type AiAskedSlot } from '../src/intents';
 import {
   OPERATOR_RULES_HEADING,
   OPERATOR_RULES_LEAD,
+  ASK_FIRST_ALREADY_SAID,
   askFirstOf,
+  askFirstRead,
   renderOperatorRules,
   ruleSafetyFailure,
   type AskFirstInput,
@@ -207,5 +209,106 @@ describe('the teach curator is told what the playbook does today (F5, F7)', () =
     expect(TEACH_PERSONA).toMatch(/Always write the question in English, Thai and Russian/);
     expect(TEACH_PERSONA).toContain('archive_draft');
     expect(system).toMatch(/An ask-first question is never put before: .*drop_off_care.*birthday_party/);
+  });
+});
+
+/**
+ * SCRUM-842 (staging, 11 Nov 2026): an approved ask-first rule on
+ * drop_off_service put "How old is your child?" after "do you have drop-off
+ * for a six year old?". A rule never asks what the family already said.
+ */
+describe('askFirstRead: a rule never asks what the family already said (SCRUM-842)', () => {
+  const AGE_Q = { en: 'Happy to help! How old is your child?', th: 'ยินดีค่ะ น้องอายุกี่ขวบคะ', ru: 'С радостью помогу! Сколько лет ребёнку?' };
+  const AGE: OperatorRuleInput = {
+    id: '01a18895-0000-7000-8000-0000000000c1',
+    intent: 'drop_off_service',
+    instruction: 'Before the drop-off details, find out how old the child is.',
+    askFirst: { condition: 'always', question: AGE_Q },
+  };
+  const DAY: OperatorRuleInput = {
+    id: '01a18895-0000-7000-8000-0000000000c2',
+    intent: 'drop_off_service',
+    instruction: 'Find out which day they plan to come.',
+    askFirst: { condition: 'always', question: { en: 'Which day would you like to come?' } },
+  };
+  const DROP: Partial<AiDecision> = { intent: 'drop_off_service', bubbles: ['Yes, we do 😊'] };
+  const read = (rules: readonly OperatorRuleInput[], over: Partial<AiDecision>, extra: Partial<AskFirstInput> = {}) => {
+    const d = decision(over);
+    return askFirstRead({
+      rules,
+      verdict: {
+        action: 'answer',
+        reason: 'OK',
+        intent: d.intent,
+        intents: [d.intent],
+        language: d.language === 'th' || d.language === 'ru' ? d.language : 'en',
+        bubbles: d.bubbles,
+        groundingKeys: [],
+        sendBrochure: false,
+        askBranch: false,
+        branchNamed: null,
+        thenHandover: null,
+        mayAutoHandle: true,
+        languageOffer: null,
+      },
+      decision: d,
+      threadHasBranch: true,
+      branchAsked: false,
+      askedFirst: false,
+      silentIntents: null,
+      ...extra,
+    });
+  };
+  const KNOWN_AGE = { known: new Set<AiAskedSlot>(['child_age']) };
+
+  it('the age is known: the question is not asked, the rule is listed as satisfied, in each language', () => {
+    for (const language of ['en', 'th', 'ru'] as const) {
+      const out = read([AGE], { ...DROP, language }, KNOWN_AGE);
+      expect(out.fired, language).toBeNull();
+      expect(out.satisfied, language).toEqual([{ ruleId: AGE.id, reason: ASK_FIRST_ALREADY_SAID, slots: ['child_age'] }]);
+    }
+  });
+
+  it('nothing known: the rule asks exactly as before, and nothing is listed', () => {
+    for (const extra of [{}, { known: new Set<AiAskedSlot>() }, { known: new Set<AiAskedSlot>(['park', 'date']) }]) {
+      const out = read([AGE], DROP, extra);
+      expect(out.fired).toMatchObject({ ruleId: AGE.id, verdict: { bubbles: [AGE_Q.en], mayAutoHandle: false } });
+      expect(out.satisfied).toEqual([]);
+    }
+    expect(read([AGE], { ...DROP, language: 'ru' }).fired?.verdict.bubbles).toEqual([AGE_Q.ru]);
+  });
+
+  it('a rule asking something not yet known still asks, after the satisfied one', () => {
+    const out = read([AGE, DAY], DROP, KNOWN_AGE);
+    expect(out.fired).toMatchObject({ ruleId: DAY.id, verdict: { bubbles: ['Which day would you like to come?'] } });
+    expect(out.satisfied).toEqual([{ ruleId: AGE.id, reason: ASK_FIRST_ALREADY_SAID, slots: ['child_age'] }]);
+  });
+
+  it('a question that asks more than what is known, or that the reader cannot name, is asked whole', () => {
+    const both: OperatorRuleInput = { ...AGE, askFirst: { condition: 'always', question: { en: 'How old is your child, and which day would you like to come?' } } };
+    expect(read([both], DROP, KNOWN_AGE).fired?.ruleId).toBe(AGE.id);
+    expect(read([both], DROP, { known: new Set<AiAskedSlot>(['child_age', 'date']) })).toMatchObject({ fired: null, satisfied: [{ slots: ['child_age', 'date'] }] });
+    const free: OperatorRuleInput = { ...AGE, askFirst: { condition: 'always', question: { en: 'Has your child stayed with us before?' } } };
+    expect(read([free], DROP, KNOWN_AGE)).toMatchObject({ fired: { ruleId: AGE.id }, satisfied: [] });
+    // Another child's age was never said.
+    const sibling: OperatorRuleInput = { ...AGE, askFirst: { condition: 'always', question: { en: 'How old is the other child?' } } };
+    expect(read([sibling], DROP, KNOWN_AGE)).toMatchObject({ fired: { ruleId: AGE.id }, satisfied: [] });
+  });
+
+  it('the park rule is satisfied by a park the family already gave in answer', () => {
+    const park: OperatorRuleInput = { ...ANY, askFirst: { condition: 'always', question: Q } };
+    expect(read([park], DROP, { threadHasBranch: false, known: new Set<AiAskedSlot>(['park']) })).toMatchObject({ fired: null, satisfied: [{ ruleId: ANY.id, slots: ['park'] }] });
+    expect(read([park], DROP, { threadHasBranch: false, ...KNOWN_AGE }).fired?.ruleId).toBe(ANY.id);
+  });
+
+  it("SCRUM-696's refusals come first: nothing is listed where a question is never put", () => {
+    // Already asked this episode, a complaint, the birthday flow, a silenced intent.
+    expect(read([AGE], DROP, { ...KNOWN_AGE, askedFirst: true })).toEqual({ fired: null, satisfied: [] });
+    const any: OperatorRuleInput = { ...AGE, intent: 'any' };
+    expect(read([any], { intent: 'complaint_onsite', bubbles: [] }, KNOWN_AGE)).toEqual({ fired: null, satisfied: [] });
+    expect(read([any], { intent: 'birthday_party', bubbles: ['🎉'] }, KNOWN_AGE)).toEqual({ fired: null, satisfied: [] });
+    expect(read([AGE], DROP, { ...KNOWN_AGE, silentIntents: new Set(['drop_off_service']) })).toEqual({ fired: null, satisfied: [] });
+    // askFirstOf is the same read.
+    expect(askFirstOf({ rules: [AGE], verdict: applyGates({ decision: decision(DROP), grounding: new Map(), episode: episode() }), decision: decision(DROP), threadHasBranch: true, branchAsked: false, askedFirst: false, silentIntents: null, ...KNOWN_AGE })).toBeNull();
   });
 });

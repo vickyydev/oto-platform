@@ -21,7 +21,8 @@
 import { AI_REPLY_LANGUAGES, type AiDecision } from './decision';
 import { holdingFailure, type GateVerdict } from './gate';
 import { linksIn, PROMISE_WORD_RULES, statesNumber, traceabilityGuard } from './guards';
-import { AI_INTENTS, ASK_FIRST_IGNORED_INTENTS, type AiIntent } from './intents';
+import { AI_INTENTS, ASK_FIRST_IGNORED_INTENTS, type AiAskedSlot, type AiIntent } from './intents';
+import { asksAnotherChildsAge, slotsAskedIn } from './slots';
 
 export const RULE_INTENT_ANY = 'any' as const;
 export type RuleIntent = AiIntent | typeof RULE_INTENT_ANY;
@@ -353,11 +354,49 @@ export interface AskFirstInput {
   askedFirst: boolean;
   /** The number's silence policy (`channel_account.silence_policy`), or null. */
   silentIntents: ReadonlySet<string> | null;
+  /**
+   * SCRUM-842: the slots the family already gave this episode — said unasked
+   * in their own lines (the child's age) or read as the answer to a question
+   * of the assistant's. A rule whose question asks only for these is
+   * satisfied, not asked. Absent: nothing is known, every rule asks as before.
+   */
+  known?: ReadonlySet<AiAskedSlot>;
 }
 
 export interface AskFirstFired {
   ruleId: string;
   verdict: Extract<GateVerdict, { action: 'answer' }>;
+}
+
+/** Why a rule that applied did not put its question (SCRUM-842): the family had already said what it asks. */
+export const ASK_FIRST_ALREADY_SAID = 'already_said' as const;
+
+/** A rule whose question was not asked because its answer is already known: the rule, why, and the slots (never the answer). */
+export interface AskFirstSatisfied {
+  ruleId: string;
+  reason: typeof ASK_FIRST_ALREADY_SAID;
+  slots: AiAskedSlot[];
+}
+
+/** What the turn's ask-first rules came to: the question that goes (or none), and the rules already satisfied on the way. */
+export interface AskFirstRead {
+  fired: AskFirstFired | null;
+  satisfied: AskFirstSatisfied[];
+}
+
+/**
+ * SCRUM-842: the slots a rule's question asks, read from its own words in the
+ * three languages (a rule stores none): `slotsAskedIn`. A question that is
+ * ONLY about slots the family already gave is satisfied — never one that
+ * asks anything else too, anything the reader cannot name, or another
+ * child's age ("And how old is her brother?").
+ */
+function alreadySaid(question: string, known: ReadonlySet<AiAskedSlot> | undefined): AiAskedSlot[] | null {
+  if (!known || known.size === 0) return null;
+  const asks = slotsAskedIn([question]);
+  if (asks.length === 0 || !asks.every((s) => known.has(s))) return null;
+  if (asksAnotherChildsAge([question])) return null;
+  return asks;
 }
 
 /**
@@ -378,15 +417,31 @@ export interface AskFirstFired {
  * thread still takes it.
  */
 export function askFirstOf(input: AskFirstInput): AskFirstFired | null {
-  if (input.askedFirst) return null;
+  return askFirstRead(input).fired;
+}
+
+/**
+ * `askFirstOf`, with the rules it found already satisfied (SCRUM-842, staging
+ * 11 Nov 2026: a rule's "How old is your child?" went out after "drop-off for
+ * a six year old"). A rule that would have asked — every condition above
+ * holds for it — but whose question asks ONLY for what the family already
+ * gave this episode (`known`) is not asked: it is listed as satisfied
+ * (`already_said`) and the next rule is tried; with none left the gate's
+ * verdict stands and the model's own answer goes. A satisfied rule asked
+ * nothing, so it does not spend the episode's one ask-first question.
+ */
+export function askFirstRead(input: AskFirstInput): AskFirstRead {
+  const satisfied: AskFirstSatisfied[] = [];
+  const none: AskFirstRead = { fired: null, satisfied };
+  if (input.askedFirst) return none;
   const v = input.verdict;
-  if (v.action === 'silent') return null;
-  if (v.action === 'handover' && (v.reason === 'CAP_EPISODE' || v.reason === 'IDENTITY_SECOND_ASK')) return null;
+  if (v.action === 'silent') return none;
+  if (v.action === 'handover' && (v.reason === 'CAP_EPISODE' || v.reason === 'IDENTITY_SECOND_ASK')) return none;
   const parts = [v.intent, ...v.intents];
-  if (parts.some((i) => ASK_FIRST_IGNORED_INTENTS.includes(i))) return null;
+  if (parts.some((i) => ASK_FIRST_IGNORED_INTENTS.includes(i))) return none;
   const silentIntents = input.silentIntents;
   // The number's silence policy is never overridden.
-  if (silentIntents && parts.some((i) => silentIntents.has(i))) return null;
+  if (silentIntents && parts.some((i) => silentIntents.has(i))) return none;
 
   const withQuestion = input.rules.filter(
     (r): r is OperatorRuleInput & { askFirst: RuleAskFirst } => r.askFirst !== null,
@@ -408,24 +463,33 @@ export function askFirstOf(input: AskFirstInput): AskFirstFired | null {
     const question = r.askFirst.question[v.language];
     if (question === undefined) continue;
     if (holdingFailure([question], 1, english) !== null) continue;
+    // SCRUM-842: the family already said what this question asks: the rule is satisfied, never asked.
+    const said = alreadySaid(question, input.known);
+    if (said !== null) {
+      satisfied.push({ ruleId: r.id, reason: ASK_FIRST_ALREADY_SAID, slots: said });
+      continue;
+    }
     return {
-      ruleId: r.id,
-      verdict: {
-        action: 'answer',
-        reason: 'OK',
-        intent: v.intent,
-        intents: v.intents,
-        language: v.language,
-        bubbles: [question],
-        groundingKeys: [],
-        sendBrochure: false,
-        askBranch: r.askFirst.condition === 'branch_unknown',
-        branchNamed: input.decision.branchNamed,
-        thenHandover: null,
-        mayAutoHandle: false,
-        languageOffer: null,
+      satisfied,
+      fired: {
+        ruleId: r.id,
+        verdict: {
+          action: 'answer',
+          reason: 'OK',
+          intent: v.intent,
+          intents: v.intents,
+          language: v.language,
+          bubbles: [question],
+          groundingKeys: [],
+          sendBrochure: false,
+          askBranch: r.askFirst.condition === 'branch_unknown',
+          branchNamed: input.decision.branchNamed,
+          thenHandover: null,
+          mayAutoHandle: false,
+          languageOffer: null,
+        },
       },
     };
   }
-  return null;
+  return none;
 }

@@ -8,7 +8,8 @@ import {
   REVIEW_VERSION,
   applyGates,
   applyReview,
-  askFirstOf,
+  askFirstRead,
+  type AskFirstSatisfied,
   askedSlotsOf,
   intentPartsOf,
   isMixedOrigin,
@@ -413,6 +414,17 @@ function parkResolutionOf(
 }
 
 /**
+ * SCRUM-842: the slots the family already gave this episode, as an ask-first
+ * rule reads them: what they said unasked in their own lines (`memory.said`,
+ * the child's age) and every question of ours they answered.
+ */
+function knownSlotsOf(memory: OpenQuestionMemory): Set<AiAskedSlot> {
+  const known = new Set<AiAskedSlot>(Object.keys(memory.said ?? {}) as AiAskedSlot[]);
+  for (const q of memory.questions) if (q.state === 'answered') known.add(q.slot);
+  return known;
+}
+
+/**
  * The holds under which a PERSON has the thread (`aiEligibility`): a hand-over
  * the assistant made, or a person who spoke or acted. The assistant stands
  * back, and its questions are still read against the customer's replies
@@ -629,6 +641,8 @@ interface TurnResult {
   turnReason?: string;
   /** SCRUM-696: an operator rule's ask-first question is the turn's reply. */
   askFirst?: { ruleId: string };
+  /** SCRUM-842: the ask-first rules that applied and did not ask, because the family had already said what they ask. */
+  askFirstSatisfied?: AskFirstSatisfied[];
   /** SCRUM-824: a voice note in the burst is still being transcribed; the turn waits for it. */
   wait?: boolean;
   /** SCRUM-831: the episode's open questions as this turn read them, and the repeat guard's trips (`open-question.ts`). */
@@ -804,8 +818,11 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   // SCRUM-696: an approved rule's ask-first question, enforced here and never
   // trusted to the model. Only when a rule with a question applies; it
   // replaces the gate's verdict only when it fires (`askFirstOf`).
-  const fired = applicable.some((r) => r.askFirst !== null)
-    ? askFirstOf({
+  // SCRUM-842: a rule never asks what the family already said this episode (in
+  // their own lines, or in answer to a question of ours): it is satisfied, and
+  // the model's own answer goes, through the repeat guard as any other.
+  const asked = applicable.some((r) => r.askFirst !== null)
+    ? askFirstRead({
         rules: applicable,
         verdict: gated,
         decision: outcome.decision,
@@ -813,8 +830,11 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
         branchAsked: facts.earlier.branchAsked,
         askedFirst: facts.askedFirst,
         silentIntents: silentIntentsOf(account.silencePolicy),
+        known: knownSlotsOf(memory),
       })
     : null;
+  const fired = asked?.fired ?? null;
+  const askFirstSatisfied = asked?.satisfied ?? [];
   const verdict = fired?.verdict ?? gated;
   const quietBefore =
     verdict.action === 'silent' && verdict.reason === 'INTENT_SILENT'
@@ -838,6 +858,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     })),
     ...(quietBefore === undefined ? {} : { quietBefore }),
     ...(fired ? { askFirst: { ruleId: fired.ruleId } } : {}),
+    ...(askFirstSatisfied.length > 0 ? { askFirstSatisfied } : {}),
   };
   // SCRUM-677: the coherence review, before anything is scheduled.
   const reviewed = await reviewStage(db, deps, turn, conv, account, episode, decided);
@@ -2090,6 +2111,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
               coherence: settled.record,
               rethink,
               ...(r.askFirst ? { askFirstRuleId: r.askFirst.ruleId } : {}),
+              ...(r.askFirstSatisfied ? { askFirstSatisfied: r.askFirstSatisfied } : {}),
             }, at),
           );
         }
@@ -2181,6 +2203,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             rethink,
             // SCRUM-696: the operator rule whose question this was, so it is asked once per episode.
             ...(r.askFirst ? { askFirstRuleId: r.askFirst.ruleId } : {}),
+            // SCRUM-842: the rules that applied and did not ask, and why (`already_said`): ids and slots, never the answer.
+            ...(r.askFirstSatisfied ? { askFirstSatisfied: r.askFirstSatisfied } : {}),
             // SCRUM-832: how the one message was composed (the park question alone, the bubbles joined, the repeats dropped): counts only.
             ...(v.composition ? { composition: v.composition } : {}),
           }, at),
