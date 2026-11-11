@@ -171,8 +171,11 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
   // back with every step, so the form asks for both. One that does not (an
   // older till, or a station that drops the field) would leave a changed
   // number unsaved and this screen waiting, so its form stays as it was: the
-  // number fixed once one was given.
-  const takesContact = prompt.contactChannel !== undefined;
+  // number fixed once one was given. A group with no child in care is an
+  // ordinary sale: its number was asked once on the first screen and is not
+  // asked again here (SCRUM-762), as on the till's own customer half, where
+  // the parent's block shows only when a child needs consent.
+  const takesContact = prompt.contactChannel !== undefined && prompt.consentRequired;
   const phoneKept = !takesContact && !!prompt.guardianPhone?.trim();
   const childrenComplete = prompt.slots.every((slot) => {
     const child = draft.slots[slot.id];

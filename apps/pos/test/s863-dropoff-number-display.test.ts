@@ -182,6 +182,29 @@ describe('a form from a till that does not take the number back', () => {
   });
 });
 
+describe('an ordinary group on the paired display, no child in care', () => {
+  it('is not asked the number again: it stays fixed as given on the first screen, and its steps carry neither field (SCRUM-762)', () => {
+    const prompt = promptOf({ slots: [{ id: 'zz-test-child', name: 'ZZ TEST child', ageYears: 6, requirement: 'none' }], consentRequired: false });
+    expect(ConsentPromptSchema.safeParse(prompt).success).toBe(true);
+    const form = open(prompt);
+    const guardian = () => form.all().find(node => node.props.id === 'public-consent-guardian');
+    for (let step = 0; step < 3 && !guardian(); step += 1) form.press('common.continue');
+    expect(guardian()).toBeDefined();
+    expect(form.field()).toBeUndefined();
+    expect(form.all().some(node => node.props['data-testid'] === 'consent-kept-phone')).toBe(true);
+    expect(words(form.view.result.current)).toContain('till.input.phoneKept');
+    form.typeName('ZZ TEST guardian Mali');
+    const before = form.sent.length;
+    form.press('common.continue');
+    const step = form.sent[before]!;
+    expect(step).toMatchObject({ action: 'fill', guardianName: 'ZZ TEST guardian Mali' });
+    expect('guardianPhone' in step).toBe(false);
+    expect('contactChannel' in step).toBe(false);
+    expect(ConsentActionSchema.safeParse(step).success).toBe(true);
+    form.view.unmount();
+  });
+});
+
 describe('the number as the form sends it and the till keeps it', () => {
   it('is the stored form of a number that reads as one, and what was typed otherwise', () => {
     expect(consentFormPhone(OTHER_TYPED)).toBe(OTHER_STORED);
