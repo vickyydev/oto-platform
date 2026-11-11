@@ -1,0 +1,8 @@
+CI run 43062028428 on commit d21a9dc39 (GitHub Actions, Linux), jobs: ci success, pos-tests success, api-tests 1-3 success
+
+$ pnpm --filter @oto/pos e2e e2e/phone-payment.spec.ts
+  ✓  1 e2e/phone-payment.spec.ts:74:1 › 375 px payment fits; Pay → Back → Cancel voids the sale and reload leaves none (5.2s)
+  ✓  2 e2e/phone-payment.spec.ts:107:1 › a refused phone cancellation keeps the order and offers the refusal (7.1s)
+  2 passed (16.0s)
+
+After the run the committed proof pictures are unchanged: the check now writes to the test output folder.

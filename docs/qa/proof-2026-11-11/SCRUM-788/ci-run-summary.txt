@@ -1,0 +1,8 @@
+CI run 43062028428 on commit d21a9dc39 (GitHub Actions, Linux), jobs: ci success, pos-tests success, api-tests 1-3 success
+
+@oto/box-agent:test   (the installer checks run here, on Linux, for the first time)
+# tests 913
+# pass 913
+# fail 0
+
+Pi scripts parse (bash -n and shellcheck on scripts/pi/*.sh): passed

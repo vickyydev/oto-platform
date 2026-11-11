@@ -1,0 +1,13 @@
+CI run 43062028428 on commit d21a9dc39 (GitHub Actions, Linux), jobs: ci success, pos-tests success, api-tests 1-3 success
+
+$ pnpm --filter @oto/pos e2e e2e/sale-ledger.spec.ts
+  ✓  1 e2e/sale-ledger.spec.ts:172:1 › Pay records the sale unpaid; Confirm Payment Received closes it (9.2s)
+  ✓  2 e2e/sale-ledger.spec.ts:224:1 › a corrected order is sold as its own sale (8.8s)
+  ✓  3 e2e/sale-ledger.spec.ts:283:3 › the handheld till › Pay records the sale unpaid; Confirm closes it (4.1s)
+  3 passed (26.0s)
+
+$ pnpm --filter @oto/pos e2e e2e/voucher.spec.ts
+  ✓  1 e2e/voucher.spec.ts:222:1 › C1 — a voucher left on an unpaid sale is voided by choice and used on a new sale (20.9s)
+  ✓  2 e2e/voucher.spec.ts:270:1 › M12 — a second screen at the same till never voids the first screen's sale by itself (9.9s)
+  ✓  3 e2e/voucher.spec.ts:325:1 › L38 and C2 — a gift voucher on its own is a ฿0 sale that asks for no payment method (8.7s)
+  3 passed (43.4s)
