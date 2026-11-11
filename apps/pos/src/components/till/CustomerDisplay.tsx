@@ -1,6 +1,6 @@
 import { formatStoredPhone } from '@/lib/phoneUtils';
-import { useEffect, useRef, useState } from 'react';
-import { Sale, Member, ChargeTarget, ContactChannel } from '@/types';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Sale, Member, ChargeTarget, ContactChannel, ManualDiscount } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QrCode } from './QrCode';
@@ -33,6 +33,7 @@ import {
   customerUnpricedReason,
 } from '@/lib/customerDisplayCopy';
 import { paymentMethodKind } from '@/lib/payments';
+import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { tierNeedsProof } from '@/lib/membership';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
@@ -292,6 +293,325 @@ export function NicknameField({
   );
 }
 
+/**
+ * SCRUM-859 — THE ORDER'S FIGURES, READ ONCE FOR THE ORDER AND PAYMENT STAGES.
+ *
+ * The owner (8 and 12 November): the payment screen shows the full order, not
+ * only the amount. So the order stage's line cards and footer rows are drawn
+ * by the three components below, and the payment stage draws the same three
+ * beside its amount (`PaymentStageLayout`): one list, one set of wording, and
+ * every figure from the same arithmetic on both screens.
+ */
+interface OrderFigures {
+  manualAmounts: Record<string, number>;
+  discountAmount: number;
+  total: number;
+  taxRows: ReturnType<typeof taxRowsOf>;
+  orderDiscounts: ManualDiscount[];
+  unpriced: ReturnType<typeof unpricedCartLines>;
+  awaitingLength: Set<string>;
+  unquotable: boolean;
+}
+
+function orderFigures(
+  sale: Sale,
+  totals: CustomerDisplayProps['totals'],
+  lineBreakdowns: Record<string, DisplayLineBreakdown> | undefined,
+): OrderFigures {
+  const { manualAmounts, discountAmount, total, taxBreakdown } =
+    totals ??
+    ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
+  const taxRows = taxRowsOf(taxBreakdown);
+  const orderDiscounts = sale.manualDiscounts.filter((md) => md.scope === 'order');
+  /**
+   * WHAT THIS SCREEN WILL NOT QUOTE A FAMILY (SCRUM-312).
+   *
+   * A tier nobody priced on a ticket resolves to ฿0 here, because
+   * `computeLineBreakdown` and `lineTotal` both go through `priceForTier`,
+   * which flattens the missing price to a number so the arithmetic has one.
+   * Unguarded, the drop-off line a family watches on this half printed
+   * "Kids 1 × ฿0" and a ฿0 total while the staff panel beside it said no
+   * price was set — two answers to the same cart, and the wrong one facing
+   * the person paying. So this half refuses the same lines the order panel
+   * refuses, read from the same helper: a dash where a figure would be, the
+   * reason underneath, and no total while any line is unpriced.
+   */
+  const unpriced = lineBreakdowns ? [] : unpricedCartLines(sale.lines);
+  /**
+   * THE SECOND WAY THIS SCREEN HAS NOTHING TO QUOTE (SCRUM-350).
+   *
+   * A drop-off child sits in the cart at `lineTotal: 0` until staff pick the
+   * play length (`lib/dropoff.ts`), carrying a placeholder ticket so the line
+   * has a type at all. Nothing above read that state, so this half priced the
+   * placeholder: the card's own figure came from `lineTotal`, so ฿0, while
+   * the Kids row, the VAT row and the total came from the ticket the line is
+   * pointing at, so "1 × ฿690", "฿45.14" and "฿690". The family read ฿690 for
+   * a length nobody has chosen, at the same moment the staff panel beside
+   * them said "—" (SCRUM-334).
+   *
+   * So this half refuses that line the way it already refuses an unpriced
+   * tier (SCRUM-312): a dash on the card, a dash on the row the placeholder
+   * priced, and no VAT, no discount amounts and no total while the cart
+   * cannot be totalled. Every figure comes back, from the same arithmetic as
+   * before, the moment a length is chosen.
+   */
+  const awaitingLength = new Set(lineBreakdowns
+    ? sale.lines.filter(line => !lineBreakdowns[line.id]?.lengthChosen).map(line => line.id)
+    : unpricedDropOffLines(sale.lines));
+  const unquotable = unpriced.length > 0 || awaitingLength.size > 0
+    || !!lineBreakdowns && sale.lines.some(line => !lineBreakdowns[line.id]?.priced);
+  return { manualAmounts, discountAmount, total, taxRows, orderDiscounts, unpriced, awaitingLength, unquotable };
+}
+
+/** The order's header row: the brand, "Your Order" and the language button. */
+function OrderHeader() {
+  const { t } = useLanguage();
+  return (
+    <div className="p-8 flex items-center justify-between border-b border-foreground/10">
+      <Brand />
+      {/* SCRUM-745 — the language button sits after "Your Order", never over it. */}
+      <div className="flex items-center gap-4">
+        <span className="text-lg text-foreground/60">{t('till.order.yourOrder')}</span>
+        <LanguageSwitcher variant="dark" />
+      </div>
+    </div>
+  );
+}
+
+/** The order's line cards: one per line, with its rows and its own discounts. */
+function OrderLineCards({
+  sale,
+  lineBreakdowns,
+  figures,
+}: {
+  sale: Sale;
+  lineBreakdowns: Record<string, DisplayLineBreakdown> | undefined;
+  figures: OrderFigures;
+}) {
+  const { t, lang } = useLanguage();
+  const { manualAmounts, awaitingLength } = figures;
+  return (
+    <>
+      {sale.lines.map((line) => {
+        const lineDiscounts = sale.manualDiscounts.filter(
+          (md) =>
+            md.scope === 'line' &&
+            md.targetLineId === line.id &&
+            !md.targetComponent
+        );
+        // Component-scoped discounts, indexed by their component key so
+        // each renders directly beneath its matching breakdown row.
+        const componentDiscounts = sale.manualDiscounts.filter(
+          (md) =>
+            md.scope === 'line' &&
+            md.targetLineId === line.id &&
+            md.targetComponent
+        );
+        // promoItem lines are synthetic (free item at ฿0 net); render
+        // as a simple grant card rather than a ticket breakdown card.
+        if (line.promoItem) {
+          return (
+            <div key={line.id} className="bg-emerald-500/10 rounded-3xl p-6 border border-emerald-500/20">
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold text-emerald-300">
+                  🎁 {line.promoItem.name}
+                </div>
+                <div className="text-2xl font-bold text-emerald-300">฿0</div>
+              </div>
+              <div className="text-sm text-emerald-400/70 mt-1">{t('till.order.complimentary')}</div>
+            </div>
+          );
+        }
+        // This line's own missing prices, if any — the line total is a
+        // dash while it has one, and each row that lacks a price says so.
+        const captured = lineBreakdowns?.[line.id];
+        const lineUnpriced = captured ? !captured.priced : unpricedCartLines([line]).length > 0;
+        // A drop-off child whose play length is not chosen yet: the same
+        // dash, for the ฿0 the line carries until it is.
+        const lineAwaitingLength = awaitingLength.has(line.id);
+        return (
+          <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10">
+            <div className="flex items-center justify-between mb-2">
+              {/* The card's title. While the length is still to be chosen
+                  the ticket on the line is the placeholder — the first
+                  package in the catalog — so naming it printed "1 Hour
+                  Play" at the family for a length nobody had picked,
+                  above a card whose every figure was already a dash
+                  (SCRUM-355). The line's data is untouched: it is the
+                  title that stops naming a length until one exists. */}
+              <div className="text-2xl font-bold">
+                {lineAwaitingLength
+                  ? t('till.order.dropOffChooseLength')
+                  : resolveName(line.ticketType, lang)}
+              </div>
+              <div className="text-2xl font-bold text-primary">
+                {lineUnpriced || lineAwaitingLength ? '—' : `฿${line.lineTotal}`}
+              </div>
+            </div>
+            <div className="mt-1">
+              {(captured?.rows ?? computeLineBreakdown(line)).map((item) => {
+                const key = breakdownComponentKey(item);
+                const rowLabel = breakdownRowLabel(item, lang, t);
+                const matches = componentDiscounts.filter(
+                  (md) => componentKey(md.targetComponent!) === key
+                );
+                // The two rows a missing price reaches: the ticket row
+                // (kids, and a drop-off child's own ticket) and the paid
+                // adults row. Socks, add-ons and the drop-off service fee
+                // carry their own prices and are shown as they are.
+                //
+                // The kids row is also the one the placeholder ticket
+                // prices on a drop-off child with no length chosen — it
+                // is where "1 × ฿690" was printed — so it dashes for that
+                // too. The line's adults are 0 while it is unconfigured.
+                const rowUnpriced = captured ? 'unpriced' in item && item.unpriced === true :
+                  item.kind === 'kids'
+                    ? lineAwaitingLength || !isTierPriced(line.ticketType, line.tier)
+                    : item.key === 'adults'
+                      ? !isAdultRulePriced(line.ticketType, line.tier, line.adults)
+                      : false;
+                return (
+                  <div key={item.key}>
+                    <BreakdownRow
+                      kind={item.kind}
+                      label={rowLabel}
+                      unitPrice={item.unitPrice}
+                      quantity={item.quantity}
+                      subtotal={item.subtotal}
+                      unpriced={rowUnpriced}
+                    />
+                    {matches.map((md) => {
+                      const amt = manualAmounts[md.id] ?? 0;
+                      if (amt <= 0) return null;
+                      return (
+                        <div
+                          key={md.id}
+                          className="flex items-center justify-between py-2 pl-9 text-(--cd-success)"
+                        >
+                          <span className="flex items-center gap-3 text-base font-semibold">
+                            <BadgePercent className="w-5 h-5 shrink-0" />
+                            {customerDiscountTarget(md, rowLabel, t)} · {customerDiscountDetail(md, t)}
+                          </span>
+                          <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+            {lineDiscounts.map((md) => {
+              const amt = manualAmounts[md.id] ?? 0;
+              if (amt <= 0) return null;
+              return (
+                <div
+                  key={md.id}
+                  className="mt-3 flex items-center justify-between rounded-2xl bg-emerald-500/10 px-4 py-3 text-(--cd-success)"
+                >
+                  <span className="flex items-center gap-3 text-lg font-semibold">
+                    <BadgePercent className="w-6 h-6 shrink-0" />
+                    {customerDiscountDetail(md, t)}
+                  </span>
+                  <span className="text-xl font-bold tabular-nums">−฿{amt}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** The order's footer rows: order discounts, the code or voucher, the member rate, tax and the total. */
+function OrderSummaryRows({
+  sale,
+  member,
+  voucherPrize,
+  figures,
+}: {
+  sale: Sale;
+  member: Member | null;
+  voucherPrize: CustomerDisplayProps['voucherPrize'];
+  figures: OrderFigures;
+}) {
+  const { t, lang } = useLanguage();
+  const { manualAmounts, discountAmount, total, taxRows, orderDiscounts, unpriced, unquotable } = figures;
+  return (
+    <>
+      {/* The discount and tax rows are worked out from a subtotal that is
+          missing a figure — the price nobody set, or the length nobody has
+          chosen — so while the cart cannot be totalled they would state
+          amounts of an order that has no amount. They come back with the
+          total, once the figure exists. */}
+      {!unquotable && (
+        <>
+          {orderDiscounts.map((md) => {
+            const amt = manualAmounts[md.id] ?? 0;
+            if (amt <= 0) return null;
+            return (
+              <div
+                key={md.id}
+                className="flex items-center justify-between mb-2 text-(--cd-success)"
+              >
+                <span className="flex items-center gap-2 text-lg">
+                  <BadgePercent className="w-5 h-5 shrink-0" />
+                  {t('common.discount')} · {customerDiscountDetail(md, t)}
+                </span>
+                <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+              </div>
+            );
+          })}
+          {discountAmount > 0 && (
+            <div className="flex items-center justify-between mb-2 text-(--cd-success)">
+              <span className="text-lg">
+                {voucherPrize
+                  ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn
+                  : t('till.order.discountCode')}
+              </span>
+              <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
+            </div>
+          )}
+        </>
+      )}
+      {member && tierNeedsProof(sale.tier) && (
+        <div className="flex items-center gap-2 mb-3 text-(--cd-success) text-base font-semibold">
+          <BadgeCheck className="w-5 h-5 shrink-0" />
+          {t('till.welcome.memberRate')}
+        </div>
+      )}
+      {!unquotable &&
+        taxRows.map((row) => (
+          <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
+            <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
+            <span className="text-lg tabular-nums">฿{row.amount}</span>
+          </div>
+        ))}
+      {/* The same sentence the staff panel shows, from the same helper, so
+          the two halves of the counter say one thing about the same cart. */}
+      {unpriced.length > 0 && (
+        <div className="mb-3 space-y-1.5 text-foreground/60">
+          {unpriced.map((u) => (
+            <div
+              key={`${u.ticketName}-${u.tier}-${u.what}`}
+              className="flex items-center gap-2 text-base"
+            >
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span>{customerUnpricedReason(u, t)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center justify-between">
+        <span className="text-2xl text-foreground/70">{t('common.total')}</span>
+        <span className="text-5xl font-black text-primary">
+          {unquotable ? '—' : `฿${total}`}
+        </span>
+      </div>
+    </>
+  );
+}
+
 export function CustomerDisplay({
   stage,
   sale,
@@ -431,264 +751,22 @@ export function CustomerDisplay({
   }
 
   if (stage === 'order') {
-    const { manualAmounts, discountAmount, total, taxBreakdown } =
-      totals ??
-      ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
-    const taxRows = taxRowsOf(taxBreakdown);
-    const orderDiscounts = sale.manualDiscounts.filter((md) => md.scope === 'order');
-    /**
-     * WHAT THIS SCREEN WILL NOT QUOTE A FAMILY (SCRUM-312).
-     *
-     * A tier nobody priced on a ticket resolves to ฿0 here, because
-     * `computeLineBreakdown` and `lineTotal` both go through `priceForTier`,
-     * which flattens the missing price to a number so the arithmetic has one.
-     * Unguarded, the drop-off line a family watches on this half printed
-     * "Kids 1 × ฿0" and a ฿0 total while the staff panel beside it said no
-     * price was set — two answers to the same cart, and the wrong one facing
-     * the person paying. So this half refuses the same lines the order panel
-     * refuses, read from the same helper: a dash where a figure would be, the
-     * reason underneath, and no total while any line is unpriced.
-     */
-    const unpriced = lineBreakdowns ? [] : unpricedCartLines(sale.lines);
-    /**
-     * THE SECOND WAY THIS SCREEN HAS NOTHING TO QUOTE (SCRUM-350).
-     *
-     * A drop-off child sits in the cart at `lineTotal: 0` until staff pick the
-     * play length (`lib/dropoff.ts`), carrying a placeholder ticket so the line
-     * has a type at all. Nothing above read that state, so this half priced the
-     * placeholder: the card's own figure came from `lineTotal`, so ฿0, while
-     * the Kids row, the VAT row and the total came from the ticket the line is
-     * pointing at, so "1 × ฿690", "฿45.14" and "฿690". The family read ฿690 for
-     * a length nobody has chosen, at the same moment the staff panel beside
-     * them said "—" (SCRUM-334).
-     *
-     * So this half refuses that line the way it already refuses an unpriced
-     * tier (SCRUM-312): a dash on the card, a dash on the row the placeholder
-     * priced, and no VAT, no discount amounts and no total while the cart
-     * cannot be totalled. Every figure comes back, from the same arithmetic as
-     * before, the moment a length is chosen.
-     */
-    const awaitingLength = new Set(lineBreakdowns
-      ? sale.lines.filter(line => !lineBreakdowns[line.id]?.lengthChosen).map(line => line.id)
-      : unpricedDropOffLines(sale.lines));
-    const unquotable = unpriced.length > 0 || awaitingLength.size > 0
-      || !!lineBreakdowns && sale.lines.some(line => !lineBreakdowns[line.id]?.priced);
+    const figures = orderFigures(sale, totals, lineBreakdowns);
     return (
       <Shell customerName={displayName} languageInHeader>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
-        <div className="p-8 flex items-center justify-between border-b border-foreground/10">
-          <Brand />
-          {/* SCRUM-745 — the language button sits after "Your Order", never over it. */}
-          <div className="flex items-center gap-4">
-            <span className="text-lg text-foreground/60">{t('till.order.yourOrder')}</span>
-            <LanguageSwitcher variant="dark" />
-          </div>
-        </div>
+        <OrderHeader />
         <div className="flex-1 overflow-y-auto p-8 space-y-4">
           {sale.lines.length === 0 ? (
             <div className="h-full flex items-center justify-center text-foreground/50 text-2xl">
               {t('till.order.building')}
             </div>
           ) : (
-            sale.lines.map((line) => {
-              const lineDiscounts = sale.manualDiscounts.filter(
-                (md) =>
-                  md.scope === 'line' &&
-                  md.targetLineId === line.id &&
-                  !md.targetComponent
-              );
-              // Component-scoped discounts, indexed by their component key so
-              // each renders directly beneath its matching breakdown row.
-              const componentDiscounts = sale.manualDiscounts.filter(
-                (md) =>
-                  md.scope === 'line' &&
-                  md.targetLineId === line.id &&
-                  md.targetComponent
-              );
-              // promoItem lines are synthetic (free item at ฿0 net); render
-              // as a simple grant card rather than a ticket breakdown card.
-              if (line.promoItem) {
-                return (
-                  <div key={line.id} className="bg-emerald-500/10 rounded-3xl p-6 border border-emerald-500/20">
-                    <div className="flex items-center justify-between">
-                      <div className="text-2xl font-bold text-emerald-300">
-                        🎁 {line.promoItem.name}
-                      </div>
-                      <div className="text-2xl font-bold text-emerald-300">฿0</div>
-                    </div>
-                    <div className="text-sm text-emerald-400/70 mt-1">{t('till.order.complimentary')}</div>
-                  </div>
-                );
-              }
-              // This line's own missing prices, if any — the line total is a
-              // dash while it has one, and each row that lacks a price says so.
-              const captured = lineBreakdowns?.[line.id];
-              const lineUnpriced = captured ? !captured.priced : unpricedCartLines([line]).length > 0;
-              // A drop-off child whose play length is not chosen yet: the same
-              // dash, for the ฿0 the line carries until it is.
-              const lineAwaitingLength = awaitingLength.has(line.id);
-              return (
-                <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10">
-                  <div className="flex items-center justify-between mb-2">
-                    {/* The card's title. While the length is still to be chosen
-                        the ticket on the line is the placeholder — the first
-                        package in the catalog — so naming it printed "1 Hour
-                        Play" at the family for a length nobody had picked,
-                        above a card whose every figure was already a dash
-                        (SCRUM-355). The line's data is untouched: it is the
-                        title that stops naming a length until one exists. */}
-                    <div className="text-2xl font-bold">
-                      {lineAwaitingLength
-                        ? t('till.order.dropOffChooseLength')
-                        : resolveName(line.ticketType, lang)}
-                    </div>
-                    <div className="text-2xl font-bold text-primary">
-                      {lineUnpriced || lineAwaitingLength ? '—' : `฿${line.lineTotal}`}
-                    </div>
-                  </div>
-                  <div className="mt-1">
-                    {(captured?.rows ?? computeLineBreakdown(line)).map((item) => {
-                      const key = breakdownComponentKey(item);
-                      const rowLabel = breakdownRowLabel(item, lang, t);
-                      const matches = componentDiscounts.filter(
-                        (md) => componentKey(md.targetComponent!) === key
-                      );
-                      // The two rows a missing price reaches: the ticket row
-                      // (kids, and a drop-off child's own ticket) and the paid
-                      // adults row. Socks, add-ons and the drop-off service fee
-                      // carry their own prices and are shown as they are.
-                      //
-                      // The kids row is also the one the placeholder ticket
-                      // prices on a drop-off child with no length chosen — it
-                      // is where "1 × ฿690" was printed — so it dashes for that
-                      // too. The line's adults are 0 while it is unconfigured.
-                      const rowUnpriced = captured ? 'unpriced' in item && item.unpriced === true :
-                        item.kind === 'kids'
-                          ? lineAwaitingLength || !isTierPriced(line.ticketType, line.tier)
-                          : item.key === 'adults'
-                            ? !isAdultRulePriced(line.ticketType, line.tier, line.adults)
-                            : false;
-                      return (
-                        <div key={item.key}>
-                          <BreakdownRow
-                            kind={item.kind}
-                            label={rowLabel}
-                            unitPrice={item.unitPrice}
-                            quantity={item.quantity}
-                            subtotal={item.subtotal}
-                            unpriced={rowUnpriced}
-                          />
-                          {matches.map((md) => {
-                            const amt = manualAmounts[md.id] ?? 0;
-                            if (amt <= 0) return null;
-                            return (
-                              <div
-                                key={md.id}
-                                className="flex items-center justify-between py-2 pl-9 text-(--cd-success)"
-                              >
-                                <span className="flex items-center gap-3 text-base font-semibold">
-                                  <BadgePercent className="w-5 h-5 shrink-0" />
-                                  {customerDiscountTarget(md, rowLabel, t)} · {customerDiscountDetail(md, t)}
-                                </span>
-                                <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {lineDiscounts.map((md) => {
-                    const amt = manualAmounts[md.id] ?? 0;
-                    if (amt <= 0) return null;
-                    return (
-                      <div
-                        key={md.id}
-                        className="mt-3 flex items-center justify-between rounded-2xl bg-emerald-500/10 px-4 py-3 text-(--cd-success)"
-                      >
-                        <span className="flex items-center gap-3 text-lg font-semibold">
-                          <BadgePercent className="w-6 h-6 shrink-0" />
-                          {customerDiscountDetail(md, t)}
-                        </span>
-                        <span className="text-xl font-bold tabular-nums">−฿{amt}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })
+            <OrderLineCards sale={sale} lineBreakdowns={lineBreakdowns} figures={figures} />
           )}
         </div>
         <div className="p-8 border-t border-foreground/10">
-          {/* The discount and tax rows are worked out from a subtotal that is
-              missing a figure — the price nobody set, or the length nobody has
-              chosen — so while the cart cannot be totalled they would state
-              amounts of an order that has no amount. They come back with the
-              total, once the figure exists. */}
-          {!unquotable && (
-            <>
-              {orderDiscounts.map((md) => {
-                const amt = manualAmounts[md.id] ?? 0;
-                if (amt <= 0) return null;
-                return (
-                  <div
-                    key={md.id}
-                    className="flex items-center justify-between mb-2 text-(--cd-success)"
-                  >
-                    <span className="flex items-center gap-2 text-lg">
-                      <BadgePercent className="w-5 h-5 shrink-0" />
-                      {t('common.discount')} · {customerDiscountDetail(md, t)}
-                    </span>
-                    <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
-                  </div>
-                );
-              })}
-              {discountAmount > 0 && (
-                <div className="flex items-center justify-between mb-2 text-(--cd-success)">
-                  <span className="text-lg">
-                    {voucherPrize
-                      ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn
-                      : t('till.order.discountCode')}
-                  </span>
-                  <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
-                </div>
-              )}
-            </>
-          )}
-          {member && tierNeedsProof(sale.tier) && (
-            <div className="flex items-center gap-2 mb-3 text-(--cd-success) text-base font-semibold">
-              <BadgeCheck className="w-5 h-5 shrink-0" />
-              {t('till.welcome.memberRate')}
-            </div>
-          )}
-          {!unquotable &&
-            taxRows.map((row) => (
-              <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-                <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
-                <span className="text-lg tabular-nums">฿{row.amount}</span>
-              </div>
-            ))}
-          {/* The same sentence the staff panel shows, from the same helper, so
-              the two halves of the counter say one thing about the same cart. */}
-          {unpriced.length > 0 && (
-            <div className="mb-3 space-y-1.5 text-foreground/60">
-              {unpriced.map((u) => (
-                <div
-                  key={`${u.ticketName}-${u.tier}-${u.what}`}
-                  className="flex items-center gap-2 text-base"
-                >
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <span>{customerUnpricedReason(u, t)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <span className="text-2xl text-foreground/70">{t('common.total')}</span>
-            <span className="text-5xl font-black text-primary">
-              {unquotable ? '—' : `฿${total}`}
-            </span>
-          </div>
+          <OrderSummaryRows sale={sale} member={member} voucherPrize={voucherPrize} figures={figures} />
         </div>
       </Shell>
     );
@@ -797,71 +875,96 @@ export function CustomerDisplay({
       );
     }
     const unpriced = lineBreakdowns ? sale.lines.filter(line => !lineBreakdowns[line.id]?.priced) : unpricedCartLines(sale.lines);
+    /**
+     * SCRUM-859 — THE WHOLE ORDER BESIDE THE AMOUNT (the owner, 8 and 12
+     * November: "the customer-facing payment screen should show the full order
+     * details, not just the final amount"). The order stage's own header, line
+     * cards and footer rows are drawn again here, by the same components and
+     * from the same figures, with the amount block — the figure the till
+     * charges, never one worked out again here — in the frame's own column.
+     * A sale with no lines keeps the screen as it was: the block alone.
+     */
+    const figures = orderFigures(sale, totals, lineBreakdowns);
+    const withOrder = (lead: ReactNode, aside: ReactNode, body: ReactNode) =>
+      sale.lines.length === 0 ? (
+        <Shell customerName={displayName}>
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
+            {lead}
+            {aside}
+            {body}
+          </div>
+        </Shell>
+      ) : (
+        <Shell customerName={displayName} languageInHeader>
+          {chargeTarget && <ChargeBanner target={chargeTarget} />}
+          <PaymentStageLayout
+            header={<OrderHeader />}
+            lines={<OrderLineCards sale={sale} lineBreakdowns={lineBreakdowns} figures={figures} />}
+            summary={<OrderSummaryRows sale={sale} member={member} voucherPrize={voucherPrize} figures={figures} />}
+            lead={lead}
+            aside={aside}
+          >
+            {body}
+          </PaymentStageLayout>
+        </Shell>
+      );
     if (nothingToPay && unpriced.length === 0 && sale.total === 0) {
       // Nothing to pay (L38): the prize by its name, in Thai where it has one,
       // and no request for money. The success ink the thank-you stage uses.
       const prize = voucherPrize ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn : null;
-      return (
-        <Shell customerName={displayName}>
-          <div
-            className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500"
-            data-testid="customer-nothing-to-pay"
-          >
-            <div className="w-24 h-24 rounded-full bg-emerald-500/15 flex items-center justify-center text-(--cd-success) mb-8">
-              <Gift className="w-12 h-12" />
-            </div>
-            {prize && <p className="text-4xl font-black mb-2">{prize}</p>}
-            <div className="text-7xl font-black text-(--cd-success) mb-4">฿0</div>
-            <p className="text-2xl text-foreground/70">{t('till.order.complimentary')}</p>
-          </div>
-        </Shell>
+      return withOrder(
+        <div className="w-24 h-24 rounded-full bg-emerald-500/15 flex items-center justify-center text-(--cd-success) mb-8">
+          <Gift className="w-12 h-12" />
+        </div>,
+        null,
+        <div className="flex flex-col items-center" data-testid="customer-nothing-to-pay">
+          {prize && <p className="text-4xl font-black mb-2">{prize}</p>}
+          <div className="text-7xl font-black text-(--cd-success) mb-4">฿0</div>
+          <p className="text-2xl text-foreground/70">{t('till.order.complimentary')}</p>
+        </div>,
       );
     }
+    const figure = unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`;
     if (payment?.qrPayload || payment?.qrImageUrl || (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr')) {
-      return (
-        <Shell customerName={displayName}>
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
-            <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
-              <QrCodeIcon className="w-6 h-6" />
-              <span className="uppercase tracking-widest text-sm font-bold">{t('till.payment.scanToPay')}</span>
-            </div>
-            <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
-            <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              {payment ? <PaymentQr payload={payment.online ? payment.qrPayload : null} imageUrl={payment.online ? payment.qrImageUrl : null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
-                : <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />}
-            </div>
-            <div className="text-6xl font-black text-(--cd-violet) mt-8">
-              {unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`}
-            </div>
-            {payment?.expiresAt && <p className="text-lg mt-3">{t('till.payment.timeLeft')} <PaymentExpiry expiresAt={payment.expiresAt} /></p>}
-            <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.openBankingApp')}</p>
-            <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {t(payment?.online === false ? 'till.payment.reconnect' : payment?.status === 'blocked' ? 'till.payment.checking' : 'till.payment.waitingConfirmation')}
-            </div>
+      return withOrder(
+        <>
+          <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
+            <QrCodeIcon className="w-6 h-6" />
+            <span className="uppercase tracking-widest text-sm font-bold">{t('till.payment.scanToPay')}</span>
           </div>
-        </Shell>
+          <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
+        </>,
+        <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
+          {payment ? <PaymentQr payload={payment.online ? payment.qrPayload : null} imageUrl={payment.online ? payment.qrImageUrl : null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
+            : <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />}
+        </div>,
+        <>
+          <div className="text-6xl font-black text-(--cd-violet) mt-8">{figure}</div>
+          {payment?.expiresAt && <p className="text-lg mt-3">{t('till.payment.timeLeft')} <PaymentExpiry expiresAt={payment.expiresAt} /></p>}
+          <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.openBankingApp')}</p>
+          <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            {t(payment?.online === false ? 'till.payment.reconnect' : payment?.status === 'blocked' ? 'till.payment.checking' : 'till.payment.waitingConfirmation')}
+          </div>
+        </>,
       );
     }
 
-    return (
-      <Shell customerName={displayName}>
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
-          <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8">
-            <Wallet className="w-12 h-12" />
+    return withOrder(
+      <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8">
+        <Wallet className="w-12 h-12" />
+      </div>,
+      null,
+      <>
+        <p className="text-2xl text-foreground/70 mb-2">{t('common.pleasePay')}</p>
+        <div className="text-7xl font-black text-primary mb-4">{figure}</div>
+        <p className="text-2xl text-foreground/70">{t('common.toStaff')}</p>
+        {sale.paymentMethod && (
+          <div className="mt-6 px-5 py-2 rounded-full bg-foreground/5 border border-foreground/10 text-lg text-foreground/80">
+            {t('common.payingBy', { method: customerPaymentMethod(sale.paymentMethod, lang, t) })}
           </div>
-          <p className="text-2xl text-foreground/70 mb-2">{t('common.pleasePay')}</p>
-          <div className="text-7xl font-black text-primary mb-4">
-            {unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`}
-          </div>
-          <p className="text-2xl text-foreground/70">{t('common.toStaff')}</p>
-          {sale.paymentMethod && (
-            <div className="mt-6 px-5 py-2 rounded-full bg-foreground/5 border border-foreground/10 text-lg text-foreground/80">
-              {t('common.payingBy', { method: customerPaymentMethod(sale.paymentMethod, lang, t) })}
-            </div>
-          )}
-        </div>
-      </Shell>
+        )}
+      </>,
     );
   }
 
