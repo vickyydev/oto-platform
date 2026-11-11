@@ -1,0 +1,24 @@
+[
+  {
+    "at": "2026-11-11T18:03:45.870Z",
+    "http": 200,
+    "status": "build_in_progress",
+    "commit": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+    "createdAt": "2026-11-11T18:03:07.476842Z"
+  },
+  {
+    "at": "2026-11-11T18:05:16.309Z",
+    "http": 200,
+    "status": "update_in_progress",
+    "commit": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+    "createdAt": "2026-11-11T18:03:07.476842Z"
+  },
+  {
+    "at": "2026-11-11T18:06:46.936Z",
+    "http": 200,
+    "status": "live",
+    "commit": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+    "createdAt": "2026-11-11T18:03:07.476842Z",
+    "finishedAt": "2026-11-11T18:05:33.36263Z"
+  }
+]

@@ -1,0 +1,323 @@
+{
+  "ticket": "SCRUM-855",
+  "expectedSha": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+  "startedAt": "2026-11-11T18:08:28.401Z",
+  "phase": "remove exact owned attachments, checklist and run, then sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/7f40d35e-6027-408e-9780-d72b613907f1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/22dea67b-7e43-4781-998e-93857ea35f89",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklist-runs/start",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/22dea67b-7e43-4781-998e-93857ea35f89",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/390ebfe9-8fcf-40ad-9430-83df6e5d0eb0",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/783f565c-df35-438e-9788-9807b7169625",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/7f40d35e-6027-408e-9780-d72b613907f1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/7f40d35e-6027-408e-9780-d72b613907f1",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-runs/064043a5-bd10-407c-81c6-e364a2100bf4",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "7f40d35e-6027-408e-9780-d72b613907f1"
+  ],
+  "runs": [
+    "064043a5-bd10-407c-81c6-e364a2100bf4"
+  ],
+  "attachments": [
+    "390ebfe9-8fcf-40ad-9430-83df6e5d0eb0",
+    "783f565c-df35-438e-9788-9807b7169625"
+  ],
+  "uploads": [
+    {
+      "kind": "no-length video",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2562,
+      "attachmentId": "390ebfe9-8fcf-40ad-9430-83df6e5d0eb0",
+      "type": "video",
+      "mimeType": "video/webm",
+      "storedFileSize": 10225147,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": null
+      },
+      "progress": {
+        "sampledEveryMs": 200,
+        "numbers": [
+          10,
+          10,
+          19,
+          45,
+          74,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95
+        ],
+        "distinct": [
+          10,
+          19,
+          45,
+          74,
+          95
+        ],
+        "start": 10,
+        "end": 95,
+        "strictlyBetween": 3,
+        "errorLine": null,
+        "midBarPicture": {
+          "valueWhenTaken": 33,
+          "atMs": 729
+        }
+      }
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2817,
+      "attachmentId": "783f565c-df35-438e-9788-9807b7169625",
+      "type": "video",
+      "mimeType": "video/webm",
+      "storedFileSize": 10956188,
+      "answered": {
+        "width": null,
+        "height": null,
+        "durationSeconds": null
+      },
+      "progress": {
+        "sampledEveryMs": 200,
+        "numbers": [
+          10,
+          24,
+          51,
+          78,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95
+        ],
+        "distinct": [
+          10,
+          24,
+          51,
+          78,
+          95
+        ],
+        "start": 10,
+        "end": 95,
+        "strictlyBetween": 3,
+        "errorLine": null,
+        "midBarPicture": null
+      }
+    }
+  ],
+  "bucketPuts": [
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "390ebfe9-8fcf-40ad-9430-83df6e5d0eb0",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "783f565c-df35-438e-9788-9807b7169625",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "7f40d35e-6027-408e-9780-d72b613907f1",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "runId": "064043a5-bd10-407c-81c6-e364a2100bf4",
+      "removedWithChecklist": true,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": false,
+  "appVersionBefore": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+  "checklist": {
+    "status": 201,
+    "templateId": "7f40d35e-6027-408e-9780-d72b613907f1",
+    "items": 1
+  },
+  "noLengthVideo": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "fileName": "ZZ TEST SCRUM-855 no-length video.webm",
+    "size": 10225147,
+    "sizeMB": 9.75,
+    "frames": 992,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "browserLengthOfRawRecording": "Infinity",
+    "lengthWrittenIntoHeader": false,
+    "browserLengthOfFileSent": "Infinity",
+    "content": "canvas noise and a moving colour block with a ZZ TEST caption; no person, no sound"
+  },
+  "noLengthReadBack": {
+    "status": 200,
+    "found": true,
+    "type": "video",
+    "mimeType": "video/webm",
+    "fileSize": 10225147,
+    "width": 1280,
+    "height": 720,
+    "durationSeconds": null,
+    "durationIsNull": true
+  },
+  "playback": {
+    "readyState": 4,
+    "currentTime": 1.9,
+    "paused": false,
+    "ended": false,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "durationTheBrowserReports": "Infinity",
+    "error": null,
+    "userMenuMasked": 1,
+    "advance": {
+      "before": 2.07,
+      "after": 2.77,
+      "ended": false
+    }
+  },
+  "noLengthPassed": true,
+  "videoWithLength": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "fileName": "ZZ TEST SCRUM-855 video with length.webm",
+    "size": 10956188,
+    "sizeMB": 10.45,
+    "frames": 991,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "browserLengthOfRawRecording": "Infinity",
+    "lengthWrittenIntoHeader": true,
+    "browserLengthOfFileSent": 6
+  },
+  "withLengthReadBack": {
+    "status": 200,
+    "found": true,
+    "type": "video",
+    "mimeType": "video/webm",
+    "fileSize": 10956188,
+    "width": null,
+    "height": null,
+    "durationSeconds": null,
+    "durationIsNull": true
+  },
+  "failure": {
+    "phase": "the normal video with its length, record only",
+    "name": "AssertionError",
+    "message": "Expected values to be strictly equal:\n\nnull !== 6\n"
+  },
+  "finishedAt": "2026-11-11T18:09:07.769Z"
+}

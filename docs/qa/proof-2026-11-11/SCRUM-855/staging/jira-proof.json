@@ -1,0 +1,33 @@
+{
+  "key": "SCRUM-855",
+  "before": {
+    "status": "In Progress",
+    "summary": "Checklist media: a video whose length the browser cannot read is accepted, and a failed save leaves no file behind"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13193",
+        "name": "855-1-no-length-video-on-item.png"
+      },
+      {
+        "id": "13194",
+        "name": "855-2-no-length-video-playing.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "walkTesting": "Testing",
+  "walkDeployed": "Deployed",
+  "after": {
+    "status": "Deployed",
+    "summary": "Checklist media: a video whose length the browser cannot read is accepted, and a failed save leaves no file behind"
+  },
+  "images": [
+    "855-1-no-length-video-on-item.png",
+    "855-2-no-length-video-playing.png"
+  ]
+}

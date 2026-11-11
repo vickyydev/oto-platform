@@ -1,0 +1,342 @@
+{
+  "ticket": "SCRUM-855",
+  "expectedSha": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+  "startedAt": "2026-11-11T18:11:46.040Z",
+  "phase": "remove exact owned attachments, checklist and run, then sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/431fb5e5-3a2a-45a7-a605-c6f365aa5c2d",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklist-runs/start",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/431fb5e5-3a2a-45a7-a605-c6f365aa5c2d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/169e896e-56d9-474f-aa37-efe38e3b0d3b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/7ef836b9-e2fd-464a-8706-7e82cdc38b1e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-runs/001073df-12c9-4002-b1dc-46c1f68c2628",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45"
+  ],
+  "runs": [
+    "001073df-12c9-4002-b1dc-46c1f68c2628"
+  ],
+  "attachments": [
+    "169e896e-56d9-474f-aa37-efe38e3b0d3b",
+    "7ef836b9-e2fd-464a-8706-7e82cdc38b1e"
+  ],
+  "uploads": [
+    {
+      "kind": "no-length video",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2227,
+      "sentByBrowser": {
+        "atMsAfterTheFileWasChosen": 168,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId"
+        ],
+        "width": null,
+        "height": null,
+        "durationSeconds": null
+      },
+      "attachmentId": "169e896e-56d9-474f-aa37-efe38e3b0d3b",
+      "type": "video",
+      "mimeType": "video/webm",
+      "storedFileSize": 10458642,
+      "answered": {
+        "width": null,
+        "height": null,
+        "durationSeconds": null
+      },
+      "progress": {
+        "sampledEveryMs": 200,
+        "numbers": [
+          10,
+          33,
+          64,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95
+        ],
+        "distinct": [
+          10,
+          33,
+          64,
+          95
+        ],
+        "start": 10,
+        "end": 95,
+        "strictlyBetween": 2,
+        "errorLine": null,
+        "midBarPicture": {
+          "valueWhenTaken": 33,
+          "atMs": 496
+        }
+      }
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 1974,
+      "sentByBrowser": {
+        "atMsAfterTheFileWasChosen": 175,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId"
+        ],
+        "width": null,
+        "height": null,
+        "durationSeconds": null
+      },
+      "attachmentId": "7ef836b9-e2fd-464a-8706-7e82cdc38b1e",
+      "type": "video",
+      "mimeType": "video/webm",
+      "storedFileSize": 10961627,
+      "answered": {
+        "width": null,
+        "height": null,
+        "durationSeconds": null
+      },
+      "progress": {
+        "sampledEveryMs": 200,
+        "numbers": [
+          10,
+          37,
+          67,
+          95,
+          95,
+          95,
+          95,
+          95,
+          95
+        ],
+        "distinct": [
+          10,
+          37,
+          67,
+          95
+        ],
+        "start": 10,
+        "end": 95,
+        "strictlyBetween": 2,
+        "errorLine": null,
+        "midBarPicture": null
+      }
+    }
+  ],
+  "bucketPuts": [
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "169e896e-56d9-474f-aa37-efe38e3b0d3b",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "7ef836b9-e2fd-464a-8706-7e82cdc38b1e",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "runId": "001073df-12c9-4002-b1dc-46c1f68c2628",
+      "removedWithChecklist": true,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": true,
+  "appVersionBefore": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+  "checklist": {
+    "status": 201,
+    "templateId": "1ac71fa5-b069-4f1c-8dd3-a9fe8542aa45",
+    "items": 1
+  },
+  "noLengthVideo": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "fileName": "ZZ TEST SCRUM-855 no-length video.webm",
+    "size": 10458642,
+    "sizeMB": 9.97,
+    "frames": 992,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "browserLengthOfRawRecording": "Infinity",
+    "lengthWrittenIntoHeader": false,
+    "browserLengthOfFileSent": "Infinity",
+    "content": "canvas noise and a moving colour block with a ZZ TEST caption; no person, no sound"
+  },
+  "noLengthReadBack": {
+    "status": 200,
+    "found": true,
+    "type": "video",
+    "mimeType": "video/webm",
+    "fileSize": 10458642,
+    "width": null,
+    "height": null,
+    "durationSeconds": null,
+    "durationIsNull": true
+  },
+  "playback": {
+    "readyState": 4,
+    "currentTime": 1.91,
+    "paused": false,
+    "ended": false,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "durationTheBrowserReports": "Infinity",
+    "error": null,
+    "userMenuMasked": 1,
+    "advance": {
+      "before": 2.08,
+      "after": 2.78,
+      "ended": false
+    }
+  },
+  "noLengthPassed": true,
+  "videoWithLength": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "fileName": "ZZ TEST SCRUM-855 video with length.webm",
+    "size": 10961627,
+    "sizeMB": 10.45,
+    "frames": 991,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "browserLengthOfRawRecording": "Infinity",
+    "lengthWrittenIntoHeader": true,
+    "browserLengthOfFileSent": 6
+  },
+  "withLengthReadBack": {
+    "status": 200,
+    "found": true,
+    "type": "video",
+    "mimeType": "video/webm",
+    "fileSize": 10961627,
+    "width": null,
+    "height": null,
+    "durationSeconds": null,
+    "durationIsNull": true
+  },
+  "withLengthMeasuresStored": false,
+  "appVersionAfter": "545795e2d6183989f7c5028571c5d8dd03a60e1f",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-11T18:12:19.307Z"
+}
