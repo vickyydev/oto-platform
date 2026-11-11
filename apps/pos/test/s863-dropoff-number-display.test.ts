@@ -101,6 +101,13 @@ describe('the parent’s block on the paired display', () => {
     expect(form.field()!.props).toMatchObject({ value: OTHER_TYPED, channel: 'telegram' });
     expect(form.button('common.done')).toBeDefined();
     expect(form.sent).toHaveLength(1);
+
+    // The till has it now, so a correction staff make afterwards shows on the
+    // family's screen instead of being typed over by the form.
+    form.view.rerender(promptOf({ requestId: 'zz-test-request-3', guardianPhone: START, contactChannel: 'line' }));
+    expect(form.field()!.props).toMatchObject({ value: START, channel: 'line' });
+    expect(form.button('common.done')).toBeDefined();
+    expect(form.sent).toHaveLength(1);
     form.view.unmount();
   });
 
@@ -193,5 +200,7 @@ describe('the number as the form sends it and the till keeps it', () => {
     expect(mergeConsentDraft(base, base, fromTill)).toMatchObject({ guardianPhone: OTHER_STORED, contactChannel: 'line' });
     expect(mergeConsentDraft({ ...base, guardianPhone: OTHER_TYPED, contactChannel: 'telegram' }, base, fromTill))
       .toMatchObject({ guardianPhone: OTHER_TYPED, contactChannel: 'telegram' });
+    // The same number typed with its leading zero is not a change: the till's copy wins.
+    expect(mergeConsentDraft({ ...base, guardianPhone: '+660898020001' }, base, fromTill).guardianPhone).toBe(OTHER_STORED);
   });
 });

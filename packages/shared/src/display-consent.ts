@@ -75,8 +75,8 @@ function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCt
  * The drop-off and nanny forms as the customer screen shows them: each child's
  * name, age and care notes as the family fills them in (SCRUM-764), the
  * guardian's name, their number and channel to confirm (SCRUM-863), the
- * consent and the confirmations. The child's photo, the food choice, waivers and every policy
- * decision stay at the till.
+ * consent and the confirmations. The child's photo, the food choice, waivers
+ * and every policy decision stay at the till.
  */
 export const ConsentPromptSchema = promptObject.superRefine(validatePrompt);
 export type ConsentPrompt = z.infer<typeof ConsentPromptSchema>;

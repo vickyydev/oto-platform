@@ -107,7 +107,10 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
   return {
     slots,
     guardianName: pick(local.guardianName, base.guardianName, next.guardianName),
-    guardianPhone: pick(local.guardianPhone, base.guardianPhone, next.guardianPhone),
+    // SCRUM-863 — a number is the same number typed with its leading zero or
+    // in its stored form: once the till has kept what the family typed, the
+    // field follows the till again, so a correction staff make later shows here.
+    guardianPhone: consentFormPhone(local.guardianPhone) === consentFormPhone(base.guardianPhone) ? next.guardianPhone : local.guardianPhone,
     ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel) } : {}),
     consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged),
     confirmations: pick(local.confirmations, base.confirmations, next.confirmations),
@@ -302,7 +305,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
             {phoneKept ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
-            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => setDraft((current) => ({ ...current, guardianPhone }))}
+            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) setDraft((current) => ({ ...current, guardianPhone })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
               onChannelChange={takesContact ? (contactChannel) => { if (!locked) setDraft((current) => ({ ...current, contactChannel })); } : undefined}
