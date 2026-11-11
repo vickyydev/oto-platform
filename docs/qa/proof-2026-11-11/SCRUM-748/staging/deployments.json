@@ -2,8 +2,15 @@
   "sourceSha": "9b3ba1f8f6544362be58fbbce3772cf16a39f722",
   "deploymentSha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
   "service": "oto-app-staging",
-  "namedRequest": { "id": "dep-dbq6qtei0phs73bgavb0", "status": "build_in_progress" },
-  "previousLiveSameSource": { "id": "dep-dbq6nr6i0phs73bg2ekg", "finishedAt": "2026-11-11T13:24:28.588636Z" },
+  "namedRequest": {
+    "id": "dep-dbq6qtei0phs73bgavb0",
+    "status": "live",
+    "finishedAt": "2026-11-11T13:30:29.979868Z"
+  },
+  "previousLiveSameSource": {
+    "id": "dep-dbq6nr6i0phs73bg2ekg",
+    "finishedAt": "2026-11-11T13:24:28.588636Z"
+  },
   "sourceComparison": "runtime-wait.json",
   "requestHelper": "scripts/agent/render.mjs deploy oto-app-staging 266830f9b5b0d624325bfcd362a13a1b56009f46",
   "earlierRequest": "Failed during authenticated service lookup before POST; no deployment request was created."

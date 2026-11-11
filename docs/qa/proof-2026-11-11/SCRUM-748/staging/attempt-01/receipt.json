@@ -1,0 +1,134 @@
+{
+  "expectedSha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "startedAt": "2026-11-11T13:31:16.690Z",
+  "phase": "remove exact owned attachments and templates, then revoke sessions",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/0bc14bc9-0519-4fc4-9c2e-d840f52ec798",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/29a4d9f3-ca97-479a-9a9e-f651a267b7de",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/eb93fc84-fb72-487d-9fec-e713a376e8c3",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/eb93fc84-fb72-487d-9fec-e713a376e8c3",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "eb93fc84-fb72-487d-9fec-e713a376e8c3"
+  ],
+  "attachments": [
+    "0bc14bc9-0519-4fc4-9c2e-d840f52ec798",
+    "29a4d9f3-ca97-479a-9a9e-f651a267b7de"
+  ],
+  "uploads": [
+    {
+      "pending": false,
+      "forcedPutRefusal": false,
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "0bc14bc9-0519-4fc4-9c2e-d840f52ec798",
+      "pendingItemIndex": null
+    },
+    {
+      "pending": true,
+      "forcedPutRefusal": true,
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "29a4d9f3-ca97-479a-9a9e-f651a267b7de",
+      "pendingItemIndex": null
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "0bc14bc9-0519-4fc4-9c2e-d840f52ec798",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "29a4d9f3-ca97-479a-9a9e-f651a267b7de",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "eb93fc84-fb72-487d-9fec-e713a376e8c3",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": false,
+  "appVersionBefore": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "savedPhotoSurvivesReload": true,
+  "injectedPutRefusals": 1,
+  "failure": {
+    "phase": "unsaved first item: deliberate bucket refusal and native create",
+    "name": "AssertionError",
+    "message": "Expected values to be strictly equal:\n\nnull !== 0\n"
+  },
+  "finishedAt": "2026-11-11T13:31:36.596Z"
+}

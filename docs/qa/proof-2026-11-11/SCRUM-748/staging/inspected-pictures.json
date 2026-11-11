@@ -1,0 +1,26 @@
+{
+  "inspectedAt": "2026-11-11T13:35:36.736Z",
+  "pictures": [
+    {
+      "name": "s748-saved-upload.png",
+      "sha256": "e07f30ec32cd70e65fee2c7fe1fc80d84182d6de4468c4a9f34965f8c830825a",
+      "inspected": true
+    },
+    {
+      "name": "s748-saved-reloaded.png",
+      "sha256": "e07f30ec32cd70e65fee2c7fe1fc80d84182d6de4468c4a9f34965f8c830825a",
+      "inspected": true
+    },
+    {
+      "name": "s748-pending-upload.png",
+      "sha256": "a270deaf81d4e0d28c4da834c1fd0c11b5903cfbc051392380173079220185e3",
+      "inspected": true
+    },
+    {
+      "name": "s748-pending-reloaded.png",
+      "sha256": "a92db2b8b923f6ae21e9963e348a0c719af326a741ab9c3d9e6def5470eea62a",
+      "inspected": true
+    }
+  ],
+  "note": "All four viewed. Saved-upload and saved-reloaded are byte-identical; their common visible image was inspected. Only ZZ TEST labels, seeded branch labels and the synthetic orange JPEG; dialog crops, no credentials or QR."
+}

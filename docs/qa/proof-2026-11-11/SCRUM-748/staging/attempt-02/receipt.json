@@ -1,0 +1,168 @@
+{
+  "expectedSha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "startedAt": "2026-11-11T13:33:24.333Z",
+  "phase": "remove exact owned attachments and templates, then revoke sessions",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2a1db2d6-fbdc-44a9-a9ff-fd05ed7add8b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/dff9a8d8-ed96-4362-a65a-ddf00f929d51",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/01805634-a4d5-474c-989b-c742568c8808",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/2a1db2d6-fbdc-44a9-a9ff-fd05ed7add8b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2a1db2d6-fbdc-44a9-a9ff-fd05ed7add8b",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/01cc0151-ba3f-41ed-b889-273d183af2d2",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/01cc0151-ba3f-41ed-b889-273d183af2d2",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "2a1db2d6-fbdc-44a9-a9ff-fd05ed7add8b",
+    "01cc0151-ba3f-41ed-b889-273d183af2d2"
+  ],
+  "attachments": [
+    "dff9a8d8-ed96-4362-a65a-ddf00f929d51",
+    "01805634-a4d5-474c-989b-c742568c8808"
+  ],
+  "uploads": [
+    {
+      "pending": false,
+      "forcedPutRefusal": false,
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "dff9a8d8-ed96-4362-a65a-ddf00f929d51",
+      "checklistTemplateId": null,
+      "checklistTemplateItemId": "f6bab01a-e854-4a03-8d35-e30d9f0296e7",
+      "pendingChecklistId": null,
+      "pendingItemIndex": null
+    },
+    {
+      "pending": true,
+      "forcedPutRefusal": true,
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "01805634-a4d5-474c-989b-c742568c8808",
+      "checklistTemplateId": null,
+      "checklistTemplateItemId": null,
+      "pendingChecklistId": "2154e7db-8674-4144-a597-58f632c8f198",
+      "pendingItemIndex": 0
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "dff9a8d8-ed96-4362-a65a-ddf00f929d51",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "01805634-a4d5-474c-989b-c742568c8808",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "2a1db2d6-fbdc-44a9-a9ff-fd05ed7add8b",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "01cc0151-ba3f-41ed-b889-273d183af2d2",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": true,
+  "appVersionBefore": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "savedPhotoSurvivesReload": true,
+  "injectedPutRefusals": 1,
+  "association": {
+    "status": 200,
+    "updated": 1
+  },
+  "pendingPhotoSurvivesSaveAndReload": true,
+  "appVersionAfter": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-11T13:33:48.407Z"
+}
