@@ -16,6 +16,7 @@ import {
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   heldSaleKindOf,
   holdOutlivedItsDay,
+  isPartyDepositAttempt,
   isPaymentReversalPending,
   newId,
   type EodOpenSale,
@@ -66,11 +67,24 @@ export interface HoldActor extends ActorContext {
 }
 
 interface SaleMoney {
+  /** Taken at a till: what a refund would give back, and what makes the sale part-paid. */
   paidSatang: number;
+  /** Everything taken on the sale, a party's deposit included: what the balance is counted from. */
+  takenSatang: number;
   inFlight: boolean;
 }
 
-/** What has been taken on each sale, and whether a tender is still in progress. */
+/**
+ * What has been taken on each sale, and whether a tender is still in progress.
+ *
+ * SCRUM-876 — a party's deposit, recorded on its settlement sale as paid in
+ * advance (`isPartyDepositAttempt`), is not money the till took: it was paid
+ * in the OTO App and stays the party's whatever becomes of the sale, as
+ * `voidSale` treats it. It counts towards the balance, never towards
+ * `paidSatang` — so a settlement left at the balance step with only the
+ * deposit on it is an unpaid sale (voided, not refunded), not a part-paid one
+ * that refuses the End of Day.
+ */
 async function moneyOf(db: Exec, saleIds: readonly string[]): Promise<Map<string, SaleMoney>> {
   const out = new Map<string, SaleMoney>();
   if (saleIds.length === 0) return out;
@@ -79,14 +93,18 @@ async function moneyOf(db: Exec, saleIds: readonly string[]): Promise<Map<string
       saleId: paymentAttempt.saleId,
       status: paymentAttempt.status,
       amountSatang: paymentAttempt.amountSatang,
+      methodCode: paymentAttempt.methodCode,
       payload: paymentAttempt.payload,
     })
     .from(paymentAttempt)
     .where(inArray(paymentAttempt.saleId, [...saleIds]));
   for (const row of rows) {
     if (!row.saleId) continue;
-    const money = out.get(row.saleId) ?? { paidSatang: 0, inFlight: false };
-    if (PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(row.status)) money.paidSatang += row.amountSatang;
+    const money = out.get(row.saleId) ?? { paidSatang: 0, takenSatang: 0, inFlight: false };
+    if (PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(row.status)) {
+      money.takenSatang += row.amountSatang;
+      if (!isPartyDepositAttempt(row)) money.paidSatang += row.amountSatang;
+    }
     if (!PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(row.status) || isPaymentReversalPending(row.payload)) {
       money.inFlight = true;
     }
@@ -95,7 +113,7 @@ async function moneyOf(db: Exec, saleIds: readonly string[]): Promise<Map<string
   return out;
 }
 
-const NO_MONEY: SaleMoney = { paidSatang: 0, inFlight: false };
+const NO_MONEY: SaleMoney = { paidSatang: 0, takenSatang: 0, inFlight: false };
 
 /** The rows of the Held sales list, with the money read live and the names resolved. */
 async function heldViews(
@@ -119,7 +137,7 @@ async function heldViews(
   return holds.map((h) => {
     const row = saleOf.get(h.saleId);
     const gross = row?.grossSatang ?? h.paidSatang + h.balanceSatang;
-    const paid = (money.get(h.saleId) ?? NO_MONEY).paidSatang;
+    const { paidSatang: paid, takenSatang: taken } = money.get(h.saleId) ?? NO_MONEY;
     return {
       holdId: h.id,
       saleId: h.saleId,
@@ -129,7 +147,7 @@ async function heldViews(
       note: h.note,
       grossSatang: gross,
       paidSatang: paid,
-      balanceSatang: Math.max(0, gross - paid),
+      balanceSatang: Math.max(0, gross - taken),
       businessDate: row?.businessDate ?? '',
       heldAt: h.heldAt.toISOString(),
       heldBy: { accountId: h.heldByAccountId, name: nameOf(h.heldByAccountId) },
@@ -204,7 +222,7 @@ export async function holdSale(
       'A payment on this sale is still in progress — finish or cancel it before holding the sale.',
     );
   }
-  const balance = row.grossSatang - money.paidSatang;
+  const balance = row.grossSatang - money.takenSatang;
   if (balance <= 0) {
     throw errors.conflict(
       'SALE_OWES_NOTHING',
@@ -327,7 +345,7 @@ export async function resumeHeldSale(
     stationId: string,
     replay: boolean,
   ): Promise<SaleResumeAnswer> => {
-    const paid = ((await moneyOf(tx, [saleId])).get(saleId) ?? NO_MONEY).paidSatang;
+    const { paidSatang: paid, takenSatang: taken } = (await moneyOf(tx, [saleId])).get(saleId) ?? NO_MONEY;
     return {
       replay,
       saleId,
@@ -337,7 +355,7 @@ export async function resumeHeldSale(
       note: hold.note,
       grossSatang: row.grossSatang,
       paidSatang: paid,
-      balanceSatang: Math.max(0, row.grossSatang - paid),
+      balanceSatang: Math.max(0, row.grossSatang - taken),
     };
   };
 
@@ -532,7 +550,7 @@ export async function openSalesOfDay(
   }
   const out: EodOpenSale[] = [];
   for (const r of rows) {
-    const paid = (money.get(r.id) ?? NO_MONEY).paidSatang;
+    const { paidSatang: paid, takenSatang: taken } = money.get(r.id) ?? NO_MONEY;
     const hold = holdOf.get(r.id);
     if (!hold && paid <= 0) continue;
     const kinds = [...(kindsOf.get(r.id) ?? [])];
@@ -546,7 +564,7 @@ export async function openSalesOfDay(
       carriedFrom: r.businessDate < date ? r.businessDate : null,
       grossSatang: r.grossSatang,
       paidSatang: paid,
-      balanceSatang: Math.max(0, r.grossSatang - paid),
+      balanceSatang: Math.max(0, r.grossSatang - taken),
       flaggedAt: hold?.flaggedAt?.toISOString() ?? null,
     });
   }

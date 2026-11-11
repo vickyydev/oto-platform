@@ -49530,6 +49530,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -49729,6 +49732,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -50089,6 +50095,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -50263,6 +50272,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -50463,6 +50475,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -50642,6 +50657,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -50859,6 +50877,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -66970,6 +66991,9 @@
                         },
                         "createdAt": {
                           "type": "string"
+                        },
+                        "partyDeposit": {
+                          "type": "boolean"
                         }
                       },
                       "required": [

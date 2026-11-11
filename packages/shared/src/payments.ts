@@ -463,6 +463,14 @@ export interface PaymentAttemptView {
   offline: boolean;
   paidAt: string | null;
   createdAt: string;
+  /**
+   * SCRUM-876 — true on a party's deposit, recorded on its settlement sale as
+   * paid in advance (`isPartyDepositAttempt`): not money this sale's till took,
+   * so History voids a settlement left with only the deposit on it, as the
+   * platform's void does. Absent on every other attempt and on a deployment
+   * older than this field.
+   */
+  partyDeposit?: boolean;
 }
 
 // --- The box's per-terminal reference counter -------------------------------

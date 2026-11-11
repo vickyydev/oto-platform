@@ -106,6 +106,8 @@ export const AttemptSchema = z.object({
   offline: z.boolean(),
   paidAt: z.string().nullable(),
   createdAt: z.string(),
+  /** SCRUM-876 — true on a party's deposit recorded on its settlement sale; absent otherwise. */
+  partyDeposit: z.boolean().optional(),
 });
 
 /**

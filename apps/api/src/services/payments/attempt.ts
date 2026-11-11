@@ -8,6 +8,7 @@ import {
   PARTY_DEPOSIT_TENDER,
   WALLET_TENDER_CODE,
   WALLET_TENDER_METHOD,
+  isPartyDepositAttempt,
   type PaymentAttemptStatus,
   type PaymentAttemptView,
 } from '@oto/shared';
@@ -98,6 +99,8 @@ export function attemptView(row: AttemptRow): PaymentAttemptView {
     offline: row.offline,
     paidAt: row.paidAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
+    // SCRUM-876 — a party's deposit is named, so History knows it is not the till's money.
+    ...(isPartyDepositAttempt(row) ? { partyDeposit: true } : {}),
   };
 }
 

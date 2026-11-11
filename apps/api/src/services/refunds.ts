@@ -4,6 +4,7 @@ import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  isPartyDepositAttempt,
   isPaymentReversalPending,
   WALLET_TENDER_CODE,
   WALLET_TENDER_METHOD,
@@ -30,6 +31,7 @@ import { revokeSaleBands } from './bands';
 import { releaseSaleBenefits } from './benefit-checkout';
 import { restoreTierClaimOf } from './sale-tier';
 import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
+import { failAttempt } from './payments/attempt';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
@@ -235,9 +237,16 @@ export async function refundSale(
 
   let remaining = refundableSatang(row.grossSatang, row.refundedSatang);
   let heldVouchers: { id: string; code: string }[] = [];
+  /**
+   * SCRUM-876 — a party's deposit on a part-paid settlement (`isPartyDepositAttempt`)
+   * is not money this sale took: it was paid in the OTO App and stays the
+   * party's, held for the next settlement. It is neither refunded nor counted
+   * here; its record is cancelled with the sale below, as `voidSale` does.
+   */
+  let deposits: { id: string; payload: unknown }[] = [];
   if (partPaid) {
     const tried = await tx
-      .select({ id: paymentAttempt.id, status: paymentAttempt.status, amountSatang: paymentAttempt.amountSatang, payload: paymentAttempt.payload })
+      .select({ id: paymentAttempt.id, status: paymentAttempt.status, amountSatang: paymentAttempt.amountSatang, methodCode: paymentAttempt.methodCode, payload: paymentAttempt.payload })
       .from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleId));
     const inFlight = tried.filter(
@@ -250,8 +259,9 @@ export async function refundSale(
         { attempts: inFlight.map((a) => ({ id: a.id, status: a.status })) },
       );
     }
+    deposits = tried.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && isPartyDepositAttempt(a));
     const takenSatang = tried
-      .filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status))
+      .filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !isPartyDepositAttempt(a))
       .reduce((sum, a) => sum + a.amountSatang, 0);
     if (takenSatang <= 0) throw notClosed();
     if (input.mode !== 'whole') {
@@ -352,7 +362,7 @@ export async function refundSale(
   // --- Where the money goes back ---------------------------------------------
   const attempts = (
     await tx.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))
-  ).filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
+  ).filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !(partPaid && isPartyDepositAttempt(a)));
   const sentBack = new Map<string, number>();
   for (const earlierRefund of earlier) {
     for (const entry of earlierRefund.tenderAllocation ?? []) {
@@ -585,6 +595,16 @@ export async function refundSale(
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not updated');
+  // SCRUM-876 — the deposit's record goes with the closed settlement; the deposit stays the party's.
+  for (const deposit of deposits) {
+    await failAttempt(tx, deposit.id, {
+      status: 'cancelled',
+      payload: {
+        ...((deposit.payload as Record<string, unknown> | null) ?? {}),
+        cancelledWithSale: { at: now.toISOString(), accountId: actor.accountId, reason, refundId },
+      },
+    });
+  }
   if (full || partPaid) await cancelSaleExtension(tx, after, actor, now);
 
   let partPaidClose: { releasedVoucherIds: string[]; releasedBenefitApplicationIds: string[]; restoredTierClaimId: string | null } | null = null;

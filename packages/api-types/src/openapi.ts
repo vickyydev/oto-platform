@@ -20538,6 +20538,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             } | null;
                             replayed: boolean;
                             outstandingSatang: number;
@@ -20610,6 +20611,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                             qrPayload: string | null;
                             qrImageUrl: string | null;
@@ -20721,6 +20723,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                             replayed: boolean;
                             /** @enum {string} */
@@ -20790,6 +20793,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                         };
                     };
@@ -20866,6 +20870,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                         };
                     };
@@ -20938,6 +20943,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                             replayed: boolean;
                             outstandingSatang: number | null;
@@ -21019,6 +21025,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             };
                             replayed: boolean;
                             outstandingSatang: number;
@@ -26904,6 +26911,7 @@ export interface paths {
                                 offline: boolean;
                                 paidAt: string | null;
                                 createdAt: string;
+                                partyDeposit?: boolean;
                             } | null;
                             replayed: boolean;
                             outstandingSatang: number;

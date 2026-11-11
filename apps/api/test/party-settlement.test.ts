@@ -11,6 +11,7 @@ import {
   paymentAttempt,
   paymentMethod,
   product,
+  refund,
   sale,
   saleLine,
   station,
@@ -42,6 +43,7 @@ import { simulateGatewayEvent } from '../src/services/payments/gateway';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
+  CHALONG_MANAGER,
   RECEPTION,
   branchIdByCode,
   createTestContext,
@@ -1024,5 +1026,177 @@ describe('SCRUM-828: a priced item the BEO added is charged on the settlement; a
     const receipt = saleReceiptDocument(await salePrintSnapshotOf(ctx.db, row!));
     expect(receipt.lines.find((l) => l.name === 'ZZ TEST unicorn cake')).toBeDefined();
     expect(receipt.lines.find((l) => l.name === 'ZZ TEST free juice')!.price).toBe('฿0');
+  });
+});
+
+// =============================================================================
+// SCRUM-876 — a settlement left before its balance is taken
+// =============================================================================
+
+/**
+ * Staff press Settle party, confirm the counts, and leave the "Take the
+ * balance" step before any tender: the sale stays `tendering` with only the
+ * party's deposit on it. The deposit was paid in the OTO App and is not money
+ * the till took, so the sale is UNPAID — not part-paid: it never stands in the
+ * End of Day's way, History voids it, the party page cancels it, and the
+ * party may be settled again with the same deposit. Nothing is refunded by
+ * any of this; the deposit stays exactly as it was.
+ */
+describe('SCRUM-876 — a settlement left before its balance', () => {
+  const voidSale = (cookie: string, saleId: string, reason: string, key = newId()) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/void`,
+      payload: { reason },
+      headers: { cookie, 'idempotency-key': key },
+    });
+  type OpenRow = { saleId: string; kind: string; paidSatang: number; balanceSatang: number; held: boolean };
+  const endOfDay = async (saleId: string) => {
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/branches/${central}/end-of-day?date=${row!.businessDate}`,
+      headers: { cookie: admin },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return { date: row!.businessDate, record: res.json() as { openSales?: { partPaid: number; rows: OpenRow[] } } };
+  };
+  const closeDay = (date: string) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${central}/end-of-day/close`,
+      headers: { cookie: admin, 'idempotency-key': newId() },
+      payload: { date, actuals: [], countedSatang: null, floatLeftSatang: null, override: { reason: 'ZZ TEST rehearsal day' } },
+    });
+  const depositOf = async (saleId: string) =>
+    (await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).filter(
+      (a) => a.methodCode === PARTY_DEPOSIT_TENDER.code,
+    );
+
+  it('with only the deposit on it, the open settlement is not a part-paid sale: End of Day does not list it', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party left at the balance', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    expect(opened.body.sale).toMatchObject({ status: 'tendering', outstandingSatang: 1_490_000 });
+    const [deposit] = await depositOf(opened.body.sale.id);
+    expect(deposit).toMatchObject({ status: 'approved', amountSatang: 200_000, stationId: null });
+
+    // History reads the deposit as the party's, not the till's.
+    const read = await call<{ attempts: { id: string; partyDeposit?: boolean }[] }>('GET', reception, `/sales/${opened.body.sale.id}`);
+    expect(read.status).toBe(200);
+    expect(read.body.attempts).toEqual([expect.objectContaining({ id: deposit!.id, partyDeposit: true })]);
+
+    const { record } = await endOfDay(opened.body.sale.id);
+    expect(record.openSales!.rows.find((r) => r.saleId === opened.body.sale.id)).toBeUndefined();
+  });
+
+  it('voided from History or the party page, the deposit stays as it was and the next settlement uses it; nothing is refunded', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party cancelled and settled again', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const first = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(first.status, JSON.stringify(first.body)).toBe(200);
+    const saleId = first.body.sale.id;
+    const [before] = await depositOf(saleId);
+
+    const key = newId();
+    const voided = await voidSale(reception, saleId, 'ZZ TEST parent will pay later', key);
+    expect(voided.statusCode, voided.body).toBe(200);
+    expect(voided.json()).toMatchObject({ replay: false, sale: { status: 'voided' }, void: { reason: 'ZZ TEST parent will pay later' } });
+    // The same press again is answered as the press it was, and a void of a voided sale is a replay.
+    const again = await voidSale(reception, saleId, 'ZZ TEST parent will pay later', key);
+    expect(again.statusCode).toBe(200);
+    expect(again.json()).toEqual(voided.json());
+    expect((await voidSale(reception, saleId, 'ZZ TEST once more')).json().replay).toBe(true);
+
+    // THE MONEY RULE: the deposit's record is cancelled with the sale and nothing was refunded.
+    const [after] = await depositOf(saleId);
+    expect(after).toMatchObject({ id: before!.id, status: 'cancelled', amountSatang: 200_000 });
+    expect((after!.payload as { cancelledWithSale?: { reason: string } }).cancelledWithSale?.reason).toBe('ZZ TEST parent will pay later');
+    expect(await ctx.db.select().from(refund).where(eq(refund.saleId, saleId))).toHaveLength(0);
+    expect(await ctx.db.select().from(auditLog).where(and(eq(auditLog.entityId, saleId), eq(auditLog.action, 'sale.void')))).toHaveLength(1);
+
+    // The party page: the settlement is released, the party's deposit untouched.
+    const read = await detail(party);
+    expect(read.body.event.party!.settlement).toMatchObject({ id: first.body.settlement.id, state: 'voided' });
+    expect(read.body.event.party!.depositSatang).toBe(200_000);
+    expect(read.body.event.party!.payments).toHaveLength(0);
+
+    // The next settlement takes the same deposit again, on its own sale.
+    const second = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(second.status, JSON.stringify(second.body)).toBe(200);
+    expect(second.body.sale.id).not.toBe(saleId);
+    expect(second.body.sale.outstandingSatang).toBe(1_690_000 - 200_000);
+    expect(second.body.settlement).toMatchObject({ state: 'open', depositSatang: 200_000, paidSatang: 200_000 });
+    const [onSecond] = await depositOf(second.body.sale.id);
+    expect(onSecond).toMatchObject({ status: 'approved', amountSatang: 200_000 });
+    const [old] = await ctx.db.select().from(partySettlement).where(eq(partySettlement.id, first.body.settlement.id));
+    expect(old!.releasedAt).not.toBeNull();
+  });
+
+  it("is voided only by an account allowed to void a sale at the party's branch", async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party another park cannot cancel', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    const elsewhere = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
+    const refused = await voidSale(elsewhere, opened.body.sale.id, 'ZZ TEST not my park');
+    expect(refused.statusCode).toBe(403);
+    const [deposit] = await depositOf(opened.body.sale.id);
+    expect(deposit!.status).toBe('approved');
+    expect((await detail(party)).body.event.party!.settlement).toMatchObject({ state: 'open' });
+  });
+
+  it('a settlement that took part of its balance in cash is part-paid by that cash alone, and a whole refund gives back the cash only', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party part-paid then refunded', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    const saleId = opened.body.sale.id;
+    const part = await finalise(saleId, { method: 'cash', amountSatang: 100_000, tenderedSatang: 100_000 });
+    expect(part.status, JSON.stringify(part.body)).toBe(200);
+    expect(part.body).toMatchObject({ finalised: false, outstandingSatang: 1_390_000 });
+
+    const { record } = await endOfDay(saleId);
+    expect(record.openSales!.rows.find((r) => r.saleId === saleId)).toMatchObject({
+      kind: 'part_paid',
+      held: false,
+      paidSatang: 100_000,
+      balanceSatang: 1_390_000,
+    });
+
+    const refunded = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/refunds`,
+      headers: { cookie: admin, 'idempotency-key': newId() },
+      payload: { mode: 'whole', reason: 'ZZ TEST party cancelled', actionId: newId() },
+    });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(refunded.json()).toMatchObject({ refund: { amountSatang: 100_000 }, sale: { status: 'voided' }, refundStatus: 'refunded', refundableSatang: 0 });
+    const slices = refunded.json().refund.tenderAllocation as { route: string; amountSatang: number; method: string }[];
+    expect(slices.reduce((sum, s) => sum + s.amountSatang, 0)).toBe(100_000);
+    expect(slices.every((s) => s.method === 'cash')).toBe(true);
+    const [deposit] = await depositOf(saleId);
+    expect(deposit).toMatchObject({ status: 'cancelled', amountSatang: 200_000 });
+    expect((await detail(party)).body.event.party!.settlement).toMatchObject({ state: 'voided' });
+    const second = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(second.status, JSON.stringify(second.body)).toBe(200);
+    expect(second.body.sale.outstandingSatang).toBe(1_490_000);
+  });
+
+  it('Close Day is not refused over a settlement left with only its deposit', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party left open at close', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    const { date, record } = await endOfDay(opened.body.sale.id);
+    expect(record.openSales!.rows.find((r) => r.saleId === opened.body.sale.id)).toBeUndefined();
+    const closed = await closeDay(date);
+    expect(closed.statusCode, closed.body).toBe(200);
   });
 });
