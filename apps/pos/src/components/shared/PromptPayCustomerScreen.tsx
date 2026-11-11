@@ -16,42 +16,54 @@ interface PromptPayCustomerScreenProps {
   qrImageUrl?: string | null;
   expiresAt?: string | null;
   note?: string;
+  /**
+   * SCRUM-859 — drawn inside another screen's frame (the tender display's
+   * payment stage, beside the lines): the same words, code and figure without
+   * the full-height shell of their own.
+   */
+  embedded?: boolean;
 }
 
-export function PromptPayCustomerScreen({ amount, qrPayload, qrImageUrl, expiresAt, note }: PromptPayCustomerScreenProps) {
+export function PromptPayCustomerScreen({ amount, qrPayload, qrImageUrl, expiresAt, note, embedded = false }: PromptPayCustomerScreenProps) {
   const { t } = useLanguage();
   const hasCode = Boolean(qrPayload || qrImageUrl);
+  const content = (
+    <>
+      <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
+        <QrCodeIcon className="w-6 h-6" />
+        <span className="uppercase tracking-widest text-sm font-bold">{t('fnb.payment.thaiQrPromptpay')}</span>
+      </div>
+      <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
+      <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
+        <PaymentQr payload={qrPayload ?? null} imageUrl={qrImageUrl ?? null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
+      </div>
+      <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amount}</div>
+      {note && <p className="text-lg text-foreground/60 mt-3">{note}</p>}
+      {expiresAt && (
+        <p className="text-lg text-foreground/60 mt-3">
+          <PaymentExpiry expiresAt={expiresAt} />
+        </p>
+      )}
+      {hasCode ? (
+        <>
+          <p className="text-xl text-foreground/60 mt-4 max-w-md">
+            {t('till.payment.openBankingApp')}
+          </p>
+          <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            {t('till.payment.waitingConfirmation')}
+          </div>
+        </>
+      ) : (
+        <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.codePending')}</p>
+      )}
+    </>
+  );
+  if (embedded) return <div className="flex flex-col items-center text-center">{content}</div>;
   return (
     <div className="h-full w-full bg-[image:var(--cd-gradient)] text-foreground flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
-        <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
-          <QrCodeIcon className="w-6 h-6" />
-          <span className="uppercase tracking-widest text-sm font-bold">{t('fnb.payment.thaiQrPromptpay')}</span>
-        </div>
-        <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
-        <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-          <PaymentQr payload={qrPayload ?? null} imageUrl={qrImageUrl ?? null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
-        </div>
-        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amount}</div>
-        {note && <p className="text-lg text-foreground/60 mt-3">{note}</p>}
-        {expiresAt && (
-          <p className="text-lg text-foreground/60 mt-3">
-            <PaymentExpiry expiresAt={expiresAt} />
-          </p>
-        )}
-        {hasCode ? (
-          <>
-            <p className="text-xl text-foreground/60 mt-4 max-w-md">
-              {t('till.payment.openBankingApp')}
-            </p>
-            <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {t('till.payment.waitingConfirmation')}
-            </div>
-          </>
-        ) : (
-          <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.codePending')}</p>
-        )}
+        {content}
       </div>
     </div>
   );

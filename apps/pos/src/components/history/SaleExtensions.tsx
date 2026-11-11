@@ -420,7 +420,13 @@ export function ExtensionPayment({
   }, [stage.state.error, onClose]);
   // SCRUM-797 — the amount reaches the customer display as any separate
   // tender's does: a QR to scan or a card to present, once the charge exists.
-  useTenderPresentation(displayHandoff, 'extra_hour', stage.state.method, stage.display, Boolean(charge || resume));
+  // SCRUM-859 — with the line the family is paying for beside it: the option
+  // by its label, the children it is charged for and the price per child.
+  const extraHourLabel = option?.label ?? resume?.label;
+  const extraHourLines = extraHourLabel && data.children > 0
+    ? [{ label: extraHourLabel, qty: data.children, ...(option ? { unitPrice: option.unitSatang / 100 } : {}), lineTotal: totalSatang / 100 }]
+    : undefined;
+  useTenderPresentation(displayHandoff, 'extra_hour', stage.state.method, stage.display, Boolean(charge || resume), extraHourLines);
   const locked =
     frozen || preparing || operatorLocked || Boolean(offlineUnlock) || stage.busy || stage.locked;
   const addBracelet = (raw: string): ExtensionBand | null => {

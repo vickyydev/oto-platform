@@ -298,7 +298,9 @@ export function AddAttendeeModal({
   const electronic = !!paymentMethod && ['card', 'qr'].includes(paymentMethodKind(paymentMethod));
   const usesStage = electronic || stage.locked;
   const chosenMethod = usesStage ? stage.state.method : paymentMethod;
-  useTenderPresentation(displayHandoff, 'event_pass', chosenMethod, stage.display, open && phase === 'payment');
+  // SCRUM-859 — the pass by the event's title beside the amount on the display.
+  useTenderPresentation(displayHandoff, 'event_pass', chosenMethod, stage.display, open && phase === 'payment',
+    doorFeeTHB > 0 ? [{ label: event.title, qty: 1, lineTotal: doorFeeTHB }] : undefined);
 
   /** A sale rung up with no money on it is not left open behind a closed form. */
   const releaseHeldSale = () => {
