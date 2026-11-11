@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Mic, Square, X } from 'lucide-react';
 import { inboxApi } from '@/api/inbox';
+import { useRecorder } from '@/components/Recorder';
 import {
   DICTATION_MAX_SECONDS,
   DICTATION_PRIVACY_LINE,
@@ -8,24 +9,18 @@ import {
   DICTATION_TRANSCRIBING,
   clockOf,
   dictationErrorLine,
-  dictationSupported,
-  microphoneErrorLine,
-  reachedCeiling,
-  recorderMimeType,
   type DictationPhase,
 } from '@/lib/dictation';
 
 /**
  * THE COMPOSER'S MICROPHONE (SCRUM-834; owner, 11 Nov 2026: "both a and then b").
  *
- * `useDictation` records a clip in the browser (`MediaRecorder`, Opus in WebM
- * where the browser offers it) from the press to the stop — or to the
- * ceiling — and posts it to the api, which answers the words; `onWords`
- * places them in the composer. The clip lives in memory for that one call;
- * nothing is sent to the customer by any of this. The microphone is asked for
- * through the browser's own door, which remembers the answer per site, and
- * its tracks are released after every clip so the tab's recording light goes
- * out between dictations.
+ * `useDictation` records a clip in the browser through the shared recorder
+ * (`useRecorder`: `MediaRecorder`, Opus in WebM where the browser offers it,
+ * from the press to the stop or to the ceiling, the microphone released
+ * after every clip) and posts it to the api, which answers the words;
+ * `onWords` places them in the composer. The clip lives in memory for that
+ * one call; nothing is sent to the customer by any of this.
  *
  * `DictateButton` is the one control in the composer's row, in its three
  * states; `DictationLine` is the line under it — the red dot and the clock
@@ -59,154 +54,59 @@ export interface DictationOfferOptions {
   maxSeconds?: number;
 }
 
-/** How often the clock ticks while recording. */
-const TICK_MS = 250;
-
 export function useDictation(conversationId: string, onWords: (words: string) => void, offer: DictationOfferOptions = {}): Dictation {
   const maxSeconds = offer.maxSeconds ?? DICTATION_MAX_SECONDS;
   const available = offer.available ?? true;
-  const [phase, setPhase] = useState<DictationPhase>('idle');
-  const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const recorder = useRef<MediaRecorder | null>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const chunks = useRef<Blob[]>([]);
-  const ticker = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
   const mounted = useRef(true);
-  // The latest callback, conversation and ceiling, read when the words land and as the clock ticks.
+  // The latest callback and conversation, read when the words land.
   const onWordsRef = useRef(onWords);
   const conversationRef = useRef(conversationId);
-  const ceilingRef = useRef(maxSeconds);
   useEffect(() => {
     onWordsRef.current = onWords;
     conversationRef.current = conversationId;
-    ceilingRef.current = maxSeconds;
-  }, [onWords, conversationId, maxSeconds]);
-
-  const release = useCallback(() => {
-    if (ticker.current !== null) {
-      clearInterval(ticker.current);
-      ticker.current = null;
-    }
-    stream.current?.getTracks().forEach((track) => track.stop());
-    stream.current = null;
-  }, []);
-
+  }, [onWords, conversationId]);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      const r = recorder.current;
-      recorder.current = null;
-      if (r && r.state !== 'inactive') {
-        try {
-          r.stop();
-        } catch {
-          // A recorder already gone has nothing to stop.
-        }
-      }
-      release();
     };
-  }, [release]);
+  }, []);
 
   const send = useCallback(async (clip: Blob) => {
+    setTranscribing(true);
     try {
       const { text } = await inboxApi.dictate(conversationRef.current, clip);
       if (!mounted.current) return;
       if (text.trim()) onWordsRef.current(text.trim());
     } catch (err) {
-      if (mounted.current) setError(dictationErrorLine(err));
+      if (mounted.current) setRefusal(dictationErrorLine(err));
     } finally {
-      if (mounted.current) setPhase('idle');
+      if (mounted.current) setTranscribing(false);
     }
   }, []);
+  const onClip = useCallback((clip: Blob) => void send(clip), [send]);
+  const recorder = useRecorder({ maxSeconds, onClip });
 
-  const stop = useCallback(() => {
-    const r = recorder.current;
-    if (!r || r.state === 'inactive') return;
-    recorder.current = null;
-    if (ticker.current !== null) {
-      clearInterval(ticker.current);
-      ticker.current = null;
-    }
-    setPhase('transcribing');
-    try {
-      r.stop();
-    } catch {
-      release();
-      setError('The recording could not be stopped.');
-      setPhase('idle');
-    }
-  }, [release]);
-
-  const start = useCallback(async () => {
-    if (recorder.current) return;
-    setError(null);
-    setPhase('starting');
-    let mic: MediaStream;
-    try {
-      mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      if (!mounted.current) return;
-      setError(microphoneErrorLine(err));
-      setPhase('idle');
-      return;
-    }
-    if (!mounted.current) {
-      mic.getTracks().forEach((track) => track.stop());
-      return;
-    }
-    stream.current = mic;
-    const mimeType = recorderMimeType(MediaRecorder.isTypeSupported);
-    let r: MediaRecorder;
-    try {
-      r = mimeType ? new MediaRecorder(mic, { mimeType }) : new MediaRecorder(mic);
-    } catch {
-      release();
-      setError('The recording could not be started.');
-      setPhase('idle');
-      return;
-    }
-    chunks.current = [];
-    r.ondataavailable = (event: BlobEvent) => {
-      if (event.data && event.data.size > 0) chunks.current.push(event.data);
-    };
-    r.onerror = () => {
-      recorder.current = null;
-      release();
-      if (!mounted.current) return;
-      setError('The recording stopped unexpectedly.');
-      setPhase('idle');
-    };
-    r.onstop = () => {
-      const type = r.mimeType || mimeType || 'audio/webm';
-      const clip = new Blob(chunks.current, { type });
-      chunks.current = [];
-      release();
-      if (!mounted.current) return;
-      void send(clip);
-    };
-    recorder.current = r;
-    const startedAt = Date.now();
-    r.start(1000);
-    setSeconds(0);
-    setPhase('recording');
-    ticker.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setSeconds(elapsed);
-      if (reachedCeiling(elapsed, ceilingRef.current)) stop();
-    }, TICK_MS);
-  }, [release, send, stop]);
+  // The wait for the recorder's last chunk and the wait for the words read the same from the composer.
+  const phase: DictationPhase = transcribing || recorder.phase === 'stopping' ? 'transcribing' : recorder.phase;
 
   return {
-    supported: available && dictationSupported(),
+    supported: available && recorder.supported,
     phase,
-    seconds,
+    seconds: recorder.seconds,
     maxSeconds,
-    error,
-    start: () => void start(),
-    stop,
-    dismissError: () => setError(null),
+    error: refusal ?? recorder.error,
+    start: () => {
+      setRefusal(null);
+      recorder.start();
+    },
+    stop: recorder.stop,
+    dismissError: () => {
+      setRefusal(null);
+      recorder.dismissError();
+    },
   };
 }
 
