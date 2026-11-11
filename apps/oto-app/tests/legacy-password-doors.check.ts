@@ -19,6 +19,8 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -74,6 +76,29 @@ const withLogin = await employee("with-login", { user_id: staff.id });
 const noLogin = await employee("no-login");
 const fresh = await employee("fresh");
 
+// SCRUM-784: the real current route provisions through a captured loopback
+// platform. No staging account, provider, password or SMS service is used.
+const asked: Array<Record<string, unknown>> = [];
+const platformAccounts = new Map<string, { userId: string; accountId: string; phone: string }>();
+const platform = createServer((request, response) => {
+  let raw = "";
+  request.on("data", chunk => { raw += chunk; });
+  request.on("end", () => { void (async () => {
+    assert.equal(request.url, "/admin/apps/oto_app/suite-sign-ins");
+    assert.equal(request.headers.authorization === "Bearer zz-784-captured-key", true);
+    assert.equal(request.headers.cookie, undefined);
+    const body = JSON.parse(raw) as Record<string, unknown>;
+    asked.push(body);
+    const actionId = String(body.actionId), existing = platformAccounts.get(actionId);
+    const account = existing ?? { userId: String(body.appUserId), accountId: randomUUID(), phone: String(body.phone) };
+    platformAccounts.set(actionId, account);
+    await q("update users set platform_user_id=$1 where id=$2", [account.accountId, account.userId]);
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ id: actionId, externalUserId: account.userId, ...account,
+      platformManaged: false, temporaryPassword: existing ? null : "ZZ TEST captured once", replayed: !!existing }));
+  })().catch(() => { response.writeHead(500); response.end(); }); });
+});
+
 // ─── The app, twice: its own form on, and closed ─────────────────────────────
 
 const children: ChildProcess[] = [];
@@ -86,7 +111,7 @@ async function serve(env: Record<string, string>): Promise<string> {
       NODE_ENV: "test",
       APP_ENV: "dev",
       DEPLOY_ENV: "local",
-      OTOAPP_JOBS: "inprocess",
+      OTOAPP_JOBS: "platform",
       STORAGE_ENV_PREFIX: "zz-test",
       OBJECT_STORAGE: "local",
       LOG_LEVEL: "warn",
@@ -98,7 +123,7 @@ async function serve(env: Record<string, string>): Promise<string> {
   children.push(child);
   let output = "";
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`harness did not start:\n${output}`)), 90_000);
+    const timer = setTimeout(() => reject(new Error("harness did not start")), 90_000);
     const read = (chunk: Buffer) => {
       output += chunk.toString("utf8");
       const m = /HARNESS_PORT=(\d+)/.exec(output);
@@ -111,7 +136,7 @@ async function serve(env: Record<string, string>): Promise<string> {
     child.stderr!.on("data", read);
     child.on("exit", (code) => {
       clearTimeout(timer);
-      reject(new Error(`harness exited ${code}:\n${output}`));
+      reject(new Error(`harness exited ${code}`));
     });
   });
 }
@@ -133,8 +158,10 @@ const call = async (origin: string, method: string, path: string, cookie: string
 };
 
 try {
-  const legacy = await serve({ OTOAPP_LEGACY_LOGIN: "true" });
-  const closed = await serve({ OTOAPP_LEGACY_LOGIN: "false" });
+  await new Promise<void>(resolve => platform.listen(0, "127.0.0.1", resolve));
+  const captured = { PLATFORM_API_URL: `http://127.0.0.1:${(platform.address() as AddressInfo).port}`, OTOAPP_PROVISION_KEY: "zz-784-captured-key" };
+  const legacy = await serve({ ...captured, OTOAPP_LEGACY_LOGIN: "true" });
+  const closed = await serve({ ...captured, OTOAPP_LEGACY_LOGIN: "false" });
 
   const login = await fetch(`${legacy}/api/login`, {
     method: "POST",
@@ -176,19 +203,32 @@ try {
   assert.equal(reset.status, 200, JSON.stringify(reset.body));
   assert.equal(typeof reset.body.tempPassword, "string");
 
-  // Create Login, by a global_admin, at the ADMIN level across all branches.
-  const created = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, {
+  // MEDIUM FINDING fixed (SCRUM-784): the pre-suite request lacks the press
+  // identity and phone. Keep its refusal pinned, then exercise today's body.
+  const request = {
+    actionId: randomUUID(), phone: "0907840001",
     email: `zz-543-made-${run}@example.com`,
     accessLevel: "ADMIN",
     branchScope: "ALL",
-  });
-  assert.equal(created.status, 200, JSON.stringify(created.body));
+  };
+  const obsolete = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, { email: request.email, accessLevel: "ADMIN", branchScope: "ALL" });
+  assert.equal(obsolete.status, 400); assert.equal(asked.length, 0);
+  assert.equal((await q("select user_id from employees where id=$1", [fresh]))[0].user_id, null);
+  // Create Login, by a global_admin, at the ADMIN level across all branches.
+  const created = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, request);
+  assert.equal(created.status, 200, "current Create Login request succeeds");
+  assert.equal(created.body.temporaryPassword === "ZZ TEST captured once", true);
+  assert.equal(created.body.replayed, false);
+  assert.deepEqual(asked, [{ actionId: request.actionId, appUserId: created.body.userId, phone: "+66907840001", actorAppUserId: admin.id }]);
   const [linked] = await q<{ user_id: string | null; core_user_id: string | null }>(
     "select e.user_id, p.core_user_id from employees e join access_policies p on p.person_id = e.person_id where e.id = $1",
     [fresh],
   );
   assert.deepEqual(linked, { user_id: created.body.userId, core_user_id: created.body.userId }, "the login is linked both ways");
-  const again = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, { email: `zz-543-again-${run}@example.com` });
+  const replay = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, request);
+  assert.equal(replay.status, 200); assert.equal(replay.body.replayed, true);
+  assert.equal(replay.body.temporaryPassword, null); assert.equal(replay.body.userId, created.body.userId);
+  const again = await call(closed, "POST", `/api/employees/${fresh}/enable-login`, cookie, { ...request, actionId: randomUUID(), email: `zz-543-again-${run}@example.com` });
   assert.equal(again.status, 409, "never a second login over the first");
 
   // Disable Login straight after, and the read names the state.
@@ -203,5 +243,6 @@ try {
   console.log("legacy-password-doors.check: all checks passed");
 } finally {
   for (const child of children) child.kill();
+  await new Promise<void>(resolve => { platform.closeAllConnections(); platform.close(() => resolve()); });
   await pool.end();
 }
