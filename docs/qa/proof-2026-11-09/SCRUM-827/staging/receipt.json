@@ -1,0 +1,3416 @@
+{
+  "unit": "SCRUM-827 staging proof",
+  "ticket": "SCRUM-827",
+  "liveCommit": "9a29dc61",
+  "startedAt": "2026-11-11T08:00:08.662Z",
+  "finishedAt": "2026-11-11T08:23:49.579Z",
+  "browser": "Chromium [number]",
+  "deploys": {
+    "before": {
+      "at": "2026-11-11T08:00:16.963Z",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbq1chd9el5s73927b0g",
+          "status": "live",
+          "sha": "17742781",
+          "finishedAt": "2026-11-11T07:20:41.034537Z"
+        },
+        {
+          "name": "oto-inbox-staging",
+          "deployId": "dep-dbq1ch59el5s73927as0",
+          "status": "live",
+          "sha": "17742781",
+          "finishedAt": "2026-11-11T07:17:28.88621Z"
+        },
+        {
+          "name": "oto-app-staging",
+          "deployId": "dep-dbq1oa1srm7s73989fb0",
+          "status": "live",
+          "sha": "9a29dc61",
+          "finishedAt": "2026-11-11T07:43:55.820172Z"
+        }
+      ],
+      "appLiveOnFixSha": true,
+      "inboxLive": true
+    },
+    "after": {
+      "at": "2026-11-11T08:23:46.328Z",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbq257rncjis73cjl29g",
+          "status": "live",
+          "sha": "9a29dc61",
+          "finishedAt": "2026-11-11T08:13:43.070177Z"
+        },
+        {
+          "name": "oto-inbox-staging",
+          "deployId": "dep-dbq2583ncjis73cjl3og",
+          "status": "live",
+          "sha": "9a29dc61",
+          "finishedAt": "2026-11-11T08:10:09.685991Z"
+        },
+        {
+          "name": "oto-app-staging",
+          "deployId": "dep-dbq257jncjis73cjl1jg",
+          "status": "live",
+          "sha": "9a29dc61",
+          "finishedAt": "2026-11-11T08:12:25.062303Z"
+        }
+      ],
+      "appLiveOnFixSha": true,
+      "inboxLive": true
+    }
+  },
+  "rules": "ZZ TEST records only; no SMS, no payments; the party host is a real staff member of the park chosen at run time and never written (masked in pictures, replaced by {HOST} or [name] here)",
+  "inboxViewer": {
+    "roles": [
+      "owner"
+    ],
+    "capabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    }
+  },
+  "app": {
+    "role": "global_admin",
+    "centralFloresta": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+    "zzTestLiveBefore": [
+      {
+        "id": "01a1c9a2-4576-7905-8b2a-3eb6cc9aeb1c",
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-21",
+        "archived": false
+      },
+      {
+        "id": "01a1c9a8-8a9b-7ad9-96da-fb2e18db5a2c",
+        "title": "ZZ Test Child's 6th Birthday",
+        "eventDate": "2026-11-22",
+        "archived": false
+      }
+    ],
+    "roster": {
+      "route": "GET /api/employees?branchId=<park>",
+      "status": 200,
+      "activeAtPark": 44,
+      "withNickname": 44,
+      "hostChosen": true,
+      "hostRule": "an active employee of the park whose nickname is unique among every name the park's people carry (the fill's matching rule); the name is held in memory only"
+    },
+    "catalogue": {
+      "packages": {
+        "route": "GET /api/beo/birthday-packages",
+        "status": 200,
+        "count": 3,
+        "chosen": {
+          "id": "391b269d-159a-4039-89a2-51ac132da747",
+          "name": "Birthday package, Central Floresta"
+        }
+      },
+      "setMenus": {
+        "route": "GET /api/beo/set-menu-templates",
+        "status": 200,
+        "count": 9,
+        "chosen": {
+          "id": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+          "name": "Set Central",
+          "group": "Pizza 1"
+        },
+        "option": "Hawaii",
+        "sampleKeys": [
+          "id",
+          "tenantId",
+          "name",
+          "items",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ],
+        "sampleItemKeys": [
+          "id",
+          "type",
+          "label",
+          "options",
+          "allowMultiple"
+        ]
+      },
+      "entertainment": {
+        "route": "GET /api/beo/entertainment-templates",
+        "status": 200,
+        "count": 19,
+        "chosen": {
+          "id": "f514a0a2-eaca-4c28-8a67-60f2583d8179",
+          "name": "Birthday entertainment program"
+        }
+      }
+    },
+    "hostHashKept": true
+  },
+  "conversations": {
+    "F": {
+      "conversationId": "01a1c99f-e27e-7f22-a28b-7afc544431b9",
+      "name": "ZZ TEST 827 family",
+      "language": "en",
+      "category": "birthdays",
+      "from": "a ZZ TEST simulator number of this run (never used before)",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi! A party for ZZ Test Child turning 7, 12 kids and 4 adults, Saturday 21 November at 2pm (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "outcome": "processed",
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "We'd like the park's cake at 16:00, a unicorn theme, a treasure hunt for the kids, and no nuts please (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "outcome": "processed",
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "n": 3,
+          "by": "team",
+          "text": "Confirmed: ZZ Test Child's 7th birthday party on Saturday 21 November 2026, 14:00 to 16:30, 12 kids and 4 adults, Birthday package, Central Floresta, the Set Central set menu with Hawaii, Birthday entertainment program, the park's cake at 16:00, booking name ZZ TEST, in the Party Room. Setup ready by 13:30: balloon arch. POS: ZZ TEST 827 party. Party host: {HOST}. Deposit 3,000 THB asked. (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "outcome": null,
+          "authorKind": "staff",
+          "providerStatus": "sent"
+        },
+        {
+          "n": 4,
+          "by": "customer",
+          "text": "one more adult is coming, so 5 adults please (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "outcome": "processed",
+          "authorKind": null,
+          "providerStatus": null
+        }
+      ],
+      "assistantTurns": {
+        "1": {
+          "turnShown": true,
+          "waitedMs": 11868,
+          "kinds": [
+            "ai_handover"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ],
+          "aiState": "left_for_team"
+        },
+        "2": {
+          "turnShown": false,
+          "waitedMs": 121552,
+          "kinds": [],
+          "lines": [],
+          "aiState": "left_for_team"
+        },
+        "4": {
+          "turnShown": false,
+          "waitedMs": 103856,
+          "kinds": [],
+          "lines": [],
+          "aiState": "person_replied"
+        }
+      }
+    },
+    "G": {
+      "conversationId": "01a1c9a8-2c92-79d3-8bae-24ed468107c7",
+      "name": "ZZ TEST 827 no-time family",
+      "language": "en",
+      "category": "birthdays",
+      "from": "a ZZ TEST simulator number of this run (never used before)",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hello, a birthday for ZZ Test Child turning 6 on Sunday 22 November, 10 kids and 3 adults. We have not decided the start time yet, but we want the park's cake at 16:00 (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "outcome": "processed",
+          "authorKind": null,
+          "providerStatus": null
+        },
+        {
+          "n": 2,
+          "by": "team",
+          "text": "Confirmed: ZZ Test Child's 6th birthday party on Sunday 22 November 2026, 10 kids and 3 adults, Birthday package, Central Floresta, the park's cake at 16:00. Party host: {HOST}. (ZZ TEST)",
+          "status": 200,
+          "path": "the inbox composer (POST /api/inbox/conversations/:id/messages)",
+          "outcome": null,
+          "authorKind": "staff",
+          "providerStatus": "sent"
+        }
+      ],
+      "assistantTurns": {
+        "1": {
+          "turnShown": true,
+          "waitedMs": 17776,
+          "kinds": [
+            "ai_handover"
+          ],
+          "lines": [
+            "Thank you so much! Our birthday manager will be with you shortly."
+          ],
+          "aiState": "left_for_team"
+        }
+      }
+    }
+  },
+  "events": {
+    "F": {
+      "id": "01a1c9a2-4576-7905-8b2a-3eb6cc9aeb1c",
+      "title": "ZZ Test Child's 7th Birthday",
+      "date": "2026-11-21",
+      "startTime": "14:00",
+      "bookedAt": "2026-11-11T08:05:44.853Z"
+    },
+    "G": {
+      "id": "01a1c9a8-8a9b-7ad9-96da-fb2e18db5a2c",
+      "title": "ZZ Test Child's 6th Birthday",
+      "date": "2026-11-22",
+      "startTime": "10:00",
+      "bookedAt": "2026-11-11T08:12:37.380Z"
+    },
+    "C": {
+      "id": "bbdecd8e-972e-488d-af2a-67d15e22d82f",
+      "title": "ZZ TEST 827 pasted party",
+      "date": "2026-11-23",
+      "startTime": "13:00",
+      "route": "POST /api/admin/events",
+      "status": 201,
+      "createdAt": "2026-11-11T08:19:10.936Z"
+    }
+  },
+  "step1": {
+    "bookDate": {
+      "F": {
+        "opened": {
+          "buttonsBefore": [
+            "Book Date",
+            "Create BEO"
+          ],
+          "proposalRoute": {
+            "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+            "status": 200
+          },
+          "readLine": "Read the whole chat",
+          "fields": {
+            "date": {
+              "value": "2026-11-21",
+              "hint": "The chat says “Saturday 21 November 2026”from the team"
+            },
+            "startTime": {
+              "value": "14:00",
+              "hint": "The chat says “14:00 to 16:30”from the team"
+            },
+            "park": {
+              "value": "Central Floresta",
+              "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare The chat says “Central Floresta”from the team"
+            },
+            "kids": {
+              "value": "12",
+              "hint": "The chat says “12 kids”from the team"
+            },
+            "adults": {
+              "value": "4",
+              "hint": "The chat says “4 adults”from the team"
+            },
+            "bookingName": {
+              "value": "ZZ TEST 827 family",
+              "hint": null
+            },
+            "phone": {
+              "value": "[number]",
+              "hint": null
+            },
+            "childName": {
+              "value": "ZZ Test Child",
+              "hint": "The chat says “ZZ Test Child's 7th birthday”from the team"
+            },
+            "childAge": {
+              "value": "7",
+              "hint": "Turning (age) The chat says “7th birthday”from the team"
+            }
+          },
+          "picture": "01-step1-book-date-dialog.png"
+        },
+        "booked": {
+          "save": {
+            "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+            "status": 200,
+            "sent": {
+              "date": "2026-11-21",
+              "startTime": "14:00",
+              "kids": 12,
+              "adults": 4,
+              "childName": "ZZ Test Child",
+              "childAge": 7,
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "hasId": true
+            },
+            "error": null,
+            "event": {
+              "id": "01a1c9a2-4576-7905-8b2a-3eb6cc9aeb1c",
+              "title": "ZZ Test Child's 7th Birthday",
+              "date": "2026-11-21",
+              "startTime": "14:00",
+              "statusName": "Tentative",
+              "branchName": "Oto Play Park, Central Floresta",
+              "kids": 12,
+              "adults": 4
+            }
+          },
+          "note": "Event: 21 Nov 2026 at Central Floresta · tentative in the Events calendar",
+          "chip": "Event: 21 Nov 2026 at Central Floresta",
+          "buttons": [
+            "Date Booked",
+            "Create BEO"
+          ],
+          "picture": "02-step1-date-booked.png"
+        }
+      }
+    }
+  },
+  "step3typedBefore": {
+    "input-event-activities": {
+      "at": "2026-11-11T08:06:02.822Z",
+      "key": "F",
+      "field": "input-event-activities",
+      "value": "ZZ typed: face painting",
+      "typed": "ZZ typed: face painting",
+      "save": {
+        "route": "PUT /api/events/:id/beo (the form's Save)",
+        "status": 200
+      },
+      "readBack": {
+        "activities": "ZZ typed: face painting",
+        "title": "ZZ Test Child's 7th Birthday",
+        "specialRequests": null
+      }
+    }
+  },
+  "step2": {
+    "createBeo": {
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null,
+        "fillParam": null
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 15.5,
+        "error": null,
+        "hasReview": true,
+        "origin": "inbox",
+        "transcript": {
+          "lines": 4,
+          "cut": false
+        },
+        "sourceIsTeamConfirmation": true,
+        "proposal": {
+          "keys": [
+            "package",
+            "addOns",
+            "setMenu",
+            "menuLines",
+            "entertainment",
+            "otherLines",
+            "event",
+            "cake",
+            "deposit",
+            "details"
+          ],
+          "event": {
+            "childName": {
+              "value": "ZZ Test Child",
+              "source": "team",
+              "line": 3
+            },
+            "numChildren": {
+              "value": 12,
+              "source": "team",
+              "line": 3
+            },
+            "numAdults": {
+              "value": 5,
+              "source": "family",
+              "line": 4
+            },
+            "startTime": {
+              "value": "14:00",
+              "source": "team",
+              "line": 3
+            },
+            "endTime": {
+              "value": "16:30",
+              "source": "team",
+              "line": 3
+            }
+          },
+          "package": {
+            "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+            "said": "Birthday package, Central Floresta",
+            "source": "team"
+          },
+          "setMenu": {
+            "templateId": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+            "said": null,
+            "choices": [
+              {
+                "option": "Hawaii",
+                "said": "Hawaii"
+              }
+            ]
+          },
+          "entertainment": [
+            {
+              "templateId": "f514a0a2-eaca-4c28-8a67-60f2583d8179",
+              "said": "Birthday entertainment program"
+            }
+          ],
+          "cake": {
+            "mode": "INTERNAL",
+            "time": "16:00",
+            "source": "team"
+          },
+          "deposit": {
+            "amount": 3000,
+            "paid": false,
+            "source": "team"
+          },
+          "requests": [],
+          "timeline": [],
+          "details": {
+            "title": {
+              "value": "ZZ Test Child's 7th Birthday",
+              "source": "default"
+            },
+            "bookingName": "null",
+            "locationText": "null",
+            "requests": 4,
+            "setup": "[object Object]",
+            "pos": "[object Object]",
+            "timeline": 4
+          },
+          "otherLines": 0
+        },
+        "fillProposals": {
+          "partyHost": {
+            "askedIsHost": true,
+            "matched": true,
+            "matchIsChosenHost": true,
+            "why": null
+          },
+          "entertainmentHost": null,
+          "setupResponsible": null
+        },
+        "catalogue": {
+          "packages": [
+            "Birthday package, Central Floresta",
+            "After School Birthday Package, Central (10 kids)",
+            "After School Birthday Package, Central (20 kids)"
+          ],
+          "setMenus": [
+            "Set Central",
+            "Set at Robinson",
+            "Cake (under 10 kids)",
+            "Cake (over 10 kids)",
+            "After school 10 kids chalong",
+            "After school central 20pax",
+            "Birthday set menu, Central Floresta",
+            "After School food set (10 kids)",
+            "After School food set (20 kids)"
+          ],
+          "entertainment": [
+            "Birthday entertainment program",
+            "Zombie game",
+            "Squid games",
+            "Jurassic park",
+            "Tesla show",
+            "Bubble show",
+            "Crio show",
+            "Minecraft: Creeper hunt",
+            "Slime Master Class",
+            "Cooking Class (pizza/cookies)",
+            "Ocean in a glass",
+            "ECO bracelet-making",
+            "Cookie decorating",
+            "Mini aquarium / Jurassic",
+            "Make & Take Workshop",
+            "Face painting",
+            "Glitter tattoo",
+            "Pinata",
+            "Neon party"
+          ]
+        }
+      },
+      "oneDialogCountIncludesTheEditorSheet": 2
+    },
+    "review": {
+      "title": "AI Fill — Review, edit and approve",
+      "header": {
+        "lines": [
+          "4 messages read; the team's confirmation from [name] wins where the family and the team both speak.",
+          "Every field is the family's, the team's, or the park's own:from the teamfrom the familythe park's defaultchanged here— the family's are defaults for you to check."
+        ],
+        "pasted": false
+      },
+      "legend": [
+        "from the team",
+        "from the family",
+        "the park's default",
+        "changed here"
+      ],
+      "eventInfo": {
+        "title": {
+          "value": "ZZ Test Child's 7th Birthday",
+          "marks": [
+            "default"
+          ],
+          "offer": null
+        },
+        "bookingName": {
+          "value": "ZZ TEST",
+          "marks": [],
+          "offer": null
+        },
+        "locationText": {
+          "value": "Party Room, Central Floresta",
+          "marks": [],
+          "offer": null
+        },
+        "activities": {
+          "value": "ZZ typed: face painting",
+          "marks": [],
+          "offer": {
+            "line": "The chat says \"a treasure hunt for the kids\"",
+            "marks": [
+              "family"
+            ],
+            "button": "Use the chat's"
+          }
+        },
+        "decoration": {
+          "value": "a unicorn theme\nballoon arch",
+          "marks": [
+            "family",
+            "team"
+          ],
+          "offer": null
+        },
+        "specialRequests": {
+          "value": "no nuts please",
+          "marks": [
+            "family"
+          ],
+          "offer": null
+        },
+        "childName": {
+          "value": "ZZ Test Child",
+          "marks": [
+            "team"
+          ]
+        },
+        "numChildren": {
+          "value": "12",
+          "marks": [
+            "team"
+          ]
+        },
+        "numAdults": {
+          "value": "5",
+          "marks": [
+            "family"
+          ]
+        },
+        "startTime": {
+          "value": "14:00",
+          "marks": [
+            "team"
+          ]
+        },
+        "endTime": {
+          "value": "16:30",
+          "marks": [
+            "team"
+          ]
+        },
+        "date": {
+          "text": "Date:Sat 21 Nov 2026— the message says \"Saturday 21 November 2026\"from the teamThe same day the event is booked for.",
+          "same": true,
+          "differs": false
+        }
+      },
+      "team": [
+        {
+          "field": "partyHost",
+          "text": "Party Host: [name] ([name] ) — the message says \"[name]\". Tick to assign.from the team",
+          "checkbox": true,
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "package": {
+        "value": "Birthday package, Central Floresta",
+        "id": "391b269d-159a-4039-89a2-51ac132da747",
+        "marks": [
+          "team"
+        ]
+      },
+      "packageSaid": "Birthday package, Central Floresta",
+      "price": "Catalogue ฿16,900 / ฿20,900",
+      "addOns": [],
+      "pos": {
+        "posName": {
+          "value": "Birthday package",
+          "marks": [],
+          "offer": null
+        },
+        "posNotes": {
+          "value": "POS: ZZ TEST 827 party. Deposit of 3,000 THB requested.",
+          "marks": [],
+          "offer": null
+        },
+        "items": [],
+        "noPos": null
+      },
+      "setup": {
+        "readyBy": {
+          "value": "13:30",
+          "marks": [],
+          "offer": null
+        },
+        "who": {
+          "value": "",
+          "marks": [],
+          "offer": null
+        },
+        "tasks": [],
+        "noSetup": null
+      },
+      "kitchen": {
+        "setMenu": {
+          "value": "Set Central",
+          "id": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+          "marks": [
+            "team"
+          ]
+        },
+        "choices": [
+          {
+            "label": "Pizza 1:",
+            "value": "Hawaii",
+            "marks": [
+              "team"
+            ],
+            "match": "Hawaii"
+          }
+        ],
+        "cake": {
+          "value": "The park's cake",
+          "time": "16:00",
+          "notes": "the park's cake",
+          "marks": [
+            "team"
+          ],
+          "notSaid": null
+        }
+      },
+      "entertainment": [
+        {
+          "value": "Birthday entertainment program",
+          "qty": "1",
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "inputs": [
+            "13:30",
+            "Setup ready by: balloon arch"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "14:00",
+            "party start"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "16:00",
+            "the park's cake"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "16:30",
+            "party end"
+          ],
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "noTimeline": null,
+      "timelineAuto": "The park's own steps (guests arrive, the setup, the cake, the food) are added from the BEO when you approve.from a template",
+      "timelineAutoMarks": [
+        "template"
+      ],
+      "deposit": {
+        "label": "Deposit asked:",
+        "amount": "3000",
+        "received": false,
+        "date": "",
+        "marks": [
+          "team"
+        ]
+      },
+      "otherLines": [],
+      "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+      "replaces": "This BEO already has its package, kitchen plan, entertainment, deposit: approving replaces what the review fills.",
+      "undecided": null,
+      "finalMessage": null,
+      "buttons": {
+        "fallback": "Load into Editor instead",
+        "approve": "Approve and create",
+        "approveEnabled": true
+      }
+    }
+  },
+  "step4": {
+    "formRightAfter": {
+      "chips": {
+        "event-info": "from the chat",
+        "party-host": "from the chat",
+        "birthday-package": "from the chat",
+        "party-details": "from the chat",
+        "setup-plan": "from the chat",
+        "kitchen-plan": "from the chat",
+        "timeline": "from the chat"
+      },
+      "fields": {
+        "input-event-title": {
+          "value": "ZZ Test Child's 7th Birthday",
+          "mark": "the park's default"
+        },
+        "input-child-name": {
+          "value": "ZZ Test Child",
+          "mark": "from the team"
+        },
+        "input-num-children": {
+          "value": "12",
+          "mark": "from the team"
+        },
+        "input-num-adults": {
+          "value": "4",
+          "mark": "from the team"
+        },
+        "textarea-special-requests": {
+          "value": "no nuts please",
+          "mark": "from the family"
+        },
+        "input-event-decoration": {
+          "value": "ZZ edited: unicorn theme, pastel balloons",
+          "mark": "changed here"
+        },
+        "input-event-activities": {
+          "value": "ZZ typed: face painting",
+          "mark": "the park's default"
+        },
+        "input-booking-name": {
+          "value": "ZZ TEST",
+          "mark": "from the team"
+        },
+        "input-location-text": {
+          "value": "Party Room, Central Floresta",
+          "mark": "from the team"
+        },
+        "input-package-name": {
+          "value": "Birthday package",
+          "mark": "from the team"
+        },
+        "input-prepayment": {
+          "value": "0",
+          "mark": "from the team"
+        },
+        "input-setup-ready-by": null,
+        "input-setup-responsible": null,
+        "textarea-setup-notes": {
+          "value": "General setup notes...",
+          "mark": "from the team"
+        },
+        "button-start-time-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-end-time-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-ready-by-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-clear-responsible": null,
+        "button-cake-internal": {
+          "text": "Our Cake",
+          "mark": "from the team"
+        },
+        "button-cake-external": {
+          "text": "Own Cake",
+          "mark": "from the team"
+        },
+        "button-cake-none": {
+          "text": "No Cake",
+          "mark": "from the team"
+        }
+      },
+      "times": {
+        "start": "14:00",
+        "end": "16:30",
+        "readyBy": "13:30"
+      },
+      "setupTasks": [
+        {
+          "id": "input-setup-item-0",
+          "text": "Balloon arch"
+        }
+      ],
+      "timeline": [
+        {
+          "time": "13:30",
+          "label": "Balloon arch"
+        },
+        {
+          "time": "13:30",
+          "label": "Setup ready by"
+        },
+        {
+          "time": "14:00",
+          "label": "Guests arrive"
+        },
+        {
+          "time": "14:00",
+          "label": "party start"
+        },
+        {
+          "time": "16:00",
+          "label": "Cake moment"
+        },
+        {
+          "time": "16:00",
+          "label": "the park's cake"
+        },
+        {
+          "time": "16:30",
+          "label": "party end"
+        }
+      ],
+      "packageItems": [
+        "Set Central set menu with Hawaii",
+        "Birthday entertainment program",
+        "Park's cake"
+      ],
+      "partyHost": {
+        "labelMark": "from the team",
+        "chips": [
+          "from the team",
+          "Employee:",
+          "[name]",
+          "[name]"
+        ],
+        "text": "Assigned Party Hostfrom the team*Employee: [name]"
+      },
+      "cakeTime": "16:00",
+      "emptyLines": {
+        "setup": null,
+        "timeline": null,
+        "pos": null,
+        "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+      },
+      "oldWordingPresent": false
+    },
+    "pictures": [
+      null,
+      null
+    ]
+  },
+  "step5": {
+    "readBack": {
+      "at": "2026-11-11T08:09:19.978Z",
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-21",
+        "startTime": "14:00",
+        "endTime": "16:30",
+        "numChildren": 12,
+        "numAdults": 4,
+        "childName": "ZZ Test Child",
+        "archivedAt": null
+      },
+      "beo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "title": "ZZ Test Child's 7th Birthday",
+        "bookingName": "ZZ TEST",
+        "locationText": "Party Room, Central Floresta",
+        "activities": "ZZ typed: face painting",
+        "decoration": "a unicorn theme\nballoon arch",
+        "specialRequests": "no nuts please",
+        "childName": "ZZ Test Child",
+        "numChildren": 12,
+        "numAdults": 4,
+        "startTime": "14:00",
+        "endTime": "16:30",
+        "setupPlan": {
+          "readyBy": null,
+          "responsible": null,
+          "responsibleEmployeeIsHost": null,
+          "tasks": null,
+          "keys": [
+            "id",
+            "eventId",
+            "setupRequired",
+            "setupItems",
+            "setupNotes",
+            "setupResponsibleMode",
+            "setupResponsibleUserId",
+            "setupResponsibleRoleId",
+            "setupResponsibleDepartmentId",
+            "setupDeadlineOffsetMinutes",
+            "setupResolvedUserId",
+            "setupResolvedAt",
+            "setupChargeMode",
+            "setupTotalPrice",
+            "setupTasks",
+            "createdAt",
+            "updatedAt"
+          ]
+        },
+        "partyDetails": {
+          "packageName": "Birthday package",
+          "items": [
+            {
+              "description": "Set Central set menu with Hawaii",
+              "type": "included"
+            },
+            {
+              "description": "Birthday entertainment program",
+              "type": "included"
+            },
+            {
+              "description": "Park's cake",
+              "type": "included"
+            }
+          ],
+          "prepaymentReceived": 0,
+          "depositDate": "",
+          "notes": "POS: ZZ TEST 827 party. Deposit of 3,000 THB requested."
+        },
+        "partyHost": {
+          "assigned": true,
+          "isChosenHost": true,
+          "assignedEmployeeName": "[name]"
+        },
+        "timeline": [
+          {
+            "label": "Guests arrive",
+            "offsetFromStartMinutes": 0,
+            "isSystemGenerated": true,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "Balloon arch",
+            "offsetFromStartMinutes": -30,
+            "isSystemGenerated": true,
+            "assignedToType": "SETUP_RESPONSIBLE"
+          },
+          {
+            "label": "Cake moment",
+            "offsetFromStartMinutes": 120,
+            "isSystemGenerated": true,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "Setup ready by",
+            "offsetFromStartMinutes": -30,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "party start",
+            "offsetFromStartMinutes": 0,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "the park's cake",
+            "offsetFromStartMinutes": 120,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "party end",
+            "offsetFromStartMinutes": 150,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          }
+        ],
+        "packageSnapshot": {
+          "name": "Birthday package, Central Floresta",
+          "items": 11,
+          "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+        },
+        "kitchenPlan": {
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "setMenuTemplate": "Set Central",
+          "setMenuTemplateId": "3f02f557-1050-4c6e-9926-9f40e86b1adb"
+        },
+        "billing": {
+          "depositAmount": 3000,
+          "depositPaid": false,
+          "keys": [
+            "depositRequired",
+            "depositAmount",
+            "depositPaid",
+            "depositPaidAmount",
+            "depositPaymentMethod",
+            "depositPaidAt"
+          ]
+        },
+        "entertainmentSelections": [
+          {
+            "name": "Birthday entertainment program",
+            "quantity": null
+          }
+        ],
+        "beoTasks": []
+      },
+      "kitchenPlanRoute": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "cakeMode": "INTERNAL",
+        "cakeTime": "16:00",
+        "setMenuEnabled": true,
+        "kidsLines": 4
+      },
+      "timelineRoute": {
+        "route": "GET /api/events/:id/beo/timeline",
+        "status": 200,
+        "count": 7,
+        "labels": [
+          "-30min Balloon arch (auto)",
+          "-30min Setup ready by",
+          "0min Guests arrive (auto)",
+          "0min party start",
+          "120min Cake moment (auto)",
+          "120min the park's cake",
+          "150min party end"
+        ]
+      },
+      "picture": "09-step5-reopened-form.png",
+      "formAfterReload": {
+        "chips": {
+          "event-info": null,
+          "party-host": null,
+          "birthday-package": null,
+          "party-details": null,
+          "setup-plan": null,
+          "kitchen-plan": null,
+          "timeline": null
+        },
+        "fields": {
+          "input-event-title": {
+            "value": "ZZ Test Child's 7th Birthday",
+            "mark": null
+          },
+          "input-child-name": {
+            "value": "ZZ Test Child",
+            "mark": null
+          },
+          "input-num-children": {
+            "value": "12",
+            "mark": null
+          },
+          "input-num-adults": {
+            "value": "4",
+            "mark": null
+          },
+          "textarea-special-requests": {
+            "value": "no nuts please",
+            "mark": null
+          },
+          "input-event-decoration": {
+            "value": "a unicorn theme balloon arch",
+            "mark": null
+          },
+          "input-event-activities": {
+            "value": "ZZ typed: face painting",
+            "mark": null
+          },
+          "input-booking-name": {
+            "value": "ZZ TEST",
+            "mark": null
+          },
+          "input-location-text": {
+            "value": "Party Room, Central Floresta",
+            "mark": null
+          },
+          "input-package-name": {
+            "value": "Birthday package",
+            "mark": null
+          },
+          "input-prepayment": {
+            "value": "0",
+            "mark": null
+          },
+          "input-setup-ready-by": null,
+          "input-setup-responsible": null,
+          "textarea-setup-notes": {
+            "value": "General setup notes...",
+            "mark": null
+          },
+          "button-start-time-edit": {
+            "text": "",
+            "mark": null
+          },
+          "button-end-time-edit": {
+            "text": "",
+            "mark": null
+          },
+          "button-ready-by-edit": {
+            "text": "",
+            "mark": null
+          },
+          "button-clear-responsible": null,
+          "button-cake-internal": {
+            "text": "Our Cake",
+            "mark": null
+          },
+          "button-cake-external": {
+            "text": "Own Cake",
+            "mark": null
+          },
+          "button-cake-none": {
+            "text": "No Cake",
+            "mark": null
+          }
+        },
+        "times": {
+          "start": "14:00",
+          "end": "16:30",
+          "readyBy": "13:30"
+        },
+        "setupTasks": [
+          {
+            "id": "input-setup-item-0",
+            "text": "Balloon arch"
+          }
+        ],
+        "timeline": [
+          {
+            "time": "13:30",
+            "label": "Balloon arch"
+          },
+          {
+            "time": "13:30",
+            "label": "Setup ready by"
+          },
+          {
+            "time": "14:00",
+            "label": "Guests arrive"
+          },
+          {
+            "time": "14:00",
+            "label": "party start"
+          },
+          {
+            "time": "16:00",
+            "label": "Cake moment"
+          },
+          {
+            "time": "16:00",
+            "label": "the park's cake"
+          },
+          {
+            "time": "16:30",
+            "label": "party end"
+          }
+        ],
+        "packageItems": [
+          "Set Central set menu with Hawaii",
+          "Birthday entertainment program",
+          "Park's cake"
+        ],
+        "partyHost": {
+          "labelMark": null,
+          "chips": [
+            "Employee:"
+          ],
+          "text": "Assigned Party Host*Employee: [name]"
+        },
+        "cakeTime": "16:00",
+        "emptyLines": {
+          "setup": null,
+          "timeline": null,
+          "pos": null,
+          "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+        },
+        "oldWordingPresent": false
+      }
+    }
+  },
+  "step6": {
+    "bookDate": {
+      "startTimeProposedByTheDialog": {
+        "value": "16:00",
+        "hint": "The chat says “at 16:00”"
+      },
+      "startTimeTyped": "10:00",
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-11-22",
+          "startTime": "10:00",
+          "kids": 10,
+          "adults": 3,
+          "childName": "ZZ Test Child",
+          "childAge": 6,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1c9a8-8a9b-7ad9-96da-fb2e18db5a2c",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-11-22",
+          "startTime": "10:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 10,
+          "adults": 3
+        }
+      }
+    },
+    "clearingTheStart": {
+      "formClearThenSave": {
+        "at": "2026-11-11T08:12:44.622Z",
+        "key": "G",
+        "startBefore": "10:00",
+        "clearButtonPresent": true,
+        "formStartAfterClear": "Set Time",
+        "save": {
+          "route": "PUT /api/events/:id/beo (the form's Save)",
+          "status": 200
+        },
+        "startAfter": "10:00",
+        "eventStartAfter": "10:00"
+      },
+      "eventRouteNull": {
+        "at": "2026-11-11T08:14:51.823Z",
+        "key": "G",
+        "value": "",
+        "patch": {
+          "route": "PATCH /api/admin/events/:id {startTime: \"\"}",
+          "status": 200,
+          "startTimeInAnswer": "",
+          "error": null
+        },
+        "startAfter": "",
+        "eventStartAfter": ""
+      },
+      "eventRouteEmpty": {
+        "at": "2026-11-11T08:14:51.823Z",
+        "key": "G",
+        "value": "",
+        "patch": {
+          "route": "PATCH /api/admin/events/:id {startTime: \"\"}",
+          "status": 200,
+          "startTimeInAnswer": "",
+          "error": null
+        },
+        "startAfter": "",
+        "eventStartAfter": ""
+      }
+    },
+    "firstPass": {
+      "aiFill": {
+        "status": 200,
+        "transcript": {
+          "lines": 2,
+          "cut": false
+        }
+      },
+      "review": {
+        "title": "AI Fill — Review, edit and approve",
+        "header": {
+          "lines": [
+            "2 messages read; the team's confirmation from [name] wins where the family and the team both speak.",
+            "Every field is the family's, the team's, or the park's own:from the teamfrom the familythe park's defaultchanged here— the family's are defaults for you to check."
+          ],
+          "pasted": false
+        },
+        "legend": [
+          "from the team",
+          "from the family",
+          "the park's default",
+          "changed here"
+        ],
+        "eventInfo": {
+          "title": {
+            "value": "ZZ Test Child's 6th Birthday",
+            "marks": [
+              "default"
+            ],
+            "offer": null
+          },
+          "bookingName": {
+            "value": "ZZ TEST 827 no-time family",
+            "marks": [],
+            "offer": null
+          },
+          "locationText": {
+            "value": "Central Floresta",
+            "marks": [],
+            "offer": null
+          },
+          "activities": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "decoration": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "specialRequests": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "marks": [
+              "team"
+            ]
+          },
+          "numChildren": {
+            "value": "10",
+            "marks": [
+              "team"
+            ]
+          },
+          "numAdults": {
+            "value": "3",
+            "marks": [
+              "team"
+            ]
+          },
+          "startTime": {
+            "value": "",
+            "marks": []
+          },
+          "endTime": {
+            "value": "",
+            "marks": []
+          },
+          "date": {
+            "text": "Date:Sun 22 Nov 2026— the message says \"Sunday 22 November 2026\"from the teamThe same day the event is booked for.",
+            "same": true,
+            "differs": false
+          }
+        },
+        "team": [
+          {
+            "field": "partyHost",
+            "text": "Party Host: [name] ([name] ) — the message says \"[name]\". Tick to assign.from the team",
+            "checkbox": true,
+            "marks": [
+              "team"
+            ]
+          }
+        ],
+        "package": {
+          "value": "Birthday package, Central Floresta",
+          "id": "391b269d-159a-4039-89a2-51ac132da747",
+          "marks": [
+            "team"
+          ]
+        },
+        "packageSaid": "Birthday package, Central Floresta",
+        "price": "Catalogue ฿16,900 / ฿20,900",
+        "addOns": [],
+        "pos": {
+          "posName": {
+            "value": "Birthday package",
+            "marks": [],
+            "offer": null
+          },
+          "posNotes": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "items": [],
+          "noPos": null
+        },
+        "setup": {
+          "readyBy": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "who": {
+            "value": "",
+            "marks": [],
+            "offer": null
+          },
+          "tasks": [],
+          "noSetup": "The chat names no setup."
+        },
+        "kitchen": {
+          "setMenu": {
+            "value": "Birthday set menu, Central Floresta",
+            "id": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+            "marks": [
+              "team"
+            ]
+          },
+          "choices": [],
+          "cake": {
+            "value": "The park's cake",
+            "time": "16:00",
+            "notes": "the park's cake",
+            "marks": [
+              "team"
+            ],
+            "notSaid": null
+          }
+        },
+        "entertainment": [],
+        "timeline": [
+          {
+            "inputs": [
+              "16:00",
+              "the park's cake"
+            ],
+            "marks": [
+              "team"
+            ]
+          }
+        ],
+        "noTimeline": null,
+        "timelineAuto": "The park's own steps (guests arrive, the setup, the cake, the food) are added from the BEO when you approve.from a template",
+        "timelineAutoMarks": [
+          "template"
+        ],
+        "deposit": null,
+        "otherLines": [],
+        "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+        "replaces": "This BEO already has its package, kitchen plan: approving replaces what the review fills.",
+        "undecided": null,
+        "finalMessage": null,
+        "buttons": {
+          "fallback": "Load into Editor instead",
+          "approve": "Approve and create",
+          "approveEnabled": true
+        }
+      },
+      "approval": {
+        "note": "The first Approve and create on the no-time thread (G), as the driver answered it at 08:15Z (the record under beo.G.approval was replaced by the second pass; these values are the driver's own output of that step).",
+        "hostTicked": true,
+        "approve": {
+          "route": "POST /api/events/:id/beo/ai-fill/approve",
+          "status": 200,
+          "sentEvent": {
+            "childName": "ZZ Test Child",
+            "numChildren": 10,
+            "numAdults": 3,
+            "startTime": "(not sent: the review's Start was empty)"
+          },
+          "timelineSent": [
+            "16:00 the park's cake"
+          ],
+          "answer": {
+            "written": {
+              "event": true,
+              "package": true,
+              "addOns": 0,
+              "setMenu": true,
+              "choices": 0,
+              "kitchenLines": 0,
+              "freeKitchenLines": 0,
+              "cake": true,
+              "team": 1,
+              "pos": true,
+              "posItems": 0,
+              "timelineLines": 0
+            },
+            "notWritten": {
+              "timeline": {
+                "reason": "no_start_time",
+                "message": "the party has no start time yet",
+                "steps": [
+                  {
+                    "time": "16:00",
+                    "label": "the park's cake"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "toast": "BEO created from the conversation Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit. Not written: the timeline's step (16:00 the park's cake) — the party has no start time yet. Set the start time, then add them to the Timeline.",
+        "noSecondDialog": true
+      }
+    },
+    "secondPass": {
+      "approval": {
+        "hostCheckboxPresent": null,
+        "hostTicked": null,
+        "pressed": 1,
+        "approve": {
+          "route": "POST /api/events/:id/beo/ai-fill/approve",
+          "status": 200,
+          "sent": {
+            "conversationId": true,
+            "messageId": true,
+            "event": {
+              "childName": "ZZ Test Child",
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "10:00"
+            },
+            "detailsKeys": [
+              "timeline"
+            ],
+            "details": {
+              "setupTasks": [],
+              "posItems": [],
+              "timeline": [
+                "16:00 the park's cake"
+              ],
+              "team": null
+            },
+            "package": {
+              "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+              "addOns": 0
+            },
+            "setMenu": {
+              "templateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+              "choices": []
+            },
+            "cake": {
+              "mode": "INTERNAL",
+              "notes": "the park's cake",
+              "time": "16:00"
+            },
+            "deposit": null,
+            "entertainment": 0,
+            "menuLines": 0,
+            "otherLines": 0,
+            "sources": {
+              "team": 7,
+              "staff": 1,
+              "default": 1
+            },
+            "sourceFields": [
+              "package:team",
+              "setMenu:team",
+              "childName:team",
+              "numChildren:team",
+              "numAdults:team",
+              "startTime:staff",
+              "cake:team",
+              "title:default",
+              "timeline:0:team"
+            ]
+          },
+          "answer": {
+            "ok": null,
+            "written": {
+              "event": true,
+              "package": true,
+              "addOns": 0,
+              "setMenu": true,
+              "choices": 0,
+              "kitchenLines": 0,
+              "freeKitchenLines": 0,
+              "cake": true,
+              "timelineLines": 1
+            },
+            "notWritten": null,
+            "message": null
+          }
+        },
+        "toast": "BEO created from the conversation Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit.",
+        "toastPicture": null,
+        "reviewGone": true,
+        "after": {
+          "dialogsOpen": 1,
+          "reviewAndConfirmText": 0,
+          "previewConfirmButton": 0,
+          "aiFillDialog": false
+        },
+        "noSecondDialog": true
+      },
+      "startSetInTheReview": {
+        "before": "",
+        "set": "10:00"
+      },
+      "formAfter": {
+        "chips": {
+          "event-info": "from the chat",
+          "party-host": null,
+          "birthday-package": "from the chat",
+          "party-details": null,
+          "setup-plan": null,
+          "kitchen-plan": "from the chat",
+          "timeline": "from the chat"
+        },
+        "fields": {
+          "input-event-title": {
+            "value": "ZZ Test Child's 6th Birthday",
+            "mark": "the park's default"
+          },
+          "input-child-name": {
+            "value": "ZZ Test Child",
+            "mark": "from the team"
+          },
+          "input-num-children": {
+            "value": "10",
+            "mark": "from the team"
+          },
+          "input-num-adults": {
+            "value": "3",
+            "mark": "from the team"
+          },
+          "textarea-special-requests": {
+            "value": "e.g., Nut allergy, a quiet corner for grandma",
+            "mark": null
+          },
+          "input-event-decoration": {
+            "value": "e.g., Balloons, Streamers, Table Setup",
+            "mark": null
+          },
+          "input-event-activities": {
+            "value": "e.g., Games, Face Painting",
+            "mark": null
+          },
+          "input-booking-name": {
+            "value": "ZZ TEST 827 no-time family",
+            "mark": null
+          },
+          "input-location-text": {
+            "value": "Central Floresta",
+            "mark": null
+          },
+          "input-package-name": {
+            "value": "Birthday package",
+            "mark": null
+          },
+          "input-prepayment": {
+            "value": "0",
+            "mark": null
+          },
+          "input-setup-ready-by": {
+            "value": "Set Time",
+            "mark": null
+          },
+          "input-setup-responsible": null,
+          "textarea-setup-notes": {
+            "value": "General setup notes...",
+            "mark": null
+          },
+          "button-start-time-edit": {
+            "text": "",
+            "mark": "changed here"
+          },
+          "button-end-time-edit": null,
+          "button-ready-by-edit": null,
+          "button-clear-responsible": null,
+          "button-cake-internal": {
+            "text": "Our Cake",
+            "mark": "from the team"
+          },
+          "button-cake-external": {
+            "text": "Own Cake",
+            "mark": "from the team"
+          },
+          "button-cake-none": {
+            "text": "No Cake",
+            "mark": "from the team"
+          }
+        },
+        "times": {
+          "start": "10:00",
+          "end": "Set Time",
+          "readyBy": null
+        },
+        "setupTasks": [],
+        "timeline": [
+          {
+            "time": "10:00",
+            "label": "Guests arrive"
+          },
+          {
+            "time": "16:00",
+            "label": "Cake moment"
+          },
+          {
+            "time": "16:00",
+            "label": "the park's cake"
+          }
+        ],
+        "packageItems": [],
+        "partyHost": {
+          "labelMark": null,
+          "chips": [
+            "Employee:"
+          ],
+          "text": "Assigned Party Host*Employee: [name]"
+        },
+        "cakeTime": "16:00",
+        "emptyLines": {
+          "setup": "No setup tasks yet. Click to add the first.",
+          "timeline": null,
+          "pos": "No line items yet. Click to add the first.",
+          "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+        },
+        "oldWordingPresent": false
+      },
+      "readBack": {
+        "at": "2026-11-11T08:18:17.209Z",
+        "event": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "title": "ZZ Test Child's 6th Birthday",
+          "eventDate": "2026-11-22",
+          "startTime": "10:00",
+          "endTime": null,
+          "numChildren": 10,
+          "numAdults": 3,
+          "childName": "ZZ Test Child",
+          "archivedAt": null
+        },
+        "beo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 200,
+          "title": "ZZ Test Child's 6th Birthday",
+          "bookingName": "ZZ TEST 827 no-time family",
+          "locationText": "Central Floresta",
+          "activities": null,
+          "decoration": null,
+          "specialRequests": null,
+          "childName": "ZZ Test Child",
+          "numChildren": 10,
+          "numAdults": 3,
+          "startTime": "10:00",
+          "endTime": null,
+          "setupPlan": {
+            "readyBy": null,
+            "responsible": null,
+            "responsibleEmployeeIsHost": null,
+            "tasks": null,
+            "keys": [
+              "id",
+              "eventId",
+              "setupRequired",
+              "setupItems",
+              "setupNotes",
+              "setupResponsibleMode",
+              "setupResponsibleUserId",
+              "setupResponsibleRoleId",
+              "setupResponsibleDepartmentId",
+              "setupDeadlineOffsetMinutes",
+              "setupResolvedUserId",
+              "setupResolvedAt",
+              "setupChargeMode",
+              "setupTotalPrice",
+              "setupTasks",
+              "createdAt",
+              "updatedAt"
+            ]
+          },
+          "partyDetails": {
+            "packageName": "Birthday package",
+            "items": [],
+            "prepaymentReceived": 0,
+            "depositDate": "",
+            "notes": ""
+          },
+          "partyHost": {
+            "assigned": true,
+            "isChosenHost": true,
+            "assignedEmployeeName": "[name]"
+          },
+          "timeline": [
+            {
+              "label": "Guests arrive",
+              "offsetFromStartMinutes": 0,
+              "isSystemGenerated": true,
+              "assignedToType": "PARTY_HOST"
+            },
+            {
+              "label": "Cake moment",
+              "offsetFromStartMinutes": 360,
+              "isSystemGenerated": true,
+              "assignedToType": "PARTY_HOST"
+            },
+            {
+              "label": "the park's cake",
+              "offsetFromStartMinutes": 360,
+              "isSystemGenerated": false,
+              "assignedToType": "PARTY_HOST"
+            }
+          ],
+          "packageSnapshot": {
+            "name": "Birthday package, Central Floresta",
+            "items": 11,
+            "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+          },
+          "kitchenPlan": {
+            "cakeMode": "INTERNAL",
+            "cakeTime": "16:00",
+            "setMenuTemplate": "Birthday set menu, Central Floresta",
+            "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4"
+          },
+          "billing": {
+            "depositAmount": null,
+            "depositPaid": false,
+            "keys": [
+              "depositRequired",
+              "depositAmount",
+              "depositPaid",
+              "depositPaidAmount",
+              "depositPaymentMethod",
+              "depositPaidAt"
+            ]
+          },
+          "entertainmentSelections": [],
+          "beoTasks": []
+        },
+        "kitchenPlanRoute": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "setMenuEnabled": true,
+          "kidsLines": 3
+        },
+        "timelineRoute": {
+          "route": "GET /api/events/:id/beo/timeline",
+          "status": 200,
+          "count": 3,
+          "labels": [
+            "0min Guests arrive (auto)",
+            "360min Cake moment (auto)",
+            "360min the park's cake"
+          ]
+        },
+        "picture": "11-step6-steps-placed.png",
+        "formAfterReload": {
+          "chips": {
+            "event-info": null,
+            "party-host": null,
+            "birthday-package": null,
+            "party-details": null,
+            "setup-plan": null,
+            "kitchen-plan": null,
+            "timeline": null
+          },
+          "fields": {
+            "input-event-title": {
+              "value": "ZZ Test Child's 6th Birthday",
+              "mark": null
+            },
+            "input-child-name": {
+              "value": "ZZ Test Child",
+              "mark": null
+            },
+            "input-num-children": {
+              "value": "10",
+              "mark": null
+            },
+            "input-num-adults": {
+              "value": "3",
+              "mark": null
+            },
+            "textarea-special-requests": {
+              "value": "e.g., Nut allergy, a quiet corner for grandma",
+              "mark": null
+            },
+            "input-event-decoration": {
+              "value": "e.g., Balloons, Streamers, Table Setup",
+              "mark": null
+            },
+            "input-event-activities": {
+              "value": "e.g., Games, Face Painting",
+              "mark": null
+            },
+            "input-booking-name": {
+              "value": "ZZ TEST 827 no-time family",
+              "mark": null
+            },
+            "input-location-text": {
+              "value": "Central Floresta",
+              "mark": null
+            },
+            "input-package-name": {
+              "value": "Birthday package",
+              "mark": null
+            },
+            "input-prepayment": {
+              "value": "0",
+              "mark": null
+            },
+            "input-setup-ready-by": {
+              "value": "Set Time",
+              "mark": null
+            },
+            "input-setup-responsible": null,
+            "textarea-setup-notes": {
+              "value": "General setup notes...",
+              "mark": null
+            },
+            "button-start-time-edit": {
+              "text": "",
+              "mark": null
+            },
+            "button-end-time-edit": null,
+            "button-ready-by-edit": null,
+            "button-clear-responsible": null,
+            "button-cake-internal": {
+              "text": "Our Cake",
+              "mark": null
+            },
+            "button-cake-external": {
+              "text": "Own Cake",
+              "mark": null
+            },
+            "button-cake-none": {
+              "text": "No Cake",
+              "mark": null
+            }
+          },
+          "times": {
+            "start": "10:00",
+            "end": "Set Time",
+            "readyBy": null
+          },
+          "setupTasks": [],
+          "timeline": [
+            {
+              "time": "10:00",
+              "label": "Guests arrive"
+            },
+            {
+              "time": "16:00",
+              "label": "Cake moment"
+            },
+            {
+              "time": "16:00",
+              "label": "the park's cake"
+            }
+          ],
+          "packageItems": [],
+          "partyHost": {
+            "labelMark": null,
+            "chips": [
+              "Employee:"
+            ],
+            "text": "Assigned Party Host*Employee: [name]"
+          },
+          "cakeTime": "16:00",
+          "emptyLines": {
+            "setup": "No setup tasks yet. Click to add the first.",
+            "timeline": null,
+            "pos": "No line items yet. Click to add the first.",
+            "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+          },
+          "oldWordingPresent": false
+        }
+      }
+    }
+  },
+  "step7": {
+    "typed": {
+      "field": "textarea-special-requests",
+      "value": "ZZ typed: a quiet corner, please",
+      "shown": "ZZ typed: a quiet corner, please",
+      "saved": false
+    },
+    "parse": {
+      "route": "POST /api/ai/parse-beo",
+      "status": 200,
+      "seconds": 16.1,
+      "hasReview": true,
+      "origin": "pasted",
+      "error": null
+    },
+    "oneDialogCountIncludesTheEditorSheet": 2,
+    "pasteDialogGone": true,
+    "review": {
+      "title": "AI Fill — Review, edit and approve",
+      "header": {
+        "lines": [
+          "The pasted message is read as the team's confirmation and matched to the park's catalogue.",
+          "Every field it fills is the team's, or the park's own:from the teamthe park's defaultchanged here— a field you change is marked as changed here."
+        ],
+        "pasted": true
+      },
+      "legend": [
+        "from the team",
+        "the park's default",
+        "changed here"
+      ],
+      "eventInfo": {
+        "title": {
+          "value": "ZZ TEST 827 pasted party",
+          "marks": [],
+          "offer": {
+            "line": "The park's default is \"ZZ Test Child's Birthday\"",
+            "marks": [
+              "default"
+            ],
+            "button": "Use the park's default"
+          }
+        },
+        "bookingName": {
+          "value": "ZZ TEST",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "locationText": {
+          "value": "Party Room, Central Floresta",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "activities": {
+          "value": "Birthday entertainment program",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "decoration": {
+          "value": "balloon arch",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "specialRequests": {
+          "value": "ZZ typed: a quiet corner, please",
+          "marks": [],
+          "offer": null
+        },
+        "childName": {
+          "value": "ZZ Test Child",
+          "marks": [
+            "team"
+          ]
+        },
+        "numChildren": {
+          "value": "12",
+          "marks": [
+            "team"
+          ]
+        },
+        "numAdults": {
+          "value": "4",
+          "marks": [
+            "team"
+          ]
+        },
+        "startTime": {
+          "value": "14:00",
+          "marks": [
+            "team"
+          ]
+        },
+        "endTime": {
+          "value": "16:30",
+          "marks": [
+            "team"
+          ]
+        },
+        "date": {
+          "text": "Date:Sat 21 Nov 2026— the message says \"Saturday 21 November 2026\"from the teamThe event is booked for Mon 23 Nov 2026: not the same day.Tick to make Sat 21 Nov 2026 the event's date.",
+          "same": false,
+          "differs": true
+        }
+      },
+      "team": [
+        {
+          "field": "partyHost",
+          "text": "Party Host: [name] ([name] ) — the message says \"[name]\". Tick to assign.from the team",
+          "checkbox": true,
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "package": {
+        "value": "Birthday package, Central Floresta",
+        "id": "391b269d-159a-4039-89a2-51ac132da747",
+        "marks": [
+          "team"
+        ]
+      },
+      "packageSaid": "Birthday package, Central Floresta",
+      "price": "Catalogue ฿16,900 / ฿20,900",
+      "addOns": [],
+      "pos": {
+        "posName": {
+          "value": "Birthday package",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "posNotes": {
+          "value": "POS: ZZ TEST 827 party. Deposit of 3,000 THB requested.",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "items": [
+          {
+            "inputs": [
+              "Included",
+              "Set Central set menu with Hawaii"
+            ],
+            "marks": [
+              "team"
+            ]
+          },
+          {
+            "inputs": [
+              "Included",
+              "Birthday entertainment program"
+            ],
+            "marks": [
+              "team"
+            ]
+          },
+          {
+            "inputs": [
+              "Included",
+              "Park's cake served at 16:00"
+            ],
+            "marks": [
+              "team"
+            ]
+          }
+        ],
+        "noPos": null
+      },
+      "setup": {
+        "readyBy": {
+          "value": "13:30",
+          "marks": [
+            "team"
+          ],
+          "offer": null
+        },
+        "who": {
+          "value": "",
+          "marks": [],
+          "offer": null
+        },
+        "tasks": [
+          {
+            "inputs": [
+              "Balloon arch",
+              ""
+            ],
+            "marks": [
+              "team"
+            ]
+          }
+        ],
+        "noSetup": null
+      },
+      "kitchen": {
+        "setMenu": {
+          "value": "Set Central",
+          "id": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+          "marks": [
+            "team"
+          ]
+        },
+        "choices": [
+          {
+            "label": "Pizza 1:",
+            "value": "Hawaii",
+            "marks": [
+              "team"
+            ],
+            "match": "Hawaii"
+          }
+        ],
+        "cake": {
+          "value": "The park's cake",
+          "time": "16:00",
+          "notes": "the park's cake",
+          "marks": [
+            "team"
+          ],
+          "notSaid": null
+        }
+      },
+      "entertainment": [
+        {
+          "value": "Birthday entertainment program",
+          "qty": "1",
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "inputs": [
+            "13:30",
+            "Setup ready by: balloon arch"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "14:00",
+            "party starts"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "16:00",
+            "the park's cake"
+          ],
+          "marks": [
+            "team"
+          ]
+        },
+        {
+          "inputs": [
+            "16:30",
+            "party ends"
+          ],
+          "marks": [
+            "team"
+          ]
+        }
+      ],
+      "noTimeline": null,
+      "timelineAuto": "The park's own steps (guests arrive, the setup, the cake, the food) are added from the BEO when you approve.from a template",
+      "timelineAutoMarks": [
+        "template"
+      ],
+      "deposit": {
+        "label": "Deposit asked:",
+        "amount": "3000",
+        "received": false,
+        "date": "",
+        "marks": [
+          "team"
+        ]
+      },
+      "otherLines": [],
+      "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+      "replaces": null,
+      "undecided": null,
+      "finalMessage": null,
+      "buttons": {
+        "fallback": "Load into Editor instead",
+        "approve": "Approve and create",
+        "approveEnabled": true
+      }
+    },
+    "pictures": {
+      "files": [
+        "13-step7-pasted-review-top.png",
+        "13-step7-pasted-review-middle.png",
+        "13-step7-pasted-review-lower.png"
+      ],
+      "geometry": {
+        "scrollHeight": 2636,
+        "clientHeight": 1210
+      }
+    },
+    "approval": {
+      "hostCheckboxPresent": true,
+      "hostTicked": true,
+      "pressed": 1,
+      "approve": {
+        "route": "POST /api/events/:id/beo/ai-fill/approve",
+        "status": 200,
+        "sent": {
+          "conversationId": false,
+          "messageId": false,
+          "event": {
+            "childName": "ZZ Test Child",
+            "numChildren": 12,
+            "numAdults": 4,
+            "startTime": "14:00",
+            "endTime": "16:30"
+          },
+          "detailsKeys": [
+            "bookingName",
+            "locationText",
+            "specialRequests",
+            "activities",
+            "decoration",
+            "setupReadyBy",
+            "posName",
+            "posNotes",
+            "setupTasks",
+            "posItems",
+            "timeline",
+            "team"
+          ],
+          "details": {
+            "bookingName": "ZZ TEST",
+            "locationText": "Party Room, Central Floresta",
+            "activities": "Birthday entertainment program",
+            "decoration": "balloon arch",
+            "specialRequests": "ZZ typed: a quiet corner, please",
+            "posName": "Birthday package",
+            "setupReadyBy": "13:30",
+            "setupTasks": [
+              {
+                "itemLabel": "Balloon arch",
+                "notes": null
+              }
+            ],
+            "posItems": [
+              "Set Central set menu with Hawaii",
+              "Birthday entertainment program",
+              "Park's cake served at 16:00"
+            ],
+            "timeline": [
+              "13:30 Setup ready by: balloon arch",
+              "14:00 party starts",
+              "16:00 the park's cake",
+              "16:30 party ends"
+            ],
+            "team": {
+              "partyHost": {
+                "kind": "employee",
+                "isChosenHost": true
+              }
+            }
+          },
+          "package": {
+            "templateId": "391b269d-159a-4039-89a2-51ac132da747",
+            "addOns": 0
+          },
+          "setMenu": {
+            "templateId": "3f02f557-1050-4c6e-9926-9f40e86b1adb",
+            "choices": [
+              null
+            ]
+          },
+          "cake": {
+            "mode": "INTERNAL",
+            "notes": "the park's cake",
+            "time": "16:00"
+          },
+          "deposit": {
+            "amount": 3000,
+            "paid": false,
+            "date": null
+          },
+          "entertainment": 1,
+          "menuLines": 0,
+          "otherLines": 0,
+          "sources": {
+            "team": 27
+          },
+          "sourceFields": [
+            "package:team",
+            "choice:item_[number]_oq08:team",
+            "setMenu:team",
+            "entertainment:0:team",
+            "childName:team",
+            "numChildren:team",
+            "numAdults:team",
+            "startTime:team",
+            "endTime:team",
+            "cake:team",
+            "deposit:team",
+            "bookingName:team",
+            "locationText:team",
+            "activities:team",
+            "decoration:team",
+            "setupReadyBy:team",
+            "posName:team",
+            "posNotes:team",
+            "setupTask:0:team",
+            "posItem:0:team",
+            "posItem:1:team",
+            "posItem:2:team",
+            "timeline:0:team",
+            "timeline:1:team",
+            "timeline:2:team",
+            "timeline:3:team",
+            "team:partyHost:team"
+          ]
+        },
+        "answer": {
+          "ok": null,
+          "written": {
+            "event": true,
+            "package": true,
+            "addOns": 0,
+            "setMenu": true,
+            "choices": 1,
+            "kitchenLines": 0,
+            "freeKitchenLines": 0,
+            "cake": true,
+            "entertainment": 1,
+            "setup": true,
+            "setupTasks": 1,
+            "team": 1,
+            "pos": true,
+            "posItems": 3,
+            "timelineLines": 4,
+            "deposit": true
+          },
+          "notWritten": null,
+          "message": null
+        }
+      },
+      "toast": "BEO created from the pasted message Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit.",
+      "toastPicture": null,
+      "reviewGone": true,
+      "after": {
+        "dialogsOpen": 1,
+        "reviewAndConfirmText": 0,
+        "previewConfirmButton": 0,
+        "aiFillDialog": false
+      },
+      "noSecondDialog": true
+    },
+    "formAfter": {
+      "chips": {
+        "event-info": "from the chat",
+        "party-host": "from the chat",
+        "birthday-package": "from the chat",
+        "party-details": "from the chat",
+        "setup-plan": "from the chat",
+        "kitchen-plan": "from the chat",
+        "timeline": "from the chat"
+      },
+      "fields": {
+        "input-event-title": {
+          "value": "ZZ TEST 827 pasted party",
+          "mark": null
+        },
+        "input-child-name": {
+          "value": "ZZ Test Child",
+          "mark": "from the team"
+        },
+        "input-num-children": {
+          "value": "12",
+          "mark": "from the team"
+        },
+        "input-num-adults": {
+          "value": "4",
+          "mark": "from the team"
+        },
+        "textarea-special-requests": {
+          "value": "ZZ typed: a quiet corner, please",
+          "mark": null
+        },
+        "input-event-decoration": {
+          "value": "balloon arch",
+          "mark": "from the team"
+        },
+        "input-event-activities": {
+          "value": "Birthday entertainment program",
+          "mark": "from the team"
+        },
+        "input-booking-name": {
+          "value": "ZZ TEST",
+          "mark": "from the team"
+        },
+        "input-location-text": {
+          "value": "Party Room, Central Floresta",
+          "mark": "from the team"
+        },
+        "input-package-name": {
+          "value": "Birthday package",
+          "mark": "from the team"
+        },
+        "input-prepayment": {
+          "value": "0",
+          "mark": "from the team"
+        },
+        "input-setup-ready-by": null,
+        "input-setup-responsible": null,
+        "textarea-setup-notes": {
+          "value": "General setup notes...",
+          "mark": null
+        },
+        "button-start-time-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-end-time-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-ready-by-edit": {
+          "text": "",
+          "mark": "from the team"
+        },
+        "button-clear-responsible": null,
+        "button-cake-internal": {
+          "text": "Our Cake",
+          "mark": "from the team"
+        },
+        "button-cake-external": {
+          "text": "Own Cake",
+          "mark": "from the team"
+        },
+        "button-cake-none": {
+          "text": "No Cake",
+          "mark": "from the team"
+        }
+      },
+      "times": {
+        "start": "14:00",
+        "end": "16:30",
+        "readyBy": "13:30"
+      },
+      "setupTasks": [
+        {
+          "id": "input-setup-item-0",
+          "text": "Balloon arch"
+        }
+      ],
+      "timeline": [
+        {
+          "time": "13:30",
+          "label": "Balloon arch"
+        },
+        {
+          "time": "13:30",
+          "label": "Setup ready by: balloon arch"
+        },
+        {
+          "time": "14:00",
+          "label": "Guests arrive"
+        },
+        {
+          "time": "14:00",
+          "label": "party starts"
+        },
+        {
+          "time": "16:00",
+          "label": "Cake moment"
+        },
+        {
+          "time": "16:00",
+          "label": "the park's cake"
+        },
+        {
+          "time": "16:30",
+          "label": "party ends"
+        }
+      ],
+      "packageItems": [
+        "Set Central set menu with Hawaii",
+        "Birthday entertainment program",
+        "Park's cake served at 16:00"
+      ],
+      "partyHost": {
+        "labelMark": "from the team",
+        "chips": [
+          "from the team",
+          "Employee:"
+        ],
+        "text": "Assigned Party Hostfrom the team*Employee: [name]"
+      },
+      "cakeTime": "16:00",
+      "emptyLines": {
+        "setup": null,
+        "timeline": null,
+        "pos": null,
+        "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+      },
+      "oldWordingPresent": false
+    },
+    "pictureForm": "14-step7-pasted-approved.png",
+    "readBack": {
+      "at": "2026-11-11T08:20:25.439Z",
+      "event": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "title": "ZZ TEST 827 pasted party",
+        "eventDate": "2026-11-23",
+        "startTime": "14:00",
+        "endTime": "16:30",
+        "numChildren": 12,
+        "numAdults": 4,
+        "childName": "ZZ Test Child",
+        "archivedAt": null
+      },
+      "beo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "title": "ZZ TEST 827 pasted party",
+        "bookingName": "ZZ TEST",
+        "locationText": "Party Room, Central Floresta",
+        "activities": "Birthday entertainment program",
+        "decoration": "balloon arch",
+        "specialRequests": "ZZ typed: a quiet corner, please",
+        "childName": "ZZ Test Child",
+        "numChildren": 12,
+        "numAdults": 4,
+        "startTime": "14:00",
+        "endTime": "16:30",
+        "setupPlan": {
+          "readyBy": null,
+          "responsible": null,
+          "responsibleEmployeeIsHost": null,
+          "tasks": null,
+          "keys": [
+            "id",
+            "eventId",
+            "setupRequired",
+            "setupItems",
+            "setupNotes",
+            "setupResponsibleMode",
+            "setupResponsibleUserId",
+            "setupResponsibleRoleId",
+            "setupResponsibleDepartmentId",
+            "setupDeadlineOffsetMinutes",
+            "setupResolvedUserId",
+            "setupResolvedAt",
+            "setupChargeMode",
+            "setupTotalPrice",
+            "setupTasks",
+            "createdAt",
+            "updatedAt"
+          ]
+        },
+        "partyDetails": {
+          "packageName": "Birthday package",
+          "items": [
+            {
+              "description": "Set Central set menu with Hawaii",
+              "type": "included"
+            },
+            {
+              "description": "Birthday entertainment program",
+              "type": "included"
+            },
+            {
+              "description": "Park's cake served at 16:00",
+              "type": "included"
+            }
+          ],
+          "prepaymentReceived": null,
+          "depositDate": null,
+          "notes": "POS: ZZ TEST 827 party. Deposit of 3,000 THB requested."
+        },
+        "partyHost": {
+          "assigned": true,
+          "isChosenHost": true,
+          "assignedEmployeeName": "[name]"
+        },
+        "timeline": [
+          {
+            "label": "Cake moment",
+            "offsetFromStartMinutes": 120,
+            "isSystemGenerated": true,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "Balloon arch",
+            "offsetFromStartMinutes": -30,
+            "isSystemGenerated": true,
+            "assignedToType": "SETUP_RESPONSIBLE"
+          },
+          {
+            "label": "Guests arrive",
+            "offsetFromStartMinutes": 0,
+            "isSystemGenerated": true,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "Setup ready by: balloon arch",
+            "offsetFromStartMinutes": -30,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "party starts",
+            "offsetFromStartMinutes": 0,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "the park's cake",
+            "offsetFromStartMinutes": 120,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          },
+          {
+            "label": "party ends",
+            "offsetFromStartMinutes": 150,
+            "isSystemGenerated": false,
+            "assignedToType": "PARTY_HOST"
+          }
+        ],
+        "packageSnapshot": {
+          "name": "Birthday package, Central Floresta",
+          "items": 11,
+          "templateId": "391b269d-159a-4039-89a2-51ac132da747"
+        },
+        "kitchenPlan": {
+          "cakeMode": "INTERNAL",
+          "cakeTime": "16:00",
+          "setMenuTemplate": "Set Central",
+          "setMenuTemplateId": "3f02f557-1050-4c6e-9926-9f40e86b1adb"
+        },
+        "billing": {
+          "depositAmount": 3000,
+          "depositPaid": false,
+          "keys": [
+            "depositRequired",
+            "depositAmount",
+            "depositPaid",
+            "depositPaidAmount",
+            "depositPaymentMethod",
+            "depositPaidAt"
+          ]
+        },
+        "entertainmentSelections": [
+          {
+            "name": "Birthday entertainment program",
+            "quantity": null
+          }
+        ],
+        "beoTasks": []
+      },
+      "kitchenPlanRoute": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "cakeMode": "INTERNAL",
+        "cakeTime": "16:00",
+        "setMenuEnabled": true,
+        "kidsLines": 4
+      },
+      "timelineRoute": {
+        "route": "GET /api/events/:id/beo/timeline",
+        "status": 200,
+        "count": 7,
+        "labels": [
+          "-30min Balloon arch (auto)",
+          "-30min Setup ready by: balloon arch",
+          "0min Guests arrive (auto)",
+          "0min party starts",
+          "120min Cake moment (auto)",
+          "120min the park's cake",
+          "150min party ends"
+        ]
+      }
+    }
+  },
+  "step8": {
+    "at": "2026-11-11T08:19:21.361Z",
+    "key": "C",
+    "emptyLines": {
+      "setup": "No setup tasks yet. Click to add the first.",
+      "timeline": "No timeline steps yet. Click to add the first.",
+      "pos": "No line items yet. Click to add the first.",
+      "ents": "No entertainment acts yet. Add one and give it a time to put it on the Timeline."
+    },
+    "oldWordingPresent": false,
+    "chips": 0,
+    "lorem": false,
+    "picture": "12-step8-empty-words.png"
+  },
+  "step9": {
+    "newLine": {
+      "n": 4,
+      "by": "customer",
+      "text": "one more adult is coming, so 5 adults please (ZZ TEST)",
+      "at": "2026-11-11T08:20:47.162Z",
+      "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+      "formState": {
+        "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+        "category": "Birthdays & Events",
+        "language": "en",
+        "message": "one more adult is coming, so 5 adults please (ZZ TEST)"
+      },
+      "requestSent": {
+        "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+        "text": "one more adult is coming, so 5 adults please (ZZ TEST)",
+        "hint": {
+          "category": "birthdays",
+          "language": "en"
+        }
+      },
+      "status": 200,
+      "outcome": "processed",
+      "conversationsCreated": 0,
+      "reopened": 0,
+      "conversationIds": [
+        "01a1c99f-e27e-7f22-a28b-7afc544431b9"
+      ],
+      "error": null,
+      "dialogSaid": "Received into the existing conversation."
+    },
+    "reopened": {
+      "aiFill": {
+        "status": 200,
+        "transcript": {
+          "lines": 4,
+          "cut": false
+        }
+      },
+      "reviewAdults": {
+        "value": "5",
+        "marks": [
+          "family"
+        ]
+      },
+      "replaces": "This BEO already has its package, kitchen plan, entertainment, deposit: approving replaces what the review fills.",
+      "closedWithoutApproving": {
+        "at": "2026-11-11T08:22:52.856Z",
+        "key": "F",
+        "wasOpen": true,
+        "closed": true,
+        "approvePostsWhileClosing": 0
+      }
+    },
+    "fetch": {
+      "at": "2026-11-11T08:22:53.866Z",
+      "tag": "step9",
+      "formBefore": {
+        "header": {
+          "aiFill": "AI Fill",
+          "fetchFromChat": "Fetch from chat",
+          "fetchFromChatTitle": "Read the conversation again and review what changed",
+          "fetchFromChatEnabled": true,
+          "fetchBesideAiFill": true
+        },
+        "eventInfo": {
+          "title": "ZZ Test Child's 7th Birthday",
+          "childName": "ZZ Test Child",
+          "numChildren": "12",
+          "numAdults": "4",
+          "startTime": null,
+          "endTime": null
+        },
+        "cake": {
+          "chosen": "internal",
+          "modes": {
+            "none": "outline",
+            "internal": "default",
+            "external": "outline"
+          },
+          "time": "16:00",
+          "setTimeButton": false
+        }
+      },
+      "warning": {
+        "title": "Fetch from chat",
+        "description": "The conversation this birthday was booked from, read again as it is now: the details typed in this form to accept or decline, and what the chat says of the package, menu and entertainment to read.",
+        "box": "This reads the conversation again, as it is now, and may change details typed in this form. Every change is listed first: nothing is changed until you accept it, and what you accept is saved only when you press Save.",
+        "buttons": [
+          "Cancel",
+          "Read the chat",
+          "Close"
+        ]
+      },
+      "readingLine": "Reading the whole conversation…",
+      "route": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "purpose": "fetch",
+        "status": 200,
+        "seconds": 20.1,
+        "error": null
+      },
+      "answer": {
+        "chat": {
+          "newestMessageId": "01a1c9b2-0575-7eda-947d-7da46bec8b0c",
+          "lines": 4
+        },
+        "hasReview": true,
+        "proposal": {
+          "numAdults": {
+            "value": 5,
+            "from": {
+              "source": "family",
+              "at": "2026-11-11T08:20:49.000Z",
+              "line": 4
+            }
+          },
+          "numChildren": {
+            "value": 12,
+            "from": {
+              "source": "team",
+              "at": "2026-11-11T08:03:29.008Z",
+              "line": 3
+            }
+          },
+          "startTime": {
+            "value": "14:00",
+            "from": {
+              "source": "team",
+              "at": "2026-11-11T08:03:29.008Z",
+              "line": 3
+            }
+          },
+          "cake": {
+            "mode": "INTERNAL",
+            "notes": "the park's cake",
+            "time": "16:00",
+            "from": {
+              "source": "team",
+              "at": "2026-11-11T08:03:29.008Z",
+              "line": 3
+            }
+          },
+          "deposit": {
+            "amount": 3000,
+            "paid": false,
+            "date": null,
+            "from": {
+              "source": "team",
+              "at": "2026-11-11T08:03:29.008Z",
+              "line": 3
+            }
+          }
+        }
+      },
+      "lines": {
+        "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+        "count": [
+          "1 change from the chat"
+        ],
+        "same": [],
+        "noField": [],
+        "held": [],
+        "error": [],
+        "catalogueCount": [],
+        "catalogueLine": []
+      },
+      "rows": [
+        {
+          "field": "numAdults",
+          "label": "Adults:",
+          "was": "4",
+          "now": "5",
+          "said": null,
+          "source": "family",
+          "sourceLabel": "from the family",
+          "decision": "undecided"
+        }
+      ],
+      "catalogueRows": [],
+      "footerButtons": [
+        "Accept all",
+        "Decline all",
+        "Cancel",
+        "Done",
+        "Close"
+      ],
+      "decisions": [],
+      "rowsAfterDecisions": [
+        [
+          "numAdults",
+          "undecided"
+        ]
+      ],
+      "applyButton": "Done",
+      "pictureList": "15-step9-fetch-rows.png",
+      "action": "cancel",
+      "toast": null,
+      "dialogClosed": true,
+      "formAfter": {
+        "header": {
+          "aiFill": "AI Fill",
+          "fetchFromChat": "Fetch from chat",
+          "fetchFromChatTitle": "Read the conversation again and review what changed",
+          "fetchFromChatEnabled": true,
+          "fetchBesideAiFill": true
+        },
+        "eventInfo": {
+          "title": "ZZ Test Child's 7th Birthday",
+          "childName": "ZZ Test Child",
+          "numChildren": "12",
+          "numAdults": "4",
+          "startTime": null,
+          "endTime": null
+        },
+        "cake": {
+          "chosen": "internal",
+          "modes": {
+            "none": "outline",
+            "internal": "default",
+            "external": "outline"
+          },
+          "time": "16:00",
+          "setTimeButton": false
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T08:23:40.669Z",
+    "events": {
+      "F": {
+        "id": "01a1c9a2-4576-7905-8b2a-3eb6cc9aeb1c",
+        "title": "ZZ Test Child's 7th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.479Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.479Z",
+          "isArchived": true
+        }
+      },
+      "G": {
+        "id": "01a1c9a8-8a9b-7ad9-96da-fb2e18db5a2c",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.628Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.628Z",
+          "isArchived": true
+        }
+      },
+      "C": {
+        "id": "bbdecd8e-972e-488d-af2a-67d15e22d82f",
+        "title": "ZZ TEST 827 pasted party",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.770Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-11T08:23:43.770Z",
+          "isArchived": true
+        }
+      }
+    },
+    "conversations": {
+      "F": {
+        "id": "01a1c99f-e27e-7f22-a28b-7afc544431b9",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:23:44.269Z",
+          "event": {
+            "id": "01a1c9a2-4576-7905-8b2a-3eb6cc9aeb1c",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "G": {
+        "id": "01a1c9a8-2c92-79d3-8bae-24ed468107c7",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:23:45.576Z",
+          "event": {
+            "id": "01a1c9a8-8a9b-7ad9-96da-fb2e18db5a2c",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      }
+    },
+    "zzTestLiveAtCentralFlorestaAfter": []
+  },
+  "signOuts": [
+    {
+      "at": "2026-11-11T08:16:52.701Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      }
+    },
+    {
+      "at": "2026-11-11T08:23:49.579Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      }
+    }
+  ],
+  "pictures": [
+    {
+      "file": "01-step1-book-date-dialog.png",
+      "at": "2026-11-11T08:04:44.086Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 10,
+      "masks": 1
+    },
+    {
+      "file": "02-step1-date-booked.png",
+      "at": "2026-11-11T08:05:47.726Z",
+      "shows": "After Book date: the note \"tentative in the Events calendar\", Date Booked and Create BEO",
+      "namesMasked": 1,
+      "masks": 1
+    },
+    {
+      "file": "03-step2-review-top.png",
+      "at": "2026-11-11T08:07:10.048Z",
+      "shows": "The one review after Create BEO: every section filled and marked (part 1)",
+      "namesMasked": 31,
+      "masks": 0
+    },
+    {
+      "file": "03-step2-review-middle.png",
+      "at": "2026-11-11T08:07:11.096Z",
+      "shows": "The one review after Create BEO: every section filled and marked (part 2)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03-step2-review-lower.png",
+      "at": "2026-11-11T08:07:12.151Z",
+      "shows": "The one review after Create BEO: every section filled and marked (part 3)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06-step3-use-the-chats-before.png",
+      "at": "2026-11-11T08:07:12.736Z",
+      "shows": "The review's bookingName row: the BEO's held value, the chat's words offered beneath with \"Use the chat's\"",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06-step3-use-the-chats.png",
+      "at": "2026-11-11T08:07:13.753Z",
+      "shows": "The bookingName row after \"Use the chat's\": the chat's value, its mark",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "07-step4-form-marks.png",
+      "at": "2026-11-11T08:08:10.442Z",
+      "shows": "The BEO form right after Approve and create: the sections the chat filled open, each field wearing its mark",
+      "namesMasked": 3,
+      "masks": 1,
+      "postMasked": "a solid box over the ZZ TEST simulator number"
+    },
+    {
+      "file": "08-step4-changed-here.png",
+      "at": "2026-11-11T08:08:13.442Z",
+      "shows": "After editing input-event-decoration on the form: its mark reads \"changed here\"; the others keep theirs",
+      "namesMasked": 0,
+      "masks": 1,
+      "postMasked": "a solid box over the ZZ TEST simulator number"
+    },
+    {
+      "file": "09-step5-reopened-form.png",
+      "at": "2026-11-11T08:09:31.861Z",
+      "shows": "The BEO reopened (a fresh page load): everything the one pass wrote",
+      "namesMasked": 31,
+      "masks": 1,
+      "postMasked": "a solid box over the ZZ TEST simulator number"
+    },
+    {
+      "file": "11-step6-steps-placed.png",
+      "at": "2026-11-11T08:18:29.186Z",
+      "shows": "The BEO reopened (a fresh page load): everything the one pass wrote",
+      "namesMasked": 33,
+      "masks": 0
+    },
+    {
+      "file": "12-step8-empty-words.png",
+      "at": "2026-11-11T08:19:22.380Z",
+      "shows": "A BEO nobody filled: POS, Setup Plan and Timeline expanded, the empty boxes in plain words",
+      "namesMasked": 33,
+      "masks": 0
+    },
+    {
+      "file": "13-step7-pasted-review-top.png",
+      "at": "2026-11-11T08:19:45.975Z",
+      "shows": "The pasted-message path: the same one review (part 1)",
+      "namesMasked": 36,
+      "masks": 0
+    },
+    {
+      "file": "13-step7-pasted-review-middle.png",
+      "at": "2026-11-11T08:19:47.034Z",
+      "shows": "The pasted-message path: the same one review (part 2)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "13-step7-pasted-review-lower.png",
+      "at": "2026-11-11T08:19:48.070Z",
+      "shows": "The pasted-message path: the same one review (part 3)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "14-step7-pasted-approved.png",
+      "at": "2026-11-11T08:20:25.129Z",
+      "shows": "After the pasted message was approved: the form, each field marked",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "15-step9-fetch-rows.png",
+      "at": "2026-11-11T08:23:17.239Z",
+      "shows": "Fetch from chat on the filled BEO (step9): what the chat brings, row by row",
+      "namesMasked": 34,
+      "masks": 0
+    }
+  ]
+}
