@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-11T09:13:37.984Z",
+  "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+  "run": 42990578676,
+  "jobId": 130422195950,
+  "conclusion": "failure",
+  "failingSteps": [
+    "Till end-to-end"
+  ],
+  "failedTests": [
+    "smoke.spec.ts:860 guest shop display",
+    "smoke.spec.ts:996 display streaming"
+  ],
+  "failureLocation": "smoke.spec.ts:234 first identify publication after pairing",
+  "localReproduction": {
+    "worktree": "C:/oto-lanes/codex-s783-ci-repro-20261111",
+    "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+    "state": "installing dependencies; complete built smoke next"
+  },
+  "retried": false
+}
