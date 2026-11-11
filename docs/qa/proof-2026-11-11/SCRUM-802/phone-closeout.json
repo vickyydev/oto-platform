@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-783",
+  "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+  "ci": { "run": 42990578676, "attempt": 2, "conclusion": "success", "apiTests": 6817, "posTests": 2333, "consoleBrowserTests": 357 },
+  "ciReceipt": "landed-attempt-two-ci.json",
+  "workspaceTypecheckReadWhole": true,
+  "apiDiagnostics": 0,
+  "appTypecheck": { "errors": 418, "baseline": 418, "readWhole": true, "receipt": "landed-validation-app-check.json" },
+  "proof": "staging/receipt.json",
+  "pictures": [
+    { "id": "13052", "filename": "s783-new-member-offer.png" },
+    { "id": "13053", "filename": "s783-customer-details.png" },
+    { "id": "13054", "filename": "s783-staff-customer-details.png" },
+    { "id": "13055", "filename": "s783-agreements.png" }
+  ],
+  "picturesInspected": true,
+  "cleanupComplete": true,
+  "jiraStatusReadBack": "Deployed",
+  "ownerAcceptancePending": true,
+  "originalFailuresPreserved": "followup-ci-failure.json"
+}
