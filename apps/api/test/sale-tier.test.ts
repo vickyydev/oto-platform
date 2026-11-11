@@ -304,6 +304,59 @@ describe('a claim prices nothing but the cart it belongs to', () => {
     });
     expect(res.json().tier).toBe('tourist');
   });
+
+  /**
+   * SCRUM-868 — and says so. A claim outside its window used to answer with
+   * silence, so a till still holding the discounted figures met
+   * SALE_LINE_PRICE_MISMATCH and was told to refresh the catalogue. The aged
+   * claim is now a refusal of the same shape as a spent one, beside the
+   * default rate, so the till drops the rate and offers to confirm it again.
+   * The window itself is unchanged.
+   */
+  it('answers an aged claim as itself, beside the default rate, and refuses the commit the same way', async () => {
+    const actionId = await expatClaim();
+    const cartLine = line(twoHoursId, 1, 1);
+    const fresh = await quote({ branchId, tierClaimActionId: actionId, lines: [cartLine] });
+    expect(fresh.json().tier).toBe('expat');
+    const expatTotal = fresh.json().lineTotals[cartLine.id] as number;
+
+    await ctx.db
+      .update(saleTierClaim)
+      .set({ createdAt: new Date(Date.now() - TIER_CLAIM_WINDOW_MS - 60_000) })
+      .where(eq(saleTierClaim.actionId, actionId));
+
+    // The till still holds the expat figure: answered as the aged claim, not
+    // as the price mismatch it causes.
+    const aged = await quote({
+      branchId,
+      tierClaimActionId: actionId,
+      lines: [{ ...cartLine, lineTotalSatang: expatTotal }],
+    });
+    expect(aged.statusCode, aged.body).toBe(200);
+    expect(aged.json().tier).toBe('tourist');
+    expect(aged.json().tierSource).toBe('default');
+    expect(aged.json().tierClaimRefusal).toMatchObject({
+      code: 'TIER_CLAIM_EXPIRED',
+      message: 'That document was checked more than 30 minutes ago — check it again to price this sale',
+      details: { claimId: expect.any(String), expiredAt: expect.any(String) },
+    });
+
+    const committed = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: {
+        id: newId(),
+        stationId,
+        branchId,
+        tierClaimActionId: actionId,
+        lines: [{ ...cartLine, lineTotalSatang: expatTotal }],
+      },
+    });
+    expect(committed.statusCode).toBe(409);
+    expect(committed.json().error.code).toBe('TIER_CLAIM_EXPIRED');
+    expect(committed.json().error.message).toMatch(/checked more than 30 minutes ago/);
+  });
 });
 
 describe('one document check prices one sale (SCRUM-311)', () => {

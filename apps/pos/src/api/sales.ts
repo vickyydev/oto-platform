@@ -454,18 +454,17 @@ export interface ApiSaleTotals {
  *
  * The platform answers this beside an ordinary quote, not as an error: the
  * cart is still priced, at the default rate, and this says what the till was
- * holding that no longer counts. One case produces it today — the claim has
- * already paid for a sale, so a second visitor cannot be rung up on the first
- * one's passport. `apps/api/src/services/sale-tier.ts` owns the vocabulary;
- * every other way a claim can fail is answered with silence and the default
- * tier, because a caller holding an action id that is not theirs is told
- * nothing.
+ * holding that no longer counts. Two cases produce it — the claim has already
+ * paid for a sale, so a second visitor cannot be rung up on the first one's
+ * passport, and (SCRUM-868) the claim is older than its window, so the rate
+ * has to be confirmed again. `apps/api/src/services/sale-tier.ts` owns the
+ * vocabulary; every other way a claim can fail is answered with silence and
+ * the default tier, because a caller holding an action id that is not theirs
+ * is told nothing.
  */
-export interface TierClaimRefusal {
-  code: 'TIER_CLAIM_SPENT';
-  message: string;
-  details: { claimId: string; saleId: string };
-}
+export type TierClaimRefusal =
+  | { code: 'TIER_CLAIM_SPENT'; message: string; details: { claimId: string; saleId: string } }
+  | { code: 'TIER_CLAIM_EXPIRED'; message: string; details: { claimId: string; expiredAt: string } };
 
 export interface ApiSaleQuote {
   pricingMode: RateMode;

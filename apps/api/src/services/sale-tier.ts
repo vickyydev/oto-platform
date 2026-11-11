@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, isNotNull, isNull, max, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, isNull, max, sql } from 'drizzle-orm';
 import { account, employee, saleTierClaim, tier } from '@oto/db';
 import { TIER_APPROVAL_EVIDENCE, newId, tierApprovalProblem } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
@@ -59,9 +59,11 @@ import type { Exec, Tx } from './tx';
  *           win it: the second update matches no row. A void of that sale —
  *           which takes no money — gives the claim back
  *           (`restoreTierClaimOf`), so the corrected order is priced on it.
- *   OLD     the window below. Nothing is deleted when either happens — the row
- *           stays as the record of what was checked and, once spent, of which
- *           sale it paid for.
+ *   OLD     the window below. Answered with `TIER_CLAIM_EXPIRED` beside the
+ *           default tier (SCRUM-868), so the till can say the rate has to be
+ *           confirmed again rather than meet a line-price mismatch. Nothing is
+ *           deleted when either happens — the row stays as the record of what
+ *           was checked and, once spent, of which sale it paid for.
  */
 
 /** `core.audit_log.entity_type` for the row written beside a claim. */
@@ -192,18 +194,27 @@ export interface ClaimedTier {
 /**
  * Why a claim the cart NAMED priced nothing, when the till should be told.
  *
- * Only one case produces it, and only because the till cannot work it out for
- * itself: the claim exists, belongs to this session, is inside its window —
- * and has already paid for a sale. Everything else a claim can fail on
- * (another session's, another branch's, expired, withdrawn tier) is answered
- * with silence and the default tier, which is what a caller holding an action
- * id that is not theirs should see.
+ * Two cases produce it, and only because the till cannot work them out for
+ * itself: the claim exists and belongs to this session, and either it has
+ * already paid for a sale (`TIER_CLAIM_SPENT`) or it is older than its window
+ * (`TIER_CLAIM_EXPIRED`, SCRUM-868 — before this an aged claim was silence,
+ * and a till still holding the discounted figures met a line-price mismatch
+ * telling it to refresh the catalogue). Everything else a claim can fail on
+ * (another session's, another branch's, withdrawn tier) is answered with
+ * silence and the default tier, which is what a caller holding an action id
+ * that is not theirs should see.
  */
-export interface TierClaimRefusal {
-  code: 'TIER_CLAIM_SPENT';
-  message: string;
-  details: { claimId: string; saleId: string };
-}
+export type TierClaimRefusal =
+  | {
+      code: 'TIER_CLAIM_SPENT';
+      message: string;
+      details: { claimId: string; saleId: string };
+    }
+  | {
+      code: 'TIER_CLAIM_EXPIRED';
+      message: string;
+      details: { claimId: string; expiredAt: string };
+    };
 
 /** What the resolver answers: a tier, or nothing and possibly a reason. */
 export interface TierClaimResolution {
@@ -600,23 +611,22 @@ export async function tierApprovalCounts(
 }
 
 /**
- * The live claim for one action, made by this account at this branch.
+ * The claim for one action, made by this account at this branch.
  *
  * Every part of that sentence is a predicate: the action id alone would let a
  * till price from a claim another session made, and the branch alone would let
- * a claim follow an account to a till it has no business pricing for. A row
- * outside the window is not returned at all, so an expired claim cannot be
- * told apart here from one that never existed — which is what a caller holding
- * somebody else's action id should see.
+ * a claim follow an account to a till it has no business pricing for. A claim
+ * of somebody else's cannot be told apart from one that never existed, which
+ * is what a caller holding their action id should see. The window is the
+ * resolver's to judge (SCRUM-868): this session's own claim outside it is
+ * answered with the reason, not with silence.
  */
 async function findClaim(
   db: Exec,
   actor: { accountId: string; operatorId: string },
   branchId: string,
   actionId: string,
-  now: Date,
 ): Promise<TierClaimView | null> {
-  const cutoff = new Date(now.getTime() - TIER_CLAIM_WINDOW_MS);
   const [row] = await db
     .select()
     .from(saleTierClaim)
@@ -629,7 +639,6 @@ async function findClaim(
         // predicate this platform lost a row through was one somebody was sure
         // the others already implied (SCRUM-280, SCRUM-289).
         eq(saleTierClaim.operatorId, actor.operatorId),
-        gte(saleTierClaim.createdAt, cutoff),
       ),
     )
     .orderBy(desc(saleTierClaim.createdAt))
@@ -649,6 +658,19 @@ function spentClaimMessage(approvedByHand: boolean): string {
         'document, to price this one'
     : 'That document check has already been used on a sale — check the document again to ' +
         'price this one';
+}
+
+/**
+ * SCRUM-868 — why a claim older than its window prices nothing, in plain
+ * words: the rate has to be confirmed again. The window is not extended.
+ */
+function expiredClaimMessage(approvedByHand: boolean): string {
+  const minutes = Math.round(TIER_CLAIM_WINDOW_MS / 60_000);
+  return approvedByHand
+    ? `That rate was confirmed more than ${minutes} minutes ago — confirm it again, or check a ` +
+        'document, to price this sale'
+    : `That document was checked more than ${minutes} minutes ago — check it again to price ` +
+        'this sale';
 }
 
 /**
@@ -683,7 +705,7 @@ export async function resolveTierClaim(
   const nothing: TierClaimResolution = { claim: null, refusal: null };
   if (!cart.tierClaimActionId) return nothing;
 
-  const claim = await findClaim(db, actor, branchId, cart.tierClaimActionId, now);
+  const claim = await findClaim(db, actor, branchId, cart.tierClaimActionId);
   if (!claim) return nothing;
   /**
    * SCRUM-772 — EXCEPT A RATE CONFIRMED AT THE TILL. The claim is for THIS
@@ -694,6 +716,25 @@ export async function resolveTierClaim(
    * member's own record wins.
    */
   if (cart.memberId && claim.approval === null) return nothing;
+  /**
+   * THE WINDOW (SCRUM-868). A claim older than `TIER_CLAIM_WINDOW_MS` prices
+   * nothing, and this session's own claim says so: the till drops the rate
+   * and offers to confirm it again, instead of sending the discounted figures
+   * into a line-price mismatch that told staff to refresh the catalogue.
+   * Judged before the spend, because a claim both spent and aged is one that
+   * even the void of its sale could not revive.
+   */
+  const expiresAt = new Date(new Date(claim.createdAt).getTime() + TIER_CLAIM_WINDOW_MS);
+  if (now.getTime() >= expiresAt.getTime()) {
+    return {
+      claim: null,
+      refusal: {
+        code: 'TIER_CLAIM_EXPIRED',
+        message: expiredClaimMessage(claim.approval !== null),
+        details: { claimId: claim.id, expiredAt: expiresAt.toISOString() },
+      },
+    };
+  }
   /**
    * ONE DOCUMENT CHECK, ONE SALE. A claim that has already priced a sale
    * prices nothing else: without this, the passport checked for the family at
