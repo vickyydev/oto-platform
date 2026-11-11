@@ -1,0 +1,8 @@
+CI run 43073502953 on commit b678c1639 (GitHub Actions, Linux), job oto-app: success
+
+The default model sampling checks: success
+The SOP from a document refusal checks: success
+    (the real route against a stand-in provider that refuses with 400 and 401, then succeeds)
+The app's suite sign-in checks: success
+    (includes the login-lifecycle check, 20 of 20, which now exits on its own)
+The app's checklist upload queue checks: success
