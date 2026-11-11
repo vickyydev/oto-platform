@@ -47,6 +47,9 @@ describe('SCRUM-783 display-only phone correction', () => {
     expect(till).not.toContain('{customerPhone.trim()}</span>. Create one');
   });
 
+  // SCRUM-863 — this is the form from a till that sends no channel with it (an
+  // older till): the number stays fixed there. A form with the channel asks for
+  // the number again; that one is in s863-dropoff-number-display.test.ts.
   it('the paired display agreement shows the same formatted number and does not rewrite it', () => {
     const prompt: ConsentPrompt = { kind: 'consent', requestId: 'zz-test-request', visitorId: 'zz-test-visitor',
       slots: [{ id: 'zz-test-child', name: 'ZZ TEST child', ageYears: 6, requirement: 'drop_off' }],
