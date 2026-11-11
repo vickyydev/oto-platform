@@ -347,6 +347,9 @@ export default function MobileTill() {
 
   // ── Sale state (same pattern as Till.tsx) ─────────────────────────────────
   const [tier, setTier] = useState<CustomerTier | null>(null);
+  // SCRUM-858 — the member staff asked every rate for on this sale, as the
+  // counter till keeps it (`pages/Till.tsx` showAllTiersFor).
+  const [showAllTiersFor, setShowAllTiersFor] = useState<string | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -692,6 +695,7 @@ export default function MobileTill() {
     setMStep('tier');
     setHandoffMode(null);
     setTier(null);
+    setShowAllTiersFor(null);
     setLines([]);
     setDiscounts([]);
     setManualDiscounts([]);
@@ -1554,6 +1558,8 @@ export default function MobileTill() {
       try {
         const found = phone ? await lookupMember(phone) : null;
         if (saleEpochRef.current !== epoch) return;
+        // SCRUM-858 — every rate was asked for the last visitor, not this one.
+        setShowAllTiersFor(null);
         setMember(found);
         if (found) {
           setTier(resolveAutoTier(found));
@@ -2360,6 +2366,8 @@ export default function MobileTill() {
                 selectedTier={tier ?? getDefaultTier().id}
                 onPickTier={handlePickTier}
                 onRequestVerify={handleRequestVerify}
+                showAllTiers={!!member && showAllTiersFor === member.id}
+                onShowAllTiers={() => setShowAllTiersFor(member?.id ?? null)}
               />
               {/* SCRUM-774 — the branch's Held sales: resume, void a held one, refund a part-paid one. */}
               <div className="mt-4">

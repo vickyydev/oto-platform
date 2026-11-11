@@ -53,3 +53,24 @@ export function resolveAutoTier(
 ): CustomerTier {
   return getVerification(member)?.tier ?? getDefaultTier().id;
 }
+
+/**
+ * SCRUM-858 — the one tier a returning member sees at the till.
+ *
+ * The owner's rule (8 and 12 November 2026): "Registered members should not
+ * see other ticket types. Show only their relevant ticket until their
+ * document expires." A member whose rate is verified and whose document is
+ * in date — or carries no expiry at all, as a Thai rate confirmed at the till
+ * never does — sees that tier's card alone. Null means every tier is shown,
+ * as before: a walk-in, a member with no verified rate, and a member whose
+ * recorded expiry has passed (`reverifyDue`, beside the re-verify prompt).
+ *
+ * A rate the branch no longer configures has no card to show alone, so it
+ * falls back to every tier rather than to none.
+ */
+export function soleTierFor(member: Member | null): CustomerTier | null {
+  const verification = getVerification(member);
+  if (!verification || verification.reverifyDue) return null;
+  if (!getTier(verification.tier)) return null;
+  return verification.tier;
+}

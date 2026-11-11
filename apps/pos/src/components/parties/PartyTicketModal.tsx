@@ -137,6 +137,10 @@ export function PartyTicketModal({
     if (phase === 'tier') setTier(member ? resolveAutoTier(member) : getDefaultTier().id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- on the answer, not on a step change
   }, [member]);
+  // SCRUM-858 — the member staff asked every rate for in this builder, as the
+  // till keeps it (`pages/Till.tsx` showAllTiersFor); keyed by the member, so
+  // the party parent's own card is back whenever a different member answers.
+  const [showAllTiersFor, setShowAllTiersFor] = useState<string | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -164,6 +168,7 @@ export function PartyTicketModal({
   const reset = () => {
     setPhase('tier');
     setTier(member ? resolveAutoTier(member) : getDefaultTier().id);
+    setShowAllTiersFor(null);
     setLines([]);
     setActiveLineId(null);
     setManualDiscounts([]);
@@ -337,6 +342,8 @@ export function PartyTicketModal({
                     selectedTier={tier}
                     onPickTier={handlePickTier}
                     onRequestVerify={handleRequestVerify}
+                    showAllTiers={!!member && showAllTiersFor === member.id}
+                    onShowAllTiers={() => setShowAllTiersFor(member?.id ?? null)}
                   />
                 </div>
               ) : (

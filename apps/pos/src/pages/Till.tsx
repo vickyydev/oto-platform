@@ -288,6 +288,16 @@ export default function Till() {
    */
   const [tierClaimRefusal, setTierClaimRefusal] = useState<string | null>(null);
 
+  /**
+   * SCRUM-858 — the member staff asked every rate for, on this sale. A
+   * returning member with a verified rate in date sees that tier's card
+   * alone (`StepCustomerType`); "Show all rates" names them here, for this
+   * sale only. Keyed by the member rather than a flag, so another member
+   * found by any path starts with their own card again; cleared by a new
+   * lookup and by `resetSale`. Nothing is written to the member.
+   */
+  const [showAllTiersFor, setShowAllTiersFor] = useState<string | null>(null);
+
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
@@ -848,6 +858,7 @@ export default function Till() {
     // The next visitor is not the one whose document was checked (SCRUM-307).
     setTierClaimActionId(null);
     setTierClaimRefusal(null);
+    setShowAllTiersFor(null);
     setSuperSlots([]);
     setSuperParentName('');
     setSuperConsentAck(false);
@@ -1004,6 +1015,8 @@ export default function Till() {
         // A new lookup is a new (or no) visit: the last check's visit must not
         // ride onto this visitor's sale.
         setConfirmedVisitId(null);
+        // SCRUM-858 — every rate was asked for the last visitor, not this one.
+        setShowAllTiersFor(null);
         setMember(mapped);
         if (mapped) {
           setTier(resolveAutoTier(mapped));
@@ -3684,6 +3697,8 @@ export default function Till() {
               onRequestVerify={handleRequestVerify}
               eventPasses={activeEventPasses}
               onSellEventPass={handleSellEventPassFromStep1}
+              showAllTiers={!!member && showAllTiersFor === member.id}
+              onShowAllTiers={() => setShowAllTiersFor(member?.id ?? null)}
             />
           )}
           {step === 3 && tier && (() => {

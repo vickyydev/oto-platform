@@ -6,12 +6,13 @@ import {
   isDefaultTier,
   getVerification,
   isTierVerified,
+  soleTierFor,
 } from '@/lib/membership';
 import { getTiers } from '@/mockApi';
 import { tierProofLabel } from '@/lib/tierProof';
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { EventPassCard } from '@/components/till/EventPassCard';
-import { Users, Globe, MapPin, BadgeCheck, ShieldQuestion, UserCircle, Ticket, type LucideIcon } from 'lucide-react';
+import { Users, Globe, MapPin, BadgeCheck, ShieldQuestion, UserCircle, Ticket, LayoutGrid, type LucideIcon } from 'lucide-react';
 
 interface StepCustomerTypeProps {
   member: Member | null;
@@ -24,6 +25,17 @@ interface StepCustomerTypeProps {
   /** Active camp/event passes for today, sold at a flat entry price (no tier). */
   eventPasses?: OtoEvent[];
   onSellEventPass?: (event: OtoEvent) => void;
+  /**
+   * SCRUM-858 — a member whose verified rate is in date sees that tier's card
+   * alone (`soleTierFor`). `onShowAllTiers` is the one way back: staff press
+   * "Show all rates" when the member's situation changed for this sale (a
+   * guest of theirs at the tourist rate), and the caller sets `showAllTiers`
+   * for this sale only; the member's stored rate is not touched. A caller
+   * passing no `onShowAllTiers` gets every tier, as a screen with no way back
+   * to them must.
+   */
+  showAllTiers?: boolean;
+  onShowAllTiers?: () => void;
 }
 
 // Per-tier presentation hints. Seeded ids keep their original icon/blurb; any
@@ -48,8 +60,15 @@ export function StepCustomerType({
   onRequestVerify,
   eventPasses = [],
   onSellEventPass,
+  showAllTiers = false,
+  onShowAllTiers,
 }: StepCustomerTypeProps) {
   const verification = getVerification(member);
+  // SCRUM-858 — one card for a member whose verified rate is in date, unless
+  // staff asked for every rate on this sale (or nobody gave them a way to).
+  const soleTier = showAllTiers || !onShowAllTiers ? null : soleTierFor(member);
+  const tiers = getTiers();
+  const shownTiers = soleTier ? tiers.filter((t) => t.id === soleTier) : tiers;
 
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -89,6 +108,18 @@ export function StepCustomerType({
                   <BadgeCheck className="w-4 h-4" />
                   {tierLabel(verification.tier)} · verified
                 </div>
+                {/* SCRUM-858 — only this member's rate is on offer below; the
+                    way back to every rate for this sale, and nothing else. */}
+                {soleTier && (
+                  <button
+                    type="button"
+                    onClick={onShowAllTiers}
+                    className="flex items-center gap-2 rounded-full bg-muted text-muted-foreground px-4 py-2 text-sm font-semibold shrink-0 hover:bg-muted/80 hover:text-foreground"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    Show all rates
+                  </button>
+                )}
               </>
             ) : (
               <div className="flex items-center gap-2 rounded-full bg-muted text-muted-foreground px-4 py-2 text-sm font-semibold shrink-0">
@@ -114,7 +145,7 @@ export function StepCustomerType({
           a viewport-keyed md:grid-cols-3 overflowed and clipped the cards. */}
       <div className="px-3 py-2 @container">
       <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6">
-        {getTiers().map((t) => {
+        {shownTiers.map((t) => {
           const tier = t.id;
           const isDefault = isDefaultTier(tier);
           const { icon: Icon, blurb } = tierPresentation(tier, isDefault);
