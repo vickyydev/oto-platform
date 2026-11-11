@@ -1,11 +1,13 @@
 import { useEffect, useReducer, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode, type SyntheticEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, FileText, Loader2, RefreshCw } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { AlertTriangle, FileText, Link2, Loader2, MessageCircle, RefreshCw, Send, XCircle } from "lucide-react";
 import {
   TILL_NOT_REACHABLE,
   bahtOfSatang,
@@ -14,6 +16,16 @@ import {
   type TillBillingReading,
   type TillFigures,
 } from "@shared/tillBilling";
+import {
+  NO_CONVERSATION_WORDS,
+  depositAmountOf,
+  depositProblemOf,
+  depositRequestProblem,
+  depositStateWordsOf,
+  type PartyDepositActionAnswer,
+  type PartyDepositReading,
+  type PartyDepositRequest,
+} from "@shared/partyDeposit";
 import type { BeoEventBilling } from "@shared/schema";
 import { DepositBuffer, type BillingPatch } from "@/lib/beo-deposit-buffer";
 import { BeoBillingModule } from "./beo-billing-module";
@@ -331,10 +343,268 @@ export function TillBillingPanel({
   );
 }
 
+// --- A deposit asked from the BEO (SCRUM-825) ---------------------------------------------
+
+/** The query the deposit request's state is read on; invalidated after every press. */
+export const depositRequestKey = (eventId: string) => ["/api/events", eventId, "beo", "deposit-request"] as const;
+
 /**
- * The BEO's BILLING section: "From the till" at the top, then the app's own
- * billing module kept whole — its invoice rows, Generate from BEO and the
- * Deposit Paid that feeds the till (SCRUM-813) — labelled as the app's own.
+ * The request's state is the platform's, read live as the till's figures are:
+ * stale at once, afresh whenever the section opens, and every minute while
+ * it is open — the family pays in their own time, and the state moves without
+ * a press here.
+ */
+export function useDepositRequest(eventId: string, options: { refetchInterval?: number | false } = {}) {
+  return useQuery<PartyDepositReading>({
+    queryKey: depositRequestKey(eventId),
+    enabled: !!eventId,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: options.refetchInterval === undefined ? TILL_BILLING_LIVE_MS : options.refetchInterval,
+  });
+}
+
+/** The press's id, minted once per press and kept until the press succeeded: a retry is the same press. */
+function usePressId() {
+  const held = useRef<string | null>(null);
+  return {
+    take: () => (held.current ??= globalThis.crypto.randomUUID()),
+    spend: () => {
+      held.current = null;
+    },
+  };
+}
+
+/** The message the server put on a refusal, in its own words. */
+function refusalWords(err: unknown, fallback: string): string {
+  const said = err instanceof Error ? err.message : "";
+  // apiRequest throws "<status>: <message>"; the words after the status are the server's.
+  const m = /^\d{3}:\s*(.*)$/s.exec(said);
+  return (m ? m[1] : said)?.trim() || fallback;
+}
+
+/**
+ * The Billing section's DEPOSIT REQUEST (SCRUM-825): type the deposit to ask
+ * for and press "Request deposit" — the platform mints the 2C2P payment link
+ * and the inbox assistant posts it in the family's chat, then watches the
+ * payment. While a request is open the panel shows it ("Deposit requested ·
+ * ฿3,000 · the link is in the family's chat, valid until …"), with "Resend"
+ * and "Cancel request"; once paid, "Deposit paid" — and the deposit figure
+ * above moves on its own, written back by the platform. "Send the menu choice
+ * link" posts the parent's set-menu link the same way. Nothing here is money:
+ * the figures stay the till's.
+ */
+export function DepositRequestPanel({
+  eventId,
+  reading,
+  loading,
+  isManager,
+  onChanged,
+}: {
+  eventId: string;
+  reading: PartyDepositReading | undefined;
+  loading?: boolean;
+  isManager: boolean;
+  /** After a press the platform answered: the state and the till's figures are read again. */
+  onChanged?: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState<"request" | "resend" | "cancel" | "menu" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const press = usePressId();
+
+  const answer = reading?.status === "ok" ? reading.answer : null;
+  const current: PartyDepositRequest | null = answer?.current ?? null;
+  const open = current?.state === "requested" ? current : null;
+  const problem = reading && reading.status !== "ok" ? depositProblemOf(reading) : null;
+  const words = current ? depositStateWordsOf(current) : null;
+  const noChat = answer ? !answer.hasConversation : false;
+
+  const post = async (what: NonNullable<typeof busy>, path: string, body: Record<string, unknown>, fallback: string) => {
+    setBusy(what);
+    setError(null);
+    setNote(null);
+    try {
+      const res = await apiRequest("POST", path, { actionId: press.take(), ...body });
+      press.spend();
+      const made = (await res.json()) as PartyDepositActionAnswer | { replayed: boolean };
+      if (what === "menu") setNote("The menu choice link is in the family's chat.");
+      else if (what === "request") setNote(`${(made as PartyDepositActionAnswer).replayed ? "Already asked: " : ""}the payment link is in the family's chat.`);
+      onChanged?.();
+    } catch (err) {
+      setError(refusalWords(err, fallback));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const request = () => {
+    const baht = depositAmountOf(amount);
+    const bad = depositRequestProblem(baht);
+    if (bad) {
+      setError(bad);
+      return;
+    }
+    void post("request", `/api/events/${eventId}/beo/deposit-request`, { amount: baht }, "The deposit was not requested.");
+  };
+
+  const tone =
+    words?.tone === "paid" ? "text-emerald-600" : words?.tone === "overdue" ? "text-red-600" : words?.tone === "open" ? "text-amber-600" : "text-muted-foreground";
+
+  return (
+    <Card className="border-2 border-violet-500/30" data-testid="panel-deposit-request">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex items-center justify-between gap-2 flex-wrap">
+          <span className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-violet-600" />
+            Deposit from the family's chat
+          </span>
+          {open && (
+            <Badge className="bg-amber-600" data-testid="badge-deposit-request-open">
+              {open.handedOverAt ? "Overdue" : "Requested"}
+            </Badge>
+          )}
+          {current?.state === "paid" && (
+            <Badge className="bg-green-600" data-testid="badge-deposit-request-paid">
+              Paid
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {loading && !reading ? (
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Asking the till…
+          </p>
+        ) : problem ? (
+          <div className="flex items-start gap-2 text-sm" data-testid="text-deposit-request-unavailable">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">{problem.headline}</p>
+              <p className="text-muted-foreground">{problem.detail}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {words && (
+              <div className="text-sm" data-testid="text-deposit-request-state">
+                <p className={cn("font-medium", tone)} data-testid="text-deposit-request-headline">
+                  {words.headline}
+                </p>
+                <p className="text-xs text-muted-foreground">{words.detail}</p>
+                {open?.paymentLink && (
+                  <a
+                    href={open.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-violet-700 underline inline-flex items-center gap-1 mt-1"
+                    data-testid="link-deposit-payment"
+                  >
+                    <Link2 className="h-3 w-3" /> The payment link
+                  </a>
+                )}
+              </div>
+            )}
+            {!words && (
+              <p className="text-sm text-muted-foreground" data-testid="text-deposit-request-none">
+                No deposit asked yet. The assistant posts the payment link in the family's chat and confirms when it is paid.
+              </p>
+            )}
+            {noChat && (
+              <p className="text-xs text-amber-600" data-testid="text-deposit-no-conversation">
+                {NO_CONVERSATION_WORDS}
+              </p>
+            )}
+            {isManager && open && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy !== null}
+                  onClick={() => void post("resend", `/api/events/${eventId}/beo/deposit-request/${open.id}/resend`, {}, "The link was not resent.")}
+                  data-testid="button-deposit-resend"
+                >
+                  {busy === "resend" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                  Resend
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy !== null}
+                  onClick={() => void post("cancel", `/api/events/${eventId}/beo/deposit-request/${open.id}/cancel`, {}, "The request was not cancelled.")}
+                  data-testid="button-deposit-cancel"
+                >
+                  {busy === "cancel" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                  Cancel request
+                </Button>
+              </div>
+            )}
+            {isManager && !open && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label htmlFor="deposit-request-amount" className="text-sm">
+                  Deposit to ask
+                </Label>
+                <Input
+                  id="deposit-request-amount"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  className="w-32"
+                  placeholder="3000"
+                  value={amount}
+                  disabled={busy !== null || noChat}
+                  onChange={(e) => setAmount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") request();
+                  }}
+                  data-testid="input-deposit-request-amount"
+                />
+                <span className="text-sm text-muted-foreground">THB</span>
+                <Button size="sm" disabled={busy !== null || noChat} onClick={request} data-testid="button-request-deposit">
+                  {busy === "request" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-1" />}
+                  Request deposit
+                </Button>
+              </div>
+            )}
+            {isManager && (
+              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-dashed border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy !== null || noChat}
+                  onClick={() => void post("menu", `/api/events/${eventId}/beo/menu-link`, {}, "The menu link was not sent.")}
+                  data-testid="button-send-menu-link"
+                >
+                  {busy === "menu" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Link2 className="h-4 w-4 mr-1" />}
+                  Send the menu choice link
+                </Button>
+                <span className="text-xs text-muted-foreground">The assistant posts the parent's menu link, and confirms their choices when they land.</span>
+              </div>
+            )}
+            {error && (
+              <p role="alert" className="text-sm text-destructive" data-testid="text-deposit-request-error">
+                {error}
+              </p>
+            )}
+            {note && !error && (
+              <p className="text-xs text-emerald-600" data-testid="text-deposit-request-note">
+                {note}
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * The BEO's BILLING section: "From the till" at the top, the deposit asked
+ * from the family's chat (SCRUM-825) under it, then the app's own billing
+ * module kept whole — its invoice rows, Generate from BEO and the Deposit Paid
+ * that feeds the till (SCRUM-813) — labelled as the app's own.
  */
 export function BeoBillingSection({
   eventId,
@@ -350,6 +620,8 @@ export function BeoBillingSection({
 }) {
   // The editor around it reads the till every minute; this one reads afresh when the section opens.
   const till = useTillBilling(eventId, { refetchInterval: false });
+  const depositRequest = useDepositRequest(eventId);
+  const queryClient = useQueryClient();
   const deposit = useBufferedDeposit(billing, onBillingChange);
   return (
     <div className="space-y-4" data-testid="section-billing">
@@ -359,6 +631,16 @@ export function BeoBillingSection({
         loading={till.isLoading}
         refreshing={till.isFetching}
         onRefresh={() => void till.refetch()}
+      />
+      <DepositRequestPanel
+        eventId={eventId}
+        reading={depositRequest.data}
+        loading={depositRequest.isLoading}
+        isManager={isManager}
+        onChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: depositRequestKey(eventId) });
+          void queryClient.invalidateQueries({ queryKey: tillBillingKey(eventId) });
+        }}
       />
       <div className="space-y-1" data-testid="text-app-invoice-rows">
         <p className="text-sm font-medium">The app's own invoice rows</p>

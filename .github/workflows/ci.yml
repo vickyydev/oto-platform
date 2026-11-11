@@ -1040,6 +1040,25 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/billing-deposit-ui.check.ts
+      # SCRUM-825: a party's deposit asked from the BEO through the platform —
+      # the amount rule and the state words, the client asking with the
+      # provision key and the press as the Idempotency-Key, the state read for
+      # a linked party and a reason (never a state) without the platform, a
+      # manager's press forwarded as satang with who pressed and the party's
+      # chat, staff / another park group / no chat / a camp / a bad amount
+      # refused before the platform is asked, Resend and Cancel request
+      # forwarded, the parent's menu link built from this deployment's address
+      # and the parent's landed choices told to the platform once; then the
+      # Billing section's panel under jsdom: the words for every state, the
+      # presses and their refusals, a party with no chat.
+      - name: The app's party deposit checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/party-deposit.check.ts
+      - name: The app's party deposit panel check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/party-deposit-ui.check.ts
       # SCRUM-567: the company payroll's R2 (migrations 0021-0022) — two park
       # groups' separate paying config, rule sets and profiles; every route
       # refused to manager and staff, writes to anyone below admin, HR-data
