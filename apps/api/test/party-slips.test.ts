@@ -6,6 +6,7 @@ import {
   branch,
   device,
   partySlipPrint,
+  prepSlipPrint,
   printJob,
   product,
   productCategory,
@@ -15,7 +16,9 @@ import {
 import {
   PARTY_ADULTS_NO_NOTE,
   PARTY_ADULTS_ONLY,
+  PARTY_CANCELLED,
   PARTY_CHOICE_NOT_MADE,
+  PARTY_PLAN_CHANGED,
   PARTY_KIDS_ONLY,
   PARTY_NO_KIDS_FOOD_TIME,
   PartyDetailWithSlipsAnswerSchema,
@@ -33,6 +36,7 @@ import {
   type PartyPlan,
   type PartySlipDocument,
   type PartySlipsPrintAnswer,
+  type PrepSlipDocument,
 } from '@oto/shared';
 import { loadEnv } from '../src/env';
 import { buildDefaultJobs } from '../src/services/jobs';
@@ -797,5 +801,185 @@ describe('the branch names the station whose printers take its party slips', () 
     expect(named.status).toBe(200);
     const [again] = await ctx.db.select().from(branch).where(eq(branch.id, central));
     expect(again?.partySlipsStationId).toBe(t1.id);
+  });
+});
+
+// =============================================================================
+// SCRUM-861 — a plan changed after the slips printed
+// =============================================================================
+
+describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UPDATED slips, once per change', () => {
+  const ORDER = { kitchen: 0, bar: 2 } as const;
+  /** A party's change slips, run by run, the kitchen's before the bar's, void before updated. */
+  const changesOf = async (eventId: string) =>
+    (await ctx.db.select().from(prepSlipPrint).where(eq(prepSlipPrint.eventId, eventId))).sort(
+      (a, b) =>
+        a.run! - b.run! || ORDER[a.station] + (a.variant === 'void' ? 0 : 1) - (ORDER[b.station] + (b.variant === 'void' ? 0 : 1)),
+    );
+  const shape = (rows: (typeof prepSlipPrint.$inferSelect)[]) => rows.map((r) => [r.run, r.station, r.variant, r.status]);
+  const docOf = (row: typeof prepSlipPrint.$inferSelect) => row.document as PrepSlipDocument;
+  const choose = (id: string, options: string[]) =>
+    ctx.db.execute(sql`
+      update otoapp.beo_set_menu_selections
+         set selections = ${JSON.stringify([{ groupId: 'g-pizza', chosenOptions: options }])}::jsonb
+       where event_id = ${id}`);
+  const setBar = (id: string, items: Array<{ itemName: string; quantity: number }>) =>
+    ctx.db.execute(sql`update otoapp.beo_bar_plans set items = ${JSON.stringify(items)}::jsonb where event_id = ${id}`);
+
+  it('a dish taken off: the kitchen gets a VOID slip of it and an UPDATED slip of the rest; the bar hears nothing; the next tick writes nothing', async () => {
+    await nameStation(t1.id);
+    const id = await appParty({ id: newId(), title: "Nam's 8th", date: T });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:10'));
+    expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
+    expect(await changesOf(id)).toEqual([]);
+
+    // The BEO changes the pizza: Margherita out, Hawaiian in.
+    await choose(id, ['Hawaiian']);
+    const summary = await runPartySlipsJob(ctx.db, atBangkok(T, '11:11'));
+    expect(summary.failed).toBe(0);
+    expect(summary.changes).toBeGreaterThanOrEqual(1);
+    const rows = await changesOf(id);
+    expect(shape(rows)).toEqual([
+      [1, 'kitchen', 'void', 'printed'],
+      [1, 'kitchen', 'updated', 'printed'],
+    ]);
+    expect(rows.every((r) => r.source === 'party' && r.partyDate === T && r.planFingerprint && r.printedAt)).toBe(true);
+    expect(docOf(rows[0]!)).toEqual({
+      title: 'VOID — Kitchen',
+      variant: 'void',
+      heading: 'Birthday party',
+      orderRef: "Nam's 8th",
+      time: '11:11',
+      details: [PARTY_PLAN_CHANGED],
+      lines: [{ qty: 3, name: 'Margherita' }],
+    });
+    expect(docOf(rows[1]!)).toEqual({
+      title: 'UPDATED — Kitchen',
+      variant: 'updated',
+      heading: 'Birthday party',
+      orderRef: "Nam's 8th",
+      time: '11:11',
+      details: [PARTY_PLAN_CHANGED, 'Room: Party room 1', 'Children: 10'],
+      readyBy: '13:40',
+      lines: [
+        { qty: 3, name: 'Hawaiian' },
+        { qty: 2, name: 'French fries' },
+        { qty: 2, name: 'Fruit skewers' },
+      ],
+    });
+    // Queued to the kitchen printer of the named station, as the party's own slip was.
+    const jobs = await ctx.db.select().from(printJob).where(inArray(printJob.id, rows.map((r) => r.printJobId!)));
+    expect(jobs.map((j) => [j.kind, j.role, j.status, j.stationId, j.subjectType])).toEqual([
+      ['kitchen_ticket', 'kitchen', 'queued', t1.id, 'prep_slip'],
+      ['kitchen_ticket', 'kitchen', 'queued', t1.id, 'prep_slip'],
+    ]);
+    const doc = await buildPrintDocument(ctx.db, { boxId: t1.boxId!, operatorId }, rows[0]!.printJobId!);
+    expect(doc.job).toEqual({ kind: 'kitchen_ticket', data: docOf(rows[0]!) });
+    const [audited] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'party.slips_change'), eq(auditLog.entityId, id)));
+    expect(audited?.after).toMatchObject({ partyDate: T, run: 1, cancelled: false, stationId: t1.id, slips: [{ station: 'kitchen', variant: 'void' }, { station: 'kitchen', variant: 'updated' }] });
+
+    // Nothing changed since: the next tick, and two at once, write nothing.
+    await Promise.all([runPartySlipsJob(ctx.db, atBangkok(T, '11:12')), runPartySlipsJob(ctx.db, atBangkok(T, '11:12'))]);
+    expect(await changesOf(id)).toHaveLength(2);
+  });
+
+  it('a count cut: the bar gets a VOID slip of the difference and an UPDATED slip with the new count; a drink added or counted up is an UPDATED slip alone', async () => {
+    const id = await appParty({ id: newId(), title: "Dao's 3rd", date: T, bar: [{ itemName: 'Juice pitcher', quantity: 2 }] });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:13'));
+
+    await setBar(id, [{ itemName: 'Juice pitcher', quantity: 1 }]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:14'));
+    let rows = await changesOf(id);
+    expect(shape(rows)).toEqual([
+      [1, 'bar', 'void', 'printed'],
+      [1, 'bar', 'updated', 'printed'],
+    ]);
+    expect(docOf(rows[0]!)).toMatchObject({ title: 'VOID — Bar', lines: [{ qty: 1, name: 'Juice pitcher' }] });
+    expect(docOf(rows[1]!)).toMatchObject({ title: 'UPDATED — Bar', lines: [{ qty: 1, name: 'Juice pitcher' }] });
+
+    await setBar(id, [
+      { itemName: 'Juice pitcher', quantity: 1 },
+      { itemName: 'Mocktail', quantity: 4 },
+    ]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:15'));
+    rows = await changesOf(id);
+    expect(shape(rows).slice(2)).toEqual([[2, 'bar', 'updated', 'printed']]);
+    expect(docOf(rows[2]!).lines).toEqual([
+      { qty: 1, name: 'Juice pitcher' },
+      { qty: 4, name: 'Mocktail' },
+    ]);
+
+    await setBar(id, [
+      { itemName: 'Juice pitcher', quantity: 3 },
+      { itemName: 'Mocktail', quantity: 4 },
+    ]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:16'));
+    rows = await changesOf(id);
+    expect(shape(rows).slice(3)).toEqual([[3, 'bar', 'updated', 'printed']]);
+    // Two ticks more change nothing, and the kitchen never heard a word.
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:17'));
+    expect(await changesOf(id)).toHaveLength(4);
+    expect((await changesOf(id)).every((r) => r.station === 'bar')).toBe(true);
+  });
+
+  it('the party cancelled: every station holding lines gets its VOID slip and nothing else, once', async () => {
+    const id = await appParty({ id: newId(), title: 'Called off late', date: T });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:18'));
+    await ctx.db.execute(sql`update otoapp.core_events set status = 'cancelled' where id = ${id}`);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:19'));
+    const rows = await changesOf(id);
+    expect(shape(rows)).toEqual([
+      [1, 'kitchen', 'void', 'printed'],
+      [1, 'bar', 'void', 'printed'],
+    ]);
+    expect(docOf(rows[0]!)).toMatchObject({
+      details: [PARTY_CANCELLED],
+      lines: [
+        { qty: 3, name: 'Margherita' },
+        { qty: 2, name: 'French fries' },
+        { qty: 2, name: 'Fruit skewers' },
+      ],
+    });
+    expect(docOf(rows[1]!)).toMatchObject({ details: [PARTY_CANCELLED], lines: [{ qty: 2, name: 'Juice pitcher' }] });
+    const [audited] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'party.slips_change'), eq(auditLog.entityId, id)));
+    expect(audited?.after).toMatchObject({ cancelled: true });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:20'));
+    expect(await changesOf(id)).toHaveLength(2);
+  });
+
+  it('a change before the slips printed sends nothing extra: the slip time prints the plan as it then is', async () => {
+    const id = await appParty({ id: newId(), title: 'Changed early', date: T, slipsTime: '16:00' });
+    await choose(id, ['Pepperoni']);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '15:59'));
+    expect(await slipsOf(id)).toEqual([]);
+    expect(await changesOf(id)).toEqual([]);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '16:00'));
+    const printed = await slipsOf(id);
+    expect(printed.map((r) => r.status)).toEqual(['printed', 'printed']);
+    expect((printed[0]!.document as PartySlipDocument).lines[0]).toEqual({ qty: 3, name: 'Pepperoni' });
+    expect(await changesOf(id)).toEqual([]);
+  });
+
+  it('with no station named, a change is recorded "no printer" once and queues nothing', async () => {
+    await nameStation(null);
+    try {
+      const id = await appParty({ id: newId(), title: 'Unnamed change', date: T });
+      await runPartySlipsJob(ctx.db, atBangkok(T, '11:21'));
+      expect((await slipsOf(id)).map((r) => r.status)).toEqual(['no_printer', 'no_printer']);
+      await setBar(id, []);
+      await runPartySlipsJob(ctx.db, atBangkok(T, '11:22'));
+      const rows = await changesOf(id);
+      expect(rows.map((r) => [r.station, r.variant, r.status, r.printJobId])).toEqual([['bar', 'void', 'no_printer', null]]);
+      await runPartySlipsJob(ctx.db, atBangkok(T, '11:23'));
+      expect(await changesOf(id)).toHaveLength(1);
+    } finally {
+      await nameStation(t1.id);
+    }
   });
 });

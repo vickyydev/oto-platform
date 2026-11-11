@@ -246,11 +246,23 @@ export function partySlipLinesRemoved(
   return removed;
 }
 
+/** A value as one stable string: object keys in order at every depth, so a jsonb round trip reads the same. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
 /** A slip's content as a short stable string, the printed time left out: two slips that say the same thing match. */
 export function partySlipFingerprint(document: PartySlipDocument | null): string {
   if (!document) return 'none';
   const { time: _time, ...rest } = document;
-  return fnv1a(JSON.stringify(rest, Object.keys(rest).sort()));
+  return fnv1a(canonical(rest));
 }
 
 /** 64 bits of FNV-1a as sixteen hex digits: a fingerprint, not a credential. */
