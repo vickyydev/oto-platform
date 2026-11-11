@@ -1,0 +1,374 @@
+{
+  "ticket": "SCRUM-850",
+  "expectedSha": "930c4e82c930d71186aec891578d18483ed61a66",
+  "startedAt": "2026-11-11T16:55:24.797Z",
+  "phase": "remove exact owned attachments, checklist and run, then sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bcfdad99-4cc0-4622-892e-ee9322cfa7e5",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/b0fb74f1-4f68-4ae8-825e-37fa741df40b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/bcfdad99-4cc0-4622-892e-ee9322cfa7e5",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bcfdad99-4cc0-4622-892e-ee9322cfa7e5",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "bcfdad99-4cc0-4622-892e-ee9322cfa7e5"
+  ],
+  "runs": [],
+  "attachments": [
+    "b0fb74f1-4f68-4ae8-825e-37fa741df40b"
+  ],
+  "uploads": [
+    {
+      "kind": "photo",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "b0fb74f1-4f68-4ae8-825e-37fa741df40b",
+      "type": "image",
+      "mimeType": "image/jpeg",
+      "storedFileSize": 583,
+      "checklistTemplateItemId": "478e5701-7914-44ca-9070-deb77f100c9e",
+      "sentBytes": 583,
+      "wallMs": 741
+    },
+    {
+      "kind": "video",
+      "route": "/api/checklist-media/upload",
+      "status": 500,
+      "sentBytes": 8742002,
+      "wallMs": 2963,
+      "requestToResponseMs": 2642
+    }
+  ],
+  "bucketPuts": [
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "b0fb74f1-4f68-4ae8-825e-37fa741df40b",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "bcfdad99-4cc0-4622-892e-ee9322cfa7e5",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": false,
+  "appVersionBefore": "930c4e82c930d71186aec891578d18483ed61a66",
+  "checklist": {
+    "status": 201,
+    "templateId": "bcfdad99-4cc0-4622-892e-ee9322cfa7e5",
+    "items": 1
+  },
+  "photoShowsOnItem": true,
+  "video": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "size": 8742002,
+    "frames": 778,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "sizeMB": 8.34,
+    "content": "canvas noise and a moving colour block with a ZZ TEST caption; no person, no sound"
+  },
+  "progress": {
+    "sampledEveryMs": 200,
+    "series": [
+      {
+        "t": 200,
+        "item": "10%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 404,
+        "item": "17%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 602,
+        "item": "27%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 800,
+        "item": "41%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1004,
+        "item": "54%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1207,
+        "item": "64%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1402,
+        "item": "75%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1604,
+        "item": "85%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1803,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2009,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2211,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2416,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2604,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2806,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3010,
+        "item": null,
+        "bar": null,
+        "error": "The upload did not go through. Try again, or use a smaller file."
+      },
+      {
+        "t": 3215,
+        "item": null,
+        "bar": null,
+        "error": "The upload did not go through. Try again, or use a smaller file."
+      },
+      {
+        "t": 3403,
+        "item": null,
+        "bar": null,
+        "error": "The upload did not go through. Try again, or use a smaller file."
+      }
+    ],
+    "numbers": [
+      10,
+      17,
+      27,
+      41,
+      54,
+      64,
+      75,
+      85,
+      95,
+      95,
+      95,
+      95,
+      95,
+      95
+    ],
+    "distinct": [
+      10,
+      17,
+      27,
+      41,
+      54,
+      64,
+      75,
+      85,
+      95
+    ],
+    "start": 10,
+    "end": 95,
+    "strictlyBetween": [
+      17,
+      27,
+      41,
+      54,
+      64,
+      75,
+      85
+    ],
+    "everyChangeSeen": [
+      {
+        "t": 18,
+        "item": "5%"
+      },
+      {
+        "t": 193,
+        "item": "10%"
+      },
+      {
+        "t": 339,
+        "item": "17%"
+      },
+      {
+        "t": 444,
+        "item": "24%"
+      },
+      {
+        "t": 545,
+        "item": "27%"
+      },
+      {
+        "t": 647,
+        "item": "34%"
+      },
+      {
+        "t": 748,
+        "item": "41%"
+      },
+      {
+        "t": 848,
+        "item": "47%"
+      },
+      {
+        "t": 950,
+        "item": "54%"
+      },
+      {
+        "t": 1053,
+        "item": "58%"
+      },
+      {
+        "t": 1154,
+        "item": "64%"
+      },
+      {
+        "t": 1255,
+        "item": "71%"
+      },
+      {
+        "t": 1356,
+        "item": "75%"
+      },
+      {
+        "t": 1460,
+        "item": "81%"
+      },
+      {
+        "t": 1560,
+        "item": "85%"
+      },
+      {
+        "t": 1663,
+        "item": "95%"
+      },
+      {
+        "t": 2888,
+        "item": null
+      }
+    ],
+    "midBarPicture": {
+      "valueWhenTaken": 24,
+      "atMs": 529
+    }
+  },
+  "failure": {
+    "phase": "step 3: video upload with the progress sampled",
+    "name": "AssertionError",
+    "message": "Expected values to be strictly equal:\n\n500 !== 200\n"
+  },
+  "finishedAt": "2026-11-11T16:55:46.549Z"
+}

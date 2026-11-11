@@ -1,0 +1,13 @@
+{
+  "serviceStatus": 200,
+  "logsStatus": 200,
+  "startTime": "2026-11-11T16:55:00Z",
+  "endTime": "2026-11-11T16:57:30Z",
+  "count": 1,
+  "lines": [
+    {
+      "at": "2026-11-11T16:55:46.693999295Z",
+      "message": "{\"level\":\"error\",\"time\":\"2026-11-11T16:55:46.693Z\",\"service\":\"oto-app\",\"env\":\"staging\",\"requestId\":\"d9fac814-3b91-4740-89e0-0f7c6774793e\",\"args\":[{\"pgCode\":\"22P02\",\"routine\":\"pg_strtoint32_safe\",\"message\":\"invalid input syntax for type integer: \\\"NaN\\\"\"}],\"msg\":\"[ChecklistMedia] POST /upload error:\"}"
+    }
+  ]
+}

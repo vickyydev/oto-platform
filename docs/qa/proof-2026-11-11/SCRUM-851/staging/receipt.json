@@ -1,0 +1,105 @@
+{
+  "ticket": "SCRUM-851",
+  "expectedSha": "930c4e82c930d71186aec891578d18483ed61a66",
+  "startedAt": "2026-11-11T17:02:05.189Z",
+  "phase": "clean own fixtures and sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sops/ec4be9e0-e799-47df-a562-00baaab6e78b",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/sops/ec4be9e0-e799-47df-a562-00baaab6e78b",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/knowledge-files/4968a068-7aa7-4cfa-9ce8-5a5d97f50377",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge-files/4968a068-7aa7-4cfa-9ce8-5a5d97f50377",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "fileId": "4968a068-7aa7-4cfa-9ce8-5a5d97f50377",
+    "sopId": "ec4be9e0-e799-47df-a562-00baaab6e78b"
+  },
+  "cleanup": [
+    {
+      "label": "delete own generated SOP",
+      "passed": true
+    },
+    {
+      "label": "delete own uploaded PDF",
+      "passed": true
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "appVersionBefore": {
+    "status": 200,
+    "sha": "930c4e82c930d71186aec891578d18483ed61a66"
+  },
+  "upload": {
+    "status": 201,
+    "title": "ZZ TEST SCRUM-851 mwcd9spy"
+  },
+  "sop": {
+    "status": 201,
+    "wallMs": 5734,
+    "sopId": "ec4be9e0-e799-47df-a562-00baaab6e78b",
+    "sopStatus": "draft",
+    "sopTitle": "ZZ TEST SCRUM-785 Sample Tray Procedure",
+    "stepsCount": 4,
+    "message": "SOP created successfully",
+    "visibleSteps": 4
+  },
+  "appVersionAfter": {
+    "status": 200,
+    "sha": "930c4e82c930d71186aec891578d18483ed61a66"
+  },
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-11T17:02:22.889Z"
+}

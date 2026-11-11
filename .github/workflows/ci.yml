@@ -521,11 +521,6 @@ jobs:
       - name: The default model sampling checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/s785-model-sampling.check.ts
-      # SCRUM-851: the real SOP route against a stand-in provider that refuses:
-      # one plain line for staff, the detail in the log, the success path as it was.
-      - name: The SOP from a document refusal checks
-        if: steps.changes.outputs.app == 'true'
-        run: npx tsx tests/s851-sop-refusal.check.ts
       # The rehearsal uses disposable databases on this job's scratch server.
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator
@@ -560,6 +555,12 @@ jobs:
         run: |
           npm run db:migrate
           npm run db:migrate
+      # SCRUM-851: the real SOP route against a stand-in provider that refuses:
+      # one plain line for staff, the detail in the log, the success path as it was. It reads
+      # the app's own tables, so it runs after the migrations.
+      - name: The SOP from a document refusal checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/s851-sop-refusal.check.ts
       - name: The app's route checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/route-fences.check.ts

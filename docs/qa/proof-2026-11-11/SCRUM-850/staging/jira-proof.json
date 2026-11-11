@@ -1,0 +1,48 @@
+{
+  "key": "SCRUM-850",
+  "before": {
+    "status": "In Progress",
+    "summary": "Checklist media: a video sent through the app server is streamed to storage, shows its progress, and is proved on staging"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13168",
+        "name": "850-1-photo-on-item.png"
+      },
+      {
+        "id": "13169",
+        "name": "850-2-video-progress-mid-bar.png"
+      },
+      {
+        "id": "13170",
+        "name": "850-3-video-on-item.png"
+      },
+      {
+        "id": "13171",
+        "name": "850-4-video-playing.png"
+      },
+      {
+        "id": "13172",
+        "name": "850-5-plain-line-when-refused.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "walkTesting": "Testing",
+  "walkDeployed": "Deployed",
+  "after": {
+    "status": "Deployed",
+    "summary": "Checklist media: a video sent through the app server is streamed to storage, shows its progress, and is proved on staging"
+  },
+  "images": [
+    "850-1-photo-on-item.png",
+    "850-2-video-progress-mid-bar.png",
+    "850-3-video-on-item.png",
+    "850-4-video-playing.png",
+    "850-5-plain-line-when-refused.png"
+  ]
+}

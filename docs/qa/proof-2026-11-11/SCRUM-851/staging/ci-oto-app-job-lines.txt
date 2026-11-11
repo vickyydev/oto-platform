@@ -1,0 +1,56 @@
+CI run 43061998617 (push to main at d21a9dc391848487865d0923e8f199ae33c12052), job oto-app 130667750870, read 2026-11-11T17:05Z.
+Lines of the job log around the step 'The SOP from a document refusal checks' (timestamps kept, colour codes removed):
+
+2026-11-11T16:54:02.1650445Z   DATABASE_URL: ***localhost:5433/otoapp_ci
+2026-11-11T16:54:02.1650764Z   QA_FFMPEG_PATH: /usr/bin/ffmpeg
+2026-11-11T16:54:02.1651029Z ##[endgroup]
+2026-11-11T16:54:02.8437643Z PASS MEDIUM: omitted uses the default without sampling
+2026-11-11T16:54:02.8438283Z PASS MEDIUM: null uses the default without sampling
+2026-11-11T16:54:02.8438757Z PASS MEDIUM: blank uses the default without sampling
+2026-11-11T16:54:02.8439477Z PASS MEDIUM: old stored model uses the default without sampling
+2026-11-11T16:54:02.8440841Z PASS MEDIUM: explicit default uses the default without sampling
+2026-11-11T16:54:02.8443763Z PASS MEDIUM: trimmed default uses the default without sampling
+2026-11-11T16:54:02.8445181Z PASS PIN: a distinct fast model keeps its caller's supported sampling
+2026-11-11T16:54:02.8446996Z PASS PIN: an omitted sampling choice remains omitted for the fast model
+2026-11-11T16:54:02.8499171Z PASS MEDIUM: SOP extraction does not request sampling
+2026-11-11T16:54:02.8661452Z PASS SCRUM-851: a refusing provider still rejects the helper with its own error
+2026-11-11T16:54:02.8667357Z PASS SCRUM-851: the log takes the status, the kind and the request id, and nothing else
+2026-11-11T16:54:02.8720189Z PASS SCRUM-851: the SOP route stops a refusal there and answers one plain line
+2026-11-11T16:54:02.8720827Z s785-model-sampling.check: 12/12 checks passed
+2026-11-11T16:54:02.9026523Z ##[group]Run npx tsx tests/s851-sop-refusal.check.ts
+2026-11-11T16:54:02.9026963Z npx tsx tests/s851-sop-refusal.check.ts
+2026-11-11T16:54:02.9047119Z shell: /usr/bin/bash -e {0}
+2026-11-11T16:54:02.9047372Z env:
+2026-11-11T16:54:02.9047780Z   DATABASE_URL: ***localhost:5433/otoapp_ci
+2026-11-11T16:54:02.9048100Z   QA_FFMPEG_PATH: /usr/bin/ffmpeg
+2026-11-11T16:54:02.9048354Z ##[endgroup]
+2026-11-11T16:54:03.6808536Z /home/runner/work/oto-platform/oto-platform/apps/oto-app/node_modules/pg-pool/index.js:45
+2026-11-11T16:54:03.6809698Z     Error.captureStackTrace(err)
+2026-11-11T16:54:03.6810339Z           ^
+2026-11-11T16:54:03.6810649Z 
+2026-11-11T16:54:03.6811188Z error: relation "tenants" does not exist
+2026-11-11T16:54:03.6814083Z     at /home/runner/work/oto-platform/oto-platform/apps/oto-app/node_modules/pg-pool/index.js:45:11
+2026-11-11T16:54:03.6815869Z     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+2026-11-11T16:54:03.6817555Z     at async q (/home/runner/work/oto-platform/oto-platform/apps/oto-app/tests/s851-sop-refusal.check.ts:46:4)
+2026-11-11T16:54:03.6819317Z     at async <anonymous> (/home/runner/work/oto-platform/oto-platform/apps/oto-app/tests/s851-sop-refusal.check.ts:59:1) {
+2026-11-11T16:54:03.6820506Z   length: 106,
+2026-11-11T16:54:03.6820970Z   severity: 'ERROR',
+2026-11-11T16:54:03.6821472Z   code: '42P01',
+2026-11-11T16:54:03.6821931Z   detail: undefined,
+2026-11-11T16:54:03.6822445Z   hint: undefined,
+2026-11-11T16:54:03.6822898Z   position: '13',
+2026-11-11T16:54:03.6823747Z   internalPosition: undefined,
+2026-11-11T16:54:03.6824789Z   internalQuery: undefined,
+2026-11-11T16:54:03.6825323Z   where: undefined,
+2026-11-11T16:54:03.6825785Z   schema: undefined,
+2026-11-11T16:54:03.6826228Z   table: undefined,
+2026-11-11T16:54:03.6826674Z   column: undefined,
+2026-11-11T16:54:03.6827184Z   dataType: undefined,
+2026-11-11T16:54:03.6827698Z   constraint: undefined,
+2026-11-11T16:54:03.6828234Z   file: 'parse_relation.c',
+2026-11-11T16:54:03.6828770Z   line: '1449',
+2026-11-11T16:54:03.6829255Z   routine: 'parserOpenTable'
+2026-11-11T16:54:03.6829798Z }
+2026-11-11T16:54:03.6829985Z 
+2026-11-11T16:54:03.6830197Z Node.js v22.23.4
+2026-11-11T16:54:03.7077340Z ##[error]Process completed with exit code 1.

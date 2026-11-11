@@ -1,0 +1,31 @@
+{
+  "key": "SCRUM-851",
+  "before": {
+    "status": "In Progress",
+    "summary": "SOP from a document: when the AI provider refuses, staff see a plain line, not the provider's raw answer"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13173",
+        "name": "851-1-sop-created.png"
+      },
+      {
+        "id": "13174",
+        "name": "851-2-sop-draft-steps.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "after": {
+    "status": "In Progress",
+    "summary": "SOP from a document: when the AI provider refuses, staff see a plain line, not the provider's raw answer"
+  },
+  "images": [
+    "851-1-sop-created.png",
+    "851-2-sop-draft-steps.png"
+  ]
+}

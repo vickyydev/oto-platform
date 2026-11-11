@@ -1,0 +1,501 @@
+{
+  "ticket": "SCRUM-850",
+  "expectedSha": "930c4e82c930d71186aec891578d18483ed61a66",
+  "startedAt": "2026-11-11T17:00:30.291Z",
+  "phase": "remove exact owned attachments, checklist and run, then sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bba9bf46-c350-4076-a6e8-2330ba994a6e",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklist-runs/start",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/d6c53156-c5cf-4981-b745-8a0221022e16",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/76774c4f-593a-4156-8d85-451a79420cf5",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/bba9bf46-c350-4076-a6e8-2330ba994a6e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bba9bf46-c350-4076-a6e8-2330ba994a6e",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-runs/ee0f5bd9-255d-4228-8b5b-eff387128a61",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "bba9bf46-c350-4076-a6e8-2330ba994a6e"
+  ],
+  "runs": [
+    "ee0f5bd9-255d-4228-8b5b-eff387128a61"
+  ],
+  "attachments": [
+    "d6c53156-c5cf-4981-b745-8a0221022e16",
+    "76774c4f-593a-4156-8d85-451a79420cf5"
+  ],
+  "uploads": [
+    {
+      "kind": "photo",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "d6c53156-c5cf-4981-b745-8a0221022e16",
+      "type": "image",
+      "mimeType": "image/jpeg",
+      "storedFileSize": 583,
+      "checklistTemplateItemId": "5607d492-2d9a-4de3-ad72-7b3cbf609a8f",
+      "sentBytes": 583,
+      "wallMs": 702
+    },
+    {
+      "kind": "video",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "attachmentId": "76774c4f-593a-4156-8d85-451a79420cf5",
+      "type": "video",
+      "mimeType": "video/webm",
+      "storedFileSize": 10107311,
+      "checklistTemplateItemId": "5607d492-2d9a-4de3-ad72-7b3cbf609a8f",
+      "sentBytes": 10107311,
+      "wallMs": 4003,
+      "requestToResponseMs": 3789
+    }
+  ],
+  "bucketPuts": [
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "d6c53156-c5cf-4981-b745-8a0221022e16",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "76774c4f-593a-4156-8d85-451a79420cf5",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "bba9bf46-c350-4076-a6e8-2330ba994a6e",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "runId": "ee0f5bd9-255d-4228-8b5b-eff387128a61",
+      "removedWithChecklist": true,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": true,
+  "appVersionBefore": "930c4e82c930d71186aec891578d18483ed61a66",
+  "checklist": {
+    "status": 201,
+    "templateId": "bba9bf46-c350-4076-a6e8-2330ba994a6e",
+    "items": 1
+  },
+  "photoShowsOnItem": true,
+  "video": {
+    "recorderMimeType": "video/webm;codecs=vp8",
+    "fileType": "video/webm",
+    "size": 10107311,
+    "frames": 797,
+    "seconds": 6,
+    "bitrate": 8000000,
+    "browserLengthOfRawRecording": "Infinity",
+    "lengthWrittenIntoHeader": true,
+    "browserLengthOfFileSent": 6,
+    "sizeMB": 9.64,
+    "content": "canvas noise and a moving colour block with a ZZ TEST caption; no person, no sound"
+  },
+  "progress": {
+    "sampledEveryMs": 200,
+    "series": [
+      {
+        "t": 203,
+        "item": "10%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 402,
+        "item": "16%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 603,
+        "item": "19%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 800,
+        "item": "28%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1005,
+        "item": "34%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1204,
+        "item": "39%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1404,
+        "item": "45%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1605,
+        "item": "54%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 1807,
+        "item": "60%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2005,
+        "item": "66%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2202,
+        "item": "75%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2404,
+        "item": "81%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2603,
+        "item": "86%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 2803,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3007,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3214,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3405,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3610,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      },
+      {
+        "t": 3815,
+        "item": "95%",
+        "bar": null,
+        "error": null
+      }
+    ],
+    "numbers": [
+      10,
+      16,
+      19,
+      28,
+      34,
+      39,
+      45,
+      54,
+      60,
+      66,
+      75,
+      81,
+      86,
+      95,
+      95,
+      95,
+      95,
+      95,
+      95
+    ],
+    "distinct": [
+      10,
+      16,
+      19,
+      28,
+      34,
+      39,
+      45,
+      54,
+      60,
+      66,
+      75,
+      81,
+      86,
+      95
+    ],
+    "start": 10,
+    "end": 95,
+    "strictlyBetween": [
+      16,
+      19,
+      28,
+      34,
+      39,
+      45,
+      54,
+      60,
+      66,
+      75,
+      81,
+      86
+    ],
+    "everyChangeSeen": [
+      {
+        "t": 18,
+        "item": "5%"
+      },
+      {
+        "t": 157,
+        "item": "10%"
+      },
+      {
+        "t": 299,
+        "item": "13%"
+      },
+      {
+        "t": 400,
+        "item": "16%"
+      },
+      {
+        "t": 502,
+        "item": "19%"
+      },
+      {
+        "t": 604,
+        "item": "22%"
+      },
+      {
+        "t": 706,
+        "item": "28%"
+      },
+      {
+        "t": 807,
+        "item": "31%"
+      },
+      {
+        "t": 908,
+        "item": "34%"
+      },
+      {
+        "t": 1008,
+        "item": "36%"
+      },
+      {
+        "t": 1110,
+        "item": "39%"
+      },
+      {
+        "t": 1210,
+        "item": "42%"
+      },
+      {
+        "t": 1310,
+        "item": "45%"
+      },
+      {
+        "t": 1411,
+        "item": "51%"
+      },
+      {
+        "t": 1511,
+        "item": "54%"
+      },
+      {
+        "t": 1612,
+        "item": "57%"
+      },
+      {
+        "t": 1719,
+        "item": "60%"
+      },
+      {
+        "t": 1822,
+        "item": "63%"
+      },
+      {
+        "t": 1926,
+        "item": "66%"
+      },
+      {
+        "t": 2030,
+        "item": "69%"
+      },
+      {
+        "t": 2132,
+        "item": "75%"
+      },
+      {
+        "t": 2242,
+        "item": "78%"
+      },
+      {
+        "t": 2343,
+        "item": "81%"
+      },
+      {
+        "t": 2443,
+        "item": "84%"
+      },
+      {
+        "t": 2546,
+        "item": "86%"
+      },
+      {
+        "t": 2646,
+        "item": "95%"
+      },
+      {
+        "t": 3992,
+        "item": null
+      }
+    ],
+    "midBarPicture": {
+      "valueWhenTaken": 22,
+      "atMs": 730
+    },
+    "moved": true
+  },
+  "playback": {
+    "readyState": 4,
+    "currentTime": 1.83,
+    "paused": false,
+    "ended": false,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "error": null,
+    "fromAppOrigin": false,
+    "userMenuMasked": 1,
+    "advance": {
+      "before": 2.07,
+      "after": 2.78,
+      "ended": false
+    }
+  },
+  "appVersionAfter": "930c4e82c930d71186aec891578d18483ed61a66",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-11T17:00:58.898Z"
+}
