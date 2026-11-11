@@ -8,6 +8,8 @@ const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
 const ADMIN_PHONE = process.env.POS_E2E_ADMIN_PHONE ?? '';
 const ADMIN_PASSWORD = process.env.POS_E2E_ADMIN_PASSWORD ?? '';
 const MEMBER_PHONE = '0811111111';
+/** SCRUM-863 — a ZZ TEST number the family changes to on the drop-off form. */
+const FORM_PHONE = '0898630001';
 const STATION_NAME = 'Reception Till 1';
 const signedOutPages = new WeakSet<Page>();
 
@@ -767,6 +769,14 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(consent.getByText('Saved on your profile — tell the team if anything has changed.', { exact: true })).toBeVisible();
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
+    // SCRUM-863 — the parent's block asks for the number again, with the channel
+    // choice, starting from the number given at the start; the family changes both.
+    await expect(consent.getByTestId('consent-kept-phone')).toHaveCount(0);
+    // (as the family typed it there: the leading zero stays until it is stored.)
+    await expect(consent.locator('input[type="tel"]')).toHaveValue(new RegExp(`^0?${MEMBER_PHONE.slice(1)}$`));
+    for (const channel of ['WhatsApp', 'Telegram', 'LINE']) await expect(consent.getByTitle(channel, { exact: true })).toBeVisible();
+    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    await consent.getByTitle('Telegram', { exact: true }).click();
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
     await page.getByLabel('Lock screen').click();
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
@@ -814,6 +824,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await page.getByRole('button', { name: 'Private child details', exact: true }).click();
     const privateForm = page.getByRole('dialog', { name: 'Private child details', exact: true });
     await expect(privateForm.getByPlaceholder('Your full name', { exact: true })).toHaveValue('Local guardian', { timeout: 20_000 });
+    // SCRUM-863 — staff's copy holds the number and channel the family chose, to correct if needed.
+    await expect(privateForm.locator('input[type="tel"]')).toHaveValue(FORM_PHONE.slice(1));
+    await expect(privateForm.getByTitle('Telegram', { exact: true })).toHaveClass(/bg-sky-500\/15/);
     await privateForm.getByPlaceholder(/^e.g. peanut allergy/).fill('Private local health marker');
     await privateForm.getByRole('button', { name: 'Start camera', exact: true }).click();
     await privateForm.getByRole('button', { name: 'Take photo', exact: true }).click();
@@ -821,6 +834,8 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     const ready = readConsent(true);
     await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
     const valid = (await (await ready).json()).document;
+    expect(valid.prompt.guardianPhone).toBe(`+66${FORM_PHONE.slice(1)}`);
+    expect(valid.prompt.contactChannel).toBe('telegram');
     expect(valid.prompt.staffReady === true && valid.prompt.consentAcknowledged === true
       && valid.prompt.confirmations.every((item: { required: boolean; acknowledged: boolean }) => !item.required || item.acknowledged)).toBe(true);
     expect(/Private local health marker|childPhotoUrl|data:image|medical|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
