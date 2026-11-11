@@ -138,7 +138,23 @@ export function Composer({
     };
     fit();
     window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    // The row's width also changes with no window resize (the simulator's side panel shown or hidden).
+    const box = inputRef.current;
+    let width = box?.clientWidth ?? 0;
+    const watcher =
+      box && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            // Only a change of width re-measures: the box's own height change must not loop.
+            if (box.clientWidth === width) return;
+            width = box.clientWidth;
+            fit();
+          })
+        : null;
+    if (box && watcher) watcher.observe(box);
+    return () => {
+      window.removeEventListener('resize', fit);
+      watcher?.disconnect();
+    };
   }, [shown, conv.status, conv.canReply]);
 
   const pickTemplate = (t: ComposerTemplate) => {
