@@ -91549,6 +91549,9 @@
                         "archived": {
                           "type": "boolean"
                         },
+                        "removed": {
+                          "type": "boolean"
+                        },
                         "kids": {
                           "type": "integer",
                           "nullable": true
@@ -94865,7 +94868,7 @@
     },
     "/inbox/conversations/{id}/book-date": {
       "post": {
-        "description": "Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation (\"From the inbox\"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`); 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "description": "Book Date (SCRUM-775): on a Birthdays & Events conversation, make a TENTATIVE birthday event in the OTO App's Events module from what the person confirmed out of the chat — the park, the date and start time, the guests, the contact and the child — and link the two: the conversation keeps the event (its `event` on GET …/{id}, a `date_booked` pill) and the event names the conversation (\"From the inbox\"). The body `id` is caller-named — the event's own id in the Events module — so the same id again is the same event (a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already (`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; 409 EVENT_BRANCH_NOT_MAPPED when the OTO App has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer (nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays team or inbox:conversation:assign at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
         "requestBody": {
           "required": true,
           "content": {
@@ -94995,6 +94998,9 @@
                         "archived": {
                           "type": "boolean"
                         },
+                        "removed": {
+                          "type": "boolean"
+                        },
                         "kids": {
                           "type": "integer",
                           "nullable": true
@@ -95120,7 +95126,7 @@
     },
     "/inbox/conversations/{id}/open-beo": {
       "post": {
-        "description": "Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. With `aiFill: true` (the Create BEO button; SCRUM-660) the BEO form runs its AI Fill on the conversation's confirmation message as it opens (`beoPath` ends `&fill=inbox`; the app reads the message itself from GET …/beo-confirmation, never from the hand-off), and the audit row says so; without it (the event chip) the form opens as before. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "description": "Create BEO (SCRUM-775): open the event Book Date made, at its BEO form in the OTO App's Events module, as the signed-in person. Answers a one-use suite hand-off (`launchUrl`, about a minute, its target the BEO form at `beoPath`), minted as `POST /auth/handoff` mints one and recorded as `auth.handoff_issue` naming the conversation and the event (`purpose: inbox.create_beo`). A second call mints a second hand-off; nothing is written to the conversation. With `aiFill: true` (the Create BEO button; SCRUM-660) the BEO form runs its AI Fill on the conversation's confirmation message as it opens (`beoPath` ends `&fill=inbox`; the app reads the message itself from GET …/beo-confirmation, never from the hand-off), and the audit row says so; without it (the event chip) the form opens as before. Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 409 EVENT_REMOVED when the Events module deleted or archived the event (`details.eventId`; no hand-off is minted, Book Date is open again); 403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
         "requestBody": {
           "required": true,
           "content": {

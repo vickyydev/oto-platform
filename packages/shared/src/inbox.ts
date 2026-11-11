@@ -403,10 +403,17 @@ export const InboxConversationEventSchema = z.object({
   statusName: z.string(),
   /**
    * The event was archived in the Events module (a customer who dropped out).
-   * The conversation keeps it: Create BEO still opens it, and the app is where
-   * it is restored. False when the inbox cannot read the app's view.
+   * False when the inbox cannot read the app's view.
    */
   archived: z.boolean(),
+  /**
+   * SCRUM-820: the party is no longer in the Events module — deleted there, or
+   * archived. The thread says "Party removed in the Events module", Create BEO
+   * opens nothing (`EVENT_REMOVED`) and Book Date is offered again. True only
+   * on a definite answer from the Events module; false when the inbox cannot
+   * read it. Optional: an api from before SCRUM-820 sends none.
+   */
+  removed: z.boolean().optional(),
   kids: z.number().int().nullable(),
   adults: z.number().int().nullable(),
   bookedAt: Iso,

@@ -343,6 +343,42 @@ export async function getEventAtBranches(
   return row && datedSoundly(row) ? toEvent(row) : null;
 }
 
+/**
+ * SCRUM-820 — where an event stands in the Events module, for a caller that
+ * holds its id (the inbox conversation it was booked from) and must not go on
+ * offering an event that is no longer there:
+ *
+ *  - `live` or `archived`: the event is at one of these branches;
+ *  - `gone`: the seam is installed and readable and holds no event of that id
+ *    at any branch — deleted in the app (or moved to an app branch the
+ *    platform has no branch for, which the views leave out the same way);
+ *  - `unknown`: nothing definite can be said — a deployment without the seam,
+ *    an id that is no uuid, or an event of that id at a branch that is not one
+ *    of these. A caller treats it as "still there".
+ *
+ * A read that fails throws, as every read here does; the caller decides, and
+ * a failure is never `gone`. The caller passes every branch of its operator:
+ * only the standing of its own event is ever said.
+ */
+export type SeamEventStanding = 'live' | 'archived' | 'gone' | 'unknown';
+
+export async function eventStandingAtBranches(
+  exec: Exec,
+  q: { branchIds: readonly string[]; eventId: string },
+): Promise<SeamEventStanding> {
+  const branchIds = new Set(q.branchIds.filter((id) => UUID.test(id)).map((id) => id.toLowerCase()));
+  if (!UUID.test(q.eventId) || branchIds.size === 0) return 'unknown';
+  if (!(await otoAppEventsInstalled(exec))) return 'unknown';
+  const res = await exec.execute<{ branch_id: string | null; archived: boolean }>(sql`
+    select branch_id, archived
+      from otoapp_v.events
+     where id = ${q.eventId}::uuid`);
+  if (res.rows.length === 0) return 'gone';
+  const own = res.rows.find((r) => r.branch_id !== null && branchIds.has(String(r.branch_id).toLowerCase()));
+  if (!own) return 'unknown';
+  return own.archived ? 'archived' : 'live';
+}
+
 /** The children registered on one of the branch's events. */
 export async function listEventAttendees(
   exec: Exec,

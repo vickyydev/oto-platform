@@ -20,6 +20,8 @@ import {
   BOOK_DATE_MESSAGES,
   OPEN_BEO_PURPOSE,
   eventTitleOf,
+  eventStandingOf,
+  isRemovedStanding,
 } from '../src/services/inbox/book-date';
 import { inboxToday, inboxWeekStart } from '../src/services/inbox/read';
 import type {
@@ -498,22 +500,167 @@ describe('Book Date makes a tentative birthday in the Events module, linked both
     expect((await get<{ event: unknown }>('gm', `/inbox/conversations/${plain}`)).body.event).toBeNull();
   });
 
-  it('an event archived in the Events module shows as archived, and stays the conversation’s', async () => {
+  it('an event restored from the archive in the Events module is the conversation’s again', async () => {
     await appPool.query(`update core_events set is_archived = true, archived_at = now() where id = $1`, [body.id]);
     try {
-      const res = await get<{ event: { id: string; archived: boolean } }>('gm', `/inbox/conversations/${conv}`);
+      const res = await get<{ event: { id: string; archived: boolean; removed: boolean } }>('gm', `/inbox/conversations/${conv}`);
       expect(res.status).toBe(200);
       expect(InboxConversationDetailSchema.safeParse(res.body).success).toBe(true);
-      expect(res.body.event).toMatchObject({ id: body.id, archived: true });
-      // Still the conversation's event: a new date is refused, naming it (an owner question on the ticket).
-      const again = await book<Refusal>('bdayA', conv, bodyOf());
-      expect(again.status).toBe(409);
-      expect(again.body.error).toMatchObject({ code: 'EVENT_ALREADY_BOOKED', details: { eventId: body.id } });
+      expect(res.body.event).toMatchObject({ id: body.id, archived: true, removed: true });
     } finally {
       await appPool.query(`update core_events set is_archived = false, archived_at = null where id = $1`, [body.id]);
     }
-    const restored = await get<{ event: { archived: boolean } }>('gm', `/inbox/conversations/${conv}`);
-    expect(restored.body.event.archived).toBe(false);
+    const restored = await get<{ event: { archived: boolean; removed: boolean } }>('gm', `/inbox/conversations/${conv}`);
+    expect(restored.body.event).toMatchObject({ archived: false, removed: false });
+    // Restored, it holds the conversation as before.
+    const again = await book<Refusal>('bdayA', conv, bodyOf());
+    expect(again.status).toBe(409);
+    expect(again.body.error).toMatchObject({ code: 'EVENT_ALREADY_BOOKED', details: { eventId: body.id } });
+  });
+});
+
+describe('a party removed in the Events module (SCRUM-820)', () => {
+  const open = async (who: string, conversationId: string): Promise<Res<Refusal & { eventId?: string }>> => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/inbox/conversations/${conversationId}/open-beo`,
+      headers: { cookie: cookies[who]! },
+    });
+    return { status: res.statusCode, body: res.json() as Refusal & { eventId?: string }, headers: res.headers };
+  };
+  type Shown = { event: { id: string; archived: boolean; removed: boolean; date: string } | null };
+  const shown = async (conversationId: string) => (await get<Shown>('gm', `/inbox/conversations/${conversationId}`)).body.event;
+  const handoffs = async () =>
+    (
+      await ctx.db
+        .select({ id: s.auditLog.id })
+        .from(s.auditLog)
+        .where(and(eq(s.auditLog.actorAccountId, people.bdayA), eq(s.auditLog.action, 'auth.handoff_issue')))
+    ).length;
+
+  it('a live party is not removed: the chip’s event, Create BEO opens it, a second date is refused', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    const made = await book('bdayA', conv, b);
+    expect(made.status, JSON.stringify(made.body)).toBe(200);
+    expect(made.body.event.removed).toBe(false);
+    expect(await shown(conv)).toMatchObject({ id: b.id, archived: false, removed: false });
+    expect((await open('bdayA', conv)).status).toBe(200);
+    expect((await book<Refusal>('bdayA', conv, bodyOf())).body.error.code).toBe('EVENT_ALREADY_BOOKED');
+  });
+
+  it('a party deleted there: the event says removed, Create BEO is refused cleanly, Book Date books again', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    expect((await book('bdayA', conv, b)).status).toBe(200);
+    await appPool.query(`delete from core_events where id = $1`, [b.id]);
+
+    // The conversation keeps what was booked, and says it is gone.
+    const ev = await shown(conv);
+    expect(ev).toMatchObject({ id: b.id, date: '2099-03-14', archived: false, removed: true });
+
+    // No hand-off is minted for a form that is not there.
+    const before = await handoffs();
+    const refused = await open('bdayA', conv);
+    expect(refused.status, JSON.stringify(refused.body)).toBe(409);
+    expect(refused.body.error).toEqual({
+      code: 'EVENT_REMOVED',
+      message: BOOK_DATE_MESSAGES.partyRemoved,
+      details: { eventId: b.id },
+    });
+    expect(await handoffs()).toBe(before);
+
+    // Book Date is open again: the new event takes the conversation.
+    const next = bodyOf({ date: '2099-04-18' });
+    const again = await book('bdayA', conv, next);
+    expect(again.status, JSON.stringify(again.body)).toBe(200);
+    expect(again.body).toMatchObject({ created: true, event: { id: next.id, date: '2099-04-18', removed: false } });
+    expect((await convRow(conv)).eventOrderRef).toBe(next.id);
+    expect(await shown(conv)).toMatchObject({ id: next.id, removed: false });
+    // The old pill stays in the thread; the audit row names the event it replaced.
+    expect(await pills(conv)).toHaveLength(2);
+    const a = await audits(conv, BOOK_DATE_ACTION);
+    expect(a).toHaveLength(2);
+    const replaced = a.find((r) => (r.after as Record<string, unknown>).eventOrderRef === next.id)!;
+    expect(replaced.before).toEqual({ eventOrderRef: b.id });
+    expect(replaced.after).toMatchObject({ replacedRemovedEvent: b.id });
+    expect((await open('bdayA', conv)).status).toBe(200);
+    // The new event holds the conversation as any other.
+    expect((await book<Refusal>('bdayA', conv, bodyOf())).body.error).toMatchObject({
+      code: 'EVENT_ALREADY_BOOKED',
+      details: { eventId: next.id },
+    });
+  });
+
+  it('a party archived there: removed too, and Book Date books again', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    expect((await book('bdayA', conv, b)).status).toBe(200);
+    await appPool.query(`update core_events set is_archived = true, archived_at = now() where id = $1`, [b.id]);
+    expect(await shown(conv)).toMatchObject({ id: b.id, archived: true, removed: true });
+    const refused = await open('bdayA', conv);
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.code).toBe('EVENT_REMOVED');
+    const next = bodyOf({ date: '2099-05-02' });
+    const again = await book('bdayA', conv, next);
+    expect(again.status, JSON.stringify(again.body)).toBe(200);
+    expect((await convRow(conv)).eventOrderRef).toBe(next.id);
+    expect(await appEvents(conv)).toHaveLength(2);
+  });
+
+  it('a party moved to another of the operator’s parks is still there', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    expect((await book('bdayA', conv, b)).status).toBe(200);
+    const appOther = newId();
+    await ctx.db.execute(sql`
+      insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+      values (${appOther}, ${appTenant}, 'Moved-to park', 'Phuket', ${chalong})`);
+    try {
+      await appPool.query(`update core_events set branch_id = $2 where id = $1`, [b.id, appOther]);
+      expect(await eventStandingOf(ctx.db, oto, b.id)).toBe('live');
+      expect(await shown(conv)).toMatchObject({ id: b.id, removed: false });
+      expect((await open('bdayA', conv)).status).toBe(200);
+      expect((await book<Refusal>('bdayA', conv, bodyOf())).body.error.code).toBe('EVENT_ALREADY_BOOKED');
+    } finally {
+      await appPool.query(`update core_events set branch_id = $2 where id = $1`, [b.id, appCentral]);
+      await ctx.db.execute(sql`delete from otoapp.branches where id = ${appOther}`);
+    }
+  });
+
+  it('nothing definite is never "removed": a park that is not the operator’s, an unreadable id, a failed read', async () => {
+    const conv = await bday();
+    const b = bodyOf();
+    expect((await book('bdayA', conv, b)).status).toBe(200);
+    // The event sits at a branch that is no park of this operator: unknown, so it stands as booked.
+    const appForeign = newId();
+    await ctx.db.execute(sql`
+      insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+      values (${appForeign}, ${appTenant}, 'Not ours', 'Phuket', ${newId()})`);
+    try {
+      await appPool.query(`update core_events set branch_id = $2 where id = $1`, [b.id, appForeign]);
+      expect(await eventStandingOf(ctx.db, oto, b.id)).toBe('unknown');
+      expect(await shown(conv)).toMatchObject({ id: b.id, removed: false });
+      expect((await book<Refusal>('bdayA', conv, bodyOf())).body.error.code).toBe('EVENT_ALREADY_BOOKED');
+    } finally {
+      await appPool.query(`update core_events set branch_id = $2 where id = $1`, [b.id, appCentral]);
+      await ctx.db.execute(sql`delete from otoapp.branches where id = ${appForeign}`);
+    }
+    expect(await eventStandingOf(ctx.db, oto, 'not-a-uuid')).toBe('unknown');
+    // Another operator asks after this event: none of its parks holds it, so nothing is said.
+    const [other] = await ctx.db.select({ id: s.operator.id }).from(s.operator).where(sql`${s.operator.id} <> ${oto}`).limit(1);
+    if (other) expect(await eventStandingOf(ctx.db, other.id, b.id)).toBe('unknown');
+    // A read that fails is not an answer.
+    const failing = {
+      select() {
+        throw new Error('the database did not answer');
+      },
+    } as unknown as Parameters<typeof eventStandingOf>[0];
+    expect(await eventStandingOf(failing, oto, b.id)).toBe('unknown');
+    expect(isRemovedStanding('unknown')).toBe(false);
+    expect(isRemovedStanding('live')).toBe(false);
+    expect(isRemovedStanding('gone')).toBe(true);
+    expect(isRemovedStanding('archived')).toBe(true);
   });
 });
 

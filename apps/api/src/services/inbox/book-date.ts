@@ -17,7 +17,7 @@ import { holdsAtOwnDepartment } from '../access-control';
 import { audit } from '../audit';
 import { claimClientId, idInUse, markReplay } from '../client-id';
 import { appAccessPermission, issueHandoffAudited, type HandoffConfig } from '../handoff';
-import { getBranchEvent } from '../otoapp-events';
+import { eventStandingAtBranches, getBranchEvent, type SeamEventStanding } from '../otoapp-events';
 import {
   DIRECTORY_NOT_CONFIGURED,
   type DirectoryInboxEventAnswer,
@@ -66,6 +66,16 @@ import { loadVisibleConversation } from './read-visibility';
  *   - a conversation that already has its event refuses a new id
  *     (`EVENT_ALREADY_BOOKED`, with the event's id): Create BEO opens it.
  *
+ * A PARTY REMOVED IN THE EVENTS MODULE (SCRUM-820). The Events module is the
+ * master, and it is asked each time the conversation is read: an event it
+ * deleted, or archived, is `removed` on the conversation's event. Create BEO
+ * then answers `EVENT_REMOVED` instead of opening a form that is not there,
+ * and Book Date is open again: the new event takes the conversation's link,
+ * the old pill stays in the thread as the history it is. Only a definite
+ * answer removes — the seam read and held no such event, or held it archived.
+ * No seam, a read that failed, or anything else unsure leaves the event as
+ * booked (`eventStandingOf`).
+ *
  * ORDER. The app is asked first, outside any transaction here, so no row is
  * held while another service answers; then one transaction locks the
  * conversation, checks again, and writes the link, the pill and the audit row
@@ -91,6 +101,7 @@ export const BOOK_DATE_MESSAGES = {
   branchNotMapped: 'This park has no branch in the OTO App yet, so no event was made.',
   unavailable: 'The Events calendar did not answer, so no date was booked. Press Book Date again.',
   noEventYet: 'No date is booked for this conversation yet. Book Date makes the event Create BEO opens.',
+  partyRemoved: 'Party removed in the Events module. Book Date books the date again.',
 } as const;
 
 /** The audit action, and the operation name of its transaction. */
@@ -160,6 +171,23 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? 
 const int = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) ? v : null);
 
 /**
+ * Where the conversation's event stands in the Events module (SCRUM-820),
+ * asked across every park of the operator: an event moved to another park
+ * there is still there. A read that fails is `unknown`, never `gone`.
+ */
+export async function eventStandingOf(db: Exec, operatorId: string, eventId: string): Promise<SeamEventStanding> {
+  try {
+    const parks = await db.select({ id: branch.id }).from(branch).where(eq(branch.operatorId, operatorId));
+    return await eventStandingAtBranches(db, { branchIds: parks.map((p) => p.id), eventId });
+  } catch {
+    return 'unknown';
+  }
+}
+
+/** Deleted or archived there: the conversation's event is no longer one to open, and the date can be booked again. */
+export const isRemovedStanding = (standing: SeamEventStanding): boolean => standing === 'gone' || standing === 'archived';
+
+/**
  * The conversation's event, as the inbox shows it: the `date_booked` pill's
  * record of what was booked, brought up to date from the Events module where
  * the inbox can read it (the app's published view, fenced by the park); as
@@ -199,6 +227,7 @@ export async function conversationEventOf(
     status: str(p.status) ?? 'tentative',
     statusName: str(p.statusName) ?? 'Tentative',
     archived: false,
+    removed: false,
     kids: int(p.kids),
     adults: int(p.adults),
     bookedAt: pill.createdAt.toISOString(),
@@ -230,10 +259,14 @@ export async function conversationEventOf(
   // event archived there shows here. Its view is optional (a deployment
   // without the app has none, one without the grant refuses): the booking as
   // made stands in for it.
+  const standing = await eventStandingOf(db, operatorId, eventId);
+  if (standing === 'gone') return { ...booked, removed: true };
+  const removed = isRemovedStanding(standing);
   const live = await getBranchEvent(db, { branchId, eventId }).catch(() => null);
-  if (!live) return booked;
+  if (!live) return { ...booked, archived: standing === 'archived', removed };
   return {
     ...booked,
+    removed,
     title: live.title,
     date: live.startDate,
     startTime: live.startTime,
@@ -298,7 +331,12 @@ export async function bookConversationDate(
     (row) => row.id === conv.id && row.operatorId === operatorId,
   );
   const eventId = claim.id;
-  if (!claim.replay && conv.eventOrderRef) {
+  // SCRUM-820: an event the Events module deleted or archived no longer holds the conversation.
+  const replaces =
+    !claim.replay && conv.eventOrderRef && isRemovedStanding(await eventStandingOf(db, operatorId, conv.eventOrderRef))
+      ? conv.eventOrderRef
+      : null;
+  if (!claim.replay && conv.eventOrderRef && !replaces) {
     throw errors.conflict('EVENT_ALREADY_BOOKED', BOOK_DATE_MESSAGES.alreadyBooked, { eventId: conv.eventOrderRef });
   }
   if (claim.replay) {
@@ -370,7 +408,7 @@ export async function bookConversationDate(
       .limit(1)
       .for('update');
     if (!locked) throw errors.notFound('Conversation not found');
-    if (locked.eventOrderRef && locked.eventOrderRef !== eventId) {
+    if (locked.eventOrderRef && locked.eventOrderRef !== eventId && locked.eventOrderRef !== replaces) {
       throw errors.conflict('EVENT_ALREADY_BOOKED', BOOK_DATE_MESSAGES.alreadyBooked, { eventId: locked.eventOrderRef });
     }
     if (locked.eventOrderRef !== eventId) {
@@ -408,8 +446,13 @@ export async function bookConversationDate(
         entityType: 'inbox.conversation',
         entityId: conv.id,
         requestId: ctx.requestId,
-        before: { eventOrderRef: null },
-        after: { eventOrderRef: eventId, ...payload, replayedInApp: outcome.body.replayed },
+        before: { eventOrderRef: locked.eventOrderRef },
+        after: {
+          eventOrderRef: eventId,
+          ...payload,
+          replayedInApp: outcome.body.replayed,
+          ...(locked.eventOrderRef ? { replacedRemovedEvent: locked.eventOrderRef } : {}),
+        },
       });
     }
     const event = await conversationEventOf(tx, operatorId, { id: conv.id, eventOrderRef: eventId });
@@ -446,7 +489,9 @@ export interface OpenBeoSession {
  * Whoever can see the conversation may open its event's BEO, as they may press
  * its chip; the OTO App decides what they may do there. Opening the app at all
  * needs `app:oto_app:access`, checked exactly as `POST /auth/handoff` checks
- * it. No event yet is `NO_EVENT_YET`: Book Date comes first.
+ * it. No event yet is `NO_EVENT_YET`: Book Date comes first. An event the
+ * Events module deleted or archived is `EVENT_REMOVED` (SCRUM-820): no
+ * hand-off is minted for a form that is not there.
  */
 export async function openConversationBeo(
   deps: { db: Db; handoff: () => HandoffConfig },
@@ -460,6 +505,9 @@ export async function openConversationBeo(
   if (conv.category !== 'birthdays') throw errors.conflict('NOT_A_BIRTHDAY', BOOK_DATE_MESSAGES.notABirthday);
   const eventId = conv.eventOrderRef;
   if (!eventId) throw errors.conflict('NO_EVENT_YET', BOOK_DATE_MESSAGES.noEventYet);
+  if (isRemovedStanding(await eventStandingOf(db, operatorId, eventId))) {
+    throw errors.conflict('EVENT_REMOVED', BOOK_DATE_MESSAGES.partyRemoved, { eventId });
+  }
 
   const permission = appAccessPermission('oto_app');
   const seated = hasPermission(ctx.effective, permission, {

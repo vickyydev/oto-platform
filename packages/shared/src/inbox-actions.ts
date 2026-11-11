@@ -143,7 +143,11 @@ export type InboxActionRefusalBody = z.infer<typeof InboxActionRefusalSchema>;
 export const INBOX_BOOK_DATE_REFUSALS = [
   /** 409: the conversation is not in Birthdays & Events. */
   'NOT_A_BIRTHDAY',
-  /** 409: the conversation already has its event (`details.eventId`): Create BEO opens it. */
+  /**
+   * 409: the conversation already has its event (`details.eventId`): Create BEO
+   * opens it. Not answered for an event the Events module deleted or archived
+   * (SCRUM-820): the new date then takes the conversation.
+   */
   'EVENT_ALREADY_BOOKED',
   /** 409: the OTO App has no branch for that park, so nothing was made. */
   'EVENT_BRANCH_NOT_MAPPED',
@@ -153,6 +157,12 @@ export const INBOX_BOOK_DATE_REFUSALS = [
   'EVENTS_CALENDAR_UNAVAILABLE',
   /** 409 (Create BEO, `…/open-beo`): no date is booked yet, so there is no event to open. */
   'NO_EVENT_YET',
+  /**
+   * 409 (Create BEO, `…/open-beo`; SCRUM-820): the party was deleted or archived
+   * in the Events module (`details.eventId`), so there is no BEO to open. Book
+   * Date is open again on the conversation.
+   */
+  'EVENT_REMOVED',
 ] as const;
 export type InboxBookDateRefusal = (typeof INBOX_BOOK_DATE_REFUSALS)[number];
 
@@ -260,7 +270,8 @@ export type InboxBookDateProposal = z.infer<typeof InboxBookDateProposalSchema>;
  * The mint is recorded as `auth.handoff_issue` naming the conversation and the
  * event (`purpose: inbox.create_beo`). The answer IS a credential: it is never
  * kept for a replay, and a second press mints a second one-use hand-off.
- * Refused 409 `NO_EVENT_YET` before Book Date has made the event.
+ * Refused 409 `NO_EVENT_YET` before Book Date has made the event, and 409
+ * `EVENT_REMOVED` once the Events module deleted or archived it (SCRUM-820).
  */
 export const InboxOpenBeoResultSchema = z.object({
   conversationId: Uuid,

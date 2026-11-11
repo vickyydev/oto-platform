@@ -227,7 +227,9 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           "`id` is caller-named — the event's own id in the Events module — so the same id again is the same event " +
           '(a replay, `x-oto-replay: true`), never a second; an id another conversation holds is 409 ID_IN_USE. ' +
           'Refusals: 409 NOT_A_BIRTHDAY; 409 EVENT_ALREADY_BOOKED when the conversation has its event already ' +
-          '(`details.eventId`; Create BEO opens it at `event.beoPath`); 409 EVENT_BRANCH_NOT_MAPPED when the OTO App ' +
+          '(`details.eventId`; Create BEO opens it at `event.beoPath`) — unless the Events module deleted or ' +
+          'archived that event (`event.removed`, SCRUM-820), when the new date takes the conversation; ' +
+          '409 EVENT_BRANCH_NOT_MAPPED when the OTO App ' +
           'has no branch for the park; 503 EVENTS_CALENDAR_UNAVAILABLE when the Events module did not answer ' +
           '(nothing was booked; press again); 502 EVENTS_CALENDAR_REFUSED otherwise. Needs a place in the birthdays ' +
           'team or inbox:conversation:assign at the conversation. ' +
@@ -266,7 +268,8 @@ export async function inboxActionRoutes(app: App): Promise<void> {
           "form runs its AI Fill on the conversation's confirmation message as it opens (`beoPath` ends " +
           '`&fill=inbox`; the app reads the message itself from GET …/beo-confirmation, never from the hand-off), and ' +
           'the audit row says so; without it (the event chip) the form opens as before. ' +
-          'Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; ' +
+          'Refusals: 409 NOT_A_BIRTHDAY; 409 NO_EVENT_YET before Book Date; 409 EVENT_REMOVED when the Events ' +
+          'module deleted or archived the event (`details.eventId`; no hand-off is minted, Book Date is open again); ' +
           '403 without app:oto_app:access; 503 HANDOFF_NOT_CONFIGURED where the suite hand-off is not set up. ' +
           'Whoever can see the conversation may open its BEO; the OTO App decides what they may do there. ' +
           REFUSALS,
