@@ -1,5 +1,6 @@
-import type { ConsentAction, FilledConsentSlot } from '@oto/shared';
+import { normalizePhone, type ConsentAction, type FilledConsentSlot } from '@oto/shared';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
+import type { ContactChannel } from '@/types';
 
 /**
  * SCRUM-764 — A STEP OF THE DROP-OFF OR NANNY FORM, AS THE TILL TAKES IT IN.
@@ -30,6 +31,17 @@ export function consentSlotPatches(
 }
 
 /**
+ * SCRUM-863 — the parent's number as the form sends it and the till keeps it:
+ * the stored form when it reads as a number, what was typed when it does not
+ * yet. The display and the till both use this, so the form the till publishes
+ * back is the one the family's screen is waiting for.
+ */
+export function consentFormPhone(typed: string): string {
+  const trimmed = typed.trim();
+  return (normalizePhone(trimmed) ?? trimmed).slice(0, 32);
+}
+
+/**
  * The till's side of the form, as `takeConsentAction` changes it. The setters
  * are the till's own state; `answered` moves the customer screen on to a new
  * request (`TicketDisplayState.answerRevision`).
@@ -37,13 +49,15 @@ export function consentSlotPatches(
 export interface ConsentFormTill {
   /** The till's copy of each child, for a filled step's patches. */
   slots: readonly SupervisedSlot[];
-  /** The parent's number the till holds: the one given at the start, when there was one. */
+  /** The parent's number the till holds for the registration: the one given at the start, until it is changed. */
   guardianPhone: string;
   /** The form as it is shown now, which a `done` marks finished. */
   signature: string;
   updateSlot: (id: string, patch: Partial<SupervisedSlot>) => void;
   setGuardianName: (name: string) => void;
   setGuardianPhone: (phone: string) => void;
+  /** SCRUM-863 — the channel the check-in confirmation goes to, as the family chose it on the form. */
+  setContactChannel: (channel: ContactChannel) => void;
   setConsentAcknowledged: (value: boolean) => void;
   setAcknowledgedConfirmationIds: (ids: string[]) => void;
   setCompletedSignature: (signature: string | null) => void;
@@ -76,8 +90,18 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
   } else if (action.action === 'fill') {
     for (const { id, patch } of consentSlotPatches(till.slots, action.slots)) till.updateSlot(id, patch);
     till.setGuardianName(action.guardianName);
-    // A number given at the start stays: the form asks only when there was none.
-    if (action.guardianPhone && !till.guardianPhone.trim()) till.setGuardianPhone(action.guardianPhone);
+    // SCRUM-863 — the family confirms or changes their number and channel on
+    // the form, and what they send is what the registration keeps: the stored
+    // form of a number that reads as one, otherwise as typed, exactly as the
+    // till's own copy of the form holds it (the registration refuses a number
+    // that cannot be one). The customer's own number on the sale is not
+    // touched. An older display sends a number only when none was given at the
+    // start and never a channel: a step without either changes neither.
+    if (action.guardianPhone !== undefined) {
+      const phone = consentFormPhone(action.guardianPhone);
+      if (phone !== till.guardianPhone.trim()) till.setGuardianPhone(phone);
+    }
+    if (action.contactChannel !== undefined) till.setContactChannel(action.contactChannel);
     till.setConsentAcknowledged(action.consentAcknowledged);
     till.setAcknowledgedConfirmationIds(action.acknowledgedConfirmationIds);
     till.setCompletedSignature(null);

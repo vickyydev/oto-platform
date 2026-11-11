@@ -1,4 +1,3 @@
-import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useId, useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
@@ -48,16 +47,12 @@ interface ConsentCaptureProps {
   // Parent contact details — captured here so the auto-send WA confirmation fires
   // immediately at registration. Optional: component hides the fields when the
   // callbacks are not provided (e.g. non-drop-off flows that don't need this).
+  // SCRUM-863 — the till starts both from what was given on the first screen,
+  // and the family confirms or changes them here, as the prototype's form asks.
   parentPhone?: string;
   parentContactMethod?: ContactChannel;
   onParentPhoneChange?: (v: string) => void;
   onParentContactMethodChange?: (v: ContactChannel) => void;
-  /**
-   * SCRUM-762 — the parent's number is the one given on the first screen: the
-   * customer sees it here and is not asked for it again. Staff can still
-   * correct it on their own copy of this form.
-   */
-  parentPhoneKept?: boolean;
   onParentNameChange: (v: string) => void;
   onConsentAckChange: (v: boolean) => void;
   onUpdateChild: (id: string, patch: Partial<SupervisedSlot>) => void;
@@ -134,7 +129,6 @@ export function ConsentCapture({
   parentContactMethod = 'whatsapp',
   onParentPhoneChange,
   onParentContactMethodChange,
-  parentPhoneKept = false,
   onParentNameChange,
   onConsentAckChange,
   onUpdateChild,
@@ -359,24 +353,15 @@ export function ConsentCapture({
                 <label className="flex items-center gap-2 text-lg text-foreground/70">
                   <Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}
                 </label>
-                {parentPhoneKept && !staffScreen && parentPhone ? (
-                  <div data-testid="consent-kept-phone">
-                    <div className="flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">
-                      {formatStoredPhone(parentPhone)}
-                    </div>
-                    <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
-                  </div>
-                ) : (
-                  <PhoneInput
-                    value={parentPhone ?? ''}
-                    onChange={onParentPhoneChange}
-                    label=""
-                    inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground"
-                    channel={onParentContactMethodChange ? parentContactMethod : undefined}
-                    onChannelChange={onParentContactMethodChange}
-                    translate={!staffScreen}
-                  />
-                )}
+                <PhoneInput
+                  value={parentPhone ?? ''}
+                  onChange={onParentPhoneChange}
+                  label=""
+                  inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground"
+                  channel={onParentContactMethodChange ? parentContactMethod : undefined}
+                  onChannelChange={onParentContactMethodChange}
+                  translate={!staffScreen}
+                />
               </div>
             )}
             {/* SCRUM-767: the whole line is the checkbox's label, and the box's

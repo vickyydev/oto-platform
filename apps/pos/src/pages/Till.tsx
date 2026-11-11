@@ -2004,8 +2004,10 @@ export default function Till() {
       }
     }
     setSuperParentName('');
-    // SCRUM-762 — the number given at the start (or the member's own) is the
-    // one the drop-off and nanny forms use; the family is not asked again.
+    // SCRUM-762 — the drop-off and nanny forms start from the number and the
+    // channel given at the start (or the member's own number). SCRUM-863 — the
+    // family confirms or changes them on the form, as the prototype's form
+    // asks; that is the registration's contact, never the sale's own number.
     setSuperParentPhone(customerPhone.trim() || member?.phone || '');
     setSuperParentContactMethod(customerContactChannel);
     gateRegistrationIdRef.current = null;
@@ -3507,15 +3509,15 @@ export default function Till() {
     guardianName: superParentName, consentRequired, consentAcknowledged: superConsentAck,
     confirmations: consentConfirmations,
     guardianPhone: superParentPhone.trim().slice(0, 32),
+    // SCRUM-863 — sent with the number, so the family's screen shows both to
+    // confirm or change and sends both back with each step.
+    contactChannel: superParentContactMethod,
     fees: { nannyHourlyTHB: dropOffPricing.nannyHourlyRateTHB, dropOffFeeTHB: dropOffPricing.oneTimeFeeTHB },
     staffReady: consentStaffReady,
     canContinue: consentStaffReady && consentSlotsComplete(consentRows.map(({ slot }) => ({ name: slot.name, ageYears: slotAgeOf(slot) })))
       && (!consentRequired || !!superParentName.trim() && superConsentAck)
       && consentConfirmations.every(item => !item.required || item.acknowledged),
   };
-  /** SCRUM-762 — the parent's number on the forms is still the one given at the start. */
-  const startPhone = (customerPhone.trim() || member?.phone || '').trim();
-  const gatePhoneKept = startPhone.length > 0 && superParentPhone.trim() === startPhone;
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
   // SCRUM-764 — the form stays on the family’s screen when they ask for help:
@@ -3556,6 +3558,7 @@ export default function Till() {
       takeConsentAction(action.data, {
         slots: superSlots, guardianPhone: superParentPhone, signature: current.signature,
         updateSlot: handleUpdateSlot, setGuardianName: setSuperParentName, setGuardianPhone: setSuperParentPhone,
+        setContactChannel: setSuperParentContactMethod,
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
         answered: () => setDisplayAnswerRevision(previous => previous + 1),
@@ -4036,7 +4039,6 @@ export default function Till() {
               policy={supervisionPolicy}
               parentPhone={superParentPhone}
               parentContactMethod={superParentContactMethod}
-              parentPhoneKept={gatePhoneKept}
               onParentNameChange={setSuperParentName}
               onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod}

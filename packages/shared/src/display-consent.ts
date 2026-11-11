@@ -8,6 +8,8 @@ const age = z.number().int().min(0).max(17);
 /** SCRUM-764 — what the family types about each child on their own screen. */
 const allergiesMedical = z.string().max(500);
 const foodRestrictions = z.string().max(200);
+/** SCRUM-863 — where the check-in confirmation goes: the family chooses it on the form, beside the number. */
+const contactChannel = z.enum(['whatsapp', 'telegram', 'line']);
 
 const promptObject = z.object({
   kind: z.literal('consent'), requestId, visitorId: id,
@@ -33,8 +35,16 @@ const promptObject = z.object({
   guardianName, consentRequired: z.boolean(), consentAcknowledged: z.boolean(),
   confirmations: z.array(z.object({ id, text: z.string().min(1).max(1_000),
     required: z.boolean(), acknowledged: z.boolean() })).max(50),
-  /** SCRUM-762 — the number given at the start: shown on the form, never asked again. Empty: the form asks. */
+  /**
+   * SCRUM-863 — the parent's number and channel as the till holds them: the
+   * ones given on the first screen to begin with. The form shows both for the
+   * family to confirm or change, as the prototype's form does. A till that
+   * sends the channel is one that takes both back from a filled step; a form
+   * published without it (an older till, or a station that does not know the
+   * field yet) is shown as before, the number fixed once one was given.
+   */
   guardianPhone: z.string().max(32).optional(),
+  contactChannel: contactChannel.optional(),
   /** What the drop-off service and a nanny cost, from the till's own drop-off pricing, for the requirement notes. */
   fees: z.object({ nannyHourlyTHB: z.number().nonnegative(), dropOffFeeTHB: z.number().nonnegative() }).optional(),
   staffReady: z.boolean(), canContinue: z.boolean(), completed: z.boolean(),
@@ -64,8 +74,8 @@ function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCt
 /**
  * The drop-off and nanny forms as the customer screen shows them: each child's
  * name, age and care notes as the family fills them in (SCRUM-764), the
- * guardian's name, the number given at the start, the consent and the
- * confirmations. The child's photo, the food choice, waivers and every policy
+ * guardian's name, their number and channel to confirm (SCRUM-863), the
+ * consent and the confirmations. The child's photo, the food choice, waivers and every policy
  * decision stay at the till.
  */
 export const ConsentPromptSchema = promptObject.superRefine(validatePrompt);
@@ -85,13 +95,19 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
     acknowledgedConfirmationIds }).strict(),
   /**
    * SCRUM-764 — a step of the form, as the family filled it: the children, the
-   * guardian's name, a number when none was given at the start, and the ticks,
-   * which are theirs alone to give. The till takes each step in as it arrives,
-   * so reception follows the form and can help with it.
+   * guardian's name, their number and channel, and the ticks, which are theirs
+   * alone to give. The till takes each step in as it arrives, so reception
+   * follows the form and can help with it.
+   *
+   * SCRUM-863 — the number and the channel travel with every step from a form
+   * that shows them (see the prompt above), so what the family confirmed or
+   * changed is what the registration keeps. Both stay optional: an older
+   * display sends a number only when none was given at the start, and never a
+   * channel, and its steps are taken as they always were.
    */
   fence.extend({ action: z.literal('fill'), slots: z.array(FilledSlotSchema).max(50)
     .refine(value => new Set(value.map(slot => slot.id)).size === value.length),
-  guardianName, guardianPhone: z.string().trim().max(32).optional(),
+  guardianName, guardianPhone: z.string().trim().max(32).optional(), contactChannel: contactChannel.optional(),
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),

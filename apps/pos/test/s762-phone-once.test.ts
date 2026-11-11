@@ -21,8 +21,13 @@ vi.mock('@/components/till/AddOnsGrid', () => ({ AddOnsGrid: () => null }));
  *
  * Agreed by the park on 30 October: the customer screen asks for the number at
  * the very beginning with no Skip and a line saying why it is needed; a member
- * is recognised from it; the same number is used at payment and on the
- * drop-off and nanny forms and the family is not asked for it again.
+ * is recognised from it; the same number is used at payment and the family is
+ * not asked for it again before paying.
+ *
+ * SCRUM-863 (the owner, 12 November) — asking once is the ordinary sale's rule
+ * only. The drop-off and nanny forms start from the same number and channel
+ * and ask the family to confirm or change them, as the prototype's form does;
+ * the assertions on those forms below follow that ruling.
  */
 
 beforeEach(() => vi.stubGlobal('React', React));
@@ -150,24 +155,25 @@ describe('the drop-off and nanny forms', () => {
     acknowledgedConfirmationIds: [], onToggleConfirmation: () => undefined,
   };
 
-  it('the customer sees the number from the start and is not asked for it', () => {
-    const html = under('th', createElement(ConsentCapture, { ...consentProps, parentPhoneKept: true } as never));
-    expect(html).toContain('data-testid="consent-kept-phone"');
-    expect(html).toContain('+66 81 234 5678');
-    expect(html).toContain(tFor('th')('till.input.phoneKept'));
+  it('SCRUM-863: the customer is asked to confirm the number, starting from the one given at the start', () => {
+    const html = under('th', createElement(ConsentCapture, consentProps as never));
+    expect(html).toContain(tFor('th')('superviseConsent.phoneNumber'));
+    // The number field itself, holding the number from the first screen.
+    expect(html).toMatch(/<input type="tel"[^>]*value="812345678"/);
+    expect(html).not.toContain('data-testid="consent-kept-phone"');
+    expect(html).not.toContain(tFor('th')('till.input.phoneKept'));
   });
 
   it('staff can still correct it on their own copy', () => {
-    const html = under('en', createElement(ConsentCapture, { ...consentProps, parentPhoneKept: true, staffScreen: true } as never));
+    const html = under('en', createElement(ConsentCapture, { ...consentProps, staffScreen: true } as never));
     expect(html).not.toContain('data-testid="consent-kept-phone"');
+    expect(html).toMatch(/<input type="tel"[^>]*value="812345678"/);
   });
 
-  it('SCRUM-783: formats the ZZ TEST number only in the read-only agreement label', () => {
-    const html = under('en', createElement(ConsentCapture, {
-      ...consentProps, parentPhone: '+660898020001', parentPhoneKept: true,
-    } as never));
-    expect(html).toContain('+66 89 802 0001');
-    expect(html).not.toContain('+660898020001');
+  it('SCRUM-783: a ZZ TEST number typed with a leading zero stays as typed in the field, with its stored form beside it', () => {
+    const html = under('en', createElement(ConsentCapture, { ...consentProps, parentPhone: '+660898020001' } as never));
+    expect(html).toMatch(/<input type="tel"[^>]*value="0898020001"/);
+    expect(html).toContain('+66898020001');
   });
 });
 
@@ -197,6 +203,7 @@ describe('the till', () => {
   it('starts the drop-off and nanny forms from the number given at the start', () => {
     expect(till).toMatch(/setSuperParentPhone\(customerPhone\.trim\(\) \|\| member\?\.phone \|\| ''\)/);
     expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\)/);
-    expect(till).toMatch(/parentPhoneKept=\{gatePhoneKept\}/);
+    // SCRUM-863 — and the family's side asks for it there; nothing fixes it any more.
+    expect(till).not.toMatch(/parentPhoneKept|gatePhoneKept/);
   });
 });

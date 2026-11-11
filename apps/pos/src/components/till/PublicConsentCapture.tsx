@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ScreenKeyboard } from './ScreenKeyboard';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { consentFormPhone } from '@/lib/consentForm';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,12 @@ import { cn } from '@/lib/utils';
  * What stays at the till: the photo of child and guardian, the food choice
  * (money), waivers and every policy decision. A child from the family's saved
  * profile keeps their care notes off this public screen.
+ *
+ * SCRUM-863 — the parent's block asks for the WhatsApp, LINE or Telegram
+ * number as the prototype's form does (components/till/ConsentCapture.tsx):
+ * it starts from the number and channel given on the first screen, the family
+ * confirms or changes them, and both go to the till with every step. Asking
+ * the number once (SCRUM-762) is the ordinary sale's rule, not this form's.
  */
 
 interface ChildDraft {
@@ -44,6 +51,8 @@ interface FormDraft {
   slots: Record<string, ChildDraft>;
   guardianName: string;
   guardianPhone: string;
+  /** SCRUM-863 — absent on a form whose till does not take the number and channel back. */
+  contactChannel?: NonNullable<ConsentPrompt['contactChannel']>;
   consentAcknowledged: boolean;
   confirmations: string[];
 }
@@ -56,6 +65,7 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
     }])),
     guardianName: prompt.guardianName,
     guardianPhone: prompt.guardianPhone ?? '',
+    ...(prompt.contactChannel ? { contactChannel: prompt.contactChannel } : {}),
     consentAcknowledged: prompt.consentAcknowledged,
     confirmations: prompt.confirmations.filter((item) => item.acknowledged).map((item) => item.id),
   };
@@ -65,7 +75,9 @@ const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.str
 const trimmed = (draft: FormDraft): FormDraft => ({
   ...draft,
   guardianName: draft.guardianName.trim(),
-  guardianPhone: draft.guardianPhone.trim(),
+  // The number as it is sent and as the till keeps it, so a number typed with
+  // its leading zero is the same one once the till's copy comes back.
+  guardianPhone: consentFormPhone(draft.guardianPhone),
   confirmations: [...draft.confirmations].sort(),
   slots: Object.fromEntries(Object.entries(draft.slots).map(([id, child]) => [id, { ...child, name: child.name.trim() }])),
 });
@@ -96,6 +108,7 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
     slots,
     guardianName: pick(local.guardianName, base.guardianName, next.guardianName),
     guardianPhone: pick(local.guardianPhone, base.guardianPhone, next.guardianPhone),
+    ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel) } : {}),
     consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged),
     confirmations: pick(local.confirmations, base.confirmations, next.confirmations),
   };
@@ -151,7 +164,13 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
   const fence = { requestId: prompt.requestId, visitorId: prompt.visitorId };
   const locked = busy || prompt.completed;
   const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
-  const phoneKept = !!prompt.guardianPhone?.trim();
+  // SCRUM-863 — a till that sends the channel takes the number and the channel
+  // back with every step, so the form asks for both. One that does not (an
+  // older till, or a station that drops the field) would leave a changed
+  // number unsaved and this screen waiting, so its form stays as it was: the
+  // number fixed once one was given.
+  const takesContact = prompt.contactChannel !== undefined;
+  const phoneKept = !takesContact && !!prompt.guardianPhone?.trim();
   const childrenComplete = prompt.slots.every((slot) => {
     const child = draft.slots[slot.id];
     return !!child && child.name.trim().length > 0 && child.ageYears !== null;
@@ -167,7 +186,9 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
       };
     }),
     guardianName: form.guardianName.trim().slice(0, 100),
-    ...(!phoneKept && form.guardianPhone.trim() ? { guardianPhone: form.guardianPhone.trim().slice(0, 32) } : {}),
+    ...(takesContact
+      ? { guardianPhone: consentFormPhone(form.guardianPhone), contactChannel: form.contactChannel ?? prompt.contactChannel }
+      : !phoneKept && form.guardianPhone.trim() ? { guardianPhone: form.guardianPhone.trim().slice(0, 32) } : {}),
     // A tick without a name is not one the till can take; it is kept here until the name is in.
     consentAcknowledged: form.consentAcknowledged && !!form.guardianName.trim(),
     acknowledgedConfirmationIds: form.confirmations,
@@ -283,6 +304,8 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
             </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => setDraft((current) => ({ ...current, guardianPhone }))}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
+              channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
+              onChannelChange={takesContact ? (contactChannel) => { if (!locked) setDraft((current) => ({ ...current, contactChannel })); } : undefined}
               inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground" />}
           </div>
           {prompt.consentRequired && <label className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">

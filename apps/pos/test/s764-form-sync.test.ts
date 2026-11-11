@@ -41,6 +41,8 @@ interface TillModel {
   slots: SupervisedSlot[];
   guardianName: string;
   guardianPhone: string;
+  /** SCRUM-863 — the channel the till holds for the registration. */
+  guardianChannel: 'whatsapp' | 'telegram' | 'line';
   consentAck: boolean;
   confirmationIds: string[];
   completed: string | null;
@@ -66,7 +68,7 @@ const promptOf = (till: TillModel): Omit<ConsentPrompt, 'kind' | 'requestId' | '
     id: 'pickup', text: 'I will collect my child before closing', required: true,
     acknowledged: till.confirmationIds.includes('pickup'),
   }],
-  guardianPhone: till.guardianPhone, staffReady: false, canContinue: false,
+  guardianPhone: till.guardianPhone, contactChannel: till.guardianChannel, staffReady: false, canContinue: false,
 });
 
 const stateOf = (till: TillModel): TicketDisplayState => {
@@ -93,6 +95,7 @@ const handlerFor = (till: TillModel, options: { moveOn: boolean }) => (answer: D
     updateSlot: (id, patch) => { till.slots = till.slots.map((s) => (s.id === id ? { ...s, ...patch } : s)); },
     setGuardianName: (name) => { till.guardianName = name; },
     setGuardianPhone: (phone) => { till.guardianPhone = phone; },
+    setContactChannel: (channel) => { till.guardianChannel = channel; },
     setConsentAcknowledged: (value) => { till.consentAck = value; },
     setAcknowledgedConfirmationIds: (ids) => { till.confirmationIds = ids; },
     setCompletedSignature: (signature) => { till.completed = signature; },
@@ -173,7 +176,7 @@ describe('SCRUM-764 — the family’s screen after each step of the form', () =
 
   const start = async (moveOn: boolean) => {
     const till: TillModel = {
-      slots: [slot()], guardianName: '', guardianPhone: '+66812345678', consentAck: false,
+      slots: [slot()], guardianName: '', guardianPhone: '+66812345678', guardianChannel: 'whatsapp', consentAck: false,
       confirmationIds: [], completed: null, staffOnly: false, answerRevision: 0,
     };
     const box = station();
@@ -232,9 +235,37 @@ describe('SCRUM-764 — the family’s screen after each step of the form', () =
   });
 });
 
+describe('SCRUM-863 — the number and channel the family changes on the form', () => {
+  let hook: RenderedHook<void, ReturnType<typeof useTicketDisplay>> | undefined;
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { hook?.unmount(); hook = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it('reach the till and come back on the form it publishes, which starts from the ones given at the start', async () => {
+    const till: TillModel = {
+      slots: [slot()], guardianName: '', guardianPhone: '+66812345678', guardianChannel: 'whatsapp', consentAck: false,
+      confirmationIds: [], completed: null, staffOnly: false, answerRevision: 0,
+    };
+    const box = station();
+    hook = renderHook(() => useTicketDisplay('station-764', stateOf(till), handlerFor(till, { moveOn: true })));
+    await settle();
+    const first = requestOf(box.current())!;
+    expect(box.current().prompt).toMatchObject({ kind: 'consent', guardianPhone: '+66812345678', contactChannel: 'whatsapp' });
+
+    expect(box.send(unchangedStep(first, { guardianPhone: '+66891112222', contactChannel: 'telegram' }), 'changed-number')).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_500);
+    hook.rerender();
+    await vi.advanceTimersByTimeAsync(1_500);
+    expect(till.guardianPhone).toBe('+66891112222');
+    expect(till.guardianChannel).toBe('telegram');
+    expect(box.current().prompt).toMatchObject({ kind: 'consent', guardianPhone: '+66891112222', contactChannel: 'telegram' });
+    expect(requestOf(box.current())).not.toBe(first);
+    expect(answerOf(box.current())).toBeUndefined();
+  });
+});
+
 describe('SCRUM-764 — what the till takes from each answer', () => {
   const setters = () => ({
-    updateSlot: vi.fn(), setGuardianName: vi.fn(), setGuardianPhone: vi.fn(), setConsentAcknowledged: vi.fn(),
+    updateSlot: vi.fn(), setGuardianName: vi.fn(), setGuardianPhone: vi.fn(), setContactChannel: vi.fn(), setConsentAcknowledged: vi.fn(),
     setAcknowledgedConfirmationIds: vi.fn(), setCompletedSignature: vi.fn(), askedForHelp: vi.fn(), answered: vi.fn(),
   });
   const fence = { requestId: 'r', visitorId: 'v' };
@@ -252,28 +283,62 @@ describe('SCRUM-764 — what the till takes from each answer', () => {
     }
   });
 
-  it('a filled step mirrors the children, the name and the family’s ticks, and keeps a number given at the start', () => {
+  // SCRUM-863 (the owner, 12 November) — the drop-off and nanny forms ask the
+  // family to confirm or change the number and the channel; asking once is the
+  // ordinary sale's rule only. The two cases here held the earlier reading.
+  it('a filled step mirrors the children, the name, the family’s ticks, and the number and channel they confirmed or changed', () => {
     const till = setters();
     takeConsentAction({
       ...fence, action: 'fill', slots: [{
         id: 'slot-a', name: 'Mai', dateOfBirth: '2020-01-02', ageYears: 6, allergiesMedical: 'Peanuts', foodRestrictions: '',
-      }], guardianName: 'Ploy', guardianPhone: '0899999999', consentAcknowledged: true, acknowledgedConfirmationIds: ['pickup'],
+      }], guardianName: 'Ploy', guardianPhone: '0899999999', contactChannel: 'telegram',
+      consentAcknowledged: true, acknowledgedConfirmationIds: ['pickup'],
     }, { ...till, slots: [slot()], guardianPhone: '+66812345678', signature: 'form-1' });
     expect(till.updateSlot).toHaveBeenCalledWith('slot-a', expect.objectContaining({ name: 'Mai', age: '6', allergiesMedical: 'Peanuts' }));
     expect(till.setGuardianName).toHaveBeenCalledWith('Ploy');
-    expect(till.setGuardianPhone).not.toHaveBeenCalled();
+    // The stored form of the number the family typed, in place of the one from the start.
+    expect(till.setGuardianPhone).toHaveBeenCalledWith('+66899999999');
+    expect(till.setContactChannel).toHaveBeenCalledWith('telegram');
     expect(till.setConsentAcknowledged).toHaveBeenCalledWith(true);
     expect(till.setAcknowledgedConfirmationIds).toHaveBeenCalledWith(['pickup']);
     expect(till.setCompletedSignature).toHaveBeenCalledWith(null);
   });
 
-  it('a number typed on the form is taken only when none was given at the start', () => {
+  it('a step from an older display, with no number and no channel, changes neither', () => {
+    const till = setters();
+    takeConsentAction({
+      ...fence, action: 'fill', slots: [], guardianName: 'Ploy', consentAcknowledged: false, acknowledgedConfirmationIds: [],
+    }, { ...till, slots: [], guardianPhone: '+66812345678', signature: 'form-1' });
+    expect(till.setGuardianName).toHaveBeenCalledWith('Ploy');
+    expect(till.setGuardianPhone).not.toHaveBeenCalled();
+    expect(till.setContactChannel).not.toHaveBeenCalled();
+    expect(till.answered).toHaveBeenCalledTimes(1);
+  });
+
+  it('a number typed on the form when none was given at the start is taken, as before', () => {
     const till = setters();
     takeConsentAction({
       ...fence, action: 'fill', slots: [], guardianName: 'Ploy', guardianPhone: '0899999999',
       consentAcknowledged: false, acknowledgedConfirmationIds: [],
     }, { ...till, slots: [], guardianPhone: '', signature: 'form-1' });
-    expect(till.setGuardianPhone).toHaveBeenCalledWith('0899999999');
+    expect(till.setGuardianPhone).toHaveBeenCalledWith('+66899999999');
+    expect(till.setContactChannel).not.toHaveBeenCalled();
+  });
+
+  it('the number confirmed unchanged is not written again, and one that does not read as a number is kept as typed', () => {
+    const same = setters();
+    takeConsentAction({
+      ...fence, action: 'fill', slots: [], guardianName: '', guardianPhone: '+660812345678', contactChannel: 'whatsapp',
+      consentAcknowledged: false, acknowledgedConfirmationIds: [],
+    }, { ...same, slots: [], guardianPhone: '+66812345678', signature: 'form-1' });
+    expect(same.setGuardianPhone).not.toHaveBeenCalled();
+    const typed = setters();
+    takeConsentAction({
+      ...fence, action: 'fill', slots: [], guardianName: '', guardianPhone: '+6681', contactChannel: 'line',
+      consentAcknowledged: false, acknowledgedConfirmationIds: [],
+    }, { ...typed, slots: [], guardianPhone: '+66812345678', signature: 'form-1' });
+    expect(typed.setGuardianPhone).toHaveBeenCalledWith('+6681');
+    expect(typed.setContactChannel).toHaveBeenCalledWith('line');
   });
 
   it('Done marks the form as it is shown finished; asking for help hands it to staff', () => {
