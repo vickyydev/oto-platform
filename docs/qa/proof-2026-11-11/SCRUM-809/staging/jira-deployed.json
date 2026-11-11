@@ -1,0 +1,25 @@
+{
+  "key": "SCRUM-809",
+  "before": {
+    "status": "Testing",
+    "summary": "A new till that reuses an archived till’s receipt prefix cannot finish any sale"
+  },
+  "attached": [
+    {
+      "id": "12999",
+      "name": "s809-archived-prefix-refused.png"
+    },
+    {
+      "id": "13000",
+      "name": "s809-corrected-prefix-saved.png"
+    }
+  ],
+  "ci": 42965931065,
+  "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+  "commentStatus": 201,
+  "after": {
+    "status": "Deployed",
+    "summary": "A new till that reuses an archived till’s receipt prefix cannot finish any sale"
+  },
+  "checkedAt": "2026-11-11T06:01:34.278Z"
+}

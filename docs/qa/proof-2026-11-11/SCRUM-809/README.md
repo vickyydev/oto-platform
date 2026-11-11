@@ -49,12 +49,19 @@ The planner released its slot in `c554fac85642f296437f44c8e276c199fa0a9881`;
 the owner also confirmed release. Unit 2 claimed source/API/proof in
 `89611072b096a67ed0f86f7d8cdcc10e2f6ea942`. The five rebased commits were
 checked, with runtime/tests/workflow identical to the green candidate.
-Main CI 42965931065 is running on the landed SHA, watched by the full SHA.
+Main CI 42965931065 passed all six jobs on the landed SHA; the full-SHA
+watcher exited zero. API 6,788 tests, POS 2,319 and 357 Console browser checks
+passed. All 16 workspace typecheck tasks passed, read whole with zero API
+diagnostics. The app was path-skipped on main; the identical app passed the
+full candidate gate at 418/418, whose output was read whole.
 Named API, Console and both-till deploys were live at that SHA throughout
 the successful Console screen proof. The named refusal and corrected save
 passed, both test tills were archived, and sign-out read back 401. Two
 earlier harness selector timeouts also cleaned up; their receipts remain
-under `staging/`. Deployed still waits for the landed-SHA main CI gate.
+under `staging/`. SCRUM-809 now reads Deployed with both images attached
+(12999/13000), the source commit linked, and the main gate green. The
+planner's subsequent API release includes this source unchanged; see
+`staging/post-proof-live.json`. Its SCRUM-830 slot remains held.
 
 The first push attempt at `263f30d729548801550580f056f929104a240534` was
 rejected because a concurrent documentation push arrived. Its premature
@@ -63,12 +70,12 @@ for that unpushed SHA were refused; no service changed. Rebase and the
 successful push above replaced it. The planner also repaired an unrelated
 API startup setting; the preceding API deploy at `c554fac85` is now live.
 
-## Staging proof to run after the slot is available
+## Staging proof completed
 
-Create and archive an isolated ZZ TEST till. In Console's New station form,
-try its prefix on a second ZZ TEST till: expect HTTP 409, the earlier till's
-name visible and no replacement saved. Change to an unused prefix in the
-same form and save successfully. Archive both exact test records, sign out
-and read back 401. Mask the signed-in badge in pictures. Never create a
-duplicate through direct database writes on staging: the legacy-payment
-case is covered by the local integration test.
+Console's New station form refused the archived ZZ TEST till's prefix with
+HTTP 409 and named the earlier till. No replacement was saved. Changing only
+the prefix in the same form saved the replacement successfully. Both exact
+test records were archived, and sign-out read back 401. The two masked images
+are attached to SCRUM-809 as 12999 and 13000; full routes, statuses, identifiers
+and cleanup readbacks are in `staging/receipt.json`. No duplicate receipt was
+forced on staging: the legacy-payment case is covered by the integration test.
