@@ -142,6 +142,34 @@ export const ROLE_FOR_KIND: Record<PrintKind, string> = {
   test_page: 'receipt',
 };
 
+/** SCRUM-861 — the `station_device` role of the printer loaded with drop-off band stock. */
+export const DROPOFF_BAND_ROLE = 'dropoff_band';
+
+/**
+ * SCRUM-861 — the role a job THIS BOX raises prints on, read from its paper.
+ *
+ * A job from the platform carries its role on the command and this is never
+ * asked. A job the box composes itself — an offline sale's bands, an offline
+ * "Check in now" — has only its document, and a kids band whose document
+ * carries the DROP-OFF badge goes to the station's drop-off band printer
+ * when the bundle has one for that station, exactly as the platform routes
+ * it online (`routeJob` in `sale-printing.ts`). With none it is a kids band
+ * on the kids band printer, as before: the band is never lost to a role the
+ * station has not filled.
+ */
+export function bandRoleFor(
+  bundle: BoxConfigBundle | null,
+  kind: PrintKind,
+  job: RenderJob,
+  stationId: string | null | undefined,
+): string {
+  const role = ROLE_FOR_KIND[kind];
+  if (kind !== 'kids_wristband') return role;
+  const data = (job as { data?: { supervisionMode?: unknown } }).data;
+  if (data?.supervisionMode !== 'DROP-OFF') return role;
+  return routeTo(bundle, DROPOFF_BAND_ROLE, stationId) ? DROPOFF_BAND_ROLE : role;
+}
+
 export interface PrintRequest {
   /** The `edge.print_job` id. Minted where the job was raised, never here. */
   id: string;

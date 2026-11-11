@@ -3381,6 +3381,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       },
       printing: () => printing,
       durablePrinting: () => options.printing?.durable === true,
+      // SCRUM-861 — so a drop-off band this box composes offline finds the
+      // station's drop-off band printer, when it has one.
+      bundle: () => bundle,
       bandKey: bandKeyNow,
       now: () => new Date(clock()),
       note,

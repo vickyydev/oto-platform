@@ -23,7 +23,8 @@ import {
   type Outbox,
 } from './outbox';
 import type { PrintingController } from './printing/index';
-import { ROLE_FOR_KIND, type PrintJobOutcome } from './printing/queue';
+import { bandRoleFor, type PrintJobOutcome } from './printing/queue';
+import type { BoxConfigBundle } from './protocol';
 import { uuidv7 } from './signing';
 import type { BoxStore, EnvelopeSealer, OutboxRecord, PrintJobRecord, QueuedFact } from './store';
 
@@ -414,6 +415,13 @@ export interface SaleQueueDeps {
   /** The print pipeline, or null on a box built without one. */
   printing: () => PrintingController | null;
   /**
+   * SCRUM-861 — the config bundle as it stands, for routing a band this box
+   * composes itself to the station's drop-off band printer when it has one
+   * (`bandRoleFor`). Absent on a host that has none to give: every band then
+   * prints on the role its kind always had.
+   */
+  bundle?: () => BoxConfigBundle | null;
+  /**
    * Whether the print queue keeps its jobs on disk (`printing.durable`). Only
    * then are a sale's jobs written in its transaction: a queue in memory never
    * deletes a stored row, and a row left behind would print again the day the
@@ -650,7 +658,9 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
       id,
       boxId,
       kind,
-      role: ROLE_FOR_KIND[kind] ?? null,
+      // SCRUM-861 — a drop-off child's band goes to the drop-off band printer
+      // when this station has one; everything else to the role its kind has.
+      role: bandRoleFor(deps.bundle?.() ?? null, kind, job, stationId),
       stationId,
       deviceId: null,
       copies: 1,
