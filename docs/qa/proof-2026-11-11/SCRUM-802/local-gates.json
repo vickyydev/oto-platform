@@ -1,0 +1,43 @@
+{
+  "sourceBeforeRebase": "f11f59d8b05a9a44da0cd9d847f07db0677b861c",
+  "preparedSource": "b7da21b5c6d719fc2343a15377ef5e3d7688a56d",
+  "touchedRuntimeIdenticalAfterRebase": true,
+  "posTests": 2332,
+  "posTestFiles": 169,
+  "focusedTests": 106,
+  "reviewPins": 4,
+  "apiDiagnostics": 0,
+  "typechecksReadWhole": true,
+  "touchedLint": "passed, 17 files",
+  "build": "POS passed with existing bundle warning",
+  "logs": [
+    {
+      "file": "local/focused-pos-1.log",
+      "sha256": "4c6eaaaebdcac36b9d20fd0a616be3b070e30641a36298c3d43f13cb7a27378e"
+    },
+    {
+      "file": "local/api-review-1.log",
+      "sha256": "02976203410bf6ac23e9f1c2f54e231c3e19c16ea9c94691615704dedece4107"
+    },
+    {
+      "file": "local/pos-typecheck-1.log",
+      "sha256": "eb9aa772628de9592c191b22b25edfc67f7ff36079562fc0b92a02fdb785c189"
+    },
+    {
+      "file": "local/api-typecheck.log",
+      "sha256": "bb79497bb747adb06452344ac1bf0685c75741250d6d47b56b78bf8cd51fc5c4"
+    },
+    {
+      "file": "local/pos-tests.log",
+      "sha256": "d70be8b99bd5a721579b521f5908e2f9625dbb7ff93fc09593f3b3960aeb66a4"
+    },
+    {
+      "file": "local/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "local/pos-build.log",
+      "sha256": "bdf8ad3dbec4286034603a0cfb13bb1455255e235df4fd593b0b3224f4956f38"
+    }
+  ]
+}
