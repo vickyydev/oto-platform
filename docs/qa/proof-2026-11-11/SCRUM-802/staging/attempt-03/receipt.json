@@ -1,0 +1,260 @@
+{
+  "tickets": [
+    "SCRUM-802",
+    "SCRUM-783"
+  ],
+  "sha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42975235170,
+    "headSha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+    "status": "in_progress"
+  },
+  "candidate": {
+    "sha": "869a73add71fe4b41550dd4370e6cfcd487a8e48",
+    "run": 42971207054,
+    "unrelatedAppChanges": [
+      "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "apps/oto-app/server/lib/aiFill.ts",
+      "apps/oto-app/server/lib/beoAiApprove.ts",
+      "apps/oto-app/shared/kitchenAdults.ts",
+      "apps/oto-app/tests/ai-fill.check.ts",
+      "apps/oto-app/tests/kitchen-adults-ui.check.ts",
+      "apps/oto-app/tests/kitchen-adults.check.ts"
+    ]
+  },
+  "startedAt": "2026-11-11T07:04:41.107Z",
+  "phase": "show customer details",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1c96c-6753-73a0-951f-b01e354c83ef/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c96c-8391-7ca5-bd81-a2a88a481151",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c96c-986d-7eff-b594-f212a7619aad",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c96c-6753-73a0-951f-b01e354c83ef",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c96c-986d-7eff-b594-f212a7619aad",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c96c-8391-7ca5-bd81-a2a88a481151",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1c96c-76a4-7396-a568-cdae66d2295b/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c96c-6753-73a0-951f-b01e354c83ef/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1c96c-6753-73a0-951f-b01e354c83ef",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c96c-6753-73a0-951f-b01e354c83ef",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c96c-6753-73a0-951f-b01e354c83ef"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c96c-76a4-7396-a568-cdae66d2295b"
+    },
+    {
+      "kind": "paid-sale",
+      "id": "01a1c96c-8391-7ca5-bd81-a2a88a481151"
+    },
+    {
+      "kind": "time-charge",
+      "id": "01a1c96c-986d-7eff-b594-f212a7619aad"
+    }
+  ],
+  "checks": {
+    "memberOffer": {
+      "formatted": true
+    },
+    "paste": {
+      "saleId": "01a1c96c-8391-7ca5-bd81-a2a88a481151",
+      "bandId": "01a1c96c-8fbf-7044-9860-7509c8e62d03",
+      "findNotPressed": true
+    },
+    "refresh": {
+      "chargeSaleId": "01a1c96c-986d-7eff-b594-f212a7619aad",
+      "status": "finalised",
+      "automaticListRead": 200,
+      "receiptVisibleWithoutNavigation": true
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "paid-test-sale",
+      "id": "01a1c96c-986d-7eff-b594-f212a7619aad",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1c96c-99bc-720f-b55e-073dd8258e80",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "paid-test-sale",
+      "id": "01a1c96c-8391-7ca5-bd81-a2a88a481151",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1c96c-8fdb-7abc-bc9b-8c6d55e567bd",
+          "status": "printed"
+        },
+        {
+          "id": "01a1c96c-8fd7-77ef-a3bf-3f2480122937",
+          "status": "printed"
+        },
+        {
+          "id": "01a1c96c-8fd1-7da6-8a59-f3f85477178b",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1c96c-76a4-7396-a568-cdae66d2295b",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1c96c-6753-73a0-951f-b01e354c83ef",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbq10ioae00c73cvvivg",
+      "status": "live",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq10ion74is739crqig",
+      "status": "live",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq0n8jl550s73971ea0",
+      "status": "live",
+      "sha": "7d88e1945f4859144b120a6646e4e7ab111f68cf"
+    }
+  },
+  "passed": false,
+  "failure": {
+    "phase": "show customer details",
+    "kind": "TimeoutError"
+  },
+  "finishedAt": "2026-11-11T07:05:32.764Z"
+}

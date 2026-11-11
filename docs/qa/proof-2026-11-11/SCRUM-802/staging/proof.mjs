@@ -144,7 +144,6 @@ try {
   phase('paid admission');
   await till.getByRole('heading', { name: 'Tourist', exact: true }).click();
   await order();
-  await till.getByRole('button', { name: /^Pay ฿/ }).click();
   await till.getByRole('heading', { name: 'Cash', exact: true }).click();
   await till.getByRole('button', { name: 'Confirm Payment Received', exact: true }).click();
   let admission;
@@ -213,7 +212,6 @@ try {
   await verification.getByRole('button', { name: 'Confirm Thai rate', exact: true }).click();
   phase('show customer details');
   await order();
-  await till.getByRole('button', { name: /^Pay ฿/ }).click();
   await expect(display.getByTestId('input-kept-phone')).toContainText(formatted(1));
   await display.getByTestId('input-kept-phone').scrollIntoViewIfNeeded();
   await shot(display, 's783-customer-details.png');

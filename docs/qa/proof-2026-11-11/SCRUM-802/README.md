@@ -72,3 +72,16 @@ archived without printers, and both sessions read back 401. The receipt,
 images and exact harness are preserved under `staging/attempt-02/`. The
 harness now presses the current confirmation. Product source is unchanged;
 the details and agreements labels still need their screen proof.
+
+Attempt 03 again passed History and the member offer. Its inspected display
+picture shows the details number correctly formatted. The harness timed
+out on a redundant Pay click: Continue had already opened Customer Details,
+and payment waits for the missing name. That click is removed. The paired
+image also exposed a real remaining display-only gap: the staff waiting
+screen still printed the raw leading-zero number. StepAwaitCustomer and
+StepIdentify need the same existing formatter before SCRUM-783 is closed.
+No phone write or payment rule needs changing. Attempt 03 is preserved under
+`staging/attempt-03/`; its two paid test receipts remain as evidence with all
+print jobs printed. Display/till retirement and both 401 sign-out checks
+passed. Agreements proof is still outstanding. The source/proof slot is
+released during this small follow-up build and will be claimed again.
