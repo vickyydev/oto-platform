@@ -14,6 +14,8 @@ import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
+import { TillRefusalNotice } from '@/components/till/RedeemVoucher';
 import { useMerchDisplay } from '@/lib/merchDisplaySession';
 import { hasBridgeOrigin } from '@/api/bridge';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
@@ -100,6 +102,8 @@ export default function MerchStation() {
   const [newBalance, setNewBalance] = useState<number | null>(null);
   /** The same writer the till and the F&B station use — see `lib/saleWriter.ts`. */
   const saleWriter = useSaleWriter();
+  /** The platform's words when X or Clear could not void the sale rung up (SCRUM-866). */
+  const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
   const completedSaleRef = useRef<string | null>(null);
   const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
@@ -489,6 +493,7 @@ export default function MerchStation() {
     saleWriter.reset();
     completedSaleRef.current = null;
     paymentSnapshotRef.current = null;
+    setCancelRefusal(null);
     setPlatformSale(null);
     setStage('scan');
     setWristband(null);
@@ -500,6 +505,42 @@ export default function MerchStation() {
     setCompletedOrder(null);
     setNewBalance(null);
     setSoldEpoch((n) => n + 1); // re-read on-hand stock after the sale's decrement
+  };
+
+  /**
+   * SCRUM-866 — THE SALE THROWN AWAY: the cart's X and Clear, as the F&B
+   * station's `letOrderGo` (`pages/OrderStation.tsx`). A sale this station
+   * rang up at Charge that took no money is voided, reason "Cancelled at the
+   * till" (`saleWriter.cancel`), so Back from the payment screen and then X
+   * or Clear leaves no Unpaid sale on the platform — before this the shop
+   * only reset its own state, and the ticket till kept offering the orphan
+   * back as a sale left behind. A void the platform refuses — money taken,
+   * a tender in progress, a sale already closed — leaves the sale on screen
+   * with the platform's words.
+   */
+  const letOrderGo = async (): Promise<boolean> => {
+    if (staffLocked.current) return false;
+    const epoch = saleEpochRef.current;
+    const scope = paymentScopeRef.current.scope;
+    const current = () =>
+      !staffLocked.current && saleEpochRef.current === epoch && paymentScopeRef.current.scope === scope;
+    setCancelRefusal(null);
+    const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+    if (!current()) return false;
+    if (!cancelled.ok) {
+      setCancelRefusal(cancelled.message);
+      return false;
+    }
+    // A voided sale's ids are spent: whatever is charged next is a new sale.
+    if (cancelled.voided) saleWriter.reset();
+    return true;
+  };
+  /** The cart's X and Clear, with what was rung up voided first (`letOrderGo`). */
+  const cancelOrder = async () => {
+    if (await letOrderGo()) resetOrder();
+  };
+  const clearOrder = async () => {
+    if (await letOrderGo()) handleClearCart();
   };
 
   const handleCheckout = () => {
@@ -688,14 +729,21 @@ export default function MerchStation() {
                       <QuoteRefusalNote error={quoteRefusal} blocking />
                       <QuoteFaultNote error={quoteFault} />
                       <PriceSourceNote quote={sale.quote} pending={sale.pending} />
+                      {cancelRefusal && (
+                        <TillRefusalNotice
+                          message={cancelRefusal}
+                          onDismiss={() => setCancelRefusal(null)}
+                          testId="cancel-refusal"
+                        />
+                      )}
                     </div>
                   ) : null
                 }
                 chargeBlockedReason={quoteRefusal?.message ?? null}
                 onChangeQty={handleChangeQty}
-                onClear={handleClearCart}
+                onClear={() => void clearOrder()}
                 onCheckout={handleCheckout}
-                onSwitchTab={resetOrder}
+                onSwitchTab={() => void cancelOrder()}
                 onAddManualDiscount={() => setShowDiscountModal(true)}
                 onRemoveManualDiscount={handleRemoveManualDiscount}
                 promoCodes={sale.totals.scannedDiscounts}
