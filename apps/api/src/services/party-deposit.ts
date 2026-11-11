@@ -286,14 +286,30 @@ export interface PartyDepositRequestInput {
   conversationId?: string | null;
 }
 
-/** Where the family's browser comes back to after the gateway's page: this api's own return page. */
-function returnUrlOf(env: Env): string {
+/**
+ * Where the family's browser comes back to after the gateway's page: this
+ * api's own return page. The simulator's page is on this api, so its return
+ * is the relative path (as the booking's is); the real gateway needs an
+ * absolute address — the origin the webhook address names
+ * (`PGW_BACKEND_RETURN_URL`, this api's own by definition), else the one the
+ * booking site's return is configured on (`PGW_FRONTEND_RETURN_URL`).
+ */
+export function partyDepositReturnUrlOf(env: Env, provider: '2c2p' | 'simulator'): string | null {
+  if (provider === 'simulator') return SIMULATOR_RETURN_PATH;
+  const own = env.PGW_BACKEND_RETURN_URL.trim();
+  if (own) {
+    try {
+      return new URL(PARTY_DEPOSIT_RETURN_PATH, new URL(own).origin).toString();
+    } catch {
+      /* not an address: the frontend return below */
+    }
+  }
   const configured = env.PGW_FRONTEND_RETURN_URL.trim();
-  if (!configured) return SIMULATOR_RETURN_PATH;
+  if (!configured) return null;
   try {
     return new URL(PARTY_DEPOSIT_RETURN_PATH, configured).toString();
   } catch {
-    return configured;
+    return null;
   }
 }
 
@@ -340,9 +356,8 @@ export async function requestPartyDeposit(
 
   if (party.archived) throw errors.conflict('EVENT_ARCHIVED', 'This party has been archived in the OTO App');
   const provider = gatewayProviderOf(env);
-  if (provider === '2c2p' && !env.PGW_FRONTEND_RETURN_URL.trim()) {
-    throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NOT_CONFIGURED.code, PARTY_DEPOSIT_REFUSALS.NOT_CONFIGURED.message);
-  }
+  const returnUrl = partyDepositReturnUrlOf(env, provider);
+  if (!returnUrl) throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NOT_CONFIGURED.code, PARTY_DEPOSIT_REFUSALS.NOT_CONFIGURED.message);
   const conv = await conversationOfParty(db, input.operatorId, party.id);
   if (!conv) throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NO_CONVERSATION.code, PARTY_DEPOSIT_REFUSALS.NO_CONVERSATION.message);
   if (input.conversationId && input.conversationId.toLowerCase() !== conv.id.toLowerCase()) {
@@ -448,7 +463,7 @@ export async function requestPartyDeposit(
       attempt: prepared.attempt,
       description: `OTO Park party deposit ${party.startDate}`,
       channels: [env.PGW_QR_CHANNEL_CODE, 'CC'],
-      frontendReturnUrl: returnUrlOf(env),
+      frontendReturnUrl: returnUrl,
       locale: partyMessageLanguageOf(conv.language) === 'th' ? 'th' : 'en',
       expiryMinutes: env.PARTY_DEPOSIT_LINK_VALIDITY_MIN,
       actionId: input.idempotencyKey,

@@ -7,7 +7,7 @@ import { signJwt } from '@oto/payments-2c2p';
 import { otoAppProvisionKeyDigest } from '../src/lib/otoapp-provision-keys';
 import { conversationEventOf } from '../src/services/inbox/book-date';
 import type { DirectoryEventEditAnswer, DirectoryEventEditBody, DirectoryNotificationBody, DirectoryOutcome, OtoAppDirectory } from '../src/services/otoapp-directory';
-import { runPartyDepositFollowUpJob } from '../src/services/party-deposit';
+import { partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
 import { gatewayFor } from '../src/services/payments/gateway';
 import {
   CENTRAL_BRANCH_CODE,
@@ -856,6 +856,17 @@ describe('the set-menu link posted with the right words, and the parent’s choi
 // --- The family's browser return -------------------------------------------------------------
 
 describe('the family’s browser return is a page, never a payment', () => {
+  it('is sent to this api’s own address: relative on the simulator, the webhook’s origin on the real gateway, else the booking return’s, else refused', () => {
+    const env = ctx.app.env;
+    expect(partyDepositReturnUrlOf(env, 'simulator')).toBe('../../../public/parties/deposit/return');
+    expect(partyDepositReturnUrlOf(env, '2c2p')).toBe('https://api.zz-test.example/public/parties/deposit/return');
+    expect(partyDepositReturnUrlOf({ ...env, PGW_BACKEND_RETURN_URL: '', PGW_FRONTEND_RETURN_URL: 'https://api.zz-test.example/public/bookings/return' }, '2c2p')).toBe(
+      'https://api.zz-test.example/public/parties/deposit/return',
+    );
+    expect(partyDepositReturnUrlOf({ ...env, PGW_BACKEND_RETURN_URL: 'not an address', PGW_FRONTEND_RETURN_URL: '' }, '2c2p')).toBeNull();
+    expect(partyDepositReturnUrlOf({ ...env, PGW_BACKEND_RETURN_URL: '', PGW_FRONTEND_RETURN_URL: '' }, '2c2p')).toBeNull();
+  });
+
   it('shows a plain page for a missing, a forged and an honest hint, and writes nothing', async () => {
     const { eventId } = await party();
     const made = await requestOk(eventId);
