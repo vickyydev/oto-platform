@@ -1,0 +1,643 @@
+{
+  "unit": "SCRUM-837 (Inbox composer: the \"Show simulator\" button covers the end of the reply row, and a long dictated reply shows only its end): staging proof",
+  "liveCommit": "70cb96d68fd0e6e7664966fc3c525ac8dbed2914",
+  "deploy": {
+    "oto-inbox-staging": {
+      "deployId": "dep-dbq4ci6k1f9s73dj4u30",
+      "status": "live",
+      "commit": "70cb96d6",
+      "liveAt": "2026-11-11T10:42:00Z"
+    }
+  },
+  "startedAt": "2026-11-11T10:44:50.422Z",
+  "browser": "Chromium 153.0.8010.12",
+  "freshLoad": {
+    "how": "a new headless Chromium profile (no cache)",
+    "bundle": [
+      "/assets/index-x9EYInNj.js"
+    ]
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "view": "owner view (the staging administrator, signed in through the launcher and handed into the inbox)"
+  },
+  "microphone": {
+    "how": "Chromium's fake microphone playing zz-test-en-48k.wav once: a text-to-speech clip made for these proofs, 14.6 s, no person"
+  },
+  "threads": {
+    "first": {
+      "conversationId": "01a1ca36-0274-73c4-9e64-4c7ee9c15968",
+      "name": "ZZ TEST 837",
+      "sent": {
+        "by": "customer",
+        "what": "typed text",
+        "at": "2026-11-11T10:44:57.047Z",
+        "path": "Settings › Simulator · test only › A customer writes › Send as the customer",
+        "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1,
+        "conversationIds": [
+          "01a1ca36-0274-73c4-9e64-4c7ee9c15968"
+        ]
+      },
+      "note": "a greeting-only line: the assistant auto-resolved it nine seconds later (\"Handled — composer disabled\"), so the check ran in a second thread"
+    },
+    "used": {
+      "conversationId": "01a1ca37-de75-7740-af1d-de69875fc62b",
+      "name": "ZZ TEST 837",
+      "sent": {
+        "by": "customer",
+        "what": "typed text",
+        "at": "2026-11-11T10:46:58.900Z",
+        "path": "Settings › Simulator · test only › A customer writes › Send as the customer",
+        "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1,
+        "conversationIds": [
+          "01a1ca37-de75-7740-af1d-de69875fc62b"
+        ]
+      },
+      "note": "a birthday question; the assistant sent its holding line and handed over to the team; the thread stayed active"
+    }
+  },
+  "steps": {
+    "1 Show simulator in the top bar, the reply row clear": {
+      "result": "pass",
+      "at": "2026-11-11T10:48:05.009Z",
+      "sidePanelWasShown": false,
+      "showButtonsWhilePanelShown": 1,
+      "showButtons": 1,
+      "showButtonVisible": true,
+      "showButtonPlace": {
+        "inHeader": true,
+        "position": "static",
+        "sameBarAsSettings": true
+      },
+      "at900": {
+        "viewport": "1440x900",
+        "boxes": {
+          "show": {
+            "x": 867,
+            "y": -274,
+            "w": 134,
+            "h": 36
+          },
+          "settings": {
+            "x": 1010,
+            "y": -274,
+            "w": 93,
+            "h": 36
+          },
+          "send": {
+            "x": 1334,
+            "y": 826,
+            "w": 32,
+            "h": 32
+          },
+          "reply": {
+            "x": 750,
+            "y": 832,
+            "w": 576,
+            "h": 20
+          }
+        },
+        "showOverSend": false,
+        "showOverReply": false,
+        "sendOnTop": {
+          "centre": true,
+          "rightEnd": true,
+          "inViewport": true
+        },
+        "replyOnTop": {
+          "centre": true,
+          "rightEnd": true,
+          "inViewport": true
+        },
+        "fixedThingsOverRow": 0
+      },
+      "at1500": {
+        "viewport": "1440x1500",
+        "boxes": {
+          "show": {
+            "x": 867,
+            "y": 59,
+            "w": 134,
+            "h": 36
+          },
+          "settings": {
+            "x": 1010,
+            "y": 59,
+            "w": 93,
+            "h": 36
+          },
+          "send": {
+            "x": 1334,
+            "y": 1281,
+            "w": 32,
+            "h": 32
+          },
+          "reply": {
+            "x": 750,
+            "y": 1287,
+            "w": 576,
+            "h": 20
+          }
+        },
+        "showOverSend": false,
+        "showOverReply": false,
+        "sendOnTop": {
+          "centre": true,
+          "rightEnd": true,
+          "inViewport": true
+        },
+        "replyOnTop": {
+          "centre": true,
+          "rightEnd": true,
+          "inViewport": true
+        },
+        "fixedThingsOverRow": 0
+      },
+      "emptyBox": {
+        "tag": "TEXTAREA",
+        "heightPx": 20,
+        "styleHeight": "20px",
+        "overflowY": "hidden",
+        "scrollHeight": 20,
+        "clientHeight": 20,
+        "scrollTop": 0,
+        "chars": 0,
+        "lineBreaks": 0
+      },
+      "picture": "837-01-show-simulator-in-top-bar.png"
+    },
+    "2 the reply box grows to five lines, then scrolls": {
+      "result": "pass",
+      "at": "2026-11-11T10:48:07.409Z",
+      "before": {
+        "tag": "TEXTAREA",
+        "heightPx": 20,
+        "styleHeight": "20px",
+        "overflowY": "hidden",
+        "scrollHeight": 20,
+        "clientHeight": 20,
+        "scrollTop": 0,
+        "chars": 0,
+        "lineBreaks": 0
+      },
+      "steps": [
+        {
+          "chars": 93,
+          "heightPx": 20,
+          "overflowY": "hidden",
+          "scrollHeight": 20
+        },
+        {
+          "chars": 192,
+          "heightPx": 60,
+          "overflowY": "hidden",
+          "scrollHeight": 60
+        },
+        {
+          "chars": 288,
+          "heightPx": 80,
+          "overflowY": "hidden",
+          "scrollHeight": 80
+        },
+        {
+          "chars": 386,
+          "heightPx": 100,
+          "overflowY": "hidden",
+          "scrollHeight": 100
+        },
+        {
+          "chars": 484,
+          "heightPx": 100,
+          "overflowY": "auto",
+          "scrollHeight": 120
+        },
+        {
+          "chars": 581,
+          "heightPx": 100,
+          "overflowY": "auto",
+          "scrollHeight": 140
+        },
+        {
+          "chars": 676,
+          "heightPx": 100,
+          "overflowY": "auto",
+          "scrollHeight": 160
+        },
+        {
+          "chars": 766,
+          "heightPx": 100,
+          "overflowY": "auto",
+          "scrollHeight": 180
+        }
+      ],
+      "after": {
+        "tag": "TEXTAREA",
+        "heightPx": 100,
+        "styleHeight": "100px",
+        "overflowY": "auto",
+        "scrollHeight": 180,
+        "clientHeight": 100,
+        "scrollTop": 78,
+        "chars": 766,
+        "lineBreaks": 0
+      },
+      "sendOnTop": {
+        "centre": true,
+        "rightEnd": true,
+        "inViewport": true
+      },
+      "picture": "837-02-reply-box-grown.png"
+    },
+    "3 Shift+Enter makes a new line, nothing sent": {
+      "result": "pass",
+      "at": "2026-11-11T10:48:10.142Z",
+      "before": {
+        "status": 200,
+        "messages": 2,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound"
+        ]
+      },
+      "boxBefore": {
+        "tag": "TEXTAREA",
+        "heightPx": 100,
+        "styleHeight": "100px",
+        "overflowY": "auto",
+        "scrollHeight": 180,
+        "clientHeight": 100,
+        "scrollTop": 78,
+        "chars": 766,
+        "lineBreaks": 0
+      },
+      "boxAfter": {
+        "tag": "TEXTAREA",
+        "heightPx": 100,
+        "styleHeight": "100px",
+        "overflowY": "auto",
+        "scrollHeight": 200,
+        "clientHeight": 100,
+        "scrollTop": 98,
+        "chars": 767,
+        "lineBreaks": 1
+      },
+      "endsWithNewLine": true,
+      "sendPostsSeen": 0,
+      "after": {
+        "status": 200,
+        "messages": 2,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound"
+        ]
+      },
+      "newMessages": [],
+      "newStaffMessages": 0,
+      "listUnchanged": true
+    },
+    "4 dictation: the recording line whole, the words at the caret": {
+      "result": "pass",
+      "at": "2026-11-11T10:48:27.925Z",
+      "boxBefore": {
+        "tag": "TEXTAREA",
+        "heightPx": 100,
+        "styleHeight": "100px",
+        "overflowY": "auto",
+        "scrollHeight": 200,
+        "clientHeight": 100,
+        "scrollTop": 98,
+        "chars": 767,
+        "lineBreaks": 1
+      },
+      "before": {
+        "status": 200,
+        "messages": 2,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound"
+        ]
+      },
+      "recordingLine": "Recording · 0:02 / 3:00 — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+      "boxes": {
+        "line": {
+          "x": 641,
+          "y": 1305,
+          "w": 738,
+          "h": 17
+        },
+        "show": {
+          "x": 867,
+          "y": 59,
+          "w": 134,
+          "h": 36
+        },
+        "send": {
+          "x": 1334,
+          "y": 1224,
+          "w": 32,
+          "h": 32
+        }
+      },
+      "showOverLine": false,
+      "lineOnTop": {
+        "centre": true,
+        "rightEnd": true,
+        "inViewport": true
+      },
+      "sendOnTop": {
+        "centre": true,
+        "rightEnd": true,
+        "inViewport": true
+      },
+      "lineWhollyOnTop": true,
+      "picture": "837-03-recording-line-clear.png",
+      "clockAtStop": "Recording · 0:15 / 3:00 — The recording ",
+      "response": {
+        "status": 200,
+        "text": "Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+        "language": "en",
+        "error": null
+      },
+      "wordsLandedAtCaret": {
+        "startsWithWhatWasThere": true,
+        "added": "Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+        "caret": {
+          "start": 937,
+          "end": 937,
+          "length": 937
+        }
+      },
+      "boxAfter": {
+        "tag": "TEXTAREA",
+        "heightPx": 100,
+        "styleHeight": "100px",
+        "overflowY": "auto",
+        "scrollHeight": 220,
+        "clientHeight": 100,
+        "scrollTop": 120,
+        "chars": 937,
+        "lineBreaks": 1
+      },
+      "endInView": true,
+      "picture2": "837-04-dictated-words-at-the-end.png",
+      "after": {
+        "status": 200,
+        "messages": 2,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound"
+        ]
+      },
+      "newStaffMessages": 0
+    },
+    "5 Enter sends, the box back to one line": {
+      "result": "pass",
+      "at": "2026-11-11T10:48:59.242Z",
+      "before": {
+        "status": 200,
+        "messages": 2,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound"
+        ]
+      },
+      "boxCleared": {
+        "tag": "TEXTAREA",
+        "heightPx": 20,
+        "styleHeight": "20px",
+        "overflowY": "hidden",
+        "scrollHeight": 20,
+        "clientHeight": 20,
+        "scrollTop": 0,
+        "chars": 0,
+        "lineBreaks": 0
+      },
+      "boxShort": {
+        "tag": "TEXTAREA",
+        "heightPx": 20,
+        "styleHeight": "20px",
+        "overflowY": "hidden",
+        "scrollHeight": 20,
+        "clientHeight": 20,
+        "scrollTop": 0,
+        "chars": 47,
+        "lineBreaks": 0
+      },
+      "sent": {
+        "route": "POST /api/inbox/conversations/:id/messages",
+        "status": 200,
+        "error": null
+      },
+      "after": {
+        "status": 200,
+        "messages": 3,
+        "kinds": [
+          "customer:inbound",
+          "ai:outbound",
+          "staff:outbound"
+        ]
+      },
+      "newMessages": [
+        {
+          "id": "01a1ca39-ada4-7779-b739-42870c60a448",
+          "direction": "outbound",
+          "authorKind": "staff",
+          "createdAt": "2026-11-11T10:49:03.474Z"
+        }
+      ],
+      "newStaffMessages": 1,
+      "sentBodyMatches": true,
+      "sentFields": [
+        "id",
+        "direction",
+        "authorKind",
+        "authorAccountId",
+        "authorName",
+        "body",
+        "bodyLanguage",
+        "translatedBody",
+        "translatedTo",
+        "mediaFileIds",
+        "audioFileId",
+        "transcript",
+        "transcriptStatus",
+        "transcriptLanguage",
+        "templateId",
+        "providerStatus",
+        "source",
+        "sentAt",
+        "deliveredAt",
+        "readAt",
+        "redacted",
+        "createdAt"
+      ],
+      "sentByTheSignedInPerson": true,
+      "boxAfterSend": {
+        "tag": "TEXTAREA",
+        "heightPx": 20,
+        "styleHeight": "20px",
+        "overflowY": "hidden",
+        "scrollHeight": 20,
+        "clientHeight": 20,
+        "scrollTop": 0,
+        "chars": 0,
+        "lineBreaks": 0
+      },
+      "bubbleShown": true,
+      "picture": "837-05-enter-sent-box-one-line.png"
+    }
+  },
+  "note": {
+    "what": "the empty box keeps its height when only the simulator side panel is shown or hidden (the width changes with no window resize): it re-measures at the next keystroke or window resize",
+    "probe": {
+      "loadPanelShown": false,
+      "onLoad": {
+        "w": 576,
+        "h": 20,
+        "scrollHeight": 20,
+        "placeholderChars": 27,
+        "value": 0
+      },
+      "afterShow": {
+        "w": 148,
+        "h": 20,
+        "scrollHeight": 40,
+        "placeholderChars": 27,
+        "value": 0
+      },
+      "panelShownAfterResize": {
+        "w": 149,
+        "h": 40,
+        "scrollHeight": 40,
+        "placeholderChars": 27,
+        "value": 0
+      },
+      "afterHideNoResize": {
+        "w": 576,
+        "h": 40,
+        "scrollHeight": 40,
+        "placeholderChars": 27,
+        "value": 0
+      },
+      "afterHideAndResize": {
+        "w": 576,
+        "h": 20,
+        "scrollHeight": 20,
+        "placeholderChars": 27,
+        "value": 0
+      }
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T10:49:25.569Z",
+    "conversations": {
+      "t837": {
+        "id": "01a1ca36-0274-73c4-9e64-4c7ee9c15968",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 409,
+          "error": {
+            "code": "ALREADY_HANDLED",
+            "message": "This conversation is already handled."
+          }
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T10:45:06.431Z"
+        }
+      },
+      "t837b": {
+        "id": "01a1ca37-de75-7740-af1d-de69875fc62b",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T10:49:29.589Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T10:49:30.881Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "837-01-show-simulator-in-top-bar.png",
+      "at": "2026-11-11T10:48:07.282Z",
+      "shows": "the simulator side panel hidden: \"Show simulator\" sits in the top bar beside Settings; the reply row's right end is clear, Send whole",
+      "namesMasked": 42,
+      "masks": 1
+    },
+    {
+      "file": "837-02-reply-box-grown.png",
+      "at": "2026-11-11T10:48:09.988Z",
+      "shows": "a long ZZ TEST reply typed: the reply box has grown to five lines with the words readable, Send whole at the row's end",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "837-03-recording-line-clear.png",
+      "at": "2026-11-11T10:48:31.646Z",
+      "shows": "dictating with the fake microphone: the recording line under the reply row is whole, nothing over it or over Send; the long reply still in the grown box",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "837-04-dictated-words-at-the-end.png",
+      "at": "2026-11-11T10:48:48.800Z",
+      "shows": "after Stop: the dictated words landed at the caret (the end of the long reply); the box at five lines, scrolled to show them; nothing sent",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "837-05-enter-sent-box-one-line.png",
+      "at": "2026-11-11T10:49:04.763Z",
+      "shows": "Enter pressed: the short ZZ TEST line is in the thread as the staff member's own message and the reply box is back to one line, empty",
+      "namesMasked": 1,
+      "masks": 1
+    }
+  ]
+}
