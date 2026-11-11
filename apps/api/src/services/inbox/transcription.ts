@@ -227,9 +227,61 @@ function mp3Seconds(b: Uint8Array): number | null {
   return null;
 }
 
+/** An EBML variable-length number at `at`: its value (null for the "unknown size" form) and its width. */
+function ebmlVint(b: Uint8Array, at: number): { value: number | null; width: number } | null {
+  const first = b[at];
+  if (first === undefined || first === 0) return null;
+  const width = Math.clz32(first) - 23;
+  if (at + width > b.length) return null;
+  let value = first & (0xff >> width);
+  let unknown = value === 0xff >> width;
+  for (let i = 1; i < width; i++) {
+    const byte = b[at + i] ?? 0;
+    unknown = unknown && byte === 0xff;
+    value = value * 256 + byte;
+  }
+  return { value: unknown ? null : value, width };
+}
+
+/**
+ * A WebM a browser recorded (SCRUM-834's dictation, the simulator's Record):
+ * `MediaRecorder` writes no length in the header, so the length is the last
+ * cluster's timecode plus its last block's own offset, in the default
+ * millisecond scale. Null where no cluster is found.
+ */
+function webmSeconds(b: Uint8Array): number | null {
+  const buf = Buffer.from(b.buffer, b.byteOffset, b.byteLength);
+  const cluster = buf.lastIndexOf(Buffer.from([0x1f, 0x43, 0xb6, 0x75]));
+  if (cluster < 0) return null;
+  const size = ebmlVint(b, cluster + 4);
+  if (!size) return null;
+  let at = cluster + 4 + size.width;
+  const end = size.value === null ? b.length : Math.min(b.length, at + size.value);
+  let timecode: number | null = null;
+  let last = 0;
+  while (at < end) {
+    const idWidth = Math.clz32(b[at] ?? 0) - 23;
+    if (idWidth < 1 || idWidth > 4) break;
+    const id = b[at];
+    const len = ebmlVint(b, at + idWidth);
+    if (!len || len.value === null) break;
+    const data = at + idWidth + len.width;
+    if (idWidth === 1 && id === 0xe7) {
+      let v = 0;
+      for (let i = 0; i < len.value && data + i < b.length; i++) v = v * 256 + (b[data + i] ?? 0);
+      timecode = v;
+    } else if (idWidth === 1 && id === 0xa3 && data + 3 <= b.length) {
+      // A SimpleBlock: the track number (one byte for a recording's one track), then its offset as an int16.
+      last = Math.max(last, view(b).getInt16(data + 1, false));
+    }
+    at = data + len.value;
+  }
+  return timecode === null ? null : (timecode + last) / 1000;
+}
+
 /**
  * How long a recording is, in seconds: read from its own header (Ogg, MP4,
- * WAV, MP3), else estimated from its size at a voice recording's rate.
+ * WAV, MP3, a browser's WebM), else estimated from its size at a voice recording's rate.
  */
 export function audioSeconds(bytes: Uint8Array, contentType: string): number {
   const ext = transcribableExtension(contentType);
@@ -244,7 +296,9 @@ export function audioSeconds(bytes: Uint8Array, contentType: string): number {
             ? wavSeconds(bytes)
             : ext === 'mp3'
               ? mp3Seconds(bytes)
-              : null;
+              : ext === 'webm'
+                ? webmSeconds(bytes)
+                : null;
   } catch {
     read = null; // A header that lies about its own length is estimated like any other file.
   }

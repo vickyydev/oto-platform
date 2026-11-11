@@ -226,6 +226,20 @@ describe('the limits, checked before anything is sent', () => {
     expect(audioSeconds(m4aNote(95.5), 'audio/mp4')).toBeCloseTo(95.5, 3);
     expect(audioSeconds(wavNote(12), 'audio/wav')).toBeCloseTo(12, 3);
     expect(audioSeconds(mp3Note(80_000), 'audio/mpeg')).toBeCloseTo(10, 3);
+    // A browser's WebM (SCRUM-834): no length in the header; the last cluster's timecode plus its last block's offset.
+    const webm = (clusterMs: number, blockMs: number, padding: number) =>
+      new Uint8Array([
+        0x1a, 0x45, 0xdf, 0xa3, 0x80,
+        ...new Array<number>(padding).fill(0x55),
+        0x1f, 0x43, 0xb6, 0x75, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xe7, 0x84, (clusterMs >>> 24) & 0xff, (clusterMs >>> 16) & 0xff, (clusterMs >>> 8) & 0xff, clusterMs & 0xff,
+        0xa3, 0x86, 0x81, 0x00, 0x00, 0x80, 0x01, 0x02,
+        0xa3, 0x86, 0x81, (blockMs >>> 8) & 0xff, blockMs & 0xff, 0x80, 0x01, 0x02,
+      ]);
+    expect(audioSeconds(webm(124_000, 980, 2_000_000), 'audio/webm;codecs=opus')).toBeCloseTo(124.98, 2);
+    expect(audioSeconds(webm(15_000, 960, 200_000), 'audio/webm')).toBeCloseTo(15.96, 2);
+    // No cluster: estimated from the size as before.
+    expect(audioSeconds(new Uint8Array(80_000), 'audio/webm')).toBeCloseTo(10, 3);
     // A webm says nothing we read: 64 kbit/s.
     expect(audioSeconds(new Uint8Array(80_000), 'audio/webm')).toBeCloseTo(10, 3);
     // A header that is not what it claims is estimated like any other file.
