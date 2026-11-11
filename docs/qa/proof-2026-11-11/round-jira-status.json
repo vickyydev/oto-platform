@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-11T13:19:47.073Z",
+  "checkedAt": "2026-11-11T13:37:59.729Z",
   "results": [
     {
       "key": "SCRUM-801",
@@ -51,7 +51,7 @@
     },
     {
       "key": "SCRUM-748",
-      "status": "In Progress"
+      "status": "Deployed"
     }
   ]
 }

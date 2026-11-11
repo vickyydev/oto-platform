@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-11-11T13:36:48.006Z",
+  "key": "SCRUM-748",
+  "status": "Deployed",
+  "attachments": [
+    {
+      "id": "13122",
+      "name": "s748-saved-upload.png"
+    },
+    {
+      "id": "13123",
+      "name": "s748-saved-reloaded.png"
+    },
+    {
+      "id": "13124",
+      "name": "s748-pending-upload.png"
+    },
+    {
+      "id": "13125",
+      "name": "s748-pending-reloaded.png"
+    }
+  ],
+  "ciPending": 43026325155,
+  "ownerRuling": "STATUS 11 November 17:32 staging-first"
+}
