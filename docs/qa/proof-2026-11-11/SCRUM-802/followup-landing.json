@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-11T08:41:55.764Z",
+  "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+  "sourceCommit": "3c810a51f9f37821ec54d3c27470533e9f226921",
+  "candidate": "6d4553cf581f0047df826fe516aa7ba7f0d81c53",
+  "candidateRun": 42978766224,
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42988870929,
+    "headSha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+    "status": "pending"
+  },
+  "deployRequests": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbq2jvrrjlhs73b1urjg",
+      "statusAtRequest": "build_in_progress"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbq2k0e7bikc73brvvng",
+      "statusAtRequest": "build_in_progress"
+    }
+  ],
+  "ownCommits": 4,
+  "ownPlatformFiles": 4,
+  "protectedFilesChangedByLane": false,
+  "slotReleasedAfterDeployRequests": true,
+  "proofPending": true
+}
