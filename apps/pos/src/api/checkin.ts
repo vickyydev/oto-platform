@@ -288,6 +288,9 @@ export function apiCheckinToCheckIn(c: ApiCheckin, reg: Pick<ApiRegistration, 'g
     ...(c.foodProvision ? { foodProvision: foodProvisionFromWire(c.foodProvision) } : {}),
     confirmationsAccepted: true,
     serviceType: c.service,
+    // SCRUM-873 — a nanny assigned on the board before payment travels
+    // with the stay wherever it is loaded (the Add drop-off picker too).
+    ...(c.nannyId ? { assignedNannyId: c.nannyId } : {}),
     status: c.status,
     ...(c.scheduledFor ? { scheduledFor: c.scheduledFor } : {}),
     ...(c.paidOnline ? { paidOnline: { ...c.paidOnline, redeemed: !!c.saleId } } : {}),
@@ -464,7 +467,8 @@ export const checkinApi = {
  * is redeemed) is checked in from the board without a payment, so the till
  * never loads one onto a second sale. Read through the waiting list, so
  * the box answers it while the link is down. `nannies` names a nanny already
- * assigned (the roster the till holds).
+ * assigned (the roster the till holds); when it does not, the park's roster
+ * is read here (SCRUM-873).
  */
 export async function waitingStaysOf(
   branchId: string,
@@ -475,14 +479,26 @@ export async function waitingStaysOf(
   const { registrations } = await checkinApi.awaiting(branchId, registrationId);
   const reg = registrations.find((r) => r.id === registrationId);
   if (!reg) return [];
-  return reg.children
-    .filter((c) => c.status === 'registered' && !c.saleId && !c.paidOnline && !paidAtTillOf(c))
-    .map((c) => {
-      const base = apiCheckinToCheckIn(c, reg);
-      if (!c.nannyId) return base;
-      const name = nannies.find((n) => n.id === c.nannyId)?.name;
-      return { ...base, assignedNannyId: c.nannyId, ...(name ? { assignedNannyName: name } : {}) };
-    });
+  const waiting = reg.children.filter(
+    (c) => c.status === 'registered' && !c.saleId && !c.paidOnline && !paidAtTillOf(c),
+  );
+  // SCRUM-873 — a nanny assigned on the board before payment is named from
+  // the park's roster, read here when the one handed in does not name her:
+  // the till's hand-over runs from its first render, where its own roster
+  // is still empty. A roster that cannot be read leaves her assigned by id.
+  let roster = nannies;
+  if (waiting.some((c) => c.nannyId && !roster.some((n) => n.id === c.nannyId))) {
+    try {
+      roster = (await checkinApi.config(branchId)).nannies;
+    } catch {
+      // the stay keeps `assignedNannyId`; only the name is missing
+    }
+  }
+  return waiting.map((c) => {
+    const base = apiCheckinToCheckIn(c, reg);
+    const name = c.nannyId ? roster.find((n) => n.id === c.nannyId)?.name : undefined;
+    return name ? { ...base, assignedNannyName: name } : base;
+  });
 }
 
 /** What "Check in now" answers, on either lane. */

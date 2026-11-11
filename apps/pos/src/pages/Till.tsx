@@ -1808,7 +1808,9 @@ export default function Till() {
             service: serviceOverride ?? template?.dropOff?.service ?? ci.serviceType,
             lengthChosen: !!template,
             nannyId: ci.assignedNannyId,
-            nannyName: ci.assignedNannyName,
+            // SCRUM-873 — the picker's rows carry a nanny assigned on the
+            // board by id only; her name is the roster's, held by now.
+            nannyName: ci.assignedNannyName ?? nannyRoster.find((n) => n.id === ci.assignedNannyId)?.name,
             pricing: dropOffPricing,
           }),
         );
