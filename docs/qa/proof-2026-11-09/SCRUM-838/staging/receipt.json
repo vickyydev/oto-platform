@@ -1,0 +1,1993 @@
+{
+  "unit": "SCRUM-838 staging proof",
+  "liveCommit": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+  "startedAt": "2026-11-11T11:43:47.562Z",
+  "writtenAt": "2026-11-11T12:02:54.958Z",
+  "browser": "Chromium 153.0.8010.12",
+  "liveDeploys": {
+    "at": "2026-11-11T11:44:10.650Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq577l6e07s73c632h0",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:42:16.974334Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq57815efls739n9mfg",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:39:08.104499Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbq577uk1f9s73dldtv0",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:41:35.194234Z"
+      }
+    ],
+    "appLiveOnFixSha": true,
+    "inboxLive": true
+  },
+  "signedInAs": "the staging administrator through the launcher (name never kept)",
+  "simulator": "Demo WhatsApp · Central Floresta (inbox Settings › Simulator · test only)",
+  "conversations": {
+    "C": {
+      "name": "ZZ TEST 838 family",
+      "id": "01a1ca6c-b763-73fe-b039-8a47fb7e7577",
+      "language": "en",
+      "category": "birthdays",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hello! A birthday party for ZZ Test Child turning 6, 10 kids and 3 adults, Sunday 20 December at 11am (ZZ TEST 838)",
+          "at": "2026-11-11T11:44:42.247Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed"
+        }
+      ],
+      "turns": {
+        "1": {
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_handover",
+              "turnId": "01a1ca6c-b774-7c83-b064-2c34c355eab0",
+              "intent": "birthday_details",
+              "intents": [
+                "birthday_details"
+              ],
+              "reason": "OK",
+              "rule": null,
+              "closingKey": "closing_birthday",
+              "rethink": null
+            }
+          ],
+          "aiState": "left_for_team"
+        }
+      }
+    },
+    "D": {
+      "name": "ZZ TEST 838 second family",
+      "id": "01a1ca6c-c2fb-735f-bed6-9ad046801fe9",
+      "language": "en",
+      "category": "birthdays",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hello! A birthday party for ZZ Test Child turning 8, 10 kids and 3 adults, Saturday 26 December at 2pm (ZZ TEST 838 resend)",
+          "at": "2026-11-11T11:44:45.220Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed"
+        }
+      ],
+      "turns": {
+        "1": {
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_handover",
+              "turnId": "01a1ca6c-c307-7669-b3c4-c99e6cca2995",
+              "intent": "birthday_details",
+              "intents": [
+                "birthday_details"
+              ],
+              "reason": "OK",
+              "rule": null,
+              "closingKey": "closing_birthday",
+              "rethink": null
+            }
+          ],
+          "aiState": "left_for_team"
+        }
+      }
+    }
+  },
+  "bookDate": {
+    "C": {
+      "at": "2026-11-11T11:53:32.712Z",
+      "key": "C",
+      "conversationId": "01a1ca6c-b763-73fe-b039-8a47fb7e7577",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 5454,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 838 family",
+        "fields": {
+          "date": {
+            "value": "2026-12-20",
+            "hint": "The chat says “Sunday 20 December”from the family"
+          },
+          "startTime": {
+            "value": "11:00",
+            "hint": "The chat says “at 11am”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “10 kids”from the family"
+          },
+          "adults": {
+            "value": "3",
+            "hint": "The chat says “3 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 838 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "6",
+            "hint": "Turning (age) The chat says “turning 6”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "booked": {
+        "at": "2026-11-11T11:54:39.162Z",
+        "key": "C",
+        "valuesAtSave": {
+          "title": "Book Date — ZZ TEST 838 family",
+          "fields": {
+            "date": {
+              "value": "2026-12-20",
+              "hint": "The chat says “Sunday 20 December”from the family"
+            },
+            "startTime": {
+              "value": "11:00",
+              "hint": "The chat says “at 11am”from the family"
+            },
+            "park": {
+              "value": "Central Floresta",
+              "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+            },
+            "kids": {
+              "value": "10",
+              "hint": "The chat says “10 kids”from the family"
+            },
+            "adults": {
+              "value": "3",
+              "hint": "The chat says “3 adults”from the family"
+            },
+            "bookingName": {
+              "value": "ZZ TEST 838 family",
+              "hint": null
+            },
+            "phone": {
+              "value": "[number]",
+              "hint": null
+            },
+            "childName": {
+              "value": "ZZ Test Child",
+              "hint": "The chat says “ZZ Test Child”from the family"
+            },
+            "childAge": {
+              "value": "6",
+              "hint": "Turning (age) The chat says “turning 6”from the family"
+            }
+          },
+          "header": {
+            "reading": false,
+            "read": true,
+            "readLine": "Read the whole chat",
+            "fetchButton": "Fetch from chat",
+            "fetchButtonEnabled": true,
+            "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+            "fetchedLine": null
+          },
+          "footer": [
+            "Cancel",
+            "Book date"
+          ],
+          "refusal": null
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "sent": {
+            "date": "2026-12-20",
+            "startTime": "11:00",
+            "kids": 10,
+            "adults": 3,
+            "childName": "ZZ Test Child",
+            "childAge": 6,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "hasId": true
+          },
+          "error": null,
+          "event": {
+            "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+            "title": "ZZ Test Child's 6th Birthday",
+            "date": "2026-12-20",
+            "startTime": "11:00",
+            "statusName": "Tentative",
+            "branchName": "Oto Play Park, Central Floresta",
+            "kids": 10,
+            "adults": 3
+          }
+        },
+        "note": "Event: 20 Dec 2026 at Central Floresta · tentative in the Events calendar",
+        "chip": "Event: 20 Dec 2026 at Central Floresta",
+        "buttons": [
+          "Date Booked",
+          "Create BEO"
+        ],
+        "convEvent": {
+          "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-20",
+          "startTime": "11:00",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": "tentative",
+          "kids": 10,
+          "adults": 3,
+          "beoPath": "/studio/events/kanban?beo=01a1ca74-c55d-711b-8bab-4fba14a726a2"
+        }
+      }
+    },
+    "D": {
+      "at": "2026-11-11T11:58:26.031Z",
+      "key": "D",
+      "conversationId": "01a1ca6c-c2fb-735f-bed6-9ad046801fe9",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 4941,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 838 second family",
+        "fields": {
+          "date": {
+            "value": "2026-12-26",
+            "hint": "The chat says “Saturday 26 December”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “at 2pm”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “10 kids”from the family"
+          },
+          "adults": {
+            "value": "3",
+            "hint": "The chat says “3 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 838 second family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "8",
+            "hint": "Turning (age) The chat says “turning 8”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "booked": {
+        "at": "2026-11-11T11:59:31.969Z",
+        "key": "D",
+        "valuesAtSave": {
+          "title": "Book Date — ZZ TEST 838 second family",
+          "fields": {
+            "date": {
+              "value": "2026-12-26",
+              "hint": "The chat says “Saturday 26 December”from the family"
+            },
+            "startTime": {
+              "value": "14:00",
+              "hint": "The chat says “at 2pm”from the family"
+            },
+            "park": {
+              "value": "Central Floresta",
+              "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+            },
+            "kids": {
+              "value": "10",
+              "hint": "The chat says “10 kids”from the family"
+            },
+            "adults": {
+              "value": "3",
+              "hint": "The chat says “3 adults”from the family"
+            },
+            "bookingName": {
+              "value": "ZZ TEST 838 second family",
+              "hint": null
+            },
+            "phone": {
+              "value": "[number]",
+              "hint": null
+            },
+            "childName": {
+              "value": "ZZ Test Child",
+              "hint": "The chat says “ZZ Test Child”from the family"
+            },
+            "childAge": {
+              "value": "8",
+              "hint": "Turning (age) The chat says “turning 8”from the family"
+            }
+          },
+          "header": {
+            "reading": false,
+            "read": true,
+            "readLine": "Read the whole chat",
+            "fetchButton": "Fetch from chat",
+            "fetchButtonEnabled": true,
+            "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+            "fetchedLine": null
+          },
+          "footer": [
+            "Cancel",
+            "Book date"
+          ],
+          "refusal": null
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "sent": {
+            "date": "2026-12-26",
+            "startTime": "14:00",
+            "kids": 10,
+            "adults": 3,
+            "childName": "ZZ Test Child",
+            "childAge": 8,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "hasId": true
+          },
+          "error": null,
+          "event": {
+            "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+            "title": "ZZ Test Child's 8th Birthday",
+            "date": "2026-12-26",
+            "startTime": "14:00",
+            "statusName": "Tentative",
+            "branchName": "Oto Play Park, Central Floresta",
+            "kids": 10,
+            "adults": 3
+          }
+        },
+        "note": "Event: 26 Dec 2026 at Central Floresta · tentative in the Events calendar",
+        "chip": "Event: 26 Dec 2026 at Central Floresta",
+        "buttons": [
+          "Date Booked",
+          "Create BEO"
+        ],
+        "convEvent": {
+          "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+          "title": "ZZ Test Child's 8th Birthday",
+          "date": "2026-12-26",
+          "startTime": "14:00",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": "tentative",
+          "kids": 10,
+          "adults": 3,
+          "beoPath": "/studio/events/kanban?beo=01a1ca79-3f13-720e-9801-6ec6772cac23"
+        }
+      }
+    }
+  },
+  "events": {
+    "C": {
+      "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+      "title": "ZZ Test Child's 6th Birthday",
+      "date": "2026-12-20",
+      "startTime": "11:00",
+      "bookedAt": "2026-11-11T11:55:39.959Z",
+      "archivedAt": "2026-11-11T11:56:10.817Z"
+    },
+    "D": {
+      "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+      "title": "ZZ Test Child's 8th Birthday",
+      "date": "2026-12-26",
+      "startTime": "14:00",
+      "bookedAt": "2026-11-11T12:00:32.714Z",
+      "archivedAt": "2026-11-11T12:00:50.835Z"
+    }
+  },
+  "createBeo": {
+    "C": {
+      "at": "2026-11-11T11:55:56.455Z",
+      "key": "C",
+      "conversationId": "01a1ca6c-b763-73fe-b039-8a47fb7e7577",
+      "eventId": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null,
+        "fillParam": null
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 409,
+        "seconds": 2.1,
+        "error": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.",
+        "hasReview": false,
+        "origin": null,
+        "transcript": null,
+        "sourceIsTeamConfirmation": null,
+        "proposal": null,
+        "fillProposals": null,
+        "catalogue": null
+      }
+    },
+    "D": {
+      "at": "2026-11-11T12:00:37.991Z",
+      "key": "D",
+      "conversationId": "01a1ca6c-c2fb-735f-bed6-9ad046801fe9",
+      "eventId": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null,
+        "fillParam": null
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 409,
+        "seconds": 1.7,
+        "error": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.",
+        "hasReview": false,
+        "origin": null,
+        "transcript": null,
+        "sourceIsTeamConfirmation": null,
+        "proposal": null,
+        "fillProposals": null,
+        "catalogue": null
+      }
+    }
+  },
+  "deposit": {
+    "C": {
+      "log": [
+        {
+          "at": "2026-11-11T11:55:59.731Z",
+          "action": "request",
+          "key": "C",
+          "typed": "2500",
+          "press": {
+            "route": "POST /api/events/:eventId/beo/deposit-request",
+            "status": 200,
+            "sent": {
+              "amount": 2500,
+              "hasActionId": true
+            },
+            "replayed": false,
+            "request": {
+              "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+              "state": "requested",
+              "amountSatang": 250000,
+              "currency": "THB",
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              },
+              "linkExpiresAt": "2026-11-14T11:56:06.229Z",
+              "invoiceNo": "(present)",
+              "requestedAt": "2026-11-11T11:56:06.203Z",
+              "remindedAt": null,
+              "handedOverAt": null,
+              "paidAt": null,
+              "closedAt": null,
+              "closeReason": null,
+              "depositBeforeSatang": null,
+              "depositAfterSatang": null,
+              "writeBack": null,
+              "requestLineStatus": "sent"
+            },
+            "error": null
+          },
+          "panel": {
+            "text": "Deposit from the family's chat Requested Deposit requested · ฿2,500 The payment link is in the family's chat, valid until 14 Nov, 18:56. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. the payment link is in the family's chat.",
+            "headline": "Deposit requested · ฿2,500",
+            "state": "Deposit requested · ฿2,500 The payment link is in the family's chat, valid until 14 Nov, 18:56. The payment link",
+            "none": null,
+            "badgeOpen": "Requested",
+            "badgePaid": null,
+            "error": null,
+            "note": "the payment link is in the family's chat.",
+            "noChat": null,
+            "unavailable": null,
+            "buttons": {
+              "request": 0,
+              "resend": 1,
+              "cancel": 1,
+              "menu": 1,
+              "link": 1
+            },
+            "tillPanelDeposit": null,
+            "tillPanelExpected": null,
+            "tillPanelOutstanding": null
+          }
+        },
+        {
+          "at": "2026-11-11T11:56:06.634Z",
+          "action": "thread",
+          "key": "C",
+          "thread": {
+            "at": "2026-11-11T11:56:07.676Z",
+            "status": 200,
+            "state": "active",
+            "teamName": "Birthdays & Events",
+            "aiState": "person_replied",
+            "eventDeposit": {
+              "requestId": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+              "state": "requested",
+              "amountSatang": 250000,
+              "overdue": false
+            },
+            "pills": [
+              {
+                "kind": "ai_handover",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T11:44:52.823Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "rule",
+                  "intent",
+                  "reason",
+                  "silent",
+                  "turnId",
+                  "intents",
+                  "rethink",
+                  "branchId",
+                  "coherence",
+                  "closingKey",
+                  "messageIds",
+                  "templateId",
+                  "destination",
+                  "holdingLine",
+                  "templateKey",
+                  "reroutedTeamId",
+                  "brochureFileIds"
+                ]
+              },
+              {
+                "kind": "date_booked",
+                "actorKind": "account",
+                "createdAt": "2026-11-11T11:55:42.578Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "date",
+                  "kids",
+                  "title",
+                  "adults",
+                  "status",
+                  "eventId",
+                  "branchId",
+                  "startTime",
+                  "branchName",
+                  "statusName"
+                ]
+              },
+              {
+                "kind": "deposit_requested",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T11:56:06.203Z",
+                "amountSatang": 250000,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "eventId",
+                  "currency",
+                  "language",
+                  "messageId",
+                  "requestId",
+                  "templateKey",
+                  "amountSatang",
+                  "linkExpiresAt"
+                ]
+              }
+            ],
+            "messages": [
+              {
+                "id": "01a1ca6c-b764-7a56-898b-4e0a37ba02ab",
+                "authorKind": "customer",
+                "direction": "inbound",
+                "templateKey": null,
+                "providerStatus": null,
+                "createdAt": "2026-11-11T11:44:44.000Z",
+                "body": "Hello! A birthday party for ZZ Test Child turning 6, 10 kids and 3 adults, Sunday 20 December at 11am (ZZ TEST 838)",
+                "link": null
+              },
+              {
+                "id": "01a1ca6c-d661-728c-a771-c970e7cb3f2d",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T11:44:52.823Z",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "link": null
+              },
+              {
+                "id": "01a0bbdc-8c41-7d76-a126-e506056d63c4",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T11:56:06.203Z",
+                "body": "To confirm your party on Sunday 20 December 2026 we kindly ask for a deposit of ฿2,500. You can pay it securely here: https://oto-api-staging.onrender.com/<link> (valid until 14 Nov, 18:56). Your booking is confirmed as soon as the deposit arrives 🎈",
+                "link": {
+                  "absolute": true,
+                  "host": "oto-api-staging.onrender.com",
+                  "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "at": "2026-11-11T11:57:20.719Z",
+          "action": "thread",
+          "key": "C",
+          "thread": {
+            "at": "2026-11-11T11:57:21.758Z",
+            "status": 200,
+            "state": "active",
+            "teamName": "Birthdays & Events",
+            "aiState": "person_replied",
+            "eventDeposit": {
+              "requestId": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+              "state": "cancelled",
+              "amountSatang": 250000,
+              "overdue": false
+            },
+            "pills": [
+              {
+                "kind": "ai_handover",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T11:44:52.823Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "rule",
+                  "intent",
+                  "reason",
+                  "silent",
+                  "turnId",
+                  "intents",
+                  "rethink",
+                  "branchId",
+                  "coherence",
+                  "closingKey",
+                  "messageIds",
+                  "templateId",
+                  "destination",
+                  "holdingLine",
+                  "templateKey",
+                  "reroutedTeamId",
+                  "brochureFileIds"
+                ]
+              },
+              {
+                "kind": "date_booked",
+                "actorKind": "account",
+                "createdAt": "2026-11-11T11:55:42.578Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "date",
+                  "kids",
+                  "title",
+                  "adults",
+                  "status",
+                  "eventId",
+                  "branchId",
+                  "startTime",
+                  "branchName",
+                  "statusName"
+                ]
+              },
+              {
+                "kind": "deposit_requested",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T11:56:06.203Z",
+                "amountSatang": 250000,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "eventId",
+                  "currency",
+                  "language",
+                  "messageId",
+                  "requestId",
+                  "templateKey",
+                  "amountSatang",
+                  "linkExpiresAt"
+                ]
+              },
+              {
+                "kind": "deposit_cancelled",
+                "actorKind": "system",
+                "createdAt": "2026-11-11T11:57:06.966Z",
+                "amountSatang": 250000,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "reason",
+                  "seenAt",
+                  "eventId",
+                  "currency",
+                  "standing",
+                  "requestId",
+                  "amountSatang",
+                  "linkExpiresAt"
+                ]
+              }
+            ],
+            "messages": [
+              {
+                "id": "01a1ca6c-b764-7a56-898b-4e0a37ba02ab",
+                "authorKind": "customer",
+                "direction": "inbound",
+                "templateKey": null,
+                "providerStatus": null,
+                "createdAt": "2026-11-11T11:44:44.000Z",
+                "body": "Hello! A birthday party for ZZ Test Child turning 6, 10 kids and 3 adults, Sunday 20 December at 11am (ZZ TEST 838)",
+                "link": null
+              },
+              {
+                "id": "01a1ca6c-d661-728c-a771-c970e7cb3f2d",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T11:44:52.823Z",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "link": null
+              },
+              {
+                "id": "01a0bbdc-8c41-7d76-a126-e506056d63c4",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T11:56:06.203Z",
+                "body": "To confirm your party on Sunday 20 December 2026 we kindly ask for a deposit of ฿2,500. You can pay it securely here: https://oto-api-staging.onrender.com/<link> (valid until 14 Nov, 18:56). Your booking is confirmed as soon as the deposit arrives 🎈",
+                "link": {
+                  "absolute": true,
+                  "host": "oto-api-staging.onrender.com",
+                  "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+                }
+              }
+            ]
+          },
+          "picture": "838-01-thread-deposit-request-closed.png",
+          "linksMasked": 5,
+          "chip": null,
+          "pillsOnScreen": [
+            "Deposit requested ฿2,500",
+            "Deposit request closed · the party was removed in the Events module · ฿2,500"
+          ]
+        }
+      ],
+      "request": {
+        "at": "2026-11-11T11:55:59.731Z",
+        "action": "request",
+        "key": "C",
+        "typed": "2500",
+        "press": {
+          "route": "POST /api/events/:eventId/beo/deposit-request",
+          "status": 200,
+          "sent": {
+            "amount": 2500,
+            "hasActionId": true
+          },
+          "replayed": false,
+          "request": {
+            "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+            "state": "requested",
+            "amountSatang": 250000,
+            "currency": "THB",
+            "link": {
+              "absolute": true,
+              "host": "oto-api-staging.onrender.com",
+              "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+            },
+            "linkExpiresAt": "2026-11-14T11:56:06.229Z",
+            "invoiceNo": "(present)",
+            "requestedAt": "2026-11-11T11:56:06.203Z",
+            "remindedAt": null,
+            "handedOverAt": null,
+            "paidAt": null,
+            "closedAt": null,
+            "closeReason": null,
+            "depositBeforeSatang": null,
+            "depositAfterSatang": null,
+            "writeBack": null,
+            "requestLineStatus": "sent"
+          },
+          "error": null
+        },
+        "panel": {
+          "text": "Deposit from the family's chat Requested Deposit requested · ฿2,500 The payment link is in the family's chat, valid until 14 Nov, 18:56. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. the payment link is in the family's chat.",
+          "headline": "Deposit requested · ฿2,500",
+          "state": "Deposit requested · ฿2,500 The payment link is in the family's chat, valid until 14 Nov, 18:56. The payment link",
+          "none": null,
+          "badgeOpen": "Requested",
+          "badgePaid": null,
+          "error": null,
+          "note": "the payment link is in the family's chat.",
+          "noChat": null,
+          "unavailable": null,
+          "buttons": {
+            "request": 0,
+            "resend": 1,
+            "cancel": 1,
+            "menu": 1,
+            "link": 1
+          },
+          "tillPanelDeposit": null,
+          "tillPanelExpected": null,
+          "tillPanelOutstanding": null
+        }
+      },
+      "thread": {
+        "at": "2026-11-11T11:57:20.719Z",
+        "action": "thread",
+        "key": "C",
+        "thread": {
+          "at": "2026-11-11T11:57:21.758Z",
+          "status": 200,
+          "state": "active",
+          "teamName": "Birthdays & Events",
+          "aiState": "person_replied",
+          "eventDeposit": {
+            "requestId": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+            "state": "cancelled",
+            "amountSatang": 250000,
+            "overdue": false
+          },
+          "pills": [
+            {
+              "kind": "ai_handover",
+              "actorKind": "ai",
+              "createdAt": "2026-11-11T11:44:52.823Z",
+              "amountSatang": null,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "rule",
+                "intent",
+                "reason",
+                "silent",
+                "turnId",
+                "intents",
+                "rethink",
+                "branchId",
+                "coherence",
+                "closingKey",
+                "messageIds",
+                "templateId",
+                "destination",
+                "holdingLine",
+                "templateKey",
+                "reroutedTeamId",
+                "brochureFileIds"
+              ]
+            },
+            {
+              "kind": "date_booked",
+              "actorKind": "account",
+              "createdAt": "2026-11-11T11:55:42.578Z",
+              "amountSatang": null,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "date",
+                "kids",
+                "title",
+                "adults",
+                "status",
+                "eventId",
+                "branchId",
+                "startTime",
+                "branchName",
+                "statusName"
+              ]
+            },
+            {
+              "kind": "deposit_requested",
+              "actorKind": "ai",
+              "createdAt": "2026-11-11T11:56:06.203Z",
+              "amountSatang": 250000,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "eventId",
+                "currency",
+                "language",
+                "messageId",
+                "requestId",
+                "templateKey",
+                "amountSatang",
+                "linkExpiresAt"
+              ]
+            },
+            {
+              "kind": "deposit_cancelled",
+              "actorKind": "system",
+              "createdAt": "2026-11-11T11:57:06.966Z",
+              "amountSatang": 250000,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "reason",
+                "seenAt",
+                "eventId",
+                "currency",
+                "standing",
+                "requestId",
+                "amountSatang",
+                "linkExpiresAt"
+              ]
+            }
+          ],
+          "messages": [
+            {
+              "id": "01a1ca6c-b764-7a56-898b-4e0a37ba02ab",
+              "authorKind": "customer",
+              "direction": "inbound",
+              "templateKey": null,
+              "providerStatus": null,
+              "createdAt": "2026-11-11T11:44:44.000Z",
+              "body": "Hello! A birthday party for ZZ Test Child turning 6, 10 kids and 3 adults, Sunday 20 December at 11am (ZZ TEST 838)",
+              "link": null
+            },
+            {
+              "id": "01a1ca6c-d661-728c-a771-c970e7cb3f2d",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "templateKey": null,
+              "providerStatus": "sent",
+              "createdAt": "2026-11-11T11:44:52.823Z",
+              "body": "Thank you so much! Our birthday manager will be with you shortly.",
+              "link": null
+            },
+            {
+              "id": "01a0bbdc-8c41-7d76-a126-e506056d63c4",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "templateKey": null,
+              "providerStatus": "sent",
+              "createdAt": "2026-11-11T11:56:06.203Z",
+              "body": "To confirm your party on Sunday 20 December 2026 we kindly ask for a deposit of ฿2,500. You can pay it securely here: https://oto-api-staging.onrender.com/<link> (valid until 14 Nov, 18:56). Your booking is confirmed as soon as the deposit arrives 🎈",
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              }
+            }
+          ]
+        },
+        "picture": "838-01-thread-deposit-request-closed.png",
+        "linksMasked": 5,
+        "chip": null,
+        "pillsOnScreen": [
+          "Deposit requested ฿2,500",
+          "Deposit request closed · the party was removed in the Events module · ฿2,500"
+        ]
+      }
+    },
+    "D": {
+      "log": [
+        {
+          "at": "2026-11-11T12:00:41.028Z",
+          "action": "request",
+          "key": "D",
+          "typed": "2000",
+          "press": {
+            "route": "POST /api/events/:eventId/beo/deposit-request",
+            "status": 200,
+            "sent": {
+              "amount": 2000,
+              "hasActionId": true
+            },
+            "replayed": false,
+            "request": {
+              "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+              "state": "requested",
+              "amountSatang": 200000,
+              "currency": "THB",
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              },
+              "linkExpiresAt": "2026-11-14T12:00:47.490Z",
+              "invoiceNo": "(present)",
+              "requestedAt": "2026-11-11T12:00:47.461Z",
+              "remindedAt": null,
+              "handedOverAt": null,
+              "paidAt": null,
+              "closedAt": null,
+              "closeReason": null,
+              "depositBeforeSatang": null,
+              "depositAfterSatang": null,
+              "writeBack": null,
+              "requestLineStatus": "sent"
+            },
+            "error": null
+          },
+          "panel": {
+            "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. the payment link is in the family's chat.",
+            "headline": "Deposit requested · ฿2,000",
+            "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+            "none": null,
+            "badgeOpen": "Requested",
+            "badgePaid": null,
+            "error": null,
+            "note": "the payment link is in the family's chat.",
+            "noChat": null,
+            "unavailable": null,
+            "buttons": {
+              "request": 0,
+              "resend": 1,
+              "cancel": 1,
+              "menu": 1,
+              "link": 1
+            },
+            "tillPanelDeposit": null,
+            "tillPanelExpected": null,
+            "tillPanelOutstanding": null
+          }
+        },
+        {
+          "at": "2026-11-11T12:00:48.131Z",
+          "action": "press",
+          "key": "D",
+          "press": {
+            "route": "POST /api/events/:eventId/beo/deposit-request/:requestId/resend",
+            "status": 409,
+            "replayed": null,
+            "request": null,
+            "messagePosted": null,
+            "error": {
+              "code": "DEPOSIT_PARTY_REMOVED",
+              "message": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family."
+            }
+          },
+          "panel": {
+            "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+            "headline": "Deposit requested · ฿2,000",
+            "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+            "none": null,
+            "badgeOpen": "Requested",
+            "badgePaid": null,
+            "error": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+            "note": null,
+            "noChat": null,
+            "unavailable": null,
+            "buttons": {
+              "request": 0,
+              "resend": 1,
+              "cancel": 1,
+              "menu": 1,
+              "link": 1
+            },
+            "tillPanelDeposit": null,
+            "tillPanelExpected": null,
+            "tillPanelOutstanding": null
+          },
+          "picture": "838-03-resend-refused-party-removed.png"
+        },
+        {
+          "at": "2026-11-11T12:01:04.958Z",
+          "action": "thread",
+          "key": "D",
+          "thread": {
+            "at": "2026-11-11T12:01:06.007Z",
+            "status": 200,
+            "state": "active",
+            "teamName": "Birthdays & Events",
+            "aiState": "person_replied",
+            "eventDeposit": {
+              "requestId": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+              "state": "cancelled",
+              "amountSatang": 200000,
+              "overdue": false
+            },
+            "pills": [
+              {
+                "kind": "ai_handover",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T11:44:58.872Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "rule",
+                  "intent",
+                  "reason",
+                  "silent",
+                  "turnId",
+                  "intents",
+                  "rethink",
+                  "branchId",
+                  "coherence",
+                  "closingKey",
+                  "messageIds",
+                  "templateId",
+                  "destination",
+                  "holdingLine",
+                  "templateKey",
+                  "reroutedTeamId",
+                  "brochureFileIds"
+                ]
+              },
+              {
+                "kind": "date_booked",
+                "actorKind": "account",
+                "createdAt": "2026-11-11T12:00:35.281Z",
+                "amountSatang": null,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "date",
+                  "kids",
+                  "title",
+                  "adults",
+                  "status",
+                  "eventId",
+                  "branchId",
+                  "startTime",
+                  "branchName",
+                  "statusName"
+                ]
+              },
+              {
+                "kind": "deposit_requested",
+                "actorKind": "ai",
+                "createdAt": "2026-11-11T12:00:47.461Z",
+                "amountSatang": 200000,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "eventId",
+                  "currency",
+                  "language",
+                  "messageId",
+                  "requestId",
+                  "templateKey",
+                  "amountSatang",
+                  "linkExpiresAt"
+                ]
+              },
+              {
+                "kind": "deposit_cancelled",
+                "actorKind": "system",
+                "createdAt": "2026-11-11T12:00:52.657Z",
+                "amountSatang": 200000,
+                "resend": null,
+                "late": null,
+                "payloadKeys": [
+                  "reason",
+                  "seenAt",
+                  "eventId",
+                  "currency",
+                  "standing",
+                  "requestId",
+                  "amountSatang",
+                  "linkExpiresAt"
+                ]
+              }
+            ],
+            "messages": [
+              {
+                "id": "01a1ca6c-c2fc-76c2-9442-79a888b944e7",
+                "authorKind": "customer",
+                "direction": "inbound",
+                "templateKey": null,
+                "providerStatus": null,
+                "createdAt": "2026-11-11T11:44:47.000Z",
+                "body": "Hello! A birthday party for ZZ Test Child turning 8, 10 kids and 3 adults, Saturday 26 December at 2pm (ZZ TEST 838 resend)",
+                "link": null
+              },
+              {
+                "id": "01a1ca6c-ee01-7a32-9716-4fcae7af77cc",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T11:44:58.872Z",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "link": null
+              },
+              {
+                "id": "01a0bbdc-8c41-75da-bd59-c1c6da7088ae",
+                "authorKind": "ai",
+                "direction": "outbound",
+                "templateKey": null,
+                "providerStatus": "sent",
+                "createdAt": "2026-11-11T12:00:47.461Z",
+                "body": "To confirm your party on Saturday 26 December 2026 we kindly ask for a deposit of ฿2,000. You can pay it securely here: https://oto-api-staging.onrender.com/<link> (valid until 14 Nov, 19:00). Your booking is confirmed as soon as the deposit arrives 🎈",
+                "link": {
+                  "absolute": true,
+                  "host": "oto-api-staging.onrender.com",
+                  "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "at": "2026-11-11T12:01:06.226Z",
+          "action": "open",
+          "key": "D",
+          "panel": {
+            "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+            "headline": "Deposit requested · ฿2,000",
+            "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+            "none": null,
+            "badgeOpen": "Requested",
+            "badgePaid": null,
+            "error": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+            "note": null,
+            "noChat": null,
+            "unavailable": null,
+            "buttons": {
+              "request": 0,
+              "resend": 1,
+              "cancel": 1,
+              "menu": 1,
+              "link": 1
+            },
+            "tillPanelDeposit": null,
+            "tillPanelExpected": null,
+            "tillPanelOutstanding": null
+          },
+          "picture": "838-04-panel-request-closed.png"
+        },
+        {
+          "at": "2026-11-11T12:01:18.908Z",
+          "action": "reload",
+          "key": "D",
+          "panel": {
+            "text": "Deposit from the family's chat Request closed · ฿2,000 This party was removed in the Events module, so the payment link was closed. Nothing was said to the family. Deposit to ask THB Request deposit Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land.",
+            "headline": "Request closed · ฿2,000",
+            "state": "Request closed · ฿2,000 This party was removed in the Events module, so the payment link was closed. Nothing was said to the family.",
+            "none": null,
+            "badgeOpen": null,
+            "badgePaid": null,
+            "error": null,
+            "note": null,
+            "noChat": null,
+            "unavailable": null,
+            "buttons": {
+              "request": 1,
+              "resend": 0,
+              "cancel": 0,
+              "menu": 1,
+              "link": 0
+            },
+            "tillPanelDeposit": null,
+            "tillPanelExpected": null,
+            "tillPanelOutstanding": null
+          },
+          "picture": "838-05-panel-after-reload-request-closed.png"
+        }
+      ],
+      "request": {
+        "at": "2026-11-11T12:00:41.028Z",
+        "action": "request",
+        "key": "D",
+        "typed": "2000",
+        "press": {
+          "route": "POST /api/events/:eventId/beo/deposit-request",
+          "status": 200,
+          "sent": {
+            "amount": 2000,
+            "hasActionId": true
+          },
+          "replayed": false,
+          "request": {
+            "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+            "state": "requested",
+            "amountSatang": 200000,
+            "currency": "THB",
+            "link": {
+              "absolute": true,
+              "host": "oto-api-staging.onrender.com",
+              "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+            },
+            "linkExpiresAt": "2026-11-14T12:00:47.490Z",
+            "invoiceNo": "(present)",
+            "requestedAt": "2026-11-11T12:00:47.461Z",
+            "remindedAt": null,
+            "handedOverAt": null,
+            "paidAt": null,
+            "closedAt": null,
+            "closeReason": null,
+            "depositBeforeSatang": null,
+            "depositAfterSatang": null,
+            "writeBack": null,
+            "requestLineStatus": "sent"
+          },
+          "error": null
+        },
+        "panel": {
+          "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. the payment link is in the family's chat.",
+          "headline": "Deposit requested · ฿2,000",
+          "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+          "none": null,
+          "badgeOpen": "Requested",
+          "badgePaid": null,
+          "error": null,
+          "note": "the payment link is in the family's chat.",
+          "noChat": null,
+          "unavailable": null,
+          "buttons": {
+            "request": 0,
+            "resend": 1,
+            "cancel": 1,
+            "menu": 1,
+            "link": 1
+          },
+          "tillPanelDeposit": null,
+          "tillPanelExpected": null,
+          "tillPanelOutstanding": null
+        }
+      },
+      "press_resend": {
+        "at": "2026-11-11T12:00:48.131Z",
+        "action": "press",
+        "key": "D",
+        "press": {
+          "route": "POST /api/events/:eventId/beo/deposit-request/:requestId/resend",
+          "status": 409,
+          "replayed": null,
+          "request": null,
+          "messagePosted": null,
+          "error": {
+            "code": "DEPOSIT_PARTY_REMOVED",
+            "message": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family."
+          }
+        },
+        "panel": {
+          "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+          "headline": "Deposit requested · ฿2,000",
+          "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+          "none": null,
+          "badgeOpen": "Requested",
+          "badgePaid": null,
+          "error": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+          "note": null,
+          "noChat": null,
+          "unavailable": null,
+          "buttons": {
+            "request": 0,
+            "resend": 1,
+            "cancel": 1,
+            "menu": 1,
+            "link": 1
+          },
+          "tillPanelDeposit": null,
+          "tillPanelExpected": null,
+          "tillPanelOutstanding": null
+        },
+        "picture": "838-03-resend-refused-party-removed.png"
+      },
+      "thread": {
+        "at": "2026-11-11T12:01:04.958Z",
+        "action": "thread",
+        "key": "D",
+        "thread": {
+          "at": "2026-11-11T12:01:06.007Z",
+          "status": 200,
+          "state": "active",
+          "teamName": "Birthdays & Events",
+          "aiState": "person_replied",
+          "eventDeposit": {
+            "requestId": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+            "state": "cancelled",
+            "amountSatang": 200000,
+            "overdue": false
+          },
+          "pills": [
+            {
+              "kind": "ai_handover",
+              "actorKind": "ai",
+              "createdAt": "2026-11-11T11:44:58.872Z",
+              "amountSatang": null,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "rule",
+                "intent",
+                "reason",
+                "silent",
+                "turnId",
+                "intents",
+                "rethink",
+                "branchId",
+                "coherence",
+                "closingKey",
+                "messageIds",
+                "templateId",
+                "destination",
+                "holdingLine",
+                "templateKey",
+                "reroutedTeamId",
+                "brochureFileIds"
+              ]
+            },
+            {
+              "kind": "date_booked",
+              "actorKind": "account",
+              "createdAt": "2026-11-11T12:00:35.281Z",
+              "amountSatang": null,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "date",
+                "kids",
+                "title",
+                "adults",
+                "status",
+                "eventId",
+                "branchId",
+                "startTime",
+                "branchName",
+                "statusName"
+              ]
+            },
+            {
+              "kind": "deposit_requested",
+              "actorKind": "ai",
+              "createdAt": "2026-11-11T12:00:47.461Z",
+              "amountSatang": 200000,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "eventId",
+                "currency",
+                "language",
+                "messageId",
+                "requestId",
+                "templateKey",
+                "amountSatang",
+                "linkExpiresAt"
+              ]
+            },
+            {
+              "kind": "deposit_cancelled",
+              "actorKind": "system",
+              "createdAt": "2026-11-11T12:00:52.657Z",
+              "amountSatang": 200000,
+              "resend": null,
+              "late": null,
+              "payloadKeys": [
+                "reason",
+                "seenAt",
+                "eventId",
+                "currency",
+                "standing",
+                "requestId",
+                "amountSatang",
+                "linkExpiresAt"
+              ]
+            }
+          ],
+          "messages": [
+            {
+              "id": "01a1ca6c-c2fc-76c2-9442-79a888b944e7",
+              "authorKind": "customer",
+              "direction": "inbound",
+              "templateKey": null,
+              "providerStatus": null,
+              "createdAt": "2026-11-11T11:44:47.000Z",
+              "body": "Hello! A birthday party for ZZ Test Child turning 8, 10 kids and 3 adults, Saturday 26 December at 2pm (ZZ TEST 838 resend)",
+              "link": null
+            },
+            {
+              "id": "01a1ca6c-ee01-7a32-9716-4fcae7af77cc",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "templateKey": null,
+              "providerStatus": "sent",
+              "createdAt": "2026-11-11T11:44:58.872Z",
+              "body": "Thank you so much! Our birthday manager will be with you shortly.",
+              "link": null
+            },
+            {
+              "id": "01a0bbdc-8c41-75da-bd59-c1c6da7088ae",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "templateKey": null,
+              "providerStatus": "sent",
+              "createdAt": "2026-11-11T12:00:47.461Z",
+              "body": "To confirm your party on Saturday 26 December 2026 we kindly ask for a deposit of ฿2,000. You can pay it securely here: https://oto-api-staging.onrender.com/<link> (valid until 14 Nov, 19:00). Your booking is confirmed as soon as the deposit arrives 🎈",
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              }
+            }
+          ]
+        }
+      },
+      "open": {
+        "at": "2026-11-11T12:01:06.226Z",
+        "action": "open",
+        "key": "D",
+        "panel": {
+          "text": "Deposit from the family's chat Requested Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+          "headline": "Deposit requested · ฿2,000",
+          "state": "Deposit requested · ฿2,000 The payment link is in the family's chat, valid until 14 Nov, 19:00. The payment link",
+          "none": null,
+          "badgeOpen": "Requested",
+          "badgePaid": null,
+          "error": "This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.",
+          "note": null,
+          "noChat": null,
+          "unavailable": null,
+          "buttons": {
+            "request": 0,
+            "resend": 1,
+            "cancel": 1,
+            "menu": 1,
+            "link": 1
+          },
+          "tillPanelDeposit": null,
+          "tillPanelExpected": null,
+          "tillPanelOutstanding": null
+        },
+        "picture": "838-04-panel-request-closed.png"
+      },
+      "reload": {
+        "at": "2026-11-11T12:01:18.908Z",
+        "action": "reload",
+        "key": "D",
+        "panel": {
+          "text": "Deposit from the family's chat Request closed · ฿2,000 This party was removed in the Events module, so the payment link was closed. Nothing was said to the family. Deposit to ask THB Request deposit Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land.",
+          "headline": "Request closed · ฿2,000",
+          "state": "Request closed · ฿2,000 This party was removed in the Events module, so the payment link was closed. Nothing was said to the family.",
+          "none": null,
+          "badgeOpen": null,
+          "badgePaid": null,
+          "error": null,
+          "note": null,
+          "noChat": null,
+          "unavailable": null,
+          "buttons": {
+            "request": 1,
+            "resend": 0,
+            "cancel": 0,
+            "menu": 1,
+            "link": 0
+          },
+          "tillPanelDeposit": null,
+          "tillPanelExpected": null,
+          "tillPanelOutstanding": null
+        },
+        "picture": "838-05-panel-after-reload-request-closed.png"
+      }
+    }
+  },
+  "removed": {
+    "C": {
+      "keeplink": {
+        "at": "2026-11-11T11:56:06.307Z",
+        "action": "keeplink",
+        "key": "C",
+        "request": {
+          "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+          "state": "requested",
+          "amountSatang": 250000,
+          "closeReason": null,
+          "closedAt": null,
+          "hasLink": true
+        },
+        "linkHeld": true,
+        "linkAbsolute": true,
+        "linkHost": "oto-api-staging.onrender.com"
+      },
+      "archive": {
+        "at": "2026-11-11T11:56:07.877Z",
+        "action": "archive",
+        "key": "C",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "archivedAt": "2026-11-11T11:56:10.817Z",
+          "error": null
+        }
+      },
+      "poll": {
+        "at": "2026-11-11T11:56:08.164Z",
+        "action": "poll",
+        "key": "C",
+        "waitedMs": 61988,
+        "read": {
+          "route": "GET /api/events/:eventId/beo/deposit-request",
+          "status": 200,
+          "reading": "ok",
+          "message": null,
+          "current": {
+            "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+            "state": "cancelled",
+            "amountSatang": 250000,
+            "closeReason": "party_removed",
+            "closedAt": "2026-11-11T11:57:06.966Z",
+            "hasLink": true
+          },
+          "history": [
+            {
+              "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+              "state": "cancelled",
+              "amountSatang": 250000,
+              "closeReason": "party_removed",
+              "closedAt": "2026-11-11T11:57:06.966Z",
+              "hasLink": true
+            }
+          ]
+        },
+        "request": {
+          "id": "01a0bbdc-8c41-7c9f-bed0-248c1935ac62",
+          "state": "cancelled",
+          "amountSatang": 250000,
+          "closeReason": "party_removed",
+          "closedAt": "2026-11-11T11:57:06.966Z",
+          "hasLink": true
+        },
+        "closedAsPartyRemoved": true
+      },
+      "link": {
+        "at": "2026-11-11T11:57:57.776Z",
+        "action": "link",
+        "key": "C",
+        "openedAsPosted": true,
+        "page": {
+          "status": 404,
+          "host": "oto-api-staging.onrender.com",
+          "title": "",
+          "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"No such payment page\"}}",
+          "payOffered": 0,
+          "buttons": [],
+          "forms": 0
+        },
+        "picture": "838-02-link-after-archive-nothing-to-pay.png",
+        "payPostAnyway": {
+          "route": "POST the page with action=pay",
+          "status": 404,
+          "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"No such payment page\"}}"
+        }
+      }
+    },
+    "D": {
+      "keeplink": {
+        "at": "2026-11-11T12:00:47.586Z",
+        "action": "keeplink",
+        "key": "D",
+        "request": {
+          "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+          "state": "requested",
+          "amountSatang": 200000,
+          "closeReason": null,
+          "closedAt": null,
+          "hasLink": true
+        },
+        "linkHeld": true,
+        "linkAbsolute": true,
+        "linkHost": "oto-api-staging.onrender.com"
+      },
+      "archive": {
+        "at": "2026-11-11T12:00:47.890Z",
+        "action": "archive",
+        "key": "D",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "archivedAt": "2026-11-11T12:00:50.835Z",
+          "error": null
+        }
+      },
+      "poll": {
+        "at": "2026-11-11T12:01:04.591Z",
+        "action": "poll",
+        "key": "D",
+        "waitedMs": 170,
+        "read": {
+          "route": "GET /api/events/:eventId/beo/deposit-request",
+          "status": 200,
+          "reading": "ok",
+          "message": null,
+          "current": {
+            "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+            "state": "cancelled",
+            "amountSatang": 200000,
+            "closeReason": "party_removed",
+            "closedAt": "2026-11-11T12:00:52.657Z",
+            "hasLink": true
+          },
+          "history": [
+            {
+              "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+              "state": "cancelled",
+              "amountSatang": 200000,
+              "closeReason": "party_removed",
+              "closedAt": "2026-11-11T12:00:52.657Z",
+              "hasLink": true
+            }
+          ]
+        },
+        "request": {
+          "id": "01a0bbdc-8c41-74ca-bb2a-0301695f888d",
+          "state": "cancelled",
+          "amountSatang": 200000,
+          "closeReason": "party_removed",
+          "closedAt": "2026-11-11T12:00:52.657Z",
+          "hasLink": true
+        },
+        "closedAsPartyRemoved": true
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "838-01-thread-deposit-request-closed.png",
+      "at": "2026-11-11T11:57:57.599Z",
+      "shows": "The family's thread after the party was archived: the pill Deposit request closed, no new message to the family",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "838-02-link-after-archive-nothing-to-pay.png",
+      "at": "2026-11-11T11:57:59.370Z",
+      "shows": "The payment link opened as posted after the party was archived: nothing to pay (the invoice number covered)",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "838-03-resend-refused-party-removed.png",
+      "at": "2026-11-11T12:00:53.069Z",
+      "shows": "After \"Resend\": the panel",
+      "namesMasked": 51,
+      "masks": 0
+    },
+    {
+      "file": "838-05-panel-after-reload-request-closed.png",
+      "at": "2026-11-11T12:01:26.810Z",
+      "shows": "The archived party's BEO loaded afresh: the billing panel reads Request closed",
+      "namesMasked": 53,
+      "masks": 0
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T12:01:41.949Z",
+    "events": {
+      "A": {
+        "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+        "title": "ZZ Test Child's 7th Birthday",
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T12:01:44.969Z"
+        }
+      },
+      "C": {
+        "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "alreadyArchived": true,
+        "archive": null,
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T11:56:10.817Z"
+        }
+      },
+      "D": {
+        "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+        "title": "ZZ Test Child's 8th Birthday",
+        "alreadyArchived": true,
+        "archive": null,
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T12:00:50.835Z"
+        }
+      }
+    },
+    "conversations": {
+      "A": {
+        "id": "01a1ca6c-9e34-73f7-bb8c-b37d14ea50c3",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:45.644Z"
+      },
+      "B": {
+        "id": "01a1ca6c-ab67-7b60-8fc6-ec56a4308927",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:47.072Z"
+      },
+      "C": {
+        "id": "01a1ca6c-b763-73fe-b039-8a47fb7e7577",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:48.220Z"
+      },
+      "D": {
+        "id": "01a1ca6c-c2fb-735f-bed6-9ad046801fe9",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:49.251Z"
+      }
+    },
+    "madeDuringRun": [
+      {
+        "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-12-19",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "eventDate": "2026-12-20",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+        "title": "ZZ Test Child's 8th Birthday",
+        "eventDate": "2026-12-26",
+        "archived": true,
+        "mine": true
+      }
+    ],
+    "othersLeftUntouched": [
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-28"
+      }
+    ]
+  },
+  "signOut": {
+    "at": "2026-11-11T12:01:54.273Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  }
+}

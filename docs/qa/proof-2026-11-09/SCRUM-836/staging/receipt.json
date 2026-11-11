@@ -1,0 +1,658 @@
+{
+  "unit": "SCRUM-836 staging proof",
+  "liveCommit": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+  "startedAt": "2026-11-11T11:43:47.562Z",
+  "writtenAt": "2026-11-11T12:02:54.841Z",
+  "browser": "Chromium 153.0.8010.12",
+  "liveDeploys": {
+    "at": "2026-11-11T11:44:10.650Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq577l6e07s73c632h0",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:42:16.974334Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq57815efls739n9mfg",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:39:08.104499Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbq577uk1f9s73dldtv0",
+        "status": "live",
+        "sha": "3410a7344834cdd6e383e25c2cb02ed14a670f6b",
+        "finishedAt": "2026-11-11T11:41:35.194234Z"
+      }
+    ],
+    "appLiveOnFixSha": true,
+    "inboxLive": true
+  },
+  "signedInAs": "the staging administrator through the launcher (name never kept)",
+  "simulator": "Demo WhatsApp · Central Floresta (inbox Settings › Simulator · test only)",
+  "conversations": {
+    "A": {
+      "name": "ZZ TEST 836 family",
+      "id": "01a1ca6c-9e34-73f7-bb8c-b37d14ea50c3",
+      "language": "en",
+      "category": "birthdays",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hi! A birthday party for ZZ Test Child turning 7, 10 kids and 4 adults, on Saturday 19 December. We have not decided the start time yet, but we want the park's cake at 16:00 (ZZ TEST 836)",
+          "at": "2026-11-11T11:44:35.801Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed"
+        }
+      ],
+      "turns": {
+        "1": {
+          "turnShown": true,
+          "turns": [
+            {
+              "kind": "ai_handover",
+              "turnId": "01a1ca6c-9e44-7b4d-87b5-69550c9e0fdd",
+              "intent": "birthday_details",
+              "intents": [
+                "birthday_details",
+                "birthday_cake"
+              ],
+              "reason": "OK",
+              "rule": null,
+              "closingKey": "closing_birthday",
+              "rethink": null
+            }
+          ],
+          "aiState": "left_for_team"
+        }
+      }
+    },
+    "B": {
+      "name": "ZZ TEST 836 control",
+      "id": "01a1ca6c-ab67-7b60-8fc6-ec56a4308927",
+      "language": "en",
+      "category": "birthdays",
+      "lines": [
+        {
+          "by": "customer",
+          "text": "Hi! A birthday party for ZZ Test Child turning 7, 10 kids and 4 adults, Saturday 19 December at 14:00, the park's cake at 16:00 (ZZ TEST 836 control)",
+          "at": "2026-11-11T11:44:39.183Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed"
+        }
+      ],
+      "turns": {}
+    }
+  },
+  "bookDate": {
+    "A": {
+      "at": "2026-11-11T11:46:33.277Z",
+      "key": "A",
+      "conversationId": "01a1ca6c-9e34-73f7-bb8c-b37d14ea50c3",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 4441,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 836 family",
+        "fields": {
+          "date": {
+            "value": "2026-12-19",
+            "hint": "The chat says “Saturday 19 December”from the family"
+          },
+          "startTime": {
+            "value": "",
+            "hint": "The chat names no start time"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “10 kids”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “4 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 836 family",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "picture": "836-01-book-date-start-time-empty.png",
+      "booked": {
+        "at": "2026-11-11T11:47:47.853Z",
+        "key": "A",
+        "startTimeBefore": "",
+        "startTimeTyped": "14:00",
+        "valuesAtSave": {
+          "title": "Book Date — ZZ TEST 836 family",
+          "fields": {
+            "date": {
+              "value": "2026-12-19",
+              "hint": "The chat says “Saturday 19 December”from the family"
+            },
+            "startTime": {
+              "value": "14:00",
+              "hint": null
+            },
+            "park": {
+              "value": "Central Floresta",
+              "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+            },
+            "kids": {
+              "value": "10",
+              "hint": "The chat says “10 kids”from the family"
+            },
+            "adults": {
+              "value": "4",
+              "hint": "The chat says “4 adults”from the family"
+            },
+            "bookingName": {
+              "value": "ZZ TEST 836 family",
+              "hint": null
+            },
+            "phone": {
+              "value": "[number]",
+              "hint": null
+            },
+            "childName": {
+              "value": "ZZ Test Child",
+              "hint": "The chat says “ZZ Test Child”from the family"
+            },
+            "childAge": {
+              "value": "7",
+              "hint": "Turning (age) The chat says “turning 7”from the family"
+            }
+          },
+          "header": {
+            "reading": false,
+            "read": true,
+            "readLine": "Read the whole chat",
+            "fetchButton": "Fetch from chat",
+            "fetchButtonEnabled": true,
+            "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+            "fetchedLine": null
+          },
+          "footer": [
+            "Cancel",
+            "Book date"
+          ],
+          "refusal": null
+        },
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+          "status": 200,
+          "sent": {
+            "date": "2026-12-19",
+            "startTime": "14:00",
+            "kids": 10,
+            "adults": 4,
+            "childName": "ZZ Test Child",
+            "childAge": 7,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "hasId": true
+          },
+          "error": null,
+          "event": {
+            "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+            "title": "ZZ Test Child's 7th Birthday",
+            "date": "2026-12-19",
+            "startTime": "14:00",
+            "statusName": "Tentative",
+            "branchName": "Oto Play Park, Central Floresta",
+            "kids": 10,
+            "adults": 4
+          }
+        },
+        "note": "Event: 19 Dec 2026 at Central Floresta · tentative in the Events calendar",
+        "chip": "Event: 19 Dec 2026 at Central Floresta",
+        "buttons": [
+          "Date Booked",
+          "Create BEO"
+        ],
+        "convEvent": {
+          "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-12-19",
+          "startTime": "14:00",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": "tentative",
+          "kids": 10,
+          "adults": 4,
+          "beoPath": "/studio/events/kanban?beo=01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff"
+        }
+      }
+    },
+    "B": {
+      "at": "2026-11-11T11:48:53.977Z",
+      "key": "B",
+      "conversationId": "01a1ca6c-ab67-7b60-8fc6-ec56a4308927",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 5447,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 836 control",
+        "fields": {
+          "date": {
+            "value": "2026-12-19",
+            "hint": "The chat says “Saturday 19 December”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “at 14:00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “10 kids”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “4 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 836 control",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Child",
+            "hint": "The chat says “ZZ Test Child”from the family"
+          },
+          "childAge": {
+            "value": "7",
+            "hint": "Turning (age) The chat says “turning 7”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "picture": "836-02-control-book-date-1400.png"
+    }
+  },
+  "events": {
+    "A": {
+      "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+      "title": "ZZ Test Child's 7th Birthday",
+      "date": "2026-12-19",
+      "startTime": "14:00",
+      "bookedAt": "2026-11-11T11:48:48.695Z"
+    }
+  },
+  "createBeo": {
+    "A": {
+      "at": "2026-11-11T11:50:14.267Z",
+      "key": "A",
+      "conversationId": "01a1ca6c-9e34-73f7-bb8c-b37d14ea50c3",
+      "eventId": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200,
+        "aiFillAsked": true
+      },
+      "appHandoff": {
+        "route": "POST /api/auth/handoff (OTO App)",
+        "status": 200
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null,
+        "fillParam": null
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 409,
+        "seconds": 2.1,
+        "error": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.",
+        "hasReview": false,
+        "origin": null,
+        "transcript": null,
+        "sourceIsTeamConfirmation": null,
+        "proposal": null,
+        "fillProposals": null,
+        "catalogue": null
+      }
+    }
+  },
+  "startTimeForm": {
+    "read": {
+      "at": "2026-11-11T11:50:17.749Z",
+      "action": "read",
+      "key": "A",
+      "formStart": "14:00",
+      "lineShown": 0,
+      "api": {
+        "eventStart": "14:00",
+        "beoStart": "14:00"
+      }
+    },
+    "clear": {
+      "at": "2026-11-11T11:50:26.300Z",
+      "action": "clear",
+      "key": "A",
+      "formStartBefore": "14:00",
+      "formStartAfter": "Set Time",
+      "line": "A party needs a start time. It was 14:00: nothing is saved until a time is set.",
+      "lineColor": "rgb(197, 32, 32)",
+      "picture": "836-03-start-time-emptied-red-line.png"
+    },
+    "save": {
+      "at": "2026-11-11T11:50:29.058Z",
+      "action": "save",
+      "key": "A",
+      "toasts": [
+        "Not saved A party needs a start time. Set the time, then save."
+      ],
+      "picture": "836-04-save-refused-not-saved.png",
+      "writesAfterSave": [],
+      "putSent": false,
+      "api": {
+        "eventStart": "14:00",
+        "beoStart": "14:00"
+      }
+    },
+    "load": {
+      "at": "2026-11-11T11:50:36.392Z",
+      "action": "load",
+      "key": "A",
+      "formStart": "14:00",
+      "lineShown": 0,
+      "api": {
+        "eventStart": "14:00",
+        "beoStart": "14:00"
+      },
+      "picture": "836-05-after-reload-still-1400.png"
+    }
+  },
+  "patchAsSignedInPage": {
+    "at": "2026-11-11T11:50:43.683Z",
+    "key": "A",
+    "by": "fetch from the signed-in BEO page (the page's own session cookie)",
+    "before": {
+      "status": 200,
+      "startTime": "14:00",
+      "message": null
+    },
+    "tries": [
+      {
+        "sent": {
+          "startTime": null
+        },
+        "status": 400,
+        "message": "A party needs a start time",
+        "startTimeInAnswer": null,
+        "getAfter": {
+          "status": 200,
+          "startTime": "14:00"
+        }
+      },
+      {
+        "sent": {
+          "startTime": ""
+        },
+        "status": 400,
+        "message": "A party needs a start time",
+        "startTimeInAnswer": null,
+        "getAfter": {
+          "status": 200,
+          "startTime": "14:00"
+        }
+      },
+      {
+        "sent": {
+          "startTime": "2pm"
+        },
+        "status": 400,
+        "message": "The start time must be a time as HH:MM on the 24-hour clock",
+        "startTimeInAnswer": null,
+        "getAfter": {
+          "status": 200,
+          "startTime": "14:00"
+        }
+      },
+      {
+        "sent": {
+          "startTime": "15:30"
+        },
+        "status": 200,
+        "message": null,
+        "startTimeInAnswer": "15:30",
+        "getAfter": {
+          "status": 200,
+          "startTime": "15:30"
+        }
+      }
+    ]
+  },
+  "images": [
+    {
+      "file": "836-01-book-date-start-time-empty.png",
+      "at": "2026-11-11T11:47:39.199Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 46,
+      "masks": 1
+    },
+    {
+      "file": "836-02-control-book-date-1400.png",
+      "at": "2026-11-11T11:50:00.809Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 46,
+      "masks": 1
+    },
+    {
+      "file": "836-03-start-time-emptied-red-line.png",
+      "at": "2026-11-11T11:50:28.933Z",
+      "shows": "The BEO form with Start Time emptied: the red line under the field",
+      "namesMasked": 47,
+      "masks": 0
+    },
+    {
+      "file": "836-04-save-refused-not-saved.png",
+      "at": "2026-11-11T11:50:32.624Z",
+      "shows": "Save pressed with Start Time emptied: the notice \"Not saved\"",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "836-05-after-reload-still-1400.png",
+      "at": "2026-11-11T11:50:43.543Z",
+      "shows": "The BEO form after a fresh page load: Start Time still holds the saved time",
+      "namesMasked": 47,
+      "masks": 0
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T12:01:41.949Z",
+    "events": {
+      "A": {
+        "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+        "title": "ZZ Test Child's 7th Birthday",
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T12:01:44.969Z"
+        }
+      },
+      "C": {
+        "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "alreadyArchived": true,
+        "archive": null,
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T11:56:10.817Z"
+        }
+      },
+      "D": {
+        "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+        "title": "ZZ Test Child's 8th Birthday",
+        "alreadyArchived": true,
+        "archive": null,
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T12:00:50.835Z"
+        }
+      }
+    },
+    "conversations": {
+      "A": {
+        "id": "01a1ca6c-9e34-73f7-bb8c-b37d14ea50c3",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:45.644Z"
+      },
+      "B": {
+        "id": "01a1ca6c-ab67-7b60-8fc6-ec56a4308927",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:47.072Z"
+      },
+      "C": {
+        "id": "01a1ca6c-b763-73fe-b039-8a47fb7e7577",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:48.220Z"
+      },
+      "D": {
+        "id": "01a1ca6c-c2fb-735f-bed6-9ad046801fe9",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T12:01:49.251Z"
+      }
+    },
+    "madeDuringRun": [
+      {
+        "id": "01a1ca6e-5ef2-7f3b-9e3f-900af9bf13ff",
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-12-19",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1ca74-c55d-711b-8bab-4fba14a726a2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "eventDate": "2026-12-20",
+        "archived": true,
+        "mine": true
+      },
+      {
+        "id": "01a1ca79-3f13-720e-9801-6ec6772cac23",
+        "title": "ZZ Test Child's 8th Birthday",
+        "eventDate": "2026-12-26",
+        "archived": true,
+        "mine": true
+      }
+    ],
+    "othersLeftUntouched": [
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-28"
+      }
+    ]
+  },
+  "signOut": {
+    "at": "2026-11-11T12:01:54.273Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  }
+}
