@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StepPayment } from '@/components/till/StepPayment';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
+import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
+import { TenderLines, TenderTotal } from '@/components/shared/TenderLines';
 import {
   AttendeeFormFields,
   buildAttendeeInput,
@@ -22,6 +24,7 @@ import {
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { paymentMethodKind } from '@/lib/payments';
 import { ageFromDob } from '@/lib/childDob';
+import type { DisplayTenderLine } from '@oto/shared';
 import type { EventAttendee, OtoEvent, Member, SavedChild } from '@/types';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import {
@@ -114,22 +117,61 @@ function buildPrefillForm(member: Member, child?: SavedChild | null): Partial<At
   };
 }
 
-// Customer-facing payment pane shown opposite StepPayment. Mirrors what the
-// customer sees while the door fee is taken: a Thai QR when a QR tender is
-// selected, otherwise a "pay our staff" prompt.
-function CustomerPaymentPane({
+/**
+ * Customer-facing payment pane shown opposite StepPayment while an event pass
+ * is sold. Mirrors what the customer sees while the door fee is taken: a Thai
+ * QR when a QR tender is selected, otherwise a "pay our staff" prompt.
+ *
+ * SCRUM-859 — with `lines` (the pass by the event's title, the same line the
+ * paired tender display draws) the pane puts them and their Total beside the
+ * amount block in the shared payment-stage frame, so the two surfaces of one
+ * tender read alike. Without lines (a free event) it keeps the amount-only
+ * screen it had. The amount is the payment's own, never a sum of the lines.
+ */
+export function CustomerPaymentPane({
   amount,
   qr,
   note,
   paymentMethod,
+  lines,
 }: {
   amount: number;
   /** What the payment stage holds: the code the payment route answered with, once it has. */
   qr: PaymentDisplayState;
   note?: string;
   paymentMethod: string | null;
+  lines?: readonly DisplayTenderLine[];
 }) {
   const isQr = !!paymentMethod && paymentMethodKind(paymentMethod) === 'qr';
+  const staffLine = paymentMethod ? 'Please complete payment with our staff.' : 'Our staff will help you choose how to pay.';
+  if (lines && lines.length > 0) {
+    return (
+      <div className="h-full w-full flex flex-col bg-[image:var(--cd-gradient)] text-foreground" data-testid="pass-customer-pane">
+        <PaymentStageLayout lines={<TenderLines lines={lines} />} summary={<TenderTotal amount={amount} />}>
+          {isQr ? (
+            <PromptPayCustomerScreen
+              amount={amount}
+              embedded
+              qrPayload={qr.qrPayload}
+              qrImageUrl={qr.qrImageUrl}
+              expiresAt={qr.expiresAt}
+              {...(note ? { note } : {})}
+            />
+          ) : (
+            <div className="flex flex-col items-center text-center">
+              <div className="h-16 w-16 rounded-full bg-foreground/10 flex items-center justify-center mb-5">
+                <Wallet className="w-8 h-8 text-sky-300" />
+              </div>
+              <h2 className="text-3xl font-black mb-3">Amount due</h2>
+              <div className="text-6xl font-black text-sky-300 tabular-nums">฿{amount}</div>
+              {note && <p className="text-lg text-foreground/60 mt-3">{note}</p>}
+              <p className="text-xl text-foreground/60 mt-6 max-w-md">{staffLine}</p>
+            </div>
+          )}
+        </PaymentStageLayout>
+      </div>
+    );
+  }
   if (isQr) {
     return (
       <PromptPayCustomerScreen
@@ -149,11 +191,7 @@ function CustomerPaymentPane({
       <h2 className="text-3xl font-black mb-3">Amount due</h2>
       <div className="text-6xl font-black text-sky-300 tabular-nums">฿{amount}</div>
       {note && <p className="text-lg text-white/60 mt-3">{note}</p>}
-      <p className="text-xl text-white/60 mt-6 max-w-md">
-        {paymentMethod
-          ? 'Please complete payment with our staff.'
-          : 'Our staff will help you choose how to pay.'}
-      </p>
+      <p className="text-xl text-white/60 mt-6 max-w-md">{staffLine}</p>
     </div>
   );
 }
@@ -298,9 +336,11 @@ export function AddAttendeeModal({
   const electronic = !!paymentMethod && ['card', 'qr'].includes(paymentMethodKind(paymentMethod));
   const usesStage = electronic || stage.locked;
   const chosenMethod = usesStage ? stage.state.method : paymentMethod;
-  // SCRUM-859 — the pass by the event's title beside the amount on the display.
-  useTenderPresentation(displayHandoff, 'event_pass', chosenMethod, stage.display, open && phase === 'payment',
-    doorFeeTHB > 0 ? [{ label: event.title, qty: 1, lineTotal: doorFeeTHB }] : undefined);
+  // SCRUM-859 — the pass by the event's title beside the amount, built once
+  // for both of the tender's surfaces: the paired display and the split view's
+  // customer half. A free event has no line and keeps the amount-only screens.
+  const passLines = doorFeeTHB > 0 ? [{ label: event.title, qty: 1, lineTotal: doorFeeTHB }] : undefined;
+  useTenderPresentation(displayHandoff, 'event_pass', chosenMethod, stage.display, open && phase === 'payment', passLines);
 
   /** A sale rung up with no money on it is not left open behind a closed form. */
   const releaseHeldSale = () => {
@@ -658,6 +698,7 @@ export function AddAttendeeModal({
         qr={stage.display}
         note={event.title}
         paymentMethod={chosenMethod}
+        {...(passLines ? { lines: passLines } : {})}
       />
     ) : (
       <div className="h-full w-full bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 text-white flex flex-col items-center justify-center text-center px-10">

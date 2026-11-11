@@ -1,29 +1,8 @@
-import type { DisplayPayment, DisplayTenderCart, DisplayTenderLine } from '@oto/shared';
+import type { DisplayPayment, DisplayTenderCart } from '@oto/shared';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { PaymentStageLayout } from './PaymentStageLayout';
 import { PromptPayCustomerScreen } from './PromptPayCustomerScreen';
-
-/**
- * SCRUM-859 — what the tender is for, as the shop's line card draws a line:
- * the count, the label, the price each where one is known, and the line's
- * figure. The amount under it is the payment's own, never a sum made here.
- */
-function TenderLines({ lines }: { lines: readonly DisplayTenderLine[] }) {
-  const { t } = useLanguage();
-  return <div className="space-y-3">{lines.map((line, index) => <div key={index} data-testid="tender-display-line"
-    className="bg-foreground/5 rounded-2xl px-5 py-4 border border-foreground/10">
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex items-start gap-4 min-w-0">
-        <span className="w-10 h-10 rounded-xl bg-primary/15 text-primary font-black text-lg flex items-center justify-center shrink-0 tabular-nums">{line.qty}</span>
-        <div className="min-w-0">
-          <div className="text-xl font-bold leading-tight">{line.label}</div>
-          {line.unitPrice !== undefined && <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>}
-        </div>
-      </div>
-      <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
-    </div>
-  </div>)}</div>;
-}
+import { TenderLines, TenderTotal } from './TenderLines';
 
 export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCart; payment: DisplayPayment }) {
   const { t } = useLanguage();
@@ -41,9 +20,7 @@ export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCa
   if (lines.length > 0) {
     return <div className="h-full flex flex-col bg-[image:var(--cd-gradient)] text-foreground" data-testid="display-tender">
       <h1 className="shrink-0 text-center text-xl font-bold p-3">{subject}</h1>
-      <PaymentStageLayout lines={<TenderLines lines={lines} />}
-        summary={<div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
-          <span className="text-5xl font-black text-primary tabular-nums">฿{amount}</span></div>}>
+      <PaymentStageLayout lines={<TenderLines lines={lines} />} summary={<TenderTotal amount={amount} />}>
         {cart.method === 'qr' ? <PromptPayCustomerScreen amount={amount} embedded
           qrPayload={waiting ? payment.qrPayload : null} qrImageUrl={waiting ? payment.qrImageUrl : null}
           expiresAt={waiting ? payment.expiresAt : null} note={note} />
