@@ -429,3 +429,82 @@ describe('SCRUM-502 — a refusal at the money press says who refused it and whe
     expect(result.current.state).toMatchObject({ kind: 'failed', stage: 'commit', cause: 'refused', answeredBy: 'box' });
   });
 });
+
+/**
+ * SCRUM-865 — A CORRECTED ORDER ON THE BOX LANE. A sale rung up on the box
+ * is priced there and recorded nowhere until it is paid, so when the order
+ * changes after Pay there is nothing to void: the writer lets it go on this
+ * till, as Cancel does, and asks the platform nothing. A sale rung up on the
+ * platform before the link went is not voided through a lane that cannot
+ * reach it; it stays for Cancel, which voids it once the platform is back.
+ */
+describe('SCRUM-865 — a corrected order after Pay on the box lane', () => {
+  const corrected = (): SaleWriteInput => {
+    const base = cart();
+    return {
+      cart: { ...base, lines: [{ ...base.lines[0]!, kids: 2, lineTotalSatang: 108_000 }], expectedTotalSatang: 108_000 },
+      finalise: false,
+    };
+  };
+
+  it('lets a sale rung up on the box go without asking anybody, and rings the corrected one up there', async () => {
+    const seen = stubFetch({ bridge: () => reply({ document: {}, result: boxQuote }) });
+    const { result } = renderHook(() => useSaleWriter());
+    const first = await result.current.commit(order());
+    expect(laneSale(first.saleId)?.lane).toBe('box');
+
+    const second = await result.current.commit(corrected());
+    expect(second).toMatchObject({ ok: true, written: true });
+    expect(second.saleId).not.toBe(first.saleId);
+    expect(laneSale(first.saleId)).toBeNull();
+    expect(laneSale(second.saleId)?.lane).toBe('box');
+    expect(bridgeCalls(seen).map((c) => c.type)).toEqual(['cart.quote', 'cart.quote']);
+    expect(seen.filter((s) => s.url.endsWith('/void'))).toHaveLength(0);
+    // Cancel then lets only the sale on screen go, on this till.
+    const before = seen.length;
+    expect(await result.current.cancel('Guest left')).toEqual({ ok: true, voided: true });
+    expect(seen.length).toBe(before);
+  });
+
+  it('keeps a sale rung up on the platform for Cancel while the till is on its box', async () => {
+    let platformUp = true;
+    const voids: string[] = [];
+    const seen = stubFetch({
+      platform: (url, body) => {
+        if (!platformUp) return forcedOffline();
+        if (url === '/api/sales') return reply({ sale: apiSale({ id: String(body!.id), stationId: STATION }), replay: false });
+        if (url.endsWith('/void')) {
+          voids.push(url);
+          return reply({
+            replay: false,
+            sale: apiSale({ id: 'voided', status: 'voided' }),
+            void: { voidedAt: null, voidedByAccountId: null, reason: String(body!.reason) },
+            releasedVoucherIds: [],
+          });
+        }
+        return forcedOffline();
+      },
+      bridge: () => reply({ document: {}, result: boxQuote }),
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    const first = await result.current.commit(order());
+    expect(laneSale(first.saleId)?.lane).toBe('platform');
+
+    // The link goes. The corrected cart falls to the box; the first sale's
+    // void could not be carried, and the sale is kept.
+    platformUp = false;
+    const second = await result.current.commit(corrected());
+    expect(second).toMatchObject({ ok: true, written: true });
+    expect(laneSale(second.saleId)?.lane).toBe('box');
+    expect(voids).toEqual([]);
+    expect(result.current.ownsSale(first.saleId)).toBe(true);
+
+    // The platform is back: Cancel voids the first sale there and lets the
+    // box's go here.
+    platformUp = true;
+    expect(await result.current.cancel('Guest left')).toEqual({ ok: true, voided: true });
+    expect(voids).toEqual([`/api/sales/${first.saleId}/void`]);
+    expect(laneSale(second.saleId)).toBeNull();
+    expect(bridgeCalls(seen).map((c) => c.type)).toEqual(['cart.quote']);
+  });
+});

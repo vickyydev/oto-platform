@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiSale } from './support/fixtures';
+import { apiSale, settle } from './support/fixtures';
 import { renderHook } from './support/hooks';
 import { api, ApiError, NetworkError } from '@/api/client';
 import { paymentsApi } from '@/api/payments';
@@ -21,7 +21,7 @@ import { usePaymentStage, type PaymentStageOptions } from '@/lib/usePaymentStage
 import * as paymentMethods from '@/lib/payments';
 import type { PaymentAttemptRead } from '@/api/payments';
 import type { SaleWriteOutcome } from '@/lib/saleWriter';
-import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
+import { CANCELLED_AT_THE_TILL, ORDER_CHANGED_AFTER_PAY } from '@/lib/tillVoucher';
 
 /**
  * WRITING THE SALE — `lib/saleWriter.ts` (S2-09a, SCRUM-203; S2-10b).
@@ -205,7 +205,7 @@ describe('the visit rides with the sale (SCRUM-208)', () => {
 });
 
 describe('a corrected cart is a different sale', () => {
-  it('gives a changed order new ids, and Cancel voids the sale it was rung up as before', async () => {
+  it('gives a changed order new ids, voids the sale it was rung up as before, and Cancel voids the one on screen', async () => {
     const { result } = mountWriter();
     const first = await result.current.commit(order(1));
     const corrected = await result.current.commit(order(2));
@@ -216,9 +216,10 @@ describe('a corrected cart is a different sale', () => {
     expect(result.current.ownsSale(first.saleId)).toBe(true);
 
     await expect(result.current.cancel(CANCELLED_AT_THE_TILL)).resolves.toEqual({ ok: true, voided: true });
-    // The one left behind first; the one on screen last, so a refusal about it is what shows.
+    // SCRUM-865 — the one left behind was voided when the corrected cart went
+    // out, with its own reason; Cancel finds only the sale on screen.
     expect(voidSale.mock.calls).toEqual([
-      [first.saleId, CANCELLED_AT_THE_TILL],
+      [first.saleId, ORDER_CHANGED_AFTER_PAY],
       [corrected.saleId, CANCELLED_AT_THE_TILL],
     ]);
   });
@@ -1338,5 +1339,176 @@ describe('payment request identities', () => {
         headers: { 'x-oto-action-id': 'first-gesture' },
       },
     ]);
+  });
+});
+
+/**
+ * SCRUM-865 — A CORRECTED ORDER AFTER PAY LEAVES NO SALE BEHIND.
+ *
+ * Before this, the sale rung up at Pay stayed `tendering` on the platform
+ * when staff pressed Back, changed the order and pressed Pay again: only
+ * Cancel voided it. It kept the document check or hand approval it spent,
+ * so the corrected cart was refused `TIER_CLAIM_SPENT` at the second Pay;
+ * after a reload it was resumed onto the next customer's payment screen;
+ * History kept an Unpaid row. The writer now voids it before the corrected
+ * cart goes out — waiting for the void when the cart names a claim or a
+ * voucher is held, running it beside the commit otherwise — and a void that
+ * fails changes nothing: the sale stays in the list Cancel voids.
+ */
+describe('a corrected order after Pay lets the first sale go (SCRUM-865)', () => {
+  /** The cart with a hand approval or document check behind it. */
+  const claimed = (kids: number): SaleWriteInput => ({
+    cart: { ...cart(kids), tierClaimActionId: 'claim-1' },
+    finalise: false,
+  });
+  const voidAnswer = (saleId: string, reason: string) => ({
+    replay: false,
+    sale: apiSale({ id: saleId, status: 'voided' as const }),
+    void: { voidedAt: '2026-09-25T04:20:00.000Z', voidedByAccountId: 'account-1', reason },
+    releasedVoucherIds: [],
+  });
+
+  it('voids the sale rung up for the order as it was, before the corrected cart goes out, when the cart names a claim', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(claimed(1));
+    const calls: string[] = [];
+    voidSale.mockImplementationOnce(async (saleId, reason) => {
+      calls.push(`void ${saleId} (${reason})`);
+      return voidAnswer(saleId, reason);
+    });
+    commit.mockImplementationOnce(async (args) => {
+      calls.push(`commit ${args.saleId}`);
+      return { sale: apiSale({ id: args.saleId }), replay: false };
+    });
+
+    const corrected = await result.current.commit(claimed(2));
+    expect(corrected).toMatchObject({ ok: true, written: true });
+    expect(corrected.saleId).not.toBe(first.saleId);
+    // The void landed first: the platform gives the claim back as it voids.
+    expect(calls).toEqual([`void ${first.saleId} (${ORDER_CHANGED_AFTER_PAY})`, `commit ${corrected.saleId}`]);
+
+    // Nothing is left behind for Cancel but the sale on screen.
+    voidSale.mockClear();
+    await expect(result.current.cancel(CANCELLED_AT_THE_TILL)).resolves.toEqual({ ok: true, voided: true });
+    expect(voidSale.mock.calls).toEqual([[corrected.saleId, CANCELLED_AT_THE_TILL]]);
+    // Still this screen's own, so no voucher refusal offers to void it under a stranger.
+    expect(result.current.ownsSale(first.saleId)).toBe(true);
+  });
+
+  it('waits for the void when a voucher is held for the cart, too', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(order(1));
+    const calls: string[] = [];
+    voidSale.mockImplementationOnce(async (saleId, reason) => {
+      calls.push(`void ${saleId}`);
+      return voidAnswer(saleId, reason);
+    });
+    commit.mockImplementationOnce(async (args) => {
+      calls.push(`commit ${args.saleId}`);
+      return { sale: apiSale({ id: args.saleId }), replay: false };
+    });
+    const corrected = await result.current.commit(order(2, { preferSaleId: 'voucher-sale' }));
+    expect(corrected.saleId).toBe('voucher-sale');
+    expect(calls).toEqual([`void ${first.saleId}`, 'commit voucher-sale']);
+  });
+
+  it('runs the void beside the commit when nothing on the cart depends on it', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(order(1));
+    let release!: () => void;
+    voidSale.mockImplementationOnce(
+      (saleId: string, reason: string) =>
+        new Promise((resolve) => {
+          release = () => resolve(voidAnswer(saleId, reason));
+        }),
+    );
+
+    // The corrected sale is rung up while the void is still on the wire.
+    const corrected = await result.current.commit(order(2));
+    expect(corrected).toMatchObject({ ok: true, written: true });
+    expect(voidSale).toHaveBeenCalledWith(first.saleId, ORDER_CHANGED_AFTER_PAY);
+    expect(sent()).toHaveLength(2);
+
+    release();
+    await settle();
+    voidSale.mockClear();
+    await result.current.cancel(CANCELLED_AT_THE_TILL);
+    expect(voidSale.mock.calls).toEqual([[corrected.saleId, CANCELLED_AT_THE_TILL]]);
+  });
+
+  it('keeps the first sale for Cancel when its void does not land, and still rings the corrected cart up', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(claimed(1));
+    voidSale.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
+
+    const corrected = await result.current.commit(claimed(2));
+    expect(corrected).toMatchObject({ ok: true, written: true });
+    expect(sent()).toHaveLength(2);
+
+    // Today's behaviour as the fallback: Cancel voids the one left behind first.
+    voidSale.mockClear();
+    await expect(result.current.cancel(CANCELLED_AT_THE_TILL)).resolves.toEqual({ ok: true, voided: true });
+    expect(voidSale.mock.calls).toEqual([
+      [first.saleId, CANCELLED_AT_THE_TILL],
+      [corrected.saleId, CANCELLED_AT_THE_TILL],
+    ]);
+  });
+
+  it('keeps a refused void out of the way: the platform’s refusal is for Cancel, not shown at Pay', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(order(1));
+    voidSale.mockRejectedValueOnce(new ApiError(409, 'SALE_HAS_PAYMENT', 'Money has been taken on this sale'));
+    const corrected = await result.current.commit(order(2));
+    await settle();
+    expect(corrected).toMatchObject({ ok: true, written: true });
+    expect(result.current.state).toEqual({
+      kind: 'committed',
+      saleId: corrected.saleId,
+      sale: expect.objectContaining({ id: corrected.saleId }),
+    });
+    expect(result.current.ownsSale(first.saleId)).toBe(true);
+  });
+
+  it('never voids a sale a tender took money on', async () => {
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    finalise.mockResolvedValueOnce({
+      sale: apiSale({ id: recorded.saleId }), replay: false, finalised: false,
+      outstandingSatang: 27_000, attempt: cashAttempt(recorded.saleId),
+    });
+    await result.current.finalise(cashPart, 'first-part');
+
+    const corrected = await result.current.commit(order(2));
+    expect(corrected).toMatchObject({ ok: true, written: true });
+    expect(voidSale).not.toHaveBeenCalled();
+    // Still this screen's: Cancel is where the platform's answer about it is heard.
+    expect(result.current.ownsSale(recorded.saleId)).toBe(true);
+  });
+
+  it('tries a void that did not land again on the next corrected cart', async () => {
+    const { result } = mountWriter();
+    const first = await result.current.commit(order(1));
+    voidSale.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
+    const second = await result.current.commit(order(2));
+    await settle();
+    voidSale.mockClear();
+    const third = await result.current.commit(order(3));
+    await settle();
+    expect(voidSale.mock.calls.map(([saleId]) => saleId).sort()).toEqual([first.saleId, second.saleId].sort());
+    expect(third.saleId).not.toBe(second.saleId);
+  });
+
+  it('starts clean for the next visitor: a reset forgets what was left behind', async () => {
+    const { result } = mountWriter();
+    await result.current.commit(order(1));
+    voidSale.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
+    await result.current.commit(order(2));
+    await settle();
+    result.current.reset();
+    voidSale.mockClear();
+    await result.current.commit(order(1));
+    await result.current.commit(order(2));
+    await settle();
+    expect(voidSale).toHaveBeenCalledTimes(1);
   });
 });

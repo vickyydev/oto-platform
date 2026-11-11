@@ -661,6 +661,8 @@ describe('SCRUM-407 — an unpaid sale left at the counter till by a reload', ()
       branchId: 'branch-1',
       stationId: 'station-1',
       status: 'tendering',
+      // SCRUM-865 — today's trading day only: an orphan from an earlier day is never offered back.
+      businessDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       limit: 10,
     });
     expect(view.result.current.sales).toEqual([

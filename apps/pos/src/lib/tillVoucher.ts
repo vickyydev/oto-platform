@@ -13,6 +13,7 @@ import { salesApi, type CartQuote } from '@/api/sales';
 import { vouchersApi, type HeldElsewhereDetails, type VoucherView } from '@/api/vouchers';
 import type { QuoteError } from '@/lib/cartQuote';
 import { getBranchTimezone } from '@/lib/pricingMode';
+import { ORDER_CHANGED_AFTER_PAY } from './voidReasons';
 
 /**
  * S2-10b (SCRUM-207) — A LUCKY WHEEL VOUCHER ON THE CART THIS TILL IS RINGING UP.
@@ -112,18 +113,15 @@ export function ticketTillVoucherBlock(at: {
   return null;
 }
 /**
- * The reason the till's Cancel voids a sale it rang up that took no money —
- * any such sale, voucher or not: the owner's rule for Cancel, so a sale nobody
- * will pay is never left `tendering` behind a screen that has moved on.
+ * The reasons the till voids a sale it rang up that took no money: Cancel's,
+ * and the one for the sale left behind when staff change the order after Pay
+ * (the corrected cart is a new sale, and the voucher cannot follow it until
+ * the abandoned one lets it go — only a sale this screen rang up is voided
+ * that way, `ownsSale`). Named in `lib/voidReasons.ts` since SCRUM-865, when
+ * the sale writer began voiding the abandoned sale itself; re-exported here
+ * for the screens that read them from this module.
  */
-export const CANCELLED_AT_THE_TILL = 'Cancelled at the till';
-/**
- * The reason a sale rung up with a voucher is voided when staff change the
- * order on the payment screen and pay again: the corrected cart is a new sale,
- * and the voucher cannot follow it until the abandoned one lets it go. Only a
- * sale this screen rang up is voided that way (`ownsSale`).
- */
-export const ORDER_CHANGED_AFTER_PAY = 'Order changed at the till after Pay';
+export { CANCELLED_AT_THE_TILL, ORDER_CHANGED_AFTER_PAY } from './voidReasons';
 /**
  * The reason recorded when staff choose to void the unpaid sale a voucher was
  * left on, so the family can use it on a new sale (`voidRungUp`). It is what

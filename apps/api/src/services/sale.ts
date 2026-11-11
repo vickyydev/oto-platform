@@ -1765,6 +1765,9 @@ export async function priceCart(
         scope.branchId,
         input,
         now,
+        // SCRUM-865 — a quote is priced on a claim the till's own unpaid sale
+        // spent (the order changed after Pay); a commit never is.
+        { quoting: voucherScope.mode === 'quote' },
       )
     : { claim: null, refusal: null };
   /**

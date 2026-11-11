@@ -18,6 +18,7 @@ import {
   noteLaneFailure,
   paymentRefusalMessage,
 } from './lane';
+import { ORDER_CHANGED_AFTER_PAY } from './voidReasons';
 import {
   commitSale,
   finaliseSale,
@@ -82,6 +83,19 @@ import {
  *    tender is never moved (plan §2.1). After an online sale the till tells its
  *    box the number the platform gave it, so the box's offline series never
  *    re-issues it (OD-4, `receipt.observed`).
+ *
+ * 6. A CORRECTED ORDER LEAVES NO SALE BEHIND (SCRUM-865). The sale rung up at
+ *    Pay for the order as it was is voided — reason "Order changed at the till
+ *    after Pay" — before the corrected cart is rung up, when it took no money
+ *    and this screen rang it up. The platform's void gives back the document
+ *    check or hand approval it spent (`restoreTierClaimOf`), so the corrected
+ *    sale prices at the rate staff confirmed; it is waited for when the cart
+ *    names a claim or a voucher is held, and runs beside the commit otherwise.
+ *    A void the platform refuses, or one the link cannot carry, changes
+ *    nothing: the sale stays in the list the till's Cancel voids, as before.
+ *    A sale a tender has taken money on is never voided this way — money
+ *    taken is refunded, not voided — and a sale rung up on the box lane,
+ *    which exists nowhere but on this till until it is paid, is let go here.
  */
 
 /** Why an attempt failed, in the terms the panel has to speak to reception. */
@@ -424,6 +438,12 @@ export function useSaleWriter(): SaleWriter {
    * (`cancel`), so throwing the order away leaves none of them behind.
    */
   const supersededRef = useRef<Map<string, ApiSale>>(new Map());
+  /**
+   * SCRUM-865 — sales a tender of this screen has taken money on, in part or
+   * in whole. Never voided without asking when the order changes after Pay:
+   * money taken is refunded, not voided, and the platform would refuse it.
+   */
+  const moneyTakenRef = useRef<Set<string>>(new Set());
   /** SCRUM-779 — the member who joined the sale on screen after it was rung up. */
   const joinRef = useRef<MemberJoin | null>(null);
 
@@ -451,10 +471,10 @@ export function useSaleWriter(): SaleWriter {
       return renewKeyRef.current ? { ...previous, saleId: newId() } : previous;
     }
     // A different cart is a different sale. The previous one, if it was
-    // committed, stays on the platform in `tendering` with no receipt number —
-    // a record of an order that was rung up and not paid for. It is kept here
-    // so the till's Cancel voids it with the sale on screen (`cancel`); paying
-    // the corrected sale leaves it as it is.
+    // committed, is on the platform in `tendering` with no receipt number — a
+    // record of an order that was rung up and not paid for. It is kept here
+    // so the commit of the corrected cart voids it first (`voidSuperseded`,
+    // SCRUM-865), and so the till's Cancel voids whatever that left (`cancel`).
     const left = committedRef.current;
     if (left && left.status !== 'finalised') supersededRef.current.set(left.id, left);
     committedRef.current = null;
@@ -498,7 +518,60 @@ export function useSaleWriter(): SaleWriter {
     inFlightRef.current = null;
     sentRef.current = new Set();
     supersededRef.current = new Map();
+    moneyTakenRef.current = new Set();
     setState({ kind: 'idle' });
+  }, []);
+
+  /**
+   * SCRUM-865 — THE SALES A CORRECTED ORDER LEFT BEHIND that the next commit
+   * voids: rung up on the platform, still `tendering`, no money taken by a
+   * tender of this screen. The platform is the last word on the money — a
+   * void of a sale that took some is refused (`SALE_HAS_PAYMENT`) and the
+   * sale stays here for Cancel, as every refused void does.
+   *
+   * One rung up on the box lane is priced on the box and recorded nowhere
+   * until it is paid, so there is nothing to void, only an order to let go —
+   * exactly as the till's Cancel lets it go. One the box is still taking a
+   * terminal payment for, or has closed, is left for Cancel to say so.
+   */
+  const supersededToVoid = useCallback((): ApiSale[] => {
+    const onPlatform: ApiSale[] = [];
+    for (const left of supersededRef.current.values()) {
+      if (left.status !== 'tendering' || moneyTakenRef.current.has(left.id)) continue;
+      const boxHeld = laneSale(left.id);
+      if (boxHeld?.lane === 'box') {
+        const waiting = boxHeld.answer?.attempt;
+        const busy =
+          boxHeld.answer?.finalised ||
+          (waiting && ['sent_to_terminal', 'unknown', 'inquiring', 'awaiting_staff_confirmation'].includes(waiting.status));
+        if (!busy) {
+          forgetLaneSale(left.id);
+          supersededRef.current.delete(left.id);
+        }
+        continue;
+      }
+      onPlatform.push(left);
+    }
+    return onPlatform;
+  }, []);
+
+  /**
+   * Void them, reason "Order changed at the till after Pay", and forget each
+   * one the platform voided. A refusal or a dropped link leaves the sale where
+   * it was — in the list Cancel voids — and never fails the corrected sale.
+   */
+  const voidSuperseded = useCallback(async (left: readonly ApiSale[]): Promise<void> => {
+    const map = supersededRef.current;
+    await Promise.all(
+      left.map(async (s) => {
+        try {
+          await salesApi.voidSale(s.id, ORDER_CHANGED_AFTER_PAY);
+          map.delete(s.id);
+        } catch {
+          // Kept for Cancel, which voids it with the sale on screen.
+        }
+      }),
+    );
   }, []);
 
   const commit = useCallback(async (offered: SaleWriteInput): Promise<SaleWriteOutcome> => {
@@ -536,6 +609,17 @@ export function useSaleWriter(): SaleWriter {
     renewKeyRef.current = false;
     saleRef.current = ids;
     sentRef.current.add(ids.saleId);
+    /**
+     * SCRUM-865 — what the corrected order left behind goes before it. The
+     * void has to LAND first when the cart names a document check or hand
+     * approval (the platform gives the claim back only as it voids, and the
+     * corrected sale is refused `TIER_CLAIM_SPENT` without it) or a voucher is
+     * held for the cart (the voucher cannot follow until the abandoned sale
+     * lets it go). Otherwise it runs beside the commit, so Pay is not slowed
+     * by a round trip the sale does not depend on.
+     */
+    const superseded = supersededToVoid();
+    const voidFirst = Boolean(input.cart.tierClaimActionId) || Boolean(input.preferSaleId);
 
     const epoch = epochRef.current;
     const attempt = ++attemptsRef.current;
@@ -575,7 +659,13 @@ export function useSaleWriter(): SaleWriter {
 
     const run = async (): Promise<SaleWriteOutcome> => {
       try {
+        // On the box lane the platform is out of reach: a sale left behind
+        // there stays for Cancel, or for the left-unpaid list when it is back.
         if (station && currentLane() === 'box') return await onBox(station);
+        if (superseded.length > 0) {
+          const letGo = voidSuperseded(superseded);
+          if (voidFirst) await letGo;
+        }
         const result = await commitSale({
           saleId: ids.saleId,
           actionId: ids.actionId,
@@ -701,7 +791,7 @@ export function useSaleWriter(): SaleWriter {
       if (committedRef.current?.id === outcome.saleId) return { ...outcome, sale: committedRef.current };
     }
     return outcome;
-  }, [asRungUp, decideIds, isCurrent]);
+  }, [asRungUp, decideIds, isCurrent, supersededToVoid, voidSuperseded]);
 
   const prepare = useCallback(
     (offered: SaleWriteInput): string => {
@@ -851,6 +941,7 @@ export function useSaleWriter(): SaleWriter {
           ? boxSale.answer
           : await finaliseOnBox(boxSale, tender, actionId ?? ids.actionId);
       const sale = apiSaleOfBox(answer.sale);
+      if (!answer.finalised && answer.outstandingSatang < sale.totals.grossSatang) moneyTakenRef.current.add(held.id);
       if (isCurrent(epoch, ids.saleId)) {
         committedRef.current = sale;
         setState(answer.finalised
@@ -881,6 +972,10 @@ export function useSaleWriter(): SaleWriter {
       }
       const finalised = result.finalised ?? result.sale.status === 'finalised';
       if (finalised) observeReceipt(station, result.sale.receiptNumber);
+      // A part accepted: money is on this sale now (SCRUM-865 never voids it unasked).
+      if (!finalised && result.outstandingSatang !== undefined && result.outstandingSatang < result.sale.totals.grossSatang) {
+        moneyTakenRef.current.add(held.id);
+      }
       if (isCurrent(epoch, ids.saleId)) {
         committedRef.current = result.sale;
         setState(finalised
@@ -1023,6 +1118,8 @@ export function useSaleWriter(): SaleWriter {
     renewKeyRef.current = false;
     inFlightRef.current = null;
     supersededRef.current = new Map();
+    // A sale the platform holds as `paid` has taken its money (SCRUM-865).
+    moneyTakenRef.current = new Set(sale.status === 'paid' ? [sale.id] : []);
     // The ids a retry of this sale's close goes under. The action id is this
     // screen's own — the press that rang the sale up is not replayed — and the
     // signature is one no cart on this screen can produce, so `commit` is never

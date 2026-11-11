@@ -938,11 +938,13 @@ export default function MobileTill() {
     const refusal = cart.quote.tierClaimRefusal;
     // Forgetting the claim is the first thing this does, so the same guard
     // that asks "was a claim named?" is what stops it running twice.
-    if (!refusal || cart.quote.tierSource !== 'default' || !tierClaimActionId) return;
+    // SCRUM-865 — shown for every tier source, as on the counter till; the
+    // lines are restated only when the platform fell back to the default rate.
+    if (!refusal || !tierClaimActionId) return;
     const fallback = getDefaultTier().id;
     setTierClaimActionId(null);
     setTierClaimRefusal(refusal.message);
-    if (tier && tier !== fallback) {
+    if (cart.quote.tierSource === 'default' && tier && tier !== fallback) {
       setTier(fallback);
       restateLinesToTier(fallback);
     }

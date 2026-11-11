@@ -1,6 +1,11 @@
 import { and, count, desc, eq, isNotNull, isNull, max, sql } from 'drizzle-orm';
-import { account, employee, saleTierClaim, tier } from '@oto/db';
-import { TIER_APPROVAL_EVIDENCE, newId, tierApprovalProblem } from '@oto/shared';
+import { account, employee, paymentAttempt, sale, saleTierClaim, tier } from '@oto/db';
+import {
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  TIER_APPROVAL_EVIDENCE,
+  newId,
+  tierApprovalProblem,
+} from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { isEvidenceExpired } from './members';
@@ -59,6 +64,11 @@ import type { Exec, Tx } from './tx';
  *           win it: the second update matches no row. A void of that sale —
  *           which takes no money — gives the claim back
  *           (`restoreTierClaimOf`), so the corrected order is priced on it.
+ *           Until that void, a QUOTE from the same till for a cart naming the
+ *           claim is still priced on it while the sale that spent it is that
+ *           till's own, unpaid and untouched by money (SCRUM-865): the order
+ *           was changed after Pay, and the till voids the first sale before
+ *           it rings the corrected one up. The commit never gets that grace.
  *   OLD     the window below. Answered with `TIER_CLAIM_EXPIRED` beside the
  *           default tier (SCRUM-868), so the till can say the rate has to be
  *           confirmed again rather than meet a line-price mismatch. Nothing is
@@ -647,6 +657,48 @@ async function findClaim(
 }
 
 /**
+ * SCRUM-865 — WHETHER THE SALE THAT SPENT A CLAIM IS THE TILL'S OWN, UNPAID
+ * ONE: rung up at the station the claim was made at, by the account that made
+ * it, still `tendering`, with no money taken on it. That is the sale the till
+ * is about to void because the order changed after Pay — and until it does, a
+ * quote for the corrected cart is priced on the same check. A sale paid in
+ * part or in whole, closed, or rung up anywhere else keeps the claim spent.
+ *
+ * Only the QUOTE reads this. The commit spends the claim with a conditional
+ * update (`spendTierClaim`), which the first sale's spend still refuses, so a
+ * corrected sale is written on a claim only once the first has given it back.
+ */
+async function spentByTheTillsOwnUnpaidSale(
+  db: Exec,
+  claim: TierClaimView,
+  saleId: string,
+): Promise<boolean> {
+  if (claim.stationId === null) return false;
+  const [spender] = await db
+    .select({
+      status: sale.status,
+      stationId: sale.stationId,
+      createdByAccountId: sale.createdByAccountId,
+    })
+    .from(sale)
+    .where(eq(sale.id, saleId))
+    .limit(1);
+  if (
+    !spender ||
+    spender.status !== 'tendering' ||
+    spender.stationId !== claim.stationId ||
+    spender.createdByAccountId !== claim.verifiedByAccountId
+  ) {
+    return false;
+  }
+  const attempts = await db
+    .select({ status: paymentAttempt.status })
+    .from(paymentAttempt)
+    .where(eq(paymentAttempt.saleId, saleId));
+  return attempts.every((a) => !PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
+}
+
+/**
  * Why a claim that has already priced a sale prices nothing else, in the
  * words of the kind of claim it was. A document check asks for the document
  * again; a rate approved by hand (SCRUM-772) was approved because the
@@ -701,6 +753,12 @@ export async function resolveTierClaim(
   branchId: string,
   cart: TierBearingCart,
   now: Date = new Date(),
+  /**
+   * SCRUM-865 — `quoting` when the caller is pricing to show, not to write:
+   * only then is a claim spent by the till's own unpaid sale still priced on
+   * (`spentByTheTillsOwnUnpaidSale`). A commit is never excused.
+   */
+  opts: { quoting?: boolean } = {},
 ): Promise<TierClaimResolution> {
   const nothing: TierClaimResolution = { claim: null, refusal: null };
   if (!cart.tierClaimActionId) return nothing;
@@ -744,8 +802,17 @@ export async function resolveTierClaim(
    *
    * Told apart from every other failure above, because this one is the
    * session's own claim and staff can do something about it.
+   *
+   * SCRUM-865 — unless the sale that spent it is this till's own unpaid one,
+   * the order having changed after Pay: the QUOTE for the corrected cart is
+   * priced on the same check, since the till voids that sale — which gives
+   * the claim back — before it rings the corrected one up. The commit is not
+   * excused: it is refused here, and `spendTierClaim` would refuse it too.
    */
-  if (claim.spentBySaleId) {
+  if (
+    claim.spentBySaleId &&
+    !(opts.quoting && (await spentByTheTillsOwnUnpaidSale(db, claim, claim.spentBySaleId)))
+  ) {
     return {
       claim: null,
       refusal: {

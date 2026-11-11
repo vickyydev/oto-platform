@@ -124,7 +124,11 @@ describe('which unpaid sale this screen may resume', () => {
       }),
     );
     await settle();
-    expect(listSales).toHaveBeenCalledWith({ branchId: 'branch-1', stationId: 'station-1', status: 'tendering', limit: 10 });
+    // SCRUM-865 — today's trading day only: an orphan from an earlier day is never offered back.
+    expect(listSales).toHaveBeenCalledWith({
+      branchId: 'branch-1', stationId: 'station-1', status: 'tendering',
+      businessDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), limit: 10,
+    });
     expect(view.result.current.sales.map((s) => [s.saleId, s.resumable])).toEqual([
       ['mine', true],
       ['theirs', false],

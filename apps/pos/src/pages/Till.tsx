@@ -1473,11 +1473,15 @@ export default function Till() {
     // No claim on this cart means nothing was refused for it — and the guard
     // is also what stops this from running a second time, because forgetting
     // the claim is the first thing it does.
-    if (!refusal || cart.quote.tierSource !== 'default' || !tierClaimActionId) return;
+    // SCRUM-865 — for every tier source: a member's own rate still prices the
+    // cart, but the commit refuses a cart naming a refused claim, so the claim
+    // is forgotten and the reason shown here rather than at Pay. The lines are
+    // restated only when the platform fell back to the default rate.
+    if (!refusal || !tierClaimActionId) return;
     const fallback = getDefaultTier().id;
     setTierClaimActionId(null);
     setTierClaimRefusal(refusal.message);
-    if (tier && tier !== fallback) {
+    if (cart.quote.tierSource === 'default' && tier && tier !== fallback) {
       setTier(fallback);
       restateLinesToTier(fallback);
     }

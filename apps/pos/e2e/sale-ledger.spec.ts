@@ -154,21 +154,6 @@ async function payCash(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Payment Successful' })).toBeVisible({ timeout: 20_000 });
 }
 
-/** Void a sale through the route the till's Cancel calls, as the signed-in account. */
-async function voidSale(page: Page, id: string): Promise<void> {
-  const status = await page.evaluate(async (saleId) => {
-    const res = await fetch(`/api/sales/${saleId}/void`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json', 'idempotency-key': `s782-void-${saleId}` },
-      body: JSON.stringify({ reason: 'ZZ TEST end-to-end clean-up' }),
-    });
-    return res.status;
-  }, id);
-  expect(status).toBe(200);
-  expect((await readSale(page, id)).sale.status).toBe('voided');
-}
-
 test('Pay records the sale unpaid; Confirm Payment Received closes it', async ({ page }) => {
   requireFixture();
   await signInAtTheCounter(page);
@@ -250,11 +235,11 @@ test('a corrected order is sold as its own sale', async ({ page }) => {
 
   const added = (await listSales(page)).filter((s) => !before.has(s.id));
   const sold = added.find((s) => s.status === 'finalised');
-  const abandoned = added.find((s) => s.status === 'tendering');
+  const abandoned = added.find((s) => s.status === 'voided');
   expect(added).toHaveLength(2);
-  // What the visitor paid is the corrected cart; the first is left recorded and
-  // unpaid, which is what an order rung up and not paid for is (voiding it is
-  // S2-11).
+  // What the visitor paid is the corrected cart; the first was voided by the
+  // till before the corrected one was rung up ("Order changed at the till
+  // after Pay", SCRUM-865), so nothing is left recorded and unpaid.
   expect(sold?.totals.grossSatang).toBe(satangOf(correctedDue));
   expect(abandoned?.totals.grossSatang).toBe(satangOf(firstDue));
   expect(abandoned?.id).toBe(first.id);
@@ -262,11 +247,6 @@ test('a corrected order is sold as its own sale', async ({ page }) => {
     ['Kids', 1],
     ['Adults', 2],
   ]);
-
-  // Nothing of this test stays open at the station: the counter till goes
-  // straight back to an unpaid sale its own account left there (SCRUM-407),
-  // which would put the next sign-in on this order's payment screen.
-  await voidSale(page, first.id);
 });
 
 /**

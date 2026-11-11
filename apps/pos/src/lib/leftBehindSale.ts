@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/api/client';
 import { salesApi, type ApiSale } from '@/api/sales';
 import type { RungUpSale } from '@/lib/tillVoucher';
+import { branchTradingDate } from '@/lib/pricingMode';
 import { saleOnScreen } from '@/lib/saleOnScreen';
 
 /**
@@ -31,6 +32,11 @@ import { saleOnScreen } from '@/lib/saleOnScreen';
  * Asked once per till and station. A sale this screen rings up afterwards is
  * its own and never listed; a sale another screen at the same station is
  * paying for right now is, and the card says how recently it was rung up.
+ *
+ * TODAY'S TRADING DAY ONLY (SCRUM-865). A sale left unpaid on an earlier day
+ * is nobody's to continue: the family it was rung up for has gone, and
+ * opening it on the next customer's payment screen is exactly the mistake
+ * this list exists to prevent. It stays in History, where it can be voided.
  */
 
 /** The void's reason, as the voids report reads it. */
@@ -117,7 +123,7 @@ export function useLeftBehindSales(opts: {
     asked.current = key;
     let cancelled = false;
     salesApi
-      .list({ branchId, stationId, status: 'tendering', limit: 10 })
+      .list({ branchId, stationId, status: 'tendering', businessDate: branchTradingDate(), limit: 10 })
       .then(({ sales: found }) => {
         if (cancelled) return;
         const listed = found
