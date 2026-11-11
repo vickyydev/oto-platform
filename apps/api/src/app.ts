@@ -80,6 +80,7 @@ import { inboxReadRoutes } from './routes/inbox-read';
 import { inboxActionRoutes } from './routes/inbox-actions';
 import { inboxPrivacyRoutes } from './routes/inbox-privacy';
 import { inboxReplyRoutes } from './routes/inbox-reply';
+import { inboxDictationRoutes } from './routes/inbox-dictation';
 import { inboxAiRoutes } from './routes/inbox-ai';
 import { assistantRoutes } from './routes/assistant';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
@@ -575,6 +576,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(inboxPrivacyRoutes, { prefix: '/inbox' });
   // S2-19 I2f — the reply, the templates and the send path.
   await app.register(inboxReplyRoutes, { prefix: '/inbox' });
+  // SCRUM-834 — a reply dictated into the composer: the recording in, the words out, no message written.
+  await app.register(inboxDictationRoutes, { prefix: '/inbox' });
   // SCRUM-590 A3 — the assistant's knowledge base, examples and controls.
   await app.register(inboxAiRoutes, { prefix: '/inbox' });
   // SCRUM-591 — the internal assistant, asking as the signed-in person.

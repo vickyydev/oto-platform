@@ -121,6 +121,9 @@ const FORMATS: Readonly<Record<string, string>> = {
   'audio/x-flac': 'flac',
 };
 
+/** Every content type the OpenAI-shaped endpoint takes: what a route that receives a recording accepts (SCRUM-834). */
+export const TRANSCRIBABLE_CONTENT_TYPES: readonly string[] = Object.keys(FORMATS);
+
 /** `audio/ogg; codecs=opus` → `audio/ogg`. */
 export function baseContentType(contentType: string): string {
   return contentType.split(';', 1)[0]!.trim().toLowerCase();

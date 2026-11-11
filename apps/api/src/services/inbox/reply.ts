@@ -114,6 +114,27 @@ function previewOf(text: string): string {
   return chars.length <= 140 ? chars.join('') : `${chars.slice(0, 139).join('')}…`;
 }
 
+/**
+ * The conversation a caller may REPLY in: visible to read (else the read
+ * side's 404), then held at a scope that carries `inbox:conversation:reply`
+ * (else 403). The one check behind a typed reply and behind a dictated one
+ * (SCRUM-834, `dictation.ts`), so the two can never drift apart.
+ */
+export async function loadReplyableConversation(
+  exec: Exec,
+  viewers: { read: InboxViewer; reply: InboxViewer },
+  conversationId: string,
+): Promise<typeof s.conversation.$inferSelect> {
+  const seen = await loadVisibleConversation(exec, viewers.read, conversationId);
+  try {
+    await loadVisibleConversation(exec, viewers.reply, seen.id);
+  } catch (err) {
+    if (err instanceof AppError && err.statusCode === 404) throw new PermissionDeniedError(INBOX_REPLY);
+    throw err;
+  }
+  return seen;
+}
+
 export async function replyToConversation(
   tx: Tx,
   deps: { channels: InboxChannels },
@@ -123,13 +144,7 @@ export async function replyToConversation(
   ctx: ReplyCtx,
 ): Promise<ReplyResult> {
   // Visible to read, or 404; then held at a scope that lets the caller reply.
-  const seen = await loadVisibleConversation(tx, viewers.read, conversationId);
-  try {
-    await loadVisibleConversation(tx, viewers.reply, seen.id);
-  } catch (err) {
-    if (err instanceof AppError && err.statusCode === 404) throw new PermissionDeniedError(INBOX_REPLY);
-    throw err;
-  }
+  const seen = await loadReplyableConversation(tx, viewers, conversationId);
   const [conv] = await tx
     .select()
     .from(conversation)

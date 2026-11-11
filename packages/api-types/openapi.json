@@ -95201,6 +95201,56 @@
         }
       }
     },
+    "/inbox/conversations/{id}/dictation": {
+      "post": {
+        "description": "Transcribe a reply the person dictated into the composer (SCRUM-834): the request body is the browser’s recording as its own bytes under its audio content type (audio/webm, audio/ogg, audio/mp4, audio/mpeg, audio/wav, audio/flac; a `;codecs=…` parameter is allowed), at most 25 MB and no longer than the deployment’s voice-note ceiling (TRANSCRIPTION_MAX_SECONDS). The same provider, model and limits as a customer’s voice note. Answers the words and the language heard (ISO 639-1, or null) for the composer to show; NO message is written, and the audio is dropped after the call. Refusals, each in a plain sentence: 409 DICTATION_NOT_AVAILABLE (no provider on this deployment), 413 DICTATION_TOO_LONG (details: maxSeconds, maxBytes, durationSeconds), 415 DICTATION_UNSUPPORTED_FORMAT, 422 DICTATION_NOTHING_HEARD, 502 DICTATION_FAILED (details: reason, retryable). Needs inbox:conversation:reply at a scope covering the conversation — the same check as replying in it; a conversation the caller cannot see is 404. Audited as inbox.dictation (ids, length, bytes, language, outcome — never the words); the answer is not kept for replay, so no Idempotency-Key is taken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "language"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/kb": {
       "get": {
         "description": "The assistant’s knowledge base for the Assistant settings page: every entry of the operator (draft and approved; archived only with `status=archived`), filtered by language, topic or status, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks entry). Only approved entries reach the assistant. Needs inbox:kb:manage somewhere in the operator.",

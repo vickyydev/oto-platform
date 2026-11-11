@@ -854,6 +854,15 @@ const OUTSIDE_THE_REPLAY_STORE = [
    */
   'POST /inbox/conversations/:id/open-beo [secretResponse]',
   /**
+   * SCRUM-834 — a reply dictated into the composer: the answer is the words
+   * the person spoke, which the inbox keeps nowhere until they press Send
+   * (the reply route then writes the message under its own key). The store
+   * would hold a day's dictations outside the message table and its erasure,
+   * so no key is claimed: a retry asks the provider again, and the route
+   * writes only its audit row (ids, length, language — never the words).
+   */
+  'POST /inbox/conversations/:id/dictation [secretResponse]',
+  /**
    * S2-20 K2 — a kiosk pairs as a display does, from its own browser secret:
    * the code is a single-use credential that never enters the store, and
    * minting again rotates it; expiring is idempotent.

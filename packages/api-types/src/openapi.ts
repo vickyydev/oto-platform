@@ -37146,6 +37146,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/conversations/{id}/dictation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Transcribe a reply the person dictated into the composer (SCRUM-834): the request body is the browser’s recording as its own bytes under its audio content type (audio/webm, audio/ogg, audio/mp4, audio/mpeg, audio/wav, audio/flac; a `;codecs=…` parameter is allowed), at most 25 MB and no longer than the deployment’s voice-note ceiling (TRANSCRIPTION_MAX_SECONDS). The same provider, model and limits as a customer’s voice note. Answers the words and the language heard (ISO 639-1, or null) for the composer to show; NO message is written, and the audio is dropped after the call. Refusals, each in a plain sentence: 409 DICTATION_NOT_AVAILABLE (no provider on this deployment), 413 DICTATION_TOO_LONG (details: maxSeconds, maxBytes, durationSeconds), 415 DICTATION_UNSUPPORTED_FORMAT, 422 DICTATION_NOTHING_HEARD, 502 DICTATION_FAILED (details: reason, retryable). Needs inbox:conversation:reply at a scope covering the conversation — the same check as replying in it; a conversation the caller cannot see is 404. Audited as inbox.dictation (ids, length, bytes, language, outcome — never the words); the answer is not kept for replay, so no Idempotency-Key is taken. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            text: string;
+                            language: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/kb": {
         parameters: {
             query?: never;
