@@ -783,11 +783,15 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * recorded "no printer" until the park names one (`services/party-slips.ts`).
      * The schedule's claim keeps one instance per tick; a transaction lock on
      * each party's day and its record keep one run, whatever runs beside it.
+     *
+     * SCRUM-861 — the same tick looks at each party whose slips printed today
+     * and, where the plan has changed since, sends the affected stations a
+     * VOID slip and an UPDATED slip, once per change (`printPartySlipChanges`).
      */
     {
       name: PARTY_SLIPS_JOB,
       description:
-        "Prints each party's kitchen and bar slips once at its slip time, from the OTO App's set menu and bar plan, to the printers of the station each park names, and records no printer where none is named",
+        "Prints each party's kitchen and bar slips once at its slip time, from the OTO App's set menu and bar plan, to the printers of the station each park names, records no printer where none is named, and sends a VOID and an UPDATED slip when a printed party's plan changes",
       intervalSeconds: 60,
       run: async ({ db, now }) => ({ detail: await runPartySlipsJob(db, now) }),
     },
