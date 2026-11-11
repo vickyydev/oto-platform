@@ -248,11 +248,15 @@ export const inboxApi = {
   // --- Contacts (SCRUM-860) -------------------------------------------------------------
 
   /** The contact behind a conversation, with the channel's own profile name and whether staff set the shown name. */
-  contact: (id: string) => api.get<ContactView>(`${at(id)}/contact`),
+  contact: (id: string) => api.get<ApiResponse<'/inbox/conversations/{id}/contact', 'get'>>(`${at(id)}/contact`),
 
   /** Set the shown name, or clear it (null) back to the channel's profile name. */
   renameContact: (id: string, displayName: string | null) =>
-    api.patch<ContactView>(`${at(id)}/contact`, { displayName }, { idempotencyKey: idemKey() }),
+    api.patch<ApiResponse<'/inbox/conversations/{id}/contact', 'patch'>>(
+      `${at(id)}/contact`,
+      { displayName },
+      { idempotencyKey: idemKey() },
+    ),
 
   /**
    * A new contact and its conversation on one of `me.contactChannels`.
@@ -260,7 +264,11 @@ export const inboxApi = {
    * or handle already on that channel.
    */
   createContact: (body: ContactCreateBody) =>
-    api.post<ContactCreated>('/inbox/contacts', body, { idempotencyKey: idemKey() }),
+    api.post<ApiResponse<'/inbox/contacts', 'post'>>(
+      '/inbox/contacts',
+      { channelAccountId: body.channelAccountId, displayName: body.displayName, identity: body.identity },
+      { idempotencyKey: idemKey() },
+    ),
 
   // --- The simulator (local and staging only; `me.simulator` says when) ----------------
 
