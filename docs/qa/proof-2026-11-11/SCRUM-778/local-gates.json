@@ -1,6 +1,6 @@
 {
   "sourceBeforeFinalFix": "a05c83c858cd26b6c6dac037b443341723e64ef1",
-  "checkedAt": "2026-11-11T11:43:44.702Z",
+  "checkedAt": "2026-11-11T11:52:54.064Z",
   "logs": [
     {
       "file": "C:/oto-lanes/s778-adversarial-before.log",
@@ -85,15 +85,55 @@
       "scope": "guarded app suite: 51/51, own database removed",
       "exitCode": 0,
       "sha256": "c87be1898a899bcf5fed956c0ae8c4e38b8e5cbe6256cb70ab4a6b4abf68e510"
+    },
+    {
+      "file": "C:/oto-lanes/s778-workspace-typecheck.log",
+      "scope": "rebased workspace types: 16 tasks, whole output read",
+      "exitCode": 0,
+      "sha256": "bf9c7ea5c008a67d4bb4679134329641ee8a7f1fffb192be835b8bd3fbfd8500"
+    },
+    {
+      "file": "C:/oto-lanes/s778-rebased-app-typecheck.log",
+      "scope": "rebased app types: all 661 lines read, 418/418 in 54 files",
+      "exitCode": 0,
+      "sha256": "abd736bc1f3ab270b280eb9a469b3300345acd49d33043a13a567cc6f988aa97"
+    },
+    {
+      "file": "C:/oto-lanes/s778-rebased-text-pins.log",
+      "scope": "rebased required API text pins: 73 tests in two files",
+      "exitCode": 0,
+      "sha256": "0bc5d2e7c98f38373ab65eadbe899ad3773b8c23314d4a8d22af6e23089b4c5d"
+    },
+    {
+      "file": "C:/oto-lanes/s778-rebased-app-build.log",
+      "scope": "rebased app production build",
+      "exitCode": 0,
+      "sha256": "37af78f4a0ad9cded734df3cd460b9438cfc6f041554f6d852a7d1cd586d0bb4"
+    },
+    {
+      "file": "C:/oto-lanes/s778-migration-landing-generate.log",
+      "scope": "landing migration regeneration: DDL identical; snapshot structurally identical",
+      "exitCode": 0,
+      "sha256": "4664d02835d247da653531d47a3efcf7ec8a1494f3171ffc50f72a3669b78aeb"
     }
   ],
   "fullApiLocal": "Not run for this unit; full exact-source CI will run and remains a separately tracked release check under the 17:32 owner direction.",
   "migration": {
     "number": "0049",
-    "provisional": true,
+    "provisional": false,
     "priorMainTag": "0048_otoapp_v_event_packages_adults_mirror",
     "generatedInIsolatedScratchBecauseHistoricalSnapshotsHaveParentCollisions": true,
-    "historicalMigrationsChanged": false
+    "historicalMigrationsChanged": false,
+    "landingRegenerated": true,
+    "sqlIdentical": true,
+    "oldSnapshotId": "72b6a970-c97c-43a4-ac1e-4cddb174eebd",
+    "newSnapshotId": "cb95d7de-5e68-4ad4-9777-d665eebb9fcc",
+    "sqlSha256": "3037614a6ae33d555d926972687822b545332426ad21166c658bdc9701daf142"
   },
-  "staging": "not run"
+  "staging": "not run",
+  "candidateCI": {
+    "run": 43014729134,
+    "sha": "902c0deb6d638bd752f2cdf7c40d097bd5cf735f",
+    "status": "running at checkpoint"
+  }
 }

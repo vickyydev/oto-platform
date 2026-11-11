@@ -71,6 +71,7 @@ async function activity() {
     && new URL(response.url()).searchParams.get('action') === 'app_identity.lifecycle_deactivation.failed');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   const response = await answer; assert.equal(response.status(), 200);
+  assert.equal(new URL(response.url()).searchParams.get('from'), receipt.observationStartedAt);
   const body = await response.json();
   assert.equal(body.masked, true); assert.equal(body.nextCursor, null);
   assert.ok(Array.isArray(body.entries)); assert.equal(body.entries.length, 0);
@@ -103,7 +104,7 @@ try {
   await page.goto(origins.console + '/activity');
   await page.getByLabel('Action', { exact: true }).fill('app_identity.lifecycle_deactivation.failed');
   // Include seconds so earlier failures in the same minute are not the observation.
-  const started = Date.now(); receipt.observationStartedAt = new Date(started).toISOString(); save();
+  const started = Math.floor(Date.now() / 1000) * 1000; receipt.observationStartedAt = new Date(started).toISOString(); save();
   await page.getByLabel('From', { exact: true }).fill(new Date(started + 7 * 3600000).toISOString().slice(0, 19));
   await page.getByRole('button', { name: 'Refresh', exact: true }).waitFor();
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
