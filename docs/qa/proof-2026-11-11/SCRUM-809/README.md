@@ -31,9 +31,23 @@ Commands ran unpiped, each to its own uncommitted log under `local/`.
 - ESLint: all six changed platform files, no errors or warnings.
 - POS and Console production builds pass, with existing bundle-size warnings.
 
-The full hosted gate, main landing, named API/Console/both-till deploys and
-Console screen proof remain pending. SCRUM-809 remains In Progress. The
-planner holds source/API/proof for SCRUM-829; this lane has not claimed it.
+Full candidate CI [42922557530](https://github.com/vickyydev/oto-platform/actions/runs/42922557530)
+passed all six jobs on `2e15a895a2924cf931c5c8a107dd70fbe723ea8f`:
+6,788 API tests (480 files, 8 existing skipped files), 2,319 POS tests,
+the full other-workspace gate, built-till browser journeys, 357 Console
+browser checks and the app gate. Workspace typechecks were read whole:
+16 successful tasks, zero API diagnostics. The app's full 659-line output
+was read: 418/418 errors in 54 files. Details are in `candidate-ci.json`.
+
+At the 12:20 Bangkok recovery, source, review tests, the proof harness and
+all nine local gate-log hashes were intact; no implementation was lost.
+The latest main source `fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3` also has
+all-six-job green CI 42918309961, watched by full SHA.
+
+Main landing, named API/Console/both-till deploys and Console screen proof
+remain pending. SCRUM-809 remains In Progress. STATUS and Jira still reserve
+source/API/proof for SCRUM-829, with no release recorded. The owner was asked
+whether that planner proof is still active; this lane has not claimed it.
 
 ## Staging proof to run after the slot is available
 
