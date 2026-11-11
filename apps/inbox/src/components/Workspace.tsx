@@ -619,15 +619,6 @@ export function Workspace({ me }: { me: InboxMe }) {
 
   return (
     <div className="flex items-start gap-0 xl:gap-4 xl:px-4">
-      {me.simulator && !simPane && (
-        <button
-          type="button"
-          onClick={() => toggleSimPane(true)}
-          className="fixed bottom-5 right-5 z-40 hidden xl:block rounded-full bg-indigo-600 px-4 py-2 text-[12.5px] font-semibold text-white shadow-lg hover:bg-indigo-500"
-        >
-          Show simulator
-        </button>
-      )}
     <div className="mx-auto min-w-0 max-w-[1400px] flex-1 space-y-5 px-4 py-5 sm:px-6">
       {/* HEADER */}
       <header className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
@@ -657,6 +648,17 @@ export function Workspace({ me }: { me: InboxMe }) {
               >
                 <Archive className="h-3.5 w-3.5" />
                 Handled
+              </button>
+            )}
+            {/* The side panel's way back, in the bar with the other controls: floating over the page it covered the end of the composer (SCRUM-837). */}
+            {me.simulator && !simPane && (
+              <button
+                type="button"
+                onClick={() => toggleSimPane(true)}
+                className="hidden items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/15 px-3 py-2 text-[12px] font-medium text-indigo-700 dark:text-indigo-200 hover:border-indigo-300 dark:hover:border-indigo-400 xl:inline-flex"
+              >
+                <FlaskConical className="h-3.5 w-3.5" />
+                Show simulator
               </button>
             )}
             <SettingsMenu

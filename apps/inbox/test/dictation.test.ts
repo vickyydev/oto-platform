@@ -252,7 +252,7 @@ describe('the composer’s microphone', () => {
     act(async () => {
       button(testId)!.click();
     });
-  const input = () => document.querySelector<HTMLInputElement>('input[aria-label="Reply"]')!;
+  const input = () => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Reply"]')!;
   const line = () => document.querySelector<HTMLElement>('[data-testid="dictation-line"]');
 
   it('records on press, shows the red dot, the clock and the privacy line, and lands the words at the caret — sending nothing', async () => {

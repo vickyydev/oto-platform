@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { AlertTriangle, FileText, Loader2, Paperclip, Send, Smile, X, type LucideIcon } from 'lucide-react';
 import { newId } from '@oto/shared/ids';
 import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
@@ -7,6 +7,7 @@ import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, 
 import { TranslationNote } from '@/components/atoms';
 import { DictateButton, DictationLine, useDictation } from '@/components/Dictation';
 import { PendingControl } from '@/components/writes';
+import { COMPOSER_LINE_PX, composerBox, sendsOnKey } from '@/lib/composer';
 import { dictationAvailable, dictationCeilingOf, insertAtCaret } from '@/lib/dictation';
 import { COMPOSER_EXTRAS_REASON, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
 
@@ -57,6 +58,11 @@ export const newDraftId = (): string => newId();
  * Dictation (SCRUM-834): the microphone in the row records a clip and the
  * words come back into this input at the caret, as if typed — read,
  * corrected and sent by the person; nothing is sent by the dictation.
+ *
+ * The reply box grows with what it holds (SCRUM-837): one line when empty,
+ * up to five, then it scrolls — a long dictated reply is read whole before
+ * it is sent. Enter sends, as it did in the one-line box; Shift+Enter makes
+ * a new line.
  */
 export function Composer({
   conv,
@@ -89,7 +95,7 @@ export function Composer({
   // value is the controlled value), and the caret follows them once rendered.
   // The deployment says whether the microphone is offered and the ceiling
   // (`/inbox/me`): no provider on, no button.
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const caretAfter = useRef<number | null>(null);
   const dictation = useDictation(
     conv.id,
@@ -110,10 +116,30 @@ export function Composer({
     try {
       input.focus();
       input.setSelectionRange(caret, caret);
+      // Words placed at the end of a reply past the box's cap: the end is shown.
+      if (caret >= input.value.length) input.scrollTop = input.scrollHeight;
     } catch {
       // A browser that cannot place the caret leaves it where it was.
     }
   }, [text]);
+
+  // The box is as tall as its words, to the cap (`composerBox`); measured
+  // after every change of what it holds, and when the window's width moves
+  // the wrapping. The box is only on screen for an open thread that replies.
+  const shown = template ? '' : text;
+  useLayoutEffect(() => {
+    const fit = () => {
+      const box = inputRef.current;
+      if (!box) return;
+      box.style.height = 'auto';
+      const { heightPx, scrolls } = composerBox(box.scrollHeight);
+      box.style.height = `${heightPx}px`;
+      box.style.overflowY = scrolls ? 'auto' : 'hidden';
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [shown, conv.status, conv.canReply]);
 
   const pickTemplate = (t: ComposerTemplate) => {
     touch();
@@ -325,17 +351,24 @@ export function Composer({
           <FileText className="h-4 w-4" />
         </button>
         <DictateButton dictation={dictation} disabled={template !== null || busy} />
-        <input
+        <textarea
           ref={inputRef}
-          value={template ? '' : text}
+          rows={1}
+          value={shown}
           disabled={template !== null}
           onChange={(e) => {
             touch();
             setText(e.target.value);
           }}
+          onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
+            if (!sendsOnKey({ key: e.key, shiftKey: e.shiftKey, composing: e.nativeEvent.isComposing })) return;
+            e.preventDefault();
+            void send();
+          }}
+          style={{ lineHeight: `${COMPOSER_LINE_PX}px` }}
           aria-label="Reply"
           placeholder={template ? 'Sending the template above' : `Reply as ${me.name ?? 'you'}…`}
-          className="min-w-0 flex-1 bg-transparent text-[13px] placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed"
+          className="min-w-0 flex-1 resize-none bg-transparent text-[13px] placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed"
         />
         <button
           type="submit"
