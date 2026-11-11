@@ -244,8 +244,9 @@ update: (id: string, patch: Record<string, unknown>) =>
       () => cloudMembersApi.update(id, patch),
       (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.update', { memberId: id, ...patch }),
     ),
-addChild: (memberId: string, body: Record<string, unknown>) => {
-    const id = newRecordId();
+addChild: (memberId: string, body: Record<string, unknown>, id: string = newRecordId()) => {
+    // `id` given: the till's own, re-sent on a retry (SCRUM-871), so the
+    // platform answers with the child that exists rather than a second one.
     return viaLane(
       () =>
         cloudMembersApi.addChild(memberId, body, id),

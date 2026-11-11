@@ -17,6 +17,7 @@ import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines
 import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
+import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
 import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
@@ -591,13 +592,15 @@ export default function Till() {
   /**
    * S2-13 — the ids this gate writes under, minted once per gate (OD-12): the
    * registration, each supervised child's stay (which is also its drop-off
-   * line's id, so the sale line names the stay) and each waiver. A Continue
-   * pressed again after a failure re-sends the same ids, and the platform
-   * answers with what already exists rather than registering the family twice.
+   * line's id, so the sale line names the stay), each waiver and — SCRUM-871 —
+   * each child's record on the guardian's profile. A Continue pressed again
+   * after a failure re-sends the same ids, and the platform answers with what
+   * already exists rather than registering the family, or a child, twice.
    */
   const gateRegistrationIdRef = useRef<string | null>(null);
   const gateStayIdsRef = useRef(new Map<string, string>());
   const gateWaiverIdsRef = useRef(new Map<string, string>());
+  const gateChildIdsRef = useRef(new Map<string, string>());
   const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
     const known = ids.get(slotId);
     if (known) return known;
@@ -2028,6 +2031,7 @@ export default function Till() {
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
+    gateChildIdsRef.current = new Map();
     refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
@@ -2092,67 +2096,11 @@ export default function Till() {
   };
 
   /**
-   * SCRUM-233 — A CHILD AT THIS GATE IS THE MEMBER'S RECORD, NOT A DRAFT.
-   *
-   * The two screens that hold a child's allergies and medical notes wrote to
-   * two different places: the membership check's confirm step saved through
-   * the member API (SCRUM-32/231, audited, `last_confirmed_at` stamped) while
-   * this gate — the one reception is standing on when a child is being left in
-   * the park's care — pushed the same fields into the browser's copy of the
-   * member, where they were gone on the next reload. Nothing on either screen
-   * said which one you were on.
-   *
-   * These three helpers put the gate on the same route. Only what the gate
-   * actually captures is sent: a name, an age (a real date of birth when the
-   * picker was used), the allergy/medical line and the dietary restriction.
-   * The medical ALERT is deliberately not sent — the gate has no switch for
-   * it, and the API raises it from the allergy text, which is the answer the
-   * counter wants when nobody chose otherwise (see ChildDetailsFields, where
-   * the switch exists and is therefore sent).
+   * SCRUM-233 — A CHILD AT THIS GATE IS THE MEMBER'S RECORD, NOT A DRAFT:
+   * the gate writes through the member API, as the membership check does.
+   * The record it sends, the patch of what changed and the loop that writes
+   * each child once live in `lib/gateChildren` (SCRUM-871 / SCRUM-872).
    */
-  const gateChildBody = (slot: SupervisedSlot, age: number): Record<string, unknown> => ({
-    name: slot.name.trim(),
-    dateOfBirth: slot.dateOfBirth ?? null,
-    ageYears: age,
-    allergies: slot.allergiesMedical.trim() || null,
-    foodRestrictions: slot.foodRestrictions.trim() || null,
-  });
-
-  /**
-   * What actually changed against the saved record — or null when nothing did.
-   *
-   * Only changed fields go in, for the reason `childDetailsPatch` gives: a
-   * PATCH that names a field sets it, so re-sending the whole slot would
-   * overwrite the medical notes and the staff notes this gate cannot even
-   * show, and would fill the audit row's before/after with fields nobody
-   * touched.
-   */
-  const gateChildPatch = (
-    slot: SupervisedSlot,
-    age: number,
-    saved: SavedChild,
-  ): Record<string, unknown> | null => {
-    const patch: Record<string, unknown> = {};
-    const name = slot.name.trim();
-    if (name && name !== saved.childName.trim()) patch.name = name;
-    if ((slot.dateOfBirth ?? '') !== (saved.dateOfBirth ?? '')) {
-      patch.dateOfBirth = slot.dateOfBirth ?? null;
-      patch.ageYears = age;
-    } else if (age !== saved.childAge) {
-      patch.ageYears = age;
-    }
-    const allergies = slot.allergiesMedical.trim();
-    if (allergies !== (saved.allergiesMedical ?? '').trim()) patch.allergies = allergies || null;
-    // The slot's dietary box is pre-filled from food restrictions FALLING BACK
-    // to the dietary line (slotPatchFromSavedChild), so it is compared against
-    // the same fallback — otherwise every confirm of an untouched child would
-    // write a copy of their dietary line into their food restrictions.
-    const food = slot.foodRestrictions.trim();
-    if (food !== (saved.foodRestrictions ?? saved.dietary ?? '').trim()) {
-      patch.foodRestrictions = food || null;
-    }
-    return Object.keys(patch).length > 0 ? patch : null;
-  };
 
   /** Put a child the API has just answered with back onto the member in hand. */
   const applySavedChild = (child: SavedChild, memberId = member?.id) =>
@@ -2401,37 +2349,34 @@ export default function Till() {
         setMember(guardian);
       }
       if (guardian) {
-        const confirmedChildIds: string[] = [];
-        for (const { slot } of supervised) {
-          const age = slotAge(slot);
-          if (age === null) continue;
-          const saved = slot.savedChildId
-            ? guardian.savedChildren?.find((c) => c.id === slot.savedChildId)
-            : undefined;
-          if (slot.savedChildId && saved) {
-            const patch = gateChildPatch(slot, age, saved);
-            const child = patch
-              ? apiChildToSavedChild((await membersApi.updateChild(slot.savedChildId, patch)).child)
-              : saved;
-            applySavedChild(child);
-            confirmedChildIds.push(child.id);
-            childIdBySlot.set(slot.id, child.id);
-          } else {
-            // The photo is deliberately NOT saved (re-taken each visit).
-            const child = apiChildToSavedChild(
-              (await membersApi.addChild(guardian.id, gateChildBody(slot, age))).child,
-            );
-            applySavedChild(child);
+        // SCRUM-871 / SCRUM-872 — each child once, however many times Continue
+        // is pressed and whoever the guardian turns out to be (lib/gateChildren):
+        // one child id per slot, a typed child matched to the guardian's saved
+        // child of the same name and date of birth (or age), and every record
+        // written put straight onto the guardian in hand — never onto whatever
+        // `member` this render happened to close over.
+        const written = await saveGateChildren({
+          guardian,
+          slots: supervised.flatMap(({ slot }) => {
+            const age = slotAge(slot);
+            return age === null ? [] : [{ slot, age }];
+          }),
+          childIdFor: (slotId) => gateIdFor(gateChildIdsRef.current, slotId),
+          addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
+          updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
+          onSaved: (slotId, child, guardianId) => {
+            applySavedChild(child, guardianId);
             // Linked to the record it just became, one child at a time: if the
             // next child's write fails, pressing Continue again corrects this
             // one instead of entering them a second time.
             setSuperSlots((prev) =>
-              prev.map((s) => (s.id === slot.id ? { ...s, savedChildId: child.id } : s)),
+              prev.map((s) => (s.id === slotId ? { ...s, savedChildId: child.id } : s)),
             );
-            confirmedChildIds.push(child.id);
-            childIdBySlot.set(slot.id, child.id);
-          }
-        }
+          },
+        });
+        guardian = written.guardian;
+        for (const [slotId, childId] of written.childIdBySlot) childIdBySlot.set(slotId, childId);
+        const confirmedChildIds = written.confirmedChildIds;
         // The visit is what stamps each child as confirmed today — the same
         // step the membership check takes once its edits have landed.
         //
