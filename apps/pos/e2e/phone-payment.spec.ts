@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -6,7 +6,22 @@ import { resolve } from 'node:path';
 // Only the disposable database provided by e2e/run.mjs is allowed here.
 test.use({ viewport: { width: 375, height: 812 }, trace: 'off', video: 'off', screenshot: 'off' });
 test.setTimeout(180_000);
-const proof = resolve(import.meta.dirname, '../../..', 'docs/qa/proof-2026-11-11/SCRUM-801/local');
+
+/**
+ * SCRUM-849 — WHERE THE TWO PICTURES OF THE PAYMENT STEP GO.
+ *
+ * A run keeps them in Playwright's own output folder for the test
+ * (`test-results/`, which is not committed), so running this check changes no
+ * file in the repository. `POS_E2E_SHOTS` names a folder to keep them in
+ * instead, as it does for the other checks here — that is how a proof folder
+ * under docs/qa is filled, on purpose and by name.
+ */
+const SHOTS = process.env.POS_E2E_SHOTS ?? '';
+async function picture(testInfo: TestInfo, name: string): Promise<string> {
+  if (!SHOTS) return testInfo.outputPath(name);
+  await mkdir(SHOTS, { recursive: true });
+  return resolve(SHOTS, name);
+}
 
 async function signIn(page: Page) {
   expect(Boolean(process.env.POS_E2E_DATABASE_URL), 'use the isolated e2e runner').toBe(true);
@@ -56,19 +71,18 @@ async function fits(page: Page) {
   return panel;
 }
 
-test('375 px payment fits; Pay → Back → Cancel voids the sale and reload leaves none', async ({ page }) => {
+test('375 px payment fits; Pay → Back → Cancel voids the sale and reload leaves none', async ({ page }, testInfo) => {
   try {
     await signIn(page);
     const saleId = await ringUp(page);
     await page.getByRole('heading', { name: 'Cash', exact: true }).click();
     const panel = await fits(page);
     await expect(panel.getByRole('button', { name: 'Confirm Payment Received', exact: true })).toBeEnabled();
-    await mkdir(proof, { recursive: true });
     for (const close of await page.locator('[toast-close]').all()) await close.click();
     await panel.getByRole('heading', { name: 'Amount Due' }).scrollIntoViewIfNeeded();
-    await page.screenshot({ path: resolve(proof, 'phone-payment-375.png'), mask: [page.locator('input[type="password"]')] });
+    await page.screenshot({ path: await picture(testInfo, 'phone-payment-375.png'), mask: [page.locator('input[type="password"]')] });
     await panel.getByRole('button', { name: 'Confirm Payment Received', exact: true }).scrollIntoViewIfNeeded();
-    await page.screenshot({ path: resolve(proof, 'phone-payment-actions-375.png'), mask: [page.locator('input[type="password"]')] });
+    await page.screenshot({ path: await picture(testInfo, 'phone-payment-actions-375.png'), mask: [page.locator('input[type="password"]')] });
     await panel.getByRole('button', { name: 'Back', exact: true }).click();
     const voided = page.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${saleId}/void`);
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
