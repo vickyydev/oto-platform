@@ -132,6 +132,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions, getLastCalculatedAt, runAttentionEngine } from "./attention-engine";
 import { holdNightBatch } from "./lib/nightBatchLock";
+import { readPlatformLifecycleEvents } from "./lib/platformLifecycle";
 import { ATTENTION_REFRESH_RUNNING } from "./lib/nightJobs";
 import { ATTENTION_WRITES_READY } from "./attention-availability";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
@@ -1024,6 +1025,17 @@ export async function registerRoutes(
   // SCRUM-674: the platform Console's support lookup reads this app by phone, as the person asking.
   const supportLookupRoutes = await import("./support-lookup-routes");
   app.use(supportLookupRoutes.supportLookupRouter(parkGroupOnly(userManagementTenant)));
+
+  // SCRUM-778/810: bounded support readback for a known login, including after
+  // deletion. Its queue snapshot keeps the park group; no staff details leave.
+  app.get("/api/admin/login-lifecycle", requireAuth, requireAdmin, parkGroupOnly(userManagementTenant), async (req, res, next) => {
+    const parsed = z.object({ userId: z.string().uuid() }).strict().safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid lifecycle lookup" });
+    try {
+      res.set("Cache-Control", "no-store");
+      res.json({ events: await readPlatformLifecycleEvents(pool, parkGroupOf(res), parsed.data.userId) });
+    } catch (error) { next(error); }
+  });
 
   // These guards run after each route's existing authentication and ownership checks.
   // Entity ownership stays explicit: an unassigned record does not inherit a tenant flag.

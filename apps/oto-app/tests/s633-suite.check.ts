@@ -1,6 +1,6 @@
 // The existing suite-sign-in CI entry imports this after its own cleanup.
-// A standalone app migration plus one ownership-only core fixture runs all39
-// SCRUM-633 app checks without platform migrations, providers or shared data.
+// A standalone app migration plus one ownership-only core fixture runs the
+// SCRUM-633/778 app checks without platform migrations, providers or shared data.
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { dirname, join } from "node:path";
@@ -54,7 +54,7 @@ async function command(label: string, argv: string[], expectedChecks?: number) {
   let exitCode: number | null = null, signal: NodeJS.Signals | null = null;
   try { ({ exitCode, signal } = await new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolve) => child.on("close", (code, reason) => resolve({ exitCode: code, signal: reason })))); }
   finally { clearTimeout(timer); stopChild(); activeChild = undefined; }
-  const summaries = stdout.split(/\r?\n/).filter(line => /^s633-[a-z-]+\.check: \d+\/\d+ (?:checks )?passed$/.test(line));
+  const summaries = stdout.split(/\r?\n/).filter(line => /^s(?:633|778)-[a-z-]+\.check: \d+\/\d+ (?:checks )?passed$/.test(line));
   const summary = summaries.length === 1 ? summaries[0].match(/: (\d+)\/(\d+) (?:checks )?passed$/) : null;
   const countsMatch = expectedChecks === undefined || (summary !== null && Number(summary[1]) === expectedChecks && Number(summary[2]) === expectedChecks);
   const passed = exitCode === 0 && signal === null && !timedOut && !failedToSpawn && !outputLimited && countsMatch;
@@ -85,6 +85,8 @@ try {
     ["s633-employee-wizard.check.ts", 9],
     ["s633-lifecycle.check.ts", 14],
     ["s633-lifecycle-privileges.check.ts", 4],
+    // SCRUM-778/810 runs in the existing oto-app CI job through suite-sign-in.
+    ["s778-lifecycle.check.ts", 9],
   ] as const) await command(file, [tsx, join(APP_DIR, "tests", file)], expected);
   completed = true;
 } catch {
@@ -99,6 +101,6 @@ try {
     }
   } catch { process.exitCode = 1; }
   finally { await admin.end().catch(() => {}); }
-  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 42 : null, ownDatabaseRemoved: removed }));
+  console.log(JSON.stringify({ suite: "s633", passed: completed && removed, checks: completed ? 51 : null, ownDatabaseRemoved: removed }));
   if (!completed || !removed) process.exitCode = 1;
 }
