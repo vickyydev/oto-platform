@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "phase": "module initialization",
+  "fixtureCreated": false,
+  "reason": "Screenshot helper loaded a second Playwright installation",
+  "source": "bfd04cd2fc9387a61c13eb822978ba40bd0a7cb0",
+  "log": {
+    "path": "C:/oto-lanes/s819-staging-proof.log",
+    "sha256": "c5db014968640b64bf28b586ebfb5fd7012a660138de9c1d574b0cbd1a3ac8df"
+  },
+  "fix": "Use the release worktree card helper and its own Playwright instance"
+}

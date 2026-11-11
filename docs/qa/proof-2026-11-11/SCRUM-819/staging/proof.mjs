@@ -12,7 +12,8 @@ const root = resolve(import.meta.dirname, '../../../../..');
 const helper = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
 const { need } = await import(pathToFileURL(resolve(helper, 'scripts/agent/env.mjs')));
 const { service, render } = await import(pathToFileURL(resolve(helper, 'scripts/agent/render.mjs')));
-const { card } = await import(pathToFileURL(resolve(helper, 'scripts/agent/evidence.mjs')));
+// Use this worktree's card helper so it shares the same Playwright instance.
+const { card } = await import(pathToFileURL(resolve(root, 'scripts/agent/evidence.mjs')));
 const { chromium, expect } = createRequire(resolve(root, 'apps/pos/package.json'))('@playwright/test');
 const sha = process.argv[2];
 assert.match(sha ?? '', /^[a-f0-9]{40}$/);
