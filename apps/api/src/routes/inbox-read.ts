@@ -78,7 +78,9 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator ' +
           'channel accounts, (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null, ' +
           'and (SCRUM-834) `dictation`: whether the composer’s microphone is offered on this deployment (a transcription ' +
-          'provider is on) and the ceiling, in seconds, a clip stops at (TRANSCRIPTION_MAX_SECONDS). ' +
+          'provider is on) and the ceiling, in seconds, a clip stops at (TRANSCRIPTION_MAX_SECONDS), and (SCRUM-860) ' +
+          '`contactChannels`: the live channel accounts a staff-made contact can be put on, for a viewer who holds ' +
+          'inbox:conversation:reply somewhere (empty otherwise). ' +
           'Needs app:inbox:access.',
         response: { 200: InboxMeSchema },
       },
