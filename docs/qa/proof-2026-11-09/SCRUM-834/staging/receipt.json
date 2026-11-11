@@ -1,0 +1,1748 @@
+{
+  "unit": "SCRUM-834 (staff dictate a reply into the composer) and SCRUM-835 (the simulator records a customer voice note): staging proof",
+  "liveCommit": "60c378becc9c8272f416298c9820ea74c037f6c4",
+  "deploys": {
+    "oto-api-staging": {
+      "deployId": "dep-dbq2cbuk1f9s73ddkqdg",
+      "status": "live",
+      "commit": "60c378be",
+      "liveAt": "2026-11-11T08:28:37Z"
+    },
+    "oto-inbox-staging": {
+      "deployId": "dep-dbq2ccbrjlhs73b176p0",
+      "status": "live",
+      "commit": "60c378be",
+      "liveAt": "2026-11-11T08:25:06Z"
+    }
+  },
+  "startedAt": "2026-11-11T08:29:00.186Z",
+  "browser": "Chromium 153.0.8010.12",
+  "microphone": {
+    "how": "Chromium's fake microphone (--use-fake-device-for-media-stream, --use-fake-ui-for-media-stream, --use-file-for-fake-audio-capture=<wav>%noloop), the microphone permission granted to the context",
+    "clip": "zz-test-824-en.wav resampled to 48 kHz 16-bit mono (zz-test-en-48k.wav): a text-to-speech voice made for these proofs, 14.6 s, no person",
+    "spoken": "Hi, this is a ZZ test voice note. We would like to book a birthday party for twelve kids on Saturday the twenty second of November at two pm at Central Floresta. How much is the package?",
+    "launches": [
+      {
+        "at": "2026-11-11T08:29:01.462Z",
+        "file": "zz-test-en-48k.wav"
+      },
+      {
+        "at": "2026-11-11T08:35:55.181Z",
+        "file": "zz-test-th-48k.wav"
+      },
+      {
+        "at": "2026-11-11T08:37:23.015Z",
+        "file": "zz-test-ru-48k.wav"
+      },
+      {
+        "at": "2026-11-11T08:38:56.476Z",
+        "file": "zz-test-en-48k.wav"
+      },
+      {
+        "at": "2026-11-11T08:40:42.486Z",
+        "file": "zz-test-en-48k.wav"
+      }
+    ]
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "capabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    },
+    "view": "owner view (the staging administrator, signed in through the launcher and handed into the inbox)"
+  },
+  "me": {
+    "route": "GET /api/inbox/me",
+    "status": 200,
+    "dictation": {
+      "available": true,
+      "maxSeconds": 180
+    }
+  },
+  "scrum835": {
+    "simulatorRecord": {
+      "sim": {
+        "key": "sim",
+        "at": "2026-11-11T08:29:12.633Z",
+        "pictures": [
+          "835-01-simulator-record-button.png",
+          "835-02-simulator-recording.png",
+          "835-03-simulator-recorded-clip.png",
+          "835-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:16 / 1:00",
+        "clipLine": "Recorded clip · 0:16",
+        "discardButton": true,
+        "recordedMs": 16311,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 835",
+          "category": "Birthdays & Events",
+          "language": "English",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:16"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:29:29.587Z",
+          "respondedAt": "2026-11-11T08:29:31.340Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 275088,
+              "bytesAbout": 206316
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9ba-02bb-7dbc-b109-c9fce99bb795"
+          ],
+          "externalMessageId": "wamid.SIM.MWBUX36U93F7380C.IN.000001",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      },
+      "sim2": {
+        "key": "sim2",
+        "at": "2026-11-11T08:31:34.063Z",
+        "pictures": [
+          "835-01-simulator-record-button.png",
+          "835-02-simulator-recording.png",
+          "835-03-simulator-recorded-clip.png",
+          "835-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:16 / 1:00",
+        "clipLine": "Recorded clip · 0:16",
+        "discardButton": true,
+        "recordedMs": 16316,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 835",
+          "category": "Birthdays & Events",
+          "language": "English",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:16"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:31:51.131Z",
+          "respondedAt": "2026-11-11T08:31:53.015Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 275104,
+              "bytesAbout": 206328
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9bc-2b52-7974-ae3f-3bf60026bdc5"
+          ],
+          "externalMessageId": "wamid.SIM.MWBUX36U93F7380C.IN.000002",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      },
+      "th": {
+        "key": "th",
+        "at": "2026-11-11T08:35:59.567Z",
+        "pictures": [
+          "tmp-th-01-simulator-record-button.png",
+          "tmp-th-02-simulator-recording.png",
+          "tmp-th-03-simulator-recorded-clip.png",
+          "tmp-th-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:16 / 1:00",
+        "clipLine": "Recorded clip · 0:16",
+        "discardButton": true,
+        "recordedMs": 16234,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 834 th",
+          "category": "Birthdays & Events",
+          "language": "Thai",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:16"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:36:16.473Z",
+          "respondedAt": "2026-11-11T08:36:18.866Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "th"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 345720,
+              "bytesAbout": 259290
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c0-3b32-796a-9b4c-042ff1c72182"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000006",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      },
+      "ru": {
+        "key": "ru",
+        "at": "2026-11-11T08:37:27.108Z",
+        "pictures": [
+          "tmp-ru-01-simulator-record-button.png",
+          "tmp-ru-02-simulator-recording.png",
+          "tmp-ru-03-simulator-recorded-clip.png",
+          "tmp-ru-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:05 / 1:00",
+        "clipLine": "Recorded clip · 0:05",
+        "discardButton": true,
+        "recordedMs": 5290,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 834 ru",
+          "category": "Birthdays & Events",
+          "language": "Russian",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:05"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:37:33.043Z",
+          "respondedAt": "2026-11-11T08:37:34.498Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "ru"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 109780,
+              "bytesAbout": 82335
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c1-62e3-701d-91c1-ad1304c77475"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000010",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      },
+      "long": {
+        "key": "long",
+        "at": "2026-11-11T08:39:01.107Z",
+        "pictures": [
+          "tmp-long-01-simulator-record-button.png",
+          "tmp-long-02-simulator-recording.png",
+          "tmp-long-03-simulator-recorded-clip.png",
+          "tmp-long-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:05 / 1:00",
+        "clipLine": "Recorded clip · 0:05",
+        "discardButton": true,
+        "recordedMs": 5307,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 834 long",
+          "category": "Birthdays & Events",
+          "language": "English",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:05"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:39:07.164Z",
+          "respondedAt": "2026-11-11T08:39:08.675Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 93300,
+              "bytesAbout": 69975
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c2-d2d1-76b3-9ef1-3d89ff9e701e"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000011",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      },
+      "long2": {
+        "key": "long2",
+        "at": "2026-11-11T08:40:47.977Z",
+        "pictures": [
+          "tmp-long-01-simulator-record-button.png",
+          "tmp-long-02-simulator-recording.png",
+          "tmp-long-03-simulator-recorded-clip.png",
+          "tmp-long-04-simulator-sent-status.png"
+        ],
+        "fieldLabel": "Voice note (optional): an audio file or a recording, played as a WhatsApp voice message",
+        "recordButton": {
+          "text": "Record",
+          "title": "Record a voice note with the microphone, as the customer",
+          "disabled": false
+        },
+        "errorAfterPress": null,
+        "clockSeen": "Recording · 0:03 / 1:00",
+        "stopButton": "Stop",
+        "clockAtStop": "Recording · 0:16 / 1:00",
+        "clipLine": "Recorded clip · 0:16",
+        "discardButton": true,
+        "recordedMs": 16231,
+        "formState": {
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "name": "ZZ TEST 834 long",
+          "category": "Birthdays & Events",
+          "language": "English",
+          "message": "(empty)",
+          "clip": "Recorded clip · 0:16"
+        },
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:41:04.791Z",
+          "respondedAt": "2026-11-11T08:41:06.819Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 300040,
+              "bytesAbout": 225030
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000012",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      }
+    },
+    "threads": {
+      "sim": {
+        "conversationId": "01a1c9ba-02bb-7dbc-b109-c9fce99bb795",
+        "name": "ZZ TEST 835",
+        "from": "a fresh ZZ TEST simulator number (not kept)",
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:29:29.587Z",
+          "respondedAt": "2026-11-11T08:29:31.340Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 275088,
+              "bytesAbout": 206316
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9ba-02bb-7dbc-b109-c9fce99bb795"
+          ],
+          "externalMessageId": "wamid.SIM.MWBUX36U93F7380C.IN.000001",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        "threadPicture": {
+          "done": {
+            "key": "sim",
+            "want": "done",
+            "firstSeen": {
+              "at": "2026-11-11T08:29:42.448Z",
+              "state": "pending",
+              "text": "Transcribing…"
+            },
+            "ready": true,
+            "waitedMs": 36414,
+            "finalState": "done",
+            "finalText": "TRANSCRIBED · ENGLISH Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+            "groupsOpened": 2,
+            "pillLines": [
+              "AI handed over · Resume",
+              "AI handed over to the team",
+              "AI handed over to the team · birthday details"
+            ],
+            "initialsMasked": 25,
+            "numbersMasked": 12,
+            "picture": "835-05-thread-voice-note-transcribed.png",
+            "listMasked": true,
+            "stateAtPicture": "done"
+          }
+        },
+        "reads": {
+          "afterSim": {
+            "at": "2026-11-11T08:30:21.436Z",
+            "conversation": {
+              "route": "GET /api/inbox/conversations/:id",
+              "status": 200,
+              "state": "active",
+              "category": "birthdays",
+              "teamName": "Birthdays & Events",
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "language": "en",
+              "aiMode": "live",
+              "aiState": "left_for_team",
+              "aiPaused": false,
+              "handledAt": null
+            },
+            "messagesRoute": {
+              "route": "GET /api/inbox/conversations/:id/messages",
+              "status": 200
+            },
+            "messages": [
+              {
+                "id": "01a1c9ba-02be-76bf-836e-495748d399de",
+                "direction": "inbound",
+                "authorKind": "customer",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:29:33.000Z",
+                "providerStatus": null,
+                "body": null,
+                "audioFileId": "01a1c9ba-02e0-769d-8458-5f33bb036b5f",
+                "transcriptStatus": "done",
+                "transcript": "Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+                "transcriptLanguage": "en",
+                "redacted": false
+              },
+              {
+                "id": "01a1c9ba-9177-7588-8542-95828d3a2140",
+                "direction": "outbound",
+                "authorKind": "ai",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:30:09.771Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "audioFileId": null,
+                "transcriptStatus": null,
+                "transcript": null,
+                "transcriptLanguage": null,
+                "redacted": false
+              }
+            ],
+            "aiPills": [
+              {
+                "kind": "ai_handover",
+                "createdAt": "2026-11-11T08:30:09.771Z",
+                "actorKind": "ai",
+                "turnId": "01a1c9ba-02d5-7c61-b913-baace3d91cab",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "destination": "birthdays",
+                "closingKey": "closing_birthday",
+                "holdingLine": "template",
+                "droppedHoldingRule": null,
+                "messageIds": [
+                  "01a1c9ba-9177-7588-8542-95828d3a2140"
+                ]
+              }
+            ],
+            "otherPills": [
+              "routed",
+              "assigned",
+              "assigned",
+              "classified"
+            ]
+          },
+          "final": {
+            "at": "2026-11-11T08:32:31.389Z",
+            "conversation": {
+              "route": "GET /api/inbox/conversations/:id",
+              "status": 200,
+              "state": "active",
+              "category": "birthdays",
+              "teamName": "Birthdays & Events",
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "language": "en",
+              "aiMode": "live",
+              "aiState": "person_replied",
+              "aiPaused": false,
+              "handledAt": null
+            },
+            "messagesRoute": {
+              "route": "GET /api/inbox/conversations/:id/messages",
+              "status": 200
+            },
+            "messages": [
+              {
+                "id": "01a1c9ba-02be-76bf-836e-495748d399de",
+                "direction": "inbound",
+                "authorKind": "customer",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:29:33.000Z",
+                "providerStatus": null,
+                "body": null,
+                "audioFileId": "01a1c9ba-02e0-769d-8458-5f33bb036b5f",
+                "transcriptStatus": "done",
+                "transcript": "Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+                "transcriptLanguage": "en",
+                "redacted": false
+              },
+              {
+                "id": "01a1c9ba-9177-7588-8542-95828d3a2140",
+                "direction": "outbound",
+                "authorKind": "ai",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:30:09.771Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "audioFileId": null,
+                "transcriptStatus": null,
+                "transcript": null,
+                "transcriptLanguage": null,
+                "redacted": false
+              },
+              {
+                "id": "01a1c9bb-3337-7a05-9ede-5fc6efa589ff",
+                "direction": "outbound",
+                "authorKind": "staff",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:30:56.733Z",
+                "providerStatus": "sent",
+                "body": "(staff line)",
+                "audioFileId": null,
+                "transcriptStatus": null,
+                "transcript": null,
+                "transcriptLanguage": null,
+                "redacted": false
+              }
+            ],
+            "aiPills": [
+              {
+                "kind": "ai_handover",
+                "createdAt": "2026-11-11T08:30:09.771Z",
+                "actorKind": "ai",
+                "turnId": "01a1c9ba-02d5-7c61-b913-baace3d91cab",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "destination": "birthdays",
+                "closingKey": "closing_birthday",
+                "holdingLine": "template",
+                "droppedHoldingRule": null,
+                "messageIds": [
+                  "01a1c9ba-9177-7588-8542-95828d3a2140"
+                ]
+              }
+            ],
+            "otherPills": [
+              "routed",
+              "assigned",
+              "assigned",
+              "classified"
+            ]
+          }
+        },
+        "auditActions": [
+          "inbox.conversation.create",
+          "inbox.conversation.read",
+          "inbox.ai.handover",
+          "inbox.dictation"
+        ]
+      },
+      "sim2": {
+        "conversationId": "01a1c9bc-2b52-7974-ae3f-3bf60026bdc5",
+        "name": "ZZ TEST 835",
+        "from": "a fresh ZZ TEST simulator number (not kept)",
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:31:51.131Z",
+          "respondedAt": "2026-11-11T08:31:53.015Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 275104,
+              "bytesAbout": 206328
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9bc-2b52-7974-ae3f-3bf60026bdc5"
+          ],
+          "externalMessageId": "wamid.SIM.MWBUX36U93F7380C.IN.000002",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        "threadPicture": {
+          "done": {
+            "key": "sim2",
+            "want": "done",
+            "firstSeen": {
+              "at": "2026-11-11T08:32:09.896Z",
+              "state": "done",
+              "text": "TRANSCRIBED · ENGLISH Hi, this is a ZZ test voice note. We would like to book a birthday party for 12 kids on Saturday, the 22nd of November at 2 pm at Central Floresta. How much is the package?"
+            },
+            "ready": true,
+            "waitedMs": 17934,
+            "finalState": "done",
+            "finalText": "TRANSCRIBED · ENGLISH Hi, this is a ZZ test voice note. We would like to book a birthday party for 12 kids on Saturday, the 22nd of November at 2 pm at Central Floresta. How much is the package?",
+            "groupsOpened": 2,
+            "pillLines": [
+              "AI handed over · Resume",
+              "AI handed over to the team",
+              "AI handed over to the team · birthday details"
+            ],
+            "initialsMasked": 25,
+            "numbersMasked": 12,
+            "picture": "835-05-thread-voice-note-transcribed.png",
+            "listMasked": true,
+            "stateAtPicture": "done"
+          }
+        },
+        "reads": {
+          "afterSim": {
+            "at": "2026-11-11T08:32:30.303Z",
+            "conversation": {
+              "route": "GET /api/inbox/conversations/:id",
+              "status": 200,
+              "state": "active",
+              "category": "birthdays",
+              "teamName": "Birthdays & Events",
+              "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+              "language": "en",
+              "aiMode": "live",
+              "aiState": "left_for_team",
+              "aiPaused": false,
+              "handledAt": null
+            },
+            "messagesRoute": {
+              "route": "GET /api/inbox/conversations/:id/messages",
+              "status": 200
+            },
+            "messages": [
+              {
+                "id": "01a1c9bc-2b54-7369-ac57-5d90d2644eeb",
+                "direction": "inbound",
+                "authorKind": "customer",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:31:54.000Z",
+                "providerStatus": null,
+                "body": null,
+                "audioFileId": "01a1c9bc-2b6c-7791-ab26-762503c3b671",
+                "transcriptStatus": "done",
+                "transcript": "Hi, this is a ZZ test voice note. We would like to book a birthday party for 12 kids on Saturday, the 22nd of November at 2 pm at Central Floresta. How much is the package?",
+                "transcriptLanguage": "en",
+                "redacted": false
+              },
+              {
+                "id": "01a1c9bc-798e-791c-ac3f-f73efe53bcff",
+                "direction": "outbound",
+                "authorKind": "ai",
+                "source": "channel",
+                "createdAt": "2026-11-11T08:32:14.717Z",
+                "providerStatus": "sent",
+                "body": "Thank you so much! Our birthday manager will be with you shortly.",
+                "audioFileId": null,
+                "transcriptStatus": null,
+                "transcript": null,
+                "transcriptLanguage": null,
+                "redacted": false
+              }
+            ],
+            "aiPills": [
+              {
+                "kind": "ai_handover",
+                "createdAt": "2026-11-11T08:32:14.717Z",
+                "actorKind": "ai",
+                "turnId": "01a1c9bc-2b65-7a71-9a2a-6e6c7037886f",
+                "intent": "birthday_details",
+                "intents": [
+                  "birthday_details"
+                ],
+                "reason": "OK",
+                "rule": null,
+                "destination": "birthdays",
+                "closingKey": "closing_birthday",
+                "holdingLine": "template",
+                "droppedHoldingRule": null,
+                "messageIds": [
+                  "01a1c9bc-798e-791c-ac3f-f73efe53bcff"
+                ]
+              }
+            ],
+            "otherPills": [
+              "routed",
+              "assigned",
+              "assigned",
+              "classified"
+            ]
+          }
+        },
+        "auditActions": [
+          "inbox.conversation.create",
+          "inbox.conversation.read",
+          "inbox.ai.handover"
+        ]
+      }
+    }
+  },
+  "scrum834": {
+    "dictation": {
+      "en": {
+        "key": "sim",
+        "tag": "en",
+        "at": "2026-11-11T08:30:31.616Z",
+        "pictures": [
+          "834-01-composer-microphone.png",
+          "834-02-composer-recording.png",
+          "834-04-composer-holds-the-words.png",
+          "834-05-reply-sent-by-the-person.png"
+        ],
+        "micButton": {
+          "ariaLabel": "Dictate a reply",
+          "title": "Dictate a reply — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+          "disabled": false
+        },
+        "before": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9ba-02be-76bf-836e-495748d399de",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:29:33.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9ba-9177-7588-8542-95828d3a2140",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:30:09.771Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "initialsMasked": 1,
+        "numbersMasked": 0,
+        "recordingLine": "Recording · 0:02 / 3:00 — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+        "stopButton": {
+          "ariaLabel": "Stop dictating"
+        },
+        "clockAtStop": "Recording · 0:16 / 3:00 — The recording ",
+        "transcribing": {
+          "file": "834-03-composer-transcribing.png",
+          "lineRightAfterPicture": "Transcribing…"
+        },
+        "request": {
+          "route": "POST /api/inbox/conversations/:id/dictation",
+          "contentType": "audio/webm;codecs=opus",
+          "bytes": null,
+          "idempotencyKeySent": false
+        },
+        "response": {
+          "status": 200,
+          "text": "Hi, this is a ZZ test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2 pm at Central Floresta. How much is the package?",
+          "language": "en",
+          "bodyKeys": [
+            "text",
+            "language"
+          ],
+          "error": null
+        },
+        "roundTripMs": 2747,
+        "composerHolds": "Hi, this is a ZZ test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2 pm at Central Floresta. How much is the package?",
+        "lineAfter": null,
+        "after": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9ba-02be-76bf-836e-495748d399de",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:29:33.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9ba-9177-7588-8542-95828d3a2140",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:30:09.771Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "newMessagesSinceBefore": [],
+        "nothingWrittenByDictation": true,
+        "sent": {
+          "route": "POST /api/inbox/conversations/:id/messages",
+          "status": 200,
+          "error": null,
+          "messageId": "01a1c9bb-3337-7a05-9ede-5fc6efa589ff"
+        },
+        "afterSend": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9ba-02be-76bf-836e-495748d399de",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:29:33.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9ba-9177-7588-8542-95828d3a2140",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:30:09.771Z",
+              "hasAudio": false
+            },
+            {
+              "id": "01a1c9bb-3337-7a05-9ede-5fc6efa589ff",
+              "direction": "outbound",
+              "authorKind": "staff",
+              "createdAt": "2026-11-11T08:30:56.733Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "newAfterSend": [
+          {
+            "id": "01a1c9bb-3337-7a05-9ede-5fc6efa589ff",
+            "direction": "outbound",
+            "authorKind": "staff",
+            "createdAt": "2026-11-11T08:30:56.733Z",
+            "hasAudio": false
+          }
+        ],
+        "composerAfterSend": ""
+      }
+    },
+    "audit": {
+      "at": "2026-11-11T08:31:55.657Z",
+      "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+      "status": 200,
+      "actionsOnConversation": [
+        "inbox.conversation.create",
+        "inbox.conversation.read",
+        "inbox.ai.handover",
+        "inbox.dictation"
+      ],
+      "dictationRows": [
+        {
+          "id": "01a1c9bb-3d0c-794f-8aa1-351cb3a2e581",
+          "action": "inbox.dictation",
+          "createdAt": "2026-11-11T08:30:53.708Z",
+          "entityType": "inbox.conversation",
+          "entityId": "01a1c9ba-02bb-7dbc-b109-c9fce99bb795",
+          "actor": "an account (the signed-in person)",
+          "requestId": "present",
+          "before": null,
+          "afterFieldNames": [
+            "bytes",
+            "model",
+            "outcome",
+            "language",
+            "latencyMs",
+            "contentType",
+            "conversationId",
+            "durationSeconds"
+          ],
+          "after": {
+            "bytes": 206328,
+            "model": "(a value, not printed)",
+            "outcome": "ok",
+            "language": "en",
+            "latencyMs": 1665,
+            "contentType": "audio/webm",
+            "conversationId": "01a1c9ba-02bb-7dbc-b109-c9fce99bb795",
+            "durationSeconds": 25.8
+          },
+          "anyWordsField": [],
+          "longestStringValue": 36
+        }
+      ],
+      "spokenWordsFoundInRows": false,
+      "me": {
+        "route": "GET /api/inbox/me",
+        "status": 200,
+        "dictation": {
+          "available": true,
+          "maxSeconds": 180
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T08:43:44.282Z",
+    "conversations": {
+      "sim": {
+        "id": "01a1c9ba-02bb-7dbc-b109-c9fce99bb795",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:32:59.818Z"
+        }
+      },
+      "sim2": {
+        "id": "01a1c9bc-2b52-7974-ae3f-3bf60026bdc5",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:33:01.062Z"
+        }
+      },
+      "th": {
+        "id": "01a1c9c0-3b32-796a-9b4c-042ff1c72182",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:37:12.183Z"
+        }
+      },
+      "ru": {
+        "id": "01a1c9c1-62e3-701d-91c1-ad1304c77475",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:33.872Z"
+        }
+      },
+      "long": {
+        "id": "01a1c9c2-d2d1-76b3-9ef1-3d89ff9e701e",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 409,
+          "error": {
+            "code": "ALREADY_HANDLED",
+            "message": "This conversation is already handled."
+          }
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:39:35.805Z"
+        }
+      },
+      "long2": {
+        "id": "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:43:47.275Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T08:43:48.774Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "834-01-composer-microphone.png",
+      "at": "2026-11-11T08:30:32.447Z",
+      "shows": "the composer of the ZZ TEST thread with the microphone button in its row",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "834-02-composer-recording.png",
+      "at": "2026-11-11T08:30:35.399Z",
+      "shows": "recording: the red dot, the clock and the privacy line under the composer; the button is now Stop",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "834-03-composer-transcribing.png",
+      "shows": "right after Stop: \"Transcribing…\" under the composer, the microphone a spinner (names masked before the press; the list of other conversations masked)",
+      "lineRightAfterPicture": "Transcribing…"
+    },
+    {
+      "file": "834-04-composer-holds-the-words.png",
+      "at": "2026-11-11T08:30:53.743Z",
+      "shows": "the dictated words in the composer; the thread above has no new outgoing message; nothing sent",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "834-05-reply-sent-by-the-person.png",
+      "at": "2026-11-11T08:30:57.532Z",
+      "shows": "Send pressed once by the person: the dictated words are now the staff member's own reply in the ZZ TEST simulator thread",
+      "namesMasked": 1,
+      "masks": 1
+    },
+    {
+      "file": "834-long-04-dictation-refused.png",
+      "at": "2026-11-11T08:43:43.003Z",
+      "shows": "the dictation was refused: the line under the composer",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "834-ru-04-composer-holds-the-words.png",
+      "at": "2026-11-11T08:38:29.839Z",
+      "shows": "the dictated words in the composer; the thread above has no new outgoing message; nothing sent",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "834-th-04-composer-holds-the-words.png",
+      "at": "2026-11-11T08:37:08.064Z",
+      "shows": "the dictated words in the composer; the thread above has no new outgoing message; nothing sent",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "835-01-simulator-record-button.png",
+      "at": "2026-11-11T08:31:34.449Z",
+      "shows": "the Simulator dialog: the voice-note field label and the Record button beside the audio-file picker",
+      "namesMasked": 10,
+      "masks": 1
+    },
+    {
+      "file": "835-02-simulator-recording.png",
+      "at": "2026-11-11T08:31:37.862Z",
+      "shows": "recording: the Stop button and \"Recording · 0:0x / 1:00\"",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "835-03-simulator-recorded-clip.png",
+      "at": "2026-11-11T08:31:51.029Z",
+      "shows": "after Stop: \"Recorded clip · 0:1x\" with its × (discard)",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "835-04-simulator-sent-status.png",
+      "at": "2026-11-11T08:31:54.182Z",
+      "shows": "after \"Send as the customer\": the dialog's status line",
+      "namesMasked": 1,
+      "masks": 1
+    },
+    {
+      "file": "835-05-thread-voice-note-transcribed.png",
+      "at": "2026-11-11T08:32:29.262Z",
+      "shows": "the ZZ TEST thread: the customer's recorded voice note as a voice-note bubble with its transcript",
+      "namesMasked": 41,
+      "masks": 1
+    }
+  ],
+  "extras": {
+    "how": "each language proved the real way: the clip decoded to a 48 kHz WAV inside Chromium (decodeAudioData), the browser relaunched with it as the fake microphone, the microphone pressed in the composer of a fresh ZZ TEST thread, nothing sent",
+    "th": {
+      "clip": "Wikimedia Commons \"Th-Bangkok ceremonial name.ogg\" (Creative Commons), 14.65 s",
+      "thread": {
+        "conversationId": "01a1c9c0-3b32-796a-9b4c-042ff1c72182",
+        "name": "ZZ TEST 834 th",
+        "madeBy": "the simulator Record, the same fake microphone",
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:36:16.473Z",
+          "respondedAt": "2026-11-11T08:36:18.866Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "th"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 345720,
+              "bytesAbout": 259290
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c0-3b32-796a-9b4c-042ff1c72182"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000006",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        "voiceNoteTranscript": "TRANSCRIBED · THAI กรุงเทพมหานคร อมรรัตนโกสินทร์ มหินทรายุธยา มหาดิลก ภพนพรัฐ ราชธานีบุรีรมย์ อุดมราชนิเวศมหาสถาน อมรพิมานอวตารสถิต สกุทัศน์ติยวษุธกรรมประสิทธิ์"
+      },
+      "dictation": {
+        "key": "th",
+        "tag": "th",
+        "at": "2026-11-11T08:36:45.518Z",
+        "pictures": [
+          "834-th-01-composer-microphone.png",
+          "834-th-02-composer-recording.png",
+          "834-th-04-composer-holds-the-words.png"
+        ],
+        "micButton": {
+          "ariaLabel": "Dictate a reply",
+          "title": "Dictate a reply — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+          "disabled": false
+        },
+        "before": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9c0-3b34-7bd0-aff4-7ee5d7955488",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:36:20.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9c0-5c0e-710c-b003-c118ad3623f2",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:36:29.314Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "initialsMasked": 0,
+        "numbersMasked": 0,
+        "recordingLine": "Recording · 0:02 / 3:00 — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+        "stopButton": {
+          "ariaLabel": "Stop dictating"
+        },
+        "clockAtStop": "Recording · 0:16 / 3:00 — The recording ",
+        "transcribing": {
+          "file": "834-th-03-composer-transcribing.png",
+          "lineRightAfterPicture": "Transcribing…"
+        },
+        "request": {
+          "route": "POST /api/inbox/conversations/:id/dictation",
+          "contentType": "audio/webm;codecs=opus",
+          "bytes": null,
+          "idempotencyKeySent": false
+        },
+        "response": {
+          "status": 200,
+          "text": "กรุงเทพมหานคร อมรรัตนโกสินทร์ มหินทรายุธยา มหาดิลก ภพนพรัตน์ราชธานีบุรีรมย์ อุดมราชนิเวศมหาสถาน อมรพิมานอวตารสถิต สักกะทัตติยวิษณุกรรมประสิทธิ์",
+          "language": "th",
+          "bodyKeys": [
+            "text",
+            "language"
+          ],
+          "error": null
+        },
+        "roundTripMs": 2826,
+        "composerHolds": "กรุงเทพมหานคร อมรรัตนโกสินทร์ มหินทรายุธยา มหาดิลก ภพนพรัตน์ราชธานีบุรีรมย์ อุดมราชนิเวศมหาสถาน อมรพิมานอวตารสถิต สักกะทัตติยวิษณุกรรมประสิทธิ์",
+        "lineAfter": null,
+        "after": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9c0-3b34-7bd0-aff4-7ee5d7955488",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:36:20.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9c0-5c0e-710c-b003-c118ad3623f2",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:36:29.314Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "newMessagesSinceBefore": [],
+        "nothingWrittenByDictation": true
+      },
+      "audit": {
+        "at": "2026-11-11T08:37:09.143Z",
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+        "status": 200,
+        "actionsOnConversation": [
+          "inbox.conversation.create",
+          "inbox.conversation.read",
+          "inbox.ai.handover",
+          "inbox.dictation"
+        ],
+        "dictationRows": [
+          {
+            "id": "01a1c9c0-f1cd-7d9c-b6a4-0deb5bd7321b",
+            "action": "inbox.dictation",
+            "createdAt": "2026-11-11T08:37:07.660Z",
+            "entityType": "inbox.conversation",
+            "entityId": "01a1c9c0-3b32-796a-9b4c-042ff1c72182",
+            "actor": "an account (the signed-in person)",
+            "requestId": "present",
+            "before": null,
+            "afterFieldNames": [
+              "bytes",
+              "model",
+              "outcome",
+              "language",
+              "latencyMs",
+              "contentType",
+              "conversationId",
+              "durationSeconds"
+            ],
+            "after": {
+              "bytes": 259289,
+              "model": "(a value, not printed)",
+              "outcome": "ok",
+              "language": "th",
+              "latencyMs": 1327,
+              "contentType": "audio/webm",
+              "conversationId": "01a1c9c0-3b32-796a-9b4c-042ff1c72182",
+              "durationSeconds": 32.4
+            },
+            "anyWordsField": [],
+            "longestStringValue": 36
+          }
+        ],
+        "spokenWordsFoundInRows": false,
+        "me": {
+          "route": "GET /api/inbox/me",
+          "status": 200,
+          "dictation": {
+            "available": true,
+            "maxSeconds": 180
+          }
+        }
+      }
+    },
+    "ru": {
+      "clip": "Tatoeba sentence 6885057 (CC BY), 2.95 s",
+      "thread": {
+        "conversationId": "01a1c9c1-62e3-701d-91c1-ad1304c77475",
+        "name": "ZZ TEST 834 ru",
+        "madeBy": "the simulator Record, the same fake microphone",
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:37:33.043Z",
+          "respondedAt": "2026-11-11T08:37:34.498Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "ru"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 109780,
+              "bytesAbout": 82335
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c1-62e3-701d-91c1-ad1304c77475"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000010",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        "voiceNoteTranscript": "TRANSCRIBED · RUSSIAN Спасибо, что пригласили меня на ваш день рождения."
+      },
+      "dictation": {
+        "key": "ru",
+        "tag": "ru",
+        "at": "2026-11-11T08:38:18.984Z",
+        "pictures": [
+          "834-ru-01-composer-microphone.png",
+          "834-ru-02-composer-recording.png",
+          "834-ru-04-composer-holds-the-words.png"
+        ],
+        "micButton": {
+          "ariaLabel": "Dictate a reply",
+          "title": "Dictate a reply — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+          "disabled": false
+        },
+        "before": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9c1-62e4-7fd2-b90a-475cd3a92cbf",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:37:36.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9c1-bb1d-7ad9-9e0a-5ce5e092cd7b",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:37:59.186Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "initialsMasked": 0,
+        "numbersMasked": 0,
+        "recordingLine": "Recording · 0:02 / 3:00 — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+        "stopButton": {
+          "ariaLabel": "Stop dictating"
+        },
+        "clockAtStop": "Recording · 0:05 / 3:00 — The recording ",
+        "transcribing": {
+          "file": "834-ru-03-composer-transcribing.png",
+          "lineRightAfterPicture": "Transcribing…"
+        },
+        "request": {
+          "route": "POST /api/inbox/conversations/:id/dictation",
+          "contentType": "audio/webm;codecs=opus",
+          "bytes": null,
+          "idempotencyKeySent": false
+        },
+        "response": {
+          "status": 200,
+          "text": "Спасибо, что пригласили меня на ваш день рождения.",
+          "language": "ru",
+          "bodyKeys": [
+            "text",
+            "language"
+          ],
+          "error": null
+        },
+        "roundTripMs": 2116,
+        "composerHolds": "Спасибо, что пригласили меня на ваш день рождения.",
+        "lineAfter": null,
+        "after": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9c1-62e4-7fd2-b90a-475cd3a92cbf",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:37:36.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9c1-bb1d-7ad9-9e0a-5ce5e092cd7b",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:37:59.186Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "newMessagesSinceBefore": [],
+        "nothingWrittenByDictation": true
+      },
+      "audit": {
+        "at": "2026-11-11T08:38:30.855Z",
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+        "status": 200,
+        "actionsOnConversation": [
+          "inbox.conversation.create",
+          "inbox.conversation.read",
+          "inbox.ai.handover",
+          "inbox.dictation"
+        ],
+        "dictationRows": [
+          {
+            "id": "01a1c9c2-32b4-732d-9bee-e727c727750f",
+            "action": "inbox.dictation",
+            "createdAt": "2026-11-11T08:38:29.812Z",
+            "entityType": "inbox.conversation",
+            "entityId": "01a1c9c1-62e3-701d-91c1-ad1304c77475",
+            "actor": "an account (the signed-in person)",
+            "requestId": "present",
+            "before": null,
+            "afterFieldNames": [
+              "bytes",
+              "model",
+              "outcome",
+              "language",
+              "latencyMs",
+              "contentType",
+              "conversationId",
+              "durationSeconds"
+            ],
+            "after": {
+              "bytes": 82335,
+              "model": "(a value, not printed)",
+              "outcome": "ok",
+              "language": "ru",
+              "latencyMs": 1230,
+              "contentType": "audio/webm",
+              "conversationId": "01a1c9c1-62e3-701d-91c1-ad1304c77475",
+              "durationSeconds": 10.3
+            },
+            "anyWordsField": [],
+            "longestStringValue": 36
+          }
+        ],
+        "spokenWordsFoundInRows": false,
+        "me": {
+          "route": "GET /api/inbox/me",
+          "status": 200,
+          "dictation": {
+            "available": true,
+            "maxSeconds": 180
+          }
+        }
+      }
+    },
+    "longDictation": {
+      "clip": "the English text-to-speech clip looping, recorded for 2:05 by the composer clock",
+      "thread": {
+        "conversationId": "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b",
+        "name": "ZZ TEST 834 long",
+        "madeBy": "the simulator Record, the same fake microphone",
+        "sent": {
+          "by": "customer",
+          "what": "voice (recorded in the dialog)",
+          "at": "2026-11-11T08:41:04.791Z",
+          "respondedAt": "2026-11-11T08:41:06.819Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "requestSent": {
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+            "text": null,
+            "hint": {
+              "category": "birthdays",
+              "language": "en"
+            },
+            "voice": {
+              "contentType": "audio/webm;codecs=opus",
+              "base64Chars": 300040,
+              "bytesAbout": 225030
+            }
+          },
+          "status": 200,
+          "outcome": "processed",
+          "messages": 1,
+          "conversationsCreated": 1,
+          "conversationIds": [
+            "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b"
+          ],
+          "externalMessageId": "wamid.SIM.MWBV3EDJA8069021.IN.000012",
+          "error": null,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        "voiceNoteTranscript": "TRANSCRIBED · ENGLISH Hi, this is a zz test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2 pm at Central Floresta. How much is the package?"
+      },
+      "dictation": {
+        "key": "long2",
+        "tag": "long",
+        "at": "2026-11-11T08:41:33.366Z",
+        "pictures": [
+          "834-long-01-composer-microphone.png",
+          "834-long-02-composer-recording.png",
+          "834-long-04-dictation-refused.png"
+        ],
+        "micButton": {
+          "ariaLabel": "Dictate a reply",
+          "title": "Dictate a reply — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+          "disabled": false
+        },
+        "before": {
+          "status": 200,
+          "list": [
+            {
+              "id": "01a1c9c4-9e61-768b-a7d1-629bb8f67bbf",
+              "direction": "inbound",
+              "authorKind": "customer",
+              "createdAt": "2026-11-11T08:41:08.000Z",
+              "hasAudio": true
+            },
+            {
+              "id": "01a1c9c4-ef9c-78e1-af1f-32f729864bb8",
+              "direction": "outbound",
+              "authorKind": "ai",
+              "createdAt": "2026-11-11T08:41:29.232Z",
+              "hasAudio": false
+            }
+          ]
+        },
+        "initialsMasked": 0,
+        "numbersMasked": 0,
+        "recordingLine": "Recording · 0:02 / 3:00 — The recording goes to the transcription provider and is not kept. Nothing reaches the customer until you press Send.",
+        "stopButton": {
+          "ariaLabel": "Stop dictating"
+        },
+        "clockAtStop": "Recording · 2:05 / 3:00 — The recording ",
+        "transcribing": {
+          "file": "834-long-03-composer-transcribing.png",
+          "lineRightAfterPicture": "Transcribing…"
+        },
+        "request": {
+          "route": "POST /api/inbox/conversations/:id/dictation",
+          "contentType": "audio/webm;codecs=opus",
+          "bytes": null,
+          "idempotencyKeySent": false
+        },
+        "response": {
+          "status": 413,
+          "text": null,
+          "language": null,
+          "bodyKeys": [
+            "error"
+          ],
+          "error": {
+            "code": "DICTATION_TOO_LONG",
+            "message": "A dictation is at most 3 minutes and 25 MB. Speak the reply in parts.",
+            "details": {
+              "maxSeconds": 180,
+              "maxBytes": 26214400,
+              "durationSeconds": 219.3
+            }
+          }
+        },
+        "roundTripMs": 2780,
+        "refusalLine": "The recording was too long (at most 3:00). Speak the reply in parts."
+      },
+      "audit": {
+        "at": "2026-11-11T08:43:44.166Z",
+        "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+        "status": 200,
+        "actionsOnConversation": [
+          "inbox.conversation.create",
+          "inbox.conversation.read",
+          "inbox.ai.handover",
+          "inbox.dictation"
+        ],
+        "dictationRows": [
+          {
+            "id": "01a1c9c6-ffb2-71c8-8574-cb9a12b4f040",
+            "action": "inbox.dictation",
+            "createdAt": "2026-11-11T08:43:44.434Z",
+            "entityType": "inbox.conversation",
+            "entityId": "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b",
+            "actor": "an account (the signed-in person)",
+            "requestId": "present",
+            "before": null,
+            "afterFieldNames": [
+              "bytes",
+              "model",
+              "outcome",
+              "language",
+              "latencyMs",
+              "contentType",
+              "conversationId",
+              "durationSeconds"
+            ],
+            "after": {
+              "bytes": 1754360,
+              "model": "(a value, not printed)",
+              "outcome": "TOO_LONG",
+              "language": null,
+              "latencyMs": 0,
+              "contentType": "audio/webm",
+              "conversationId": "01a1c9c4-9e5f-7a47-92ab-e2bbff9ffe1b",
+              "durationSeconds": 219.3
+            },
+            "anyWordsField": [],
+            "longestStringValue": 36
+          }
+        ],
+        "spokenWordsFoundInRows": false,
+        "me": {
+          "route": "GET /api/inbox/me",
+          "status": 200,
+          "dictation": {
+            "available": true,
+            "maxSeconds": 180
+          }
+        }
+      },
+      "firstTry": "a first thread (key long) was closed by the assistant itself after a 5 s note (\"Handled — composer disabled\"), so the microphone is rightly not offered there; the check was run in a second thread"
+    }
+  }
+}
