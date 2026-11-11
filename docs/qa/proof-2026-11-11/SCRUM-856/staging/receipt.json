@@ -1,0 +1,843 @@
+{
+  "ticket": "SCRUM-856",
+  "expectedSha": "14a7bcdf1e83c371050e70bb5d45a4f962f4a9ca",
+  "startedAt": "2026-11-11T18:29:02.989Z",
+  "phase": "remove exact owned attachments, checklists and run, then sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bf3f16d6-33f5-4259-b38f-02497ad7a408",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/dbb6c8ba-2128-4b2a-a0e2-99a08f5c704c",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/f96d68d4-0f34-4af0-bc4c-7e93b6d87d18",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/232f944a-32e4-449b-bfc5-6db37fccf321",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/e07632b5-89d8-48e6-aee7-858379c2d8ca",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/eff0d60e-96e2-442d-a797-e5466d307371",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2a08d11d-ddbe-4c2a-b954-8acda1c84597",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/015acaf8-4a44-4436-9202-07635d675dc0",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/b38adbc4-af4f-4032-a841-841c87930ac4",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/6c7b4ecd-c366-4fbf-acc1-c23c4ecc45c6",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2b64aedc-5f28-4f06-ba74-57c0c9a1458f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/720f006c-9c6a-41d1-b8a6-f28de0d79f49",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklists/templates",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2da0614c-be8b-4117-bad4-f1936f91ce6f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/by-item/d108239e-734a-4de6-a1d6-b71a21ca9fd8",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/checklist-runs/start",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/f2326c61-c5eb-466c-b76c-0233feece15d",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/ef1db417-218d-4985-baba-79e74ee7bfa8",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/5d0ecab3-120c-4d5e-b72d-da908ccf8927",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/642024ff-14cb-4210-aad0-900f9f6f1026",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/2f836a99-a83a-4140-9342-c7c2a94bea26",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/c985202f-1b61-4e7d-8800-e3f0f36fe83a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklist-media/7d3d2077-c034-4473-a522-c89466f50a10",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-media/url",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/bf3f16d6-33f5-4259-b38f-02497ad7a408",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/bf3f16d6-33f5-4259-b38f-02497ad7a408",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/f96d68d4-0f34-4af0-bc4c-7e93b6d87d18",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/f96d68d4-0f34-4af0-bc4c-7e93b6d87d18",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/e07632b5-89d8-48e6-aee7-858379c2d8ca",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/e07632b5-89d8-48e6-aee7-858379c2d8ca",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/2a08d11d-ddbe-4c2a-b954-8acda1c84597",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2a08d11d-ddbe-4c2a-b954-8acda1c84597",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/b38adbc4-af4f-4032-a841-841c87930ac4",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/b38adbc4-af4f-4032-a841-841c87930ac4",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/2b64aedc-5f28-4f06-ba74-57c0c9a1458f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2b64aedc-5f28-4f06-ba74-57c0c9a1458f",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/checklists/templates/2da0614c-be8b-4117-bad4-f1936f91ce6f",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklists/templates/2da0614c-be8b-4117-bad4-f1936f91ce6f",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/checklist-runs/0da58399-f371-4d4a-8ef0-59208541d811",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "templates": [
+    "bf3f16d6-33f5-4259-b38f-02497ad7a408",
+    "f96d68d4-0f34-4af0-bc4c-7e93b6d87d18",
+    "e07632b5-89d8-48e6-aee7-858379c2d8ca",
+    "2a08d11d-ddbe-4c2a-b954-8acda1c84597",
+    "b38adbc4-af4f-4032-a841-841c87930ac4",
+    "2b64aedc-5f28-4f06-ba74-57c0c9a1458f",
+    "2da0614c-be8b-4117-bad4-f1936f91ce6f"
+  ],
+  "runs": [
+    "0da58399-f371-4d4a-8ef0-59208541d811"
+  ],
+  "attachments": [
+    "f2326c61-c5eb-466c-b76c-0233feece15d",
+    "ef1db417-218d-4985-baba-79e74ee7bfa8",
+    "5d0ecab3-120c-4d5e-b72d-da908ccf8927",
+    "642024ff-14cb-4210-aad0-900f9f6f1026",
+    "2f836a99-a83a-4140-9342-c7c2a94bea26",
+    "c985202f-1b61-4e7d-8800-e3f0f36fe83a",
+    "7d3d2077-c034-4473-a522-c89466f50a10"
+  ],
+  "withLengthRuns": [
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2237,
+      "formTheBrowserSent": {
+        "msAfterTheFileWasChosen": 458,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId",
+          "width",
+          "height",
+          "durationSeconds"
+        ],
+        "width": "1280",
+        "height": "720",
+        "durationSeconds": "6"
+      },
+      "attachmentId": "f2326c61-c5eb-466c-b76c-0233feece15d",
+      "type": "video",
+      "storedFileSize": 9936558,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "bar": [
+        5,
+        10,
+        22,
+        55,
+        88,
+        95
+      ],
+      "errorLine": null,
+      "run": 1,
+      "file": {
+        "fileName": "ZZ TEST SCRUM-856 video 1.webm",
+        "fileType": "video/webm",
+        "size": 9936558,
+        "sizeMB": 9.48,
+        "lengthWrittenIntoHeader": true,
+        "browserLengthOfFileSent": 6
+      },
+      "readBack": {
+        "status": 200,
+        "found": true,
+        "type": "video",
+        "fileSize": 9936558,
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "thumbnailLabel": "0:06",
+      "pass": true
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2704,
+      "formTheBrowserSent": {
+        "msAfterTheFileWasChosen": 452,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId",
+          "width",
+          "height",
+          "durationSeconds"
+        ],
+        "width": "1280",
+        "height": "720",
+        "durationSeconds": "6"
+      },
+      "attachmentId": "ef1db417-218d-4985-baba-79e74ee7bfa8",
+      "type": "video",
+      "storedFileSize": 10950067,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "bar": [
+        5,
+        21,
+        43,
+        72,
+        95
+      ],
+      "errorLine": null,
+      "run": 2,
+      "file": {
+        "fileName": "ZZ TEST SCRUM-856 video 2.webm",
+        "fileType": "video/webm",
+        "size": 10950067,
+        "sizeMB": 10.44,
+        "lengthWrittenIntoHeader": true,
+        "browserLengthOfFileSent": 6
+      },
+      "readBack": {
+        "status": 200,
+        "found": true,
+        "type": "video",
+        "fileSize": 10950067,
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "thumbnailLabel": "0:06",
+      "pass": true
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2023,
+      "formTheBrowserSent": {
+        "msAfterTheFileWasChosen": 386,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId",
+          "width",
+          "height",
+          "durationSeconds"
+        ],
+        "width": "1280",
+        "height": "720",
+        "durationSeconds": "6"
+      },
+      "attachmentId": "5d0ecab3-120c-4d5e-b72d-da908ccf8927",
+      "type": "video",
+      "storedFileSize": 10959119,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "bar": [
+        5,
+        10,
+        37,
+        51,
+        81,
+        95
+      ],
+      "errorLine": null,
+      "run": 3,
+      "file": {
+        "fileName": "ZZ TEST SCRUM-856 video 3.webm",
+        "fileType": "video/webm",
+        "size": 10959119,
+        "sizeMB": 10.45,
+        "lengthWrittenIntoHeader": true,
+        "browserLengthOfFileSent": 6
+      },
+      "readBack": {
+        "status": 200,
+        "found": true,
+        "type": "video",
+        "fileSize": 10959119,
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "thumbnailLabel": "0:06",
+      "pass": true
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2513,
+      "formTheBrowserSent": {
+        "msAfterTheFileWasChosen": 383,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId",
+          "width",
+          "height",
+          "durationSeconds"
+        ],
+        "width": "1280",
+        "height": "720",
+        "durationSeconds": "6"
+      },
+      "attachmentId": "642024ff-14cb-4210-aad0-900f9f6f1026",
+      "type": "video",
+      "storedFileSize": 10947983,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "bar": [
+        5,
+        10,
+        26,
+        53,
+        81,
+        95
+      ],
+      "errorLine": null,
+      "run": 4,
+      "file": {
+        "fileName": "ZZ TEST SCRUM-856 video 4.webm",
+        "fileType": "video/webm",
+        "size": 10947983,
+        "sizeMB": 10.44,
+        "lengthWrittenIntoHeader": true,
+        "browserLengthOfFileSent": 6
+      },
+      "readBack": {
+        "status": 200,
+        "found": true,
+        "type": "video",
+        "fileSize": 10947983,
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "thumbnailLabel": "0:06",
+      "pass": true
+    },
+    {
+      "kind": "video with its length",
+      "route": "/api/checklist-media/upload",
+      "status": 200,
+      "wallMs": 2396,
+      "formTheBrowserSent": {
+        "msAfterTheFileWasChosen": 465,
+        "fields": [
+          "file",
+          "target",
+          "checklistTemplateItemId",
+          "width",
+          "height",
+          "durationSeconds"
+        ],
+        "width": "1280",
+        "height": "720",
+        "durationSeconds": "6"
+      },
+      "attachmentId": "2f836a99-a83a-4140-9342-c7c2a94bea26",
+      "type": "video",
+      "storedFileSize": 10941411,
+      "answered": {
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "bar": [
+        5,
+        26,
+        53,
+        83,
+        95
+      ],
+      "errorLine": null,
+      "run": 5,
+      "file": {
+        "fileName": "ZZ TEST SCRUM-856 video 5.webm",
+        "fileType": "video/webm",
+        "size": 10941411,
+        "sizeMB": 10.43,
+        "lengthWrittenIntoHeader": true,
+        "browserLengthOfFileSent": 6
+      },
+      "readBack": {
+        "status": 200,
+        "found": true,
+        "type": "video",
+        "fileSize": 10941411,
+        "width": 1280,
+        "height": 720,
+        "durationSeconds": 6
+      },
+      "thumbnailLabel": "0:06",
+      "pass": true
+    }
+  ],
+  "bucketPuts": [
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    },
+    {
+      "method": "PUT",
+      "outcome": "failed",
+      "reason": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "attachmentId": "f2326c61-c5eb-466c-b76c-0233feece15d",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "ef1db417-218d-4985-baba-79e74ee7bfa8",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "5d0ecab3-120c-4d5e-b72d-da908ccf8927",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "642024ff-14cb-4210-aad0-900f9f6f1026",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "2f836a99-a83a-4140-9342-c7c2a94bea26",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "c985202f-1b61-4e7d-8800-e3f0f36fe83a",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "attachmentId": "7d3d2077-c034-4473-a522-c89466f50a10",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "bf3f16d6-33f5-4259-b38f-02497ad7a408",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "f96d68d4-0f34-4af0-bc4c-7e93b6d87d18",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "e07632b5-89d8-48e6-aee7-858379c2d8ca",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "2a08d11d-ddbe-4c2a-b954-8acda1c84597",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "b38adbc4-af4f-4032-a841-841c87930ac4",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "2b64aedc-5f28-4f06-ba74-57c0c9a1458f",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "templateId": "2da0614c-be8b-4117-bad4-f1936f91ce6f",
+      "deleteStatus": 200,
+      "readStatus": 404
+    },
+    {
+      "runId": "0da58399-f371-4d4a-8ef0-59208541d811",
+      "removedWithChecklist": true,
+      "readStatus": 404
+    },
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "readStatus": 401
+    }
+  ],
+  "passed": true,
+  "appVersionBefore": "14a7bcdf1e83c371050e70bb5d45a4f962f4a9ca",
+  "withLengthPassed": 5,
+  "withLengthOf": 5,
+  "photo": {
+    "kind": "photo",
+    "route": "/api/checklist-media/upload",
+    "status": 200,
+    "wallMs": 600,
+    "formTheBrowserSent": {
+      "msAfterTheFileWasChosen": 162,
+      "fields": [
+        "file",
+        "target",
+        "checklistTemplateItemId",
+        "width",
+        "height"
+      ],
+      "width": "320",
+      "height": "180",
+      "durationSeconds": null
+    },
+    "attachmentId": "c985202f-1b61-4e7d-8800-e3f0f36fe83a",
+    "type": "image",
+    "storedFileSize": 583,
+    "answered": {
+      "width": 320,
+      "height": 180,
+      "durationSeconds": null
+    },
+    "bar": [
+      10,
+      95
+    ],
+    "errorLine": null,
+    "fixture": {
+      "bytes": 583,
+      "pixels": "320 x 180"
+    },
+    "readBack": {
+      "status": 200,
+      "found": true,
+      "type": "image",
+      "fileSize": 583,
+      "width": 320,
+      "height": 180,
+      "durationSeconds": null
+    },
+    "pass": true
+  },
+  "noLength": {
+    "kind": "no-length video",
+    "route": "/api/checklist-media/upload",
+    "status": 200,
+    "wallMs": 2639,
+    "formTheBrowserSent": {
+      "msAfterTheFileWasChosen": 463,
+      "fields": [
+        "file",
+        "target",
+        "checklistTemplateItemId",
+        "width",
+        "height"
+      ],
+      "width": "1280",
+      "height": "720",
+      "durationSeconds": null
+    },
+    "attachmentId": "7d3d2077-c034-4473-a522-c89466f50a10",
+    "type": "video",
+    "storedFileSize": 10940440,
+    "answered": {
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": null
+    },
+    "bar": [
+      5,
+      26,
+      53,
+      81,
+      95
+    ],
+    "errorLine": null,
+    "file": {
+      "fileName": "ZZ TEST SCRUM-856 no-length video.webm",
+      "fileType": "video/webm",
+      "size": 10940440,
+      "sizeMB": 10.43,
+      "lengthWrittenIntoHeader": false,
+      "browserLengthOfFileSent": "Infinity"
+    },
+    "readBack": {
+      "status": 200,
+      "found": true,
+      "type": "video",
+      "fileSize": 10940440,
+      "width": 1280,
+      "height": 720,
+      "durationSeconds": null
+    },
+    "thumbnailLabel": "",
+    "playback": {
+      "readyState": 4,
+      "currentTime": 1.91,
+      "paused": false,
+      "videoWidth": 1280,
+      "videoHeight": 720,
+      "error": null
+    },
+    "pass": true
+  },
+  "appVersionAfter": "14a7bcdf1e83c371050e70bb5d45a4f962f4a9ca",
+  "behaviorPassed": true,
+  "finishedAt": "2026-11-11T18:30:24.568Z"
+}

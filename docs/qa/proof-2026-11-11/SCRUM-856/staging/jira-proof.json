@@ -1,0 +1,28 @@
+{
+  "key": "SCRUM-856",
+  "before": {
+    "status": "In Progress",
+    "summary": "Checklist media: the upload waits for the picture or video to be measured, so its size and length are saved"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13196",
+        "name": "856-1-video-length-label.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "walkTesting": "Testing",
+  "walkDeployed": "Deployed",
+  "after": {
+    "status": "Deployed",
+    "summary": "Checklist media: the upload waits for the picture or video to be measured, so its size and length are saved"
+  },
+  "images": [
+    "856-1-video-length-label.png"
+  ]
+}
