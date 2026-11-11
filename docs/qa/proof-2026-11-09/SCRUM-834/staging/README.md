@@ -122,3 +122,27 @@ with the same words.
 - `834-th-04`, `834-ru-04`, `834-long-04`: the extras.
 - `835-01` … `835-05`: the simulator's Record (SCRUM-835; its own folder
   points here).
+
+## Re-check after the length fix (16:00-16:05 Bangkok, 09:00-09:05 UTC)
+
+The length fix (`11cfd3934`: the api reads a browser recording's length from
+the WebM itself, its last cluster, instead of estimating it from the size) was
+live on oto-api-staging as deploy `dep-dbq2ov3rjlhs73b2e6a0`, commit
+`11cfd393`, at 08:55:36 UTC; the run started after a further 90 seconds. Same
+harness, same fake microphone, one fresh thread "ZZ TEST 834 long2" on Demo
+WhatsApp · Central Floresta made with the simulator's Record (200,
+`processed`). Nothing was sent in it.
+
+| # | Check | Result | Value | Picture |
+|---|---|---|---|---|
+| 20 | A long dictation under the clock's ceiling (the English clip looping, Stop pressed at 125 s; the clock read "Recording · 2:04 / 3:00" a moment before the press) | Pass | `POST …/dictation` 200, `language: "en"`; no refusal line; the words landed in the composer; no message written (the same two messages before and after). Audit row `inbox.dictation`: `outcome: ok`, `durationSeconds: 124.9` (was 219.3), `bytes: 1750496`, `latencyMs: 2440`, no words | `834-long-05-two-minute-dictation-accepted.png` |
+| 21 | A short dictation (the clip once, not looping, stopped at "0:16 / 3:00") | Pass | 200, `language: "en"`; audit row `outcome: ok`, `durationSeconds: 16` (was 25.8), `bytes: 206300`, `latencyMs: 1531` | — |
+| 22 | Clean-up | Pass | the thread read back `handled`; signed out of the inbox, the Console and the launcher, each read back 401; the driver stopped | — |
+
+One thing to know about check 20: the clip is one 15-second sentence played
+eight times over, and the transcription provider gave the sentence back once
+(169 characters: "Hi, this is AZZ test voice note. … How much is the
+package?"), not eight times. The whole two-minute recording was accepted and
+sent to the provider (the audit row's length and bytes say so); the provider
+folds exact repeats. A long dictation of varied speech was not tried, since no
+real voice is used here.

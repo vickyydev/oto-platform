@@ -1744,5 +1744,217 @@
       },
       "firstTry": "a first thread (key long) was closed by the assistant itself after a 5 s note (\"Handled — composer disabled\"), so the microphone is rightly not offered there; the check was run in a second thread"
     }
+  },
+  "recheckAfterLengthFix": {
+    "fix": "11cfd3934 fix(api): read a browser recording's real length from its WebM",
+    "deploy": {
+      "service": "oto-api-staging",
+      "deployId": "dep-dbq2ov3rjlhs73b2e6a0",
+      "status": "live",
+      "commit": "11cfd393",
+      "liveAt": "2026-11-11T08:55:36Z",
+      "runStartedAfter": "2026-11-11T08:57:14Z"
+    },
+    "thread": {
+      "conversationId": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+      "name": "ZZ TEST 834 long2",
+      "madeBy": "the simulator Record",
+      "sent": {
+        "by": "customer",
+        "what": "voice (recorded in the dialog)",
+        "at": "2026-11-11T08:57:52.607Z",
+        "respondedAt": "2026-11-11T08:57:54.306Z",
+        "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Record → Stop → Send as the customer (its own POST /api/inbox/simulator/inbound)",
+        "requestSent": {
+          "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503",
+          "text": null,
+          "hint": {
+            "category": "birthdays",
+            "language": "en"
+          },
+          "voice": {
+            "contentType": "audio/webm;codecs=opus",
+            "base64Chars": 300040,
+            "bytesAbout": 225030
+          }
+        },
+        "status": 200,
+        "outcome": "processed",
+        "messages": 1,
+        "conversationsCreated": 1,
+        "conversationIds": [
+          "01a1c9d3-ffa1-74d9-addf-6356b6495411"
+        ],
+        "externalMessageId": "wamid.SIM.MWBVVTWU8A13064F.IN.000001",
+        "error": null,
+        "dialogSaid": "Received: a new conversation, routed."
+      }
+    },
+    "longDictation": {
+      "how": "the English clip looping, Stop pressed at 125 s",
+      "at": "2026-11-11T08:58:28.855Z",
+      "clockAtStop": "Recording · 2:04 / 3:00 — The recording ",
+      "request": {
+        "route": "POST /api/inbox/conversations/:id/dictation",
+        "contentType": "audio/webm;codecs=opus",
+        "bytes": null,
+        "idempotencyKeySent": false
+      },
+      "response": {
+        "status": 200,
+        "text": "Hi, this is AZZ test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+        "language": "en",
+        "bodyKeys": [
+          "text",
+          "language"
+        ],
+        "error": null
+      },
+      "composerHolds": "Hi, this is AZZ test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2pm at Central Floresta. How much is the package?",
+      "nothingWrittenByDictation": true,
+      "newMessagesSinceBefore": [],
+      "audit": {
+        "id": "01a1c9d6-8497-729c-a769-db825090541f",
+        "action": "inbox.dictation",
+        "createdAt": "2026-11-11T09:00:41.495Z",
+        "entityType": "inbox.conversation",
+        "entityId": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+        "actor": "an account (the signed-in person)",
+        "requestId": "present",
+        "before": null,
+        "afterFieldNames": [
+          "bytes",
+          "model",
+          "outcome",
+          "language",
+          "latencyMs",
+          "contentType",
+          "conversationId",
+          "durationSeconds"
+        ],
+        "after": {
+          "bytes": 1750496,
+          "model": "(a value, not printed)",
+          "outcome": "ok",
+          "language": "en",
+          "latencyMs": 2440,
+          "contentType": "audio/webm",
+          "conversationId": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+          "durationSeconds": 124.9
+        },
+        "anyWordsField": [],
+        "longestStringValue": 36
+      },
+      "picture": "834-long-05-two-minute-dictation-accepted.png",
+      "before": {
+        "status": 413,
+        "durationSeconds": 219.3
+      }
+    },
+    "shortDictation": {
+      "how": "the English clip once (not looping), Stop pressed at 16 s",
+      "at": "2026-11-11T09:04:42.544Z",
+      "clockAtStop": "Recording · 0:16 / 3:00 — The recording ",
+      "request": {
+        "route": "POST /api/inbox/conversations/:id/dictation",
+        "contentType": "audio/webm;codecs=opus",
+        "bytes": null,
+        "idempotencyKeySent": false
+      },
+      "response": {
+        "status": 200,
+        "text": "Hi, this is a z z test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2 p.m. at Central Floresta. How much is the package?",
+        "language": "en",
+        "bodyKeys": [
+          "text",
+          "language"
+        ],
+        "error": null
+      },
+      "composerHolds": "Hi, this is a z z test voice note. We would like to book a birthday party for 12 kids on Saturday the 22nd of November at 2 p.m. at Central Floresta. How much is the package?",
+      "nothingWrittenByDictation": true,
+      "newMessagesSinceBefore": [],
+      "audit": {
+        "id": "01a1c9da-88df-768c-ba9f-155e4083bb40",
+        "action": "inbox.dictation",
+        "createdAt": "2026-11-11T09:05:04.734Z",
+        "entityType": "inbox.conversation",
+        "entityId": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+        "actor": "an account (the signed-in person)",
+        "requestId": "present",
+        "before": null,
+        "afterFieldNames": [
+          "bytes",
+          "model",
+          "outcome",
+          "language",
+          "latencyMs",
+          "contentType",
+          "conversationId",
+          "durationSeconds"
+        ],
+        "after": {
+          "bytes": 206300,
+          "model": "(a value, not printed)",
+          "outcome": "ok",
+          "language": "en",
+          "latencyMs": 1531,
+          "contentType": "audio/webm",
+          "conversationId": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+          "durationSeconds": 16
+        },
+        "anyWordsField": [],
+        "longestStringValue": 36
+      },
+      "before": {
+        "durationSeconds": 25.8
+      }
+    },
+    "note": "the looping clip is one sentence eight times; the provider returned it once",
+    "cleanup": {
+      "id": "01a1c9d3-ffa1-74d9-addf-6356b6495411",
+      "handle": {
+        "route": "POST /api/inbox/conversations/:id/handle",
+        "status": 200,
+        "error": null
+      },
+      "readBack": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T09:05:08.823Z"
+      }
+    },
+    "signOut": {
+      "at": "2026-11-11T09:05:09.536Z",
+      "signOut": {
+        "inbox": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "console": {
+          "route": "POST /api/auth/sign-out (Console)",
+          "status": 200
+        },
+        "launcher": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        }
+      },
+      "readBack": {
+        "inbox": {
+          "route": "GET /api/inbox/me (inbox)",
+          "status": 401
+        },
+        "console": {
+          "route": "GET /api/me (Console)",
+          "status": 401
+        },
+        "launcher": {
+          "route": "GET /api/me (launcher)",
+          "status": 401
+        }
+      }
+    }
   }
 }
