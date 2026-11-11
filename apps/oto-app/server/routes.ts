@@ -23868,7 +23868,6 @@ Return a JSON object with:
 Focus on actionable steps that staff can follow. If the document contains multiple procedures, focus on the main one.
 Return ONLY valid JSON, no markdown or explanation.`,
         user: `Please extract structured steps from this document:\n\n${fullText.substring(0, 8000)}`,
-        temperature: 0.3,
         maxTokens: 2000,
       });
 

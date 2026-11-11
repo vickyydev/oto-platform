@@ -512,6 +512,10 @@ jobs:
       - name: The AI fill checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/ai-fill.check.ts
+      # SCRUM-785: capture the SDK request; no real model key or provider call.
+      - name: The default model sampling checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/s785-model-sampling.check.ts
       # The rehearsal uses disposable databases on this job's scratch server.
       # It dumps the baseline sample from public, restores and renames it,
       # imports after every platform migration, then runs the app migrator
@@ -579,6 +583,10 @@ jobs:
         run: |
           npx tsx tests/suite-sign-in.check.ts
           npx tsx tests/suite-sign-in-routes.check.ts
+      # SCRUM-784: real password doors and current employee launcher request.
+      - name: The legacy password door checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/legacy-password-doors.check.ts
       # SCRUM-591 (P1, this app's half): the launcher's hand-off may name a
       # screen to land on. The receiver's copy of the shared path rule, pinned
       # by the same vectors as packages/shared/test/handoff-target.test.ts,

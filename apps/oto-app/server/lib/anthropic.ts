@@ -51,10 +51,13 @@ export interface AiCompleteOptions {
 
 /** One system+user round trip returning the answer text. */
 export async function aiComplete(opts: AiCompleteOptions): Promise<string> {
+  const model = resolveAiModel(opts.model);
   const message = await getAnthropic().messages.create({
-    model: resolveAiModel(opts.model),
+    model,
     max_tokens: opts.maxTokens,
-    ...(opts.temperature === undefined ? {} : { temperature: opts.temperature }),
+    // SCRUM-785: the default extraction model refuses sampling settings.
+    // Apply this after resolution so old stored model names are covered too.
+    ...(model === DEFAULT_AI_MODEL || opts.temperature === undefined ? {} : { temperature: opts.temperature }),
     system: opts.system,
     messages: [{ role: "user", content: opts.user }],
   });
