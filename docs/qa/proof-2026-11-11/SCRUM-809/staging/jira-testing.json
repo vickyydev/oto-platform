@@ -1,0 +1,25 @@
+{
+  "key": "SCRUM-809",
+  "before": {
+    "status": "In Progress",
+    "summary": "A new till that reuses an archived till’s receipt prefix cannot finish any sale"
+  },
+  "attached": {
+    "status": 200,
+    "files": [
+      {
+        "id": "12999",
+        "name": "s809-archived-prefix-refused.png"
+      },
+      {
+        "id": "13000",
+        "name": "s809-corrected-prefix-saved.png"
+      }
+    ]
+  },
+  "commentStatus": 201,
+  "after": {
+    "status": "Testing",
+    "summary": "A new till that reuses an archived till’s receipt prefix cannot finish any sale"
+  }
+}
