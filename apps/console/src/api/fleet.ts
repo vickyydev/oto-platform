@@ -85,6 +85,7 @@ export const STATION_DEVICE_ROLES = [
   'receipt',
   'kids_band',
   'adult_band',
+  'dropoff_band',
   'kitchen',
   'bar',
   'scanner',

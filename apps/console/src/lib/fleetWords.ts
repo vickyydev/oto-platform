@@ -129,6 +129,7 @@ const DEVICE_ROLE_WORDS: Record<StationDeviceRole, string> = {
   receipt: 'Receipt printer',
   kids_band: "Kids' band printer",
   adult_band: 'Adult band printer',
+  dropoff_band: 'Drop-off band printer',
   kitchen: 'Kitchen printer',
   bar: 'Bar printer',
   scanner: 'Scanner',
@@ -322,6 +323,7 @@ const ROLE_ACCEPTS: Record<StationDeviceRole, DeviceKind[]> = {
   receipt: ['receipt_printer'],
   kids_band: ['band_printer'],
   adult_band: ['band_printer'],
+  dropoff_band: ['band_printer'],
   kitchen: ['kitchen_printer', 'receipt_printer'],
   bar: ['bar_printer', 'receipt_printer'],
   scanner: ['scanner'],
@@ -345,6 +347,9 @@ const KIND_ROLES: Record<StationKind, StationDeviceRole[]> = {
     'receipt',
     'kids_band',
     'adult_band',
+    // SCRUM-861 — the printer loaded with drop-off band stock. Left unset, a
+    // dropped-off child's band prints on the kids' band printer as before.
+    'dropoff_band',
     'scanner',
     'card_terminal',
     'qr_terminal',
