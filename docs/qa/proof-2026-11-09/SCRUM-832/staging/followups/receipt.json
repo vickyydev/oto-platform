@@ -1,0 +1,937 @@
+{
+  "unit": "SCRUM-832 follow-ups (one-line hand-over, messages count, no park question on a park's own number)",
+  "commit": "601dc16495c0f3d51bbf1d227b644419634fd7de",
+  "runWindowUtc": {
+    "start": "2026-11-11T08:33:38.423Z",
+    "end": "2026-11-11T08:38:51.448Z"
+  },
+  "browser": "Chromium 153.0.8010.12 (headless), 1440×900, light, en-GB, Asia/Bangkok",
+  "liveBefore": {
+    "at": "2026-11-11T08:33:45.009Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq2ei8n74is739h1uqg",
+        "status": "live",
+        "sha": "601dc16495c0f3d51bbf1d227b644419634fd7de",
+        "finishedAt": "2026-11-11T08:33:24.30464Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq2ccbrjlhs73b176p0",
+        "status": "live",
+        "sha": "60c378becc9c8272f416298c9820ea74c037f6c4",
+        "finishedAt": "2026-11-11T08:25:06.871259Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq2583ncjis73cjl3l0",
+        "status": "live",
+        "sha": "9a29dc6191eccb413c2c5fed5b596228207d2b15",
+        "finishedAt": "2026-11-11T08:10:14.816892Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "liveAfter": {
+    "at": "2026-11-11T08:38:39.215Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbq2ei8n74is739h1uqg",
+        "status": "live",
+        "sha": "601dc16495c0f3d51bbf1d227b644419634fd7de",
+        "finishedAt": "2026-11-11T08:33:24.30464Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbq2ccbrjlhs73b176p0",
+        "status": "live",
+        "sha": "60c378becc9c8272f416298c9820ea74c037f6c4",
+        "finishedAt": "2026-11-11T08:25:06.871259Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "deployId": "dep-dbq2583ncjis73cjl3l0",
+        "status": "live",
+        "sha": "9a29dc6191eccb413c2c5fed5b596228207d2b15",
+        "finishedAt": "2026-11-11T08:10:14.816892Z"
+      }
+    ],
+    "apiLiveOnSha": true
+  },
+  "viewer": {
+    "roles": [
+      "owner"
+    ],
+    "via": "the launcher, handed into the inbox (staging administrator)"
+  },
+  "assistant": {
+    "route": "GET /api/inbox/ai/channel-accounts",
+    "status": 200,
+    "account": {
+      "id": "01a156bb-6778-72b0-8237-6028f8874503",
+      "displayName": "Demo WhatsApp · Central Floresta",
+      "channel": "whatsapp",
+      "aiMode": "live"
+    }
+  },
+  "threads": {
+    "A": {
+      "key": "A",
+      "verdict": "FIRST ATTEMPT, 46 s after the deploy turned live: the branch was still asked (not the fixed behaviour). Repeated as A2.",
+      "expect": "date and headcount asked in ONE message, no branch question",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9be-1859-7e05-b284-eca40522f147",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "Hi, I'd like to book a birthday party for my daughter",
+      "sentAt": "2026-11-11T08:33:58.463Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9be-3e0f-7d4e-94f1-c9fcf56c29b1",
+          "createdAt": "2026-11-11T08:34:10.556Z",
+          "providerStatus": "queued",
+          "body": "Hi! Amazing, thank you! We'd love to organize a party for your daughter 🎈\n\nWhat date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        },
+        {
+          "slot": "park",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:34:10.556Z",
+          "turnId": "01a1c9be-186f-7d49-bb83-f98600af60e3",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9be-3e0f-7d4e-94f1-c9fcf56c29b1"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "B": {
+      "key": "B",
+      "verdict": "FIRST ATTEMPT, 53 s after the deploy turned live: the branch was still asked. Repeated as B2.",
+      "expect": "the same in Russian, the sentence whole",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9be-27d0-7b60-8ce6-bd5ef9b5b48b",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "ru",
+      "customerLine": "Здравствуйте, хотим отметить день рождения сына у вас",
+      "sentAt": "2026-11-11T08:34:02.392Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9be-59ab-7ead-a83a-fd82475a7501",
+          "createdAt": "2026-11-11T08:34:17.630Z",
+          "providerStatus": "sent",
+          "body": "Здравствуйте! Как здорово, спасибо! Мы с радостью организуем праздник для вашего сына 🎈\n\nПодскажите, какую дату (или даты) вы рассматриваете, примерно сколько будет гостей и какой филиал вам удобнее, Central Floresta или Robinson Chalong?"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        },
+        {
+          "slot": "park",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:34:17.630Z",
+          "turnId": "01a1c9be-27e3-74ce-92ed-8ce11b950a10",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9be-59ab-7ead-a83a-fd82475a7501"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "C": {
+      "key": "C",
+      "verdict": "PASS (control): the general number with no park still asks the branch, inside the same one message",
+      "expect": "control, no park on the number: the park is still asked",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9be-396e-7540-ac64-7de866f3ec31",
+      "account": "Demo Facebook · Facebook",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "Hi, I'd like to book a birthday party for my daughter",
+      "sentAt": "2026-11-11T08:34:06.908Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": null,
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9be-6a7f-76d9-9faa-76677ed148de",
+          "createdAt": "2026-11-11T08:34:21.891Z",
+          "providerStatus": "queued",
+          "body": "Hi! Amazing, thank you! We'd love to organize a party for your daughter 🎈\n\nWhat date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        },
+        {
+          "slot": "park",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:34:21.891Z",
+          "turnId": "01a1c9be-397e-71f4-ae60-729471c95afa",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9be-6a7f-76d9-9faa-76677ed148de"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "A2": {
+      "key": "A2",
+      "verdict": "PASS: one message, date and headcount, no branch question",
+      "expect": "the same as A, sent again some minutes after the deploy went live",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9be-feb6-7a5b-9e00-bd750687709f",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "Hi, I'd like to book a birthday party for my daughter",
+      "sentAt": "2026-11-11T08:34:57.421Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9bf-29ea-78b4-9c73-cf46cfb03ebc",
+          "createdAt": "2026-11-11T08:35:10.945Z",
+          "providerStatus": "queued",
+          "body": "Hi! Amazing, thank you! We'd love to organize a party for your daughter 🎈\n\nWhat date or dates are you thinking of, and roughly how many people will be coming?"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:35:10.945Z",
+          "turnId": "01a1c9be-fecb-75f3-81f0-ba16b8e1e77d",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9bf-29ea-78b4-9c73-cf46cfb03ebc"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "B2": {
+      "key": "B2",
+      "verdict": "PASS: one message in Russian, date and headcount, no branch question, the sentence whole",
+      "expect": "the same as B, sent again",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9bf-0add-7e96-9a2f-b87f17ec517a",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "ru",
+      "customerLine": "Здравствуйте, хотим отметить день рождения сына у вас",
+      "sentAt": "2026-11-11T08:35:00.541Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "ru",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9bf-3912-7c3b-ae58-0b6bf886de7d",
+          "createdAt": "2026-11-11T08:35:14.823Z",
+          "providerStatus": "sent",
+          "body": "Здравствуйте! Как здорово, спасибо, что выбрали нас! Мы с радостью организуем праздник для вашего сына 🎈\n\nПодскажите, на какую дату (или даты) вы планируете и примерно сколько будет гостей?"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:35:14.823Z",
+          "turnId": "01a1c9bf-0afa-7dbd-962f-c4969fef7a36",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9bf-3912-7c3b-ae58-0b6bf886de7d"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "T": {
+      "key": "T",
+      "verdict": "PASS: one message in Thai, date and headcount, no branch question",
+      "expect": "the same in Thai (only if Russian misbehaves)",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9bf-169b-7eee-91d2-ddf666c74f8b",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "th",
+      "customerLine": "สวัสดีค่ะ อยากจัดปาร์ตี้วันเกิดให้ลูกชายค่ะ",
+      "sentAt": "2026-11-11T08:35:03.514Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "birthdays",
+        "teamName": "Birthdays & Events",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "th",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 1,
+      "assistantLines": [
+        {
+          "id": "01a1c9bf-4e14-789d-9b56-e7747f4741e5",
+          "createdAt": "2026-11-11T08:35:20.200Z",
+          "providerStatus": "sent",
+          "body": "สวัสดีค่ะ ยินดีมากเลยค่ะ แอดมินอยากช่วยจัดปาร์ตี้วันเกิดให้น้องนะคะ 🎈\n\nสะดวกจัดวันไหนคะ และมีแขกมาประมาณกี่ท่านคะ แจ้งแอดมินได้เลยนะคะ"
+        }
+      ],
+      "openQuestions": [
+        {
+          "slot": "date",
+          "state": "open"
+        },
+        {
+          "slot": "guests_count",
+          "state": "open"
+        }
+      ],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:35:20.200Z",
+          "turnId": "01a1c9bf-16aa-7557-b324-bad55f253631",
+          "intents": [
+            "birthday_party"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9bf-4e14-789d-9b56-e7747f4741e5"
+          ],
+          "askBranch": false,
+          "composition": {
+            "joined": true,
+            "bubbles": 2,
+            "repeats": 0,
+            "parkFirst": false,
+            "duplicates": 0,
+            "parkQuestions": 0
+          },
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "N": {
+      "key": "N",
+      "verdict": "NOT A PROOF: the hand-over was silent (SILENCE_POLICY), no message went, no coherence record",
+      "expect": "a reviewed turn: the coherence record carries sent and messages, messages equals the bubbles that went",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9c0-3c21-7545-ade6-5be0f2155438",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "ZZ TEST do you have a nanny for my 3 year old?",
+      "sentAt": "2026-11-11T08:36:18.665Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 0,
+      "assistantLines": [],
+      "openQuestions": [],
+      "aiEvents": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-11T08:36:35.164Z",
+          "turnId": "01a1c9c0-3c35-7169-a2f1-6b6b001a2631",
+          "intents": [
+            "nanny_booking"
+          ],
+          "reason": "SILENCE_POLICY",
+          "silent": true,
+          "holdingLine": "none",
+          "templateKey": "closing_booking",
+          "messageIds": [],
+          "askBranch": null,
+          "composition": null,
+          "coherence": null
+        }
+      ]
+    },
+    "M": {
+      "key": "M",
+      "verdict": "NOT A PROOF: two topics answered as two messages; coherence skipped (NOT_MIXED), so no sent/messages values",
+      "expect": "a two-topic turn: the coherence record carries sent and messages",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9c0-cbf3-77e8-a832-3d2fc15f5d0e",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "ZZ TEST What time do you open tomorrow, and do the kids need socks?",
+      "sentAt": "2026-11-11T08:36:55.486Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "ready",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 2,
+      "assistantLines": [
+        {
+          "id": "01a1c9c0-e67f-779f-a2ad-d3b81b5ccf2b",
+          "createdAt": "2026-11-11T08:37:04.757Z",
+          "providerStatus": "sent",
+          "body": "We're open 10:00–20:00 tomorrow, same as every day 😊"
+        },
+        {
+          "id": "01a1c9c0-e67f-779f-a2ad-d3b9c31fb33e",
+          "createdAt": "2026-11-11T08:37:04.758Z",
+          "providerStatus": "sent",
+          "body": "And yes, kids need anti-slip socks, and parents just need any socks. Bring your own or grab a pair at the entrance for 60 baht."
+        }
+      ],
+      "openQuestions": [],
+      "aiEvents": [
+        {
+          "kind": "ai_replied",
+          "createdAt": "2026-11-11T08:37:04.757Z",
+          "turnId": "01a1c9c0-cbfe-7400-9f5a-d21b0d3ac203",
+          "intents": [
+            "hours",
+            "socks"
+          ],
+          "reason": null,
+          "silent": null,
+          "holdingLine": null,
+          "templateKey": null,
+          "messageIds": [
+            "01a1c9c0-e67f-779f-a2ad-d3b81b5ccf2b",
+            "01a1c9c0-e67f-779f-a2ad-d3b9c31fb33e"
+          ],
+          "askBranch": false,
+          "composition": null,
+          "coherence": {
+            "state": "skipped",
+            "reason": "NOT_MIXED"
+          }
+        }
+      ]
+    },
+    "X": {
+      "key": "X",
+      "verdict": "NOT A PROOF: the hand-over was silent (SILENCE_POLICY), no message went, no coherence record",
+      "expect": "an answer plus a hand-over: the coherence record carries sent and messages",
+      "sender": "its own ZZ TEST simulator number (not kept)",
+      "conversationId": "01a1c9c1-436e-7bb3-90ad-27d4bb2df9c9",
+      "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "categoryHint": "As the channel routes it",
+      "languageHint": "en",
+      "customerLine": "ZZ TEST do the kids need socks? Also my son left his jacket at the park yesterday, can someone check?",
+      "sentAt": "2026-11-11T08:37:26.054Z",
+      "route": "POST /api/inbox/simulator/inbound (the inbox Settings › Simulator · test only dialog)",
+      "status": 200,
+      "conversation": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "state": "active",
+        "category": "general",
+        "teamName": "Reception · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "language": "en",
+        "aiMode": "live",
+        "aiState": "left_for_team",
+        "aiPaused": false,
+        "handledAt": null,
+        "openQuestionsPresent": true
+      },
+      "assistantBubbles": 0,
+      "assistantLines": [],
+      "openQuestions": [],
+      "aiEvents": [
+        {
+          "kind": "ai_handover",
+          "createdAt": "2026-11-11T08:37:34.141Z",
+          "turnId": "01a1c9c1-437b-7dea-a0b7-b4287c087b8f",
+          "intents": [
+            "lost_item",
+            "socks"
+          ],
+          "reason": "SILENCE_POLICY",
+          "silent": true,
+          "holdingLine": "none",
+          "templateKey": "closing_branch",
+          "messageIds": [],
+          "askBranch": null,
+          "composition": null,
+          "coherence": null
+        }
+      ]
+    }
+  },
+  "findings": {
+    "parkQuestionOnParkNumber": "A2, B2 and T (sent 1.5 to 2 minutes after live) do not ask the branch. A and B (sent 46 and 53 seconds after live) did. The landed cut, run locally on the exact A and B replies, removes the branch clause from both (cuts 1 each), so the first two are read as answered by the previous instance while it drained; that reading is inferred, not observed.",
+    "cutNotExercised": "In A2, B2 and T composition.parkQuestions is 0: the model itself did not ask the branch (the changed prompt line), so the cut in compose.ts did not have to act on staging in this run.",
+    "coherenceMessages": "No turn in this run was reviewed: every coherence record is {state: skipped, reason: NOT_MIXED} or null (silent hand-over). The new `messages` value beside `sent` was therefore NOT seen on staging.",
+    "oneLineHandover": "Not shown: it needs the closing templates switched off (a settings change, not allowed in this run). Covered by the engine tests (inbox-ai-one-message).",
+    "silentHandovers": "Observation outside this change: the nanny line (N) and the socks + lost jacket line (X) on the park number were handed over silently (reason SILENCE_POLICY, holdingLine none, no message to the customer)."
+  },
+  "pictures": [
+    {
+      "file": "fu-a-english-park-number.png",
+      "shows": "English birthday line on the park's own number: date and people asked in one message, no branch question",
+      "at": "2026-11-11T08:37:54.330Z",
+      "namesMasked": 46,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "fu-b-russian-park-number.png",
+      "shows": "Russian birthday line on the park's own number: one message, no branch question, the sentence whole",
+      "at": "2026-11-11T08:37:59.608Z",
+      "namesMasked": 46,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "fu-b-thai-park-number.png",
+      "shows": "Thai birthday line on the park's own number: one message, no branch question",
+      "at": "2026-11-11T08:38:04.324Z",
+      "namesMasked": 45,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "fu-c-control-general-number.png",
+      "shows": "Control on the general number with no park: the branch is still asked, in the same one message",
+      "at": "2026-11-11T08:38:09.022Z",
+      "namesMasked": 45,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "fu-x-first-attempt-english.png",
+      "shows": "First English attempt, 46 seconds after the deploy went live: the branch was still asked",
+      "at": "2026-11-11T08:38:14.276Z",
+      "namesMasked": 45,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    },
+    {
+      "file": "fu-x-first-attempt-russian.png",
+      "shows": "First Russian attempt, 53 seconds after the deploy went live: the branch was still asked",
+      "at": "2026-11-11T08:38:19.497Z",
+      "namesMasked": 45,
+      "note": "list of other conversations masked; names, phone-like numbers and staff initials masked"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T08:38:39.290Z",
+    "conversations": {
+      "A": {
+        "id": "01a1c9be-1859-7e05-b284-eca40522f147",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:42.721Z"
+        }
+      },
+      "B": {
+        "id": "01a1c9be-27d0-7b60-8ce6-bd5ef9b5b48b",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:44.018Z"
+        }
+      },
+      "C": {
+        "id": "01a1c9be-396e-7540-ac64-7de866f3ec31",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:45.277Z"
+        }
+      },
+      "A2": {
+        "id": "01a1c9be-feb6-7a5b-9e00-bd750687709f",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:46.255Z"
+        }
+      },
+      "B2": {
+        "id": "01a1c9bf-0add-7e96-9a2f-b87f17ec517a",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:47.154Z"
+        }
+      },
+      "T": {
+        "id": "01a1c9bf-169b-7eee-91d2-ddf666c74f8b",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:48.061Z"
+        }
+      },
+      "N": {
+        "id": "01a1c9c0-3c21-7545-ade6-5be0f2155438",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:48.946Z"
+        }
+      },
+      "M": {
+        "id": "01a1c9c0-cbf3-77e8-a832-3d2fc15f5d0e",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:49.851Z"
+        }
+      },
+      "X": {
+        "id": "01a1c9c1-436e-7bb3-90ad-27d4bb2df9c9",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T08:38:50.752Z"
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-11T08:38:51.448Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notTouched": "No other conversation, setting or key was read or changed. Nothing was sent to a phone: the simulator accounts are internal."
+}
