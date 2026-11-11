@@ -1,0 +1,13 @@
+{
+  "run": 43016530898,
+  "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+  "jobId": 130508924330,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/immutable-app-typecheck.log",
+  "sha256": "a4b6bbb36168598c80bca5ad3cfd7fc466d474f489df188fd07ce67cf306c3aa",
+  "readWholeEvidence": "Entire 667-line output byte-identical to candidate-app-typecheck.log, already read whole in this session",
+  "readWholeAt": "2026-11-11T12:16:14.694Z"
+}

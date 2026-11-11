@@ -1,0 +1,25 @@
+{
+  "inspectedAt": "2026-11-11T12:15:20.897Z",
+  "pictures": [
+    {
+      "name": "s810-scrum-769-settled.png",
+      "sha256": "0720893c9a8e1d9cd62a93593a9c4c59a043d1a4c0121afc1b3da610570ac21c"
+    },
+    {
+      "name": "s810-scrum-795-settled.png",
+      "sha256": "7927c9f36764f6b9fe9451df3db92bacc23f0b1494ef62d1d521c732e38980dd"
+    },
+    {
+      "name": "s778-activity-start.png",
+      "sha256": "0f7d4a6b06d2ee86a19c8a0656990ab79a9bfea719ad3c5cc10b1a214cb4ce45"
+    },
+    {
+      "name": "s778-activity-ten-minutes.png",
+      "sha256": "0f7d4a6b06d2ee86a19c8a0656990ab79a9bfea719ad3c5cc10b1a214cb4ce45"
+    },
+    {
+      "name": "s778-observation-card.png",
+      "sha256": "973c0576973237e06956c338cbc10b92c9ca05b62ed223ae1c7709c590ec8929"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "source": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+  "at": "2026-11-11T12:15:22.203Z",
+  "ci": {
+    "conclusion": "",
+    "headSha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d",
+    "status": "in_progress"
+  },
+  "observation": {
+    "elapsedMs": 600553,
+    "samples": 21
+  },
+  "tickets": [
+    {
+      "key": "SCRUM-778",
+      "attachments": [
+        {
+          "id": "13104",
+          "name": "s810-scrum-769-settled.png"
+        },
+        {
+          "id": "13105",
+          "name": "s810-scrum-795-settled.png"
+        },
+        {
+          "id": "13106",
+          "name": "s778-activity-start.png"
+        },
+        {
+          "id": "13107",
+          "name": "s778-activity-ten-minutes.png"
+        },
+        {
+          "id": "13108",
+          "name": "s778-observation-card.png"
+        }
+      ],
+      "testing": true,
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-781",
+      "attachments": [
+        {
+          "id": "13109",
+          "name": "s810-scrum-769-settled.png"
+        },
+        {
+          "id": "13110",
+          "name": "s810-scrum-795-settled.png"
+        },
+        {
+          "id": "13111",
+          "name": "s778-activity-start.png"
+        },
+        {
+          "id": "13112",
+          "name": "s778-activity-ten-minutes.png"
+        },
+        {
+          "id": "13113",
+          "name": "s778-observation-card.png"
+        }
+      ],
+      "testing": true,
+      "status": "Deployed"
+    },
+    {
+      "key": "SCRUM-810",
+      "attachments": [
+        {
+          "id": "13114",
+          "name": "s810-scrum-769-settled.png"
+        },
+        {
+          "id": "13115",
+          "name": "s810-scrum-795-settled.png"
+        },
+        {
+          "id": "13116",
+          "name": "s778-activity-start.png"
+        },
+        {
+          "id": "13117",
+          "name": "s778-activity-ten-minutes.png"
+        },
+        {
+          "id": "13118",
+          "name": "s778-observation-card.png"
+        }
+      ],
+      "testing": true,
+      "status": "Deployed"
+    }
+  ]
+}

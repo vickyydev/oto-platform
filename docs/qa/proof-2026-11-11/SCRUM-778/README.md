@@ -35,5 +35,32 @@ enters the app through the launcher, reads only the old SCRUM-769 and SCRUM-795
 ZZ TEST receipts through the authenticated app route, and watches the filtered
 Console Activity screen for ten real minutes. It saves each response count,
 compares attempt counters before/after, takes masked pictures and signs out.
-No new staging record is needed. At this checkpoint the staging proof has not
-run and these three tickets remain In Progress.
+Attempt 07 passed on staging: 21 native Refresh responses over 600,553 ms,
+zero matching failures, no next page, and unchanged settled receipts before
+and after. The old deactivation events are `64948019-0a5b-4fd0-bf8e-d82df60ed0ab`
+and `5133dfa0-7b45-47a1-bcd5-3e488af7aa76`; the migration settled both as
+superseded with `LOGIN_DELETED`, no next attempt, and historical counts 5,458
+and 6,291 retained. The older restriction receipt was already delivered.
+
+The source is `51c558bdd4bc5fd1761d5221cb8cb606c043b15d`. Both named services
+reached that source. During the proof the API ran planner descendant
+`33e54e3f1ca1c4ed3093838d2793e9595561be19`; the receipt records its changed
+inbox files and unchanged lifecycle paths. The app remained at the released
+source. Exact landed validation is run 43016530898 on an immutable ref;
+its app job passed and its entire typecheck output is byte-identical to the
+667 lines already read for the candidate. The other full jobs remain tracked.
+
+All five pictures were inspected and attached to each ticket (13104–13118).
+Each ticket walked through Testing to Deployed under the owner's 17:32
+direction to accept staging proof while full CI continues. None is Done.
+The successful run created no records, signed out all three sessions and
+read back 401. See `staging/{receipt,inspected-pictures,jira-proof}.json`.
+
+Failed attempts remain visible. Attempt 01 did not revoke its launcher and
+Console sessions before discarding the browser cookies; server-side cleanup
+of those two sessions is not claimed. Subsequent attempts signed out cleanly.
+The harness corrections cover browser cookie readiness, actual logout paths,
+the native filter's minute precision, and the seeded administrator's actual
+`masked:false` API flag. Every observed list is empty and the pictures omit
+personal details. Backoff, rollback, concurrency and park isolation are local
+database checks, not staging fault injections.

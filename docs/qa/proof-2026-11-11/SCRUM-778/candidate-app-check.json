@@ -1,0 +1,12 @@
+{
+  "run": 43014729134,
+  "sha": "902c0deb6d638bd752f2cdf7c40d097bd5cf735f",
+  "jobId": 130502833680,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/candidate-app-typecheck.log",
+  "sha256": "a4b6bbb36168598c80bca5ad3cfd7fc466d474f489df188fd07ce67cf306c3aa",
+  "readWholeAt": "2026-11-11T12:07:20.298Z"
+}
