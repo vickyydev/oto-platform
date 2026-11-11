@@ -366,8 +366,13 @@ export interface TillVoucher {
    * the cart. A void the platform refuses — money was taken, a tender is in
    * progress, the sale was closed — is shown in its words and nothing else
    * happens.
+   *
+   * SCRUM-854 — `onVoided` is told the sale's id once the platform has voided
+   * it, whatever the scan that follows meets, so the till can take down its
+   * own left-unpaid notice for that same sale (`lib/leftBehindSale.ts`). It is
+   * not called for a void the platform refuses.
    */
-  voidRungUp: () => Promise<boolean>;
+  voidRungUp: (onVoided?: (saleId: string) => void) => Promise<boolean>;
   /** Show a refusal the till made itself. */
   refuse: (message: string, voucherCode: string, code?: string) => void;
   dismiss: () => void;
@@ -575,7 +580,7 @@ export function useTillVoucher(options: {
     [refusalWithOffer, setHeld, setRefusal],
   );
 
-  const voidRungUp = useCallback(async (): Promise<boolean> => {
+  const voidRungUp = useCallback(async (onVoided?: (saleId: string) => void): Promise<boolean> => {
     const shown = refusalRef.current;
     const named = shown?.rungUp;
     if (!shown || !named || busyRef.current) return false;
@@ -587,6 +592,8 @@ export function useTillVoucher(options: {
     start();
     try {
       await salesApi.voidSale(named.saleId, VOIDED_TO_USE_VOUCHER);
+      // The sale is void whatever this cart did meanwhile (SCRUM-854).
+      onVoided?.(named.saleId);
       if (epochRef.current !== epoch) return false;
       setRefusal(null);
       // The void let the voucher go: it goes on this cart as a scan would put it.

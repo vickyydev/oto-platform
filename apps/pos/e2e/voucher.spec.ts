@@ -244,6 +244,11 @@ test('C1 — a voucher left on an unpaid sale is voided by choice and used on a 
   // Inside the refusal: the till lists the same sale again in its own
   // left-unpaid notice (SCRUM-407), which this test never presses.
   await expect(refusal.getByTestId('rung-up-sale')).toContainText('Unpaid sale');
+  // That notice, counted: a database used before may hold other sales left
+  // unpaid at this till, each with a notice of its own.
+  const leftNotices = page.getByTestId('left-behind-sale');
+  await expect(leftNotices.first()).toContainText('rung up at this till was left unpaid');
+  const noticesBefore = await leftNotices.count();
   // Nothing is voided until staff choose it.
   await expect(page.getByTestId('voucher-card')).toBeHidden();
   expect(await statusOf(page, left.id)).toBe('tendering');
@@ -251,6 +256,9 @@ test('C1 — a voucher left on an unpaid sale is voided by choice and used on a 
   await expect(page.getByTestId('voucher-card')).toBeVisible({ timeout: 15_000 });
   await expect(refusal).toBeHidden();
   expect(await statusOf(page, left.id)).toBe('voided');
+  // SCRUM-854 — voided from the refusal, the sale's own left-unpaid notice
+  // goes with it; any other sale's notice stays.
+  await expect(leftNotices).toHaveCount(noticesBefore - 1);
 
   const sold = await pay(page);
   expect(sold.id).not.toBe(left.id);

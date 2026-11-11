@@ -3944,8 +3944,9 @@ export default function Till() {
                     busy={voucher.busy}
                     // C1 — the unpaid sale the voucher was left on is voided only
                     // by this press, and only by an account the platform lets void.
+                    // SCRUM-854 — voided here, its own left-unpaid notice below goes too.
                     {...(can('pos:sale:void')
-                      ? { onVoidRungUp: () => void voucher.voidRungUp() }
+                      ? { onVoidRungUp: () => void voucher.voidRungUp(leftBehind.dismiss) }
                       : {})}
                   />
                 )}
