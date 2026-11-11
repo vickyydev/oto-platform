@@ -1,0 +1,39 @@
+
+######## BEFORE the fix: install.sh from "Starting" to its last line, tailscale installed and logged out ########
+$ tailscale status; echo "exit $?"   (the stand-in)
+Logged out.
+exit 1
+$ sudo bash oto-box/pi/install.sh   (the closing part)
+
+== Starting
+
+>>> installer exit code: 1
+
+######## AFTER the fix: install.sh from "Starting" to its last line, tailscale installed and logged out ########
+$ tailscale status; echo "exit $?"   (the stand-in)
+Logged out.
+exit 1
+$ sudo bash oto-box/pi/install.sh   (the closing part)
+
+== Starting
+
+Installed: oto-box 0.1.0-20261105-33a60bb, talking to https://oto-api-staging.onrender.com
+
+Next:
+  1. In the Console: Devices -> Add a box. Copy the claim code (valid for a short time).
+  2. Type it on the television ("Set up this box"), or here:
+       sudo oto-box claim          (it asks for the code, so the code stays out of the shell history)
+  3. In the Console: add the receipt printer to this box at its network address,
+     create a booth station on this box, put staff on the booth, publish the wheel.
+  4. Check:   oto-box status     journalctl -u oto-box -f     (the box row in Console -> Devices)
+  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
+     the television opens the booth; every boot after that does the same.
+
+SSH: (stand-in)
+Tailscale: installed, not signed in: the box is not on the private network. To join it, run the installer again with --tailscale-authkey
+Printer: (stand-in)
+Scanner: (stand-in)
+Mirror: (stand-in)
+The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
+
+>>> installer exit code: 0
