@@ -41,6 +41,7 @@ async function upload(input, pending) {
   if (forceFallback) assert.equal(new URL(response.url()).pathname, '/api/checklist-media/upload');
   const thumbnail = app.getByTestId(`media-thumbnail-${attachment.id}`); await expect(thumbnail).toBeVisible();
   await expect.poll(() => thumbnail.locator('img').evaluateAll(images => images.some(img => img.complete && img.naturalWidth > 0))).toBe(true);
+  await thumbnail.scrollIntoViewIfNeeded();
   return attachment;
 }
 async function edit(id) {
@@ -74,6 +75,7 @@ try {
   await edit(saved.id);
   const savedImage = app.getByTestId(`media-thumbnail-${savedPhoto.id}`).locator('img');
   await expect(savedImage).toBeVisible(); await expect.poll(() => savedImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await savedImage.scrollIntoViewIfNeeded();
   receipt.savedPhotoSurvivesReload = true; save(); await photo('s748-saved-reloaded.png');
   await app.getByTestId('button-cancel-edit').click();
   phase('unsaved first item: deliberate bucket refusal and native create');
@@ -97,6 +99,7 @@ try {
   await edit(body.id);
   const pendingImage = app.getByTestId(`media-thumbnail-${pendingPhoto.id}`).locator('img');
   await expect(pendingImage).toBeVisible(); await expect.poll(() => pendingImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await pendingImage.scrollIntoViewIfNeeded();
   receipt.pendingPhotoSurvivesSaveAndReload = true; save(); await photo('s748-pending-reloaded.png');
   receipt.appVersionAfter = await version(); assert.equal(receipt.appVersionAfter, expectedSha);
   receipt.behaviorPassed = true;

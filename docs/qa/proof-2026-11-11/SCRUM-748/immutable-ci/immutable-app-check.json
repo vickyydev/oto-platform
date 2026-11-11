@@ -1,0 +1,16 @@
+{
+  "run": 43026325155,
+  "sha": "9b3ba1f8f6544362be58fbbce3772cf16a39f722",
+  "jobId": 130541836809,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "local/immutable-app-typecheck.log",
+  "sha256": "5405b5c2b4ee3b90a16c4466f93aab4fca4b1f585c385cf0767513a670186214",
+  "readMethod": "All 667 lines byte-identical to Unit7 exact-source CI output already read whole; SHA256 equality verified.",
+  "newChecks": {
+    "queue": 8,
+    "checklistCopiesIncludingMultipart": 45
+  }
+}
