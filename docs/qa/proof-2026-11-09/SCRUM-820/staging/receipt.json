@@ -1,0 +1,842 @@
+{
+  "unit": "SCRUM-820 staging proof",
+  "ticket": "SCRUM-820",
+  "landed": "c60d80e9",
+  "startedAt": "2026-11-11T10:57:44.338Z",
+  "finishedAt": "2026-11-11T11:10:31.178Z",
+  "browser": "Chromium [number]",
+  "deploys": {
+    "before": {
+      "at": "2026-11-11T10:58:53.012Z",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbq4htoae00c73da4adg",
+          "status": "live",
+          "sha": "c60d80e9",
+          "finishedAt": "2026-11-11T10:57:00.690785Z",
+          "newer": {
+            "deployId": "dep-dbq4kn6k1f9s73djrdc0",
+            "status": "build_in_progress",
+            "sha": "3cf7846e",
+            "createdAt": "2026-11-11T10:58:37.068909Z"
+          }
+        },
+        {
+          "name": "oto-inbox-staging",
+          "deployId": "dep-dbq4hubl550s739i4n70",
+          "status": "live",
+          "sha": "c60d80e9",
+          "finishedAt": "2026-11-11T10:53:37.465677Z"
+        },
+        {
+          "name": "oto-app-staging",
+          "deployId": "dep-dbq46qoae00c73d95u20",
+          "status": "live",
+          "sha": "e01476a1",
+          "finishedAt": "2026-11-11T10:32:11.8764Z"
+        }
+      ]
+    },
+    "after": {
+      "at": "2026-11-11T11:10:27.057Z",
+      "services": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbq4kn6k1f9s73djrdc0",
+          "status": "live",
+          "sha": "3cf7846e",
+          "finishedAt": "2026-11-11T11:03:01.891041Z"
+        },
+        {
+          "name": "oto-inbox-staging",
+          "deployId": "dep-dbq4hubl550s739i4n70",
+          "status": "live",
+          "sha": "c60d80e9",
+          "finishedAt": "2026-11-11T10:53:37.465677Z"
+        },
+        {
+          "name": "oto-app-staging",
+          "deployId": "dep-dbq4lp3ncjis73cmrbpg",
+          "status": "live",
+          "sha": "e01476a1",
+          "finishedAt": "2026-11-11T11:03:32.223825Z"
+        }
+      ]
+    },
+    "note": "Steps A and B ran with the api live on c60d80e9. A later api deploy (3cf7846e, a descendant of c60d80e9 on main) went live at 11:03 UTC, during step C; steps C (Create BEO), D and E ran on it. The inbox stayed on c60d80e9 throughout."
+  },
+  "rules": "ZZ TEST records and simulator accounts only; only events booked in this run were archived or deleted",
+  "viewer": {
+    "inboxRoles": [
+      "owner"
+    ],
+    "appRole": "global_admin"
+  },
+  "conversations": {
+    "A": {
+      "conversationId": "01a1ca43-1b46-7022-8c80-2907dcc188c4",
+      "name": "ZZ TEST 820",
+      "from": "a ZZ TEST simulator number of this run",
+      "opener": {
+        "text": "Hi! A birthday party for ZZ Test Child turning 7, 10 kids and 3 adults, Saturday 5 December at 2pm (ZZ TEST)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1
+      }
+    },
+    "D": {
+      "conversationId": "01a1ca43-2790-7552-8874-c4d18267716d",
+      "name": "ZZ TEST 820 second",
+      "from": "a ZZ TEST simulator number of this run",
+      "opener": {
+        "text": "Hello, a birthday party for ZZ Test Child turning 6, 8 kids and 2 adults, Saturday 12 December at 11am (ZZ TEST)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1
+      }
+    },
+    "E": {
+      "conversationId": "01a1ca43-3366-7744-9e6c-b8d643ec34fa",
+      "name": "ZZ TEST 820 control",
+      "from": "a ZZ TEST simulator number of this run",
+      "opener": {
+        "text": "Hello, a birthday party for ZZ Test Child turning 5, 9 kids and 2 adults, Sunday 13 December at 3pm (ZZ TEST)",
+        "status": 200,
+        "outcome": "processed",
+        "conversationsCreated": 1
+      }
+    }
+  },
+  "eventsMade": [
+    {
+      "key": "A",
+      "id": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+      "title": "ZZ Test Child's 7th Birthday",
+      "date": "2026-12-05",
+      "startTime": "14:00",
+      "bookedAt": "2026-11-11T11:01:40.987Z",
+      "removed": "archive",
+      "removedStatus": 200
+    },
+    {
+      "key": "A",
+      "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+      "title": "ZZ Test Child's 7th Birthday",
+      "date": "2026-12-06",
+      "startTime": "10:00",
+      "bookedAt": "2026-11-11T11:04:25.956Z"
+    },
+    {
+      "key": "D",
+      "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+      "title": "ZZ Test Child's 6th Birthday",
+      "date": "2026-12-12",
+      "startTime": "11:00",
+      "bookedAt": "2026-11-11T11:07:06.549Z",
+      "removed": "delete",
+      "removedStatus": 204
+    },
+    {
+      "key": "E",
+      "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+      "title": "ZZ Test Child's 5th Birthday",
+      "date": "2026-12-13",
+      "startTime": "15:00",
+      "bookedAt": "2026-11-11T11:09:19.239Z"
+    }
+  ],
+  "stepA": {
+    "result": "pass",
+    "booked": {
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-12-05",
+          "startTime": "14:00",
+          "kids": 10,
+          "adults": 3,
+          "childName": "ZZ Test Child",
+          "childAge": 7,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-12-05",
+          "startTime": "14:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 10,
+          "adults": 3
+        }
+      },
+      "dateTyped": null,
+      "startTimeTyped": null,
+      "note": "Event: 5 Dec 2026 at Central Floresta · tentative in the Events calendar",
+      "chip": "Event: 5 Dec 2026 at Central Floresta",
+      "buttons": [
+        "Date Booked",
+        "Create BEO"
+      ],
+      "picture": "820-A-live-chip.png",
+      "conversationEvent": {
+        "id": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+        "title": "ZZ Test Child's 7th Birthday",
+        "date": "2026-12-05",
+        "startTime": "14:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "tentative",
+        "kids": 10,
+        "adults": 3,
+        "beoPath": "/studio/events/kanban?beo=01a1ca43-5bad-7b0a-b024-2e137c9f45b8"
+      }
+    }
+  },
+  "stepB": {
+    "result": "pass",
+    "archive": {
+      "at": "2026-11-11T11:01:58.433Z",
+      "key": "A",
+      "eventId": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+      "title": "ZZ Test Child's 7th Birthday",
+      "how": "archive",
+      "before": {
+        "status": 200,
+        "isArchived": false
+      },
+      "action": {
+        "route": "POST /api/admin/events/:id/archive",
+        "status": 200,
+        "isArchived": true,
+        "message": null
+      },
+      "readBack": {
+        "route": "GET /api/admin/events/:id",
+        "status": 200,
+        "isArchived": true
+      }
+    },
+    "threadAfter": {
+      "at": "2026-11-11T11:02:02.870Z",
+      "key": "A",
+      "conversationId": "01a1ca43-1b46-7022-8c80-2907dcc188c4",
+      "api": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": {
+          "id": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-12-05",
+          "startTime": "14:00",
+          "status": "tentative",
+          "statusName": "Tentative",
+          "archived": true,
+          "removed": true
+        }
+      },
+      "buttons": [
+        {
+          "text": "Book Date",
+          "enabled": true
+        },
+        {
+          "text": "Create BEO",
+          "enabled": true
+        }
+      ],
+      "liveChip": null,
+      "removedChip": {
+        "text": "Party removed in the Events module",
+        "tag": "SPAN",
+        "role": null,
+        "tabindex": null,
+        "insideButtonOrLink": false,
+        "cursor": "auto",
+        "title": "ZZ Test Child's 7th Birthday was deleted or archived in the Events calendar. Book Date books the date again.",
+        "pressed": {
+          "openBeoRequests": 0,
+          "newTabs": 0,
+          "dialogsOpen": 0
+        }
+      },
+      "picture": "820-B-removed-after-archive.png"
+    },
+    "openBeo": {
+      "at": "2026-11-11T11:02:07.818Z",
+      "key": "A",
+      "route": "POST /api/inbox/conversations/:id/open-beo (from the page)",
+      "status": 409,
+      "code": "EVENT_REMOVED",
+      "message": "Party removed in the Events module. Book Date books the date again.",
+      "hasLaunchUrl": false
+    }
+  },
+  "stepC": {
+    "result": "pass",
+    "rebooked": {
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-12-06",
+          "startTime": "10:00",
+          "kids": 10,
+          "adults": 3,
+          "childName": "ZZ Test Child",
+          "childAge": 7,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-12-06",
+          "startTime": "10:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 10,
+          "adults": 3
+        }
+      },
+      "dateTyped": "2026-12-06",
+      "startTimeTyped": "10:00",
+      "note": "Event: 6 Dec 2026 at Central Floresta · tentative in the Events calendar",
+      "chip": "Event: 6 Dec 2026 at Central Floresta",
+      "buttons": [
+        "Date Booked",
+        "Create BEO"
+      ],
+      "picture": "820-C-rebooked-live-chip.png",
+      "conversationEvent": {
+        "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+        "title": "ZZ Test Child's 7th Birthday",
+        "date": "2026-12-06",
+        "startTime": "10:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "tentative",
+        "kids": 10,
+        "adults": 3,
+        "beoPath": "/studio/events/kanban?beo=01a1ca45-e0b1-75b8-aa57-5e54f3e570d3"
+      }
+    },
+    "createBeo": {
+      "at": "2026-11-11T11:04:32.892Z",
+      "key": "A",
+      "conversationId": "01a1ca43-1b46-7022-8c80-2907dcc188c4",
+      "expectedEventId": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200
+      },
+      "appHandoff": {
+        "status": 200
+      },
+      "aiFill": {
+        "status": 409,
+        "eventIdInRoute": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3"
+      },
+      "landed": {
+        "origin": "https://oto-app-staging.onrender.com",
+        "path": "/studio/events/kanban",
+        "beoParam": null
+      },
+      "isTheNewParty": true,
+      "dialogs": 1,
+      "headings": [
+        "ZZ Test Child's 7th Birthday",
+        "Event Info",
+        "Party Host",
+        "Birthday Package",
+        "POS",
+        "Billing",
+        "Setup Plan",
+        "Kitchen Plan",
+        "Bar Plan",
+        "Timeline 0 steps",
+        "Parent Experience"
+      ],
+      "picture": "820-C-new-party-beo.png",
+      "closedWithoutSaving": true
+    },
+    "threadAtTheEnd": {
+      "at": "2026-11-11T11:10:03.934Z",
+      "key": "A",
+      "conversationId": "01a1ca43-1b46-7022-8c80-2907dcc188c4",
+      "api": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": {
+          "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+          "title": "ZZ Test Child's 7th Birthday",
+          "date": "2026-12-06",
+          "startTime": "10:00",
+          "status": "tentative",
+          "statusName": "Tentative",
+          "archived": false,
+          "removed": false
+        }
+      },
+      "buttons": [
+        {
+          "text": "Date Booked",
+          "enabled": false
+        },
+        {
+          "text": "Create BEO",
+          "enabled": true
+        }
+      ],
+      "liveChip": {
+        "text": "Event: 6 Dec 2026 at Central Floresta",
+        "tag": "BUTTON",
+        "enabled": true,
+        "title": "ZZ Test Child's 7th Birthday · Tentative in the Events calendar. Opens it in the OTO App."
+      },
+      "removedChip": null
+    },
+    "note": "Create BEO opened the new party (the AI Fill route carried the new event id; the form shows 6 December at 10:00). AI Fill answered 409 because this test chat has no team confirmation to read; the BEO itself opened, and was closed without saving."
+  },
+  "stepD": {
+    "result": "pass",
+    "booked": {
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-12-12",
+          "startTime": "11:00",
+          "kids": 8,
+          "adults": 2,
+          "childName": "ZZ Test Child",
+          "childAge": 6,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-12",
+          "startTime": "11:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 8,
+          "adults": 2
+        }
+      },
+      "dateTyped": null,
+      "startTimeTyped": null,
+      "note": "Event: 12 Dec 2026 at Central Floresta · tentative in the Events calendar",
+      "chip": "Event: 12 Dec 2026 at Central Floresta",
+      "buttons": [
+        "Date Booked",
+        "Create BEO"
+      ],
+      "picture": null,
+      "conversationEvent": {
+        "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+        "title": "ZZ Test Child's 6th Birthday",
+        "date": "2026-12-12",
+        "startTime": "11:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "tentative",
+        "kids": 8,
+        "adults": 2,
+        "beoPath": "/studio/events/kanban?beo=01a1ca48-52b4-72c7-a264-e5976b54c70a"
+      }
+    },
+    "liveBefore": {
+      "at": "2026-11-11T11:09:26.149Z",
+      "key": "D",
+      "conversationId": "01a1ca43-2790-7552-8874-c4d18267716d",
+      "api": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": {
+          "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-12",
+          "startTime": "11:00",
+          "status": "tentative",
+          "statusName": "Tentative",
+          "archived": false,
+          "removed": false
+        }
+      },
+      "buttons": [
+        {
+          "text": "Date Booked",
+          "enabled": false
+        },
+        {
+          "text": "Create BEO",
+          "enabled": true
+        }
+      ],
+      "liveChip": {
+        "text": "Event: 12 Dec 2026 at Central Floresta",
+        "tag": "BUTTON",
+        "enabled": true,
+        "title": "ZZ Test Child's 6th Birthday · Tentative in the Events calendar. Opens it in the OTO App."
+      },
+      "removedChip": null
+    },
+    "delete": {
+      "at": "2026-11-11T11:09:27.387Z",
+      "key": "D",
+      "eventId": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+      "title": "ZZ Test Child's 6th Birthday",
+      "how": "delete",
+      "before": {
+        "status": 200,
+        "isArchived": false
+      },
+      "action": {
+        "route": "DELETE /api/admin/events/:id",
+        "status": 204,
+        "isArchived": null,
+        "message": null
+      },
+      "readBack": {
+        "route": "GET /api/admin/events/:id",
+        "status": 404,
+        "isArchived": null
+      }
+    },
+    "threadAfter": {
+      "at": "2026-11-11T11:09:48.930Z",
+      "key": "D",
+      "conversationId": "01a1ca43-2790-7552-8874-c4d18267716d",
+      "api": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": {
+          "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-12",
+          "startTime": "11:00",
+          "status": "tentative",
+          "statusName": "Tentative",
+          "archived": false,
+          "removed": true
+        }
+      },
+      "buttons": [
+        {
+          "text": "Book Date",
+          "enabled": true
+        },
+        {
+          "text": "Create BEO",
+          "enabled": true
+        }
+      ],
+      "liveChip": null,
+      "removedChip": {
+        "text": "Party removed in the Events module",
+        "tag": "SPAN",
+        "role": null,
+        "tabindex": null,
+        "insideButtonOrLink": false,
+        "cursor": "auto",
+        "title": "ZZ Test Child's 6th Birthday was deleted or archived in the Events calendar. Book Date books the date again.",
+        "pressed": {
+          "openBeoRequests": 0,
+          "newTabs": 0,
+          "dialogsOpen": 0
+        }
+      },
+      "picture": "820-D-removed-after-delete.png"
+    },
+    "openBeo": {
+      "at": "2026-11-11T11:09:53.600Z",
+      "key": "D",
+      "route": "POST /api/inbox/conversations/:id/open-beo (from the page)",
+      "status": 409,
+      "code": "EVENT_REMOVED",
+      "message": "Party removed in the Events module. Book Date books the date again.",
+      "hasLaunchUrl": false
+    }
+  },
+  "stepE": {
+    "result": "pass",
+    "booked": {
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-12-13",
+          "startTime": "15:00",
+          "kids": 9,
+          "adults": 2,
+          "childName": "ZZ Test Child",
+          "childAge": 5,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+          "title": "ZZ Test Child's 5th Birthday",
+          "date": "2026-12-13",
+          "startTime": "15:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 9,
+          "adults": 2
+        }
+      },
+      "dateTyped": null,
+      "startTimeTyped": null,
+      "note": "Event: 13 Dec 2026 at Central Floresta · tentative in the Events calendar",
+      "chip": "Event: 13 Dec 2026 at Central Floresta",
+      "buttons": [
+        "Date Booked",
+        "Create BEO"
+      ],
+      "picture": null,
+      "conversationEvent": {
+        "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+        "title": "ZZ Test Child's 5th Birthday",
+        "date": "2026-12-13",
+        "startTime": "15:00",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "status": "tentative",
+        "kids": 9,
+        "adults": 2,
+        "beoPath": "/studio/events/kanban?beo=01a1ca4a-56b5-73ae-90fb-1d56d28bb996"
+      }
+    },
+    "control": {
+      "at": "2026-11-11T11:09:57.851Z",
+      "key": "E",
+      "conversationId": "01a1ca43-3366-7744-9e6c-b8d643ec34fa",
+      "api": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": {
+          "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+          "title": "ZZ Test Child's 5th Birthday",
+          "date": "2026-12-13",
+          "startTime": "15:00",
+          "status": "tentative",
+          "statusName": "Tentative",
+          "archived": false,
+          "removed": false
+        }
+      },
+      "buttons": [
+        {
+          "text": "Date Booked",
+          "enabled": false
+        },
+        {
+          "text": "Create BEO",
+          "enabled": true
+        }
+      ],
+      "liveChip": {
+        "text": "Event: 13 Dec 2026 at Central Floresta",
+        "tag": "BUTTON",
+        "enabled": true,
+        "title": "ZZ Test Child's 5th Birthday · Tentative in the Events calendar. Opens it in the OTO App."
+      },
+      "removedChip": null,
+      "picture": "820-E-control-live-chip.png"
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T11:10:19.985Z",
+    "events": [
+      {
+        "key": "A",
+        "id": "01a1ca43-5bad-7b0a-b024-2e137c9f45b8",
+        "title": "ZZ Test Child's 7th Birthday",
+        "archive": {
+          "status": 200,
+          "isArchived": true
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true
+        }
+      },
+      {
+        "key": "A",
+        "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+        "title": "ZZ Test Child's 7th Birthday",
+        "archive": {
+          "status": 200,
+          "isArchived": true
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true
+        }
+      },
+      {
+        "key": "D",
+        "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "status": "skipped (deleted in step D)",
+          "isArchived": null
+        },
+        "readBack": {
+          "status": 404,
+          "isArchived": null
+        }
+      },
+      {
+        "key": "E",
+        "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+        "title": "ZZ Test Child's 5th Birthday",
+        "archive": {
+          "status": 200,
+          "isArchived": true
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true
+        }
+      }
+    ],
+    "conversations": {
+      "A": {
+        "id": "01a1ca43-1b46-7022-8c80-2907dcc188c4",
+        "handle": {
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "event": {
+            "id": "01a1ca45-e0b1-75b8-aa57-5e54f3e570d3",
+            "removed": true,
+            "archived": true
+          }
+        }
+      },
+      "D": {
+        "id": "01a1ca43-2790-7552-8874-c4d18267716d",
+        "handle": {
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "event": {
+            "id": "01a1ca48-52b4-72c7-a264-e5976b54c70a",
+            "removed": true,
+            "archived": false
+          }
+        }
+      },
+      "E": {
+        "id": "01a1ca43-3366-7744-9e6c-b8d643ec34fa",
+        "handle": {
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "event": {
+            "id": "01a1ca4a-56b5-73ae-90fb-1d56d28bb996",
+            "removed": true,
+            "archived": true
+          }
+        }
+      }
+    },
+    "thisRunsEventsStillLive": []
+  },
+  "signOut": {
+    "at": "2026-11-11T11:10:31.178Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  },
+  "pictures": [
+    {
+      "file": "820-A-live-chip.png",
+      "at": "2026-11-11T11:01:43.930Z",
+      "shows": "After Book date on the ZZ TEST thread: Date Booked, Create BEO and the live event chip",
+      "namesMasked": 9,
+      "masks": 1
+    },
+    {
+      "file": "820-B-removed-after-archive.png",
+      "at": "2026-11-11T11:02:07.221Z",
+      "shows": "After the party was archived in the Events module: the thread says Party removed in the Events module (not pressable) and offers Book Date again",
+      "namesMasked": 9,
+      "masks": 1
+    },
+    {
+      "file": "820-C-rebooked-live-chip.png",
+      "at": "2026-11-11T11:04:28.884Z",
+      "shows": "After Book date on the ZZ TEST thread: Date Booked, Create BEO and the live event chip",
+      "namesMasked": 10,
+      "masks": 1
+    },
+    {
+      "file": "820-C-new-party-beo.png",
+      "at": "2026-11-11T11:04:39.357Z",
+      "shows": "Create BEO on the re-booked thread: the OTO App opened on the new party's BEO (nothing approved or saved)",
+      "namesMasked": 39,
+      "masks": 1,
+      "postMasked": "a solid box over the ZZ TEST simulator number"
+    },
+    {
+      "file": "820-D-removed-after-delete.png",
+      "at": "2026-11-11T11:09:52.957Z",
+      "shows": "After the party was deleted in the Events module: the second thread says Party removed in the Events module and offers Book Date again",
+      "namesMasked": 9,
+      "masks": 1
+    },
+    {
+      "file": "820-E-control-live-chip.png",
+      "at": "2026-11-11T11:09:59.825Z",
+      "shows": "The control thread, its party untouched: Date Booked, Create BEO and the normal event chip",
+      "namesMasked": 9,
+      "masks": 1
+    }
+  ]
+}
