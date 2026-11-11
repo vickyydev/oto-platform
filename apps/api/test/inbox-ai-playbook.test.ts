@@ -231,7 +231,8 @@ describe('the GM queue (playbook routing)', () => {
     await drain();
     const conv = await customer(w, central, nextPhone(), 'hmm not sure what to do now');
     const reception = await teamOf(w, 'reception', w.central);
-    expect(conv.teamId).toBe(reception.id);
+    // SCRUM-789: held in the General inbox until the hand-over makes it the park's work.
+    expect(conv).toMatchObject({ teamId: null, branchId: w.central });
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id, branchId: w.central });
@@ -239,6 +240,17 @@ describe('the GM queue (playbook routing)', () => {
     expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([
       { body: UNCLEAR_LINE, templateId: unclear.id },
     ]);
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_unclear', reroutedTeamId: reception.id });
+  });
+
+  it('an unclear message on a thread already at the park’s desk stays there: nothing is re-routed', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'hmm not sure what to do now', { seat: true });
+    const reception = await teamOf(w, 'reception', w.central);
+    expect(conv.teamId).toBe(reception.id);
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id, branchId: w.central });
     expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_unclear', reroutedTeamId: null });
   });
 
@@ -456,7 +468,8 @@ describe('the nanny (the playbook’s "Ages, nanny and drop-off")', () => {
 
   it('the live case (staging, 29 Oct): a nanny answer on a thread with no park closes with the booking line, not the branch’s', async () => {
     await drain();
-    const conv = await customer(w, wide, nextPhone(), 'Hi, do you have a nanny service? I would like to book one');
+    // SCRUM-789: seated, as the live thread was (a new one is held in the General inbox first; `inbox-routing-general.test.ts`).
+    const conv = await customer(w, wide, nextPhone(), 'Hi, do you have a nanny service? I would like to book one', { seat: true });
     // As staging had it: no park named, the thread with Central's reception by the router's fallback.
     const receptionCentral = await teamOf(w, 'reception', w.central);
     expect(await conversationRow(w, conv.id)).toMatchObject({ branchId: null, teamId: receptionCentral.id });

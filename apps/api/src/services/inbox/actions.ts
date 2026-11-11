@@ -28,6 +28,7 @@ import { pgErrorOf } from '../../lib/scrub';
 import type { Exec, Tx } from '../tx';
 import { INBOX_READ, loadVisibleConversation, type InboxViewer } from './read-visibility';
 import { pickRule, routeConversation } from './router';
+import { isGeneralPool } from './placement';
 import { handledPatch, reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { cancelAiForThread, type AiCancelReason } from './ai-turns';
 
@@ -441,7 +442,11 @@ export async function setPrimary(tx: Tx, ctx: ActionCtx, input: SetPrimaryInput)
 
   refuseIfSeated(l.slots, input.assignee);
 
-  if (dest && input.confirmMove !== true) {
+  // SCRUM-789: a conversation held in the General inbox has no department to
+  // leave: seating a reception person (or a reception team) on it is its
+  // first seat at a park, not a move between departments, and asks nothing.
+  const firstSeat = dest !== null && dest.key === 'reception' && isGeneralPool(l.conv);
+  if (dest && !firstSeat && input.confirmMove !== true) {
     throw errors.conflict('CATEGORY_MOVE_UNCONFIRMED', INBOX_ACTION_MESSAGES.moveUnconfirmed, {
       fromCategory: l.conv.category,
       toCategory: CATEGORY_OF_TEAM[dest.key],

@@ -33,6 +33,7 @@ import type { FileStorage } from '../files';
 import { closedSince, isOpenAt, readOpeningHours } from './hours';
 import { storeInboundMedia, type PendingMedia } from './media';
 import { routeConversation, type CategoryDecision } from './router';
+import { isGeneralPool, localTopicsOf, placeIfPooled } from './placement';
 import { reopenAuditBefore, reopenPatch, reopenedPayload } from './status';
 import { sendAfterCommit } from './send';
 import type { InboxAiSchedule } from './ai-runtime';
@@ -76,6 +77,9 @@ import { VOICE_MEDIA_GRACE_MS } from './voice-notes';
  *      the channel account's default. The `routed` pill carries the source
  *      and the cue's key, and an `inbox.conversation.classify` audit row
  *      says the same. The assistant's own re-route after its turn stays.
+ *      SCRUM-789: a new GENERAL conversation the assistant is about to
+ *      answer is held in the General inbox instead of seated at a park
+ *      (`placement.ts`), and seated the moment no turn will read it.
  *   7. OUT OF HOURS: when the channel account has opening hours and the
  *      delivery arrives outside them, the `out_of_hours` template is queued
  *      as the reply, at most once per closed period per thread, and sent
@@ -736,6 +740,18 @@ async function receiveMessage(
   const unrouted = !created && thread.lastRoutedAt === null && !(await hasPrimary(tx, operatorId, thread.id));
   if (created || unrouted) {
     if (created) result.conversationsCreated += 1;
+    // SCRUM-789: a NEW general conversation the assistant is about to answer
+    // is held in the General inbox, not seated at a park: the number's park
+    // stays on it (prices differ by park) but does not seat it. Only where
+    // the assistant answers for real (live, a turn due now); a hint whose
+    // topic is the park's own work (the simulator's instrument) seats it at
+    // once. Everything else is routed as before.
+    const hold =
+      created &&
+      thread.category === 'general' &&
+      account.aiMode === 'live' &&
+      (await aiTurnDue(tx, c)) &&
+      !(thread.intent !== null && (await localTopicsOf(tx, operatorId)).has(thread.intent));
     const routed = await routeConversation(tx, {
       operatorId,
       conversationId: thread.id,
@@ -746,6 +762,7 @@ async function receiveMessage(
       // A mirrored notice thread routed on its first customer message keeps
       // the category it was created with: nothing decided it here.
       ...(created ? { decided } : {}),
+      ...(hold ? { hold: true } : {}),
     });
     await audit.record(tx, {
       actorAccountId: null,
@@ -765,6 +782,7 @@ async function receiveMessage(
         teamId: routed.teamId,
         ruleId: routed.ruleId,
         fallback: routed.fallback,
+        ...(hold ? { held: 'general' } : {}),
         assignments: routed.assignments.map((a) => ({
           id: a.id,
           slot: a.slot,
@@ -831,6 +849,16 @@ async function receiveMessage(
   if (!scheduled && c.ai?.enabled) {
     const current = await currentThread();
     if (current) await readAnswersWhileStoodBack(tx, current, messageId, c.now);
+  }
+  // SCRUM-789, never stranded: a thread held in the General inbox whose
+  // newest line no assistant turn will read (the park is closed, the
+  // assistant is off or in shadow, the thread is paused, a person acted on
+  // it) is seated at its park now, as every general conversation was before.
+  if (!scheduled) {
+    const current = await currentThread();
+    if (current && isGeneralPool(current)) {
+      await placeIfPooled(tx, { operatorId, conversationId: thread.id }, { at, reason: 'assistant_away', requestId: c.input.requestId ?? null });
+    }
   }
 }
 

@@ -83,7 +83,9 @@ afterAll(async () => {
 
 /** A fresh thread whose turn is pending. */
 async function pendingThread(text = `hello there ${SENTINEL}`) {
-  const conv = await customer(w, central, nextPhone(), text);
+  // SCRUM-789: seated at the park — the people acting below are the desk's, and a
+  // general thread held in the General inbox is not on the desk's list.
+  const conv = await customer(w, central, nextPhone(), text, { seat: true });
   const turns = await turnsOf(w, conv.id);
   expect(turns.map((t) => t.state)).toEqual(['pending']);
   return { conv, turn: turns[0]! };

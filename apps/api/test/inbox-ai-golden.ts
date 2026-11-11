@@ -1509,6 +1509,15 @@ export async function threadState(w: GoldenWorld, conversationId: string) {
   return { conv: conv!, turns, lines, events, templateKeyOf: (id: string | null) => (id ? (keyOf.get(id) ?? null) : null) };
 }
 
+/**
+ * SCRUM-789: the thread is seated at its own park's reception desk. A general
+ * thread opens held in the General inbox (no team); the park's own work —
+ * lost property, a child in care — seats it there.
+ */
+export async function atParkDesk(w: GoldenWorld, conv: { teamId: string | null; branchId: string | null }): Promise<boolean> {
+  return conv.branchId !== null && conv.teamId === (await teamIdOf(w, 'reception', conv.branchId));
+}
+
 export async function teamIdOf(w: GoldenWorld, key: 'birthdays' | 'gm' | 'reception', branchId: string | null = null): Promise<string> {
   const [t] = await w.ctx.db
     .select({ id: s.team.id })
@@ -1806,7 +1815,8 @@ export async function playMechanical(w: GoldenWorld, id: MechanicalId, fake: Fak
           'a normal number: the only AI line is not the branch’s closing line',
         );
         check(!aiA.some((l) => /jacket|blue|found a/i.test(l.body ?? '')), 'an AI line describes the item');
-        check(a.t.conv.teamId === a.conv.teamId, 'a normal number: the thread left the park');
+        // SCRUM-789: the thread opens held in the General inbox; lost property seats it at its park's desk.
+        check(await atParkDesk(w, a.t.conv), 'a normal number: the thread left the park');
 
         // (b) A park number whose policy names lost_item (the playbook's default): nothing at all.
         const policyAccount = w.accounts.chalong;
@@ -1826,7 +1836,7 @@ export async function playMechanical(w: GoldenWorld, id: MechanicalId, fake: Fak
             b.t.events.some((e) => e.kind === 'ai_handover' && (e.payload as { silent?: boolean }).silent === true),
             'a policy number: no silent hand-over was recorded',
           );
-          check(b.t.conv.teamId === b.conv.teamId, 'a policy number: the thread left the park');
+          check(await atParkDesk(w, b.t.conv), 'a policy number: the thread left the park');
           notes.push(`policy number: turn ${turnB?.state}/${turnB?.reason}, ${b.t.lines.filter((l) => l.authorKind === 'ai').length} AI line(s)`);
         } finally {
           await w.ctx.db.update(s.channelAccount).set({ silencePolicy: null }).where(eq(s.channelAccount.id, policyAccount));

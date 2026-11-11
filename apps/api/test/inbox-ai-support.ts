@@ -8,6 +8,7 @@ import { newId } from '@oto/shared';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import type { FileStorage } from '../src/services/files';
 import { runInboxAiJob, type AiSweep } from '../src/services/inbox/ai-engine';
+import { placeIfPooled } from '../src/services/inbox/placement';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -163,7 +164,7 @@ export async function customer(
   accountId: string,
   from: string,
   text: string | { image: true },
-  opts: { at?: Date; hint?: ClassificationHint } = {},
+  opts: { at?: Date; hint?: ClassificationHint; seat?: boolean } = {},
 ) {
   const channel = await sim(w, accountId);
   const stamp = { ...(opts.at ? { at: opts.at } : {}), ...(opts.hint ? { hint: opts.hint } : {}) };
@@ -184,7 +185,22 @@ export async function customer(
     .innerJoin(s.contact, eq(s.contact.id, s.conversation.contactId))
     .where(and(eq(s.conversation.channelAccountId, accountId), eq(s.contact.externalHandle, `+${from}`)))
     .limit(1);
+  if (opts.seat) return seatAtPark(w, row!.conv.id);
   return row!.conv;
+}
+
+/**
+ * SCRUM-789: a new general conversation the assistant is answering is held in
+ * the General inbox, on no team, where a park's desk does not see it. The
+ * suites whose subject is a person AT THE DESK acting on a general thread
+ * (a reply during the debounce, Resume, "Correct the assistant") open theirs
+ * with `seat: true`: the thread is seated at its park as when it becomes the
+ * local team's work (`placeIfPooled`), its pending turn untouched. A thread
+ * that is not held is left as it is.
+ */
+export async function seatAtPark(w: AiWorld, conversationId: string) {
+  await w.ctx.db.transaction((tx) => placeIfPooled(tx, { operatorId: w.oto, conversationId }, { at: new Date(), reason: 'local' }));
+  return conversationRow(w, conversationId);
 }
 
 export function decision(over: Partial<AiDecision> = {}): AiDecision {

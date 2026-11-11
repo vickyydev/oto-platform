@@ -352,8 +352,8 @@ describe('a handover (§B.5, §C.5)', () => {
     // SCRUM-830 would route this opener to Birthdays at ingest; the hint keeps
     // it with Reception so the move asserted below is the assistant's own.
     const conv = await customer(w, central, phone, `a birthday party for my son please ${SENTINEL}`, ON_DEFAULT_QUEUE);
-    const reception = await teamOf(w, 'reception', w.central);
-    expect(conv.teamId).toBe(reception.id);
+    // SCRUM-789: a general thread the assistant is answering is held in the General inbox, on no team.
+    expect(conv).toMatchObject({ category: 'general', teamId: null });
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [PARTY_OPEN, PARTY_ASK] }) });
     expect((await tick(w, later(25_000))).answered).toBe(1);
 
@@ -363,7 +363,8 @@ describe('a handover (§B.5, §C.5)', () => {
     expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, mediaFileIds: l.mediaFileIds }))).toEqual([
       { body: `${PARTY_OPEN}${PART_JOIN}${PARTY_ASK_PARK_KNOWN}`, mediaFileIds: [] },
     ]);
-    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
+    // SCRUM-789: still held in the General inbox — the question seats nobody.
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: null });
     expect((await eventsOf(w, conv.id)).some((e) => e.kind === 'ai_handover')).toBe(false);
 
     // The basics are in: the birthday manager's line, verbatim and alone.
@@ -452,7 +453,10 @@ describe('a handover (§B.5, §C.5)', () => {
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const after = await conversationRow(w, conv.id);
     expect(after.category).toBe('general');
-    expect(after.teamId).toBe(conv.teamId);
+    // SCRUM-789: the thread opened held in the General inbox; the person's seat was its first
+    // at the park (no move to confirm), and the assistant leaves it there.
+    expect(conv.teamId).toBeNull();
+    expect(after.teamId).toBe((await teamOf(w, 'reception', w.central)).id);
     const slots = await activeSlots(w, conv.id);
     expect(slots.find((a) => a.slot === 'primary')!.accountId).toBe(agent);
     const handover = (await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover');
@@ -518,7 +522,9 @@ describe('a handover (§B.5, §C.5)', () => {
       expect(lines).toHaveLength(1);
       expect(lines[0]).toMatchObject({ body: words, templateId: null, bodyLanguage: 'th' });
       expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'persona', closingKey: null });
-      expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
+      // SCRUM-789: held until now; the unclear hand-over seats it at its park's reception.
+      expect(conv.teamId).toBeNull();
+      expect((await conversationRow(w, conv.id)).teamId).toBe((await teamOf(w, 'reception', w.central)).id);
     } finally {
       for (const u of untranslated) {
         await w.ctx.db.update(s.template).set({ body: u.row.body, needsTranslation: u.row.needsTranslation }).where(eq(s.template.id, u.row.id));
@@ -526,10 +532,27 @@ describe('a handover (§B.5, §C.5)', () => {
     }
   });
 
-  it('a park named on a branchless general thread: the branch is set and the thread goes to that park’s reception, as the assistant', async () => {
+  it('a park named on a branchless general thread: the branch is set by the assistant; SCRUM-789 — knowing the park seats nobody', async () => {
     await drain();
     const conv = await customer(w, wide, nextPhone(), 'hi, we are coming to Chalong');
+    expect(conv).toMatchObject({ branchId: null, teamId: null });
+    w.fake.push({ kind: 'decision', decision: decision({ branchNamed: 'chalong' }) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    const after = await conversationRow(w, conv.id);
+    // The park is on the thread for the answers (prices differ by park); it stays in the General inbox.
+    expect(after).toMatchObject({ branchId: w.chalong, category: 'general', teamId: null });
+    expect(await activeSlots(w, conv.id)).toHaveLength(0);
+    const events = await eventsOf(w, conv.id);
+    expect(events.find((e) => e.kind === 'branch_set')).toMatchObject({ actorKind: 'ai' });
+    expect(events.some((e) => e.kind === 'moved_team')).toBe(false);
+  });
+
+  it('a park named on a branchless general thread already seated at a desk: the thread goes to that park’s reception, as the assistant', async () => {
+    await drain();
+    // Seated before the assistant read it (as a thread the assistant was not answering is): the first reception team.
+    const conv = await customer(w, wide, nextPhone(), 'hi, we are coming to Chalong', { seat: true });
     expect(conv.branchId).toBeNull();
+    expect(conv.teamId).not.toBeNull();
     w.fake.push({ kind: 'decision', decision: decision({ branchNamed: 'chalong' }) });
     expect((await tick(w, later(25_000))).answered).toBe(1);
     const after = await conversationRow(w, conv.id);
@@ -1023,7 +1046,6 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     // A brochure on the birthday template, which neither turn sends (owner D1).
     const fileId = await attachBrochure('inbox/templates/brochure-mixed.pdf');
     const holding = await closingTemplate('closing_birthday');
-    const reception = await teamOf(w, 'reception', w.central);
 
     // Turn one (owner D1): the hours part answered, the party part asked about — no hand-over yet.
     const phone = nextPhone();
@@ -1039,7 +1061,8 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     expect((await tick(w, later(25_000))).answered).toBe(1);
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'hours', action: 'answer' });
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([hours, askParkKnown]);
-    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
+    // SCRUM-789: answered and still held in the General inbox — no hand-over yet, nobody seated.
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: null });
     expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({
       intents: ['hours', 'birthday_party'],
       brochureFileIds: [],
@@ -1139,7 +1162,8 @@ describe('Resume brings the assistant back (test night 2026-10-21, W4b)', () => 
     const reception = await teamOf(w, 'reception', w.central);
     const [, cookie] = await staff(w, '+66810008201', 'AI Test Resumer', 'inbox_agent', { scopeType: 'department', scopeId: reception.departmentId! });
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, `hello, do kids need socks to play? ${SENTINEL}`);
+    // SCRUM-789: seated at the park, so the desk's person sees it (a held general thread is not on the desk's list).
+    const conv = await customer(w, central, phone, `hello, do kids need socks to play? ${SENTINEL}`, { seat: true });
     expect(await detailState(cookie, conv.id)).toBe('ready');
     const reply = await w.ctx.app.inject({
       method: 'POST',
@@ -1246,7 +1270,7 @@ describe('the episode is ordered by time, never by id (test night 2026-10-21, CR
     await drain();
     const cookie = await agentOf('+66810008301', 'AI Test Orderer');
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, `hello, do kids need socks? ${SENTINEL}`);
+    const conv = await customer(w, central, phone, `hello, do kids need socks? ${SENTINEL}`, { seat: true });
     await personReplies(cookie, conv.id, lateV4());
 
     await customer(w, central, phone, `and socks?? ${SENTINEL}`);
@@ -1262,7 +1286,7 @@ describe('the episode is ordered by time, never by id (test night 2026-10-21, CR
     await drain();
     const cookie = await agentOf('+66810008302', 'AI Test Stamper');
     const phone = nextPhone();
-    const conv = await customer(w, central, phone, `hello ${SENTINEL}`, { at: new Date(Date.now() - 10_000) });
+    const conv = await customer(w, central, phone, `hello ${SENTINEL}`, { at: new Date(Date.now() - 10_000), seat: true });
     await personReplies(cookie, conv.id, newId());
 
     // Stamped a second before the reply above was written, received after it:

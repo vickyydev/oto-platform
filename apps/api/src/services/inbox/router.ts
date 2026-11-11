@@ -46,6 +46,14 @@ import type { Exec } from '../tx';
  *
  * Manual-only people (the GM, the entertainment coordinator) are never
  * picked here, because routing only ever picks the people a rule names.
+ *
+ * THE GENERAL INBOX (SCRUM-789, `placement.ts`): a general conversation the
+ * assistant is answering is HELD instead (`hold`): no rule is picked, nobody
+ * is seated and the conversation has no team; only `last_routed_at` and a
+ * `routed` pill (`held: 'general'`) are written. "Nothing is ever unowned"
+ * then reads: the assistant holds it, and the moment it stops — or the thread
+ * turns into the park's own work — the routing above is made (`placed`, the
+ * pill says why), exactly as it would have been on the first message.
  */
 
 /** The team that owns each category (IT Brief). General is reception, per branch. */
@@ -82,7 +90,26 @@ export interface RouteInput {
    * Recorded on the `routed` pill; absent on a re-route.
    */
   decided?: CategoryDecision;
+  /**
+   * SCRUM-789: hold a general conversation in the General inbox — no team,
+   * nobody seated. Only on a new `general` conversation; ignored otherwise.
+   */
+  hold?: boolean;
+  /**
+   * SCRUM-789: this is a held conversation being seated at its park now, and
+   * why. Recorded on the `routed` pill.
+   */
+  placed?: PlacementReason;
 }
+
+/**
+ * Why a held general conversation was seated at its park (SCRUM-789):
+ *   `local`           its topic is the park's own work, or the assistant
+ *                     handed it to the branch desk;
+ *   `assistant_away`  no assistant turn answers it (off, shadow, closed,
+ *                     paused, a person acted, a turn that ended unanswered).
+ */
+export type PlacementReason = 'local' | 'assistant_away';
 
 export type CategoryDecision =
   | { source: 'hint' }
@@ -105,7 +132,8 @@ export interface RoutedAssignment {
 
 export interface RouteResult {
   ruleId: string | null;
-  teamId: string;
+  /** Null only for a conversation held in the General inbox (SCRUM-789). */
+  teamId: string | null;
   fallback: boolean;
   assignments: RoutedAssignment[];
 }
@@ -147,6 +175,7 @@ export function pickRule(
 }
 
 export async function routeConversation(tx: Exec, input: RouteInput): Promise<RouteResult> {
+  if (input.hold && input.category === 'general' && !input.reroute) return holdInGeneral(tx, input);
   const rules = await tx
     .select()
     .from(routingRule)
@@ -264,6 +293,8 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
         // SCRUM-830: the pill says "from the message" when the first message decided.
         ...(input.decided ? { source: input.decided.source } : {}),
         ...(input.decided?.source === 'message' ? { cue: input.decided.cue, cueLanguage: input.decided.cueLanguage } : {}),
+        // SCRUM-789: a held general conversation seated at its park, and why.
+        ...(input.placed ? { placed: input.placed } : {}),
       },
       createdAt: input.at,
     },
@@ -286,4 +317,34 @@ export async function routeConversation(tx: Exec, input: RouteInput): Promise<Ro
   ]);
 
   return { ruleId: rule?.id ?? null, teamId, fallback, assignments };
+}
+
+/**
+ * SCRUM-789: the General inbox. The routing decision is recorded — the time
+ * and a `routed` pill — and nothing else: no team, no rule, nobody seated.
+ */
+async function holdInGeneral(tx: Exec, input: RouteInput): Promise<RouteResult> {
+  await tx
+    .update(conversation)
+    .set({ teamId: null, lastRoutedAt: input.at, updatedAt: new Date() })
+    .where(and(eq(conversation.operatorId, input.operatorId), eq(conversation.id, input.conversationId)));
+  await tx.insert(inboxEvent).values({
+    id: newId(),
+    operatorId: input.operatorId,
+    conversationId: input.conversationId,
+    kind: 'routed' as const,
+    actorKind: 'system' as const,
+    payload: {
+      ruleId: null,
+      teamId: null,
+      held: 'general',
+      category: input.category,
+      language: input.language,
+      branchId: input.branchId,
+      fallback: false,
+      ...(input.decided ? { source: input.decided.source } : {}),
+    },
+    createdAt: input.at,
+  });
+  return { ruleId: null, teamId: null, fallback: false, assignments: [] };
 }

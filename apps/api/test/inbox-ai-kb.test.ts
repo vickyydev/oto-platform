@@ -271,7 +271,9 @@ describe('"Correct the assistant" and the examples queue (§E, §D.5)', () => {
   let customerLineId: string;
 
   beforeAll(async () => {
-    const conv = await customer(w, line, nextPhone(), `how much for two kids ${SENTINEL}`);
+    // SCRUM-789: seated at the park — the desk's agent corrects the assistant on it below,
+    // and a general thread held in the General inbox is not on the desk's list.
+    const conv = await customer(w, line, nextPhone(), `how much for two kids ${SENTINEL}`, { seat: true });
     convId = conv.id;
     w.fake.push({ kind: 'decision', decision: decision() });
     expect((await tick(w, later(25_000))).answered).toBe(1);
@@ -475,7 +477,8 @@ describe('the controls (§D.4)', () => {
   });
 
   it('pause: whoever may reply cancels the waiting turn in the same transaction; the thread read says paused; resume clears it', async () => {
-    const conv = await customer(w, line, nextPhone(), 'are you open today?');
+    // SCRUM-789: seated at the park, so the desk's agent may pause it.
+    const conv = await customer(w, line, nextPhone(), 'are you open today?', { seat: true });
     const [turn] = await turnsOf(w, conv.id);
     expect(turn!.state).toBe('pending');
     // Not their thread: 404.

@@ -95,6 +95,7 @@ import {
   type OpenQuestionTurn,
 } from './open-question';
 import { routeConversation } from './router';
+import { isGeneralPool, localTopicsOf, placeIfPooled } from './placement';
 import { sendAfterCommit } from './send';
 import { holdTurnForTranscript, messageText, voiceHold, voiceUnreadTurn } from './voice-notes';
 
@@ -1256,6 +1257,8 @@ async function aiMove(
     payload: {
       followsPrimary: false,
       byAi: true,
+      // SCRUM-789: a thread held in the General inbox, seated because it became the park's work.
+      ...(isGeneralPool(conv) ? { fromGeneral: true } : {}),
       fromTeamId: conv.teamId,
       toTeamId: dest.id,
       toTeamName: dest.name,
@@ -1290,6 +1293,17 @@ async function teamFor(tx: Exec, operatorId: string, category: InboxCategory, br
         key === 'reception' ? (branchId ? eq(team.branchId, branchId) : sql`false`) : isNull(team.branchId),
       ),
     )
+    .orderBy(asc(team.sortOrder), asc(team.createdAt))
+    .limit(1);
+  return t ?? null;
+}
+
+/** The first reception team by the operator's order: the router's own fallback for a general thread with no park. */
+async function firstReception(tx: Exec, operatorId: string) {
+  const [t] = await tx
+    .select()
+    .from(team)
+    .where(and(eq(team.operatorId, operatorId), eq(team.key, 'reception')))
     .orderBy(asc(team.sortOrder), asc(team.createdAt))
     .limit(1);
   return t ?? null;
@@ -1388,6 +1402,15 @@ interface RoutingPlan {
  * Floresta, the only park with the service) goes to that park's reception
  * whatever the thread's park — each only when no person has touched the
  * routing. Read-only; `executeRouting` writes it.
+ *
+ * SCRUM-789, a thread HELD IN THE GENERAL INBOX (`placement.ts`): it takes
+ * the park the customer named (the answer depends on it) and stays held —
+ * knowing the park seats nobody. It is seated at the park's reception only
+ * when it is the park's own work: a part of the burst is a local topic, or
+ * the hand-over ends at the branch desk. With no park to name, the first
+ * reception team takes it and the thread keeps no branch, as a branchless
+ * general conversation always did. A hand-over to another queue moves it as
+ * before.
  */
 async function planRouting(
   tx: Exec,
@@ -1395,6 +1418,7 @@ async function planRouting(
   branchNamed: AiBranchKey | null,
   handover: Handover | null,
   knowledge: TurnKnowledge | undefined,
+  intents: readonly AiIntent[] = [],
 ): Promise<RoutingPlan> {
   const stay: RoutingPlan = { branchSet: null, move: null, category: conv.category };
   if (!(await noPersonRouting(tx, conv))) return stay;
@@ -1407,6 +1431,7 @@ async function planRouting(
       branchSet = named;
     }
   }
+  const topics = isGeneralPool(conv) ? await localTopicsOf(tx, conv.operatorId) : new Set<string>();
   const target: InboxCategory = handover
     ? destinationOf(handover.owner, handover.plan, { category: conv.category, branchKnown: branchId !== null })
     : conv.category;
@@ -1414,7 +1439,14 @@ async function planRouting(
     target === 'general' && handover?.plan.branch && knowledge ? (knowledge.branchOfKey.get(handover.plan.branch) ?? null) : null;
   const destBranch = planPark ?? branchId;
   let move: RoutingPlan['move'] = null;
-  if (target !== conv.category || branchSet || destBranch !== conv.branchId) {
+  if (isGeneralPool(conv) && target === 'general') {
+    const local = handover !== null || (intents.length > 0 && intents.some((i) => topics.has(i)));
+    if (local) {
+      const own = await teamFor(tx, conv.operatorId, 'general', destBranch);
+      const dest = own ?? (await firstReception(tx, conv.operatorId));
+      if (dest) move = { dest, category: 'general', branchId: own ? own.branchId : destBranch };
+    }
+  } else if (target !== conv.category || branchSet || destBranch !== conv.branchId) {
     const dest = await teamFor(tx, conv.operatorId, target, destBranch);
     if (dest && dest.id !== conv.teamId) {
       move = { dest, category: target, branchId: dest.key === 'reception' ? dest.branchId : destBranch };
@@ -1514,7 +1546,7 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   const none: ComposedReply = { v, fallback: fallback !== null, handover, routing: null, replied: false, brochure: [], holding: NO_LINE, lines: [] };
   if (!v || v.action === 'silent') return none;
   // Where the thread ends up is read first: the closing line names it.
-  const routing = await planRouting(exec, { ...conv, intent: v.intent, language: v.language }, v.branchNamed, handover, r.knowledge);
+  const routing = await planRouting(exec, { ...conv, intent: v.intent, language: v.language }, v.branchNamed, handover, r.knowledge, v.intents);
   // A hand-over the number's policy silences says nothing at all, its
   // answer included (the nanny on Central's own number is the desk's).
   const replied = v.action === 'answer' && !handover?.silenced;
@@ -1761,6 +1793,9 @@ function addUsage(a: TurnUsage | null | undefined, b: TurnUsage | null | undefin
   };
 }
 
+/** SCRUM-789: the silent turns after which a thread held in the General inbox stays held — nothing is owed. */
+const HELD_SILENCES: ReadonlySet<string> = new Set(['SPAM_TIDIED', 'MODEL_SILENT']);
+
 /** Writes the turn's final row and its decide audit. */
 async function closeTurn(
   tx: Tx,
@@ -1824,6 +1859,17 @@ async function closeTurn(
       rethink: records.rethink ?? null,
     },
   });
+  // SCRUM-789, never stranded: a thread held in the General inbox stays held
+  // only while the assistant answers it. A turn that ended with nothing said
+  // to the customer — cancelled (off, paused, a person acted), shadowed,
+  // silent, a provider failure — seats it at its park, where people see it
+  // unanswered, as before. Two silences owe the customer nothing and stay
+  // out: spam the assistant tidied (handled), and the model choosing silence
+  // on a line that needs no reply ("thanks, bye" — item D's own exception).
+  // A superseded turn's successor decides for itself.
+  if (conv && (state === 'cancelled' || state === 'shadowed' || state === 'silent') && !HELD_SILENCES.has(reason)) {
+    await placeIfPooled(tx, { operatorId: conv.operatorId, conversationId: conv.id }, { at, reason: 'assistant_away' });
+  }
 }
 
 async function writeLines(
@@ -2196,6 +2242,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           at,
         });
       }
+
+      // SCRUM-789, belt and braces: a hand-over never leaves a thread held in
+      // the General inbox — where the routing above seated nobody (no team to
+      // name), the first routing is made now.
+      if (handover) await placeIfPooled(tx, { operatorId: conv.operatorId, conversationId: conv.id }, { at, reason: 'local' });
 
       // X7 / owner G4 default: a closing on an episode no person touched is handled by the assistant.
       if (v.action === 'answer' && v.mayAutoHandle && !handover) await handleByAi(tx, conv, turn.id, at, null);

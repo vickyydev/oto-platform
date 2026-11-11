@@ -230,11 +230,27 @@ export function isVisibleTo(c: InboxVisibilityFacts, viewer: InboxViewerScope): 
 }
 
 /**
+ * Held in the General inbox (SCRUM-789): a `general` conversation that was
+ * routed and seated on no team — a general question the assistant is
+ * answering. Its park may be known (prices differ by park); that seats it
+ * nowhere. It is seated at its park when it becomes the local team's work.
+ */
+export function isHeldInGeneral(c: { category: string; teamId: string | null; lastRoutedAt: Date | string | null }): boolean {
+  return c.category === 'general' && c.teamId === null && c.lastRoutedAt !== null;
+}
+
+/**
  * The branch filter (:1066): a conversation matches its own branch, and one
  * with no branch (operator-wide — the prototype's "all") matches every branch.
+ * SCRUM-789: a park's inbox holds only what its local team must handle, so a
+ * conversation held in the General inbox (`held`) matches no branch.
  */
-export function matchesBranchFilter(c: { branchId: string | null }, branchId: string | null | undefined): boolean {
+export function matchesBranchFilter(
+  c: { branchId: string | null; held?: boolean },
+  branchId: string | null | undefined,
+): boolean {
   if (!branchId) return true;
+  if (c.held) return false;
   return c.branchId === null || c.branchId === branchId;
 }
 
@@ -264,8 +280,17 @@ export const InboxViewRoleSchema = z.enum(INBOX_VIEW_ROLES);
 export const InboxConversationListQuerySchema = z.object({
   tab: InboxTabSchema.optional(),
   category: InboxCategorySchema.optional(),
-  /** The branch filter: that branch's conversations and the operator-wide ones (:1066). */
+  /**
+   * The branch filter: that branch's conversations and the operator-wide ones
+   * (:1066) — a park's inbox. SCRUM-789: never one held in the General inbox.
+   */
   branchId: Uuid.optional(),
+  /**
+   * SCRUM-789: `general` is the General inbox — only the general
+   * conversations held out of the park inboxes (routed, on no team: a
+   * general question the assistant is answering). Visibility is unchanged.
+   */
+  inbox: z.enum(['general']).optional(),
   status: InboxStatusSchema.optional(),
   language: z.string().min(1).max(16).optional(),
   /** Search across customer, intent and last message. */

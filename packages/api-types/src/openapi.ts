@@ -35407,13 +35407,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. Needs inbox:conversation:read somewhere in the operator. */
+        /** @description The conversations the caller can see — operator-wide reading sees all; a branch grant that branch; a team member (a department-scoped grant) the team's; anyone the conversations they hold a slot on — newest activity first, keyset-paged by `cursor`. `tab` applies the ported rule: mine = active and on it; team = every active one visible (the viewer’s own included); handled = handled. Filters: category, branch (that branch's and the operator-wide ones — a park's inbox; SCRUM-789: never a conversation held in the General inbox), `inbox=general` (SCRUM-789: only the general conversations held out of the park inboxes — routed, on no team, a general question the assistant is answering), status, language, `q` (customer, intent, last message), `unanswered=true` (a customer message or a routing after the last staff reply; AI lines do not count), the handled date range, and `resolvedBy` (on the handled tab only). `tabCounts` counts the viewer’s tabs over everything visible, before filters. Needs inbox:conversation:read somewhere in the operator. */
         get: {
             parameters: {
                 query?: {
                     tab?: "mine" | "team" | "handled";
                     category?: "birthdays" | "general" | "marketing" | "gm";
                     branchId?: string;
+                    inbox?: "general";
                     status?: "active" | "handled";
                     language?: string;
                     q?: string;

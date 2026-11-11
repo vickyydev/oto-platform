@@ -9,6 +9,7 @@ import {
   InboxDashboardSchema,
   inTab,
   isUnanswered,
+  isHeldInGeneral,
   isVisibleTo,
   matchesBranchFilter,
   matchesSearch,
@@ -142,6 +143,20 @@ describe('the filters (:1066, :1079-1085)', () => {
     expect(matchesBranchFilter({ branchId: 'b2' }, 'b1')).toBe(false);
     expect(matchesBranchFilter({ branchId: null }, 'b1')).toBe(true);
     expect(matchesBranchFilter({ branchId: 'b2' }, undefined)).toBe(true);
+  });
+  it('SCRUM-789: a conversation held in the General inbox is in no park inbox, and still under All', () => {
+    expect(matchesBranchFilter({ branchId: 'b1', held: true }, 'b1')).toBe(false);
+    expect(matchesBranchFilter({ branchId: null, held: true }, 'b1')).toBe(false);
+    expect(matchesBranchFilter({ branchId: 'b1', held: true }, undefined)).toBe(true);
+    expect(matchesBranchFilter({ branchId: 'b1', held: false }, 'b1')).toBe(true);
+  });
+  it('SCRUM-789: held is general, routed and on no team', () => {
+    const at = '2026-11-11T03:00:00.000Z';
+    expect(isHeldInGeneral({ category: 'general', teamId: null, lastRoutedAt: at })).toBe(true);
+    expect(isHeldInGeneral({ category: 'general', teamId: 't1', lastRoutedAt: at })).toBe(false);
+    // A mirrored notice thread nobody routed yet is not held.
+    expect(isHeldInGeneral({ category: 'general', teamId: null, lastRoutedAt: null })).toBe(false);
+    expect(isHeldInGeneral({ category: 'gm', teamId: null, lastRoutedAt: at })).toBe(false);
   });
   it('search reads customer, intent and last message, case-insensitively', () => {
     const c = { contactName: 'Sarah Demo', intent: 'birthday enquiry', preview: 'Saturday the 14th' };

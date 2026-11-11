@@ -26,6 +26,7 @@ import { conversationEventOf } from './book-date';
 import { aiStateOf } from './ai-turns';
 import { handoverNoticesOf } from './handover-notice';
 import { openQuestionsOf } from './open-question';
+import { generalPoolSql } from './placement';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -291,10 +292,14 @@ function toRow(r: RawRow, assignments: InboxConversationRow['assignments']): Inb
 function filterSql(q: InboxConversationListQuery): SQL[] {
   const where: SQL[] = [];
   if (q.category) where.push(eq(s.conversation.category, q.category));
-  // `matchesBranchFilter`: the branch's own, and the operator-wide ones (:1066).
+  // `matchesBranchFilter`: the branch's own, and the operator-wide ones (:1066);
+  // never one held in the General inbox (SCRUM-789: a park's inbox holds only
+  // what its local team must handle).
   if (q.branchId) {
-    where.push(sql`(${s.conversation.branchId} = ${q.branchId} or ${s.conversation.branchId} is null)`);
+    where.push(sql`((${s.conversation.branchId} = ${q.branchId} or ${s.conversation.branchId} is null) and not ${generalPoolSql})`);
   }
+  // SCRUM-789: the General inbox — the general conversations held out of the park inboxes.
+  if (q.inbox === 'general') where.push(generalPoolSql);
   if (q.status) where.push(eq(s.conversation.status, q.status));
   if (q.language) where.push(eq(s.conversation.language, q.language));
   // SCRUM-220 playbook, the named inboxes: the number the conversation came in on.

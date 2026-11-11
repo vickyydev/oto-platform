@@ -127,6 +127,24 @@ fixed rule: they are parked with Birthdays & Events and a manager decides.
   birthday backup, the GM on every marketing and complaint chat). Fixed
   pairs; the owner can reassign anywhere. Once a birthday's branch is
   confirmed, the birthday manager who hosts at that branch is added.
+- General questions stay out of the park inboxes (SCRUM-789): a general
+  conversation the assistant is answering — prices, opening hours, how to
+  get there, age rules, parking, promotions — is held in the General
+  inbox: on no team, nobody seated, its park still on it for the answers
+  (prices differ by park). It shows under All conversations and the
+  General view, and in no park view. It is seated at its park's
+  reception, with the usual routing pills, when it becomes the local
+  team's work: its topic is a local topic (a nanny, a drop-off, a child
+  in our care, lost property — one list, `services/inbox/placement.ts`,
+  which an operator can replace with a `core.setting` row
+  `inbox_local_topics`), the assistant hands it to the branch desk
+  (unclear, not covered, a person asked for: something that happened on
+  a visit, a booking the staff must change), or a person moves it. A
+  thread is held only while the assistant answers it: where no turn will
+  read the customer's newest line (assistant off or in shadow, park
+  closed, thread paused, a person acted) or a turn ends with nothing
+  said, it is seated at its park as before. Conversations seated before
+  this rule are not moved.
 - The first message decides the queue (SCRUM-830, owner 11 Nov 2026): a
   new conversation's category is read from its first customer message
   before any AI runs — a birthday, party, package, cake, camp or school
