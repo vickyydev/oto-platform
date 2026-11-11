@@ -107,7 +107,7 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
   it('cash: the order’s lines, its total and "Please pay" the charged amount, lines before the amount', () => {
     const html = ticketDisplay({ sale: sale(2, { paymentMethod: 'cash' }) });
     const t = tFor('en');
-    expect(html).toContain('data-testid="payment-stage"');
+    expect(html).toContain('data-testid="customer-payment"');
     const lines = between(html, 'payment-order-lines', 'payment-order-summary');
     expect(lines).toContain('ZZ TEST Play 1');
     expect(lines).toContain('ZZ TEST Play 2');
@@ -192,15 +192,15 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
 
   it('a sale with no lines, and a price still pending, keep the screens they had', () => {
     const none = ticketDisplay({ sale: sale(0, { paymentMethod: 'cash' }), totals: cartQuote(0).totals, payment: payment(0) });
-    expect(none).not.toContain('data-testid="payment-stage"');
+    expect(none).not.toContain('data-testid="customer-payment"');
     expect(none).toContain(tFor('en')('common.pleasePay'));
     const pending = ticketDisplay({ sale: sale(2), pricePending: true });
     expect(pending).toContain('data-testid="customer-price-pending"');
-    expect(pending).not.toContain('data-testid="payment-stage"');
+    expect(pending).not.toContain('data-testid="customer-payment"');
     expect(pending).not.toContain('ZZ TEST Play 1');
     const paid = ticketDisplay({ sale: sale(2), payment: payment(0, { status: 'paid' }) });
     expect(paid).toContain('data-testid="customer-payment-paid"');
-    expect(paid).not.toContain('data-testid="payment-stage"');
+    expect(paid).not.toContain('data-testid="customer-payment"');
   });
 
   it('reads in the guest’s language, with no English of its own', () => {
@@ -274,7 +274,7 @@ describe('SCRUM-859: the F&B customer screen at the payment stage', () => {
 
   it('an order with no lines keeps the amount-only screen', () => {
     const html = fnb({ presentation: { cart: { ...fnbCart, lines: [], orderNote: '' }, totals: fnbTotals } });
-    expect(html).not.toContain('data-testid="payment-stage"');
+    expect(html).not.toContain('data-testid="customer-payment"');
     expect(html).toContain(tFor('en')('fnb.payment.amountToPay'));
   });
 });
@@ -304,7 +304,7 @@ describe('SCRUM-859: the shop’s customer screens at the payment stage', () => 
 
   it('paired display: a document without totals (an older till) keeps the amount-only screen', () => {
     const html = under('en', createElement(PublicMerchCustomerDisplay, { stage: 'payment', cart: merchCart, payment: fnbPayment({ amountSatang: 43_000 }) }));
-    expect(html).not.toContain('data-testid="payment-stage"');
+    expect(html).not.toContain('data-testid="customer-payment"');
     expect(html).toContain(tFor('en')('merch.payment.amountToPay'));
     expect(html).toContain('฿430');
   });
@@ -329,7 +329,7 @@ describe('SCRUM-859: the tender display', () => {
   it('a named line beside the QR, and beside the card amount; the total is the payment’s own', () => {
     const lines = [{ label: '+1 hour', qty: 2, unitPrice: 300, lineTotal: 600 }];
     const qr = under('en', createElement(TenderCustomerDisplay, { cart: { ...base, lines }, payment: tenderPayment }));
-    expect(qr).toContain('data-testid="payment-stage"');
+    expect(qr).toContain('data-testid="customer-payment"');
     const drawn = between(qr, 'payment-order-lines', 'payment-order-summary');
     expect(drawn).toContain('data-testid="tender-display-line"');
     expect(drawn).toContain('+1 hour');
@@ -350,7 +350,7 @@ describe('SCRUM-859: the tender display', () => {
     const older = readDisplayTenderCart({ kind: 'tender', supported: true, subject: 'party_balance', method: 'qr' }, 'payment');
     expect(older).toEqual({ kind: 'tender', supported: true, subject: 'party_balance', method: 'qr' });
     const html = under('en', createElement(TenderCustomerDisplay, { cart: older!, payment: tenderPayment }));
-    expect(html).not.toContain('data-testid="payment-stage"');
+    expect(html).not.toContain('data-testid="customer-payment"');
     expect(html).toContain(tFor('en')('display.tender.partyBalance'));
     expect(html).toContain('data-testid="payment-qr-countdown"');
     expect(html).toContain('฿600');

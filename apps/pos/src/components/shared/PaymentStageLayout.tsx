@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
  * within itself rather than off the screen, and the lines keep a minimum of
  * their own.
  *
- * `data-testid`s: `payment-stage` (the frame), `payment-order-lines` (the
+ * `data-testid`s: `customer-payment` (the frame), `payment-order-lines` (the
  * scrolling list), `payment-order-summary` (the footer rows) and
  * `payment-amount` (the block the family pays from).
  */
@@ -58,7 +58,7 @@ export function PaymentStageLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="@container flex-1 min-h-0 flex flex-col" data-testid="payment-stage">
+    <div className="@container flex-1 min-h-0 flex flex-col" data-testid="customer-payment">
       {header && <div className="shrink-0">{header}</div>}
       <div className="flex-1 min-h-0 flex flex-col @4xl:flex-row">
         <section className="flex-1 min-h-40 @4xl:min-h-0 min-w-0 flex flex-col" data-testid="payment-order">
