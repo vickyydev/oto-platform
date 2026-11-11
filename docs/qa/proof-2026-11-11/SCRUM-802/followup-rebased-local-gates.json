@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-11-11T08:39:11.660Z",
+  "headBeforeLanding": "714893cfa7ecedead7768ebf08de918026b21384",
+  "base": "af3dd729a39fd4d76c191c3e62ab880df05afd57",
+  "posTests": 2333,
+  "posTestFiles": 169,
+  "reviewPins": 5,
+  "apiDiagnostics": 0,
+  "posDiagnostics": 0,
+  "typechecksReadWhole": true,
+  "touchedFileLint": "four platform files passed",
+  "build": "POS passed; existing bundle warning",
+  "candidate": "6d4553cf581f0047df826fe516aa7ba7f0d81c53",
+  "candidatePosPhoneAndDependencyInputsIdentical": true,
+  "logs": [
+    {
+      "file": "local/rebased-pos-tests.log",
+      "sha256": "63b741286ed5c00371c2f5bc95e19daaf6821d4f2d0d386a6532619a371ddb36"
+    },
+    {
+      "file": "local/rebased-pos-typecheck.log",
+      "sha256": "eb9aa772628de9592c191b22b25edfc67f7ff36079562fc0b92a02fdb785c189"
+    },
+    {
+      "file": "local/rebased-api-typecheck.log",
+      "sha256": "bb79497bb747adb06452344ac1bf0685c75741250d6d47b56b78bf8cd51fc5c4"
+    },
+    {
+      "file": "local/rebased-api-review.log",
+      "sha256": "7b0a449eeb8a7f008c2e07a56d44e7c29699a39885ff60c0222c4dccbf0f63b1"
+    },
+    {
+      "file": "local/rebased-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "local/rebased-pos-build.log",
+      "sha256": "af52960ffdb608f454f91a237960cd9a4dc1e002a50fdcded54044ad1a2d6269"
+    }
+  ]
+}
