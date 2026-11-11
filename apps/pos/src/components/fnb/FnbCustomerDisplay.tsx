@@ -6,6 +6,7 @@ import { perUnitBaht, taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { computeManualDiscount } from '@/lib/manualDiscount';
 import { customerDiscountDetail, customerTaxRowLabel } from '@/lib/customerDisplayCopy';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -225,6 +226,91 @@ function OrderLines({
   );
 }
 
+/**
+ * SCRUM-859 — the order's discount amounts, read once for the order and the
+ * payment stages: the captured figures on a paired display, the till's own
+ * arithmetic on the harness. The payment stage draws the order stage's own
+ * header, line cards and footer rows beside its amount (`PaymentStageLayout`),
+ * so the family keeps sight of what they are paying for.
+ */
+function fnbManualAmounts(
+  presentation: FnbCustomerDisplayProps['presentation'],
+  legacyDiscounts: ManualDiscount[],
+  lines: FnbOrderLine[],
+): Record<string, number> {
+  return presentation ? presentation.totals?.manualAmounts ?? {} : computeManualDiscount(
+    legacyDiscounts, lines.reduce((acc, line) => acc + line.lineTotal, 0),
+    Object.fromEntries(lines.map(line => [line.id, line.lineTotal]))
+  ).amounts;
+}
+
+/** The order's header row: the brand and the balance chip, the party, or "Your Order". */
+function FnbOrderHeader({ wristband, chargeTarget }: { wristband: Wristband | null; chargeTarget?: ChargeTarget }) {
+  const { t } = useLanguage();
+  return (
+    <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
+      <Brand />
+      {wristband ? (
+        <BalanceChip wristband={wristband} />
+      ) : chargeTarget ? (
+        <div className="text-right">
+          <div className="text-lg font-bold leading-tight">{chargeTarget.parentName}</div>
+          {chargeTarget.phone && (
+            <div className="text-sm text-foreground/50 font-mono">{chargeTarget.phone}</div>
+          )}
+        </div>
+      ) : (
+        <span className="text-lg text-foreground/60">{t('fnb.header.yourOrder')}</span>
+      )}
+    </div>
+  );
+}
+
+/** The order's footer rows: order discounts, tax and the total. */
+function FnbOrderFooter({
+  manualDiscounts,
+  manualAmounts,
+  taxBreakdown,
+  total,
+}: {
+  manualDiscounts: readonly (ManualDiscount | PublicDiscount)[];
+  manualAmounts: Record<string, number>;
+  taxBreakdown: TaxBreakdownBaht | undefined;
+  total: number;
+}) {
+  const { t } = useLanguage();
+  const orderDiscounts = manualDiscounts.filter((md) => md.scope === 'order');
+  return (
+    <>
+      {orderDiscounts.map((md) => {
+        const amt = manualAmounts[md.id] ?? 0;
+        if (amt <= 0) return null;
+        return (
+          <div
+            key={md.id}
+            className="flex items-center justify-between mb-2 text-(--cd-success)"
+          >
+            <span className="flex items-center gap-2 text-lg">
+              <BadgePercent className="w-5 h-5 shrink-0" />
+              {t('common.discount')} · {customerDiscountDetail(md, t)}
+            </span>
+            <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+          </div>
+        );
+      })}
+      {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
+        <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
+          <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
+          <span className="text-lg tabular-nums">฿{row.amount}</span>
+        </div>
+      ))}
+      <div className="flex items-center justify-between">
+        <span className="text-2xl text-foreground/70">{t('common.total')}</span>
+        <span className="text-5xl font-black text-primary tabular-nums">฿{total}</span>
+      </div>
+    </>
+  );
+}
 export function FnbCustomerDisplay({
   stage,
   wristband: legacyWristband = null,
@@ -311,60 +397,17 @@ export function FnbCustomerDisplay({
       );
     }
 
-    const manualAmounts = presentation ? presentation.totals?.manualAmounts ?? {} : computeManualDiscount(
-      legacyDiscounts, lines.reduce((acc, line) => acc + line.lineTotal, 0),
-      Object.fromEntries(lines.map(line => [line.id, line.lineTotal]))
-    ).amounts;
-    const orderDiscounts = manualDiscounts.filter((md) => md.scope === 'order');
+    const manualAmounts = fnbManualAmounts(presentation, legacyDiscounts, lines);
     return (
       <Shell>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
-        <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
-          <Brand />
-          {wristband ? (
-            <BalanceChip wristband={wristband} />
-          ) : chargeTarget ? (
-            <div className="text-right">
-              <div className="text-lg font-bold leading-tight">{chargeTarget.parentName}</div>
-              {chargeTarget.phone && (
-                <div className="text-sm text-foreground/50 font-mono">{chargeTarget.phone}</div>
-              )}
-            </div>
-          ) : (
-            <span className="text-lg text-foreground/60">{t('fnb.header.yourOrder')}</span>
-          )}
-        </div>
+        <FnbOrderHeader wristband={wristband} chargeTarget={chargeTarget} />
         <div className="flex-1 overflow-y-auto p-8 space-y-4">
           <OrderLines lines={lines} capturedLines={presentation?.cart.lines} manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} />
           {orderNote.trim() && <OrderNoteCallout note={orderNote.trim()} />}
         </div>
         <div className="p-8 border-t border-foreground/10 shrink-0">
-          {orderDiscounts.map((md) => {
-            const amt = manualAmounts[md.id] ?? 0;
-            if (amt <= 0) return null;
-            return (
-              <div
-                key={md.id}
-                className="flex items-center justify-between mb-2 text-(--cd-success)"
-              >
-                <span className="flex items-center gap-2 text-lg">
-                  <BadgePercent className="w-5 h-5 shrink-0" />
-                  {t('common.discount')} · {customerDiscountDetail(md, t)}
-                </span>
-                <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
-              </div>
-            );
-          })}
-          {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
-            <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-              <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
-              <span className="text-lg tabular-nums">฿{row.amount}</span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between">
-            <span className="text-2xl text-foreground/70">{t('common.total')}</span>
-            <span className="text-5xl font-black text-primary tabular-nums">฿{total}</span>
-          </div>
+          <FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />
         </div>
       </Shell>
     );
@@ -381,66 +424,104 @@ export function FnbCustomerDisplay({
     const leftToPaySatang = guestLeftToPaySatang(payment, orderSatang);
     const coveredByCredit = creditCoversOrder(payment, orderSatang);
     const amountToPay = leftToPaySatang / 100;
-
-    if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
-      return (
+    /**
+     * SCRUM-859 — THE WHOLE ORDER BESIDE THE AMOUNT (the owner, 8 and 12
+     * November: "the customer-facing payment screen should show the full order
+     * details, not just the final amount"). The order stage's own header, line
+     * cards, note and footer rows are drawn again here, by the same components
+     * and from the same figures, with the amount block — the stage's own
+     * figure, never one worked out again here — in the frame's own column. An
+     * order with no lines keeps the screen as it was: the block alone.
+     */
+    const manualAmounts = fnbManualAmounts(presentation, legacyDiscounts, lines);
+    const withOrder = (lead: React.ReactNode, aside: React.ReactNode, body: React.ReactNode) =>
+      (presentation?.cart.lines ?? lines).length === 0 ? (
         <Shell>
           <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
-            <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
-              <QrCodeIcon className="w-6 h-6" />
-              <span className="uppercase tracking-widest text-sm font-bold">{t('fnb.payment.thaiQrPromptpay')}</span>
-            </div>
-            <h2 className="text-4xl font-black mb-6">{t('fnb.payment.scanToPay')}</h2>
-            <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
-            </div>
-            <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
-            {creditUsed > 0 && (
-              <p className="text-lg text-foreground/60 mt-3">
-                {t('fnb.payment.paidFromCredit', { amount: String(creditUsed) })}
-              </p>
-            )}
-            <PaymentExpiry expiresAt={payment.expiresAt} />
-            <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('fnb.payment.openBankingApp')}</p>
-            <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {t('fnb.payment.waiting')}
-            </div>
+            {lead}
+            {aside}
+            {body}
           </div>
         </Shell>
+      ) : (
+        <Shell>
+          {chargeTarget && <ChargeBanner target={chargeTarget} />}
+          <PaymentStageLayout
+            header={<FnbOrderHeader wristband={wristband} chargeTarget={chargeTarget} />}
+            lines={
+              <>
+                <OrderLines lines={lines} capturedLines={presentation?.cart.lines} manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} />
+                {orderNote.trim() && <OrderNoteCallout note={orderNote.trim()} />}
+              </>
+            }
+            summary={<FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />}
+            lead={lead}
+            aside={aside}
+          >
+            {body}
+          </PaymentStageLayout>
+        </Shell>
+      );
+
+    if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
+      return withOrder(
+        <>
+          <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4">
+            <QrCodeIcon className="w-6 h-6" />
+            <span className="uppercase tracking-widest text-sm font-bold">{t('fnb.payment.thaiQrPromptpay')}</span>
+          </div>
+          <h2 className="text-4xl font-black mb-6">{t('fnb.payment.scanToPay')}</h2>
+        </>,
+        <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
+          <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
+        </div>,
+        <>
+          <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
+          {creditUsed > 0 && (
+            <p className="text-lg text-foreground/60 mt-3">
+              {t('fnb.payment.paidFromCredit', { amount: String(creditUsed) })}
+            </p>
+          )}
+          <PaymentExpiry expiresAt={payment.expiresAt} />
+          <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('fnb.payment.openBankingApp')}</p>
+          <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            {t('fnb.payment.waiting')}
+          </div>
+        </>,
       );
     }
 
-    return (
-      <Shell>
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
-          <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8">
-            <Wallet className="w-12 h-12" />
-          </div>
-          <p className="text-2xl text-foreground/70 mb-6">{t('fnb.payment.amountToPay')}</p>
-
-          <div className="w-full max-w-md space-y-3">
-            {creditUsed > 0 && (
-              <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
-                <span className="flex items-center gap-3 text-xl text-foreground/80">
-                  <Wallet className="w-6 h-6 text-primary" />
-                  {t('fnb.payment.fromCredit')}
-                </span>
-                <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
-              </div>
-            )}
+    return withOrder(
+      <>
+        <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8">
+          <Wallet className="w-12 h-12" />
+        </div>
+        <p className="text-2xl text-foreground/70 mb-6">{t('fnb.payment.amountToPay')}</p>
+      </>,
+      null,
+      <>
+        <div className="w-full max-w-md space-y-3">
+          {creditUsed > 0 && (
             <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
               <span className="flex items-center gap-3 text-xl text-foreground/80">
-                <Banknote className="w-6 h-6 text-foreground/60" />
-                {creditUsed > 0 ? t('fnb.payment.leftToPay') : t('fnb.payment.toPay')}
+                <Wallet className="w-6 h-6 text-primary" />
+                {t('fnb.payment.fromCredit')}
               </span>
-              <span className="text-4xl font-black tabular-nums">฿{amountToPay}</span>
+              <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
             </div>
+          )}
+          <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
+            <span className="flex items-center gap-3 text-xl text-foreground/80">
+              <Banknote className="w-6 h-6 text-foreground/60" />
+              {creditUsed > 0 ? t('fnb.payment.leftToPay') : t('fnb.payment.toPay')}
+            </span>
+            <span className="text-4xl font-black tabular-nums">฿{amountToPay}</span>
           </div>
-
-          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('fnb.payment.coveredByCredit') : t('fnb.payment.confirmWithStaff')}</p>
         </div>
-      </Shell>
+
+        <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('fnb.payment.coveredByCredit') : t('fnb.payment.confirmWithStaff')}</p>
+      </>,
     );
   }
 

@@ -82,14 +82,14 @@ export function PaymentStageLayout({
             )}
           >
             {lead && (
-              <div className={cn('flex flex-col items-center', aside && '@xl:col-start-2 @4xl:col-start-auto')}>{lead}</div>
+              <div className={cn('w-full flex flex-col items-center', aside && '@xl:col-start-2 @4xl:col-start-auto')}>{lead}</div>
             )}
             {aside && (
               <div className="flex flex-col items-center @xl:col-start-1 @xl:row-start-1 @xl:row-span-2 @4xl:col-start-auto @4xl:row-start-auto @4xl:row-span-1">
                 {aside}
               </div>
             )}
-            <div className={cn('flex flex-col items-center min-w-0', aside && '@xl:col-start-2 @4xl:col-start-auto')}>{children}</div>
+            <div className={cn('w-full flex flex-col items-center min-w-0', aside && '@xl:col-start-2 @4xl:col-start-auto')}>{children}</div>
           </div>
         </section>
       </div>

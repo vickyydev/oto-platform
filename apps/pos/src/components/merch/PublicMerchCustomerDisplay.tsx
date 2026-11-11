@@ -3,6 +3,7 @@ import type { DisplayMerchCart, DisplayPayment, DisplayTotals } from '@oto/share
 import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { customerDiscountDetail, customerTaxRowLabel } from '@/lib/customerDisplayCopy';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
@@ -43,6 +44,59 @@ function PaidRow({ icon: Icon, label, amount }: { icon: typeof Wallet; label: st
   </div>;
 }
 
+/**
+ * SCRUM-859 — the purchase's header, line cards and footer rows, drawn by the
+ * order stage and again by the payment stage beside its amount
+ * (`PaymentStageLayout`), so the guest keeps sight of what they are paying for.
+ */
+function MerchOrderHeader() {
+  const { t } = useLanguage();
+  return <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
+    <Brand /><span className="text-lg text-foreground/60">{t('merch.header.yourSale')}</span>
+  </div>;
+}
+
+function MerchLines({ cart, totals }: { cart: DisplayMerchCart; totals: DisplayTotals }) {
+  const { t, lang } = useLanguage();
+  return <div className="space-y-3">{cart.lines.map(line => <div key={line.id} data-testid="merch-display-line"
+    className="bg-foreground/5 rounded-2xl px-5 py-4 border border-foreground/10 transition-none animate-in fade-in slide-in-from-right-2 duration-300">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-4 min-w-0">
+        <span className="w-10 h-10 rounded-xl bg-primary/15 text-primary font-black text-lg flex items-center justify-center shrink-0 tabular-nums">{line.qty}</span>
+        <div className="min-w-0">
+          <div className="text-xl font-bold leading-tight">{line.translations?.[lang] ?? line.name}</div>
+          {line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
+          <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>
+        </div>
+      </div>
+      <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
+    </div>
+    {cart.manualDiscounts.filter(discount => discount.scope === 'line' && discount.targetLineId === line.id)
+      .map(discount => totals.manualAmounts[discount.id] > 0 && <div key={discount.id}
+        className="mt-3 flex items-center justify-between rounded-xl bg-emerald-500/10 px-4 py-2.5 text-(--cd-success)">
+        <span className="flex items-center gap-2.5 text-base font-semibold"><BadgePercent className="w-5 h-5 shrink-0" />{customerDiscountDetail(discount, t)}</span>
+        <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
+      </div>)}
+  </div>)}</div>;
+}
+
+function MerchFooter({ cart, totals }: { cart: DisplayMerchCart; totals: DisplayTotals }) {
+  const { t } = useLanguage();
+  return <>
+    {cart.manualDiscounts.filter(discount => discount.scope === 'order').map(discount => totals.manualAmounts[discount.id] > 0
+      && <div key={discount.id} className="flex items-center justify-between mb-2 text-(--cd-success)">
+        <span className="flex items-center gap-2 text-lg"><BadgePercent className="w-5 h-5 shrink-0" />
+          {t('common.discount')} · {customerDiscountDetail(discount, t)}</span>
+        <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
+      </div>)}
+    {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
+      <span className="text-lg">{customerTaxRowLabel(row, t)}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
+    </div>)}
+    <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
+      <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>
+  </>;
+}
+
 /** The approved guest layout reads captured facts only; it has no catalog or wallet access. */
 export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
   stage: PublicMerchStage;
@@ -67,43 +121,12 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
   }
   if (stage === 'order' && totals) {
     return <Shell>
-      <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
-        <Brand /><span className="text-lg text-foreground/60">{t('merch.header.yourSale')}</span>
-      </div>
+      <MerchOrderHeader />
       <div className="flex-1 overflow-y-auto p-8 space-y-4">
-        <div className="space-y-3">{cart.lines.map(line => <div key={line.id} data-testid="merch-display-line"
-          className="bg-foreground/5 rounded-2xl px-5 py-4 border border-foreground/10 transition-none animate-in fade-in slide-in-from-right-2 duration-300">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4 min-w-0">
-              <span className="w-10 h-10 rounded-xl bg-primary/15 text-primary font-black text-lg flex items-center justify-center shrink-0 tabular-nums">{line.qty}</span>
-              <div className="min-w-0">
-                <div className="text-xl font-bold leading-tight">{line.translations?.[lang] ?? line.name}</div>
-                {line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
-                <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>
-              </div>
-            </div>
-            <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
-          </div>
-          {cart.manualDiscounts.filter(discount => discount.scope === 'line' && discount.targetLineId === line.id)
-            .map(discount => totals.manualAmounts[discount.id] > 0 && <div key={discount.id}
-              className="mt-3 flex items-center justify-between rounded-xl bg-emerald-500/10 px-4 py-2.5 text-(--cd-success)">
-              <span className="flex items-center gap-2.5 text-base font-semibold"><BadgePercent className="w-5 h-5 shrink-0" />{customerDiscountDetail(discount, t)}</span>
-              <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
-            </div>)}
-        </div>)}</div>
+        <MerchLines cart={cart} totals={totals} />
       </div>
       <div className="p-8 border-t border-foreground/10 shrink-0">
-        {cart.manualDiscounts.filter(discount => discount.scope === 'order').map(discount => totals.manualAmounts[discount.id] > 0
-          && <div key={discount.id} className="flex items-center justify-between mb-2 text-(--cd-success)">
-            <span className="flex items-center gap-2 text-lg"><BadgePercent className="w-5 h-5 shrink-0" />
-              {t('common.discount')} · {customerDiscountDetail(discount, t)}</span>
-            <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
-          </div>)}
-        {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-          <span className="text-lg">{customerTaxRowLabel(row, t)}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
-        </div>)}
-        <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
-          <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>
+        <MerchFooter cart={cart} totals={totals} />
       </div>
     </Shell>;
   }
@@ -117,23 +140,44 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
     const orderSatang = totals ? Math.round(totals.total * 100) : null;
     const leftToPay = guestLeftToPaySatang(payment, orderSatang) / 100;
     const coveredByCredit = creditCoversOrder(payment, orderSatang);
+    /**
+     * SCRUM-859 — THE WHOLE PURCHASE BESIDE THE AMOUNT (the owner, 8 and 12
+     * November: "the customer-facing payment screen should show the full order
+     * details, not just the final amount"). The order stage's own header, line
+     * cards and footer rows are drawn again here, from the captured frame, with
+     * the amount block — the frame's own figure, never one worked out again
+     * here — in the frame's own column. A document with no totals or no lines
+     * (an older till, a purchase of nothing) keeps the screen as it was.
+     */
+    const withOrder = (lead: ReactNode, aside: ReactNode, body: ReactNode) =>
+      !totals || cart.lines.length === 0 ? <Shell>
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
+          {lead}{aside}{body}
+        </div>
+      </Shell> : <Shell>
+        <PaymentStageLayout header={<MerchOrderHeader />} lines={<MerchLines cart={cart} totals={totals} />}
+          summary={<MerchFooter cart={cart} totals={totals} />} lead={lead} aside={aside}>
+          {body}
+        </PaymentStageLayout>
+      </Shell>;
     if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
-      return <Shell><div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
+      return withOrder(<>
         <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4"><QrCodeIcon className="w-6 h-6" />
           <span className="uppercase tracking-widest text-sm font-bold">{t('merch.payment.thaiQrPromptpay')}</span></div>
         <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
-        <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-          <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} /></div>
+      </>, <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
+        <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} /></div>, <>
         <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{leftToPay}</div>
         {creditUsed > 0 && <p className="text-lg text-foreground/60 mt-3">{t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}</p>}
         <PaymentExpiry expiresAt={payment.expiresAt} />
         <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('merch.payment.openBankingApp')}</p>
         <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg"><Loader2 className="w-5 h-5 animate-spin" />{t('merch.payment.waiting')}</div>
-      </div></Shell>;
+      </>);
     }
-    return <Shell><div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
+    return withOrder(<>
       <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8"><Wallet className="w-12 h-12" /></div>
       <p className="text-2xl text-foreground/70 mb-6">{t('merch.payment.amountToPay')}</p>
+    </>, null, <>
       <div className="w-full max-w-md space-y-3">
         {creditUsed > 0 && <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
           <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="w-6 h-6 text-primary" />{t('merch.payment.fromCredit')}</span>
@@ -145,7 +189,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
       <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded')
         : payment.status === 'pending' ? t('merch.payment.waiting') : payment.status === 'paid' ? t('till.payment.received')
           : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('merch.payment.coveredByCredit') : t('merch.payment.confirmWithStaff')}</p>
-    </div></Shell>;
+    </>);
   }
   const completion = cart.completion;
   if (stage === 'thankyou' && completion) {
