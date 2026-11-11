@@ -1702,7 +1702,8 @@ export interface StationProfile {
 // public Drop-Off web form (built elsewhere); each submission lands here under
 // "Registered". Staff message the parent, optionally assign a nanny, check the
 // child in (→ In Park, running timer) and later check out (→ Out).
-export type CheckInStatus = 'registered' | 'in_park' | 'out';
+/** SCRUM-862 — `cancelled` reaches the till only on a registration read; the board and the waiting picker never list one. */
+export type CheckInStatus = 'registered' | 'in_park' | 'out' | 'cancelled';
 // 'none' = child is self-sufficient (floor=none); offered in the online supervised-child
 // form so a 9+ year-old can proceed without a paid service.
 // 'drop_off' = group supervision flat fee. 'nanny' = dedicated hourly nanny.

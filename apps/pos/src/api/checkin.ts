@@ -150,7 +150,8 @@ export interface ApiCheckin {
   mayOrderFood: boolean;
   foodProvision: ApiFoodProvision | null;
   service: SupervisionRequirement;
-  status: 'registered' | 'in_park' | 'out';
+  /** SCRUM-862 — `cancelled` comes back only on a registration read; the board and the waiting list leave it out. */
+  status: 'registered' | 'in_park' | 'out' | 'cancelled';
   scheduledFor: string | null;
   bookedMinutes: number | null;
   nannyId: string | null;
@@ -353,6 +354,21 @@ export const checkinApi = {
         api.post<ApiRegistration>(`/checkin/registrations/${registrationId}/children`, { children }, { idempotencyKey: idemKey() }),
       async () => {
         throw needsInternet('Adding a child to a registration that is already paid for');
+      },
+    ),
+
+  /**
+   * SCRUM-862 — cancel a booking still waiting to be checked in: every waiting,
+   * unpaid child moves to cancelled with the reason given; the signed form
+   * stays on record. Platform only: the box's copy cannot tell whether another
+   * sale has paid for the child meanwhile, so offline it is refused in plain
+   * words rather than guessed.
+   */
+  cancelRegistration: (registrationId: string, reason: string) =>
+    viaLane(
+      () => api.post<ApiRegistration>(`/checkin/registrations/${registrationId}/cancel`, { reason }, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet('Cancelling a waiting booking');
       },
     ),
 
