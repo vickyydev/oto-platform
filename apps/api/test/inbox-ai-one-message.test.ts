@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EN_PERSONA, PART_JOIN, TH_PERSONA, type AiDecision } from '@oto/assistant';
 import { schema as s } from '@oto/db';
@@ -97,9 +97,9 @@ async function drain(): Promise<void> {
 const nextSecond = () => new Promise((resolve) => setTimeout(resolve, 1_100));
 
 /** The customer writes after a pause; one tick decides the burst with the scripted decision; the lines are marked sent. */
-async function say(phone: string, text: string, d: AiDecision) {
+async function say(phone: string, text: string, d: AiDecision, account = wide) {
   await nextSecond();
-  const conv = await customer(w, wide, phone, text);
+  const conv = await customer(w, account, phone, text);
   const before = (await aiLines(w, conv.id)).length;
   w.fake.push({ kind: 'decision', decision: d });
   const sweep = await tick(w, new Date());
@@ -321,5 +321,60 @@ describe('SCRUM-832: the owner’s case through the engine', () => {
     expect(await questionsOf(t.conv.id)).toEqual([]);
     expect((await conversationRow(w, t.conv.id)).branchId).toBe(w.central);
     expect((await repliedPayloads(t.conv.id))[0]).toMatchObject({ askBranch: false, composition: { parkFirst: false, bubbles: 2 } });
+  }, 60_000);
+});
+
+/**
+ * SCRUM-832 follow-up (from the review): a hand-over with no usable closing
+ * template sends the model's checked holding words — and those are ONE
+ * message too, the bubbles joined by `PART_JOIN`, as the template path
+ * already sends one line.
+ */
+describe('SCRUM-832 follow-up: a hand-over with no usable template is one message', () => {
+  /** Every English row of these keys, switched off for one test and restored after. */
+  async function withoutClosingTemplates<T>(keys: readonly string[], run: () => Promise<T>): Promise<T> {
+    const rows = await w.ctx.db
+      .select({ id: s.template.id })
+      .from(s.template)
+      .where(and(eq(s.template.operatorId, w.oto), inArray(s.template.key, [...keys] as never[]), eq(s.template.language, 'en'), eq(s.template.active, true)));
+    const ids = rows.map((r) => r.id);
+    expect(ids.length).toBeGreaterThan(0);
+    await w.ctx.db.update(s.template).set({ active: false }).where(inArray(s.template.id, ids));
+    try {
+      return await run();
+    } finally {
+      await w.ctx.db.update(s.template).set({ active: true }).where(inArray(s.template.id, ids));
+    }
+  }
+
+  it('the unclear, the GM and the general lines all switched off: the model’s two holding bubbles go as ONE line, persona-kind', async () => {
+    await drain();
+    const words = ['Thanks so much for your message.', 'A colleague will be with you shortly to help with this.'];
+    await withoutClosingTemplates(['closing_unclear', 'closing_gm', 'handover_general'], async () => {
+      const t = await say(
+        nextPhone(),
+        `I am not sure what I need, can you help? ${SENTINEL}`,
+        decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: words }),
+      );
+      expect(t.sweep.handedOver).toBe(1);
+      expect(t.lines.map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: words.join(PART_JOIN), templateId: null }]);
+      const handover = (await eventsOf(w, t.conv.id)).find((e) => e.kind === 'ai_handover')!.payload as Record<string, unknown>;
+      expect(handover).toMatchObject({ holdingLine: 'persona', closingKey: null, templateId: null, messageIds: [t.lines[0]!.id] });
+      expect((await turnsOf(w, t.conv.id)).map((x) => x.messageIds.length)).toEqual([1]);
+    });
+  }, 60_000);
+
+  it('with the templates on, the same hand-over sends the template’s one line, as before', async () => {
+    await drain();
+    const words = ['Thanks so much for your message.', 'A colleague will be with you shortly to help with this.'];
+    const t = await say(
+      nextPhone(),
+      `I am not sure what I need, can you help? ${SENTINEL}`,
+      decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: words }),
+    );
+    expect(t.sweep.handedOver).toBe(1);
+    expect(t.lines).toHaveLength(1);
+    expect(t.lines[0]!.templateId).not.toBeNull();
+    expect((await eventsOf(w, t.conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'template', closingKey: 'closing_unclear' });
   }, 60_000);
 });

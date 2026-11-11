@@ -1116,9 +1116,10 @@ async function templateLine(
  * `handover_general` — since the playbook a plan carries its destination's
  * closing key, and the old per-topic lines name teams the playbook moved
  * (reception for a complaint, marketing for a collaboration). The model's own
- * checked holding words only where none of those is usable in the language;
- * and nothing when neither exists — the hand-over still happens, a person
- * owns the thread.
+ * checked holding words only where none of those is usable in the language —
+ * as ONE line, the bubbles joined by `PART_JOIN` (SCRUM-832: one message per
+ * turn, as the template path already sends one line); and nothing when
+ * neither exists — the hand-over still happens, a person owns the thread.
  */
 async function closingLine(
   tx: Exec,
@@ -1141,7 +1142,7 @@ async function closingLine(
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null, templateKey: key as InboxTemplateKey };
   }
   if (modelWords.length > 0) {
-    return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null, templateKey: null };
+    return { kind: 'persona', items: [{ body: modelWords.join(PART_JOIN) }], templateId: null, closingKey: null, templateKey: null };
   }
   return NO_LINE;
 }
