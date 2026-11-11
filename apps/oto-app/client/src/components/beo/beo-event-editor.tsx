@@ -93,6 +93,7 @@ import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
 import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBilling } from "./beo-till-billing";
+import { eventDepositOf, type EventDeposit } from "@/lib/beo-deposit-buffer";
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
@@ -776,6 +777,36 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const changeBilling = (patch: Partial<BeoEventBilling>) => {
     billingPress.current += 1;
     return billingMutation.mutateAsync({ patch, press: billingPress.current });
+  };
+
+  // SCRUM-839: while the party has no billing record the Financial Summary reads the event's own
+  // deposit, as the BEO's read carries it. A deposit paid through the chat while the BEO is open
+  // is read again on its own (no other field of the form is reloaded): the summary and Party
+  // Details take the paid figure, so a later Save keeps it.
+  const [depositReadAgain, setDepositReadAgain] = useState<EventDeposit | null | undefined>(undefined);
+  useEffect(() => setDepositReadAgain(undefined), [beoData]);
+  const eventDeposit = depositReadAgain !== undefined ? depositReadAgain : eventDepositOf(beoData);
+  const readDepositAgain = async () => {
+    void queryClient.invalidateQueries({ queryKey: billingKey, exact: true });
+    try {
+      const res = await fetch(`/api/events/${eventId}/beo`, { credentials: "include" });
+      if (!res.ok) return;
+      const read = (await res.json()) as {
+        prepaymentAmount?: unknown;
+        prepaymentDate?: unknown;
+        partyDetails?: { prepaymentReceived?: unknown; depositDate?: unknown } | null;
+      };
+      setDepositReadAgain(eventDepositOf(read));
+      const paid = Number(read.partyDetails?.prepaymentReceived) || 0;
+      const had = Number((beoData as { partyDetails?: { prepaymentReceived?: unknown } | null } | undefined)?.partyDetails?.prepaymentReceived) || 0;
+      // Party Details takes the figure only when the saved deposit moved since the form was read.
+      if (paid > 0 && paid !== had) {
+        setPrepaymentReceived(paid);
+        setDepositDate(typeof read.partyDetails?.depositDate === "string" ? read.partyDetails.depositDate : "");
+      }
+    } catch {
+      // The next read of the BEO shows it.
+    }
   };
 
   const { data: branches } = useQuery<Branch[]>({
@@ -2613,6 +2644,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                 billing={billingRow}
                 onBillingChange={changeBilling}
                 isManager={canManageBilling}
+                eventDeposit={eventDeposit}
+                onDepositMoved={() => void readDepositAgain()}
               />
             </AccordionContent>
           </AccordionItem>

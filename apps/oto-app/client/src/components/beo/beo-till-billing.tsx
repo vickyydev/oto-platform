@@ -27,7 +27,7 @@ import {
   type PartyDepositRequest,
 } from "@shared/partyDeposit";
 import type { BeoEventBilling } from "@shared/schema";
-import { DepositBuffer, type BillingPatch } from "@/lib/beo-deposit-buffer";
+import { DepositBuffer, patchOverEventDeposit, summaryBillingOf, type BillingPatch, type EventDeposit } from "@/lib/beo-deposit-buffer";
 import { BeoBillingModule } from "./beo-billing-module";
 
 /**
@@ -621,24 +621,55 @@ export function DepositRequestPanel({
  * from the family's chat (SCRUM-825) under it, then the app's own billing
  * module kept whole — its invoice rows, Generate from BEO and the Deposit Paid
  * that feeds the till (SCRUM-813) — labelled as the app's own.
+ *
+ * SCRUM-839: on a party with no billing record the Financial Summary reads
+ * the event's own deposit (`eventDeposit`), so the section never shows two
+ * deposit figures. When the family pays while the section is open the
+ * request's state moves on its own; `onDepositMoved` then has the editor read
+ * the saved deposit again.
  */
 export function BeoBillingSection({
   eventId,
   billing,
   onBillingChange,
   isManager,
+  eventDeposit = null,
+  onDepositMoved,
 }: {
   eventId: string;
   billing: BeoEventBilling | null;
   /** One billing write; a promise settles when the server has answered. */
   onBillingChange: (billing: Partial<BeoEventBilling>) => Promise<unknown> | void;
   isManager: boolean;
+  /** The event's own deposit (its Prepayment), shown by the summary while the party has no billing record. */
+  eventDeposit?: EventDeposit | null;
+  /** The chat's deposit request changed state without a press here (the family paid): the saved deposit is read again. */
+  onDepositMoved?: () => void;
 }) {
   // The editor around it reads the till every minute; this one reads afresh when the section opens.
   const till = useTillBilling(eventId, { refetchInterval: false });
   const depositRequest = useDepositRequest(eventId);
   const queryClient = useQueryClient();
-  const deposit = useBufferedDeposit(billing, onBillingChange);
+  const summaryBilling = summaryBillingOf(billing, eventDeposit);
+  const deposit = useBufferedDeposit(summaryBilling, (patch) => onBillingChange(patchOverEventDeposit(patch, billing, eventDeposit)));
+  // The request as last read: its payment moves the party's deposit on the server, not through this screen.
+  const requestMark = depositRequestMarkOf(depositRequest.data);
+  const seenMark = useRef<string | null>(null);
+  const movedRef = useRef(onDepositMoved);
+  movedRef.current = onDepositMoved;
+  const savedSatangRef = useRef(0);
+  savedSatangRef.current = (summaryBilling?.depositPaidAmount || 0) * 100;
+  useEffect(() => {
+    if (requestMark === null) return;
+    const was = seenMark.current;
+    seenMark.current = requestMark;
+    if (requestMark === NOT_PAID_MARK || was === requestMark) return;
+    // A payment seen to land here; or, as the section opens, a paid request whose deposit the
+    // summary does not hold (the family paid after the BEO was read).
+    const paidSatang = depositRequest.data?.status === "ok" ? (depositRequest.data.answer.current?.depositAfterSatang ?? null) : null;
+    if (was !== null || (paidSatang !== null && paidSatang !== savedSatangRef.current)) movedRef.current?.();
+    // Keyed on the mark alone: the reading is read as it stands when the mark moves.
+  }, [requestMark]);
   return (
     <div className="space-y-4" data-testid="section-billing">
       <TillBillingPanel
@@ -669,6 +700,14 @@ export function BeoBillingSection({
       </div>
     </div>
   );
+}
+
+const NOT_PAID_MARK = "not-paid";
+/** What of the chat's request says the party's deposit moved: a paid request, the deposit after it, its write back. */
+function depositRequestMarkOf(reading: PartyDepositReading | undefined): string | null {
+  if (!reading || reading.status !== "ok") return null;
+  const c = reading.answer.current;
+  return c && c.state === "paid" ? [c.id, c.depositAfterSatang ?? "", c.writeBack?.syncState ?? ""].join("|") : NOT_PAID_MARK;
 }
 
 /** The billing module's Deposit Paid input (beo-billing-module.tsx, kept whole). */

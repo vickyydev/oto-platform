@@ -145,3 +145,55 @@ export class DepositBuffer {
     this.options.onChange?.();
   }
 }
+
+// --- The summary's deposit on a party with no billing record (SCRUM-839) ------------------
+
+/** The event's own deposit (its Prepayment): whole baht and its day, YYYY-MM-DD, when known. */
+export interface EventDeposit {
+  amountThb: number;
+  date: string | null;
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The event's own Prepayment as the BEO's read carries it
+ * (`prepaymentAmount`, `prepaymentDate`): the party's one deposit while the
+ * BEO keeps no billing record (SCRUM-813, server/lib/partyDeposit.ts
+ * `currentDeposit`). Null when the event holds none.
+ */
+export function eventDepositOf(event: { prepaymentAmount?: unknown; prepaymentDate?: unknown } | null | undefined): EventDeposit | null {
+  const n = typeof event?.prepaymentAmount === "number" ? event.prepaymentAmount : Number.NaN;
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const day = typeof event?.prepaymentDate === "string" ? event.prepaymentDate.trim().slice(0, 10) : "";
+  return { amountThb: Math.round(n), date: DAY.test(day) ? day : null };
+}
+
+/**
+ * THE FINANCIAL SUMMARY'S BILLING. With a billing record, the record: the
+ * server keeps its deposit equal to the party's one deposit. With none
+ * (nobody saved the BEO's billing yet), the event's own deposit and its day,
+ * so a deposit paid through the chat or typed on the Events page reads here
+ * as it does at the till, never "Deposit Paid: 0" beside it. Shown only: no
+ * record is made by reading.
+ */
+export function summaryBillingOf(billing: BeoEventBilling | null, eventDeposit: EventDeposit | null | undefined): BeoEventBilling | null {
+  if (billing || !eventDeposit || eventDeposit.amountThb <= 0) return billing;
+  return {
+    depositPaid: true,
+    depositPaidAmount: eventDeposit.amountThb,
+    depositPaidAt: eventDeposit.date ? `${eventDeposit.date}T00:00:00.000Z` : null,
+  } as unknown as BeoEventBilling;
+}
+
+/**
+ * A write from the summary while it shows the event's deposit: a patch that
+ * names the deposit's day and no amount carries the amount shown, so the new
+ * record says the deposit is paid. Without it the route would read a record
+ * with a day and no deposit, and clear the party's deposit.
+ */
+export function patchOverEventDeposit(patch: BillingPatch, billing: BeoEventBilling | null, eventDeposit: EventDeposit | null | undefined): BillingPatch {
+  if (billing || !eventDeposit || eventDeposit.amountThb <= 0) return patch;
+  if (!("depositPaidAt" in patch) || "depositPaidAmount" in patch) return patch;
+  return { depositPaidAmount: eventDeposit.amountThb, depositPaid: true, ...patch };
+}

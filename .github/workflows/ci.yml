@@ -1052,6 +1052,8 @@ jobs:
         run: npx tsx tests/till-billing-ui.check.ts
       # SCRUM-822: the Billing section rendered under jsdom and typed into:
       # Deposit Paid sends one PUT per figure, never an emptied field's 0.
+      # SCRUM-839: and with no billing record the Financial Summary reads the
+      # event's own deposit and its day, the record's once there is one.
       - name: The app's billing deposit typing check
         if: steps.changes.outputs.app == 'true'
         env:
