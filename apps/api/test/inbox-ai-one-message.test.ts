@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { EN_PERSONA, PART_JOIN, TH_PERSONA, type AiDecision } from '@oto/assistant';
+import { EN_PERSONA, FakeCoherenceReviewer, PART_JOIN, REVIEW_VERSION, TH_PERSONA, reviewOps, type AiDecision, type FakeReviewScriptEntry } from '@oto/assistant';
+import { INBOX_TEMPLATE_BODIES } from '@oto/db/seed';
 import { schema as s } from '@oto/db';
 import { teardownAll } from './helpers';
 import {
@@ -78,6 +79,13 @@ beforeAll(async () => {
   await entry('pb.parking', 'parking', 'Is there parking?', 'Parking is free at both malls.');
   await entry('pb.hours', 'hours_note', 'When are you open?', 'Both branches are open 10:00 to 20:00, 7 days a week.');
   await kb(w, approver, { key: 'pb.socks', topic: 'socks', language: 'en', question: 'Do we need socks?', body: 'Grip socks are required on the play floor; you can buy them at reception.' });
+  await kb(w, approver, {
+    key: 'nanny',
+    topic: 'faq',
+    language: 'en',
+    question: 'Do you have a nanny service?',
+    body: 'Our nanny service is one-on-one care at Central Floresta for children from 3 years old. Please book ahead.',
+  });
 }, 300_000);
 
 afterAll(async () => {
@@ -376,5 +384,78 @@ describe('SCRUM-832 follow-up: a hand-over with no usable template is one messag
     expect(t.lines).toHaveLength(1);
     expect(t.lines[0]!.templateId).not.toBeNull();
     expect((await eventsOf(w, t.conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'template', closingKey: 'closing_unclear' });
+  }, 60_000);
+});
+
+/**
+ * SCRUM-832 follow-up (from the review): the coherence record's `sent` counts
+ * the review items kept, not the messages that went once `oneMessage` joined
+ * the answer's parts; the record now says both (`messages`), and rides the
+ * ai_replied and ai_handover payloads as before.
+ */
+describe('SCRUM-832 follow-up: the coherence record counts the messages that went', () => {
+  const FACTS = `Our nanny is one-on-one care at Central Floresta, from 3 years old ${SENTINEL}`;
+  const MORE = 'Please book ahead so we can have a nanny ready for you.';
+  const SOCKS = 'Yes, grip socks are required on the play floor, and you can buy them at reception.';
+  const BOOKING_LINE = INBOX_TEMPLATE_BODIES.closing_booking;
+
+  /** A reviewer with its own script for one turn, the runtime's restored after. */
+  async function reviewed<T>(script: FakeReviewScriptEntry[], run: (reviewer: FakeCoherenceReviewer) => Promise<T>): Promise<T> {
+    const saved = w.ctx.app.inboxAi.reviewer;
+    const reviewer = new FakeCoherenceReviewer([...script]);
+    w.ctx.app.inboxAi.reviewer = reviewer;
+    w.ctx.app.inboxAi.config.reviewTimeoutMs = 2_000;
+    try {
+      const out = await run(reviewer);
+      expect(reviewer.remaining).toBe(0);
+      return out;
+    } finally {
+      w.ctx.app.inboxAi.reviewer = saved;
+    }
+  }
+
+  const recordsOf = async (conversationId: string) => {
+    const events = await eventsOf(w, conversationId);
+    const of = (kind: string) => (events.find((e) => e.kind === kind)?.payload as Record<string, unknown> | undefined)?.coherence;
+    return { replied: of('ai_replied'), handover: of('ai_handover') };
+  };
+
+  it('a joined turn (one topic, two parts, the closing line): 3 items reviewed, 3 kept, 2 messages went', async () => {
+    await drain();
+    await reviewed([{ kind: 'keep_all' }], async (reviewer) => {
+      const t = await say(nextPhone(), `do you have a nanny for my 3 year old? ${SENTINEL}`, decision({ intent: 'nanny_booking', grounding: ['nanny'], reason: 'FACT_IN_KB', bubbles: [FACTS, MORE] }));
+      expect(t.sweep.handedOver).toBe(1);
+      // The reviewer still read the parts one by one; what went was one message and the closing line.
+      expect(reviewer.requests[0]!.items.map((i) => i.text)).toEqual([FACTS, MORE, BOOKING_LINE]);
+      expect(t.lines.map((l) => l.body)).toEqual([[FACTS, MORE].join(PART_JOIN), BOOKING_LINE]);
+      const record = { state: 'reviewed', version: REVIEW_VERSION, items: 3, sent: 3, messages: 2, merged: 0, dropped: [] };
+      const r = await recordsOf(t.conv.id);
+      expect(r.replied).toEqual(record);
+      expect(r.handover).toEqual(record);
+      expect((await turnsOf(w, t.conv.id)).map((x) => x.messageIds.length)).toEqual([2]);
+    });
+  }, 60_000);
+
+  it('the same joined turn with the closing line dropped: 2 kept, 1 message went', async () => {
+    await drain();
+    await reviewed([{ kind: 'review', decision: reviewOps({ drop: [2] }) }], async () => {
+      const t = await say(nextPhone(), `do you have a nanny for my 3 year old? ${SENTINEL}`, decision({ intent: 'nanny_booking', grounding: ['nanny'], reason: 'FACT_IN_KB', bubbles: [FACTS, MORE] }));
+      expect(t.lines.map((l) => l.body)).toEqual([[FACTS, MORE].join(PART_JOIN)]);
+      expect((await recordsOf(t.conv.id)).replied).toMatchObject({ items: 3, sent: 2, messages: 1, dropped: [{ index: 2, origin: 'template', key: 'closing_booking' }] });
+    });
+  }, 60_000);
+
+  it('a multi-topic turn (the nanny and the socks): a bubble per part, so the messages are the items kept', async () => {
+    await drain();
+    await reviewed([{ kind: 'keep_all' }], async () => {
+      const t = await say(
+        nextPhone(),
+        `do you have a nanny? and do we need socks? ${SENTINEL}`,
+        decision({ intent: 'nanny_booking', intents: ['nanny_booking', 'socks'], grounding: ['nanny', 'pb.socks'], reason: 'FACT_IN_KB', bubbles: [FACTS, SOCKS] }),
+      );
+      expect(t.sweep.handedOver).toBe(1);
+      expect(t.lines.map((l) => l.body)).toEqual([FACTS, SOCKS, BOOKING_LINE]);
+      expect((await recordsOf(t.conv.id)).replied).toMatchObject({ items: 3, sent: 3, messages: 3, merged: 0, dropped: [] });
+    });
   }, 60_000);
 });

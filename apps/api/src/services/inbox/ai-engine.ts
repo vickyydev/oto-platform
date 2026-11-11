@@ -1599,8 +1599,12 @@ type CoherenceRecord =
   | {
       state: 'reviewed';
       version: string;
+      /** The items the reviewer was shown: the answer's parts one by one, the brochure, the closing line. */
       items: number;
+      /** The review items kept: a merged line counts once, a dropped one not at all. Not the messages sent. */
       sent: number;
+      /** SCRUM-832: the messages that went, once `oneMessage` joined the answer's parts side by side. */
+      messages: number;
       merged: number;
       dropped: Array<{ index: number; origin: ReviewOrigin; key: InboxTemplateKey | null }>;
     };
@@ -1712,6 +1716,8 @@ function settleReview(lines: readonly OutLine[], review: ReviewState | undefined
       version: REVIEW_VERSION,
       items: lines.length,
       sent: out.length,
+      // What goes after the kept parts are joined (the commit sends `oneMessage(out)`).
+      messages: oneMessage(out).length,
       merged,
       dropped: dropped.map((index) => ({ index, origin: lines[index]!.origin, key: lines[index]!.templateKey })),
     },
