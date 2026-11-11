@@ -151,7 +151,7 @@ Review page (screens and decision boxes): https://claude.ai/artifact/MRK5VbmoMKs
 | 4 (and 6) Fetch from chat | SCRUM-826 | LANDED 820c3fa4c + the reading fix 463fac2a6; proved (Book Date) and re-checked (the BEO fetch, eleven presses one way); DEPLOYED 11 Nov 05:00 (CI 42906195994); three decisions + two notes on the ticket |
 | 5 BEO pre-filled in one pass | SCRUM-827 | APPROVED on the page 11 Nov 04:50 — BUILDING on lane/prefill827-20261111 from 12:45 (Fable workflow), on the landed 826/829 editor |
 | 7 BEO-only menu items | SCRUM-828 | APPROVED — LANDED a3d87300a, proved, DEPLOYED |
-| 8 Adults start from the kids' choice | SCRUM-829 | LANDED fcd1a08b3 (11 Nov 05:51, app migration 0048); PROVED 12:29 on the repaired api — every step Pass except the free-text fill still splitting "the adults eat the same" (fix lane adults829b running); the MONEY decision on the ticket — Deployed held |
-| 9 First message decides the queue | SCRUM-830 | LANDED 3ac4658cd; proved 12:49–12:58: steps 1–6 Pass, step 7 FAIL ("in the event of rain", "refundable") — fixed and landed b37f06334, the re-check running; five decisions on the ticket |
+| 8 Adults start from the kids' choice | SCRUM-829 | LANDED fcd1a08b3 + the fold fix 8e4c41ee3 (11 Nov 13:18); proved on the repaired api (all Pass but the free-text fill, fixed by the fold); the AI-fill re-check running; the MONEY decision on the ticket — Deployed held |
+| 9 First message decides the queue | SCRUM-830 | LANDED 3ac4658cd + the edge-word fix b37f06334; proved and re-checked 11 Nov; TESTING (Deployed on CI green); five decisions on the ticket |
 | 10 Never ask twice | SCRUM-831 | APPROVED (the page 11 Nov 04:51: "never let the assistant trip; smart and efficient") — DEPLOYED 11 Nov 00:20 |
 | 11 One message per turn, park first | SCRUM-832 | APPROVED 10 Nov 22:35 — LANDED ba3f25bb4 + the bare-park-question fix 4af68aafc, proved and re-checked 11 Nov; DEPLOYED 11 Nov 01:38; four decisions on the ticket |
