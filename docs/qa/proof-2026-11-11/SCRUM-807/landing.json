@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-11T09:06:46.725Z",
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42992278433,
+    "headSha": "7a1e2aada300f544d182a5991397800a311bc3db",
+    "status": "pending"
+  },
+  "deployRequests": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbq2vurrjlhs73b32kf0"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbq2vvd6e07s73bvstt0"
+    }
+  ],
+  "slotReleased": true,
+  "proofPending": true
+}
