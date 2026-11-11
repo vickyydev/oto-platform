@@ -1,0 +1,177 @@
+{
+  "tickets": [
+    "SCRUM-802",
+    "SCRUM-783"
+  ],
+  "sha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42975235170,
+    "headSha": "1774278145af7a37b6d4855f87eacff7710d5f21",
+    "status": "in_progress"
+  },
+  "candidate": {
+    "sha": "869a73add71fe4b41550dd4370e6cfcd487a8e48",
+    "run": 42971207054,
+    "unrelatedAppChanges": [
+      "apps/oto-app/client/src/components/beo/beo-event-editor.tsx",
+      "apps/oto-app/server/lib/aiFill.ts",
+      "apps/oto-app/server/lib/beoAiApprove.ts",
+      "apps/oto-app/shared/kitchenAdults.ts",
+      "apps/oto-app/tests/ai-fill.check.ts",
+      "apps/oto-app/tests/kitchen-adults-ui.check.ts",
+      "apps/oto-app/tests/kitchen-adults.check.ts"
+    ]
+  },
+  "startedAt": "2026-11-11T06:55:03.549Z",
+  "phase": "leading zero in member offer and paid admission",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1c963-9707-7a2e-af50-d8c82ef4c8ea/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c963-9707-7a2e-af50-d8c82ef4c8ea",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1c963-a65c-7451-a9f8-23fcaa1f6ae8/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c963-9707-7a2e-af50-d8c82ef4c8ea/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1c963-9707-7a2e-af50-d8c82ef4c8ea",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c963-9707-7a2e-af50-d8c82ef4c8ea",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c963-9707-7a2e-af50-d8c82ef4c8ea"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c963-a65c-7451-a9f8-23fcaa1f6ae8"
+    }
+  ],
+  "checks": {},
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1c963-a65c-7451-a9f8-23fcaa1f6ae8",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1c963-9707-7a2e-af50-d8c82ef4c8ea",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbq10ioae00c73cvvivg",
+      "status": "live",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq10ion74is739crqig",
+      "status": "live",
+      "sha": "1774278145af7a37b6d4855f87eacff7710d5f21"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq0n8jl550s73971ea0",
+      "status": "live",
+      "sha": "7d88e1945f4859144b120a6646e4e7ab111f68cf"
+    }
+  },
+  "passed": false,
+  "failure": {
+    "phase": "leading zero in member offer and paid admission",
+    "kind": "TimeoutError"
+  },
+  "finishedAt": "2026-11-11T06:55:43.585Z"
+}

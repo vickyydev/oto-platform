@@ -45,6 +45,7 @@ async function deployments() {
     const d = (await render('GET', `/services/${svc.id}/deploys?limit=1`))[0]?.deploy;
     assert.equal(d?.status, 'live', `${name} is live`);
     if (name !== 'oto-api-staging') assert.equal(d.commit.id, sha, 'changed service at proved source');
+    else assert.equal(git(['diff', '--name-only', sha, d.commit.id, '--', 'apps/api/src', 'packages']).trim(), '', 'the live API runtime matches the checked source');
     result[name] = { id: d.id, status: d.status, sha: d.commit.id };
   }
   return result;
@@ -65,13 +66,18 @@ const shot = async (page, name) => {
   for (const close of await page.locator('[toast-close]').all()) await close.click();
   await page.screenshot({ path: resolve(out, name), animations: 'disabled',
     mask: [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
-      page.locator('svg:not(.lucide), canvas'), page.getByText(/^QR-[A-Z0-9]+$/)] });
+      page.getByTestId('display-pairing-code'), page.locator('svg:not(.lucide), canvas'), page.getByText(/^QR-[A-Z0-9]+$/)] });
 };
 const keypad = async (page, digits) => { for (const digit of digits) await page.getByRole('button', { name: digit, exact: true }).last().click(); };
 const identify = async index => {
+  phase(`guest ${index + 1}: language choice`);
+  await display.locator('[data-testid="language-choice"],[data-testid="identify-safety"]').first().waitFor();
+  if (await display.getByTestId('language-choice').isVisible()) await display.getByTestId('language-choice-en').click();
+  phase(`guest ${index + 1}: type test number`);
   await display.getByTestId('identify-safety').waitFor();
   await keypad(display, testNumbers[index]);
   await display.getByRole('button', { name: 'Continue', exact: true }).click();
+  phase(`guest ${index + 1}: member offer`);
   const offer = till.getByRole('dialog', { name: 'New member?', exact: true });
   await expect(offer).toContainText(formatted(index));
   if (index === 0) await shot(till, 's783-new-member-offer.png');
@@ -135,6 +141,7 @@ try {
   phase('leading zero in member offer and paid admission');
   await identify(0);
   receipt.checks.memberOffer = { formatted: true };
+  phase('paid admission');
   await till.getByRole('heading', { name: 'Tourist', exact: true }).click();
   await order();
   await till.getByRole('button', { name: /^Pay ฿/ }).click();
@@ -240,6 +247,7 @@ try {
   failed = true; receipt.passed = false; receipt.failure = { phase: receipt.phase, kind: error.name };
   // No exception text: a browser call log can include the value being typed.
   if (till) await shot(till, 'failed-attempt.png').catch(() => {});
+  if (display) await shot(display, 'failed-display.png').catch(() => {});
 } finally {
   const clean = async (step, action) => {
     try { await action(); }

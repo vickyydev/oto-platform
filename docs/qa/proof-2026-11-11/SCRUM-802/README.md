@@ -3,7 +3,8 @@
 Unit 3 is built in `C:/oto-lanes/codex-history-phone-20261111`, branch
 `lane/codex-history-phone-20261111`. It landed fast-forward at
 `1774278145af7a37b6d4855f87eacff7710d5f21`. Both named till deployments
-are building; main CI `42975235170` is running. Staging proof is not run.
+are live; main CI `42975235170` is running. The first proof attempt timed
+out before phone entry and cleaned up; the corrected harness retry is next.
 `landing.json` records the source and deploy requests.
 
 Both History layouts now use the F&B field's existing paste and scanner
@@ -37,8 +38,8 @@ Full candidate CI `42971207054` passed all six jobs at
 `869a73add71fe4b41550dd4370e6cfcd487a8e48`. The saved source and local
 gate logs survived the interruption. The staging harness is prepared and
 syntax-checked at `staging/proof.mjs`; it asserts the automatic list reread
-contains the paid charge before searching the screen. It has not run and has created no
-fixtures. Its cleanup attempts each independent step even if a prior step
+contains the paid charge before searching the screen. The first attempt stopped before phone entry; its test till and display
+were retired and both sessions signed out. Its cleanup attempts each independent step even if a prior step
 fails, and records failures without discarding the other cleanup receipts.
 
 The full candidate passed 6,798 API tests, 2,332 POS tests and 357 Console
@@ -53,3 +54,10 @@ leaving History, and the leading-zero ZZ TEST number correctly shown in the
 three reported places. Use an own till and paired display, retire the exact
 fixtures, sign out and read back 401, inspect masked PNGs, attach to both
 tickets, Testing on proof and Deployed only with green landed-SHA CI.
+
+The first attempt is retained under `staging/attempt-01/`: the receipt,
+inspected masked failure picture and exact harness. It waited for the phone
+form without choosing the existing first-screen language. No sale was
+created. Cleanup read back the display revoked, the till archived with no
+printers, and both sessions at 401. The corrected harness chooses English
+and captures both screens on a failure; the deployed product is unchanged.
