@@ -1,0 +1,1095 @@
+{
+  "unit": "SCRUM-843 staging proof",
+  "liveCommit": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+  "startedAt": "2026-11-11T13:54:00.215Z",
+  "writtenAt": "2026-11-11T14:12:55.529Z",
+  "browser": "Chromium 153.0.8010.12",
+  "liveDeploys": {
+    "how": "each deploy read by its id from the host control API (GET /v1/services/:serviceId/deploys/:deployId), one request every 90 s; the run began 90 s after both read live",
+    "readings": [
+      {
+        "at": "2026-11-11T13:51:42.304Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq757lg1s2s739mall0",
+        "http": 200,
+        "status": "build_in_progress",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": null,
+        "tookMs": 629
+      },
+      {
+        "at": "2026-11-11T13:53:12.819Z",
+        "service": "oto-app-staging",
+        "deploy": "dep-dbq757qjnfac73evcht0",
+        "http": 200,
+        "status": "live",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": "2026-11-11T13:52:34.635732Z",
+        "tookMs": 499
+      },
+      {
+        "at": "2026-11-11T13:54:43.247Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq757lg1s2s739mall0",
+        "http": 200,
+        "status": "update_in_progress",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": null,
+        "tookMs": 423
+      },
+      {
+        "at": "2026-11-11T13:56:13.683Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq757lg1s2s739mall0",
+        "http": 200,
+        "status": "live",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": "2026-11-11T13:54:58.033301Z",
+        "tookMs": 430
+      }
+    ],
+    "established": {
+      "oto-app-staging": {
+        "at": "2026-11-11T13:53:12.819Z",
+        "service": "oto-app-staging",
+        "deploy": "dep-dbq757qjnfac73evcht0",
+        "http": 200,
+        "status": "live",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": "2026-11-11T13:52:34.635732Z",
+        "tookMs": 499
+      },
+      "oto-api-staging": {
+        "at": "2026-11-11T13:56:13.683Z",
+        "service": "oto-api-staging",
+        "deploy": "dep-dbq757lg1s2s739mall0",
+        "http": 200,
+        "status": "live",
+        "sha": "e9bdd4bc407f026a5c635fcdd082f4f92ddaf337",
+        "finishedAt": "2026-11-11T13:54:58.033301Z",
+        "tookMs": 430
+      }
+    }
+  },
+  "signedInAs": "the staging administrator through the launcher (name never kept)",
+  "simulator": "Demo WhatsApp · Central Floresta (inbox Settings › Simulator · test only); payments on the simulated payment page only",
+  "verdict": "PASSED: the deposit paid while the review was open was kept on approval; a fresh review then raised it",
+  "parties": {
+    "party4": {
+      "thread": {
+        "name": "ZZ TEST 843 family",
+        "id": "01a1cae7-0972-7cad-8243-2a63c237281b",
+        "from": "a ZZ TEST simulator number",
+        "line": "Hello! A birthday party for ZZ Test Child turning 9, 10 kids and 3 adults, Sunday 27 December at 1pm (ZZ TEST 843)",
+        "sentAt": "2026-11-11T13:58:18.535Z",
+        "status": 200
+      },
+      "event": {
+        "id": "01a1caef-a02e-705e-a479-663d8459bdc5",
+        "title": "ZZ Test Child's 9th Birthday",
+        "date": "2026-12-27",
+        "startTime": "13:00",
+        "bookedAt": "2026-11-11T14:09:51.119Z"
+      },
+      "bookDate": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "sent": {
+          "date": "2026-12-27",
+          "startTime": "13:00",
+          "kids": 10,
+          "adults": 3,
+          "childName": "ZZ Test Child",
+          "childAge": 9,
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "hasId": true
+        },
+        "error": null,
+        "event": {
+          "id": "01a1caef-a02e-705e-a479-663d8459bdc5",
+          "title": "ZZ Test Child's 9th Birthday",
+          "date": "2026-12-27",
+          "startTime": "13:00",
+          "statusName": "Tentative",
+          "branchName": "Oto Play Park, Central Floresta",
+          "kids": 10,
+          "adults": 3
+        }
+      },
+      "createBeo": {
+        "openBeo": {
+          "route": "POST /api/inbox/conversations/:id/open-beo",
+          "status": 200,
+          "aiFillAsked": true
+        },
+        "aiFill": {
+          "status": 409,
+          "error": "AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet."
+        }
+      },
+      "steps": [
+        {
+          "at": "2026-11-11T14:10:01.541Z",
+          "action": "paste",
+          "key": "P4",
+          "pasted": "ZZ TEST team confirmation. Confirmed: ZZ Test Child's 9th birthday party on Sunday 27 December 2026, 13:00 to 15:30, 12 kids and 4 adults, booking name ZZ TEST, decoration: balloon arch. Deposit 1,000 THB received. (ZZ TEST)",
+          "storedBefore": {
+            "at": "2026-11-11T14:10:01.982Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 0,
+                "date": null
+              },
+              "partyDetailsPrepaymentReceived": null,
+              "partyDetailsDepositDate": null,
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": null
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": null,
+              "prepaymentDate": null,
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "parse": {
+            "route": "POST /api/ai/parse-beo",
+            "status": 200,
+            "seconds": 8,
+            "hasReview": true,
+            "origin": "pasted",
+            "oneDepositTheReviewWasReadWith": {
+              "amountThb": 0,
+              "date": null
+            },
+            "proposalDeposit": {
+              "amount": 1000,
+              "paid": true,
+              "source": "team"
+            },
+            "error": null,
+            "answerKeys": [
+              "summary",
+              "event",
+              "setupPlan",
+              "kitchenPlan",
+              "partyDetails",
+              "proposals",
+              "review"
+            ]
+          },
+          "reviewDialogs": 1,
+          "review": {
+            "title": "AI Fill — Review, edit and approve",
+            "pasted": true,
+            "plain": {
+              "childName": {
+                "value": "ZZ Test Child",
+                "marks": [
+                  "team"
+                ]
+              },
+              "numChildren": {
+                "value": "12",
+                "marks": [
+                  "team"
+                ]
+              },
+              "numAdults": {
+                "value": "4",
+                "marks": [
+                  "team"
+                ]
+              },
+              "startTime": {
+                "value": "13:00",
+                "marks": [
+                  "team"
+                ]
+              },
+              "endTime": {
+                "value": "15:30",
+                "marks": [
+                  "team"
+                ]
+              }
+            },
+            "date": {
+              "text": "Date:Sun 27 Dec 2026— the message says \"Sunday 27 December 2026\"from the teamThe same day the event is booked for.",
+              "same": true,
+              "differs": false
+            },
+            "deposit": {
+              "label": "Deposit paid:",
+              "amount": "1000",
+              "received": true,
+              "date": "",
+              "marks": [
+                "team"
+              ]
+            },
+            "details": {
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "replaces": null,
+            "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+            "approveEnabled": true,
+            "undecided": null
+          },
+          "picture": "843-01-review-open-deposit-1000-received.png",
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:10:20.961Z",
+          "action": "request",
+          "key": "P4",
+          "onPage": "a second page of the same session, the BEO opened on its link",
+          "typed": "3000",
+          "press": {
+            "route": "POST /api/events/:eventId/beo/deposit-request",
+            "status": 200,
+            "request": {
+              "id": "01a0bbdc-8c41-7fbd-9bc5-b35ca95cdc61",
+              "state": "requested",
+              "amountSatang": 300000,
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              },
+              "requestedAt": "2026-11-11T14:10:32.667Z",
+              "paidAt": null,
+              "closedAt": null,
+              "closeReason": null
+            },
+            "error": null
+          },
+          "panel": {
+            "at": "2026-11-11T14:10:32.298Z",
+            "text": "Deposit from the family's chat Requested Deposit requested · ฿3,000 The payment link is in the family's chat, valid until 14 Nov, 21:10. The payment link Resend Cancel request Send the menu choice link The assistant posts the parent's menu link, and confirms their choices when they land. the payment link is in the family's chat.",
+            "headline": "Deposit requested · ฿3,000",
+            "state": "Deposit requested · ฿3,000 The payment link is in the family's chat, valid until 14 Nov, 21:10. The payment link",
+            "none": null,
+            "badgeOpen": "Requested",
+            "badgePaid": null,
+            "error": null,
+            "note": "the payment link is in the family's chat.",
+            "unavailable": null,
+            "errorColor": null,
+            "buttons": {
+              "request": 0,
+              "resend": 1,
+              "cancel": 1,
+              "link": 1
+            }
+          },
+          "chatLink": {
+            "foundInTheAssistantsChatLine": true,
+            "absolute": true,
+            "host": "oto-api-staging.onrender.com",
+            "pathShape": "/webhooks/2c2p/hosted/<attempt id>",
+            "sameAsThePanelsLink": true,
+            "waitedMs": 733
+          },
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:10:33.198Z",
+          "action": "pay",
+          "key": "P4",
+          "storedBeforePay": {
+            "at": "2026-11-11T14:10:33.573Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 0,
+                "date": null
+              },
+              "partyDetailsPrepaymentReceived": null,
+              "partyDetailsDepositDate": null,
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": null
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": null,
+              "prepaymentDate": null,
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "page": {
+            "status": 200,
+            "host": "oto-api-staging.onrender.com",
+            "text": "Simulated payment page — no real money moves. The real one is 2C2P's. ฿3,000 OTO Park party deposit 2026-12-27 Invoice <no> · PPQR, CC Pay Fail"
+          },
+          "kind": "simulator hosted page",
+          "payPress": {
+            "route": "POST /webhooks/2c2p/hosted/:attemptId (action=pay), the simulated page's Pay",
+            "status": 200,
+            "at": "2026-11-11T14:10:34.217Z"
+          },
+          "returned": {
+            "host": "oto-api-staging.onrender.com",
+            "text": "Thank you Thank you — your deposit is being confirmed. You will get a message in the chat as soon as it is in. OTO Play Park"
+          },
+          "storedAfterPay": {
+            "at": "2026-11-11T14:10:36.214Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "partyDetailsPrepaymentReceived": 3000,
+              "partyDetailsDepositDate": "2026-11-11",
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": null
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 3000,
+              "prepaymentDate": "2026-11-11",
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "waitedForDepositMs": 363,
+          "request": {
+            "current": {
+              "id": "01a0bbdc-8c41-7fbd-9bc5-b35ca95cdc61",
+              "state": "paid",
+              "amountSatang": 300000,
+              "link": {
+                "absolute": true,
+                "host": "oto-api-staging.onrender.com",
+                "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+              },
+              "requestedAt": "2026-11-11T14:10:32.667Z",
+              "paidAt": "2026-11-11T14:10:37.031Z",
+              "closedAt": null,
+              "closeReason": null
+            },
+            "history": [
+              {
+                "id": "01a0bbdc-8c41-7fbd-9bc5-b35ca95cdc61",
+                "state": "paid",
+                "amountSatang": 300000,
+                "link": {
+                  "absolute": true,
+                  "host": "oto-api-staging.onrender.com",
+                  "pathShape": "/webhooks/2c2p/hosted/<attempt id>"
+                },
+                "requestedAt": "2026-11-11T14:10:32.667Z",
+                "paidAt": "2026-11-11T14:10:37.031Z",
+                "closedAt": null,
+                "closeReason": null
+              }
+            ]
+          },
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:11:16.370Z",
+          "action": "approve",
+          "key": "P4",
+          "reviewOpenBefore": true,
+          "depositInTheReviewAtApprove": {
+            "label": "Deposit paid:",
+            "amount": "1000",
+            "received": true,
+            "date": "",
+            "marks": [
+              "team"
+            ]
+          },
+          "storedBefore": {
+            "at": "2026-11-11T14:11:16.891Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "partyDetailsPrepaymentReceived": 3000,
+              "partyDetailsDepositDate": "2026-11-11",
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": null
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 3000,
+              "prepaymentDate": "2026-11-11",
+              "numChildren": 10,
+              "numAdults": 3,
+              "startTime": "13:00",
+              "endTime": null,
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "approve": {
+            "route": "POST /api/events/:id/beo/ai-fill/approve",
+            "status": 200,
+            "sent": {
+              "deposit": {
+                "amount": 1000,
+                "paid": true,
+                "date": null
+              },
+              "expectedDeposit": {
+                "amountThb": 0,
+                "date": null
+              },
+              "event": {
+                "numChildren": 12,
+                "numAdults": 4,
+                "startTime": "13:00",
+                "endTime": "15:30"
+              },
+              "details": {
+                "bookingName": null,
+                "decoration": "balloon arch"
+              },
+              "sourceFields": [
+                "childName:team",
+                "numChildren:team",
+                "numAdults:team",
+                "startTime:team",
+                "endTime:team",
+                "deposit:team",
+                "title:default",
+                "decoration:team"
+              ]
+            },
+            "answer": {
+              "written": {
+                "event": true
+              },
+              "notWritten": {
+                "deposit": {
+                  "reason": "moved",
+                  "message": "it changed while this review was open (now ฿3,000)",
+                  "amountThb": 3000,
+                  "date": "2026-11-11"
+                }
+              },
+              "message": null
+            }
+          },
+          "toasts": [
+            "BEO created from the pasted message Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps and the team you ticked. Not written: the deposit — it changed while this review was open (now ฿3,000)."
+          ],
+          "toast": "BEO created from the pasted message Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps and the team you ticked. Not written: the deposit — it changed while this review was open (now ฿3,000).",
+          "picture": "843-02-approved-deposit-kept-at-3000.png",
+          "reviewGone": true,
+          "formDeposit": null,
+          "storedAfter": {
+            "at": "2026-11-11T14:11:20.523Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "partyDetailsPrepaymentReceived": 3000,
+              "partyDetailsDepositDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 3000,
+              "prepaymentDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "beoAfter": {
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "title": "ZZ Test Child's 9th Birthday",
+              "eventDate": "2026-12-27",
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "numChildren": 12,
+              "numAdults": 4,
+              "childName": "ZZ Test Child",
+              "archivedAt": null
+            },
+            "beo": {
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "partyDetails": {
+                "prepaymentReceived": 3000,
+                "depositDate": "2026-11-11"
+              }
+            }
+          },
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:11:31.317Z",
+          "action": "paste",
+          "key": "P4",
+          "pasted": "ZZ TEST team confirmation. Confirmed: ZZ Test Child's 9th birthday party on Sunday 27 December 2026, 13:00 to 15:30, 12 kids and 4 adults, booking name ZZ TEST, decoration: balloon arch. Deposit 1,000 THB received. (ZZ TEST)",
+          "storedBefore": {
+            "at": "2026-11-11T14:11:36.403Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "partyDetailsPrepaymentReceived": 3000,
+              "partyDetailsDepositDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 3000,
+              "prepaymentDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "parse": {
+            "route": "POST /api/ai/parse-beo",
+            "status": 200,
+            "seconds": 9.2,
+            "hasReview": true,
+            "origin": "pasted",
+            "oneDepositTheReviewWasReadWith": {
+              "amountThb": 3000,
+              "date": "2026-11-11"
+            },
+            "proposalDeposit": {
+              "amount": 1000,
+              "paid": true,
+              "source": "team"
+            },
+            "error": null,
+            "answerKeys": [
+              "summary",
+              "event",
+              "setupPlan",
+              "kitchenPlan",
+              "partyDetails",
+              "proposals",
+              "review"
+            ]
+          },
+          "reviewDialogs": 1,
+          "review": {
+            "title": "AI Fill — Review, edit and approve",
+            "pasted": true,
+            "plain": {
+              "childName": {
+                "value": "ZZ Test Child",
+                "marks": [
+                  "team"
+                ]
+              },
+              "numChildren": {
+                "value": "12",
+                "marks": [
+                  "team"
+                ]
+              },
+              "numAdults": {
+                "value": "4",
+                "marks": [
+                  "team"
+                ]
+              },
+              "startTime": {
+                "value": "13:00",
+                "marks": [
+                  "team"
+                ]
+              },
+              "endTime": {
+                "value": "15:30",
+                "marks": [
+                  "team"
+                ]
+              }
+            },
+            "date": {
+              "text": "Date:Sun 27 Dec 2026— the message says \"Sunday 27 December 2026\"from the teamThe same day the event is booked for.",
+              "same": true,
+              "differs": false
+            },
+            "deposit": {
+              "label": "Deposit paid:",
+              "amount": "1000",
+              "received": true,
+              "date": "",
+              "marks": [
+                "team"
+              ]
+            },
+            "details": {
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "replaces": "This BEO already has its deposit: approving replaces what the review fills.",
+            "writes": "Approve and create writes the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit — everything above, in one go. Nothing opens after it; a field the BEO already holds keeps its value unless you take the chat's.",
+            "approveEnabled": true,
+            "undecided": null
+          },
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:11:47.375Z",
+          "action": "setdep",
+          "key": "P4",
+          "before": {
+            "label": "Deposit paid:",
+            "amount": "1000",
+            "received": true,
+            "date": "",
+            "marks": [
+              "team"
+            ]
+          },
+          "after": {
+            "label": "Deposit paid:",
+            "amount": "5000",
+            "received": true,
+            "date": "",
+            "marks": [
+              "staff"
+            ]
+          },
+          "picture": "843-03-fresh-review-deposit-5000-received.png",
+          "pageErrors": []
+        },
+        {
+          "at": "2026-11-11T14:11:58.009Z",
+          "action": "approve",
+          "key": "P4",
+          "reviewOpenBefore": true,
+          "depositInTheReviewAtApprove": {
+            "label": "Deposit paid:",
+            "amount": "5000",
+            "received": true,
+            "date": "",
+            "marks": [
+              "staff"
+            ]
+          },
+          "storedBefore": {
+            "at": "2026-11-11T14:11:58.842Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "partyDetailsPrepaymentReceived": 3000,
+              "partyDetailsDepositDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 3000,
+              "prepaymentDate": "2026-11-11",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": null
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "approve": {
+            "route": "POST /api/events/:id/beo/ai-fill/approve",
+            "status": 200,
+            "sent": {
+              "deposit": {
+                "amount": 5000,
+                "paid": true,
+                "date": null
+              },
+              "expectedDeposit": {
+                "amountThb": 3000,
+                "date": "2026-11-11"
+              },
+              "event": {
+                "numChildren": 12,
+                "numAdults": 4,
+                "startTime": "13:00",
+                "endTime": "15:30"
+              },
+              "details": {
+                "bookingName": null,
+                "decoration": null
+              },
+              "sourceFields": [
+                "childName:team",
+                "numChildren:team",
+                "numAdults:team",
+                "startTime:team",
+                "endTime:team",
+                "deposit:staff",
+                "title:default"
+              ]
+            },
+            "answer": {
+              "written": {
+                "event": true,
+                "deposit": true
+              },
+              "notWritten": null,
+              "message": null
+            }
+          },
+          "toasts": [
+            "BEO created from the pasted message Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit."
+          ],
+          "toast": "BEO created from the pasted message Saved: the event's name and details, the counts, the times, the date when ticked, the package, the kitchen plan, the bar, the entertainment, the setup plan, the POS box, the timeline's steps, the team you ticked and the deposit.",
+          "picture": "843-04-fresh-review-approved-deposit-5000.png",
+          "reviewGone": true,
+          "formDeposit": "5,000",
+          "storedAfter": {
+            "at": "2026-11-11T14:12:02.584Z",
+            "beo": {
+              "route": "GET /api/events/:id/beo",
+              "status": 200,
+              "oneDeposit": {
+                "amountThb": 5000,
+                "date": null
+              },
+              "partyDetailsPrepaymentReceived": 5000,
+              "partyDetailsDepositDate": null,
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch"
+            },
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "prepaymentAmount": 5000,
+              "prepaymentDate": null,
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "archivedAt": null
+            },
+            "billing": {
+              "route": "GET /api/events/:id/beo/billing",
+              "status": 200,
+              "record": {
+                "id": "0e83abbe-0608-4205-945c-6236e994d398",
+                "depositPaidAmount": 5000,
+                "depositPaidAt": null
+              }
+            },
+            "lineItems": {
+              "route": "GET /api/events/:id/line-items",
+              "status": 200,
+              "count": 0
+            }
+          },
+          "beoAfter": {
+            "event": {
+              "route": "GET /api/admin/events/:id",
+              "status": 200,
+              "title": "ZZ Test Child's 9th Birthday",
+              "eventDate": "2026-12-27",
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "numChildren": 12,
+              "numAdults": 4,
+              "childName": "ZZ Test Child",
+              "archivedAt": null
+            },
+            "beo": {
+              "bookingName": "ZZ TEST 843 family",
+              "decoration": "balloon arch",
+              "numChildren": 12,
+              "numAdults": 4,
+              "startTime": "13:00",
+              "endTime": "15:30",
+              "partyDetails": {
+                "prepaymentReceived": 5000,
+                "depositDate": null
+              }
+            }
+          },
+          "pageErrors": []
+        }
+      ]
+    }
+  },
+  "notes": [
+    "The review was opened by the pasted-message path (AI Fill › paste › Parse with AI, POST /api/ai/parse-beo): Create BEO on the thread answered 409 \"AI Fill did not run: no message from the team in this conversation names the date, the time and the party details yet.\" as expected for a thread with no team line.",
+    "The second page was another page of the same browser session; the payment was made in a separate context with no session.",
+    "Fresh review: the review carries no day for the deposit (the pasted message names none); after the approval that raised the deposit to 5,000 the stored deposit reads 5000 with no day (before it: 3000 on 2026-11-11).",
+    "Mask boxes in the pictures over empty-looking areas cover a phone-like number of the ZZ TEST simulator and name matches on the form behind the dialog."
+  ],
+  "images": [
+    {
+      "file": "843-01-review-open-deposit-1000-received.png",
+      "at": "2026-11-11T14:10:12.363Z",
+      "shows": "The ONE AI Fill review open on the pasted ZZ TEST team confirmation: the Deposit row with its amount and the Received tick",
+      "covered": {
+        "names": 2,
+        "numbers": 2,
+        "links": 0,
+        "fields": 0
+      },
+      "note": "the events board behind the BEO sheet hidden; names, phone-like numbers and any written link covered by boxes laid over the page (no node of the page rewritten)"
+    },
+    {
+      "file": "843-02-approved-deposit-kept-at-3000.png",
+      "at": "2026-11-11T14:11:18.602Z",
+      "shows": "Right after Approve and create on the review that was open while the family paid: the toast ends Not written: the deposit — it changed while this review was open (now ฿3,000).",
+      "covered": {
+        "names": 2,
+        "numbers": 2,
+        "links": 0,
+        "fields": 0
+      },
+      "note": "the events board behind the BEO sheet hidden; names, phone-like numbers and any written link covered by boxes laid over the page (no node of the page rewritten)"
+    },
+    {
+      "file": "843-03-fresh-review-deposit-5000-received.png",
+      "at": "2026-11-11T14:11:48.492Z",
+      "shows": "The fresh review with the deposit set to 5000 and Received ticked, before Approve and create",
+      "covered": {
+        "names": 2,
+        "numbers": 2,
+        "links": 0,
+        "fields": 0
+      },
+      "note": "the events board behind the BEO sheet hidden; names, phone-like numbers and any written link covered by boxes laid over the page (no node of the page rewritten)"
+    },
+    {
+      "file": "843-04-fresh-review-approved-deposit-5000.png",
+      "at": "2026-11-11T14:12:00.594Z",
+      "shows": "Right after Approve and create on the fresh review with the deposit set to 5,000: the toast lists the deposit among what was saved, no Not written",
+      "covered": {
+        "names": 2,
+        "numbers": 2,
+        "links": 0,
+        "fields": 0
+      },
+      "note": "the events board behind the BEO sheet hidden; names, phone-like numbers and any written link covered by boxes laid over the page (no node of the page rewritten)"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-11T14:12:15.929Z",
+    "events": {
+      "P4": {
+        "id": "01a1caef-a02e-705e-a479-663d8459bdc5",
+        "title": "ZZ Test Child's 9th Birthday",
+        "openRequestBefore": null,
+        "cancelled": null,
+        "alreadyArchived": false,
+        "archive": {
+          "status": 200
+        },
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-11T14:12:20.874Z"
+        },
+        "requestAfter": {
+          "state": "paid",
+          "closeReason": null,
+          "amountSatang": 300000
+        }
+      }
+    },
+    "conversations": {
+      "P4": {
+        "id": "01a1cae7-0972-7cad-8243-2a63c237281b",
+        "handle": 200,
+        "state": "handled",
+        "handledAt": "2026-11-11T14:12:24.878Z"
+      }
+    },
+    "othersLeftUntouched": [
+      {
+        "title": "ZZ Test Child's 7th Birthday",
+        "eventDate": "2026-11-28"
+      }
+    ]
+  },
+  "signOut": {
+    "at": "2026-11-11T14:12:28.203Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  }
+}
