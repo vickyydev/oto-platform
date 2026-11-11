@@ -22,7 +22,7 @@
     "sha256": "67a055b019e6bd8214e0cc5d719f5234692bb49c6e61c8a01abaf98654eeba1e",
     "tests": 7
   },
-  "retried": false,
+  "retried": true,
   "types": {
     "workspaceLines": 141,
     "workspaceReadWhole": true,
@@ -31,5 +31,24 @@
     "appReadWhole": true,
     "appErrors": 418,
     "appBaseline": 418
+  },
+  "apiFailure": {
+    "jobId": 130422196163,
+    "file": "test/s707-print-template-defaults.test.ts",
+    "line": 230,
+    "observation": "The diff reorders the same six templates; rowsOf has no orderBy",
+    "local": {
+      "tests": 26,
+      "exitCode": 0,
+      "sha": "1bd870dcfad18fdafc62d7e244a324d7e047afc2",
+      "log": "C:/oto-lanes/s783-exact-print-defaults.log",
+      "sha256": "bd84cb952f2f866f06fdd528e6cd95744055db086e957c35b83fa7ed61d5bc6f"
+    }
+  },
+  "retry": {
+    "requestedAt": "2026-11-11T09:25:33.534Z",
+    "command": "gh run rerun 42990578676 --failed",
+    "failedJobsOnly": true,
+    "maximumRetries": 1
   }
 }

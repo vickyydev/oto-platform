@@ -1,0 +1,298 @@
+{
+  "tickets": [
+    "SCRUM-807"
+  ],
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "ci": {
+    "conclusion": "",
+    "databaseId": 42992278433,
+    "headSha": "7a1e2aada300f544d182a5991397800a311bc3db",
+    "status": "in_progress"
+  },
+  "localGates": "../local-gates.json",
+  "startedAt": "2026-11-11T09:25:58.800Z",
+  "phase": "returned price matches Amount Due and the automatic saved sale",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/01a1c9ed-c397-77bb-a013-dc16b88c07b5/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9ed-d980-7e7f-8576-bc40c2b09dec",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1c9ed-f349-7108-ac39-452a14a12500",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1c9ed-f349-7108-ac39-452a14a12500",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9ed-c397-77bb-a013-dc16b88c07b5",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1c9ed-f349-7108-ac39-452a14a12500",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/01a1c9ed-f349-7108-ac39-452b52d15818/release",
+      "status": 400
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1c9ed-d980-7e7f-8576-bc40c2b09dec",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/01a1c9ed-d335-7347-abcd-a94ba9b7b2b1/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1c9ed-c397-77bb-a013-dc16b88c07b5/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1c9ed-c397-77bb-a013-dc16b88c07b5",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1c9ed-c397-77bb-a013-dc16b88c07b5",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/01a1c9ed-f249-70ec-b9f4-e88c7b529217",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1c9ed-c397-77bb-a013-dc16b88c07b5"
+    },
+    {
+      "kind": "display",
+      "id": "01a1c9ed-d335-7347-abcd-a94ba9b7b2b1"
+    },
+    {
+      "kind": "voucher-sale",
+      "id": "01a1c9ed-d980-7e7f-8576-bc40c2b09dec"
+    },
+    {
+      "kind": "voucher",
+      "id": "01a1c9ed-e53b-753d-b4f9-6acee42449bc"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1c9ed-f349-7108-ac39-452a14a12500"
+    },
+    {
+      "kind": "redemption-sale",
+      "id": "01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee"
+    }
+  ],
+  "checks": {
+    "delayedQuote": {
+      "status": 200,
+      "heldAt": "2026-11-11T09:26:18.255Z"
+    },
+    "pricing": {
+      "amountDueSatang": 0,
+      "orderTotalSatang": 0,
+      "automaticSaleTotalSatang": 0,
+      "noBackOrSecondPay": true,
+      "confirmationEnabledAfterPricing": true
+    },
+    "completed": {
+      "saleId": "01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee",
+      "status": "finalised",
+      "totalSatang": 0
+    }
+  },
+  "cleanup": [
+    {
+      "kind": "paid-test-sale",
+      "id": "01a1c9ed-e90e-7ac8-b7a4-476d6fe794ee",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1c9ee-06de-73c4-920d-80be0c8789f9",
+          "status": "printed"
+        },
+        {
+          "id": "01a1c9ee-0589-7fa9-a2b8-a45b8aca4de4",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "paid-test-sale",
+      "id": "01a1c9ed-d980-7e7f-8576-bc40c2b09dec",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1c9ed-e552-74db-88ea-19053b2d2d63",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "display",
+      "id": "01a1c9ed-d335-7347-abcd-a94ba9b7b2b1",
+      "revoked": true
+    },
+    {
+      "kind": "station",
+      "id": "01a1c9ed-c397-77bb-a013-dc16b88c07b5",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "id": "01a1c9ed-f249-70ec-b9f4-e88c7b529217",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "apiRuntimeDifferences": [],
+  "deployments": {
+    "oto-pos-staging": {
+      "id": "dep-dbq2vurrjlhs73b32kf0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq2vvd6e07s73bvstt0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq36uqjnfac739ouh40",
+      "status": "live",
+      "sha": "11cfd393486375ff7cf57cb9a74ef5aa2a679ac6"
+    }
+  },
+  "deploymentsAfter": {
+    "oto-pos-staging": {
+      "id": "dep-dbq2vurrjlhs73b32kf0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-pos-web-staging": {
+      "id": "dep-dbq2vvd6e07s73bvstt0",
+      "status": "live",
+      "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+    },
+    "oto-api-staging": {
+      "id": "dep-dbq36uqjnfac739ouh40",
+      "status": "live",
+      "sha": "11cfd393486375ff7cf57cb9a74ef5aa2a679ac6"
+    }
+  },
+  "passed": false,
+  "cleanupFailures": [
+    {
+      "step": "release own test child",
+      "kind": "AssertionError"
+    }
+  ],
+  "finishedAt": "2026-11-11T09:26:24.000Z"
+}

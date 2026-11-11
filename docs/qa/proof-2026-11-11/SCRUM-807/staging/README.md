@@ -1,0 +1,11 @@
+# SCRUM-807 Golden Ticket drop-off
+
+Both tills were live at 7a1e2aada300f544d182a5991397800a311bc3db throughout the screen proof. The API was live at 11cfd393486375ff7cf57cb9a74ef5aa2a679ac6 with no runtime difference for this source. Main CI 42992278433 remains pending completion; this is Testing, not Deployed.
+
+The second screen attempt bought a Golden Ticket through Shop, redeemed it for a ZZ TEST seven-year-old drop-off, completed the family form and captured a synthetic reception photo. The real pricing response was held: Amount Due showed a dash, Confirm was disabled and no redemption sale was written. Releasing the response changed Amount Due to zero, the order Total to zero and automatically saved a zero-total sale without Back or a second Pay press. Complete Sale then finalised the zero sale and Check in now admitted the test child.
+
+All three pictures were opened and inspected. Voucher details, QR graphics and the staff identity are masked. The order Total assertion is recorded in the receipt; that row is below the priced screenshot viewport. During the deliberate delay, the separate customer mirror still shows the local estimate; this proof covers the staff payment step and blocks acceptance until pricing.
+
+Cleanup initially refused reuse of the check-in photo for pickup (400). The original attempt-02 receipt is preserved with its failed cleanup flag. cleanup-pickup.mjs uploaded a separate synthetic PNG, released the exact guarded ZZ TEST child, read the child out, signed out and read 401; cleanup-pickup.json records success. This cleanup is an API action, not pickup-screen proof. The paid voucher purchase and zero-value redemption remain as audit records; all print jobs printed. The display was revoked, station archived with zero devices, member archived and both original sessions read 401. No active fixture remains. proof-result.json joins the screen pass and cleanup recovery without changing the original failed receipt.
+
+Attempt 01 stopped before voucher issuance at a harness Cash selector and was fully cleaned. A subsequent preflight invocation stopped during the API automatic redeploy and created nothing. attempt-02 holds the exact executed proof and flow.

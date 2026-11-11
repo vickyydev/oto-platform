@@ -1,0 +1,22 @@
+{
+  "attachments": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13057",
+        "name": "s807-waiting-for-voucher-price.png"
+      },
+      {
+        "id": "13058",
+        "name": "s807-priced-payment-zero.png"
+      },
+      {
+        "id": "13059",
+        "name": "s807-completed-zero-sale.png"
+      }
+    ]
+  },
+  "commentStatus": 201,
+  "status": "Testing",
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db"
+}

@@ -1,0 +1,50 @@
+{
+  "startedAt": "2026-11-11T09:27:50.448Z",
+  "registrationId": "01a1c9ed-f349-7108-ac39-452a14a12500",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1c9ed-f349-7108-ac39-452a14a12500",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/01a1c9ef-6bf3-798b-b49d-b4de841b6c14/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/01a1c9ed-f349-7108-ac39-452b52d15818/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/01a1c9ed-f349-7108-ac39-452a14a12500",
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "children": [
+        {
+          "id": "01a1c9ed-f349-7108-ac39-452b52d15818",
+          "status": "out"
+        }
+      ],
+      "separateSyntheticPickupPhoto": true
+    },
+    {
+      "adminSession": "signed out",
+      "me": 401
+    }
+  ],
+  "fileId": "01a1c9ef-6bf3-798b-b49d-b4de841b6c14",
+  "releaseId": "01a1c9ef-6ea2-796e-abf1-93f22ad4609d",
+  "passed": true,
+  "finishedAt": "2026-11-11T09:27:51.773Z"
+}

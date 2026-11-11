@@ -1,0 +1,27 @@
+{
+  "sha": "7a1e2aada300f544d182a5991397800a311bc3db",
+  "screenChecksPassed": true,
+  "cleanupPassed": true,
+  "screenReceipt": "attempt-02/receipt.json",
+  "cleanupRecovery": "cleanup-pickup.json",
+  "originalReceiptPassed": false,
+  "reason": "Only the initial pickup cleanup failed; separate synthetic pickup upload completed it. Original receipt retained unchanged.",
+  "pictures": [
+    {
+      "name": "s807-waiting-for-voucher-price.png",
+      "sha256": "2f1c9370d9871730e8e416fde9ea925d5341961ffab9b00fc274d1b881d01d21",
+      "inspected": true
+    },
+    {
+      "name": "s807-priced-payment-zero.png",
+      "sha256": "c9c78962042c2884451ff0166be4e7f16abe4e815f416207f76d640025b86e0a",
+      "inspected": true
+    },
+    {
+      "name": "s807-completed-zero-sale.png",
+      "sha256": "c4f3daf39b5241bd28866dce4d321c569011942cda3f6dc8975b6314dff9a089",
+      "inspected": true
+    }
+  ],
+  "ciPending": true
+}
