@@ -34,6 +34,7 @@ import {
   getRateModeForDate,
   newId,
   normalizePhone,
+  validateMessagingPhone,
   parseDayStart,
   prepaidItemNotOnMenuRefusal,
   prepaidItemPriceRefusal,
@@ -240,6 +241,9 @@ export interface RegistrationView {
   guardianName: string;
   guardianPhone: string | null;
   contactChannel: string;
+  /** SCRUM-857 — when the family confirmed the number for the channel, and who gave the tick. Null when it was not taken. */
+  contactConfirmedAt: string | null;
+  contactConfirmedBy: 'family' | 'staff' | null;
   consentRecordedAt: string | null;
   acknowledgedConfirmations: { itemId: string; text: string; acknowledgedAt: string }[];
   source: string;
@@ -286,6 +290,8 @@ async function registrationViewOf(db: Exec, row: RegistrationRow): Promise<Regis
     guardianName: row.guardianName,
     guardianPhone: row.guardianPhone,
     contactChannel: row.contactChannel,
+    contactConfirmedAt: row.contactConfirmedAt?.toISOString() ?? null,
+    contactConfirmedBy: row.contactConfirmedBy ?? null,
     consentRecordedAt: row.consentRecordedAt?.toISOString() ?? null,
     acknowledgedConfirmations: row.acknowledgedConfirmations,
     source: row.source,
@@ -293,6 +299,21 @@ async function registrationViewOf(db: Exec, row: RegistrationRow): Promise<Regis
     createdAt: row.createdAt.toISOString(),
     children: stays.map(checkinViewOf),
   };
+}
+
+/**
+ * SCRUM-857 — why a guardian's number was refused as one to message them on,
+ * in the words the till shows staff beside the form.
+ */
+export function messagingPhoneRefusal(problem: 'empty' | 'not_a_number' | 'not_valid' | 'not_mobile'): string {
+  switch (problem) {
+    case 'not_mobile':
+      return "That number is a landline or a service line, not one that can take WhatsApp, Telegram or LINE messages — check it with the guardian.";
+    case 'not_valid':
+      return "That phone number is not a valid number for its country — check it with the guardian.";
+    default:
+      return "That phone number doesn't look right — check it with the guardian.";
+  }
 }
 
 /** One registration, inside the caller's operator. 404 for anybody else's. */
@@ -700,13 +721,25 @@ export async function createRegistration(
       'Every confirmation has to be ticked on the customer screen before the children can be registered.',
     );
   }
+  // SCRUM-857 — the number the child's messages go to must be one that can
+  // take them: a valid number for its country, and not a landline or a
+  // toll-free line where the library can tell. The form says the same before
+  // the family confirms it; this is the api's own check behind it.
   let guardianPhone: string | null = null;
   if (input.guardianPhone?.trim()) {
-    guardianPhone = normalizePhone(input.guardianPhone);
-    if (!guardianPhone) throw errors.badRequest("That phone number doesn't look right — check it with the guardian.");
+    const checked = validateMessagingPhone(input.guardianPhone);
+    if (!checked.ok) throw errors.badRequest(messagingPhoneRefusal(checked.problem));
+    guardianPhone = checked.e164;
+  }
+  // The family's confirmation names a number that is there, and is not from
+  // the future: the till's clock stamps it when the tick is taken.
+  const confirmation = input.contactConfirmation ?? null;
+  if (confirmation && !guardianPhone) {
+    throw errors.badRequest('The number was confirmed but none was given — add the number the family confirmed.');
   }
 
   const now = new Date();
+  const confirmedAt = confirmation ? new Date(Math.min(Date.parse(confirmation.confirmedAt), now.getTime())) : null;
   const acknowledged = buildAcknowledgedConfirmations(config.policy, input.acknowledgedConfirmationIds, now.toISOString());
   const row = {
     id: input.id,
@@ -716,6 +749,8 @@ export async function createRegistration(
     guardianName: input.guardianName.trim(),
     guardianPhone,
     contactChannel: input.contactChannel,
+    contactConfirmedAt: confirmedAt,
+    contactConfirmedBy: confirmation?.by ?? null,
     consentRecordedAt: input.consentAcknowledged ? now : null,
     acknowledgedConfirmations: acknowledged,
     source: 'till' as const,
@@ -737,6 +772,8 @@ export async function createRegistration(
       guardianName: row.guardianName,
       guardianPhone,
       contactChannel: row.contactChannel,
+      contactConfirmedAt: confirmedAt?.toISOString() ?? null,
+      contactConfirmedBy: row.contactConfirmedBy,
       consentRecordedAt: row.consentRecordedAt?.toISOString() ?? null,
       acknowledgedConfirmations: acknowledged,
       children: input.children.map((c) => ({ checkinId: c.checkinId, name: c.name, service: c.service })),

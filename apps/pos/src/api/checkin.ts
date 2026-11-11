@@ -173,6 +173,9 @@ export interface ApiRegistration {
   guardianName: string;
   guardianPhone: string | null;
   contactChannel: string;
+  /** SCRUM-857 — when the family confirmed the number for the channel, and who gave the tick. Absent from an older platform. */
+  contactConfirmedAt?: string | null;
+  contactConfirmedBy?: 'family' | 'staff' | null;
   consentRecordedAt: string | null;
   acknowledgedConfirmations: { itemId: string; text: string; acknowledgedAt: string }[];
   source: string;
@@ -204,6 +207,13 @@ export interface CreateRegistrationBody {
   contactChannel: 'whatsapp' | 'telegram' | 'line';
   consentAcknowledged: boolean;
   acknowledgedConfirmationIds: string[];
+  /**
+   * SCRUM-857 — the family's confirmation that the number is the one for the
+   * channel: when, and whether they ticked it on their own screen or staff did
+   * on the till with them. Sent on the platform's path only: the counter box's
+   * own registration (`viaLane`'s box side) does not know the field yet.
+   */
+  contactConfirmation?: { confirmedAt: string; by: 'family' | 'staff' } | null;
   children: RegistrationChildBody[];
 }
 

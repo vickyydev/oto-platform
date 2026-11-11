@@ -21926,6 +21926,12 @@ export interface paths {
                         consentAcknowledged: boolean;
                         /** @default [] */
                         acknowledgedConfirmationIds?: string[];
+                        contactConfirmation?: {
+                            /** Format: date-time */
+                            confirmedAt: string;
+                            /** @enum {string} */
+                            by: "family" | "staff";
+                        } | null;
                         children: {
                             /** Format: uuid */
                             checkinId: string;

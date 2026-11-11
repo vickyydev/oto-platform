@@ -52564,6 +52564,28 @@
                     "maxItems": 50,
                     "default": []
                   },
+                  "contactConfirmation": {
+                    "type": "object",
+                    "properties": {
+                      "confirmedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "by": {
+                        "type": "string",
+                        "enum": [
+                          "family",
+                          "staff"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "confirmedAt",
+                      "by"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
                   "children": {
                     "type": "array",
                     "items": {
