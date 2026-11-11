@@ -1,0 +1,1703 @@
+{
+  "run": 43022494903,
+  "conclusion": "success",
+  "headSha": "22263520da3218805bf520d300966e9a739c3b41",
+  "jobs": [
+    {
+      "completedAt": "2026-11-11T13:07:14Z",
+      "conclusion": "success",
+      "databaseId": 130528881513,
+      "name": "api-tests (2)",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:24Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:35Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:06Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 3,
+          "startedAt": "2026-11-11T12:41:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:06Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 4,
+          "startedAt": "2026-11-11T12:42:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:07Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:42:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:15Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 6,
+          "startedAt": "2026-11-11T12:42:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:18Z",
+          "conclusion": "success",
+          "name": "Install",
+          "number": 7,
+          "startedAt": "2026-11-11T12:42:15Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:19Z",
+          "conclusion": "success",
+          "name": "Build the api's dependencies",
+          "number": 8,
+          "startedAt": "2026-11-11T12:42:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:11Z",
+          "conclusion": "success",
+          "name": "Api tests (shard 2 of 3)",
+          "number": 9,
+          "startedAt": "2026-11-11T12:42:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:11Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 15,
+          "startedAt": "2026-11-11T13:07:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:11Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 16,
+          "startedAt": "2026-11-11T13:07:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:12Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 17,
+          "startedAt": "2026-11-11T13:07:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:12Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 18,
+          "startedAt": "2026-11-11T13:07:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:12Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-11-11T13:07:12Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881513"
+    },
+    {
+      "completedAt": "2026-11-11T12:43:52Z",
+      "conclusion": "success",
+      "databaseId": 130528881764,
+      "name": "pos-tests",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:24Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:02Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:02Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 3,
+          "startedAt": "2026-11-11T12:42:02Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:03Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 4,
+          "startedAt": "2026-11-11T12:42:02Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:09Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:42:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:12Z",
+          "conclusion": "success",
+          "name": "Install",
+          "number": 6,
+          "startedAt": "2026-11-11T12:42:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:12Z",
+          "conclusion": "success",
+          "name": "Build the POS's dependencies",
+          "number": 7,
+          "startedAt": "2026-11-11T12:42:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:47Z",
+          "conclusion": "success",
+          "name": "POS tests",
+          "number": 8,
+          "startedAt": "2026-11-11T12:42:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:48Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 14,
+          "startedAt": "2026-11-11T12:43:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:48Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 15,
+          "startedAt": "2026-11-11T12:43:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:48Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 16,
+          "startedAt": "2026-11-11T12:43:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:48Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-11-11T12:43:48Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881764"
+    },
+    {
+      "completedAt": "2026-11-11T13:10:29Z",
+      "conclusion": "success",
+      "databaseId": 130528881845,
+      "name": "api-tests (3)",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:23Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:22Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:38Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:51Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 3,
+          "startedAt": "2026-11-11T12:41:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:51Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 4,
+          "startedAt": "2026-11-11T12:41:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:52Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:41:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:56Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 6,
+          "startedAt": "2026-11-11T12:41:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:59Z",
+          "conclusion": "success",
+          "name": "Install",
+          "number": 7,
+          "startedAt": "2026-11-11T12:41:56Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:59Z",
+          "conclusion": "success",
+          "name": "Build the api's dependencies",
+          "number": 8,
+          "startedAt": "2026-11-11T12:41:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Api tests (shard 3 of 3)",
+          "number": 9,
+          "startedAt": "2026-11-11T12:41:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 15,
+          "startedAt": "2026-11-11T13:10:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 16,
+          "startedAt": "2026-11-11T13:10:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 17,
+          "startedAt": "2026-11-11T13:10:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 18,
+          "startedAt": "2026-11-11T13:10:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:27Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-11-11T13:10:27Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881845"
+    },
+    {
+      "completedAt": "2026-11-11T13:07:54Z",
+      "conclusion": "success",
+      "databaseId": 130528881858,
+      "name": "ci",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:24Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:22Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:37Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:06Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 3,
+          "startedAt": "2026-11-11T12:41:37Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:06Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 4,
+          "startedAt": "2026-11-11T12:42:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:08Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:42:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:12Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 6,
+          "startedAt": "2026-11-11T12:42:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:16Z",
+          "conclusion": "success",
+          "name": "Install",
+          "number": 7,
+          "startedAt": "2026-11-11T12:42:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:47Z",
+          "conclusion": "success",
+          "name": "Typecheck",
+          "number": 8,
+          "startedAt": "2026-11-11T12:42:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:27Z",
+          "conclusion": "success",
+          "name": "Lint",
+          "number": 9,
+          "startedAt": "2026-11-11T12:44:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:28Z",
+          "conclusion": "success",
+          "name": "No screen reads mock members",
+          "number": 10,
+          "startedAt": "2026-11-11T12:45:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:29Z",
+          "conclusion": "success",
+          "name": "Chat-history tool tests",
+          "number": 11,
+          "startedAt": "2026-11-11T12:45:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:35Z",
+          "conclusion": "success",
+          "name": "Generated api types match the api",
+          "number": 12,
+          "startedAt": "2026-11-11T12:45:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:35Z",
+          "conclusion": "success",
+          "name": "Vendored redaction has not drifted",
+          "number": 13,
+          "startedAt": "2026-11-11T12:45:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:40Z",
+          "conclusion": "success",
+          "name": "Migrations apply cleanly from empty (twice)",
+          "number": 14,
+          "startedAt": "2026-11-11T12:45:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:42Z",
+          "conclusion": "success",
+          "name": "Seed",
+          "number": 15,
+          "startedAt": "2026-11-11T12:45:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:59Z",
+          "conclusion": "success",
+          "name": "Console tests",
+          "number": 16,
+          "startedAt": "2026-11-11T12:45:42Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:21Z",
+          "conclusion": "success",
+          "name": "Print tests",
+          "number": 17,
+          "startedAt": "2026-11-11T12:45:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:01Z",
+          "conclusion": "success",
+          "name": "Test",
+          "number": 18,
+          "startedAt": "2026-11-11T12:46:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:15Z",
+          "conclusion": "success",
+          "name": "Build",
+          "number": 19,
+          "startedAt": "2026-11-11T12:54:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:01:52Z",
+          "conclusion": "success",
+          "name": "Till end-to-end",
+          "number": 20,
+          "startedAt": "2026-11-11T12:54:15Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:01:53Z",
+          "conclusion": "success",
+          "name": "Pi scripts parse",
+          "number": 21,
+          "startedAt": "2026-11-11T13:01:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:01:53Z",
+          "conclusion": "success",
+          "name": "Working tree before the pack",
+          "number": 22,
+          "startedAt": "2026-11-11T13:01:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:02:02Z",
+          "conclusion": "success",
+          "name": "Pack the Pi release",
+          "number": 23,
+          "startedAt": "2026-11-11T13:01:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:02:03Z",
+          "conclusion": "success",
+          "name": "Upload the Pi release",
+          "number": 24,
+          "startedAt": "2026-11-11T13:02:02Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:02:05Z",
+          "conclusion": "success",
+          "name": "Install Chromium for the Console end-to-end set",
+          "number": 25,
+          "startedAt": "2026-11-11T13:02:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:51Z",
+          "conclusion": "success",
+          "name": "Console end-to-end",
+          "number": 26,
+          "startedAt": "2026-11-11T13:02:05Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:51Z",
+          "conclusion": "skipped",
+          "name": "Console end-to-end report",
+          "number": 27,
+          "startedAt": "2026-11-11T13:07:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:51Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 51,
+          "startedAt": "2026-11-11T13:07:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:51Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 52,
+          "startedAt": "2026-11-11T13:07:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:51Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 53,
+          "startedAt": "2026-11-11T13:07:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:52Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 54,
+          "startedAt": "2026-11-11T13:07:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:07:52Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 55,
+          "startedAt": "2026-11-11T13:07:52Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881858"
+    },
+    {
+      "completedAt": "2026-11-11T12:54:52Z",
+      "conclusion": "success",
+      "databaseId": 130528881863,
+      "name": "oto-app",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:25Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:38Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:09Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 3,
+          "startedAt": "2026-11-11T12:41:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:09Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 4,
+          "startedAt": "2026-11-11T12:42:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:14Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:42:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:32Z",
+          "conclusion": "success",
+          "name": "Install the OTO App",
+          "number": 6,
+          "startedAt": "2026-11-11T12:42:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:49Z",
+          "conclusion": "success",
+          "name": "Build the OTO App",
+          "number": 7,
+          "startedAt": "2026-11-11T12:42:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:44Z",
+          "conclusion": "success",
+          "name": "The OTO App's inherited typecheck ceiling",
+          "number": 8,
+          "startedAt": "2026-11-11T12:42:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:43:46Z",
+          "conclusion": "success",
+          "name": "The payroll golden example (engine leg)",
+          "number": 9,
+          "startedAt": "2026-11-11T12:43:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:15Z",
+          "conclusion": "success",
+          "name": "The payroll engine checks",
+          "number": 10,
+          "startedAt": "2026-11-11T12:43:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:15Z",
+          "conclusion": "success",
+          "name": "The suite theme checks",
+          "number": 11,
+          "startedAt": "2026-11-11T12:44:15Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:16Z",
+          "conclusion": "success",
+          "name": "The AI fill checks",
+          "number": 12,
+          "startedAt": "2026-11-11T12:44:15Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:17Z",
+          "conclusion": "success",
+          "name": "The default model sampling checks",
+          "number": 13,
+          "startedAt": "2026-11-11T12:44:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:44:46Z",
+          "conclusion": "success",
+          "name": "Install PostgreSQL 16 and video evidence tools",
+          "number": 14,
+          "startedAt": "2026-11-11T12:44:17Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:06Z",
+          "conclusion": "success",
+          "name": "Rehearse the app restore and replay",
+          "number": 15,
+          "startedAt": "2026-11-11T12:44:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:08Z",
+          "conclusion": "success",
+          "name": "Keep the restore counts",
+          "number": 16,
+          "startedAt": "2026-11-11T12:45:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:08Z",
+          "conclusion": "success",
+          "name": "The otoapp schema, as the platform makes it",
+          "number": 17,
+          "startedAt": "2026-11-11T12:45:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:12Z",
+          "conclusion": "success",
+          "name": "The app's migrations apply cleanly from empty (twice)",
+          "number": 18,
+          "startedAt": "2026-11-11T12:45:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:19Z",
+          "conclusion": "success",
+          "name": "The app's route checks",
+          "number": 19,
+          "startedAt": "2026-11-11T12:45:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:25Z",
+          "conclusion": "success",
+          "name": "The app's fix module checks",
+          "number": 20,
+          "startedAt": "2026-11-11T12:45:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:37Z",
+          "conclusion": "success",
+          "name": "The app's Fix report availability checks",
+          "number": 21,
+          "startedAt": "2026-11-11T12:45:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:45:44Z",
+          "conclusion": "success",
+          "name": "The app's night-job checks",
+          "number": 22,
+          "startedAt": "2026-11-11T12:45:37Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:19Z",
+          "conclusion": "success",
+          "name": "The app's suite sign-in checks",
+          "number": 23,
+          "startedAt": "2026-11-11T12:45:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:26Z",
+          "conclusion": "success",
+          "name": "The legacy password door checks",
+          "number": 24,
+          "startedAt": "2026-11-11T12:46:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:40Z",
+          "conclusion": "success",
+          "name": "The app's hand-off target checks",
+          "number": 25,
+          "startedAt": "2026-11-11T12:46:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:46Z",
+          "conclusion": "success",
+          "name": "The app's tenant ownership checks",
+          "number": 26,
+          "startedAt": "2026-11-11T12:46:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:46:54Z",
+          "conclusion": "success",
+          "name": "The app's Attention checks",
+          "number": 27,
+          "startedAt": "2026-11-11T12:46:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:00Z",
+          "conclusion": "success",
+          "name": "The app's attendance checks",
+          "number": 28,
+          "startedAt": "2026-11-11T12:46:54Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:01Z",
+          "conclusion": "success",
+          "name": "The app's attendance evidence parser checks",
+          "number": 29,
+          "startedAt": "2026-11-11T12:47:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:03Z",
+          "conclusion": "success",
+          "name": "The app's attendance reviewer transaction checks",
+          "number": 30,
+          "startedAt": "2026-11-11T12:47:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:35Z",
+          "conclusion": "success",
+          "name": "The app's Onboard Again and profile fold checks",
+          "number": 31,
+          "startedAt": "2026-11-11T12:47:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:41Z",
+          "conclusion": "success",
+          "name": "The app's profile fold checks",
+          "number": 32,
+          "startedAt": "2026-11-11T12:47:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:53Z",
+          "conclusion": "success",
+          "name": "The app's ended-employment access checks",
+          "number": 33,
+          "startedAt": "2026-11-11T12:47:41Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:47:59Z",
+          "conclusion": "success",
+          "name": "The app's ended-employment screen check",
+          "number": 34,
+          "startedAt": "2026-11-11T12:47:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:24Z",
+          "conclusion": "success",
+          "name": "The app's document checks",
+          "number": 35,
+          "startedAt": "2026-11-11T12:47:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:25Z",
+          "conclusion": "success",
+          "name": "The app's finance import checks",
+          "number": 36,
+          "startedAt": "2026-11-11T12:48:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:27Z",
+          "conclusion": "success",
+          "name": "The app's finance ownership checks",
+          "number": 37,
+          "startedAt": "2026-11-11T12:48:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:29Z",
+          "conclusion": "success",
+          "name": "The app's Xero connection ownership checks",
+          "number": 38,
+          "startedAt": "2026-11-11T12:48:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:46Z",
+          "conclusion": "success",
+          "name": "The app's administration and payroll checks",
+          "number": 39,
+          "startedAt": "2026-11-11T12:48:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:51Z",
+          "conclusion": "success",
+          "name": "The app's record deletion checks",
+          "number": 40,
+          "startedAt": "2026-11-11T12:48:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:48:56Z",
+          "conclusion": "success",
+          "name": "The app's event status and shift-row merge checks",
+          "number": 41,
+          "startedAt": "2026-11-11T12:48:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:00Z",
+          "conclusion": "success",
+          "name": "The app's schedule history view-as checks",
+          "number": 42,
+          "startedAt": "2026-11-11T12:48:56Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:06Z",
+          "conclusion": "success",
+          "name": "The app's schedule history undo checks",
+          "number": 43,
+          "startedAt": "2026-11-11T12:49:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:10Z",
+          "conclusion": "success",
+          "name": "The app's camp cancelled-day checks",
+          "number": 44,
+          "startedAt": "2026-11-11T12:49:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:14Z",
+          "conclusion": "success",
+          "name": "The app's camp creation day-exclusion checks",
+          "number": 45,
+          "startedAt": "2026-11-11T12:49:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:19Z",
+          "conclusion": "success",
+          "name": "The app's salary visibility checks",
+          "number": 46,
+          "startedAt": "2026-11-11T12:49:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:24Z",
+          "conclusion": "success",
+          "name": "The app's checklist media and history checks",
+          "number": 47,
+          "startedAt": "2026-11-11T12:49:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:29Z",
+          "conclusion": "success",
+          "name": "The app's leave type checks",
+          "number": 48,
+          "startedAt": "2026-11-11T12:49:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:34Z",
+          "conclusion": "success",
+          "name": "The app's task assignees in Today checks",
+          "number": 49,
+          "startedAt": "2026-11-11T12:49:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:39Z",
+          "conclusion": "success",
+          "name": "The app's checklist assignees in Today checks",
+          "number": 50,
+          "startedAt": "2026-11-11T12:49:34Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:43Z",
+          "conclusion": "success",
+          "name": "The app's overdue checklist in Today checks",
+          "number": 51,
+          "startedAt": "2026-11-11T12:49:39Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:49:51Z",
+          "conclusion": "success",
+          "name": "The app's checklist copy checks",
+          "number": 52,
+          "startedAt": "2026-11-11T12:49:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:08Z",
+          "conclusion": "success",
+          "name": "The app's checklist copy editor checks",
+          "number": 53,
+          "startedAt": "2026-11-11T12:49:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:14Z",
+          "conclusion": "success",
+          "name": "The app's check-in child card checks",
+          "number": 54,
+          "startedAt": "2026-11-11T12:50:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:19Z",
+          "conclusion": "success",
+          "name": "The app's leave balance reach checks",
+          "number": 55,
+          "startedAt": "2026-11-11T12:50:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:24Z",
+          "conclusion": "success",
+          "name": "The app's access escalation checks",
+          "number": 56,
+          "startedAt": "2026-11-11T12:50:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:29Z",
+          "conclusion": "success",
+          "name": "The app's support lookup checks",
+          "number": 57,
+          "startedAt": "2026-11-11T12:50:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:34Z",
+          "conclusion": "success",
+          "name": "The app's named rights checks",
+          "number": 58,
+          "startedAt": "2026-11-11T12:50:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:38Z",
+          "conclusion": "success",
+          "name": "The app's kiosk device checks",
+          "number": 59,
+          "startedAt": "2026-11-11T12:50:34Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:44Z",
+          "conclusion": "success",
+          "name": "The app's birthdays and sidebar checks",
+          "number": 60,
+          "startedAt": "2026-11-11T12:50:38Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:45Z",
+          "conclusion": "success",
+          "name": "The app's inbox birthday booking checks",
+          "number": 61,
+          "startedAt": "2026-11-11T12:50:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:46Z",
+          "conclusion": "success",
+          "name": "The app's inbox hand-over notification checks",
+          "number": 62,
+          "startedAt": "2026-11-11T12:50:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:47Z",
+          "conclusion": "success",
+          "name": "The app's inbox AI fill checks",
+          "number": 63,
+          "startedAt": "2026-11-11T12:50:46Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:49Z",
+          "conclusion": "success",
+          "name": "The app's fetch-from-chat checks",
+          "number": 64,
+          "startedAt": "2026-11-11T12:50:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:53Z",
+          "conclusion": "success",
+          "name": "The app's fetch-from-chat dialog check",
+          "number": 65,
+          "startedAt": "2026-11-11T12:50:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:50:57Z",
+          "conclusion": "success",
+          "name": "The app's AI fill catalogue checks",
+          "number": 66,
+          "startedAt": "2026-11-11T12:50:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:05Z",
+          "conclusion": "success",
+          "name": "The app's BEO one-pass prefill form check",
+          "number": 67,
+          "startedAt": "2026-11-11T12:50:57Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:09Z",
+          "conclusion": "success",
+          "name": "The app's event start time checks",
+          "number": 68,
+          "startedAt": "2026-11-11T12:51:05Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:13Z",
+          "conclusion": "success",
+          "name": "The app's event start time form check",
+          "number": 69,
+          "startedAt": "2026-11-11T12:51:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:24Z",
+          "conclusion": "success",
+          "name": "The app's birthday package checks",
+          "number": 70,
+          "startedAt": "2026-11-11T12:51:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:25Z",
+          "conclusion": "success",
+          "name": "The app's package total checks",
+          "number": 71,
+          "startedAt": "2026-11-11T12:51:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:32Z",
+          "conclusion": "success",
+          "name": "The app's party menu item checks",
+          "number": 72,
+          "startedAt": "2026-11-11T12:51:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:35Z",
+          "conclusion": "success",
+          "name": "The app's party menu item form check",
+          "number": 73,
+          "startedAt": "2026-11-11T12:51:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:39Z",
+          "conclusion": "success",
+          "name": "The app's kitchen adults checks",
+          "number": 74,
+          "startedAt": "2026-11-11T12:51:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:48Z",
+          "conclusion": "success",
+          "name": "The app's kitchen adults form check",
+          "number": 75,
+          "startedAt": "2026-11-11T12:51:39Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:51:52Z",
+          "conclusion": "success",
+          "name": "The app's kitchen adults day-of check",
+          "number": 76,
+          "startedAt": "2026-11-11T12:51:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:10Z",
+          "conclusion": "success",
+          "name": "The app's till billing checks",
+          "number": 77,
+          "startedAt": "2026-11-11T12:51:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:11Z",
+          "conclusion": "success",
+          "name": "The app's till billing screens check",
+          "number": 78,
+          "startedAt": "2026-11-11T12:52:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:17Z",
+          "conclusion": "success",
+          "name": "The app's billing deposit typing check",
+          "number": 79,
+          "startedAt": "2026-11-11T12:52:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:26Z",
+          "conclusion": "success",
+          "name": "The app's party deposit checks",
+          "number": 80,
+          "startedAt": "2026-11-11T12:52:17Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:29Z",
+          "conclusion": "success",
+          "name": "The app's party deposit panel check",
+          "number": 81,
+          "startedAt": "2026-11-11T12:52:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:35Z",
+          "conclusion": "success",
+          "name": "The app's payroll configuration checks",
+          "number": 82,
+          "startedAt": "2026-11-11T12:52:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:40Z",
+          "conclusion": "success",
+          "name": "The app's payroll profile editor check",
+          "number": 83,
+          "startedAt": "2026-11-11T12:52:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:41Z",
+          "conclusion": "success",
+          "name": "The app's payroll cutover check",
+          "number": 84,
+          "startedAt": "2026-11-11T12:52:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:52:52Z",
+          "conclusion": "success",
+          "name": "The payroll golden example (service and HTTP leg)",
+          "number": 85,
+          "startedAt": "2026-11-11T12:52:41Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:03Z",
+          "conclusion": "success",
+          "name": "The app's payroll feeds checks",
+          "number": 86,
+          "startedAt": "2026-11-11T12:52:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:11Z",
+          "conclusion": "success",
+          "name": "The app's payroll lifecycle checks",
+          "number": 87,
+          "startedAt": "2026-11-11T12:53:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:16Z",
+          "conclusion": "success",
+          "name": "The app's payroll statutory documents checks",
+          "number": 88,
+          "startedAt": "2026-11-11T12:53:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:23Z",
+          "conclusion": "success",
+          "name": "The app's payroll outputs checks",
+          "number": 89,
+          "startedAt": "2026-11-11T12:53:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:24Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 90,
+          "startedAt": "2026-11-11T12:53:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:53:28Z",
+          "conclusion": "success",
+          "name": "Install the focused feature review dependencies",
+          "number": 91,
+          "startedAt": "2026-11-11T12:53:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:19Z",
+          "conclusion": "success",
+          "name": "The app's feature runtime reviews",
+          "number": 92,
+          "startedAt": "2026-11-11T12:53:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:30Z",
+          "conclusion": "success",
+          "name": "The app's issue reporting review",
+          "number": 93,
+          "startedAt": "2026-11-11T12:54:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:47Z",
+          "conclusion": "success",
+          "name": "The app's scheduling park-group review",
+          "number": 94,
+          "startedAt": "2026-11-11T12:54:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:48Z",
+          "conclusion": "success",
+          "name": "The offboarding census",
+          "number": 95,
+          "startedAt": "2026-11-11T12:54:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:48Z",
+          "conclusion": "success",
+          "name": "The tenant ownership read-back",
+          "number": 96,
+          "startedAt": "2026-11-11T12:54:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:48Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 189,
+          "startedAt": "2026-11-11T12:54:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:48Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 190,
+          "startedAt": "2026-11-11T12:54:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:48Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 191,
+          "startedAt": "2026-11-11T12:54:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:49Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 192,
+          "startedAt": "2026-11-11T12:54:48Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:54:49Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 193,
+          "startedAt": "2026-11-11T12:54:49Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881863"
+    },
+    {
+      "completedAt": "2026-11-11T13:10:37Z",
+      "conclusion": "success",
+      "databaseId": 130528881993,
+      "name": "api-tests (1)",
+      "startedAt": "2026-11-11T12:41:22Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-11-11T12:41:23Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-11T12:41:22Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:41:34Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-11-11T12:41:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:04Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 3,
+          "startedAt": "2026-11-11T12:41:34Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:04Z",
+          "conclusion": "success",
+          "name": "What changed",
+          "number": 4,
+          "startedAt": "2026-11-11T12:42:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:06Z",
+          "conclusion": "success",
+          "name": "Run pnpm/action-setup@v4",
+          "number": 5,
+          "startedAt": "2026-11-11T12:42:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:10Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 6,
+          "startedAt": "2026-11-11T12:42:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:13Z",
+          "conclusion": "success",
+          "name": "Install",
+          "number": 7,
+          "startedAt": "2026-11-11T12:42:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T12:42:13Z",
+          "conclusion": "success",
+          "name": "Build the api's dependencies",
+          "number": 8,
+          "startedAt": "2026-11-11T12:42:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:35Z",
+          "conclusion": "success",
+          "name": "Api tests (shard 1 of 3)",
+          "number": 9,
+          "startedAt": "2026-11-11T12:42:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:35Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 15,
+          "startedAt": "2026-11-11T13:10:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:35Z",
+          "conclusion": "success",
+          "name": "Post Run pnpm/action-setup@v4",
+          "number": 16,
+          "startedAt": "2026-11-11T13:10:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:35Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 17,
+          "startedAt": "2026-11-11T13:10:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:36Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 18,
+          "startedAt": "2026-11-11T13:10:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-11T13:10:36Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-11-11T13:10:36Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903/job/130528881993"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/43022494903",
+  "logs": [
+    {
+      "job": "api-tests (2)",
+      "file": "local/main-130528881513.log",
+      "sha256": "13c6e6025df02088af1923a7fc060df0c03962b92076501b267cd7a644e5ea49",
+      "summaries": [
+        " Tasks:    0 successful, 0 total",
+        " Test Files  161 passed | 4 skipped (165)",
+        "      Tests  2344 passed | 174 skipped | 3 todo (2521)",
+        "   Duration  1491.24s (transform 8.81s, setup 0ms, collect 291.44s, tests 1160.44s, environment 37ms, prepare 12.88s)"
+      ]
+    },
+    {
+      "job": "pos-tests",
+      "file": "local/main-130528881764.log",
+      "sha256": "6905ce98e32edf57e6db339108043789439c3a6f1b1a0947a3476f318e63b87a",
+      "summaries": [
+        " Tasks:    0 successful, 0 total",
+        " Test Files  170 passed (170)",
+        "      Tests  2336 passed (2336)",
+        "   Duration  93.91s (transform 9.64s, setup 0ms, collect 121.13s, tests 99.24s, environment 51ms, prepare 21.89s)"
+      ]
+    },
+    {
+      "job": "api-tests (3)",
+      "file": "local/main-130528881845.log",
+      "sha256": "a6198f79edad24f02bf2955673f214745c3a92af82265186e1881ec43ab8867a",
+      "summaries": [
+        " Tasks:    0 successful, 0 total",
+        " Test Files  163 passed | 2 skipped (165)",
+        "      Tests  2221 passed | 121 skipped | 1 todo (2343)",
+        "   Duration  1706.32s (transform 8.07s, setup 0ms, collect 238.81s, tests 1435.47s, environment 26ms, prepare 9.64s)"
+      ]
+    },
+    {
+      "job": "ci",
+      "file": "local/main-130528881858.log",
+      "sha256": "ec027ced56b141ff1d5960f5ae0faca739980e182600abb662e2f77e38c3f518",
+      "summaries": [
+        " Tasks:    16 successful, 16 total",
+        "# tests 20",
+        " Test Files  63 passed (63)",
+        "      Tests  611 passed | 3 todo (614)",
+        "   Duration  15.63s (transform 4.06s, setup 0ms, collect 25.05s, tests 4.02s, environment 12ms, prepare 6.06s)",
+        " Tasks:    1 successful, 1 total",
+        " Test Files  13 passed (13)",
+        "      Tests  294 passed (294)",
+        "   Duration  21.45s (transform 357ms, setup 0ms, collect 2.64s, tests 16.55s, environment 2ms, prepare 773ms)",
+        " Tasks:    1 successful, 1 total",
+        " Test Files  13 passed (13)",
+        "      Tests  294 passed (294)",
+        "   Duration  21.45s (transform 357ms, setup 0ms, collect 2.64s, tests 16.55s, environment 2ms, prepare 773ms)",
+        "# tests 38",
+        " Test Files  6 passed (6)",
+        "      Tests  80 passed (80)",
+        "   Duration  5.86s (transform 2.29s, setup 0ms, collect 4.11s, tests 696ms, environment 1ms, prepare 4.23s)",
+        " Test Files  4 passed (4)",
+        "      Tests  38 passed (38)",
+        "   Duration  6.63s (transform 1.13s, setup 0ms, collect 3.81s, tests 1.37s, environment 1ms, prepare 2.45s)",
+        " Test Files  63 passed (63)",
+        "      Tests  611 passed | 3 todo (614)",
+        "   Duration  15.63s (transform 4.06s, setup 0ms, collect 25.05s, tests 4.02s, environment 12ms, prepare 6.06s)",
+        " Test Files  6 passed (6)",
+        "      Tests  86 passed (86)",
+        "   Duration  12.36s (transform 5.86s, setup 0ms, collect 11.72s, tests 2.58s, environment 1ms, prepare 4.01s)",
+        " Test Files  8 passed (8)",
+        "      Tests  93 passed (93)",
+        "   Duration  15.57s (transform 3.13s, setup 0ms, collect 14.32s, tests 5.88s, environment 9.44s, prepare 4.73s)",
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  34.29s (transform 4.49s, setup 0ms, collect 31.93s, tests 319ms, environment 0ms, prepare 633ms)",
+        " Test Files  22 passed (22)",
+        "      Tests  352 passed (352)",
+        "   Duration  42.26s (transform 12.40s, setup 0ms, collect 51.31s, tests 16.00s, environment 10.79s, prepare 12.23s)",
+        " Test Files  24 passed (24)",
+        "      Tests  897 passed (897)",
+        "   Duration  47.55s (transform 9.63s, setup 0ms, collect 80.32s, tests 19.60s, environment 19ms, prepare 12.37s)",
+        " Test Files  23 passed (23)",
+        "      Tests  189 passed (189)",
+        "   Duration  47.12s (transform 13.35s, setup 0ms, collect 93.33s, tests 15.65s, environment 22ms, prepare 9.40s)",
+        " Test Files  65 passed (65)",
+        "      Tests  1102 passed (1102)",
+        "   Duration  59.40s (transform 7.60s, setup 0ms, collect 72.32s, tests 21.39s, environment 77ms, prepare 26.95s)",
+        "# tests 904",
+        " Test Files  68 passed (68)",
+        "      Tests  458 passed (458)",
+        "   Duration  455.67s (transform 8.16s, setup 0ms, collect 46.69s, tests 393.56s, environment 41ms, prepare 5.29s)",
+        " Tasks:    14 successful, 14 total",
+        " Tasks:    5 successful, 5 total",
+        "  7 passed (1.9m)",
+        "  4 passed (26.0s)",
+        "  3 passed (16.3s)",
+        "  1 passed (13.7s)",
+        "  1 passed (13.5s)",
+        "  2 passed (41.5s)",
+        "  1 passed (23.6s)",
+        "  2 passed (17.4s)",
+        "  1 passed (31.2s)",
+        "  357 passed (5.4m)"
+      ]
+    },
+    {
+      "job": "oto-app",
+      "file": "local/main-130528881863.log",
+      "sha256": "36a468529e28c1a22afc56ffc0c200fe4535bb28c4a1395dc5973d88ded33d62",
+      "summaries": [
+        "typecheck: 418/418 errors in 54 files",
+        " Test Files  5 passed (5)",
+        "      Tests  89 passed (89)",
+        "   Duration  50.39s (transform 161ms, setup 0ms, collect 1.75s, tests 47.84s, environment 1ms, prepare 277ms)",
+        " Test Files  1 passed (1)",
+        "      Tests  36 passed (36)",
+        "   Duration  10.20s (transform 63ms, setup 0ms, collect 382ms, tests 9.64s, environment 0ms, prepare 53ms)",
+        " Test Files  1 passed (1)",
+        "      Tests  32 passed (32)",
+        "   Duration  16.91s (transform 61ms, setup 0ms, collect 385ms, tests 16.35s, environment 0ms, prepare 51ms)"
+      ]
+    },
+    {
+      "job": "api-tests (1)",
+      "file": "local/main-130528881993.log",
+      "sha256": "a6f2b6d429cd98de9673580b53fbee10f432a0fd6a90af8aad823ea41b1e6309",
+      "summaries": [
+        " Tasks:    0 successful, 0 total",
+        " Test Files  163 passed | 2 skipped (165)",
+        "      Tests  2345 passed | 106 skipped (2451)",
+        "   Duration  1700.23s (transform 9.36s, setup 0ms, collect 314.05s, tests 1344.69s, environment 40ms, prepare 13.40s)"
+      ]
+    }
+  ],
+  "workspaceTypecheckReadWhole": true,
+  "appTypecheckReceipt": "../immutable-app-check.json"
+}

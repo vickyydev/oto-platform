@@ -1,0 +1,12 @@
+{
+  "run": 43022494903,
+  "sha": "22263520da3218805bf520d300966e9a739c3b41",
+  "jobId": 130528881863,
+  "jobConclusion": "success",
+  "summary": "typecheck: 418/418 errors in 54 files",
+  "lines": 667,
+  "readWhole": true,
+  "log": "immutable-app-check/local/candidate-app-typecheck.log",
+  "sha256": "5405b5c2b4ee3b90a16c4466f93aab4fca4b1f585c385cf0767513a670186214",
+  "readMethod": "All 656 compiler-section lines compared to the complete local output already read: 654 identical, two path-rendering lines changed and read whole; all CI wrapper lines read. 667 lines total."
+}
