@@ -45,6 +45,7 @@ import { birthdaySchema } from "../shared/birthday";
 import { findBirthdayEmployee, getPersonBirthdays } from "./person-birthdays";
 import { computeSidebarBadges } from "./sidebar-badges";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
+import { refuseStartTime } from "@shared/eventStartTime";
 import { pickTodayChecklistRun } from "@shared/checklist-today-run";
 
 // Format date as dd-mm-yyyy
@@ -18260,6 +18261,9 @@ OTO Company Limited`,
       if (req.body.eventType === "studio_event" && req.body.color !== undefined && !isOtherEventColor(req.body.color)) {
         return res.status(400).json({ message: "Other Event color must be selected from the available calendar colors" });
       }
+      // SCRUM-836: an event is made with a start time, HH:MM (the column is NOT NULL: none answered 500).
+      const startRefused = refuseStartTime(req.body.startTime, undefined, req.body.eventType);
+      if (startRefused) return res.status(400).json({ message: startRefused });
       const eventData = {
         ...req.body,
         ...(req.body.eventType === "workshop" ? { color: null } : {}),
@@ -18295,6 +18299,10 @@ OTO Company Limited`,
       if (!branch) return res.status(404).json({ message: "Branch not found" });
       
       const effectiveEventType = req.body.eventType ?? existingEvent.eventType;
+      // SCRUM-836: a start time named here is a clock time. Null answered 500 and "" emptied
+      // the column; both are refused in words now, and the time the event holds stays.
+      const startRefused = refuseStartTime(req.body.startTime, existingEvent.startTime ?? "", effectiveEventType);
+      if (startRefused) return res.status(400).json({ message: startRefused });
       const isSavedLegacyColor = isHexCalendarColor(req.body.color)
         && typeof existingEvent.color === "string"
         && existingEvent.color.toLowerCase() === req.body.color.toLowerCase();

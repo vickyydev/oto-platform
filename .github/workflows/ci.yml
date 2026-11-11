@@ -935,6 +935,23 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-prefill-ui.check.ts
+      # SCRUM-836: a party has a start time — the rule on its own
+      # (shared/eventStartTime.ts); POST and PATCH /api/admin/events and the
+      # BEO form's PUT refusing no start, null, "" and a malformed start with a
+      # 400 in words (never a 500, never the column emptied, nothing else of
+      # the body written); a clock time written; and a row from before the
+      # rule that holds an empty start still saving its other fields. Then the
+      # BEO form under jsdom: emptying Start Time says so under the field, Save
+      # sends nothing, the picker confirms no empty time, a time set again
+      # saves, and a BEO with no start yet still saves.
+      - name: The app's event start time checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/event-start-time.check.ts
+      - name: The app's event start time form check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/event-start-time-ui.check.ts
       # SCRUM-803: the birthday packages as the park prints them (migration
       # 0041) — every new package, line item, entertainment and set-menu field
       # round-trips through the settings routes, a value out of range or

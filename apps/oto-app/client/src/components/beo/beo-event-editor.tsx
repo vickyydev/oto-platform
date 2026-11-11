@@ -96,6 +96,7 @@ import { BeoBillingSection, PartyDetailsTillTiles, tillBillingKey, useTillBillin
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
+import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
@@ -1082,8 +1083,21 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     return hours * 60 + minutes;
   };
 
+  /**
+   * SCRUM-836: a party has a start time. The saved BEO holds one and the form's is emptied:
+   * the line under the field says so and Save writes nothing (it used to drop the emptied
+   * time from the save and say "saved", the old time still there). A BEO from before the
+   * rule that holds no start yet still saves its other fields.
+   */
+  const startTimeMissing = !eventData.startTime && !!beoData?.startTime;
+  const startTimeLine = needsStartTimeLine(beoData?.eventType);
+
   const handleSave = async () => {
     if (readOnly) return;
+    if (startTimeMissing) {
+      toast({ title: "Not saved", description: `${startTimeLine}. Set the time, then save.`, variant: "destructive" });
+      return;
+    }
     if (eventData.startTime && eventData.endTime) {
       const startMinutes = timeToMinutes(eventData.startTime);
       const endMinutes = timeToMinutes(eventData.endTime);
@@ -2152,6 +2166,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         </Button>
                       )}
                     </div>
+                    {startTimeMissing && (
+                      <p className="text-xs text-destructive" data-testid="text-start-time-needed">
+                        {startTimeLine}. It was {beoData?.startTime}: nothing is saved until a time is set.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1">End Time{aiMark("endTime")}</Label>
@@ -2216,7 +2235,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       onChange={(e) => setTempStartTime(e.target.value)}
                       data-testid="input-start-time"
                     />
-                    <Button type="button" size="sm" className="h-7 text-xs" onClick={() => {
+                    <Button type="button" size="sm" className="h-7 text-xs" disabled={!isStartTime(tempStartTime)} onClick={() => {
                       const updates: any = { startTime: tempStartTime };
                       if (!eventData.endTime) {
                         const startMins = timeToMinutes(tempStartTime);

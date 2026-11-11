@@ -516,7 +516,9 @@ describe('A. fences and seams', () => {
       // adults" switch as its readers resolve it (withAdultsDiffer), and the parent link's submit
       // keeps the adults' own list's set menu in step with the kids' (writeResolvedSetMenu); where
       // the BEO's documents live is unchanged.
-      'beo-routes.ts': '4ab69397cb6a47acb55513b82f9ae8aa8961a85ac0b37c457d3d7084097c551b',
+      // SCRUM-836: the BEO's Save refuses a start time that is no clock time (null, "" or malformed) in
+      // words instead of writing it (shared/eventStartTime.ts); where the BEO's documents live is unchanged.
+      'beo-routes.ts': '05279c73264b0885565629bdf158bc40216476dd22596c3807a41385c27762d0',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

@@ -260,8 +260,8 @@ export default function CampDetailPage() {
       setShowEditSheet(false);
       toast({ title: "Camp updated" });
     },
-    onError: () => {
-      toast({ title: "Failed to update camp", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Failed to update camp", description: error.message, variant: "destructive" });
     },
   });
 

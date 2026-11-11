@@ -3144,7 +3144,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                   // Open the view dialog so user can add bookings / see the updated details
                   openStudioEventView(savedEvent);
                 } catch (error) {
-                  toast({ title: editingOneOffEvent ? "Failed to update event" : "Failed to create event", variant: "destructive" });
+                  // SCRUM-836: the server's own words for a refused save ("An event needs a start time").
+                  toast({ title: editingOneOffEvent ? "Failed to update event" : "Failed to create event", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
                 } finally {
                   setSavingOneOffEvent(false);
                 }
@@ -3582,8 +3583,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
                   });
                   setShowCampSheet(false);
                   setEditingCampEvent(null);
-                } catch {
-                  toast({ title: editingCampEvent ? "Failed to update camp event" : "Failed to create camp event", variant: "destructive" });
+                } catch (error) {
+                  toast({ title: editingCampEvent ? "Failed to update camp event" : "Failed to create camp event", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
                 }
               }}
             >

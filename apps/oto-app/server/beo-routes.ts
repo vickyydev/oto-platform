@@ -45,6 +45,7 @@ import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines } from "./lib/setMenuResolve";
 import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
+import { refuseStartTime } from "@shared/eventStartTime";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -1560,6 +1561,13 @@ export function registerBeoRoutes(app: Express) {
         return res.status(400).json({ error: "Event tenant and branch cannot be changed from BEO" });
       }
       
+      // SCRUM-836: a start time named by the form is a clock time. An emptied one is refused in
+      // words (never written over the party's time, never a 500 for a null).
+      if (eventUpdates && "startTime" in eventUpdates) {
+        const startRefused = refuseStartTime(eventUpdates.startTime, existingEvent.startTime ?? "", existingEvent.eventType);
+        if (startRefused) return res.status(400).json({ error: startRefused });
+      }
+
       // Validate times: endTime must be after startTime
       if (eventUpdates?.startTime && eventUpdates?.endTime) {
         const timeToMinutes = (time: string): number => {
