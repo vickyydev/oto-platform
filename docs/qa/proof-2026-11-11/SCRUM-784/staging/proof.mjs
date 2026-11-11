@@ -42,7 +42,7 @@ async function picture(name, dialog = false) {
   const target = dialog ? app.getByRole('dialog') : app;
   await target.screenshot({ path: resolve(out, name), animations: 'disabled', mask: [
     app.getByTestId('text-employee-suite-password'), app.getByTestId('text-employee-suite-phone'),
-    app.locator('input[type="password"], input[type="tel"]'), app.locator('[data-testid="button-user-menu"], [data-testid="avatar-user"]'),
+    app.locator('input[type="password"], input[type="tel"]'), app.locator('[data-testid^="button-user-menu"], [data-testid="avatar-user"]'),
   ] });
 }
 try {
@@ -108,7 +108,17 @@ try {
     message: typeof genBody.message === 'string' ? genBody.message.replace(/https?:\/\/\S+/g, '[URL omitted]').slice(0, 220) : undefined };
   if (genBody.sop?.id) receipt.created.sopId = genBody.sop.id; save();
   await picture('s785-sop-result.png');
-  if (!mode.startsWith('before')) { assert.equal(genResponse.status(), 201); assert.ok(genBody.stepsCount > 0); }
+  if (!mode.startsWith('before')) {
+    assert.equal(genResponse.status(), 201); assert.ok(genBody.stepsCount > 0);
+    assert.equal(genBody.sop.status, 'draft');
+    await app.goto(origins.app + '/studio/sops');
+    await app.getByTestId('input-search-sops').fill(genBody.sop.title);
+    await app.getByTestId(`card-sop-${genBody.sop.id}`).click();
+    await app.getByTestId('input-step-0-title').waitFor();
+    receipt.sop.visibleSteps = await app.locator('[data-testid^="step-card-"]').count(); save();
+    assert.equal(receipt.sop.visibleSteps, genBody.stepsCount);
+    await picture('s785-sop-steps.png', true);
+  }
   receipt.behaviorRecorded = true;
 } catch (error) {
   failed = true; receipt.failure = { phase: receipt.phase, name: error.name, message: String(error.message).split('\n')[0].replace(/https?:\/\/\S+/g, '[URL omitted]').slice(0, 180), path: new URL(app.url()).pathname,
@@ -128,6 +138,7 @@ try {
   // SOP cleanup uses the discovered route; never enumerate or delete other files.
   if (receipt.created.sopId) await cleanup('delete own generated SOP', async () => {
     const r = await call(origins.app, `/api/sops/${receipt.created.sopId}`, 'DELETE'); assert.ok([200, 204].includes(r.status()));
+    assert.equal((await call(origins.app, `/api/sops/${receipt.created.sopId}`)).status(), 404);
   });
   if (receipt.created.fileId) await cleanup('delete own uploaded PDF', async () => {
     assert.ok([200, 204].includes((await call(origins.app, `/api/knowledge-files/${receipt.created.fileId}`, 'DELETE')).status()));

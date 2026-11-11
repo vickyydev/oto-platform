@@ -1,0 +1,72 @@
+{
+  "at": "2026-11-11T12:38:16.213Z",
+  "source": "182c29a0c",
+  "logs": {
+    "s784-after-check": {
+      "path": "C:/oto-lanes/s784-after-check.log",
+      "exitCode": 0,
+      "bytes": 11586,
+      "sha256": "657ddc3ab0a9b94841c6cb5d387132a184837f9a940ffa4c3a512313d9319406"
+    },
+    "s785-after-review": {
+      "path": "C:/oto-lanes/s785-after-review.log",
+      "exitCode": 0,
+      "bytes": 1206,
+      "sha256": "58f8c2382be76d7fe0298cd714c010b03ab2712e664b87984d6592e1e18ab0d9"
+    },
+    "s784-ai-fill": {
+      "path": "C:/oto-lanes/s784-ai-fill.log",
+      "exitCode": 0,
+      "bytes": 1626,
+      "sha256": "093bf0d76d6070c7d07b4766e76615bac7288f709658d03faabb3cfa7643f617"
+    },
+    "s784-app-typecheck": {
+      "path": "C:/oto-lanes/s784-app-typecheck.log",
+      "exitCode": 0,
+      "bytes": 269996,
+      "sha256": "116cdcbd02b86508f43a0be873e4d746b0b0953897dc5811833edb2a2a22405e"
+    },
+    "s784-app-build": {
+      "path": "C:/oto-lanes/s784-app-build.log",
+      "exitCode": 0,
+      "bytes": 65586,
+      "sha256": "77e85668e2581a50a095f5402c7be0bf383ea0a85865f7ec9e5115365f6c871e"
+    },
+    "s784-api-text-pins": {
+      "path": "C:/oto-lanes/s784-api-text-pins.log",
+      "exitCode": 0,
+      "bytes": 76830,
+      "sha256": "cd4b9df16650c73323b982f2b358ff75fe4118e3a915afb58c3e4dd5d65b125b"
+    },
+    "s784-api-typecheck": {
+      "path": "C:/oto-lanes/s784-api-typecheck.log",
+      "exitCode": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "s784-contracts": {
+      "path": "C:/oto-lanes/s784-contracts.log",
+      "exitCode": 0,
+      "bytes": 1986,
+      "sha256": "c11eda298dff00dc7b4d29f1f0cf47af958ae07abdb8ef486663b15c236584d1"
+    }
+  },
+  "apiTypecheck": {
+    "readWhole": true,
+    "diagnostics": 0,
+    "bytes": 0
+  },
+  "appTypecheck": {
+    "readWhole": true,
+    "lines": 661,
+    "ratchet": "418/418",
+    "files": 54
+  },
+  "modelReview": 9,
+  "requiredTextPins": 73,
+  "legacyDoors": "all checks passed; own database removed",
+  "aiFill": "passed",
+  "appBuild": "passed with existing duplicate task field and bundle warnings",
+  "lint": "No platform source files changed; app is excluded by existing root ESLint policy. App ratchet and runtime checks apply.",
+  "fullCi": "pending landed source"
+}
