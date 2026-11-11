@@ -191,6 +191,11 @@ jobs:
           # SCRUM-766: a wristband scanned with no box selected opens on F&B,
           # the shop, History and the till, and is acted on once.
           pnpm --filter @oto/pos e2e e2e/band-anywhere-scan.spec.ts
+          # SCRUM-782: Pay records the sale and the tender closes it, at the
+          # counter and on the handheld; a voucher left on an unpaid sale, two
+          # screens at one till and a gift voucher, on codes each test issues.
+          pnpm --filter @oto/pos e2e e2e/sale-ledger.spec.ts
+          pnpm --filter @oto/pos e2e e2e/voucher.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file
