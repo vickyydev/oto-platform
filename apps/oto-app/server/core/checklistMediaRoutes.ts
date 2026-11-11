@@ -13,6 +13,7 @@ import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { randomUUID } from "crypto";
 import { createS3Client, s3Bucket } from "../storage/s3Client";
 import { putTempUpload, removeTempUpload, tempFileStorage, uploadMimeType } from "./checklistMediaUpload";
+import { wholeMeasure } from "@shared/mediaMeasure";
 
 const router = Router();
 
@@ -141,6 +142,19 @@ export async function deleteUnusedChecklistMedia(s3Keys: readonly string[]): Pro
       console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
     }
   }
+}
+
+/**
+ * SCRUM-855: the file is in the bucket and its row was refused. No screen can
+ * remove a file no row names, so it is removed here, before the refusal is
+ * answered: the same way a deleted checklist's files go, which keeps a file
+ * another row still names and never throws. The refusal is the caller's.
+ */
+async function removeFileWithoutRow(route: string, s3Key: string, failure: unknown): Promise<void> {
+  console.error(`[ChecklistMedia] POST ${route}: the attachment was not saved, removing its stored file:`, {
+    pgCode: (failure as { code?: unknown })?.code,
+  });
+  await deleteUnusedChecklistMedia([s3Key]);
 }
 
 async function verifyTemplateAccess(req: Request, templateId: string, userTenantId: string): Promise<boolean> {
@@ -296,9 +310,11 @@ const confirmSchema = z.object({
   checklistTemplateItemId: z.string().uuid().optional(),
   pendingChecklistId: z.string().uuid().optional(), // For uploads during checklist creation
   pendingItemIndex: z.number().int().min(0).optional(), // Item index for pending uploads
-  width: z.number().int().positive().optional(),
-  height: z.number().int().positive().optional(),
-  durationSeconds: z.number().int().positive().optional(),
+  // SCRUM-855: whatever arrives. A measure that is not a whole number above
+  // nothing is stored as not known; it never refuses the attachment.
+  width: z.unknown(),
+  height: z.unknown(),
+  durationSeconds: z.unknown(),
   sortOrder: z.number().int().default(0),
 });
 
@@ -366,6 +382,8 @@ router.post("/confirm", requireAuth, requireManager, async (req: Request, res: R
       }
     }
 
+    // Every guard above has passed: the key is this target's own. If the row
+    // is refused now, the file the browser put there has nothing naming it.
     const [attachment] = await db
       .insert(checklistAttachments)
       .values({
@@ -379,13 +397,17 @@ router.post("/confirm", requireAuth, requireManager, async (req: Request, res: R
         mimeType: body.mimeType,
         fileSize: body.fileSize,
         originalFilename: body.originalFilename,
-        width: body.width,
-        height: body.height,
-        durationSeconds: body.durationSeconds,
+        width: wholeMeasure(body.width),
+        height: wholeMeasure(body.height),
+        durationSeconds: wholeMeasure(body.durationSeconds),
         sortOrder: body.sortOrder,
         createdByUserId: userId,
       })
-      .returning();
+      .returning()
+      .catch(async (failure: unknown) => {
+        await removeFileWithoutRow("/confirm", body.s3Key, failure);
+        throw failure;
+      });
 
     res.json({ attachment });
   } catch (error: any) {
@@ -879,13 +901,18 @@ router.post("/upload", requireAuth, requireManager, receiveUpload, fixMulterFile
         mimeType,
         fileSize: size,
         originalFilename: file.originalname,
-        width: width ? parseInt(width) : null,
-        height: height ? parseInt(height) : null,
-        durationSeconds: durationSeconds ? parseInt(durationSeconds) : null,
+        // SCRUM-855: a recording made in the page arrives as "Infinity".
+        width: wholeMeasure(width),
+        height: wholeMeasure(height),
+        durationSeconds: wholeMeasure(durationSeconds),
         sortOrder: 0,
         createdByUserId: userId,
       })
-      .returning();
+      .returning()
+      .catch(async (failure: unknown) => {
+        await removeFileWithoutRow("/upload", s3Key, failure);
+        throw failure;
+      });
 
     res.json(attachment);
   } catch (error: any) {

@@ -1,3 +1,5 @@
+import { wholeMeasure } from "@shared/mediaMeasure";
+
 type UploadStatus = "pending" | "uploading" | "confirming" | "completed" | "failed";
 
 export interface UploadItem {
@@ -239,9 +241,11 @@ class UploadQueue {
             checklistTemplateItemId: item.isPending ? undefined : item.checklistTemplateItemId,
             pendingChecklistId: item.pendingChecklistId,
             pendingItemIndex: item.pendingItemIndex,
-            width: item.width && item.width > 0 ? item.width : undefined,
-            height: item.height && item.height > 0 ? item.height : undefined,
-            durationSeconds: item.durationSeconds && item.durationSeconds > 0 ? item.durationSeconds : undefined,
+            // SCRUM-855: only what the browser could measure. A recording
+            // made in the page has no length, and the browser says Infinity.
+            width: wholeMeasure(item.width) ?? undefined,
+            height: wholeMeasure(item.height) ?? undefined,
+            durationSeconds: wholeMeasure(item.durationSeconds) ?? undefined,
           }),
         });
 
@@ -287,9 +291,9 @@ class UploadQueue {
       checklistTemplateItemId: item.isPending ? undefined : item.checklistTemplateItemId,
       pendingChecklistId: item.pendingChecklistId,
       pendingItemIndex: item.pendingItemIndex,
-      width: item.width && item.width > 0 ? item.width : undefined,
-      height: item.height && item.height > 0 ? item.height : undefined,
-      durationSeconds: item.durationSeconds && item.durationSeconds > 0 ? item.durationSeconds : undefined,
+      width: wholeMeasure(item.width) ?? undefined,
+      height: wholeMeasure(item.height) ?? undefined,
+      durationSeconds: wholeMeasure(item.durationSeconds) ?? undefined,
     };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) form.append(key, String(value));

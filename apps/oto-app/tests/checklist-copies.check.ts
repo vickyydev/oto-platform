@@ -78,6 +78,17 @@
 //      once keep their own bytes. The harness is given a temporary folder of
 //      its own, so what it leaves there can be counted.
 //
+// SCRUM-855, a width, height or length the browser could not measure:
+//
+//  16. On the multipart route and on the confirmation after a direct upload,
+//      a measure that is not a whole number above nothing ("Infinity" from a
+//      recording made in the page, text, a negative, a number past the
+//      column) is stored as not known and the attachment is saved; a fraction
+//      is stored rounded. It used to refuse the row with the file already in
+//      the bucket. When the row cannot be saved for any other reason, the
+//      stored file is removed before the refusal is answered, unless another
+//      row names it.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-copies.check.ts
@@ -211,14 +222,18 @@ await q("insert into locations (id, tenant_id, name) values ($1, $2, $3)", [loca
 const BUCKET = `zz-cc-${run}`;
 const bucketDeletes: string[] = [];
 const bucketPuts: { path: string; bytes: number; crc: string; headers: Record<string, string | string[] | undefined> }[] = [];
+// SCRUM-855: what the stand-in holds, so a file removed again can be seen gone.
+const bucketHolds = new Set<string>();
 const crcBase64 = (value: number) => { const four = Buffer.alloc(4); four.writeUInt32BE(value); return four.toString("base64"); };
 const bucketServer = createServer((req, res) => {
   if (req.method === "DELETE") bucketDeletes.push(decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname));
+  if (req.method === "DELETE") bucketHolds.delete(decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname));
   let bytes = 0;
   let sum = 0;
   req.on("data", chunk => { bytes += chunk.length; sum = crc32(chunk, sum); });
   req.on("end", () => {
     if (req.method === "PUT") bucketPuts.push({ path: decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname), bytes, crc: crcBase64(sum), headers: req.headers });
+    if (req.method === "PUT") bucketHolds.add(decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname));
     res.writeHead(204);
     res.end();
   });
@@ -1404,9 +1419,9 @@ try {
   // existing guarded association. Refusals must reach neither bucket nor DB.
   const uploadTemplate = await fullChecklist("Upload fallback");
   const fileBytes = Buffer.from("ZZ TEST isolated upload");
-  async function multipart(who: Who | null, fields: Record<string, string>, mime = "image/jpeg", bytes: Uint8Array = fileBytes) {
+  async function multipart(who: Who | null, fields: Record<string, string>, mime = "image/jpeg", bytes: Uint8Array = fileBytes, name = "ZZ TEST upload.jpg") {
     const form = new FormData();
-    form.append("file", new Blob([bytes], { type: mime }), "ZZ TEST upload.jpg");
+    form.append("file", new Blob([bytes], { type: mime }), name);
     for (const [key, value] of Object.entries(fields)) form.append(key, value);
     const res = await fetch(`${ORIGIN}/api/checklist-media/upload`, {
       method: "POST", headers: who ? { cookie: cookies.get(who)! } : {}, body: form,
@@ -1596,6 +1611,119 @@ try {
     await nothingWaiting("a refused upload");
     assert.equal(bucketPuts.length, before + 1); assert.equal(await attachmentRows(), rows + 1);
   });
+
+  // SCRUM-855. A measure the browser could not take never refuses the row.
+  const measuresOf = async (id: string) => (await q("select width, height, duration_seconds from checklist_attachments where id = $1", [id]))
+    .map(row => [row.width, row.height, row.duration_seconds])[0];
+  const inBucketPath = (s3Key: string) => `/${BUCKET}/${s3Key}`;
+  /** A direct upload as the browser makes one: a signed address, the file put there, then the confirmation. */
+  async function direct(extra: Record<string, unknown>, originalFilename = "ZZ TEST clip.webm") {
+    const presigned = await api("managerHkt", "POST", "/api/checklist-media/presign", {
+      fileName: "ZZ TEST clip.webm", mimeType: "video/webm", size: fileBytes.length, ...headerTarget,
+    });
+    assert.equal(presigned.status, 200, JSON.stringify(presigned.body));
+    assert.equal((await fetch(presigned.body.uploadUrl, { method: "PUT", headers: { "content-type": "video/webm" }, body: fileBytes })).status, 204);
+    const s3Key: string = presigned.body.s3Key;
+    assert.ok(bucketHolds.has(inBucketPath(s3Key)), "the stand-in did not take the direct upload");
+    const confirmed = await api("managerHkt", "POST", "/api/checklist-media/confirm", {
+      type: "video", s3Key, mimeType: "video/webm", fileSize: fileBytes.length, originalFilename,
+      checklistTemplateId: uploadTemplate.id, ...extra,
+    });
+    return { s3Key, ...confirmed };
+  }
+  const notMeasures: [unknown, number | null][] = [
+    ["Infinity", null], ["NaN", null], ["abc", null], ["", null], ["-3", null], ["99999999999", null], ["1e3", null],
+    ["6.4", 6], ["6.5", 7], ["12", 12],
+  ];
+  await check("SCRUM-855: a length the browser could not read is stored as not known on the multipart route, and the file is saved", async () => {
+    for (const [sent, kept] of notMeasures) {
+      const before = bucketPuts.length;
+      const result = await multipart("managerHkt", { ...headerTarget, durationSeconds: String(sent), width: "1280", height: "720" }, "video/webm");
+      assert.equal(result.status, 200, `durationSeconds ${JSON.stringify(sent)}: ${JSON.stringify(result.body)}`);
+      assert.equal(result.body.durationSeconds, kept, `durationSeconds ${JSON.stringify(sent)}`);
+      assert.deepEqual(await measuresOf(result.body.id), [1280, 720, kept]);
+      assert.equal(bucketPuts.length, before + 1); assert.ok(bucketHolds.has(inBucketPath(result.body.s3Key)));
+    }
+    const sizes = await multipart("managerHkt", { ...headerTarget, width: "Infinity", height: "1280.4" }, "video/webm");
+    assert.equal(sizes.status, 200); assert.deepEqual(await measuresOf(sizes.body.id), [null, 1280, null]);
+    const none = await multipart("managerHkt", headerTarget, "video/webm");
+    assert.equal(none.status, 200); assert.deepEqual(await measuresOf(none.body.id), [null, null, null]);
+    await nothingWaiting("an upload with a length that is not one");
+  });
+  await check("SCRUM-855: the confirmation after a direct upload stores the same, and no longer refuses", async () => {
+    // JSON cannot carry Infinity: the browser's Infinity arrives here as null.
+    for (const [sent, kept] of [[null, null], [6.4, 6], [6, 6], [-1, null], [1e12, null], [0, null], [true, null], ...notMeasures] as [unknown, number | null][]) {
+      const result = await direct({ durationSeconds: sent, width: 1280, height: "720" });
+      assert.equal(result.status, 200, `durationSeconds ${JSON.stringify(sent)}: ${JSON.stringify(result.body)}`);
+      assert.equal(result.body.attachment.durationSeconds, kept, `durationSeconds ${JSON.stringify(sent)}`);
+      assert.deepEqual(await measuresOf(result.body.attachment.id), [1280, 720, kept]);
+      assert.ok(bucketHolds.has(inBucketPath(result.s3Key)));
+    }
+    const none = await direct({});
+    assert.equal(none.status, 200); assert.deepEqual(await measuresOf(none.body.attachment.id), [null, null, null]);
+  });
+  // A row the database refuses, whatever the reason: a trigger on this run's own file name.
+  const REFUSED_NAME = `ZZ TEST refuse row ${run}.webm`;
+  await q(`create or replace function zz_cc_refuse_row_${run}() returns trigger language plpgsql as $$
+    begin
+      if new.original_filename = '${REFUSED_NAME}' then raise exception 'ZZ TEST row refused'; end if;
+      return new;
+    end $$`);
+  await q(`create trigger zz_cc_refuse_row_${run} before insert on checklist_attachments for each row execute function zz_cc_refuse_row_${run}()`);
+  try {
+    await check("SCRUM-855: a row that cannot be saved leaves no file behind on the multipart route", async () => {
+      const rows = await attachmentRows();
+      const puts = bucketPuts.length;
+      bucketDeletes.length = 0;
+      const result = await multipart("managerHkt", { ...headerTarget, durationSeconds: "6" }, "video/webm", randomBytes(2 * MB), REFUSED_NAME);
+      assert.equal(result.status, 500, JSON.stringify(result.body));
+      assert.equal(typeof result.body.error, "string");
+      assert.equal(bucketPuts.length, puts + 1, "the file was stored before the row was refused");
+      const stored = bucketPuts.at(-1)!.path;
+      assert.ok(stored.startsWith(inBucketPath(`checklists/${uploadTemplate.id}/header/`)));
+      assert.deepEqual(bucketDeletes, [stored], "the stored file was not removed again");
+      assert.equal(bucketHolds.has(stored), false, "the bucket still holds a file no row names");
+      assert.equal(await attachmentRows(), rows);
+      await nothingWaiting("a row that could not be saved");
+      assert.equal((await multipart("managerHkt", headerTarget, "video/webm")).status, 200, "the route still takes the next upload");
+    });
+    await check("SCRUM-855: the same on the confirmation; a file another row names stays", async () => {
+      const rows = await attachmentRows();
+      bucketDeletes.length = 0;
+      const refused = await direct({ durationSeconds: 6 }, REFUSED_NAME);
+      assert.equal(refused.status, 500, JSON.stringify(refused.body));
+      assert.deepEqual(bucketDeletes, [inBucketPath(refused.s3Key)]);
+      assert.equal(bucketHolds.has(inBucketPath(refused.s3Key)), false, "the bucket still holds a file no row names");
+      assert.equal(await attachmentRows(), rows);
+      // Confirmed once, then a second confirmation of the same file is refused: the first row still names it.
+      const kept = await direct({ durationSeconds: 6 });
+      assert.equal(kept.status, 200);
+      bucketDeletes.length = 0;
+      const again = await api("managerHkt", "POST", "/api/checklist-media/confirm", {
+        type: "video", s3Key: kept.s3Key, mimeType: "video/webm", fileSize: fileBytes.length, originalFilename: REFUSED_NAME,
+        checklistTemplateId: uploadTemplate.id,
+      });
+      assert.equal(again.status, 500);
+      assert.deepEqual(bucketDeletes, [], "a file a row names was removed");
+      assert.ok(bucketHolds.has(inBucketPath(kept.s3Key)));
+      assert.equal((await api("managerHkt", "GET", `/api/checklist-media/url?s3Key=${encodeURIComponent(kept.s3Key)}`)).status, 200);
+    });
+    await check("SCRUM-855 PIN: a confirmation the guards refuse removes nothing", async () => {
+      // The key is another target's, or the caller's reach ends before it: not theirs to remove.
+      bucketDeletes.length = 0;
+      const mine = await direct({});
+      assert.equal(mine.status, 200);
+      const body = { type: "video", s3Key: mine.s3Key, mimeType: "video/webm", fileSize: fileBytes.length, originalFilename: REFUSED_NAME };
+      assert.equal((await api("managerRobinson", "POST", "/api/checklist-media/confirm", { ...body, checklistTemplateId: uploadTemplate.id })).status, 404);
+      assert.equal((await api("managerForeign", "POST", "/api/checklist-media/confirm", { ...body, checklistTemplateId: uploadTemplate.id })).status, 404);
+      assert.equal((await api("managerHkt", "POST", "/api/checklist-media/confirm", { ...body, checklistTemplateId: randomUUID() })).status, 400);
+      assert.equal((await api("staffPatong", "POST", "/api/checklist-media/confirm", { ...body, checklistTemplateId: uploadTemplate.id })).status, 403);
+      assert.deepEqual(bucketDeletes, []); assert.ok(bucketHolds.has(inBucketPath(mine.s3Key)));
+    });
+  } finally {
+    await q(`drop trigger if exists zz_cc_refuse_row_${run} on checklist_attachments`);
+    await q(`drop function if exists zz_cc_refuse_row_${run}()`);
+  }
 
   console.log(`checklist-copies.check: ${checks} checks passed`);
 } catch (err) {

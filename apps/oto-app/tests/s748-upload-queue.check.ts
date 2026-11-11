@@ -9,6 +9,10 @@
 // module with a captured bucket client: a file is received to a temporary
 // file and handed to the bucket as a stream, never as one buffer; each type
 // stores no more than its limit; nothing is left behind.
+//
+// SCRUM-855: a width, height or length goes to the server only when the
+// browser could measure it, as a whole number. A recording made in the page
+// has no length and the browser says Infinity: nothing is sent for it.
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
@@ -24,6 +28,7 @@ import {
   putTempUpload, removeStaleUploads, removeTempUpload, tempFileStorage, type TempUploadFile,
 } from "../server/core/checklistMediaUpload";
 import { UPLOAD_NOT_THROUGH, uploadQueue } from "../client/src/lib/uploadQueue";
+import { wholeMeasure } from "../shared/mediaMeasure";
 
 const originals = { fetch, XMLHttpRequest: globalThis.XMLHttpRequest, Image: globalThis.Image,
   document: globalThis.document, setTimeout, error: console.error, warn: console.warn };
@@ -44,7 +49,13 @@ globalThis.Image = class {
   naturalWidth = 4; naturalHeight = 3; onload = () => {}; onerror = () => {};
   set src(_value: string) { queueMicrotask(() => this.onload()); }
 } as any;
-globalThis.document = { createElement: () => ({ set src(_value: string) { queueMicrotask(() => this.onerror()); }, onerror: () => {} }) } as any;
+// What the page's video element reports for the file; null is a file it cannot read.
+let page: { duration: number; videoWidth: number; videoHeight: number } | null = null;
+globalThis.document = { createElement: (tag: string) => tag === "canvas" ? { getContext: () => null } : ({
+  ...(page ?? {}), onerror: () => {}, onloadeddata: () => {}, onseeked: () => {},
+  set src(_value: string) { queueMicrotask(() => (page ? this.onloadeddata() : this.onerror())); },
+  set currentTime(_value: number) { queueMicrotask(() => this.onseeked()); },
+}) } as any;
 // One XMLHttpRequest stands for both uploads: the PUT to the bucket and, since
 // SCRUM-850, the POST to the app's own route. Each reports bytes as it sends.
 globalThis.XMLHttpRequest = class {
@@ -78,6 +89,7 @@ globalThis.fetch = (async (path: string, init: RequestInit) => {
   calls.push({ path, init });
   assert.equal(init.credentials, "include");
   assert.equal(path.endsWith("upload"), false, "the multipart route is sent with progress, not by fetch");
+  await tick(); // what the page measured is in before the file is sent
   if (small && path.endsWith(small.boundary)) return new Response(small.body, { status: small.status });
   const body = path.endsWith("presign") ? { uploadUrl: "https://bucket.invalid/zz", s3Key: "zz-direct-key" } : { attachment };
   return new Response(JSON.stringify(path.endsWith(refuse) && refuse ? { error: "ZZ TEST refused" } : body),
@@ -217,6 +229,47 @@ try {
       assert.equal(calls.some(c => c.path.endsWith("upload")), false, "a refused small request never reaches the multipart route");
     }
     small = null;
+  });
+
+  // SCRUM-855. Both ways a file is saved: the confirmation after a direct
+  // upload (JSON) and the app's own multipart route (form fields).
+  const measuresSent = async (measured: typeof page, mode: "ok" | "refused") => {
+    page = measured; direct = mode;
+    const item = await run({}, "item", "video/webm");
+    page = null;
+    assert.equal(item.status, "completed"); assert.equal(completed.length, 1);
+    const keys = ["width", "height", "durationSeconds"] as const;
+    if (mode === "ok") {
+      const raw = calls.find(c => c.path.endsWith("confirm"))!.init.body as string;
+      assert.equal(/null|Infinity|NaN/.test(raw), false, `the confirmation carries a measure that is not one: ${raw}`);
+      const body = JSON.parse(raw);
+      return keys.map(key => (key in body ? body[key] : undefined));
+    }
+    const form = calls.find(c => c.path.endsWith("upload"))!.init.body as FormData;
+    return keys.map(key => (form.has(key) ? Number(form.get(key)) : undefined));
+  };
+  for (const mode of ["ok", "refused"] as const) {
+    const way = mode === "ok" ? "the confirmation" : "the multipart route";
+    await check(`SCRUM-855: a length the page cannot read is not sent on ${way}`, async () => {
+      for (const duration of [Infinity, -Infinity, NaN, 0, 0.4, -3]) {
+        assert.deepEqual(await measuresSent({ duration, videoWidth: 1280, videoHeight: 720 }, mode), [1280, 720, undefined], `a length of ${duration}`);
+      }
+    });
+    await check(`SCRUM-855: a length the page can read is sent whole on ${way}`, async () => {
+      for (const [duration, sent] of [[6.4, 6], [6.5, 7], [12, 12], [0.5, 1]]) {
+        assert.deepEqual(await measuresSent({ duration, videoWidth: 1280, videoHeight: 720 }, mode), [1280, 720, sent], `a length of ${duration}`);
+      }
+      assert.deepEqual(await measuresSent({ duration: 6, videoWidth: 0, videoHeight: NaN }, mode), [undefined, undefined, 6], "no picture size, a length");
+      assert.deepEqual(await measuresSent(null, mode), [undefined, undefined, undefined], "a file the page cannot read at all");
+    });
+  }
+  await check("SCRUM-855: a measure is a whole number above nothing, or not known", () => {
+    for (const [value, measure] of [
+      [6, 6], [6.4, 6], [6.5, 7], ["6", 6], [" 12 ", 12], ["6.4", 6], ["1280", 1280], [2147483647, 2147483647], ["2147483647", 2147483647],
+      [Infinity, null], [-Infinity, null], [NaN, null], [0, null], [0.4, null], [-3, null], [2147483648, null], [1e12, null],
+      ["Infinity", null], ["NaN", null], ["abc", null], ["", null], ["  ", null], ["-5", null], ["1e3", null], ["0x10", null], ["6px", null],
+      ["99999999999", null], ["0", null], ["0.2", null], [null, null], [undefined, null], [true, null], [[6], null], [{}, null],
+    ] as const) assert.equal(wholeMeasure(value), measure, `wholeMeasure(${JSON.stringify(value) ?? String(value)})`);
   });
 } finally {
   Object.assign(globalThis, { fetch: originals.fetch, XMLHttpRequest: originals.XMLHttpRequest, Image: originals.Image, document: originals.document, setTimeout: originals.setTimeout });
