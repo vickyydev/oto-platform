@@ -240,7 +240,8 @@ export async function claimDisplay(
     await tx.insert(deviceCredential).values({
       id, operatorId: actor.operatorId, branchId: current.branchId, stationId: current.id,
       kind: 'display', label: input.name, secretHash: request.tokenHash, scopes: DISPLAY_SCOPES,
-      pairedAt: claimedAt, pairedByAccountId: actor.accountId,
+      // SCRUM-819: pairing is the first sighting, before the display's next poll.
+      pairedAt: claimedAt, lastSeenAt: claimedAt, pairedByAccountId: actor.accountId,
     });
     await tx.update(displayPairingRequest).set({
       credentialId: id, claimedAt, pairingCodeHash: null, updatedAt: claimedAt,
