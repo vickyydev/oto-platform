@@ -1,0 +1,39 @@
+{
+  "sha": "d75159d54e8f6194fc3dc5ab35ac976a5acfcf46",
+  "worktree": "C:/oto-lanes/codex-display-presence-20261111",
+  "install": {
+    "exitCode": 0
+  },
+  "adversarialBefore": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/adversarial-before.log",
+    "sha256": "6a3076354256fe688f059ca5597da620df50d40d71d9f72f7c6b3d900dc0930a",
+    "tests": 3,
+    "expectedFindings": 2,
+    "exitCode": 0
+  },
+  "focused": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/review-and-presence.log",
+    "sha256": "2b1dd7300ce894317c6aab142ddc085bab79d9706412f014c505ef509d89701e",
+    "files": 3,
+    "tests": 35,
+    "exitCode": 0
+  },
+  "typecheck": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/api-typecheck.log",
+    "sha256": "0fc2d19dab0673fcd901a9980f78d430904a1f2f54b40a4fb6f13b95c82b555f",
+    "readWhole": true,
+    "apiDiagnostics": 0,
+    "exitCode": 0
+  },
+  "lint": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/lint.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0
+  },
+  "fullApiSuite": {
+    "state": "running",
+    "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/api-full-tests.log",
+    "session": 38357
+  },
+  "landed": false
+}
