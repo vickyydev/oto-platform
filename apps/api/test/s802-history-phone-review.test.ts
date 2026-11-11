@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 const pos = (file: string) => readFileSync(new URL(`../../pos/src/${file}`, import.meta.url), 'utf8');
 
 describe('SCRUM-802/783 adversarial review', () => {
+  it('LOW FINDING fixed: staff mirrors use the shared display formatter instead of the raw prefix', () => {
+    for (const file of ['components/till/StepAwaitCustomer.tsx', 'components/till/StepIdentify.tsx'])
+      expect(pos(file)).toContain('formatStoredPhone(phone)');
+  });
+
   it('MEDIUM FINDING fixed: both History layouts reuse the F&B field rule', () => {
     for (const file of ['pages/History.tsx', 'components/mobile/history/MobileHistory.tsx', 'components/fnb/ScanWristband.tsx']) {
       const source = pos(file);
