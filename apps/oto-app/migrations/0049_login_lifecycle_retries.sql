@@ -29,12 +29,17 @@ $$;
 --> statement-breakpoint
 
 CREATE FUNCTION otoapp.stamp_login_lifecycle_tenant() RETURNS trigger
-LANGUAGE plpgsql AS $$
+-- The platform's restricted queue writer need not read app ownership tables.
+-- This trigger can only stamp NEW, cannot be called as a normal function, and
+-- resolves every relation/function explicitly under a fixed catalog path.
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $$
 BEGIN
   NEW.tenant_id := otoapp.login_lifecycle_tenant(NEW.user_id);
   RETURN NEW;
 END;
 $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION otoapp.stamp_login_lifecycle_tenant() FROM PUBLIC;
 --> statement-breakpoint
 CREATE TRIGGER login_lifecycle_tenant_stamp
 BEFORE INSERT ON otoapp.login_lifecycle_events

@@ -96,6 +96,14 @@ await check('the existing API users update fires the ordinary invoker trigger an
   await applyGrant(client, appRole);
   assert.equal((await client.query(`SELECT p.prosecdef FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
     WHERE n.nspname='otoapp' AND p.proname='queue_login_lifecycle_event'`)).rows[0].prosecdef, false);
+  // SCRUM-778: the ownership stamp runs as its owner, with a fixed path;
+  // the platform gets no new ownership-table or direct function privileges.
+  const stamp = (await client.query(`SELECT p.prosecdef,p.proconfig,has_function_privilege($1,p.oid,'EXECUTE') AS callable
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='otoapp' AND p.proname='stamp_login_lifecycle_tenant'`, [apiRole])).rows[0];
+  assert.equal(stamp.prosecdef, true); assert.deepEqual(stamp.proconfig, ['search_path=pg_catalog']);
+  assert.equal(stamp.callable, false);
+  assert.equal((await client.query("SELECT has_table_privilege($1,'otoapp.user_branch_access','SELECT') AS allowed", [apiRole])).rows[0].allowed, false);
   await asRole(client, apiRole, () => client.query('UPDATE otoapp.users SET is_active=false WHERE id=$1', [userId]));
   const first = await asRole(client, apiRole, () => client.query('SELECT id,user_id,platform_account_id,state FROM otoapp.login_lifecycle_events WHERE user_id=$1', [userId]));
   assert.equal(first.rows.length, 1); assert.equal(first.rows[0].user_id, userId);

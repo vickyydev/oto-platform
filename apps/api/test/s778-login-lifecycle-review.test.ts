@@ -102,4 +102,46 @@ describe('SCRUM-778/781/810 adversarial lifecycle review', () => {
       async () => { throw new AppError(409, 'ZZ_TEST_REFUSAL', 'ZZ TEST refusal'); })).rejects.toThrow();
     expect(await ctx.db.select().from(auditLog).where(eq(auditLog.action, `${op}.failed`))).toHaveLength(2);
   });
+
+  it('HIGH pin: when both login records are gone, only the stamped park can settle the old event', async () => {
+    const target = await fixture();
+    await ctx.db.execute(sql`delete from otoapp.user_branch_access where user_id=${target.userId}`);
+    await ctx.db.delete(otoappUsers).where(eq(otoappUsers.id, target.userId));
+    await ctx.db.delete(appIdentity).where(eq(appIdentity.accountId, target.accountId));
+    await ctx.db.delete(roleAssignment).where(eq(roleAssignment.accountId, target.accountId));
+    await ctx.db.delete(account).where(eq(account.id, target.accountId));
+    await ctx.db.execute(sql`update otoapp.login_lifecycle_events set state='pending',settled_at=null where id=${target.eventId}`);
+    expect((await consume(target.eventId, foreignKey)).statusCode).toBe(404);
+    expect((await consume(target.eventId)).json()).toMatchObject({ state: 'superseded', replayed: false });
+    expect(await audits(target.eventId)).toHaveLength(1);
+  });
+
+  it('HIGH pin: deleting a pay-only login leaves no restriction to retry or role to withdraw', async () => {
+    const target = await fixture();
+    await ctx.db.execute(sql`update otoapp.users set access_mode='pay_only' where id=${target.userId}`);
+    const event = (await ctx.db.execute<{ id: string }>(sql`select id from otoapp.login_lifecycle_events
+      where user_id=${target.userId} and kind='restrict'`)).rows[0]!;
+    const before = await ctx.db.select().from(roleAssignment).where(eq(roleAssignment.accountId, target.accountId));
+    await ctx.db.execute(sql`delete from otoapp.user_branch_access where user_id=${target.userId}`);
+    await ctx.db.delete(otoappUsers).where(eq(otoappUsers.id, target.userId));
+    await ctx.db.execute(sql`update otoapp.login_lifecycle_events set state='pending',settled_at=null where id=${event.id}`);
+    const send = (credential: string) => ctx.app.inject({ method: 'POST', url: '/admin/apps/oto_app/lifecycle-restrictions',
+      headers: { authorization: `Bearer ${credential}` }, payload: { eventId: event.id } });
+    expect((await send(foreignKey)).statusCode).toBe(404);
+    expect((await send(key)).json()).toMatchObject({ state: 'superseded', replayed: false });
+    expect((await send(key)).json()).toMatchObject({ state: 'superseded', replayed: true });
+    expect(await ctx.db.select().from(roleAssignment).where(eq(roleAssignment.accountId, target.accountId))).toEqual(before);
+  });
+
+  it('MEDIUM pin: deduplication retains a new cause and a different event instead of hiding them', async () => {
+    const op = `zz_test.failure.${newId()}`, first = newId(), second = newId();
+    for (const [eventId, cause] of [[first, 'ZZ_TEST_FIRST'], [first, 'ZZ_TEST_FIRST'], [first, 'ZZ_TEST_SECOND'], [second, 'ZZ_TEST_FIRST']]) {
+      await expect(withTx(ctx.db, { operatorId, requestId: newId(), failureEventId: eventId }, op,
+        async () => { throw new AppError(409, cause!, 'ZZ TEST refusal'); })).rejects.toThrow();
+    }
+    const rows = await ctx.db.select().from(auditLog).where(eq(auditLog.action, `${op}.failed`));
+    expect(rows).toHaveLength(3);
+    expect(rows.filter(row => row.entityId === first)).toHaveLength(2);
+    expect(rows.filter(row => row.entityId === second)).toHaveLength(1);
+  });
 });
