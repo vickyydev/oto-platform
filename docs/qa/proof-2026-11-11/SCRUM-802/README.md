@@ -61,3 +61,14 @@ form without choosing the existing first-screen language. No sale was
 created. Cleanup read back the display revoked, the till archived with no
 printers, and both sessions at 401. The corrected harness chooses English
 and captures both screens on a failure; the deployed product is unchanged.
+
+Attempt 02 passed the member-offer phone label, pasted-band lookup and
+automatic Add time receipt refresh (including the HTTP list response).
+It stopped at the Thai-rate modal because the harness still expected a
+document selector; the current approved screen has Confirm Thai rate.
+All six attempt images were inspected. Two paid test receipts remain as
+evidence, with every print job printed; the display was revoked, the till
+archived without printers, and both sessions read back 401. The receipt,
+images and exact harness are preserved under `staging/attempt-02/`. The
+harness now presses the current confirmation. Product source is unchanged;
+the details and agreements labels still need their screen proof.

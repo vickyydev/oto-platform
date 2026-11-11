@@ -207,10 +207,11 @@ try {
   const newSale = till.getByRole('button', { name: 'New sale', exact: true });
   if (await newSale.isVisible()) await newSale.click();
   await identify(1);
+  phase('confirm Thai rate for customer details');
   await till.getByRole('heading', { name: 'Thai', exact: true }).click();
   const verification = till.getByRole('dialog');
-  await verification.getByRole('button', { name: 'Driving licence', exact: true }).click();
-  await verification.getByRole('button', { name: /^Verify Thai/ }).click();
+  await verification.getByRole('button', { name: 'Confirm Thai rate', exact: true }).click();
+  phase('show customer details');
   await order();
   await till.getByRole('button', { name: /^Pay ฿/ }).click();
   await expect(display.getByTestId('input-kept-phone')).toContainText(formatted(1));
