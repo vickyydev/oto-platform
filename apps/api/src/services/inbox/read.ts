@@ -940,6 +940,7 @@ export async function inboxMe(
       ai: holdsAnywhere(effective, 'inbox:ai:manage', viewer.operatorId),
     },
     simulator,
+    contactChannels,
   };
 }
 
