@@ -126,11 +126,22 @@ describe('s862 — the control on the family card', () => {
     expect(cancelButton(card(group([stay('c1')])))).toBeNull();
   });
 
-  it('still offers Cancel booking when a paid child has an unpaid sibling waiting', () => {
+  it('is disabled, naming the paid child, when a paid child has an unpaid sibling waiting', () => {
+    // The platform refuses the whole press when any waiting child is paid
+    // (CHECKIN_CANCEL_PAID), so the till never offers a press it will refuse.
     const mixed = group([stay('c1', { paidOnline: { bookingId: SALE, reference: 'OTO-AB12-3456' } }), stay('c2', { childName: 'ZZ TEST Nok' })]);
-    const button = cancelButton(card(mixed, [], () => {}));
+    const markup = card(mixed, [], () => {});
+    const button = cancelButton(markup);
     expect(button).not.toBeNull();
-    expect(isDisabled(button)).toBe(false);
+    expect(isDisabled(button)).toBe(true);
+    expect(markup).toContain('ZZ TEST Mint is paid for — a paid booking is handled through its sale.');
+  });
+
+  it('is disabled, naming the child, when a sibling on the booking is already checked in', () => {
+    const g = { ...group([stay('c2', { childName: 'ZZ TEST Nok' })]), checkedIn: ['ZZ TEST Mint'] };
+    const markup = card(g, [], () => {});
+    expect(isDisabled(cancelButton(markup))).toBe(true);
+    expect(markup).toContain('ZZ TEST Mint is already checked in — a checked-in booking is handled through its sale.');
   });
 });
 
@@ -141,7 +152,10 @@ describe('s862 — why the cancel is blocked', () => {
   it('names the sale for a paid family, the cart for an attached child, and nothing otherwise', () => {
     expect(cancelBookingBlockedBy({ children: [paid] }, new Set())).toBe('A paid booking is handled through its sale.');
     expect(cancelBookingBlockedBy({ children: [mint, paid] }, new Set(['c1']))).toBe('Take the children off this sale first.');
-    expect(cancelBookingBlockedBy({ children: [mint, paid] }, new Set(['c2']))).toBeNull();
+    // Any paid child blocks the press, as the platform's CHECKIN_CANCEL_PAID does.
+    expect(cancelBookingBlockedBy({ children: [mint, paid] }, new Set(['c2']))).toBe(
+      'ZZ TEST Mint is paid for — a paid booking is handled through its sale.',
+    );
     expect(cancelBookingBlockedBy({ children: [mint] }, new Set())).toBeNull();
     expect(cancelBookingBlockedBy({ children: [] }, new Set())).toBeNull();
   });

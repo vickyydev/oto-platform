@@ -27,6 +27,11 @@ export interface RegistrationGroup {
   parentName: string;
   phone: string;
   children: CheckIn[];
+  /**
+   * SCRUM-862 — the names of children on this booking already checked in or
+   * collected: the platform refuses a cancel while one is, so the till says so.
+   */
+  checkedIn?: readonly string[];
 }
 
 // What a freshly-added sibling should become. A drop-off child is always a named
@@ -49,16 +54,22 @@ interface AddDropOffModalProps {
  * SCRUM-862 — why a family's "Cancel booking" is not offered right now, or
  * null when it is. A child already on this sale is cancelled by taking them
  * off the sale first (the platform refuses a sale under a cancelled stay); a
- * booking every child of which is paid for is handled through its sale, and
- * the platform refuses the press anyway.
+ * booking with ANY child paid for or already checked in is handled through its
+ * sale: the platform refuses the whole press then (CHECKIN_CANCEL_PAID,
+ * CHECKIN_CANCEL_CHECKED_IN), so the till never offers a press that can only
+ * be refused.
  */
 export function cancelBookingBlockedBy(
-  group: Pick<RegistrationGroup, 'children'>,
+  group: Pick<RegistrationGroup, 'children' | 'checkedIn'>,
   attached: ReadonlySet<string>,
 ): string | null {
   const chargeable = group.children.filter((c) => !c.paidOnline && !c.paidAtTill);
   if (group.children.length > 0 && chargeable.length === 0) return 'A paid booking is handled through its sale.';
   if (chargeable.some((c) => attached.has(c.id))) return 'Take the children off this sale first.';
+  const settled = group.checkedIn?.[0];
+  if (settled) return `${settled} is already checked in — a checked-in booking is handled through its sale.`;
+  const paid = group.children.find((c) => c.paidOnline || c.paidAtTill);
+  if (paid) return `${paid.childName} is paid for — a paid booking is handled through its sale.`;
   return null;
 }
 
@@ -69,7 +80,8 @@ export function cancelBookingBlockedBy(
  * nor is a child a till sale already paid for: the board checks them in.
  * SCRUM-862 — "Cancel booking" takes a waiting, unpaid family off the list for
  * good, after one confirm with a reason (`onCancel`); hidden for a family every
- * child of which is paid, disabled while a child is on this sale.
+ * child of which is paid, disabled (with the reason) while any child is paid or
+ * a child is on this sale.
  */
 export function WaitingFamily({
   group,
@@ -245,6 +257,7 @@ export function AddDropOffModal({
           .filter((c) => c.status === 'registered')
           .map((c) => apiCheckinToCheckIn(c, reg))
           .sort((a, b) => a.childName.localeCompare(b.childName)),
+        checkedIn: reg.children.filter((c) => c.status === 'in_park' || c.status === 'out').map((c) => c.childName),
       })),
     [registrations],
   );
