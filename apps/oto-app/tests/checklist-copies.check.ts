@@ -66,6 +66,18 @@
 //      file a copy still names stays and still opens, and goes when the copy is
 //      deleted. A refused delete removes nothing.
 //
+// SCRUM-850, reference media sent through the app's own route:
+//
+//  15. The file is passed to the bucket as a stream with its counted length
+//      and its checksum, the request a buffer made, without the chunked
+//      encoding a streamed body would otherwise switch to. A video one byte
+//      past 200 MB is refused while it is still arriving, in the route's own
+//      words, and exactly 200 MB is taken. Whatever the answer (stored,
+//      refused, or the browser gone halfway) no temporary file is left, no
+//      refused upload reaches the bucket or the table, and two uploads at
+//      once keep their own bytes. The harness is given a temporary folder of
+//      its own, so what it leaves there can be counted.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-copies.check.ts
@@ -75,10 +87,14 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
-import { createServer } from "node:http";
+import { mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
+import { createServer, request } from "node:http";
 import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { setTimeout as wait } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { crc32 } from "node:zlib";
 import pg from "pg";
 import {
   addedBranchIds,
@@ -194,13 +210,15 @@ await q("insert into locations (id, tenant_id, name) values ($1, $2, $3)", [loca
 
 const BUCKET = `zz-cc-${run}`;
 const bucketDeletes: string[] = [];
-const bucketPuts: { path: string; bytes: number }[] = [];
+const bucketPuts: { path: string; bytes: number; crc: string; headers: Record<string, string | string[] | undefined> }[] = [];
+const crcBase64 = (value: number) => { const four = Buffer.alloc(4); four.writeUInt32BE(value); return four.toString("base64"); };
 const bucketServer = createServer((req, res) => {
   if (req.method === "DELETE") bucketDeletes.push(decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname));
   let bytes = 0;
-  req.on("data", chunk => { bytes += chunk.length; });
+  let sum = 0;
+  req.on("data", chunk => { bytes += chunk.length; sum = crc32(chunk, sum); });
   req.on("end", () => {
-    if (req.method === "PUT") bucketPuts.push({ path: decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname), bytes });
+    if (req.method === "PUT") bucketPuts.push({ path: decodeURIComponent(new URL(req.url ?? "/", "http://bucket").pathname), bytes, crc: crcBase64(sum), headers: req.headers });
     res.writeHead(204);
     res.end();
   });
@@ -211,7 +229,16 @@ const BUCKET_PORT = (bucketServer.address() as AddressInfo).port;
 // ─── The server ──────────────────────────────────────────────────────────────
 
 const children: ChildProcess[] = [];
+// SCRUM-850: a temporary folder of the harness's own, under whichever name
+// this system reads, so the uploads it leaves waiting can be counted.
+const HARNESS_TEMP = mkdtempSync(join(tmpdir(), "zz-cc-tmp-"));
+const waitingUploads = () => {
+  try { return readdirSync(join(HARNESS_TEMP, "oto-checklist-media")); } catch { return []; }
+};
 const HARNESS_ENV = {
+  TMPDIR: HARNESS_TEMP,
+  TEMP: HARNESS_TEMP,
+  TMP: HARNESS_TEMP,
   NODE_ENV: "test",
   APP_ENV: "dev",
   STORAGE_ENV_PREFIX: "zz-test",
@@ -1444,6 +1471,132 @@ try {
     assert.equal(bucketPuts.length, before);
   });
 
+  // SCRUM-850. The route used to hold the whole file in memory and hand the
+  // bucket a buffer. It now receives to a temporary file and streams from it.
+  const MB = 1024 * 1024;
+  const attachmentRows = async () => Number((await q("select count(*) as n from checklist_attachments"))[0].n);
+  const nothingWaiting = async (what: string) => {
+    for (let i = 0; i < 150 && waitingUploads().length; i++) await wait(20);
+    assert.deepEqual(waitingUploads(), [], `${what} left a temporary file`);
+  };
+  /** One upload written piece by piece, so the check itself never holds 200 MB either. */
+  function pieces(who: Who, mime: string, parts: Buffer[], fields: Record<string, string>, options: { stopAfter?: number; hold?: boolean } = {}) {
+    return new Promise<{ status: number; body: any; peak: number }>((resolve, reject) => {
+      const boundary = `zz-cc-${run}`;
+      const origin = new URL(ORIGIN);
+      let peak = 0;
+      const req = request({ host: origin.hostname, port: origin.port, path: "/api/checklist-media/upload", method: "POST",
+        headers: { cookie: cookies.get(who)!, "content-type": `multipart/form-data; boundary=${boundary}`, "transfer-encoding": "chunked" } }, res => {
+        let text = "";
+        res.on("data", chunk => { text += chunk; });
+        res.on("end", () => { req.destroy(); resolve({ status: res.statusCode!, body: JSON.parse(text), peak }); });
+      });
+      req.on("error", error => (options.stopAfter === undefined ? reject(error) : resolve({ status: 0, body: null, peak })));
+      req.on("close", () => resolve({ status: 0, body: null, peak }));
+      req.setTimeout(120_000, () => { req.destroy(); reject(new Error("the upload was not answered")); });
+      (async () => {
+        req.write(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="ZZ TEST clip.mp4"\r\nContent-Type: ${mime}\r\n\r\n`);
+        for (const [index, part] of parts.entries()) {
+          if (index === options.stopAfter) return req.destroy();
+          if (req.destroyed) return;
+          if (!req.write(part)) await new Promise(done => req.once("drain", done));
+          for (const name of waitingUploads()) {
+            peak = Math.max(peak, statSync(join(HARNESS_TEMP, "oto-checklist-media", name), { throwIfNoEntry: false })?.size ?? 0);
+          }
+        }
+        if (options.hold) return;
+        for (const [key, value] of Object.entries(fields)) req.write(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}`);
+        req.end(`\r\n--${boundary}--\r\n`);
+      })().catch(reject);
+    });
+  }
+  const headerTarget = { target: "checklist", checklistTemplateId: uploadTemplate.id };
+  await check("SCRUM-850: a video reaches the bucket as a stream with its length and checksum", async () => {
+    const video = randomBytes(5 * MB + 123);
+    const before = bucketPuts.length;
+    const result = await multipart("managerHkt", headerTarget, "video/mp4", video);
+    assert.equal(result.status, 200, JSON.stringify(result.body));
+    assert.equal(result.body.type, "video"); assert.equal(result.body.fileSize, video.length);
+    assert.equal(bucketPuts.length, before + 1);
+    const put = bucketPuts.at(-1)!;
+    assert.ok(put.path.endsWith(`/${result.body.s3Key}`), "the object is where the row says it is");
+    assert.equal(put.bytes, video.length, "the bucket was sent the file's bytes and nothing around them");
+    assert.equal(put.crc, crcBase64(crc32(video)));
+    assert.equal(put.headers["content-length"], String(video.length));
+    assert.equal(put.headers["x-amz-checksum-crc32"], put.crc, "the checksum given is the checksum of what arrived");
+    assert.equal(put.headers["x-amz-sdk-checksum-algorithm"], "CRC32");
+    assert.equal(put.headers["content-type"], "video/mp4");
+    for (const name of ["transfer-encoding", "content-encoding", "x-amz-trailer", "x-amz-decoded-content-length"]) {
+      assert.equal(put.headers[name], undefined, `the bucket was sent ${name}`);
+    }
+    await nothingWaiting("a stored video");
+  });
+  await check("SCRUM-850: two uploads at once keep their own bytes", async () => {
+    const files = [randomBytes(3 * MB), randomBytes(4 * MB + 7)];
+    const before = bucketPuts.length;
+    const results = await Promise.all(files.map(file => multipart("managerHkt", headerTarget, "video/mp4", file)));
+    for (const [index, result] of results.entries()) {
+      assert.equal(result.status, 200); assert.equal(result.body.fileSize, files[index].length);
+      const put = bucketPuts.slice(before).find(sent => sent.path.endsWith(`/${result.body.s3Key}`));
+      assert.ok(put, "each upload has its own object");
+      assert.equal(put.crc, crcBase64(crc32(files[index])), "an upload was stored with another's bytes");
+    }
+    assert.notEqual(results[0].body.s3Key, results[1].body.s3Key);
+    assert.equal(bucketPuts.length, before + 2);
+    await nothingWaiting("two uploads at once");
+  });
+  await check("SCRUM-850: a video one byte past 200 MB is refused while it arrives; exactly 200 MB is taken", async () => {
+    const part = Buffer.alloc(MB, 7);
+    const before = bucketPuts.length;
+    const rows = await attachmentRows();
+    // Past the limit and never finished: the refusal cannot be waiting for the end.
+    const over = await pieces("managerHkt", "video/mp4", [...Array.from({ length: 200 }, () => part), Buffer.alloc(1, 7), part, part], headerTarget, { hold: true });
+    assert.equal(over.status, 400, JSON.stringify(over.body));
+    assert.deepEqual(over.body, { error: "Video too large. Maximum size is 200MB" });
+    assert.ok(over.peak <= 200 * MB, `${over.peak} bytes of a refused video were written`);
+    await nothingWaiting("a video past the limit");
+    assert.equal(bucketPuts.length, before); assert.equal(await attachmentRows(), rows);
+    const photo = await pieces("managerHkt", "image/jpeg", [...Array.from({ length: 200 }, () => part), Buffer.alloc(1, 7), part], headerTarget, { hold: true });
+    assert.equal(photo.status, 400); assert.deepEqual(photo.body, { error: "Image too large. Maximum size is 10MB" });
+    assert.ok(photo.peak <= 10 * MB, `${photo.peak} bytes of a refused photo were written`);
+    await nothingWaiting("a photo past every limit");
+    assert.equal(bucketPuts.length, before); assert.equal(await attachmentRows(), rows);
+    const atLimit = await pieces("managerHkt", "video/mp4", Array.from({ length: 200 }, () => part), headerTarget);
+    assert.equal(atLimit.status, 200, JSON.stringify(atLimit.body));
+    assert.equal(atLimit.body.fileSize, 200 * MB); assert.equal(bucketPuts.length, before + 1);
+    assert.equal(bucketPuts.at(-1)!.bytes, 200 * MB); assert.equal(bucketPuts.at(-1)!.headers["content-length"], String(200 * MB));
+    await nothingWaiting("a video at the limit");
+  });
+  await check("SCRUM-850: an upload that stops halfway leaves no file, object or row", async () => {
+    const before = bucketPuts.length;
+    const rows = await attachmentRows();
+    const stopped = await pieces("managerHkt", "video/mp4", Array.from({ length: 12 }, () => Buffer.alloc(MB, 3)), headerTarget, { stopAfter: 6 });
+    assert.equal(stopped.status, 0);
+    await nothingWaiting("an upload that stopped halfway");
+    assert.equal(bucketPuts.length, before); assert.equal(await attachmentRows(), rows);
+    assert.equal((await multipart("managerHkt", headerTarget, "video/mp4")).status, 200, "the route still takes the next upload");
+  });
+  await check("SCRUM-850 PIN: every refusal answers as before and leaves nothing waiting", async () => {
+    const before = bucketPuts.length;
+    const rows = await attachmentRows();
+    const video = randomBytes(2 * MB);
+    for (const [who, expected] of [["managerForeign", 404], ["managerRobinson", 404], ["staffPatong", 403], [null, 401]] as const) {
+      assert.equal((await multipart(who, savedItem, "video/mp4", video)).status, expected);
+    }
+    const mixed = await multipart("managerHkt", { ...savedItem, pendingChecklistId: randomUUID() }, "video/mp4", video);
+    assert.deepEqual([mixed.status, mixed.body], [400, { error: "Pending and saved targets cannot be combined" }]);
+    const target = await multipart("managerHkt", { target: "unknown" }, "video/mp4", video);
+    assert.deepEqual([target.status, target.body], [400, { error: "Invalid upload target" }]);
+    const type = await multipart("managerHkt", savedItem, "text/plain", video);
+    assert.equal(type.status, 400); assert.equal(type.body.error, "Invalid file type"); assert.equal(type.body.allowedTypes.length, 8);
+    const photo = await multipart("managerHkt", savedItem, "image/jpeg", new Uint8Array(10 * MB + 1));
+    assert.deepEqual([photo.status, photo.body], [400, { error: "Image too large. Maximum size is 10MB" }]);
+    const atPhotoLimit = await multipart("managerHkt", savedItem, "image/jpeg", new Uint8Array(10 * MB));
+    assert.equal(atPhotoLimit.status, 200, "a photo of exactly 10 MB is taken");
+    await nothingWaiting("a refused upload");
+    assert.equal(bucketPuts.length, before + 1); assert.equal(await attachmentRows(), rows + 1);
+  });
+
   console.log(`checklist-copies.check: ${checks} checks passed`);
 } catch (err) {
   console.error("checklist-copies.check FAILED:", err);
@@ -1451,6 +1604,11 @@ try {
 } finally {
   for (const child of children) child.kill();
   bucketServer.close();
+  try {
+    rmSync(HARNESS_TEMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch {
+    // The harness may still hold its own cache there for a moment: the system clears its temporary folder.
+  }
   // The platform's branch rows this run wrote, or the stand-in table it made.
   if (platformBranches.standIn === true) {
     await q("drop table if exists core.branch");

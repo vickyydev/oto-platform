@@ -24,6 +24,42 @@ export interface UploadItem {
 
 type Listener = (items: UploadItem[]) => void;
 
+/**
+ * What staff read when an upload fails and the server had no sentence of its
+ * own (SCRUM-850): a proxy's error page, a dropped connection, a server
+ * fault. Never a parse error and never a technical message.
+ */
+export const UPLOAD_NOT_THROUGH = "The upload did not go through. Try again, or use a smaller file.";
+
+function parseJsonObject(text: string): Record<string, any> | null {
+  try {
+    const value = JSON.parse(text);
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The line for a refused request. The app's own refusals (400 to 499) are
+ * sentences written for the person; anything else is not.
+ */
+function refusalLine(status: number, body: Record<string, any> | null): string {
+  if (status >= 400 && status < 500) {
+    if (typeof body?.error === "string" && body.error) return body.error;
+    if (typeof body?.message === "string" && body.message) return body.message;
+  }
+  return UPLOAD_NOT_THROUGH;
+}
+
+/** A JSON answer, or the plain line: for the two small requests around an upload. */
+async function readAnswer(response: Response): Promise<Record<string, any>> {
+  const body = parseJsonObject(await response.text().catch(() => ""));
+  if (!response.ok) throw new Error(refusalLine(response.status, body));
+  if (!body) throw new Error(UPLOAD_NOT_THROUGH);
+  return body;
+}
+
 class UploadQueue {
   private items: Map<string, UploadItem> = new Map();
   private listeners: Set<Listener> = new Set();
@@ -170,12 +206,7 @@ class UploadQueue {
         }),
       });
 
-      if (!presignResponse.ok) {
-        const err = await presignResponse.json();
-        throw new Error(err.error || "Failed to get upload URL");
-      }
-
-      const { uploadUrl, s3Key } = await presignResponse.json();
+      const { uploadUrl, s3Key } = await readAnswer(presignResponse);
       this.updateItem(item.id, { s3Key, progress: 10 });
 
       let directUploaded = false;
@@ -186,6 +217,7 @@ class UploadQueue {
       } catch {
         // SCRUM-748: a bucket CORS/network refusal can use the app's own route.
         // Presign and confirmation refusals keep their existing failure path.
+        this.updateItem(item.id, { progress: 10 });
         attachment = await this.uploadViaServer(item);
       }
 
@@ -213,12 +245,8 @@ class UploadQueue {
           }),
         });
 
-        if (!confirmResponse.ok) {
-          const err = await confirmResponse.json();
-          throw new Error(err.error || "Failed to confirm upload");
-        }
-
-        ({ attachment } = await confirmResponse.json());
+        ({ attachment } = await readAnswer(confirmResponse));
+        if (!attachment) throw new Error(UPLOAD_NOT_THROUGH);
       }
       
       this.updateItem(item.id, {
@@ -244,7 +272,13 @@ class UploadQueue {
     }
   }
 
-  private async uploadViaServer(item: UploadItem) {
+  /**
+   * The same file through the app's own route, which stores the attachment
+   * itself. An XMLHttpRequest, as the direct upload is: fetch reports no
+   * upload progress, and wherever the bucket refuses the browser every upload
+   * comes this way (SCRUM-850).
+   */
+  private uploadViaServer(item: UploadItem): Promise<any> {
     const form = new FormData();
     form.append("file", item.file);
     form.append("target", item.target);
@@ -260,29 +294,47 @@ class UploadQueue {
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) form.append(key, String(value));
     }
-    const response = await fetch("/api/checklist-media/upload", {
-      method: "POST",
-      credentials: "include",
-      body: form,
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener("progress", (e) => this.reportProgress(item, e));
+      // Every byte has left the browser; the server is still passing the file
+      // on to storage, which for a video takes a moment of its own. It stays
+      // "uploading": the screens draw a bar for that status alone.
+      xhr.upload.addEventListener("load", () => this.updateItem(item.id, { progress: 95 }));
+
+      xhr.addEventListener("load", () => {
+        // This route returns the attachment without a wrapper.
+        const body = parseJsonObject(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && body?.id) {
+          resolve(body);
+        } else {
+          reject(new Error(refusalLine(xhr.status, body)));
+        }
+      });
+
+      xhr.addEventListener("error", () => reject(new Error(UPLOAD_NOT_THROUGH)));
+      xhr.addEventListener("abort", () => reject(new Error(UPLOAD_NOT_THROUGH)));
+
+      xhr.open("POST", "/api/checklist-media/upload");
+      xhr.withCredentials = true;
+      xhr.send(form);
     });
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to upload file");
+  }
+
+  /** Bytes sent so far, as the 10 to 90 the bar gives an upload in flight. */
+  private reportProgress(item: UploadItem, e: { lengthComputable: boolean; loaded: number; total: number }) {
+    if (e.lengthComputable) {
+      const progress = Math.round((e.loaded / e.total) * 80) + 10;
+      this.updateItem(item.id, { progress: Math.min(progress, 90) });
     }
-    // This route stores the attachment itself and returns it without a wrapper.
-    return response.json();
   }
 
   private uploadToS3(item: UploadItem, uploadUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
 
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 80) + 10;
-          this.updateItem(item.id, { progress: Math.min(progress, 90) });
-        }
-      });
+      xhr.upload.addEventListener("progress", (e) => this.reportProgress(item, e));
 
       xhr.addEventListener("load", () => {
         if (xhr.status >= 200 && xhr.status < 300) {

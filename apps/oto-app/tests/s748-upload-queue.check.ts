@@ -1,14 +1,38 @@
 // SCRUM-748 adversarial review: capture the real queue's browser boundaries.
 // HIGH FINDING: a refused bucket PUT loses the upload. Prescribed fix: use the
 // authenticated multipart route, including pending targets, without confirming twice.
+//
+// SCRUM-850: the multipart route is an XMLHttpRequest too, so the bar moves on
+// it as it does on the direct upload, and a refusal with no sentence of the
+// app's own (a proxy's page, a server fault, a dropped connection) reads as one
+// plain line, never a parse error. And the server's half, on the real storage
+// module with a captured bucket client: a file is received to a temporary
+// file and handed to the bucket as a stream, never as one buffer; each type
+// stores no more than its limit; nothing is left behind.
 import assert from "node:assert/strict";
-import { setImmediate as tick } from "node:timers/promises";
-import { uploadQueue } from "../client/src/lib/uploadQueue";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
+import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Readable } from "node:stream";
+import { setImmediate as tick, setTimeout as wait } from "node:timers/promises";
+import { crc32 } from "node:zlib";
+import express from "express";
+import multer from "multer";
+import {
+  putTempUpload, removeStaleUploads, removeTempUpload, tempFileStorage, type TempUploadFile,
+} from "../server/core/checklistMediaUpload";
+import { UPLOAD_NOT_THROUGH, uploadQueue } from "../client/src/lib/uploadQueue";
 
 const originals = { fetch, XMLHttpRequest: globalThis.XMLHttpRequest, Image: globalThis.Image,
   document: globalThis.document, setTimeout, error: console.error, warn: console.warn };
 let direct: "ok" | "network" | "refused" = "ok";
 let refuse = "";
+// What the app's multipart route answers when a check says so; null is the stored attachment.
+let viaServer: { status: number; body: string } | "network" | null = null;
+// What presign or confirm answers when a check says so.
+let small: { boundary: string; status: number; body: string } | null = null;
 const calls: { path: string; init: RequestInit }[] = [];
 const completed: any[] = [];
 const attachment = { id: "zz-attachment", s3Key: "zz-server-key" };
@@ -21,18 +45,41 @@ globalThis.Image = class {
   set src(_value: string) { queueMicrotask(() => this.onload()); }
 } as any;
 globalThis.document = { createElement: () => ({ set src(_value: string) { queueMicrotask(() => this.onerror()); }, onerror: () => {} }) } as any;
+// One XMLHttpRequest stands for both uploads: the PUT to the bucket and, since
+// SCRUM-850, the POST to the app's own route. Each reports bytes as it sends.
 globalThis.XMLHttpRequest = class {
-  status = 200; upload = { addEventListener() {} }; listeners = new Map<string, () => void>();
+  status = 200; responseText = ""; withCredentials = false; method = ""; url = "";
+  headers: Record<string, string> | undefined;
+  sent = new Map<string, (event: any) => void>(); listeners = new Map<string, () => void>();
+  upload = { addEventListener: (name: string, fn: (event: any) => void) => { this.sent.set(name, fn); } };
   addEventListener(name: string, fn: () => void) { this.listeners.set(name, fn); }
-  open(method: string) { assert.equal(method, "PUT"); }
-  setRequestHeader() {}
-  send() { this.status = direct === "refused" ? 403 : 200; queueMicrotask(() => this.listeners.get(direct === "network" ? "error" : "load")!()); }
+  open(method: string, url: string) { this.method = method; this.url = url; }
+  setRequestHeader(name: string, value: string) { (this.headers ??= {})[name] = value; }
+  send(body: unknown) {
+    const progress = () => { for (const loaded of [25, 50, 100]) this.sent.get("progress")?.({ lengthComputable: true, loaded, total: 100 }); };
+    if (this.method === "PUT") {
+      this.status = direct === "refused" ? 403 : 200;
+      queueMicrotask(() => { if (direct === "ok") progress(); this.listeners.get(direct === "network" ? "error" : "load")!(); });
+      return;
+    }
+    assert.equal(this.method, "POST"); assert.equal(this.withCredentials, true);
+    calls.push({ path: this.url, init: { body: body as FormData, headers: this.headers } });
+    queueMicrotask(() => {
+      if (viaServer === "network") return this.listeners.get("error")!();
+      progress(); this.sent.get("load")?.({});
+      const refused = refuse === "upload";
+      this.status = viaServer?.status ?? (refused ? 403 : 200);
+      this.responseText = viaServer?.body ?? JSON.stringify(refused ? { error: "ZZ TEST refused" } : attachment);
+      this.listeners.get("load")!();
+    });
+  }
 } as any;
 globalThis.fetch = (async (path: string, init: RequestInit) => {
   calls.push({ path, init });
   assert.equal(init.credentials, "include");
-  const body = path.endsWith("presign") ? { uploadUrl: "https://bucket.invalid/zz", s3Key: "zz-direct-key" }
-    : path.endsWith("confirm") ? { attachment } : attachment;
+  assert.equal(path.endsWith("upload"), false, "the multipart route is sent with progress, not by fetch");
+  if (small && path.endsWith(small.boundary)) return new Response(small.body, { status: small.status });
+  const body = path.endsWith("presign") ? { uploadUrl: "https://bucket.invalid/zz", s3Key: "zz-direct-key" } : { attachment };
   return new Response(JSON.stringify(path.endsWith(refuse) && refuse ? { error: "ZZ TEST refused" } : body),
     { status: path.endsWith(refuse) && refuse ? 403 : 200 });
 }) as typeof fetch;
@@ -52,7 +99,7 @@ async function run(options: Parameters<typeof uploadQueue.addUpload>[2] = {}, ta
 async function check(title: string, action: () => Promise<void>) {
   checks++;
   try { await action(); console.log(`PASS ${title}`); }
-  catch { failed++; originals.error(`FAIL ${title}`); }
+  catch (error) { failed++; originals.error(`FAIL ${title}`, error instanceof Error ? error.message : error); }
 }
 try {
   await check("PIN: successful direct PUT confirms once without fallback", async () => {
@@ -90,12 +137,253 @@ try {
   });
   for (const boundary of ["presign", "confirm"]) await check(`PIN: ${boundary} refusal cannot bypass its guard via fallback`, async () => {
     direct = "ok"; refuse = boundary;
-    assert.equal((await run()).status, "failed"); assert.equal(completed.length, 0);
+    const item = await run();
+    assert.equal(item.status, "failed"); assert.equal(completed.length, 0);
+    assert.equal(item.error, "ZZ TEST refused", "the app's own sentence is what the person reads");
     assert.equal(calls.some(c => c.path.endsWith("upload")), false);
+  });
+  refuse = "";
+
+  // SCRUM-850. The bar: 10 at the start of an upload, 10 to 90 while bytes
+  // leave, 95 while the server finishes, 100 when the attachment is back.
+  const watch = async (action: () => Promise<{ status: string }>) => {
+    const seen: { status: string; progress: number }[] = [];
+    for (const item of uploadQueue.getItems()) uploadQueue.removeItem(item.id);
+    const stop = uploadQueue.subscribe(items => { for (const item of items) seen.push({ status: item.status, progress: item.progress }); });
+    try { return { item: await action(), seen }; } finally { stop(); }
+  };
+  await check("SCRUM-850: the bar moves while a file goes through the app's own route", async () => {
+    for (const mode of ["network", "refused"] as const) {
+      direct = mode;
+      const { item, seen } = await watch(() => run());
+      assert.equal(item.status, "completed");
+      const bar = seen.map(step => step.progress);
+      for (const step of [30, 50, 90, 95, 100]) assert.ok(bar.includes(step), `${mode}: the bar never showed ${step}: ${bar.join(",")}`);
+      assert.ok(bar.indexOf(30) < bar.indexOf(50) && bar.indexOf(50) < bar.indexOf(90) && bar.indexOf(90) < bar.indexOf(95));
+      // The screens draw a bar for "uploading" alone, and the server can be a while storing a video.
+      assert.ok(seen.some(step => step.status === "uploading" && step.progress === 95), "bytes sent, the server still storing");
+      assert.equal(seen.some(step => step.status === "confirming"), false, "the bar would vanish while the server stores the file");
+    }
+  });
+  await check("SCRUM-850 PIN: the direct upload reports its bytes as before", async () => {
+    direct = "ok";
+    const { item, seen } = await watch(() => run());
+    assert.equal(item.status, "completed");
+    const bar = seen.map(step => step.progress);
+    for (const step of [5, 10, 30, 50, 90, 95, 100]) assert.ok(bar.includes(step), `the bar never showed ${step}: ${bar.join(",")}`);
+    assert.equal(calls.some(c => c.path.endsWith("upload")), false);
+  });
+  await check("SCRUM-850: a refusal that is not the app's own reads as one plain line", async () => {
+    direct = "network";
+    assert.equal(UPLOAD_NOT_THROUGH, "The upload did not go through. Try again, or use a smaller file.");
+    const page = "<!DOCTYPE html><html><body><h1>502 Bad Gateway</h1></body></html>";
+    const cases: (typeof viaServer)[] = [
+      { status: 502, body: page }, { status: 413, body: "<html>Request Entity Too Large</html>" },
+      { status: 504, body: "" }, { status: 200, body: page }, { status: 200, body: "null" }, { status: 200, body: "{}" },
+      { status: 500, body: JSON.stringify({ error: "ZZ TEST AccessDenied: bucket zz-bucket, request 0123ABCD" }) },
+      { status: 500, body: JSON.stringify({ message: "ZZ TEST ENOSPC: no space left on device, open '/tmp/zz'" }) },
+      "network",
+    ];
+    for (const answer of cases) {
+      viaServer = answer;
+      const item = await run();
+      assert.equal(item.status, "failed", JSON.stringify(answer)); assert.equal(completed.length, 0);
+      assert.equal(item.error, UPLOAD_NOT_THROUGH, JSON.stringify(answer));
+    }
+    viaServer = null;
+  });
+  await check("SCRUM-850 PIN: the route's own refusals keep their sentences", async () => {
+    direct = "refused";
+    for (const [status, body, line] of [
+      [400, { error: "Image too large. Maximum size is 10MB" }, "Image too large. Maximum size is 10MB"],
+      [400, { error: "Video too large. Maximum size is 200MB" }, "Video too large. Maximum size is 200MB"],
+      [404, { error: "Checklist item not found or access denied" }, "Checklist item not found or access denied"],
+      [403, { message: "ZZ TEST manager access required" }, "ZZ TEST manager access required"],
+      [401, { message: "ZZ TEST not signed in" }, "ZZ TEST not signed in"],
+    ] as const) {
+      viaServer = { status, body: JSON.stringify(body) };
+      const item = await run();
+      assert.equal(item.status, "failed"); assert.equal(item.error, line);
+    }
+    viaServer = null;
+  });
+  for (const boundary of ["presign", "confirm"]) await check(`SCRUM-850: a ${boundary} answer that is not JSON is the plain line, never a parse error`, async () => {
+    direct = "ok";
+    for (const answer of [{ status: 502, body: "<html>Bad Gateway</html>" }, { status: 200, body: "<html>Sign in</html>" },
+      { status: 500, body: JSON.stringify({ error: "ZZ TEST AWS credentials not configured" }) }]) {
+      small = { boundary, ...answer };
+      const item = await run();
+      assert.equal(item.status, "failed"); assert.equal(item.error, UPLOAD_NOT_THROUGH, JSON.stringify(answer));
+      assert.equal(calls.some(c => c.path.endsWith("upload")), false, "a refused small request never reaches the multipart route");
+    }
+    small = null;
   });
 } finally {
   Object.assign(globalThis, { fetch: originals.fetch, XMLHttpRequest: originals.XMLHttpRequest, Image: originals.Image, document: originals.document, setTimeout: originals.setTimeout });
   console.error = originals.error; console.warn = originals.warn;
+}
+
+// ─── SCRUM-850, the server's half ─────────────────────────────────────────────
+// The storage the route uses, behind a small app of its own: the route's
+// guards and its bucket are proved on the real route in checklist-copies.check.
+const MB = 1024 * 1024;
+const dir = mkdtempSync(join(tmpdir(), "zz-s850-"));
+const LIMITS: Record<string, number> = { "image/jpeg": 64 * 1024, "video/mp4": 64 * MB };
+const receiver = multer({ storage: tempFileStorage(mime => LIMITS[mime] ?? 0, () => dir), limits: { fileSize: 64 * MB + 1 } });
+let received: TempUploadFile | undefined;
+const app = express();
+app.post("/upload", (req, res) => receiver.single("file")(req, res, (error: any) => {
+  received = req.file;
+  if (error) return res.status(error.code === "LIMIT_FILE_SIZE" ? 413 : 500).json({ code: error.code ?? String(error.message) });
+  res.json({ size: req.file?.size ?? null, stored: Boolean(req.file?.path), buffered: req.file?.buffer !== undefined });
+}));
+const server = app.listen(0, "127.0.0.1");
+await new Promise(resolve => server.once("listening", resolve));
+const port = (server.address() as AddressInfo).port;
+const stored = () => readdirSync(dir);
+const crcOf = (parts: Buffer[]) => { const b = Buffer.alloc(4); b.writeUInt32BE(parts.reduce((sum, part) => crc32(part, sum), 0)); return b.toString("base64"); };
+/** One multipart upload, its file written piece by piece and never held whole. */
+function send(mime: string, pieces: Buffer[], options: { stopAfter?: number; hold?: boolean } = {}) {
+  return new Promise<{ status: number; body: any; peak: number }>((resolve, reject) => {
+    const boundary = "zz-s850-boundary";
+    let peak = 0;
+    const req = request({ host: "127.0.0.1", port, path: "/upload", method: "POST",
+      headers: { "content-type": `multipart/form-data; boundary=${boundary}`, "transfer-encoding": "chunked" } }, res => {
+      let text = "";
+      res.on("data", chunk => { text += chunk; });
+      res.on("end", () => { req.destroy(); resolve({ status: res.statusCode!, body: JSON.parse(text), peak }); });
+    });
+    req.on("error", error => (options.stopAfter === undefined ? reject(error) : resolve({ status: 0, body: null, peak })));
+    req.on("close", () => resolve({ status: 0, body: null, peak }));
+    req.setTimeout(30_000, () => { req.destroy(); reject(new Error("the upload was not answered")); });
+    (async () => {
+      req.write(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="ZZ TEST clip"\r\nContent-Type: ${mime}\r\n\r\n`);
+      for (const [index, piece] of pieces.entries()) {
+        if (index === options.stopAfter) return req.destroy();
+        if (req.destroyed) return;
+        if (!req.write(piece)) await new Promise(resolve => req.once("drain", resolve));
+        for (const name of stored()) peak = Math.max(peak, statSync(join(dir, name), { throwIfNoEntry: false })?.size ?? 0);
+      }
+      if (!options.hold) req.end(`\r\n--${boundary}--\r\n`);
+    })().catch(reject);
+  });
+}
+const piece = (fill: number, size = MB) => Buffer.alloc(size, fill);
+try {
+  await check("SCRUM-850: a large video is received to a temporary file, never into a buffer", async () => {
+    const pieces = Array.from({ length: 48 }, (_, index) => piece(index + 1));
+    const result = await send("video/mp4", pieces);
+    assert.deepEqual({ status: result.status, ...result.body }, { status: 200, size: 48 * MB, stored: true, buffered: false });
+    assert.equal(received!.buffer, undefined); assert.equal(received!.size, 48 * MB);
+    assert.equal(received!.checksumCrc32, crcOf(pieces), "the checksum is of the bytes that arrived");
+    assert.deepEqual(stored(), [received!.filename]); assert.equal(statSync(received!.path).size, 48 * MB);
+  });
+  await check("SCRUM-850: the bucket client is handed a stream with its length and checksum, and the file goes after", async () => {
+    const file = received!;
+    const sent: any[] = []; const sizes: number[] = [];
+    await putTempUpload({ send: async (command: any) => {
+      sent.push(command.input);
+      for await (const chunk of command.input.Body) sizes.push(chunk.length);
+      return {};
+    } } as any, { bucket: "zz-bucket", key: "checklists/zz/header/zz.mp4", contentType: "video/mp4" }, file);
+    assert.equal(sent.length, 1);
+    const input = sent[0];
+    assert.ok(input.Body instanceof Readable, "the body is a stream");
+    assert.equal(Buffer.isBuffer(input.Body) || ArrayBuffer.isView(input.Body) || typeof input.Body === "string", false);
+    assert.equal(sizes.reduce((sum, size) => sum + size, 0), 48 * MB); assert.ok(Math.max(...sizes) <= MB, "read in pieces, never whole");
+    assert.deepEqual({ ...input, Body: null }, { Bucket: "zz-bucket", Key: "checklists/zz/header/zz.mp4", ContentType: "video/mp4",
+      Body: null, ContentLength: 48 * MB, ChecksumAlgorithm: "CRC32", ChecksumCRC32: file.checksumCrc32 });
+    await removeTempUpload(file);
+    assert.deepEqual(stored(), []);
+    await removeTempUpload(file); await removeTempUpload(undefined);
+  });
+  await check("SCRUM-850: a refused bucket write is tried again from the first byte, and only when it may pass", async () => {
+    const pieces = [piece(7), piece(8), piece(9)];
+    assert.equal((await send("video/mp4", pieces)).status, 200);
+    const file = received!;
+    const reads: number[] = [];
+    const failing = (failure: unknown, times: number) => ({ send: async (command: any) => {
+      let bytes = 0; let sum = 0;
+      for await (const chunk of command.input.Body) { bytes += chunk.length; sum = crc32(chunk, sum); if (reads.length < times && bytes >= MB) break; }
+      reads.push(bytes);
+      if (reads.length <= times) throw failure;
+      assert.equal(crcOf(pieces), (() => { const b = Buffer.alloc(4); b.writeUInt32BE(sum); return b.toString("base64"); })());
+      return {};
+    } }) as any;
+    const target = { bucket: "zz-bucket", key: "zz-key", contentType: "video/mp4" };
+    await putTempUpload(failing(Object.assign(new Error("ZZ TEST slow down"), { $metadata: { httpStatusCode: 503 } }), 2), target, file);
+    assert.equal(reads.length, 3); assert.equal(reads[2], 3 * MB, "the last try read the whole file");
+    reads.length = 0;
+    const denied = Object.assign(new Error("ZZ TEST denied"), { $metadata: { httpStatusCode: 403 } });
+    await assert.rejects(putTempUpload(failing(denied, 9), target, file), /ZZ TEST denied/);
+    assert.equal(reads.length, 1, "a refusal that will not change is not asked twice");
+    reads.length = 0;
+    await assert.rejects(putTempUpload(failing(Object.assign(new Error("ZZ TEST reset"), { code: "ECONNRESET" }), 9), target, file), /ZZ TEST reset/);
+    assert.equal(reads.length, 3, "three tries, then the failure is the route's to answer");
+    await removeTempUpload(file);
+    await assert.rejects(putTempUpload(failing(denied, 0), target, { ...file, path: undefined as any }), /not received/);
+    assert.deepEqual(stored(), []);
+  });
+  await check("SCRUM-850: each type stores no more than its limit, and a refused type stores nothing", async () => {
+    const photo = await send("image/jpeg", [piece(1, 64 * 1024)]);
+    assert.deepEqual({ ...photo.body }, { size: 64 * 1024, stored: true, buffered: false }, "a photo at its limit is kept");
+    await removeTempUpload(received);
+    const bigPhoto = await send("image/jpeg", Array.from({ length: 8 }, () => piece(2)));
+    assert.deepEqual({ status: bigPhoto.status, ...bigPhoto.body }, { status: 200, size: 8 * MB, stored: false, buffered: false });
+    assert.ok(bigPhoto.peak <= 64 * 1024, `a photo past its limit wrote ${bigPhoto.peak} bytes`);
+    assert.equal(received!.path, undefined); assert.equal(received!.size, 8 * MB, "still counted to the end, so the route can say why");
+    const other = await send("text/plain", Array.from({ length: 4 }, () => piece(3)));
+    assert.deepEqual({ status: other.status, ...other.body, peak: other.peak }, { status: 200, size: 4 * MB, stored: false, buffered: false, peak: 0 });
+    assert.deepEqual(stored(), []);
+  });
+  await check("SCRUM-850: one byte past the largest allowance is refused while it arrives, with nothing left", async () => {
+    const atLimit = await send("video/mp4", Array.from({ length: 64 }, () => piece(4)));
+    assert.deepEqual({ status: atLimit.status, ...atLimit.body }, { status: 200, size: 64 * MB, stored: true, buffered: false }, "exactly the limit is taken");
+    await removeTempUpload(received);
+    // The file never ends: the refusal cannot be waiting for the end of it.
+    const over = await send("video/mp4", [...Array.from({ length: 64 }, () => piece(5)), piece(6, 1), ...Array.from({ length: 4 }, () => piece(6))], { hold: true });
+    assert.deepEqual({ status: over.status, ...over.body }, { status: 413, code: "LIMIT_FILE_SIZE" });
+    assert.ok(over.peak <= 64 * MB, `wrote ${over.peak} bytes of a file past the limit`);
+    for (let i = 0; i < 50 && stored().length; i++) await wait(20);
+    assert.deepEqual(stored(), []);
+  });
+  await check("SCRUM-850: an upload that stops halfway leaves no temporary file", async () => {
+    await send("video/mp4", Array.from({ length: 12 }, () => piece(7)), { stopAfter: 6 });
+    for (let i = 0; i < 100 && stored().length; i++) await wait(20);
+    assert.deepEqual(stored(), []);
+  });
+  await check("SCRUM-850: two uploads at once keep their own bytes", async () => {
+    const one = Array.from({ length: 6 }, () => piece(11)), two = Array.from({ length: 9 }, () => piece(12));
+    const both = await Promise.all([send("video/mp4", one), send("video/mp4", two)]);
+    assert.deepEqual(both.map(r => r.body.size), [6 * MB, 9 * MB]);
+    const names = stored(); assert.equal(names.length, 2);
+    const sums = names.map(name => crcOf([readFileSync(join(dir, name))])).sort();
+    assert.deepEqual(sums, [crcOf(one), crcOf(two)].sort());
+    for (const name of names) rmSync(join(dir, name));
+  });
+  await check("SCRUM-850: what a stopped process left behind is removed, and nothing else", async () => {
+    const old = join(dir, "zz-old.upload"), fresh = join(dir, "zz-fresh.upload"), other = join(dir, "zz-old.txt");
+    for (const file of [old, fresh, other]) writeFileSync(file, "ZZ TEST");
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(old, twoHoursAgo, twoHoursAgo); utimesSync(other, twoHoursAgo, twoHoursAgo);
+    assert.equal(await removeStaleUploads(dir), 1);
+    assert.deepEqual([old, fresh, other].map(file => existsSync(file)), [false, true, true]);
+    assert.equal(await removeStaleUploads(join(dir, "zz-missing")), 0);
+  });
+  await check("SCRUM-850 PIN: the route keeps no file in memory and streams from the temporary file", () => {
+    const route = readFileSync(new URL("../server/core/checklistMediaRoutes.ts", import.meta.url), "utf8");
+    assert.equal(/memoryStorage|\.buffer\b/.test(route), false, "the route reaches for a buffer");
+    assert.ok(route.includes("storage: tempFileStorage("));
+    assert.ok(route.includes("limits: { fileSize: MAX_VIDEO_SIZE + 1 }"));
+    assert.ok(route.includes('router.post("/upload", requireAuth, requireManager, receiveUpload, fixMulterFilenames,'));
+    const handler = route.slice(route.indexOf('router.post("/upload"'));
+    assert.ok(handler.includes("await putTempUpload(s3Client, { bucket, key: s3Key, contentType: mimeType }, file);"));
+    assert.ok(/finally \{[^}]*await removeTempUpload\(req\.file\);/.test(handler), "the temporary file goes with every answer");
+  });
+} finally {
+  server.closeAllConnections();
+  await new Promise(resolve => server.close(resolve));
+  rmSync(dir, { recursive: true, force: true });
 }
 console.log(`s748-upload-queue.check: ${checks - failed}/${checks} checks passed`);
 if (failed) process.exitCode = 1;

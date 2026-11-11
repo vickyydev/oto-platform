@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import type { S3Client } from "@aws-sdk/client-s3";
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -12,6 +12,7 @@ import multer from "multer";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { randomUUID } from "crypto";
 import { createS3Client, s3Bucket } from "../storage/s3Client";
+import { putTempUpload, removeTempUpload, tempFileStorage, uploadMimeType } from "./checklistMediaUpload";
 
 const router = Router();
 
@@ -20,10 +21,46 @@ const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
 
+/**
+ * SCRUM-850: a file sent through this server is never held in memory. It is
+ * written to a temporary file as it arrives and streamed from there to the
+ * bucket (./checklistMediaUpload). Each type stores no more than its own
+ * limit, and a type the route refuses stores nothing.
+ */
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_VIDEO_SIZE },
+  storage: tempFileStorage((mimeType) =>
+    ALLOWED_IMAGE_TYPES.includes(mimeType) ? MAX_IMAGE_SIZE
+      : ALLOWED_VIDEO_TYPES.includes(mimeType) ? MAX_VIDEO_SIZE
+        : 0),
+  // The form parser stops a file at the byte that reaches this number, so it
+  // is one past the largest allowance: a video of exactly 200 MB is taken, as
+  // /presign takes it, and one byte more is refused while it is arriving.
+  limits: { fileSize: MAX_VIDEO_SIZE + 1 },
 });
+
+/**
+ * Receive the one file of an upload. A file past the largest allowance is
+ * refused as soon as it passes it, in the words the route's own size checks
+ * use; it used to reach the app's last error handler as a 500.
+ */
+function receiveUpload(req: Request, res: Response, next: NextFunction) {
+  upload.single("file")(req, res, (error: unknown) => {
+    if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+      const mimeType = uploadMimeType(req) ?? "";
+      if (ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+        return res.status(400).json({ error: `Image too large. Maximum size is ${MAX_IMAGE_SIZE / (1024 * 1024)}MB` });
+      }
+      if (ALLOWED_VIDEO_TYPES.includes(mimeType)) {
+        return res.status(400).json({ error: `Video too large. Maximum size is ${MAX_VIDEO_SIZE / (1024 * 1024)}MB` });
+      }
+      return res.status(400).json({
+        error: "Invalid file type",
+        allowedTypes: [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES],
+      });
+    }
+    next(error);
+  });
+}
 const PRESIGN_EXPIRY = 3600; // 1 hour for upload/download URLs
 
 /**
@@ -728,7 +765,7 @@ router.patch("/reorder", requireAuth, requireManager, async (req: Request, res: 
 });
 
 // Direct upload route - proxies through backend to avoid CORS issues
-router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMulterFilenames, async (req: Request, res: Response) => {
+router.post("/upload", requireAuth, requireManager, receiveUpload, fixMulterFilenames, async (req: Request, res: Response) => {
   try {
     const file = req.file;
     if (!file) {
@@ -823,14 +860,8 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
     const s3Client = getS3Client();
     const bucket = getS3Bucket();
 
-    const putCommand = new PutObjectCommand({
-      Bucket: bucket,
-      Key: s3Key,
-      ContentType: mimeType,
-      Body: file.buffer,
-    });
-
-    await s3Client.send(putCommand);
+    // SCRUM-850: streamed from the temporary file, never from memory.
+    await putTempUpload(s3Client, { bucket, key: s3Key, contentType: mimeType }, file);
 
     const userId = req.user?.id;
     const type = isImage ? "image" : "video";
@@ -860,6 +891,9 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
   } catch (error: any) {
     console.error("[ChecklistMedia] POST /upload error:", error);
     res.status(500).json({ error: error.message });
+  } finally {
+    // Stored or refused, the temporary file goes with the answer.
+    await removeTempUpload(req.file);
   }
 });
 
