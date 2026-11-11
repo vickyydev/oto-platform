@@ -38,6 +38,8 @@ export type MoveDest = ApiBody<'/inbox/conversations/{id}/move', 'post'>['dest']
 export type PrimaryAssignee = ApiBody<'/inbox/conversations/{id}/primary', 'put'>['assignee'];
 export type SimulatedInbound = ApiBody<'/inbox/simulator/inbound', 'post'>;
 export type BookDateBody = ApiBody<'/inbox/conversations/{id}/book-date', 'post'>;
+/** The words of a dictated clip (SCRUM-834): what the composer places at the caret. */
+export type Dictation = ApiResponse<'/inbox/conversations/{id}/dictation', 'post'>;
 export type BookDateResult = ApiResponse<'/inbox/conversations/{id}/book-date', 'post'>;
 export type BookDateProposal = ApiResponse<'/inbox/conversations/{id}/book-date-proposal', 'get'>;
 /** A conversation's event in the Events module (SCRUM-775), on its detail. */
@@ -175,6 +177,19 @@ export const inboxApi = {
       { id: body.id, text: body.text, templateId: body.templateId, variables: body.variables },
       { idempotencyKey: idemKey() },
     ),
+
+  // --- Dictation (SCRUM-834) ---------------------------------------------------------
+
+  /**
+   * The words of a clip the composer recorded, to land in the composer: the
+   * same provider and limits as a customer's voice note. No message is
+   * written. The clip goes as its own bytes under its own type (the
+   * brochure's way); the answer is the spoken words, which the api keeps no
+   * replay of (`secretResponse`), so no idempotency key is sent — a retry
+   * speaks again.
+   */
+  dictate: (id: string, clip: Blob) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/dictation', 'post'>>(`${at(id)}/dictation`, clip),
 
   // --- Template settings (inbox:template:manage) --------------------------------------
 

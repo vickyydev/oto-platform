@@ -5,7 +5,9 @@ import { renderTemplate, templateVariables } from '@oto/shared/inbox-reply';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationRow, type InboxMe, type QualifyingTemplate, type ReplyRefusalDetails } from '@/api/inbox';
 import { TranslationNote } from '@/components/atoms';
+import { DictateButton, DictationLine, useDictation } from '@/components/Dictation';
 import { PendingControl } from '@/components/writes';
+import { insertAtCaret } from '@/lib/dictation';
 import { COMPOSER_EXTRAS_REASON, langLabel, needsTranslation, offeredTemplates } from '@/lib/view';
 
 /** A template the composer holds: from the templates dialog, or offered by a refusal. */
@@ -51,6 +53,10 @@ export const newDraftId = (): string => newId();
  *
  * Each draft carries one message id: a retry of an unchanged draft is the
  * same message on the server, never a second send; any edit starts a new id.
+ *
+ * Dictation (SCRUM-834): the microphone in the row records a clip and the
+ * words come back into this input at the caret, as if typed — read,
+ * corrected and sent by the person; nothing is sent by the dictation.
  */
 export function Composer({
   conv,
@@ -78,6 +84,30 @@ export function Composer({
   const touch = () => {
     draftId.current = newDraftId();
   };
+
+  // The dictated words land at the caret of the input as it stands (the DOM
+  // value is the controlled value), and the caret follows them once rendered.
+  const inputRef = useRef<HTMLInputElement>(null);
+  const caretAfter = useRef<number | null>(null);
+  const dictation = useDictation(conv.id, (words) => {
+    const input = inputRef.current;
+    const placed = insertAtCaret(input?.value ?? '', input?.selectionStart ?? null, input?.selectionEnd ?? null, words);
+    caretAfter.current = placed.caret;
+    touch();
+    setText(placed.text);
+  });
+  useEffect(() => {
+    const caret = caretAfter.current;
+    const input = inputRef.current;
+    if (caret === null || !input) return;
+    caretAfter.current = null;
+    try {
+      input.focus();
+      input.setSelectionRange(caret, caret);
+    } catch {
+      // A browser that cannot place the caret leaves it where it was.
+    }
+  }, [text]);
 
   const pickTemplate = (t: ComposerTemplate) => {
     touch();
@@ -288,7 +318,9 @@ export function Composer({
         >
           <FileText className="h-4 w-4" />
         </button>
+        <DictateButton dictation={dictation} disabled={template !== null || busy} />
         <input
+          ref={inputRef}
           value={template ? '' : text}
           disabled={template !== null}
           onChange={(e) => {
@@ -308,6 +340,7 @@ export function Composer({
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
         </button>
       </form>
+      <DictationLine dictation={dictation} />
     </div>
   );
 }
