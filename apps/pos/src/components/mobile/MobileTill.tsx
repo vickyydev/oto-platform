@@ -69,6 +69,7 @@ import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
 import { TillRefusalNotice } from '@/components/till/RedeemVoucher';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { cartBodyIdentity } from '@/lib/paymentScope';
 import { useTicketDisplay } from '@/lib/displaySession';
 import {
   phoneTillDisplayStage,
@@ -1937,7 +1938,8 @@ export default function MobileTill() {
   };
 
   const paymentEpoch = saleEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, cartIdentity, lines, discounts, manualDiscounts]);
+  // SCRUM-867 — the order, not who it is for: a member joining the sale after Pay keeps the tender in progress.
+  const paymentScope = JSON.stringify([paymentEpoch, cartBodyIdentity(cartIdentity), lines, discounts, manualDiscounts]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentStage = usePaymentStage({

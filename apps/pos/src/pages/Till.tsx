@@ -85,6 +85,7 @@ import { paymentMethodLabel } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { cartBodyIdentity } from '@/lib/paymentScope';
 import { readTabScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { ticketTillTabScanWords } from '@/lib/tabScan';
 import { usePageScanRoute } from '@/lib/pageScan';
@@ -3133,7 +3134,8 @@ export default function Till() {
   };
 
   const paymentEpoch = saleEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, cartIdentity, lines, discounts, manualDiscounts, voucherCodes]);
+  // SCRUM-867 — the order, not who it is for: a member joining the sale after Pay keeps the tender in progress.
+  const paymentScope = JSON.stringify([paymentEpoch, cartBodyIdentity(cartIdentity), lines, discounts, manualDiscounts, voucherCodes]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentStage = usePaymentStage({
