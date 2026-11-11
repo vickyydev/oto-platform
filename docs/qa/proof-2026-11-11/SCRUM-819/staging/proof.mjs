@@ -182,6 +182,13 @@ try {
   if (station) await clean('retire own display and till', async () => {
     const own = (await call('GET', `/stations/${station.id}`)).body.station;
     assert.equal(own.name, fixtureName);
+    // A lost claim response can still have paired the browser. Recover its ID
+    // only from this exact new station and label before retiring the fixture.
+    if (!displayId) {
+      const active = (await call('GET', `/stations/${station.id}/displays`)).body.displays;
+      assert.ok(active.length <= 1);
+      if (active.length) { assert.equal(active[0].name, fixtureName); displayId = active[0].id; }
+    }
     if (displayId) {
       assert.equal((await call('POST', `/credentials/${displayId}/revoke`, { reason: 'ZZ TEST SCRUM-819 proof complete' })).status, 200);
       assert.ok((await ownCredential()).revokedAt);
