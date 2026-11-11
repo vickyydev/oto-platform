@@ -35,5 +35,44 @@
     "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/api-full-tests.log",
     "session": 38357
   },
-  "landed": false
+  "landed": false,
+  "proofCommit": "0087b6c6506396d5d8b7982a303f4d74e31e568c",
+  "workspaceTypecheck": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-typecheck.log",
+    "sha256": "e9a9543e863113fce46ea36b3017c548870e129beca7378c2e5b2996d741c387",
+    "exitCode": 0,
+    "readWhole": true,
+    "tasks": 16,
+    "cached": 3,
+    "apiDiagnostics": 0
+  },
+  "workspaceBuild": {
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-build.log",
+    "sha256": "947e6682f563998c85a2b307f48d9a031fa4e076a9d5116b72ed3844cdb5c173",
+    "exitCode": 0,
+    "tasks": 5
+  },
+  "apiBuild": {
+    "available": false,
+    "attemptedExitCode": 1,
+    "reason": "The API package has no build script",
+    "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/api-build.log",
+    "sha256": "97a0bcd53b20036a5484b567e5496295282d82d4d887c6e7335dec5d6dba5571"
+  },
+  "workspaceTests": {
+    "firstAttempt": {
+      "path": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-tests.log",
+      "sha256": "5aea4dbacfe48cf0244625151da10b5b22828a4c8cae91a595fae35a6593f5b7",
+      "exitCode": 1,
+      "sharedPassed": 1058,
+      "sharedFailed": 1,
+      "failure": "test/inbox.test.ts:221 dynamic import timed out after 5000 ms"
+    },
+    "serialAttempt": {
+      "state": "running",
+      "session": 71345,
+      "log": "C:/oto-lanes/codex-display-presence-20261111/docs/qa/proof-2026-11-11/SCRUM-819/local/workspace-tests-serial.log",
+      "sharedPackagePassed": true
+    }
+  }
 }
