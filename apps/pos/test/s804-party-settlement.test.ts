@@ -1,13 +1,16 @@
 import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventView, PartyPlan, PartySettleQuote, PartySettlementView } from '@oto/shared';
-import { api } from '@/api/client';
+import { api, ApiError } from '@/api/client';
 import { toOtoEvent } from '@/api/events';
 import { readPartyPlanOnPlatform } from '@/api/parties';
 import { computePartyOutstanding } from '@/lib/party';
 import { PartyDetail } from '@/components/parties/PartyDetail';
 import { PartySettleModal } from '@/components/parties/PartySettleModal';
 import { StepPayment } from '@/components/till/StepPayment';
+import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 import type { PartyBooking } from '@/types';
 import { renderHook, type RenderedHook } from './support/hooks';
 
@@ -47,8 +50,14 @@ vi.mock('@/api/client', async (importOriginal) => {
 });
 vi.mock('@/lib/lane', () => ({ currentLane: () => 'platform', viaLane: (onPlatform: () => unknown) => onPlatform() }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn(), useToast: () => ({ toasts: [], toast: vi.fn(), dismiss: vi.fn() }) }));
+// SCRUM-876 — what the signed-in account may do; a test turns the void off.
+const permissions = vi.hoisted(() => ({ void: true }));
 vi.mock('@/auth/OperatorContext', () => ({
-  useOperator: () => ({ operator: { id: 'acc-som', name: 'Som (Reception)' }, locked: false }),
+  useOperator: () => ({
+    operator: { id: 'acc-som', name: 'Som (Reception)' },
+    locked: false,
+    can: (permission: string) => permission !== 'pos:sale:void' || permissions.void,
+  }),
 }));
 vi.mock('@/station/StationContext', () => ({ useStation: () => ({ station: { stationId: TILL, name: 'Till 1' } }) }));
 vi.mock('@/branch/BranchContext', () => ({ useBranch: () => ({ branch: { id: 'hkt-central', name: 'HKT Central' } }) }));
@@ -448,5 +457,131 @@ describe('the Settle form: the actual counts, the plan\'s add-ons, the platform\
     await press(confirm);
     await settle();
     expect(postMock.mock.calls.some((c) => c[0] === `/parties/${PARTY}/settle`)).toBe(false);
+  });
+});
+
+// =============================================================================
+// SCRUM-876 — Cancel settlement on the party page
+// =============================================================================
+
+/**
+ * A settlement left at its balance step is an open sale with only the party's
+ * deposit on it. The party page offers Cancel settlement beside Resume
+ * settlement: a reason, then the ordinary void of an unpaid sale on the
+ * platform — nothing is refunded, the deposit stays the party's — and the
+ * party is read back so Settle party is offered again.
+ */
+describe('SCRUM-876 — a settlement left before its balance is cancelled from the party page', () => {
+  const OPEN: PartySettlementView = { ...SETTLED, state: 'open', receiptNumber: null, outstandingSatang: 1_390_000 };
+  const voidAnswer = (reason: string) => ({
+    replay: false,
+    sale: { id: 'sale-1', status: 'voided' },
+    void: { voidedAt: `${T}T08:00:00.000Z`, voidedByAccountId: 'acc-som', reason },
+    releasedVoucherIds: [],
+  });
+  /** The header's button, not the dialog's confirm (always in the element tree, `destructive`). */
+  const cancelButton = (tree: unknown): El | null => {
+    for (const el of walk(tree)) {
+      if (typeof el.props.onClick !== 'function' || el.props.variant === 'destructive') continue;
+      if (textOf(el.props.children).trim() === 'Cancel settlement') return el;
+    }
+    return null;
+  };
+  const confirmButton = (tree: unknown) => withProp(tree, 'variant', 'destructive');
+  const reasonInput = (tree: unknown) => elementOf(tree, Input);
+  const typeReason = (tree: unknown, value: string) =>
+    (reasonInput(tree)!.props.onChange as (e: { target: { value: string } }) => void)({ target: { value } });
+  const voids = () => postMock.mock.calls.filter((c) => c[0] === '/sales/sale-1/void');
+
+  beforeEach(() => {
+    permissions.void = true;
+    vi.mocked(toast).mockClear();
+  });
+
+  it('an open settlement offers Cancel settlement beside Resume settlement; a settled or unsettled party does not', async () => {
+    const page = partyPage(partyOf(OPEN));
+    await settle();
+    const button = cancelButton(page.result.current);
+    expect(button).not.toBeNull();
+    expect(button!.props.disabled).toBe(false);
+    expect(buttonIn(page.result.current, 'Resume settlement ฿13900')).not.toBeNull();
+    expect(elementOf(page.result.current, Dialog)?.props.open).toBe(false);
+
+    const settled = partyPage(partyOf(SETTLED));
+    await settle();
+    expect(cancelButton(settled.result.current)).toBeNull();
+    const unsettled = partyPage(partyOf());
+    await settle();
+    expect(cancelButton(unsettled.result.current)).toBeNull();
+  });
+
+  it('asks for a reason, voids the settlement sale with it, reads the party back and tells the host', async () => {
+    postMock.mockImplementation((async (path: string, body: unknown) => {
+      if (path === '/sales/sale-1/void') return voidAnswer((body as { reason: string }).reason);
+      throw new Error(`unexpected POST ${path}`);
+    }) as unknown as typeof api.post);
+    const onChanged = vi.fn();
+    const page = renderHook(
+      (p: Record<string, unknown>) => PartyDetail(p as never),
+      { party: partyOf(OPEN), surface: 'till', onBack: () => undefined, onChanged } as Record<string, unknown>,
+    );
+    await settle();
+    press(cancelButton(page.result.current));
+    await settle();
+    expect(elementOf(page.result.current, Dialog)?.props.open).toBe(true);
+    // No reason, no void.
+    expect(confirmButton(page.result.current)!.props.disabled).toBe(true);
+    expect(flat(page.result.current)).toContain('Nothing is refunded — the deposit of ฿3000 stays with the party');
+    typeReason(page.result.current, '  Parent will pay later  ');
+    await settle();
+    expect(confirmButton(page.result.current)!.props.disabled).toBe(false);
+    press(confirmButton(page.result.current));
+    await settle(5);
+
+    expect(voids()).toHaveLength(1);
+    expect(voids()[0]![1]).toEqual({ reason: 'Parent will pay later' });
+    // The party is read back: released, the page offers Settle party again.
+    expect(getMock.mock.calls.filter((c) => c[0] === `/parties/${PARTY}?branchId=${HKT_CENTRAL}`).length).toBeGreaterThanOrEqual(2);
+    expect(elementOf(page.result.current, Dialog)?.props.open).toBe(false);
+    expect(cancelButton(page.result.current)).toBeNull();
+    expect(buttonIn(page.result.current, 'Settle party')).not.toBeNull();
+    expect(onChanged).toHaveBeenCalled();
+    expect(vi.mocked(toast)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Settlement cancelled', description: expect.stringContaining('Nothing was refunded. The deposit of ฿3000 stays with the party') }),
+    );
+  });
+
+  it("a refusal keeps the dialog open with the platform's words, and the settlement in place", async () => {
+    postMock.mockImplementation((async (path: string) => {
+      if (path === '/sales/sale-1/void') {
+        throw new ApiError(409, 'SALE_HAS_PAYMENT', 'Money has been taken on this sale — it is refunded, not voided');
+      }
+      throw new Error(`unexpected POST ${path}`);
+    }) as unknown as typeof api.post);
+    const page = partyPage(partyOf(OPEN));
+    await settle();
+    press(cancelButton(page.result.current));
+    await settle();
+    typeReason(page.result.current, 'Wrong counts');
+    await settle();
+    press(confirmButton(page.result.current));
+    await settle(5);
+    expect(voids()).toHaveLength(1);
+    expect(elementOf(page.result.current, Dialog)?.props.open).toBe(true);
+    expect(confirmButton(page.result.current)!.props.disabled).toBe(false);
+    expect(buttonIn(page.result.current, 'Resume settlement ฿13900')).not.toBeNull();
+    expect(vi.mocked(toast)).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Settlement not cancelled', description: 'Money has been taken on this sale — it is refunded, not voided', variant: 'destructive' }),
+    );
+  });
+
+  it('without the till\'s void permission the button is in view and off', async () => {
+    permissions.void = false;
+    const page = partyPage(partyOf(OPEN));
+    await settle();
+    const button = cancelButton(page.result.current);
+    expect(button).not.toBeNull();
+    expect(button!.props.disabled).toBe(true);
+    expect(button!.props.title).toContain('void permission');
   });
 });

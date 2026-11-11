@@ -2,6 +2,16 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { newId, partyAdultsNoteMark, partySettlementLive } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PartyBooking, PartyPaymentMethod } from '@/types';
 import {
@@ -17,6 +27,7 @@ import { useStation } from '@/station/StationContext';
 import {
   PARTY_CHARGE_NOT_CONFIRMED,
   PARTY_PAYMENT_NOT_CONFIRMED,
+  cancelSettlementOnPlatform,
   chargePartyOnPlatform,
   partyChargeConfirmationOf,
   partyChargePress,
@@ -46,6 +57,7 @@ import { PartySlipsCard } from './PartySlipsCard';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import {
   ArrowLeft,
+  Ban,
   Pencil,
   Wallet,
   GlassWater,
@@ -136,7 +148,7 @@ const listOf = (items: string[]) =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
 export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
-  const { operator, locked: operatorLocked } = useOperator();
+  const { operator, locked: operatorLocked, can } = useOperator();
   const { station } = useStation();
   const linkedDisplay = useTenderDisplay(station?.stationId ?? null, !operatorLocked);
   // S2-20 E4 — the party as the platform last answered a write with it, until
@@ -153,6 +165,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const [planRead, setPlanRead] = useState<PartyPlanRead | null>(null);
   const [planNonce, setPlanNonce] = useState(0);
   const [showSettle, setShowSettle] = useState(false);
+  // SCRUM-876 — Cancel settlement: the reason being typed, and whether the void is out.
+  const [cancelling, setCancelling] = useState<{ reason: string; busy: boolean } | null>(null);
 
   // Message the parent in-app with party context so the party templates
   // ({parentName}, {time}=party start time) resolve correctly.
@@ -345,6 +359,36 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     } finally {
       saving.current = false;
     }
+  };
+
+  /**
+   * SCRUM-876 — CANCEL SETTLEMENT. A settlement left at its balance step is an
+   * open sale with only the party's deposit on it. Cancelling voids that sale
+   * on the platform (the void an unpaid sale gets, under the till's void
+   * permission): nothing is refunded, the deposit stays exactly as it was —
+   * paid, the party's, used again by the next settlement — and the page reads
+   * the party back to offer Settle party once more.
+   */
+  const mayCancelSettlement = settlement?.state === 'open' && can('pos:sale:void');
+  const confirmCancelSettlement = async () => {
+    if (!cancelling || cancelling.busy || !settlement || settlement.state !== 'open') return;
+    const reason = cancelling.reason.trim();
+    if (!reason) return;
+    setCancelling({ reason, busy: true });
+    const outcome = await cancelSettlementOnPlatform({ party, saleId: settlement.saleId, reason });
+    if (!outcome.ok) {
+      setCancelling({ reason, busy: false });
+      toast({ title: 'Settlement not cancelled', description: outcome.message, variant: 'destructive' });
+      return;
+    }
+    setCancelling(null);
+    if (outcome.party) setFresh(outcome.party);
+    setPlanNonce((n) => n + 1);
+    onChanged();
+    toast({
+      title: 'Settlement cancelled',
+      description: `Nothing was refunded. The deposit of ฿${settlement.depositSatang / 100} stays with the party — settle it again when ready.`,
+    });
   };
 
   const cake = party.kitchen.cake;
@@ -742,6 +786,19 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
                 Add tickets
               </Button>
             )}
+            {settlement?.state === 'open' && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 h-12"
+                disabled={!mayCancelSettlement}
+                title={!mayCancelSettlement ? 'Cancelling a settlement needs the till’s void permission.' : undefined}
+                onClick={() => openUnlessBlocked(() => setCancelling({ reason: '', busy: false }))}
+              >
+                <Ban className="w-5 h-5" />
+                Cancel settlement
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"
@@ -813,6 +870,47 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           }}
         />
       )}
+      <Dialog
+        open={cancelling !== null}
+        onOpenChange={(next) => {
+          if (!next && !cancelling?.busy) setCancelling(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel this settlement</DialogTitle>
+            <DialogDescription>
+              {`${party.title}: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿${(settlement?.depositSatang ?? 0) / 100} stays with the party and is used again when it is settled.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="cancel-settlement-reason">Reason</Label>
+            <Input
+              id="cancel-settlement-reason"
+              value={cancelling?.reason ?? ''}
+              maxLength={120}
+              disabled={cancelling?.busy}
+              onChange={(event) => setCancelling((c) => (c ? { ...c, reason: event.target.value } : c))}
+              autoFocus
+            />
+            {(cancelling?.reason.trim() ?? '') === '' && (
+              <p className="text-xs text-muted-foreground">A reason is required.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={cancelling?.busy} onClick={() => setCancelling(null)}>
+              Back
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!cancelling || cancelling.busy || cancelling.reason.trim() === ''}
+              onClick={() => void confirmCancelSettlement()}
+            >
+              {cancelling?.busy ? 'Cancelling…' : 'Cancel settlement'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <PartyTicketModal
         open={showTickets}
         onOpenChange={setShowTickets}

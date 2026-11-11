@@ -40,6 +40,7 @@ import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, NetworkError } from './client';
 import { EVENTS_NOT_LINKED, toOtoEvent } from './events';
 import type { PaymentStartResult } from './payments';
+import { salesApi } from './sales';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -486,6 +487,40 @@ export async function readPartyPlanOnPlatform(party: Pick<PartyBooking, 'id' | '
     return { plan: answer.plan ?? null, status: answer.planStatus };
   } catch {
     return null;
+  }
+}
+
+export type PartyCancelSettlementOutcome =
+  | { ok: true; party: PartyBooking | null }
+  | { ok: false; message: string };
+
+/**
+ * SCRUM-876 — "CANCEL SETTLEMENT" ON THE PARTY PAGE. A settlement left at its
+ * balance step is an open sale with only the party's deposit on it. It is
+ * voided on the platform through the ordinary void of an unpaid sale: the
+ * deposit's record goes with the sale and the deposit stays the party's,
+ * nothing is refunded, and the party may be settled again. The party is read
+ * back afterwards so the page shows the settlement released; a read that
+ * fails after a void that went through still answers ok, with no party, and
+ * the host's own re-read brings the released party back.
+ */
+export async function cancelSettlementOnPlatform(args: {
+  party: Pick<PartyBooking, 'id' | 'branchId'>;
+  saleId: string;
+  reason: string;
+}): Promise<PartyCancelSettlementOutcome> {
+  const branchId = apiBranchIdForSlug(args.party.branchId);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED };
+  try {
+    await salesApi.voidSale(args.saleId, args.reason);
+  } catch (err) {
+    return { ok: false, message: failureOf(err).message };
+  }
+  try {
+    const answer = (await partiesApi.detail(branchId, args.party.id)) as PartyDetailAnswer;
+    return { ok: true, party: toOtoEvent(answer.event, args.party.branchId) as unknown as PartyBooking };
+  } catch {
+    return { ok: true, party: null };
   }
 }
 
