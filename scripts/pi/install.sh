@@ -259,10 +259,14 @@ timedatectl set-timezone "$TIMEZONE" || warn "could not set the timezone"
 # summary still says whether the box is on the network, and at which address.
 ts_name() {
   # The box's own line of `tailscale status`: "100.x.y.z  name  user@  linux  -".
-  # Nothing while Tailscale is logged out, stopped or not installed.
-  tailscale status --self=true --peers=false 2>/dev/null | awk '$1 ~ /^100\./ { print $2; exit }'
+  # Nothing while Tailscale is logged out, stopped or not installed — and
+  # never a failure: `tailscale status` exits non-zero in each of those states,
+  # and under pipefail that would be this function's answer too. Asked after
+  # "Starting", it stopped the installer before its summary with the new
+  # release already running (SCRUM-788). The same for the address below.
+  tailscale status --self=true --peers=false 2>/dev/null | awk '$1 ~ /^100\./ { print $2; exit }' || true
 }
-ts_ip() { tailscale ip -4 2>/dev/null | head -n 1; }
+ts_ip() { tailscale ip -4 2>/dev/null | head -n 1 || true; }
 TS_NOTE="not configured"
 if [ -n "$TS_AUTHKEY" ]; then
   say "Private network: Tailscale as $TS_HOSTNAME"
@@ -753,7 +757,10 @@ fi
 # Password log-in stays ON unless asked: switching it off with no key on the Pi
 # locks everybody out of a box in a mall. Whatever is decided is said again at
 # the end, so nobody is left believing the box is keys-only when it is not.
-SSH_HOME="$(getent passwd "${KIOSK_USER:-root}" | cut -d: -f6)"
+# `|| true`: getent exits 2 for a name it does not know (--no-kiosk skips the
+# check on --kiosk-user), and the release is already in place by here; root's
+# keys are read instead, as for a user with no home on record.
+SSH_HOME="$(getent passwd "${KIOSK_USER:-root}" | cut -d: -f6 || true)"
 KEYS="${SSH_HOME:-/root}/.ssh/authorized_keys"
 if [ "$SSH_KEYS_ONLY" -eq 1 ]; then
   if [ -s "$KEYS" ]; then
@@ -821,11 +828,16 @@ fi
 
 # The private network, whatever this run did about it: a box joined on an
 # earlier run is reported too, with its address, so the summary always says
-# how the box is reached and how the next release gets to it.
+# how the box is reached and how the next release gets to it. A box that has
+# Tailscale but no name on the network reads "installed, not signed in" (a
+# stopped Tailscale service answers the same way and reads the same), unless
+# a join this run tried has already said why it failed (SCRUM-788).
 TS_SELF=""
 if command -v tailscale >/dev/null; then TS_SELF="$(ts_name)"; fi
 if [ -n "$TS_SELF" ]; then
   TS_NOTE="joined as $TS_SELF ($(ts_ip)). The next release, from the laptop: scripts/agent/push-release.sh $TS_SELF <release>.tgz -- <this box's options, without the key>"
+elif [ "$TS_NOTE" = "not configured" ] && command -v tailscale >/dev/null; then
+  TS_NOTE="installed, not signed in: the box is not on the private network. To join it, run the installer again with --tailscale-authkey"
 fi
 
 # A screen on an address of its own: it does not show the box's set-up page or

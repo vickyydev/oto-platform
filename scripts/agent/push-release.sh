@@ -108,15 +108,19 @@ for arg in "$@"; do
   q="$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")"
   FLAGS="$FLAGS '$q'"
 done
-BEFORE="command -v oto-box >/dev/null 2>&1 && oto-box status | head -1 || echo '(no box installed yet)'"
+# The build line is the first line of `oto-box status`, taken with sed, which
+# reads the box's answer to its end: `head -1` closed the pipe after one line
+# while the box was still writing the rest, and Node on the box then printed
+# a "write EPIPE" stack into this output (SCRUM-788).
+BEFORE="command -v oto-box >/dev/null 2>&1 && oto-box status | sed -n 1p || echo '(no box installed yet)'"
 REMOTE="set -e
 cd ~
 sha256sum -c '$NAME.sha256'
 rm -rf oto-box
 tar -xzf '$NAME'
 sudo bash oto-box/pi/install.sh$FLAGS
-oto-box status | head -1"
-AFTER="oto-box status | head -1"
+oto-box status | sed -n 1p"
+AFTER="oto-box status | sed -n 1p"
 
 echo "Release: $NAME (sha256 $HASH)"
 echo "Box:     $TARGET${KEY:+ (key $KEY)}"
