@@ -748,8 +748,11 @@ const sameText = (a: string | null | undefined, b: string | null | undefined) =>
  * the booking name, the location, the setup plan and the POS box are the
  * ruling's (`from`); the title is the app's own rule from the child's name the
  * chat gave (else the form's) and the age the event holds — the park's
- * default, never the chat's. A value equal to what the form already holds is
- * the form's, carried forward by the model, and is not proposed. The requests
+ * default, never the chat's — and only for a birthday (the event's type, else
+ * the form's; as apps/api's Book Date names only birthdays so): a camp or a
+ * corporate event is not named after a child's birthday. A value equal to
+ * what the form already holds is the form's, carried forward by the model,
+ * and is not proposed. The requests
  * and the timeline the conversation's read gave stand; what the form's read
  * gives of them (its special requests, decoration, activities and timeline)
  * joins only where the conversation's read holds no such words, so a park
@@ -759,7 +762,7 @@ const sameText = (a: string | null | undefined, b: string | null | undefined) =>
 export function detailsFromFill(
   proposal: BeoAiProposal,
   fill: BeoFill,
-  input: { existingData: unknown; from: BeoAiFrom; event: { childName?: string | null; kidTurningAge?: number | null } | null },
+  input: { existingData: unknown; from: BeoAiFrom; event: { childName?: string | null; kidTurningAge?: number | null; eventType?: string | null } | null },
 ): BeoAiDetails {
   const existing = asRecord(input.existingData);
   const formEvent = asRecord(existing.event);
@@ -770,7 +773,8 @@ export function detailsFromFill(
   const sourced = (value: string | undefined, held: unknown) => (value && !sameText(value, heldText(held)) ? { value, from } : null);
 
   const child = proposal.event.childName?.value ?? fill.event?.childName ?? heldText(formEvent.childName) ?? input.event?.childName ?? null;
-  const title = beoEventTitleOf(child, input.event?.kidTurningAge ?? null);
+  const kind = input.event?.eventType ?? heldText(formEvent.eventType);
+  const title = kind === "birthday" ? beoEventTitleOf(child, input.event?.kidTurningAge ?? null) : null;
   details.title = title ? { value: title, from: { source: "default", at: null, line: null } } : null;
   details.bookingName = sourced(fill.event?.bookingName, formEvent.bookingName);
   details.locationText = sourced(fill.event?.locationText, formEvent.locationText);

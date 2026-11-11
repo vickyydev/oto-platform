@@ -669,6 +669,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
   const aiTouched = (field: string) => {
     setAiMarks((m) => (m[field] && m[field] !== "staff" ? { ...m, [field]: "staff" } : m));
   };
+  /** The Setup Who wears either mark (a person ticked, or a name typed); an edit lets both go. */
+  const aiTouchedSetupWho = () => { aiTouched("setupResponsible"); aiTouched("team:setupResponsible"); };
   const aiSectionMark = (section: string) => (aiSections.includes(section) ? <FromTheChat section={section} /> : null);
   // SCRUM-826: "Fetch from chat" — its dialog, and the changes declined on it (held until the chat changes).
   const [fetchOpen, setFetchOpen] = useState(false);
@@ -2105,7 +2107,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                     <MandatoryLabel>Date{aiMark("eventDate")}</MandatoryLabel>
                     <DatePicker
                       value={eventData.eventDate ? parseISO(eventData.eventDate) : undefined}
-                      onChange={(date) => setEventData({ ...eventData, eventDate: date ? format(date, "yyyy-MM-dd") : undefined })}
+                      onChange={(date) => { setEventData({ ...eventData, eventDate: date ? format(date, "yyyy-MM-dd") : undefined }); aiTouched("eventDate"); }}
                       data-testid="input-event-date"
                     />
                   </div>
@@ -2130,7 +2132,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => setEventData({ ...eventData, startTime: undefined })}
+                            onClick={() => { setEventData({ ...eventData, startTime: undefined }); aiTouched("startTime"); }}
                             data-testid="button-start-time-clear"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -2172,7 +2174,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => { setEventData({ ...eventData, endTime: undefined }); setTimeError(null); }}
+                            onClick={() => { setEventData({ ...eventData, endTime: undefined }); setTimeError(null); aiTouched("endTime"); }}
                             data-testid="button-end-time-clear"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -2226,6 +2228,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       setEventData({ ...eventData, ...updates });
                       setTimeError(null);
                       setShowStartTimePicker(false);
+                      aiTouched("startTime");
+                      if (updates.endTime) aiTouched("endTime");
                     }} data-testid="button-confirm-start-time">Confirm</Button>
                     <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowStartTimePicker(false)}>Cancel</Button>
                   </div>
@@ -2252,6 +2256,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       setEventData({ ...eventData, endTime: tempEndTime });
                       setTimeError(null);
                       setShowEndTimePicker(false);
+                      aiTouched("endTime");
                     }} data-testid="button-confirm-end-time">Confirm</Button>
                     <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowEndTimePicker(false)}>Cancel</Button>
                   </div>
@@ -2689,6 +2694,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 setShowResponsibleDropdown(false);
                                 if (setupResponsibleSearch && !setupResponsible) {
                                   setSetupResponsible(setupResponsibleSearch);
+                                  aiTouchedSetupWho();
                                 }
                               }, 200);
                             }}
@@ -2701,6 +2707,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 setSetupResponsible(setupResponsibleSearch);
                                 setShowResponsibleDropdown(false);
                                 (e.target as HTMLInputElement).blur();
+                                aiTouchedSetupWho();
                               }
                             }}
                             placeholder="Search employee, dept..."
@@ -2720,6 +2727,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                     setSetupResponsibleType(r.type);
                                     setSetupResponsibleSearch("");
                                     setShowResponsibleDropdown(false);
+                                    aiTouchedSetupWho();
                                   }}
                                   data-testid={`responsible-option-${r.type}-${r.id}`}
                                 >
@@ -2745,6 +2753,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             setSetupResponsibleSearch("");
                             setShowResponsibleDropdown(true);
                             setTimeout(() => responsibleSearchRef.current?.focus(), 0);
+                            aiTouchedSetupWho();
                           }}
                           data-testid="button-clear-responsible"
                         >
@@ -3401,7 +3410,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                             key={mode}
                             variant={cakeMode === mode ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setCakeMode(mode)}
+                            onClick={() => { setCakeMode(mode); aiTouched("cake"); }}
                             data-testid={`button-cake-${mode.toLowerCase()}`}
                           >
                             {mode === "NONE" ? "No Cake" : mode === "INTERNAL" ? "Our Cake" : "Own Cake"}
@@ -3413,7 +3422,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                         cakeMode={cakeMode}
                         cakeTime={cakeTime}
                         cakeNotes={cakeNotes}
-                        onClear={() => { setCakeTime(""); setCakeNotes(""); }}
+                        onClear={() => { setCakeTime(""); setCakeNotes(""); aiTouched("cake"); }}
                         disabled={readOnly}
                       />
                       {cakeMode !== "NONE" && (
@@ -3467,7 +3476,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                    onClick={() => setCakeTime("")}
+                                    onClick={() => { setCakeTime(""); aiTouched("cake"); }}
                                     data-testid="button-cake-time-clear"
                                   >
                                     <X className="h-3 w-3" />
@@ -3507,14 +3516,14 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                 onChange={(e) => setTempCakeTime(e.target.value)}
                                 data-testid="input-cake-time-picker"
                               />
-                              <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); }} data-testid="button-confirm-cake-time">Confirm</Button>
+                              <Button type="button" size="sm" className="h-7 text-xs" onClick={() => { setCakeTime(tempCakeTime); setShowCakeTimePicker(false); aiTouched("cake"); }} data-testid="button-confirm-cake-time">Confirm</Button>
                               <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCakeTimePicker(false)}>Cancel</Button>
                             </div>
                           )}
                           <EditableText
                             className="flex-1 min-w-[150px] text-sm"
                             value={cakeNotes}
-                            onChange={setCakeNotes}
+                            onChange={(v) => { setCakeNotes(v); aiTouched("cake"); }}
                             placeholder="e.g., Dairy Queen (ordered on event day)"
                             data-testid="input-cake-notes"
                           />

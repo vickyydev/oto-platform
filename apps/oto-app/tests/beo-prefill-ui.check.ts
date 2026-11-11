@@ -28,7 +28,11 @@
 //      title — the model's guess — is never offered (SCRUM-827 review);
 //   8. text typed before AI Fill, not yet saved, survives the approval: the
 //      review keeps it, the one Save writes it as it stands, the read-back
-//      shows it (SCRUM-827 review).
+//      shows it (SCRUM-827 review);
+//   9. the Start Time, End Time, Cake and Setup Who marks: an edit turns each
+//      into "changed here", as the text fields' do (SCRUM-827 review; the Date
+//      edits the same way, but this fixture's chat date is the booked one, so
+//      it wears no mark to pin).
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-prefill-ui.check.ts
@@ -596,6 +600,37 @@ await check("text typed before AI Fill survives the approval: the review keeps i
   assert.equal(labelMark("textarea-special-requests"), null, "no mark: nobody's line");
 });
 
+await check("a time, the cake or the setup's who edited after the approval says changed here", async () => {
+  // E_TYPED, approved from the pasted message in the check before: the times the team's, the cake
+  // the family's, the setup's who the team's. These inputs sit beside their label, not under it.
+  const markAbove = (id: string, levels: number) => {
+    let block: HTMLElement = required(id);
+    for (let i = 0; i < levels; i += 1) block = block.parentElement!;
+    return byTestId("ai-review-source", block)?.textContent?.trim() ?? null;
+  };
+  assert.equal(markAbove("button-start-time-edit", 2), "from the team");
+  assert.equal(markAbove("button-end-time-edit", 2), "from the team");
+  assert.equal(markAbove("button-cake-external", 2), "from the family");
+  assert.equal(markAbove("button-clear-responsible", 2), "from the team");
+  // The start time, set again: changed here; the end time keeps its mark.
+  await click("button-start-time-edit");
+  await setValue(required("input-start-time") as HTMLInputElement, "14:30");
+  await click("button-confirm-start-time");
+  assert.equal(byTestId("button-confirm-start-time"), null, "the picker closed");
+  assert.equal(markAbove("button-start-time-edit", 2), "changed here");
+  assert.equal(markAbove("button-end-time-edit", 2), "from the team", "the end time keeps its mark");
+  // The end time, cleared: changed here.
+  await click("button-end-time-clear");
+  assert.equal(markAbove("button-end-time", 2), "changed here");
+  // The cake, made the family's own: changed here.
+  await click("button-cake-external");
+  assert.equal(markAbove("button-cake-external", 2), "changed here");
+  // The setup's who, cleared: changed here (the search opens in its place).
+  await click("button-clear-responsible");
+  assert.equal(markAbove("input-setup-responsible-search", 3), "changed here");
+  assert.equal(labelMark("input-event-decoration"), "from the family", "the others keep theirs");
+});
+
 await check("an empty BEO's sections say plain words, never a placeholder", async () => {
   await open(E_EMPTY);
   for (const section of ["party-host", "party-details", "setup-plan", "timeline"]) await click(`accordion-${section}`);
@@ -611,4 +646,4 @@ await check("an empty BEO's sections say plain words, never a placeholder", asyn
 
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
-process.exit(checks === 9 ? 0 : 1);
+process.exit(checks === 10 ? 0 : 1);

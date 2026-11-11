@@ -73,6 +73,9 @@ const MENU_LABEL: Record<BeoAiMenu, string> = { kids: "Kids", adults: "Adults", 
 const CAKE_LABEL: Record<BeoAiCakeMode, string> = { INTERNAL: "The park's cake", EXTERNAL: "The family's own cake", NONE: "No cake" };
 const SELECT = "h-8 rounded-md border border-input bg-background px-2 text-sm";
 
+/** SCRUM-827 review: the approval's answer — what it could not write, so the toast can say so. */
+type ApproveAnswer = { notWritten?: { timeline?: { message: string; steps: Array<{ time: string; label: string }> } } };
+
 /** The small mark beside a filled field. */
 export function SourceMark({ field }: { field: { from: Pick<BeoAiFrom, "source"> & Partial<BeoAiFrom> | null; changed: boolean } | null }) {
   const source = sourceOf(field as Parameters<typeof sourceOf>[0]);
@@ -848,9 +851,11 @@ export function BeoAiReviewDialog({
     setApproving(true);
     setError(null);
     let body: BeoAiApproveBody;
+    let answer: ApproveAnswer = {};
     try {
       body = approveBodyOf(review, state, { conversationId: source?.conversationId ?? null, messageId: source?.messageId ?? null });
-      await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/approve`, body);
+      const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/approve`, body);
+      answer = ((await res.json().catch(() => ({}))) ?? {}) as ApproveAnswer;
     } catch (err: any) {
       setError(err?.message || "The BEO was not saved: the server could not be reached just now.");
       setApproving(false);
@@ -871,10 +876,16 @@ export function BeoAiReviewDialog({
     } catch {
       // The BEO is saved; a read that failed catches up on the next one.
     }
-    toast({ title: `BEO created from the ${pasted ? "pasted message" : "conversation"}`, description: `Saved: ${APPROVAL_WRITES}.` });
+    // SCRUM-827 review: the chat's timed steps have no place on a party with no start time yet
+    // (the timeline holds a step as minutes from the start); the answer says so, and so does this.
+    const missing = answer.notWritten?.timeline;
+    const notWritten = missing
+      ? ` Not written: ${missing.steps.length === 1 ? "the timeline's step" : `the timeline's ${missing.steps.length} steps`} (${missing.steps.map((s) => `${s.time} ${s.label}`).join(", ")}) — ${missing.message}. Set the start time, then add them to the Timeline.`
+      : "";
+    toast({ title: `BEO created from the ${pasted ? "pasted message" : "conversation"}`, description: `Saved: ${APPROVAL_WRITES}.${notWritten}` });
     setApproving(false);
-    // SCRUM-827: one pass — nothing opens after this; the form wears the sources' marks.
-    onApproved(approvedMarksOf(body.sources), pending);
+    // SCRUM-827: one pass — nothing opens after this; the form wears the sources' marks (not a step's that was not written).
+    onApproved(approvedMarksOf(missing ? body.sources.filter((s) => !s.field.startsWith("timeline:")) : body.sources), pending);
   };
 
   return (

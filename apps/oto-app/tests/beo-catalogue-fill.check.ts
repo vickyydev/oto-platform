@@ -114,7 +114,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 17;
+const CHECKS = 19;
 
 const run = randomUUID().slice(0, 8);
 const tenantA = randomUUID();
@@ -135,7 +135,7 @@ const cat = {
   zombie: randomUUID(),
   otherPackage: randomUUID(), // park group B's: never matched for A
 };
-const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent", "paste"] as const;
+const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent", "paste", "noStart", "camp"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -336,6 +336,7 @@ const inbox = new Map<string, InboxRead>([
   [conv.b, confirmation("b", ev.b, transcriptOf("en", msgIds.b))],
   [conv.multi, confirmation("multi", ev.multi, MULTI_LINES)],
   [conv.parent, confirmation("parent", ev.parent, transcriptOf("en", msgIds.parent))],
+  [conv.camp, confirmation("camp", ev.camp, transcriptOf("en", msgIds.camp))],
 ]);
 // A platform older than SCRUM-815: no transcript in its answer.
 {
@@ -485,14 +486,18 @@ try {
             ($3, $4, 'Zombie game', 'Games', 30, 400000, true, 'session', 3)`,
     [cat.bubble, cat.face, cat.zombie, tenantA],
   );
-  const event = (id: string, tenant: string, branch: string, conversation: string, title: string) =>
+  const event = (id: string, tenant: string, branch: string, conversation: string, title: string, kind: { type?: string; start?: string } = {}) =>
     q(
       `insert into core_events (id, tenant_id, branch_id, event_type, title, event_date, start_time, status, inbox_conversation_id)
-       values ($1, $2, $3, 'birthday', $4, $6, '10:00', 'tentative', $5)`,
-      [id, tenant, branch, title, conversation, BOOKED],
+       values ($1, $2, $3, $7::core_event_type, $4, $6, $8, 'tentative', $5)`,
+      [id, tenant, branch, title, conversation, BOOKED, kind.type ?? "birthday", kind.start ?? "10:00"],
     );
-  for (const k of KEYS) if (k !== "b") await event(ev[k], tenantA, park, conv[k], `ZZ TEST 815 ${k}`);
+  for (const k of KEYS) if (k !== "b" && k !== "noStart" && k !== "camp") await event(ev[k], tenantA, park, conv[k], `ZZ TEST 815 ${k}`);
   await event(ev.b, tenantB, parkB, conv.b, "ZZ TEST 815 B");
+  // SCRUM-827 review: a party booked with no start time yet (the column is NOT NULL text; "no start
+  // time" is the empty string the app's own screens read as unset — server/routes.ts), and a camp.
+  await event(ev.noStart, tenantA, park, conv.noStart, "ZZ TEST 815 noStart", { start: "" });
+  await event(ev.camp, tenantA, park, conv.camp, "ZZ TEST 815 camp", { type: "camp" });
 
   await check("conversationAndCatalogueReachTheModel", async () => {
     for (const lang of ["ru", "th", "en"] as const) {
@@ -833,6 +838,55 @@ try {
     assert.equal(rows.event.title, "ZZ TEST 815 th", "SCRUM-827: a title the BEO holds is not overwritten unless the park's default is taken");
     assert.equal(rows.event.special_requests, "ZZ no nuts", "the rest is written all the same");
     assert.equal(body.details?.title, undefined);
+  });
+
+  await check("stepsWithNoStartTimeAreAnswered", async () => {
+    // SCRUM-827 review: the timeline holds a step as minutes from the party's start; a party with
+    // no start time yet has no place for the chat's timed steps. They are not dropped in silence:
+    // the rest is written, the answer names the steps and why, and the record counts them.
+    const body = {
+      conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [], otherLines: [],
+      event: { numChildren: 9 }, cake: null, deposit: null,
+      details: { activities: "ZZ games", timeline: [{ time: "16:00", label: "ZZ cake" }, { time: "15:00", label: "ZZ show" }] },
+      sources: [],
+    };
+    const res = await approve(ev.noStart, body);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.written.event, true, "the rest is written");
+    assert.equal(res.body.written.timelineLines, 0, "recorded: no step written");
+    assert.deepEqual(res.body.notWritten, {
+      timeline: { reason: "no_start_time", message: "the party has no start time yet", steps: [{ time: "16:00", label: "ZZ cake" }, { time: "15:00", label: "ZZ show" }] },
+    }, "the answer names the steps, so the review can say so");
+    const rows = await beoRows(ev.noStart);
+    assert.equal(rows.event.num_children, 9);
+    assert.equal(rows.event.activities, "ZZ games");
+    assert.equal(rows.event.start_time, "", "still no start time");
+    assert.deepEqual(await q("select label from beo_timeline_items where event_id = $1 and label like 'ZZ %'", [ev.noStart]), [], "no step placed without a start");
+    const meta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
+    assert.equal(meta?.written.timelineLines, 0);
+    assert.deepEqual(meta?.notWritten, { timeline: { reason: "no_start_time", steps: 2 } }, "the record counts them");
+    assert.ok(!rows.activity.some((r) => r.metadata_json.includes("ZZ cake")), "never the chat's words in the activity row");
+    // The start time in the same approval: the steps are the timeline's own lines, as before; nothing is "not written".
+    const withStart = await approve(ev.noStart, { ...body, event: { startTime: "14:00" } });
+    assert.equal(withStart.status, 200, JSON.stringify(withStart.body));
+    assert.equal(withStart.body.written.timelineLines, 2);
+    assert.equal(withStart.body.notWritten, undefined);
+    const placed = await q("select label, offset_from_start_minutes from beo_timeline_items where event_id = $1 and label like 'ZZ %' order by label", [ev.noStart]);
+    assert.deepEqual(placed, [{ label: "ZZ cake", offset_from_start_minutes: 120 }, { label: "ZZ show", offset_from_start_minutes: 60 }]);
+  });
+
+  await check("noBirthdayTitleForACampOrCorporateEvent", async () => {
+    // SCRUM-827 review: "Emma's Birthday" is the park's default name for a birthday (apps/api's Book
+    // Date names only birthdays so); a camp read from the same conversation is not named after the child.
+    const res = await fill(ev.camp);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const p = res.body.review?.proposal;
+    assert.ok(p, "the review opens");
+    assert.equal(p.details.title, null, "no title proposed for a camp");
+    assert.equal(p.event.childName?.value, WORDS.en.child, "the child is still read");
+    assert.equal(res.body.fill?.event?.title, "ZZ party en", "the free-text fill still carries the model's title, for Load into Editor");
+    // The birthday booked from the same conversation is named by the park's rule (the en event, read earlier).
+    assert.deepEqual(reviews.en!.proposal.details.title, { value: "Emma's Birthday", from: { source: "default", at: null, line: null } });
   });
 
   await check("approvalRefusesWhatTheCatalogueLacks", async () => {

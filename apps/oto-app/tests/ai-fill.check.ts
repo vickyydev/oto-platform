@@ -841,7 +841,7 @@ try {
       setupPlan: { readyBy: "", responsible: "", simplifiedTasks: [{ itemLabel: "balloon arch" }] },
       partyDetails: { packageName: "Floresta", notes: "", items: [] },
     };
-    const d = detailsFromFill(proposal, fill, { existingData: existing, from: ruling, event: { childName: null, kidTurningAge: 6 } });
+    const d = detailsFromFill(proposal, fill, { existingData: existing, from: ruling, event: { childName: null, kidTurningAge: 6, eventType: "birthday" } });
     assert.deepEqual(d.title, { value: "Mali's 6th Birthday", from: { source: "default", at: null, line: null } }, "the title: the app's rule, the park's default, never the model's");
     assert.equal(d.bookingName, null, "carried forward from the form: not proposed");
     assert.deepEqual(d.locationText, { value: "Jungle Room", from: ruling });
@@ -857,14 +857,25 @@ try {
       "the ruling's own words join only where the conversation holds no such words",
     );
     assert.deepEqual(d.timeline.map((t) => [t.time, t.label]), [["15:00", "the show"], ["16:00", "Cake"]], "the conversation's steps stand; the ruling's are not added beside them");
-    // No conversation read (the ruling alone): the ruling's requests and steps, all the team's; the title without an age.
-    const bare = detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), fill, { existingData: {}, from: ruling, event: null });
+    // No conversation read (the ruling alone): the ruling's requests and steps, all the team's; the title without an age
+    // (no event loaded: the form's own type says it is a birthday).
+    const bare = detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), fill, { existingData: { event: { eventType: "birthday" } }, from: ruling, event: null });
     assert.deepEqual(bare.title, { value: "Mali's Birthday", from: { source: "default", at: null, line: null } });
     assert.deepEqual(bare.bookingName, { value: "Khun Noi", from: ruling });
     assert.deepEqual(bare.requests.map((r) => [r.kind, r.text, r.from]), [["special_request", "no nuts please", ruling], ["decoration", "balloons", ruling], ["activity", "treasure hunt and games", ruling]]);
     assert.deepEqual(bare.timeline, [{ time: "17:00", label: "the end", from: ruling }]);
     assert.equal(bare.setup.tasks.length, 2);
-    assert.equal(detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), BeoFillSchema.parse({}), { existingData: {}, from: ruling, event: { childName: "  ", kidTurningAge: 5 } }).title, null, "no child's name: no title, never a made-up one");
+    assert.equal(detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), BeoFillSchema.parse({}), { existingData: {}, from: ruling, event: { childName: "  ", kidTurningAge: 5, eventType: "birthday" } }).title, null, "no child's name: no title, never a made-up one");
+    // SCRUM-827 review: "Mali's 6th Birthday" is a birthday's name (as apps/api's Book Date names only birthdays so):
+    // a camp or a corporate event is not named after a child's birthday — the event's type decides, else the form's.
+    const titled = (event: { childName?: string | null; kidTurningAge?: number | null; eventType?: string | null } | null, existingData: unknown = {}) =>
+      detailsFromFill(resolveCatalogueAnswer({}, CATALOGUE, [], ruling), fill, { existingData, from: ruling, event }).title;
+    assert.equal(titled({ childName: null, kidTurningAge: 6, eventType: "camp" }), null, "a camp");
+    assert.equal(titled({ childName: null, kidTurningAge: 6, eventType: "private_event" }), null, "a corporate event");
+    assert.equal(titled({ childName: null, kidTurningAge: 6, eventType: "camp" }, { event: { eventType: "birthday" } }), null, "the event's type wins over the form's");
+    assert.deepEqual(titled({ childName: null, kidTurningAge: 6, eventType: "birthday" })?.value, "Mali's 6th Birthday");
+    assert.equal(titled(null, { event: { eventType: "camp" } }), null, "no event: the form's type");
+    assert.equal(titled(null, {}), null, "no type known: no title, never a guess");
     // The naming rule, as Book Date and the Events form name a party.
     assert.equal(beoEventTitleOf("Mali", 1), "Mali's 1st Birthday");
     assert.equal(beoEventTitleOf("Mali", 2), "Mali's 2nd Birthday");
@@ -907,7 +918,7 @@ try {
         setupPlan: { readyBy: "13:30", responsible: "Ying", simplifiedTasks: [{ itemLabel: "Kids' table", notes: "12 seats" }] },
         partyDetails: { notes: "pay the rest on the day", items: [{ description: "Extra hour", type: "extra" }] },
       }),
-      { existingData: {}, from: ruling, event: { childName: null, kidTurningAge: 6 } },
+      { existingData: {}, from: ruling, event: { childName: null, kidTurningAge: 6, eventType: "birthday" } },
     );
     const review = {
       origin: "inbox" as const, proposal, catalogue: CATALOGUE, finalMessage: null, ruling, transcript: { lines: 3, cut: false }, replaces: [], parentSelection: null,

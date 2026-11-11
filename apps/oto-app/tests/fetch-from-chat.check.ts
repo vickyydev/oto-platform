@@ -231,9 +231,10 @@ registerAIRoutes(app, fakeAuth, {
   now: () => new Date("2026-11-10T03:05:00Z"),
   loadEvent: async (_req, eventId) => {
     const key = (Object.keys(ev) as Array<keyof typeof ev>).find((k) => ev[k] === eventId);
-    if (key) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: conv[key] };
-    if (eventId === proof.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: proof.conv };
-    if (eventId === mirror.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: mirror.conv };
+    // SCRUM-827 review: the loader carries the event's type; the park's default title is a birthday's.
+    if (key) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: conv[key], eventType: "birthday" };
+    if (eventId === proof.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: proof.conv, eventType: "birthday" };
+    if (eventId === mirror.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: mirror.conv, eventType: "birthday" };
     return null;
   },
   teamCandidates: async () => ({ employees: [], departments: [], hostSource: "employee" as const }),

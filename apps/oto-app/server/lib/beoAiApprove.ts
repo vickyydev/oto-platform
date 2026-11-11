@@ -76,8 +76,18 @@ export interface ApproveEvent {
   title: string;
 }
 
+/**
+ * SCRUM-827 review: what the approval could not write, and why, so the review
+ * can say so instead of dropping it in silence. The timeline holds a step as
+ * minutes from the party's start (`beo_timeline_items.offset_from_start_minutes`):
+ * a party with no start time yet has no place for the chat's timed steps.
+ */
+export interface NotWritten {
+  timeline?: { reason: "no_start_time"; message: string; steps: Array<{ time: string; label: string }> };
+}
+
 export type ApproveOutcome =
-  | { ok: true; written: Record<string, number | boolean> }
+  | { ok: true; written: Record<string, number | boolean>; notWritten: NotWritten }
   | { ok: false; status: 400; message: string };
 
 type KitchenLine = Record<string, unknown> & { source?: string };
@@ -217,6 +227,7 @@ export async function approveBeoAiFill(
 
   const food = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
   const written: Record<string, number | boolean> = {};
+  const notWritten: NotWritten = {};
   const matches: Array<Record<string, unknown>> = [];
 
   await db.transaction(async (tx) => {
@@ -521,6 +532,13 @@ export async function approveBeoAiFill(
           });
         }
         written.timelineLines = steps.length;
+      } else {
+        // A step is held as minutes from the start; with no start time yet, a step's own clock
+        // time has no place. Said in the answer (SCRUM-827 review), never dropped in silence.
+        written.timelineLines = 0;
+        if (steps.length > 0) {
+          notWritten.timeline = { reason: "no_start_time", message: "the party has no start time yet", steps: steps.map((s) => ({ time: s.time, label: s.label })) };
+        }
       }
     }
 
@@ -558,11 +576,13 @@ export async function approveBeoAiFill(
           sources: body.sources,
           matches,
           written,
+          // What could not be written, counted: never the chat's words.
+          ...(notWritten.timeline ? { notWritten: { timeline: { reason: notWritten.timeline.reason, steps: notWritten.timeline.steps.length } } } : {}),
         }),
       },
       tx,
     );
   });
 
-  return { ok: true, written };
+  return { ok: true, written, notWritten };
 }

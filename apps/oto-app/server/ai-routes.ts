@@ -83,6 +83,8 @@ export interface BeoFillEvent {
   /** SCRUM-827: what the event already holds of the child, for the party's name (the app's own rule). */
   childName?: string | null;
   kidTurningAge?: number | null;
+  /** SCRUM-827 review: the party's name is proposed for a birthday only, never a camp or a corporate event. */
+  eventType?: string | null;
 }
 
 /** What the routes reach outside themselves; a check replaces any of them. */
@@ -192,6 +194,7 @@ export const defaultAiRouteDeps: AiRouteDeps = {
         inboxConversationId: coreEvents.inboxConversationId,
         childName: coreEvents.childName,
         kidTurningAge: coreEvents.kidTurningAge,
+        eventType: coreEvents.eventType,
       })
       .from(coreEvents)
       .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, tenantId)));
@@ -715,8 +718,10 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         // The BEO stands; the timeline catches up at the next Save.
         log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the BEO timeline was not generated after an AI fill approval");
       }
-      log().info({ eventId: event.id, written: outcome.written }, "ai fill approved");
-      res.json({ written: outcome.written });
+      // SCRUM-827 review: what could not be written rides in the answer, so the review can say so.
+      const notWritten = Object.keys(outcome.notWritten).length > 0 ? outcome.notWritten : undefined;
+      log().info({ eventId: event.id, written: outcome.written, notWrittenSteps: notWritten?.timeline?.steps.length ?? 0 }, "ai fill approved");
+      res.json({ written: outcome.written, ...(notWritten ? { notWritten } : {}) });
     } catch (error: any) {
       log().warn({ err: error?.message ?? String(error) }, "the AI fill approval failed");
       next(error);
