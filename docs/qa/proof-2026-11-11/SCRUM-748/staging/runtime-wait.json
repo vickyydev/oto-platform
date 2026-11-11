@@ -1,0 +1,68 @@
+{
+  "startedAt": "2026-11-11T13:18:56.004Z",
+  "source": "9b3ba1f8f6544362be58fbbce3772cf16a39f722",
+  "samples": [
+    {
+      "at": "2026-11-11T13:19:03.118Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:20:03.332Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:21:03.515Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:22:03.694Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:23:03.871Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:24:04.062Z",
+      "status": 200,
+      "sha": "22263520da3218805bf520d300966e9a739c3b41"
+    },
+    {
+      "at": "2026-11-11T13:25:04.290Z",
+      "status": 200,
+      "sha": "266830f9b5b0d624325bfcd362a13a1b56009f46"
+    }
+  ],
+  "cleanup": [
+    {
+      "origin": "https://oto-app-staging.onrender.com",
+      "status": 200,
+      "readStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "status": 200,
+      "readStatus": 401
+    }
+  ],
+  "ready": true,
+  "blobs": [
+    {
+      "path": "apps/oto-app/client/src/lib/uploadQueue.ts",
+      "source": "e9395727de62ce2a7351a921e77072bbc1d6e524",
+      "running": "e9395727de62ce2a7351a921e77072bbc1d6e524"
+    },
+    {
+      "path": "apps/oto-app/server/core/checklistMediaRoutes.ts",
+      "source": "09e8a366d97c513ff5ac5f523b52614075bbf41f",
+      "running": "09e8a366d97c513ff5ac5f523b52614075bbf41f"
+    }
+  ],
+  "runningSha": "266830f9b5b0d624325bfcd362a13a1b56009f46",
+  "finishedAt": "2026-11-11T13:25:07.806Z"
+}
