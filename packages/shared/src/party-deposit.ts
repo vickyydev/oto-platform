@@ -63,6 +63,15 @@ export const PartyDepositWriteBackSchema = z.object({
   syncError: z.string().nullable(),
 });
 
+/**
+ * Where the assistant's request line stands with the channel (the message's
+ * `provider_status`): `queued` until the channel took it, `sent` / `delivered`
+ * / `read` once it did, `failed` when every attempt was refused, `withdrawn`
+ * when the send path held it back. The BEO words each one.
+ */
+export const PARTY_LINE_STATUSES = ['queued', 'sent', 'delivered', 'read', 'failed', 'withdrawn'] as const;
+export type PartyLineStatus = (typeof PARTY_LINE_STATUSES)[number];
+
 /** One request, as the platform holds it. */
 export const PartyDepositRequestViewSchema = z.object({
   id: z.string().uuid(),
@@ -88,6 +97,8 @@ export const PartyDepositRequestViewSchema = z.object({
   depositBeforeSatang: z.number().int().nullable(),
   depositAfterSatang: z.number().int().nullable(),
   writeBack: PartyDepositWriteBackSchema.nullable(),
+  /** The request line's delivery state; null while no line was posted (the page never opened). */
+  requestLineStatus: z.enum(PARTY_LINE_STATUSES).nullable(),
 });
 export type PartyDepositRequestView = z.infer<typeof PartyDepositRequestViewSchema>;
 
@@ -161,5 +172,10 @@ export const PARTY_DEPOSIT_REFUSALS = {
   NOT_CONFIGURED: {
     code: 'DEPOSIT_NOT_CONFIGURED',
     message: 'Online payment is not set up on this deployment yet (no return address for the payment page).',
+  },
+  /** The gateway would not open its page: nothing was posted, and the same press again is answered this again (400). */
+  PAGE_NOT_OPENED: {
+    code: 'DEPOSIT_PAGE_NOT_OPENED',
+    message: 'The payment page could not be opened, so nothing was sent to the family. Press Request deposit again in a moment.',
   },
 } as const;

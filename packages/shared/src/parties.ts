@@ -93,12 +93,23 @@ export type PartyEditFields = z.infer<typeof PartyEditFieldsSchema>;
 export const PARTY_EDITABLE_FIELDS = Object.keys(PartyEditFieldsSchema.shape) as Array<keyof PartyEditFields>;
 
 /**
+ * SCRUM-825 — an edit that reports a FACT rather than a till's change: a
+ * deposit the family paid through the gateway. The OTO App records a fact
+ * whatever it changed since (a BEO save after the payment cannot refuse it as
+ * superseded, the way SCRUM-803's settlement sale is taken), so the marker is
+ * only ever set by the platform's own writers, never from a PATCH.
+ */
+export const PARTY_EDIT_FACTS = ['gateway_deposit'] as const;
+export type PartyEditFact = (typeof PARTY_EDIT_FACTS)[number];
+
+/**
  * SCRUM-804 — what a stored edit may carry beyond a till's own fields: the
  * settlement sale's id, which the PLATFORM writes back when a party's
- * settlement closes (`beo_event_billing.pos_order_ref` in the OTO App). Never
- * a till's to send: a PATCH naming it has it ignored, as any protected field.
+ * settlement closes (`beo_event_billing.pos_order_ref` in the OTO App), and
+ * (SCRUM-825) the fact marker above. Never a till's to send: a PATCH naming
+ * either has it ignored, as any protected field.
  */
-export type PartyStoredEditFields = PartyEditFields & { posSaleId?: string };
+export type PartyStoredEditFields = PartyEditFields & { posSaleId?: string; fact?: PartyEditFact };
 
 /** The keys of a PATCH body that address the request rather than the party. */
 export const PARTY_PATCH_ENVELOPE = ['branchId', 'editId', 'stationId', 'actionId'] as const;

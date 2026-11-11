@@ -180,6 +180,27 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * message where the park is already known, so it asks the date and roughly
  * how many people only.
  */
+/**
+ * SCRUM-825 (`0115_party_deposit_request`): the party messages the assistant
+ * posts from the BEO — the deposit request with its payment link, the one
+ * reminder, the confirmation once the gateway settled it; the parent's
+ * set-menu link and the confirmation of their choices. Each carries the
+ * placeholders the party-messages service fills (`{{amount}}`, `{{date}}`,
+ * `{{link}}`, `{{validUntil}}`), never a customer's name.
+ *
+ * A line of one of these keys stands for a press or a fact, not for a turn
+ * of the conversation: the send path never withdraws it when a person writes
+ * in the thread after it (`inbox/send.ts`, the overtaken rule).
+ */
+export const PARTY_LINE_TEMPLATE_KEYS = [
+  'party_deposit_request',
+  'party_deposit_reminder',
+  'party_deposit_received',
+  'party_menu_link',
+  'party_menu_received',
+] as const;
+export type PartyLineTemplateKey = (typeof PARTY_LINE_TEMPLATE_KEYS)[number];
+
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
   'handover_birthday',
@@ -198,19 +219,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_booking',
   'opener_birthday_advice',
   'opener_birthday_advice_park_known',
-  /**
-   * SCRUM-825 (`0115_party_deposit_request`): the party messages the assistant
-   * posts from the BEO — the deposit request with its payment link, the one
-   * reminder, the confirmation once the gateway settled it; the parent's
-   * set-menu link and the confirmation of their choices. Each carries the
-   * placeholders the party-messages service fills (`{{amount}}`, `{{date}}`,
-   * `{{link}}`, `{{validUntil}}`), never a customer's name.
-   */
-  'party_deposit_request',
-  'party_deposit_reminder',
-  'party_deposit_received',
-  'party_menu_link',
-  'party_menu_received',
+  ...PARTY_LINE_TEMPLATE_KEYS,
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 

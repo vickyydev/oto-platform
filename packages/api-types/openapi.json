@@ -16912,6 +16912,18 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "requestLineStatus": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "sent",
+                            "delivered",
+                            "read",
+                            "failed",
+                            "withdrawn"
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -16932,7 +16944,8 @@
                         "closeReason",
                         "depositBeforeSatang",
                         "depositAfterSatang",
-                        "writeBack"
+                        "writeBack",
+                        "requestLineStatus"
                       ],
                       "additionalProperties": false,
                       "nullable": true
@@ -17038,6 +17051,18 @@
                             ],
                             "additionalProperties": false,
                             "nullable": true
+                          },
+                          "requestLineStatus": {
+                            "type": "string",
+                            "enum": [
+                              "queued",
+                              "sent",
+                              "delivered",
+                              "read",
+                              "failed",
+                              "withdrawn"
+                            ],
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -17058,7 +17083,8 @@
                           "closeReason",
                           "depositBeforeSatang",
                           "depositAfterSatang",
-                          "writeBack"
+                          "writeBack",
+                          "requestLineStatus"
                         ],
                         "additionalProperties": false
                       }
@@ -17228,6 +17254,18 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "requestLineStatus": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "sent",
+                            "delivered",
+                            "read",
+                            "failed",
+                            "withdrawn"
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -17248,7 +17286,8 @@
                         "closeReason",
                         "depositBeforeSatang",
                         "depositAfterSatang",
-                        "writeBack"
+                        "writeBack",
+                        "requestLineStatus"
                       ],
                       "additionalProperties": false
                     },
@@ -17419,6 +17458,18 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "requestLineStatus": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "sent",
+                            "delivered",
+                            "read",
+                            "failed",
+                            "withdrawn"
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -17439,7 +17490,8 @@
                         "closeReason",
                         "depositBeforeSatang",
                         "depositAfterSatang",
-                        "writeBack"
+                        "writeBack",
+                        "requestLineStatus"
                       ],
                       "additionalProperties": false
                     },
@@ -17610,6 +17662,18 @@
                           ],
                           "additionalProperties": false,
                           "nullable": true
+                        },
+                        "requestLineStatus": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "sent",
+                            "delivered",
+                            "read",
+                            "failed",
+                            "withdrawn"
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -17630,7 +17694,8 @@
                         "closeReason",
                         "depositBeforeSatang",
                         "depositAfterSatang",
-                        "writeBack"
+                        "writeBack",
+                        "requestLineStatus"
                       ],
                       "additionalProperties": false
                     },

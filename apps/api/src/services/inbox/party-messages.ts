@@ -41,7 +41,10 @@ import { sendAfterCommit } from './send';
  *      bubbles (`ai-engine.ts` `writeLines`): the send job and the
  *      post-commit send take it from there, the pills and the "1 more" read
  *      it as any assistant line, the thread's preview moves, and the staff
- *      clock does not (an AI line is not an answer).
+ *      clock does not (an AI line is not an answer). One difference, kept in
+ *      the send path by the line's template key (`PARTY_LINE_TEMPLATE_KEYS`):
+ *      a party line is NEVER WITHDRAWN when a person writes in the thread
+ *      before it left — it stands for a press or a fact, not for a turn.
  *   4. AUDITED, WITHOUT ITS WORDS. Each line is one audit row and, where the
  *      caller asks, one timeline pill — ids, the key, the language and the
  *      length, never the text and never the link.

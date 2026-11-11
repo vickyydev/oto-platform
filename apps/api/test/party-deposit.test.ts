@@ -6,11 +6,13 @@ import { PartyDepositActionAnswerSchema, PartyDepositAnswerSchema, PartyMessageA
 import { signJwt } from '@oto/payments-2c2p';
 import { otoAppProvisionKeyDigest } from '../src/lib/otoapp-provision-keys';
 import { conversationEventOf } from '../src/services/inbox/book-date';
+import { runInboxSendJob, sendQueuedMessage } from '../src/services/inbox/send';
 import type { DirectoryEventEditAnswer, DirectoryEventEditBody, DirectoryNotificationBody, DirectoryOutcome, OtoAppDirectory } from '../src/services/otoapp-directory';
-import { partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
-import { gatewayFor } from '../src/services/payments/gateway';
+import { configurePartyDeposit, partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
+import { gatewayFor, pollPendingAttempts } from '../src/services/payments/gateway';
 import {
   CENTRAL_BRANCH_CODE,
+  CHALONG_BRANCH_CODE,
   RECEPTION,
   SECOND_OPERATOR_NAME,
   branchIdByCode,
@@ -48,6 +50,17 @@ import {
  *     is written back to the app (SCRUM-804's party edit, prepaymentAmountThb
  *     and the paid day), the confirmation is posted once, the birthday
  *     manager's bell rings once — and a replayed notification changes nothing;
+ *   - the write-back is a FACT: a BEO save after the payment (the app's
+ *     order rule, which the stand-in applies) cannot refuse it, it goes alone
+ *     (an older till edit still waiting is not carried into it), and the view
+ *     reads synced; the figure is read where the party is NOW (moved to the
+ *     operator's other park, it pays onto its figure) and never as zero (a
+ *     party the till cannot read rolls the settlement back for the next
+ *     notification, and the poller goes on with its tick);
+ *   - the gateway would not open the page: refused by name with nothing
+ *     posted, the same key again the same refusal, a new key a fresh request;
+ *   - a party line is never withdrawn when a person writes in the thread
+ *     before it left, and the BEO reads where the line stands;
  *   - the link runs out unpaid: the request is `expired`, and the next press
  *     issues a fresh link as a new request;
  *   - the follow-up job: no reminder before the window, ONE after it, the
@@ -81,6 +94,9 @@ let reception: string;
 let receptionAccountId: string;
 let appTenant: string;
 let appPark: string;
+/** The park group's other park, anchored to Robinson Chalong; and one anchored to no platform branch. */
+let appPark2: string;
+let appParkUnknown: string;
 let presser: string;
 let manager: string;
 let channelAccountId: string;
@@ -90,6 +106,14 @@ let phoneSeq = 0;
 /** What the stand-in OTO App was told: every party edit and every bell. */
 const edits: Array<{ eventId: string; body: DirectoryEventEditBody }> = [];
 const bells: DirectoryNotificationBody[] = [];
+/**
+ * The app's ORDER RULE, as the stand-in applies it (the app's eventWrites.ts
+ * `editPartyEvent`): a party saved in the app after an edit's stamp refuses
+ * the edit as `edit_superseded` — unless the edit is a FACT the platform
+ * settled (`fact: 'gateway_deposit'`), which the app records whatever it
+ * changed since. A test sets the party's last save here to play a BEO save.
+ */
+const appUpdatedAt = new Map<string, Date>();
 const directory: OtoAppDirectory = {
   configured: true,
   async checkinAttendee() {
@@ -100,6 +124,16 @@ const directory: OtoAppDirectory = {
   },
   async editEvent(eventId, body): Promise<DirectoryOutcome<DirectoryEventEditAnswer>> {
     edits.push({ eventId, body });
+    const savedAt = appUpdatedAt.get(eventId);
+    if (body.fact !== 'gateway_deposit' && savedAt && savedAt.getTime() > new Date(body.editedAt).getTime()) {
+      return {
+        ok: false,
+        status: 409,
+        code: 'edit_superseded',
+        message: 'This party was changed in the OTO App after the edit was made at the till, so the edit was not applied',
+        retryable: false,
+      };
+    }
     return {
       ok: true,
       status: 200,
@@ -330,6 +364,14 @@ beforeAll(async () => {
   await ctx.db.execute(sql`
     insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
     values (${appPark}, ${appTenant}, 'ZZ TEST 825 park', 'Phuket', ${central})`);
+  // The group's other park, anchored to the operator's other branch; and one the till does not know.
+  const chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
+  appPark2 = newId();
+  appParkUnknown = newId();
+  await ctx.db.execute(sql`
+    insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+    values (${appPark2}, ${appTenant}, 'ZZ TEST 825 other park', 'Phuket', ${chalong}),
+           (${appParkUnknown}, ${appTenant}, 'ZZ TEST 825 unmapped park', 'Phuket', null)`);
   const appUser = async (platformUserId: string | null, name: string) => {
     const id = newId();
     await ctx.db.insert(otoappUsers).values({
@@ -629,6 +671,200 @@ describe('the family pays: the signed notification settles it, the one deposit m
     const read = PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json());
     expect(read.current?.id).toBe(next.request.id);
     expect(read.history.map((r) => r.state)).toEqual(['requested', 'paid']);
+  });
+});
+
+// --- The write-back as a fact, and the figure it moves ------------------------------------------
+
+describe('the write-back is a FACT the app records whatever it changed since', () => {
+  it('a BEO save after the payment cannot strand the one figure: the fact lands, alone, and the view reads synced', async () => {
+    const { eventId } = await party({ depositThb: 1_000 });
+    const made = await requestOk(eventId);
+    // A till edit of the party still waiting for the app (the app was unreachable), older than the payment.
+    const waiting = newId();
+    const earlier = new Date(Date.now() - 60_000);
+    await ctx.db.insert(partyEdit).values({
+      id: waiting,
+      operatorId,
+      branchId: central,
+      otoappEventId: eventId,
+      fields: { expectedKids: 12 },
+      syncState: 'pending',
+      accountId: receptionAccountId,
+      createdAt: earlier,
+      updatedAt: earlier,
+    });
+    // The BEO saved the party AFTER the money lands: the app's order rule refuses any plain edit stamped before it.
+    appUpdatedAt.set(eventId, new Date(Date.now() + 60_000));
+    const plain = await directory.editEvent!(eventId, { id: newId(), editedAt: new Date().toISOString(), fields: { decoration: 'ZZ TEST' } });
+    expect(plain).toMatchObject({ ok: false, status: 409, code: 'edit_superseded' });
+    const told = edits.length;
+    try {
+      await press((await requestRow(made.request.id)).paymentAttemptId, 'pay');
+      const after = await requestRow(made.request.id);
+      expect(after).toMatchObject({ state: 'paid', depositBeforeSatang: 100_000, depositAfterSatang: 400_000 });
+      expect(edits.length).toBe(told + 1);
+      const edit = edits[edits.length - 1]!;
+      expect(edit.body.fact).toBe('gateway_deposit');
+      expect(Object.keys(edit.body.fields).sort()).toEqual(['prepaymentAmountThb', 'prepaymentDate']);
+      expect(edit.body.fields.prepaymentAmountThb).toBe(4_000);
+      const [editRow] = await ctx.db.select().from(partyEdit).where(eq(partyEdit.id, after.writeBackEditId!));
+      expect(editRow).toMatchObject({ syncState: 'synced', fields: { depositSatang: 400_000, fact: 'gateway_deposit' } });
+      // The waiting till edit was not carried into the fact: it still waits, on its own.
+      const [still] = await ctx.db.select().from(partyEdit).where(eq(partyEdit.id, waiting));
+      expect(still!.syncState).toBe('pending');
+      const read = PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json());
+      expect(read.current?.writeBack).toEqual({ editId: after.writeBackEditId, syncState: 'synced', syncError: null });
+    } finally {
+      appUpdatedAt.delete(eventId);
+    }
+  });
+});
+
+describe('the deposit figure is read where the party is NOW, and never as zero', () => {
+  it('a party moved to the operator’s other park after the request pays onto its figure: before + amount', async () => {
+    const { eventId } = await party({ depositThb: 1_000 });
+    const made = await requestOk(eventId);
+    await ctx.db.execute(sql`update otoapp.core_events set branch_id = ${appPark2} where id = ${eventId}`);
+    await press((await requestRow(made.request.id)).paymentAttemptId, 'pay');
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'paid', depositBeforeSatang: 100_000, depositAfterSatang: 400_000 });
+    expect(edits[edits.length - 1]).toMatchObject({ eventId, body: { fact: 'gateway_deposit', fields: { prepaymentAmountThb: 4_000 } } });
+  });
+
+  it('a party the till cannot read is not settled as zero: the settlement is rolled back, the poller goes on, the next notification settles it', async () => {
+    const { eventId, conversationId } = await party({ depositThb: 1_000 });
+    const made = await requestOk(eventId);
+    const row = await requestRow(made.request.id);
+    const before = { edits: edits.length, bells: bells.length };
+    // Moved to a park the till does not know: no platform branch is anchored to it.
+    await ctx.db.execute(sql`update otoapp.core_events set branch_id = ${appParkUnknown} where id = ${eventId}`);
+    const pressed = await press(row.paymentAttemptId, 'pay');
+    expect([200, 302, 303]).toContain(pressed.statusCode);
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'requested', paidAt: null, depositBeforeSatang: null, depositAfterSatang: null, writeBackEditId: null });
+    const attempt = await attemptRow(row.paymentAttemptId);
+    expect(attempt.status).not.toBe('approved');
+    expect(await linesOf(conversationId!)).toHaveLength(1);
+    expect(await pillsOf(conversationId!, 'deposit_paid')).toHaveLength(0);
+    expect(edits.length).toBe(before.edits);
+    // The poller finds the gateway paid, cannot settle it either, and goes on with its tick rather than aborting it.
+    const stuck = await pollPendingAttempts(ctx.db, ctx.app.env, ctx.app.log, new Date(attempt.createdAt.getTime() + 90_000));
+    expect(stuck.failed).toBeGreaterThanOrEqual(1);
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'requested' });
+    // Back where the till knows it: the next notification settles it onto the real figure.
+    await ctx.db.execute(sql`update otoapp.core_events set branch_id = ${appPark} where id = ${eventId}`);
+    const again = await postNotification(notification({ invoiceNo: row.invoiceNo, amount: wire(THB_3000), tranRef: 'TR-ZZ-825-UNREADABLE' }));
+    expect(again.json().outcome).toBe('settled');
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'paid', depositBeforeSatang: 100_000, depositAfterSatang: 400_000 });
+    expect((await attemptRow(row.paymentAttemptId)).status).toBe('approved');
+    expect(await linesOf(conversationId!)).toHaveLength(2);
+    expect(await pillsOf(conversationId!, 'deposit_paid')).toHaveLength(1);
+    expect(edits.length).toBe(before.edits + 1);
+    expect(bells.length).toBe(before.bells + 1);
+  });
+});
+
+// --- The gateway would not open the page -------------------------------------------------------
+
+describe('the gateway would not open the page', () => {
+  it('the press is refused by name with nothing posted; the same key again is the same refusal; a new key makes a fresh request', async () => {
+    const { eventId, conversationId } = await party();
+    const sim = gatewayFor(ctx.app.env).qr as unknown as { createHostedPayment: (...args: unknown[]) => Promise<unknown> };
+    const real = sim.createHostedPayment;
+    sim.createHostedPayment = () => Promise.reject(new Error('ZZ TEST: the gateway is down'));
+    const idem = newId();
+    try {
+      const refused = await request(eventId, { amountSatang: THB_3000, actorAppUserId: presser }, { idem });
+      expect(refused.statusCode, refused.body).toBe(400);
+      expect(refused.json().error.code).toBe('DEPOSIT_PAGE_NOT_OPENED');
+      const rows = await ctx.db.select().from(partyDepositRequest).where(eq(partyDepositRequest.otoappEventId, eventId));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ state: 'cancelled', closeReason: 'gateway_refused', paymentLink: null, requestMessageId: null });
+      expect((await attemptRow(rows[0]!.paymentAttemptId)).status).toBe('declined');
+      expect(await linesOf(conversationId!)).toHaveLength(0);
+      expect(await pillsOf(conversationId!, 'deposit_requested')).toHaveLength(0);
+      const read = PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json());
+      expect(read.current).toMatchObject({ id: rows[0]!.id, state: 'cancelled', closeReason: 'gateway_refused', requestLineStatus: null });
+      // The app may keep the press id for a retry it cannot tell from a lost answer: the same key is the same refusal, never "already asked".
+      const again = await request(eventId, { amountSatang: THB_3000, actorAppUserId: presser }, { idem });
+      expect(again.statusCode, again.body).toBe(400);
+      expect(again.json().error.code).toBe('DEPOSIT_PAGE_NOT_OPENED');
+      expect(await ctx.db.select().from(partyDepositRequest).where(eq(partyDepositRequest.otoappEventId, eventId))).toHaveLength(1);
+    } finally {
+      sim.createHostedPayment = real;
+    }
+    const fresh = await requestOk(eventId);
+    expect(fresh.request.state).toBe('requested');
+    expect(['queued', 'sent']).toContain(fresh.request.requestLineStatus);
+    expect(await linesOf(conversationId!)).toHaveLength(1);
+    expect(PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json()).current?.id).toBe(fresh.request.id);
+  });
+});
+
+// --- A party line is never withdrawn ---------------------------------------------------------------
+
+describe('a party line is never withdrawn by a person’s reply, and the BEO reads where it stands', () => {
+  it('a staff line between the post and the send withdraws the assistant’s own turn, not the deposit line; the view says sent, then failed', async () => {
+    const { eventId, conversationId } = await party();
+    // No post-commit send: the line waits for the sweeper, as it does while outbound is paused or the provider is down.
+    configurePartyDeposit({ directory: () => directory, sender: () => null });
+    const made = await requestOk(eventId).finally(() =>
+      configurePartyDeposit({ directory: () => directory, sender: () => ({ channels: ctx.app.inboxChannels, storage: ctx.app.fileStorage ?? null }) }),
+    );
+    const [line] = await linesOf(conversationId!);
+    expect(line!.providerStatus).toBe('queued');
+    expect(made.request.requestLineStatus).toBe('queued');
+
+    // A turn of the assistant's own, queued a moment after the deposit line; then a person's reply after both.
+    // (Milliseconds apart, so both rows are already due when the sweeper's send is asked for them.)
+    const turn = newId();
+    const t0 = new Date(line!.createdAt.getTime() + 1);
+    await ctx.db.insert(s.message).values({
+      id: turn,
+      operatorId,
+      conversationId: conversationId!,
+      channelAccountId,
+      direction: 'outbound',
+      authorKind: 'ai',
+      body: 'ZZ TEST a turn of the assistant',
+      bodyLanguage: 'en',
+      providerStatus: 'queued',
+      nextAttemptAt: null,
+      createdAt: t0,
+      updatedAt: t0,
+    });
+    const t1 = new Date(t0.getTime() + 1);
+    await ctx.db.insert(s.message).values({
+      id: newId(),
+      operatorId,
+      conversationId: conversationId!,
+      channelAccountId,
+      direction: 'outbound',
+      authorKind: 'staff',
+      authorAccountId: receptionAccountId,
+      body: 'ZZ TEST a person replied',
+      providerStatus: 'sent',
+      sentAt: t1,
+      createdAt: t1,
+      updatedAt: t1,
+    });
+    // The sweeper's send of each, by id (its batch is fifty rows oldest first: the seeded thread's own queue comes before these).
+    const deps = { channels: ctx.app.inboxChannels, storage: null };
+    expect(await sendQueuedMessage(ctx.db, deps, turn)).toEqual({ messageId: turn, outcome: 'withdrawn' });
+    expect((await sendQueuedMessage(ctx.db, deps, line!.id)).outcome).toBe('sent');
+    const [sent] = await ctx.db.select().from(s.message).where(eq(s.message.id, line!.id));
+    expect(sent!.providerStatus).toBe('sent');
+    const [withdrawn] = await ctx.db.select().from(s.message).where(eq(s.message.id, turn));
+    expect(withdrawn!.providerStatus).toBe('withdrawn');
+    // Asked again by the sweeper, nothing withdraws the sent line and nothing sends the withdrawn turn.
+    await runInboxSendJob(ctx.db, deps, new Date(t1.getTime() + 60_000));
+    expect((await ctx.db.select().from(s.message).where(eq(s.message.id, line!.id)))[0]!.providerStatus).toBe('sent');
+    expect((await ctx.db.select().from(s.message).where(eq(s.message.id, turn)))[0]!.providerStatus).toBe('withdrawn');
+    expect((await pillsOf(conversationId!, 'ai_withdrawn')).map((p) => (p.payload as { messageId?: string }).messageId)).toEqual([turn]);
+    expect(PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json()).current?.requestLineStatus).toBe('sent');
+
+    // A line the channel refused for good shows as such.
+    await ctx.db.update(s.message).set({ providerStatus: 'failed' }).where(eq(s.message.id, line!.id));
+    expect(PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json()).current?.requestLineStatus).toBe('failed');
   });
 });
 

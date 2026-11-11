@@ -2301,7 +2301,18 @@ export async function pollPendingAttempts(
     if (facts.state === 'paid' || bookingLate) {
       // The poller's own answer IS the inquiry, so it settles directly rather
       // than inquiring a second time about the call it just made.
-      const settled = await settlePaidAttempt(db, env, log, { attempt, facts, source: 'inquiry' });
+      let settled: SettleOutcome;
+      try {
+        settled = await settlePaidAttempt(db, env, log, { attempt, facts, source: 'inquiry' });
+      } catch (err) {
+        // SCRUM-825 — a settlement that could not complete (a party deposit
+        // whose party the OTO App's view cannot read just now) is this
+        // attempt's to try again next tick, not the tick's to abort on: the
+        // rest of the batch is still polled, and the gateway holds the money.
+        summary.failed += 1;
+        log.error({ err, attemptId: attempt.id, invoiceNo: attempt.invoiceNo }, 'a paid attempt could not be settled; the next tick tries again');
+        continue;
+      }
       if (settled.outcome === 'settled') summary.settled += 1;
       if (settled.finalisedSale) summary.closed += 1;
       continue;

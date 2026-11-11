@@ -1,5 +1,15 @@
 import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
-import { channelAccount, contact, conversation, fileObject, inboxEvent, message, template, type Db } from '@oto/db';
+import {
+  PARTY_LINE_TEMPLATE_KEYS,
+  channelAccount,
+  contact,
+  conversation,
+  fileObject,
+  inboxEvent,
+  message,
+  template,
+  type Db,
+} from '@oto/db';
 import { insideFreeTextWindow, type OutboundContent, type SendResult } from '@oto/messaging';
 import { newId, templateParameters } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
@@ -78,7 +88,11 @@ import type { InboxChannels } from './channels';
  * audit row, ids and the reason word only. A row under a live lease is not
  * withdrawn here: its provider call may be in flight, and if the provider
  * accepts it the row is `sent` whatever a withdrawal wrote meanwhile — the
- * thread says what the customer actually received.
+ * thread says what the customer actually received. A PARTY LINE (SCRUM-825:
+ * the deposit request and its reminder, the paid confirmation, the menu link
+ * and its confirmation — an AI row of one of `PARTY_LINE_TEMPLATE_KEYS`) is
+ * never withdrawn: it stands for a press in the BEO or a fact the gateway
+ * settled, not for a turn a person can take over.
  *
  * PAUSED (SCRUM-643, the Console's "pause outbound messaging" kill switch).
  * While the switch resolves on for the message's park group or park, nothing
@@ -177,8 +191,24 @@ const STAFF_SPOKE_AFTER = sql`exists (
      and later.author_kind = 'staff'
      and later.created_at > ${OUTER}.created_at)`;
 
-/** The claim's AI predicate: anything but an AI line, or an AI line no person has overtaken. */
-const NOT_OVERTAKEN = sql`(${OUTER}.author_kind <> 'ai' or not ${STAFF_SPOKE_AFTER})`;
+/**
+ * SCRUM-825: the row is a PARTY LINE — one the party-messages service posted
+ * for a press or a fact (the deposit request with its payment link, the one
+ * reminder, the paid confirmation, the parent's menu link and the choices'
+ * confirmation), named by its template's key. A person writing in the thread
+ * does not unsay the family's payment link, so such a line is never withdrawn.
+ */
+const PARTY_LINE = sql`exists (
+  select 1 from ${template} as party_line
+   where party_line.operator_id = ${OUTER}.operator_id
+     and party_line.id = ${OUTER}.template_id
+     and party_line.key in (${sql.join(
+       PARTY_LINE_TEMPLATE_KEYS.map((key) => sql`${key}`),
+       sql`, `,
+     )}))`;
+
+/** The claim's AI predicate: anything but an AI line, a party line, or an AI line no person has overtaken. */
+const NOT_OVERTAKEN = sql`(${OUTER}.author_kind <> 'ai' or ${PARTY_LINE} or not ${STAFF_SPOKE_AFTER})`;
 
 /** What a WhatsApp-shaped channel calls a file of this content type. */
 export function outboundMediaType(contentType: string): 'image' | 'video' | 'audio' | 'document' {
@@ -541,6 +571,7 @@ async function withdrawOvertaken(
             eq(message.authorKind, 'ai'),
             eq(message.providerStatus, 'queued'),
             or(isNull(message.nextAttemptAt), lte(message.nextAttemptAt, at)),
+            sql`not ${PARTY_LINE}`,
             STAFF_SPOKE_AFTER,
           ),
         )

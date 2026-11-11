@@ -4,6 +4,7 @@ import {
   branch,
   conversation,
   inboxEvent,
+  message,
   partyDepositRequest,
   partyEdit,
   paymentAttempt,
@@ -13,6 +14,7 @@ import {
 } from '@oto/db';
 import {
   PARTY_DEPOSIT_REFUSALS,
+  PARTY_LINE_STATUSES,
   businessDate,
   deriveId,
   isoDateInTz,
@@ -20,11 +22,12 @@ import {
   type PartyDepositActionAnswer,
   type PartyDepositAnswer,
   type PartyDepositRequestView,
+  type PartyLineStatus,
   type PartyMessageAnswer,
   type PartyStoredEditFields,
 } from '@oto/shared';
 import type { Env } from '../env';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { contactOf } from './inbox/handover-notice';
 import {
@@ -40,7 +43,7 @@ import {
 } from './inbox/party-messages';
 import { routeConversation } from './inbox/router';
 import type { OtoAppDirectory } from './otoapp-directory';
-import { getBranchEvent, getEventAtBranches, type SeamEvent } from './otoapp-events';
+import { getEventAtBranches, type SeamEvent } from './otoapp-events';
 import { pushPartyEdit, seamRead } from './parties';
 import { actorAccountOf } from './party-menu';
 import { lockParty } from './party-tab';
@@ -68,16 +71,24 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  *              the party's date, the link and its validity; a `deposit_requested`
  *              pill beside it. The request's id is derived from the app's
  *              Idempotency-Key: the same press again answers the same request.
- *              One open request per party.
+ *              One open request per party. A page the gateway would not open
+ *              closes the request `cancelled` (`gateway_refused`) with nothing
+ *              posted, and the same key again is answered the same refusal —
+ *              never a "request made" over a closed row.
  *   PAID       `confirmPartyDepositPaid`, INSIDE the gateway settlement's own
  *              transaction (`payments/gateway.ts` `settleWithin`, reached only
  *              on inquiry-agreed facts, exactly as a booking is): the request
- *              `paid`, the party's ONE deposit figure moved by the amount and
- *              written to the OTO App through the party-edit path
- *              (SCRUM-804, `write_back_edit_id`), the confirmation posted, a
- *              `deposit_paid` pill. After the commit (`afterPartyDepositPaid`)
- *              the edit is pushed, the line sent, and the birthday manager's
- *              bell rung through the app's directory.
+ *              `paid`, the party's ONE deposit figure — read as the app holds
+ *              it NOW, at whichever of the operator's parks the party is at;
+ *              a party that cannot be read rolls the settlement back for the
+ *              next notification or inquiry, never counts as zero — moved by
+ *              the amount and written to the OTO App through the party-edit
+ *              path (SCRUM-804, `write_back_edit_id`) as a FACT the app
+ *              records whatever it changed since (`fields.fact`), the
+ *              confirmation posted, a `deposit_paid` pill. After the commit
+ *              (`afterPartyDepositPaid`) the edit is pushed, the line sent,
+ *              and the birthday manager's bell rung through the app's
+ *              directory.
  *   EXPIRED    `closePartyDepositUnpaid`, inside the gateway's close of the
  *              attempt (`applyNonPaidState`): the link ran out unpaid, or the
  *              gateway closed it — the request is over; the next "Request
@@ -115,8 +126,14 @@ const SIMULATOR_RETURN_PATH = '../../../public/parties/deposit/return';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** The close reason of a request whose page the gateway would not open. */
+const GATEWAY_REFUSED = 'gateway_refused';
+
 type RequestRow = typeof partyDepositRequest.$inferSelect;
 type ConversationRow = typeof conversation.$inferSelect;
+
+/** The deposit's own refusal when the gateway would not open its page: said on the press, and again on the same key. */
+const pageNotOpened = () => new AppError(400, PARTY_DEPOSIT_REFUSALS.PAGE_NOT_OPENED.code, PARTY_DEPOSIT_REFUSALS.PAGE_NOT_OPENED.message);
 
 // --- The deployment's hooks ----------------------------------------------------------
 
@@ -155,6 +172,17 @@ async function partyOfOperator(db: Exec, operatorId: string, eventId: string): P
   return found;
 }
 
+/**
+ * A request's party as the OTO App holds it NOW, at whichever of the operator's
+ * parks it is at: a party moved between parks after the request is still this
+ * request's. Null when no park of the operator has it (or the view cannot be
+ * read); what that means is the caller's to say.
+ */
+async function partyOfRow(exec: Exec, row: Pick<RequestRow, 'operatorId' | 'otoappEventId'>): Promise<SeamEvent | null> {
+  const parks = await exec.select({ id: branch.id }).from(branch).where(eq(branch.operatorId, row.operatorId));
+  return getEventAtBranches(exec, { branchIds: parks.map((p) => p.id), eventId: row.otoappEventId });
+}
+
 /** The family's thread for the party: the conversation Book Date linked to it, the newest when several. */
 async function conversationOfParty(db: Exec, operatorId: string, eventId: string): Promise<ConversationRow | null> {
   const [row] = await db
@@ -176,6 +204,15 @@ async function viewOf(db: Exec, row: RequestRow): Promise<PartyDepositRequestVie
         .where(eq(partyEdit.id, row.writeBackEditId))
         .limit(1)
     : [];
+  // Where the request line stands with the channel: queued, sent, failed… — so the BEO never says "in the chat" of a line that is not.
+  const [line] = row.requestMessageId
+    ? await db
+        .select({ status: message.providerStatus })
+        .from(message)
+        .where(and(eq(message.operatorId, row.operatorId), eq(message.id, row.requestMessageId)))
+        .limit(1)
+    : [];
+  const lineStatus = line?.status ?? null;
   return {
     id: row.id,
     eventId: row.otoappEventId,
@@ -195,6 +232,8 @@ async function viewOf(db: Exec, row: RequestRow): Promise<PartyDepositRequestVie
     depositBeforeSatang: row.depositBeforeSatang,
     depositAfterSatang: row.depositAfterSatang,
     writeBack: edit ? { editId: edit.id, syncState: edit.syncState, syncError: edit.syncError } : null,
+    requestLineStatus:
+      lineStatus && (PARTY_LINE_STATUSES as readonly string[]).includes(lineStatus) ? (lineStatus as PartyLineStatus) : null,
   };
 }
 
@@ -349,6 +388,9 @@ export async function requestPartyDeposit(
     if (row.operatorId !== input.operatorId || row.otoappEventId !== party.id || row.amountSatang !== input.amountSatang) {
       throw errors.conflict('IDEMPOTENCY_MISMATCH', 'Idempotency-Key was already used with a different request');
     }
+    // The gateway would not open the page for this press: the same press is
+    // the same refusal, never "already asked" over a row nothing was posted for.
+    if (row.state === 'cancelled' && row.closeReason === GATEWAY_REFUSED) throw pageNotOpened();
     return { request: await viewOf(db, row), replayed: true };
   };
   const [prior] = await db.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, requestId)).limit(1);
@@ -469,10 +511,14 @@ export async function requestPartyDeposit(
       actionId: input.idempotencyKey,
     });
   } catch (err) {
+    log.warn({ err, requestId, invoiceNo: prepared.row.invoiceNo }, 'the gateway did not open a party deposit page');
     await withTx(db, scope, 'party_deposit.cancel', async (tx) => {
-      await closeRequest(tx, prepared.row, 'cancelled', 'gateway_refused', ctx.requestId ?? null, actorAccountId, now);
+      await closeRequest(tx, prepared.row, 'cancelled', GATEWAY_REFUSED, ctx.requestId ?? null, actorAccountId, now);
     });
-    throw err;
+    // The deposit's own words (the gateway helper's are a booking's), and the
+    // same answer the same key gets again (`replay`): a press id the app keeps
+    // for its retry finds the refusal, not a success.
+    throw pageNotOpened();
   }
 
   // Act 3 — the link on the request, and the assistant's one message.
@@ -742,12 +788,25 @@ export async function confirmPartyDepositPaid(
   }
   const late = row.state !== 'requested';
   const clock = await clockOf(tx, row.operatorId, row.branchId);
-  const party = await getBranchEvent(tx, { branchId: row.branchId, eventId: row.otoappEventId }).catch(() => null);
-  const before = party?.depositSatang ?? 0;
+  // The deposit as the app holds it NOW, wherever the party is: a figure that
+  // cannot be read is not zero. The throw rolls the whole settlement back —
+  // the gateway still holds the money — and the next notification or inquiry
+  // settles it once the party reads again (a deleted party: never, and loudly).
+  const party = await partyOfRow(tx, row);
+  if (!party) {
+    throw new AppError(
+      503,
+      'PARTY_DEPOSIT_PARTY_UNREADABLE',
+      'The party could not be read from the OTO App, so its deposit was not settled yet; the next notification or inquiry tries again',
+      { requestId: row.id, eventId: row.otoappEventId },
+    );
+  }
+  const before = party.depositSatang ?? 0;
   const after = before + row.amountSatang;
   const paidDay = isoDateInTz(now, clock.timezone);
   const editId = deriveId(row.id, 'party-deposit:write-back');
-  const fields: PartyStoredEditFields = { depositSatang: after, depositDate: paidDay };
+  // A FACT, not a till's change: the app records it whatever it changed since (`parties.ts` sendPartyEdit).
+  const fields: PartyStoredEditFields = { depositSatang: after, depositDate: paidDay, fact: 'gateway_deposit' };
   await tx
     .insert(partyEdit)
     .values({
@@ -1047,7 +1106,7 @@ async function remindOne(db: Db, env: Env, due: RequestRow, now: Date): Promise<
     if (!live || live.state !== 'requested' || live.remindedAt || !live.paymentLink) return null;
     if (live.linkExpiresAt && live.linkExpiresAt.getTime() <= now.getTime()) return null; // the gateway's close is on its way
     const conv = await lockedConversation(tx, live.operatorId, live.conversationId);
-    const party = await getBranchEvent(tx, { branchId: live.branchId, eventId: live.otoappEventId }).catch(() => null);
+    const party = await partyOfRow(tx, live).catch(() => null);
     const clock = await clockOf(tx, live.operatorId, live.branchId);
     const line = await postPartyMessage(tx, live.operatorId, {
       messageId: partyMessageId(live.id, 'reminder'),
@@ -1079,7 +1138,7 @@ async function handOverOne(db: Db, due: RequestRow, now: Date): Promise<{ messag
     const [live] = await tx.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, due.id)).for('update').limit(1);
     if (!live || live.state !== 'requested' || live.handedOverAt) return null;
     const conv = await lockedConversation(tx, live.operatorId, live.conversationId);
-    const party = await getBranchEvent(tx, { branchId: live.branchId, eventId: live.otoappEventId }).catch(() => null);
+    const party = await partyOfRow(tx, live).catch(() => null);
     const dest = await birthdaysTeamOf(tx, live.operatorId);
     const line = await postPartyMessage(tx, live.operatorId, {
       messageId: partyMessageId(live.id, 'handover'),

@@ -145,6 +145,14 @@ export interface DirectoryEventEditBody {
   id: string;
   editedAt: string;
   fields: DirectoryEventEditFields;
+  /**
+   * SCRUM-825 — the edit reports a FACT, not a till's change: a deposit the
+   * family paid through the gateway (`prepaymentAmountThb` and
+   * `prepaymentDate` only). The app records it whatever it changed since,
+   * the way it takes SCRUM-803's settlement sale, instead of refusing it as
+   * `edit_superseded` after a BEO save.
+   */
+  fact?: 'gateway_deposit';
 }
 
 /** What the app answers with (`EventEditResult`, the app's eventWrites.ts). */

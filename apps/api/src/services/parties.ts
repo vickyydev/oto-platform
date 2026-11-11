@@ -994,6 +994,14 @@ export async function updateParty(
  * the app changed the party after, which it would refuse on its own; a newer
  * edit must not put either back.
  *
+ * A FACT (SCRUM-825, `fields.fact`: a deposit the family paid through the
+ * gateway) is sent ALONE and marked: the app records it whatever it changed
+ * since, as it takes SCRUM-803's settlement sale, so a BEO save after the
+ * payment cannot leave the one deposit figure stranded as `edit_superseded`.
+ * An older edit still waiting is not carried into it — a fact names only the
+ * deposit, and anything carried would be judged by the order rule again — and
+ * goes on its own with the next retry, judged as it would be.
+ *
  * Recorded twice over, as a child's write-back is: on the edit (`sync_state`,
  * the attempts, the error) and as an `ops_run` of kind `integration` named
  * `otoapp:party.update`, which the Failures page groups and offers to retry.
@@ -1018,24 +1026,29 @@ async function sendPartyEdit(
   if (!row) throw errors.notFound('That party edit is not on record');
   if (row.syncState === 'synced') return { row, outcome: null };
 
-  const older = await db
-    .select()
-    .from(partyEdit)
-    .where(
-      and(
-        eq(partyEdit.operatorId, row.operatorId),
-        eq(partyEdit.otoappEventId, row.otoappEventId),
-        eq(partyEdit.syncState, 'pending'),
-        sql`${partyEdit.createdAt} <= ${row.createdAt}`,
-        ne(partyEdit.id, row.id),
-      ),
-    )
-    .orderBy(asc(partyEdit.createdAt), asc(partyEdit.id));
+  // SCRUM-825 — a fact goes alone (see above); anything else carries what waits before it.
+  const fact = (row.fields as PartyStoredEditFields).fact ?? null;
+  const older = fact
+    ? []
+    : await db
+        .select()
+        .from(partyEdit)
+        .where(
+          and(
+            eq(partyEdit.operatorId, row.operatorId),
+            eq(partyEdit.otoappEventId, row.otoappEventId),
+            eq(partyEdit.syncState, 'pending'),
+            sql`${partyEdit.createdAt} <= ${row.createdAt}`,
+            ne(partyEdit.id, row.id),
+          ),
+        )
+        .orderBy(asc(partyEdit.createdAt), asc(partyEdit.id));
   // An older edit the OTO App changed the party after is not carried: inside
   // this newer edit it would put back values the app has since replaced. Sent
   // on its own it is refused as superseded, which is the truth. (When the
   // party cannot be read, every waiting edit is carried, as it would be shown.)
-  const seam = await getBranchEvent(db, { branchId: row.branchId, eventId: row.otoappEventId }).catch(() => null);
+  const seam =
+    older.length === 0 ? null : await getBranchEvent(db, { branchId: row.branchId, eventId: row.otoappEventId }).catch(() => null);
   const carried = [...older.filter((e) => !seam || editStillShown(e, seam)), row];
   const merged = Object.assign({}, ...carried.map((e) => e.fields as PartyStoredEditFields)) as PartyStoredEditFields;
 
@@ -1045,6 +1058,7 @@ async function sendPartyEdit(
         id: row.id,
         editedAt: row.createdAt.toISOString(),
         fields: directoryFieldsOf(merged),
+        ...(fact ? { fact } : {}),
       })
     : {
         ok: false,

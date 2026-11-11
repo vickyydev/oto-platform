@@ -8213,6 +8213,8 @@ export interface paths {
                                     syncState: "synced" | "pending" | "failed";
                                     syncError: string | null;
                                 } | null;
+                                /** @enum {string|null} */
+                                requestLineStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                             } | null;
                             history: {
                                 /** Format: uuid */
@@ -8243,6 +8245,8 @@ export interface paths {
                                     syncState: "synced" | "pending" | "failed";
                                     syncError: string | null;
                                 } | null;
+                                /** @enum {string|null} */
+                                requestLineStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                             }[];
                         };
                     };
@@ -8307,6 +8311,8 @@ export interface paths {
                                     syncState: "synced" | "pending" | "failed";
                                     syncError: string | null;
                                 } | null;
+                                /** @enum {string|null} */
+                                requestLineStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                             };
                             replayed: boolean;
                         };
@@ -8384,6 +8390,8 @@ export interface paths {
                                     syncState: "synced" | "pending" | "failed";
                                     syncError: string | null;
                                 } | null;
+                                /** @enum {string|null} */
+                                requestLineStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                             };
                             replayed: boolean;
                         };
@@ -8461,6 +8469,8 @@ export interface paths {
                                     syncState: "synced" | "pending" | "failed";
                                     syncError: string | null;
                                 } | null;
+                                /** @enum {string|null} */
+                                requestLineStatus: "queued" | "sent" | "delivered" | "read" | "failed" | "withdrawn" | null;
                             };
                             replayed: boolean;
                         };
