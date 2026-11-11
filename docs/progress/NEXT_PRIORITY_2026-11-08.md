@@ -21,6 +21,14 @@ How to read each topic:
 - **How it works today.** Empty until checked against the code and staging.
 - **Ticket.** None until the details are in.
 
+> **State on 12 November 2026.** The evening session of 8 November did not happen: the
+> data restore came first (F1), then the BEO and inbox round. Topics D1, D2 and F1 were
+> built since under their own tickets. Every other topic is still waiting for the
+> owner's details and now has a tracking story on the board so it cannot be lost:
+> SCRUM-857 (A, the drop-off and nanny flow), SCRUM-858 (B, tiers), SCRUM-859 (C1, the
+> display's payment screen), SCRUM-860 (D3, contacts), SCRUM-861 (E, printing). Those
+> stories carry the owner's words only; nothing in them is decided or built.
+
 ---
 
 ## A. Drop-off and nanny flow
@@ -33,7 +41,7 @@ How to read each topic:
   longer takes the picture.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A2. Care details: the two phone numbers
 
@@ -46,7 +54,7 @@ How to read each topic:
   the result.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A3. No staff confirmation at the end
 
@@ -58,7 +66,7 @@ How to read each topic:
   confirms it is removed.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A4. Live sync of the forms
 
@@ -68,7 +76,7 @@ How to read each topic:
   once, for both the drop-off and the nanny form.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A5. Drop-off in the unified inbox
 
@@ -77,7 +85,7 @@ How to read each topic:
   from the inbox while the child is in care.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ### A6. Non-members check in right away
 
@@ -87,7 +95,7 @@ How to read each topic:
   now option that members have.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-857 (tracking story, filed 12 November; details still to be given).
 
 ## B. Tiers and ticket types
 
@@ -101,7 +109,7 @@ How to read each topic:
   list comes back.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-858 (tracking story, filed 12 November; details still to be given).
 
 ### B2. Thai rate: a two-button verification, no documents
 
@@ -112,7 +120,7 @@ How to read each topic:
   a small confirmation with two buttons. Who confirmed and when is recorded.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-858 (tracking story, filed 12 November; details still to be given).
 
 ## C. Customer display
 
@@ -124,7 +132,7 @@ How to read each topic:
   total.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-859 (tracking story, filed 12 November; details still to be given).
 
 ## D. Unified inbox
 
@@ -145,7 +153,7 @@ How to read each topic:
   dictating replies, or both.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** DONE without waiting for this file: SCRUM-824 (customer voice notes transcribed), SCRUM-834 (staff dictate a reply), SCRUM-835 (the simulator records a voice note) — all Deployed 11 November.
 
 ### D3. Create and edit contacts from the inbox
 
@@ -155,7 +163,7 @@ How to read each topic:
   from the inbox.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-860 (tracking story, filed 12 November; details still to be given).
 
 ## E. Kitchen, bar and wristband printing
 
@@ -168,7 +176,7 @@ How to read each topic:
   cancelled, and a fresh slip with what remains.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ### E2. Separate wristbands and printer for drop-off children
 
@@ -178,7 +186,7 @@ How to read each topic:
   manual choice.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ### E3. Right print, right place, right person
 
@@ -190,7 +198,7 @@ How to read each topic:
   adult) for every new or changed order and every band update.
 - **Details from the owner.** _(to be given)_
 - **How it works today.** _(to be checked)_
-- **Ticket.** none yet
+- **Ticket.** SCRUM-861 (tracking story, filed 12 November; details still to be given). Related: SCRUM-805 (kitchen and bar slips for the day's parties, Deployed).
 
 ## F. Data
 
@@ -206,7 +214,7 @@ How to read each topic:
   the POS. Plan and dry run: `plans/data-restore/PLAN.md`.
 - **How it works today.** The restore procedure exists and passed a dry run
   on the 19 September dump (2026-11-09). Staging still holds demo rows.
-- **Ticket.** none yet
+- **Ticket.** DONE: SCRUM-791 (the OTO App's production data restored into staging, Testing) and SCRUM-792 (the park's real menus, prices and shop items seeded, Deployed).
 
 ---
 
