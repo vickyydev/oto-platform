@@ -1,0 +1,159 @@
+{
+  "mode": "before-attempt-02",
+  "startedAt": "2026-11-11T12:29:50.129Z",
+  "phase": "clean own fixture graph and sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/887ef4e5-4ee3-4927-adb0-049eca41d589",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/887ef4e5-4ee3-4927-adb0-049eca41d589",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "employeeId": "887ef4e5-4ee3-4927-adb0-049eca41d589"
+  },
+  "cleanup": [
+    {
+      "label": "delete own employee graph",
+      "passed": true
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    },
+    {
+      "label": "sign out console",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbq5g4v13mps73f3u76g",
+      "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19"
+    },
+    "oto-app-staging": {
+      "id": "dep-dbq5ejajnfac73f5tc1g",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+    }
+  },
+  "failure": {
+    "phase": "press Create Login through employee screen",
+    "name": "TimeoutError",
+    "message": "locator.waitFor: Timeout 30000ms exceeded.",
+    "path": "/employees/887ef4e5-4ee3-4927-adb0-049eca41d589",
+    "visibleTestIds": [
+      "section-toggle-daily-operations",
+      "nav-dashboard",
+      "nav-needs-action",
+      "nav-today's-attendance",
+      "nav-scheduling",
+      "section-toggle-people-and-hr",
+      "nav-employees",
+      "nav-contracts",
+      "nav-org-chart",
+      "nav-activity-logbook",
+      "section-toggle-finance",
+      "section-toggle-payroll",
+      "section-toggle-configuration",
+      "nav-branches",
+      "nav-departments",
+      "nav-locations",
+      "nav-roles",
+      "nav-templates",
+      "nav-policies",
+      "nav-access",
+      "nav-vault",
+      "nav-advisors",
+      "section-toggle-platform-admin",
+      "button-sidebar-toggle",
+      "branch-selector-desktop",
+      "branch-selector-trigger",
+      "mode-switcher",
+      "button-mode-core",
+      "button-mode-ops",
+      "button-mode-events",
+      "button-mode-hr",
+      "button-mode-setup",
+      "button-user-menu-hr",
+      "button-back",
+      "clickable-avatar-887ef4e5-4ee3-4927-adb0-049eca41d589",
+      "avatar-employee-887ef4e5-4ee3-4927-adb0-049eca41d589",
+      "status-indicator-887ef4e5-4ee3-4927-adb0-049eca41d589",
+      "text-employee-editor-title",
+      "badge-employee-status",
+      "button-fold-into-profile",
+      "banner-no-signed-contract",
+      "button-create-contract-banner",
+      "card-onboarding-progress",
+      "step-1-complete",
+      "step-2-incomplete",
+      "button-generate-contract",
+      "button-goto-step-2",
+      "step-3-incomplete",
+      "step-4-incomplete",
+      "step-5-incomplete",
+      "step-6-incomplete",
+      "step-7-incomplete",
+      "employee-editor-tabs",
+      "tab-overview",
+      "tab-personal",
+      "tab-job",
+      "tab-payroll",
+      "tab-time",
+      "tab-access",
+      "tab-leaving",
+      "qa-report-launcher"
+    ]
+  },
+  "finishedAt": "2026-11-11T12:30:35.190Z"
+}

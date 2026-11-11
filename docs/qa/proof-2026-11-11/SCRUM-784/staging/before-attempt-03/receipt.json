@@ -1,0 +1,184 @@
+{
+  "mode": "before-attempt-03",
+  "startedAt": "2026-11-11T12:31:01.748Z",
+  "phase": "clean own fixture graph and sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/accounts/01a1ca97-54b2-7e95-af97-4239c6453e55",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/01a1ca97-54b2-7e95-af97-4239c6453e55",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/c7970631-63ab-45b8-a368-bc02cd1c7b7b",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/c7970631-63ab-45b8-a368-bc02cd1c7b7b",
+      "status": 404
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/knowledge-files/33144a3d-c2b0-4f01-b918-6d4f49475c96",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge-files/33144a3d-c2b0-4f01-b918-6d4f49475c96",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "employeeId": "c7970631-63ab-45b8-a368-bc02cd1c7b7b",
+    "userId": "6bcff1bf-cc71-4102-b945-ad31cd5c9af1",
+    "personId": "fea43b51-c145-4f0b-8648-518364af5a38",
+    "accessPolicyId": "3563ab3d-4c60-4d1b-bd9d-80e7c13ebbdb",
+    "accountId": "01a1ca97-54b2-7e95-af97-4239c6453e55",
+    "fileId": "33144a3d-c2b0-4f01-b918-6d4f49475c96"
+  },
+  "cleanup": [
+    {
+      "label": "deactivate own core account",
+      "passed": true
+    },
+    {
+      "label": "unlink own app grant",
+      "passed": true
+    },
+    {
+      "label": "delete own employee graph",
+      "passed": true
+    },
+    {
+      "label": "delete own uploaded PDF",
+      "passed": true
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    },
+    {
+      "label": "sign out console",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbq5g4v13mps73f3u76g",
+      "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19"
+    },
+    "oto-app-staging": {
+      "id": "dep-dbq5ejajnfac73f5tc1g",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+    }
+  },
+  "login": {
+    "status": 200,
+    "requestKeys": [
+      "accessLevel",
+      "actionId",
+      "branchIds",
+      "branchScope",
+      "email",
+      "enableCoreModule",
+      "enableEventsModule",
+      "enableHrModule",
+      "enableOpsModule",
+      "enableSetupModule",
+      "enableStudioModule",
+      "phone"
+    ],
+    "success": true,
+    "userId": "6bcff1bf-cc71-4102-b945-ad31cd5c9af1",
+    "personId": "fea43b51-c145-4f0b-8648-518364af5a38",
+    "accessPolicyId": "3563ab3d-4c60-4d1b-bd9d-80e7c13ebbdb",
+    "accountId": "01a1ca97-54b2-7e95-af97-4239c6453e55",
+    "replayed": false,
+    "platformManaged": false,
+    "temporaryPasswordShown": true
+  },
+  "upload": {
+    "status": 201,
+    "responseKeys": [
+      "branchId",
+      "createdAt",
+      "createdByUserId",
+      "departmentId",
+      "description",
+      "fileType",
+      "filename",
+      "id",
+      "indexError",
+      "indexStatus",
+      "isActive",
+      "language",
+      "mimeType",
+      "pageCount",
+      "sizeBytes",
+      "storageUrl",
+      "tags",
+      "tenantId",
+      "thumbnailUrl",
+      "title",
+      "updatedAt",
+      "version"
+    ]
+  },
+  "sop": {
+    "status": 500,
+    "message": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"`temperature` is deprecated for this model.\"},\"request_id\":\"req_011Cgw9Lkwx6SxYzHX3KNovR\"}"
+  },
+  "behaviorRecorded": true,
+  "finishedAt": "2026-11-11T12:31:22.706Z"
+}

@@ -1,0 +1,95 @@
+{
+  "mode": "before",
+  "startedAt": "2026-11-11T12:28:44.748Z",
+  "phase": "clean own fixture graph and sign out",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employees/4ba2feaf-91eb-4957-946f-65926e096036",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/api/employees/4ba2feaf-91eb-4957-946f-65926e096036",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "employeeId": "4ba2feaf-91eb-4957-946f-65926e096036"
+  },
+  "cleanup": [
+    {
+      "label": "delete own employee graph",
+      "passed": true
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    },
+    {
+      "label": "sign out console",
+      "passed": true
+    }
+  ],
+  "passed": false,
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbq5g4v13mps73f3u76g",
+      "sha": "33e54e3f1ca1c4ed3093838d2793e9595561be19"
+    },
+    "oto-app-staging": {
+      "id": "dep-dbq5ejajnfac73f5tc1g",
+      "sha": "51c558bdd4bc5fd1761d5221cb8cb606c043b15d"
+    }
+  },
+  "failure": {
+    "phase": "press Create Login through employee screen",
+    "name": "TimeoutError",
+    "message": "locator.waitFor: Timeout 30000ms exceeded."
+  },
+  "finishedAt": "2026-11-11T12:29:32.163Z"
+}
