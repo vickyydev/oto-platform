@@ -757,6 +757,46 @@ try {
     assert.equal(await saleOf(fresh), `ZZ-${run}-000003`);
   });
 
+  await check("a gateway-paid deposit is a fact the platform settled (SCRUM-825): taken over a later BEO save, updated_at moved to now, the same fact again a replay", async () => {
+    const factEdit = (eventId: string, fields: Record<string, unknown>, editedAt: string) =>
+      call("POST", `/api/directory/events/${eventId}/edits`, {
+        headers: { authorization: `Bearer ${key}` },
+        body: { id: randomUUID(), editedAt, fields, fact: "gateway_deposit" },
+      });
+    const depositNow = async (eventId: string) =>
+      (
+        await q<{ amount: number | null; day: string | null; billed: number | null }>(
+          `select e.prepayment_amount as amount, e.prepayment_date as day,
+                  (select b.deposit_paid_amount from beo_event_billing b where b.event_id = e.id) as billed
+             from core_events e where e.id = $1`,
+          [eventId],
+        )
+      )[0];
+    const stamped = await updatedAtOf(party);
+    // Stamped before the app's last change: as a plain edit this is refused as superseded (the check above). As a fact it lands.
+    const landed = await factEdit(party, { prepaymentAmountThb: 3500, prepaymentDate: "2099-03-02" }, "2000-01-01T00:00:00Z");
+    assert.equal(landed.status, 200, show(landed));
+    assert.equal(landed.body.replayed, false);
+    assert.deepEqual([...landed.body.edit.fields].sort(), ["prepaymentAmountThb", "prepaymentDate"]);
+    assert.deepEqual(await depositNow(party), { amount: 3500, day: "2099-03-02", billed: 3500 });
+    const moved = await updatedAtOf(party);
+    assert.ok(moved > stamped, "the deposit changed now: updated_at moved on");
+    // The same fact again: a replay, nothing written, the order untouched.
+    const again = await factEdit(party, { prepaymentAmountThb: 3500, prepaymentDate: "2099-03-02" }, "2000-01-01T00:00:00Z");
+    assert.equal(again.status, 200, show(again));
+    assert.equal(again.body.replayed, true);
+    assert.equal(await updatedAtOf(party), moved);
+    // A plain edit of the deposit with an old stamp is still refused: the fact is the platform's to mark.
+    const plain = await edit(party, { prepaymentAmountThb: 9000 }, "2000-01-01T00:00:00Z");
+    assert.equal(plain.status, 409, show(plain));
+    assert.equal(plain.body.error, "edit_superseded");
+    // Marked but naming another field, it follows the order rule.
+    const mixed = await factEdit(party, { prepaymentAmountThb: 9000, decoration: "ZZ TEST" }, "2000-01-01T00:00:00Z");
+    assert.equal(mixed.status, 409, show(mixed));
+    assert.equal(mixed.body.error, "edit_superseded");
+    assert.equal((await depositNow(party)).amount, 3500);
+  });
+
   // ── 3b. one deposit (SCRUM-813) ───────────────────────────────────────────
 
   await check("a deposit entered in the BEO billing reaches the till's view, the event's Prepayment and Party Details; every writer keeps one figure (SCRUM-813)", async () => {

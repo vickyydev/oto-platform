@@ -365,7 +365,15 @@ export function useDepositRequest(eventId: string, options: { refetchInterval?: 
   });
 }
 
-/** The press's id, minted once per press and kept until the press succeeded: a retry is the same press. */
+/**
+ * The press's id, minted once per press and kept while the press may have
+ * reached the platform without an answer coming back — a lost connection, or
+ * this app's server unable to reach the till (a 5xx): the retry is the same
+ * press, so a request made behind the silence is answered as made, never made
+ * twice. Spent once the server ANSWERED it — a success, or a refusal (a 4xx):
+ * a refused press is over, and the next press is a new one, not a replay of a
+ * request the platform closed.
+ */
 function usePressId() {
   const held = useRef<string | null>(null);
   return {
@@ -375,6 +383,12 @@ function usePressId() {
     },
   };
 }
+
+/** apiRequest throws an ApiError carrying the status when the server answered; a 4xx is the press refused, and over. */
+const pressRefused = (err: unknown): boolean => {
+  const status = err instanceof Error ? (err as { status?: unknown }).status : undefined;
+  return typeof status === "number" && status >= 400 && status < 500;
+};
 
 /** The message the server put on a refusal, in its own words. */
 function refusalWords(err: unknown, fallback: string): string {
@@ -434,6 +448,8 @@ export function DepositRequestPanel({
       else if (what === "request") setNote(`${(made as PartyDepositActionAnswer).replayed ? "Already asked: " : ""}the payment link is in the family's chat.`);
       onChanged?.();
     } catch (err) {
+      // A refusal ends the press; a lost connection, or the till out of reach, keeps it for the retry.
+      if (pressRefused(err)) press.spend();
       setError(refusalWords(err, fallback));
     } finally {
       setBusy(null);

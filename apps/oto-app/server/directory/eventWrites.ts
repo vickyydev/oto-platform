@@ -664,6 +664,8 @@ export interface EventEditInput {
   /** When the edit was made at the till: the app's own later changes win over it. */
   editedAt: string;
   fields: EventEditFields;
+  /** SCRUM-825 — a fact the platform settled (a gateway-paid deposit): taken whatever this app changed since. */
+  fact?: "gateway_deposit";
 }
 
 export interface EventEditResult {
@@ -784,6 +786,20 @@ async function mirrorDepositToBilling(tx: PoolClient, eventId: string) {
  * alone, so it can neither be refused by a later BEO save nor move the order
  * the other edits are judged by. Sent again with the same sale it is a
  * replay. Named beside the party's own fields, it follows their rule.
+ *
+ * A GATEWAY-PAID DEPOSIT (SCRUM-825, `fact: "gateway_deposit"`) is a fact the
+ * platform settled: the family paid, and the one deposit figure (SCRUM-813)
+ * must say so here however the BEO was saved since — otherwise the chat says
+ * "received" while the Billing section, the Day-of view, the Quote PDF and
+ * the till's "Deposit paid in advance" keep the old figure for ever, since a
+ * retry carries the same stamp. So an edit so marked, naming only the
+ * deposit's amount and day, is written whatever `updated_at` says, and
+ * `updated_at` becomes NOW — or a microsecond past the last stamp, whichever
+ * is later (the deposit did change now, and an older till edit that would
+ * put the old figure back, even a replay of the last one applied, is rightly
+ * refused after it). The same fact again finds the figures already as it
+ * says them: a replay, nothing written. Marked but naming any other field,
+ * it follows the order rule.
  */
 export async function editPartyEvent(
   pool: Pool,
@@ -797,6 +813,8 @@ export async function editPartyEvent(
   if (keys.length === 0) return refuse(400, "nothing_to_change", "The edit names no field to change");
   const settlementOnly = keys.length === 1 && keys[0] === "posSaleId";
   const posSaleId = keys.includes("posSaleId") ? blank(input.fields.posSaleId) : undefined;
+  const depositFact =
+    input.fact === "gateway_deposit" && keys.every((key) => key === "prepaymentAmountThb" || key === "prepaymentDate");
 
   return inTransaction(pool, async (tx) => {
     if (settlementOnly) {
@@ -813,9 +831,10 @@ export async function editPartyEvent(
       return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, replayed) };
     }
 
-    const { rows } = await tx.query<{ newer: boolean; same: boolean }>(
+    const { rows } = await tx.query<{ newer: boolean; same: boolean; amount: number | null; day: string | null }>(
       `select (updated_at at time zone 'UTC') > $3::timestamptz as newer,
-              (updated_at at time zone 'UTC') = $3::timestamptz as same
+              (updated_at at time zone 'UTC') = $3::timestamptz as same,
+              prepayment_amount as amount, prepayment_date as day
          from core_events
         where id = $1 and tenant_id = $2 and not is_archived
         for update`,
@@ -823,7 +842,14 @@ export async function editPartyEvent(
     );
     const current = rows[0];
     if (!current) return refuse(404, "event_not_found", "Event not found");
-    if (current.newer) {
+    if (depositFact) {
+      // The fact already stands here: nothing to write, and `updated_at` stays
+      // where the last real change put it.
+      const alreadySaid =
+        (!keys.includes("prepaymentAmountThb") || current.amount === input.fields.prepaymentAmountThb) &&
+        (!keys.includes("prepaymentDate") || current.day === input.fields.prepaymentDate);
+      if (alreadySaid) return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, true) };
+    } else if (current.newer) {
       return refuse(
         409,
         "edit_superseded",
@@ -868,13 +894,21 @@ export async function editPartyEvent(
       if (was && !namesAmount && was.amount !== null && was.amount > 0) set("prepayment_amount", was.amount);
       if (was && !namesDay && was.day !== null) set("prepayment_date", was.day);
     }
-    params.push(input.editedAt);
-    sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
+    if (depositFact) {
+      // The deposit changed now, whatever the edit's stamp says — and strictly
+      // after every stamp seen here, so no edit stamped before the fact (not
+      // even a replay of the last one applied, which an equal stamp would
+      // re-apply) can put the old figure back.
+      sets.push(`updated_at = greatest(updated_at, now() at time zone 'UTC') + interval '1 microsecond'`);
+    } else {
+      params.push(input.editedAt);
+      sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
+    }
     await tx.query(`update core_events set ${sets.join(", ")} where id = $1 and tenant_id = $2`, params);
     if (posSaleId !== undefined) await recordPosSaleId(tx, event.id, posSaleId);
     if (keys.includes("prepaymentAmountThb") || keys.includes("prepaymentDate")) await mirrorDepositToBilling(tx, event.id);
 
-    return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, current.same) };
+    return { ok: true, status: 200, body: await editAnswer(tx, event, input, keys, depositFact ? false : current.same) };
   });
 }
 

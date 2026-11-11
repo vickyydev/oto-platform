@@ -83,6 +83,12 @@ export const editBodySchema = z
     id: z.string().uuid(),
     /** When the edit was made at the till: the app's own later changes win over it. */
     editedAt: z.string().datetime({ offset: true }),
+    /**
+     * SCRUM-825 — the edit reports a FACT the platform settled, not a till's
+     * change: a deposit the family paid through the gateway. Named only by the
+     * platform's own write-back, and taken whatever this app changed since.
+     */
+    fact: z.literal("gateway_deposit").optional(),
     fields: z
       .object({
         title: z.string().trim().min(1).max(500),

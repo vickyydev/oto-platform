@@ -124,6 +124,7 @@ function request(state: "requested" | "paid" | "expired" | "cancelled", over: Re
     depositBeforeSatang: state === "paid" ? 0 : null,
     depositAfterSatang: state === "paid" ? 300_000 : null,
     writeBack: state === "paid" ? { editId: "44444444-4444-4444-8444-444444444825", syncState: "synced", syncError: null } : null,
+    requestLineStatus: state === "requested" ? "sent" : null,
     ...over,
   };
 }
@@ -212,6 +213,16 @@ await check("reminded, then overdue: the words move; paid, expired and cancelled
   await mountPanel(ok(request("cancelled")));
   assert.equal(text("text-deposit-request-headline"), "Request cancelled · ฿3,000");
   assert.ok(byTestId("button-request-deposit"));
+  // Where the line stands: on its way, or never sent (Resend still offered); a page the gateway would not open.
+  await mountPanel(ok(request("requested", { requestLineStatus: "queued" })));
+  assert.match(text("text-deposit-request-state")!, /The payment link is on its way to the family's chat/);
+  await mountPanel(ok(request("requested", { requestLineStatus: "failed" })));
+  assert.match(text("text-deposit-request-state")!, /The payment link could not be sent to the family's chat/);
+  assert.ok(byTestId("button-deposit-resend"));
+  await mountPanel(ok(request("cancelled", { closeReason: "gateway_refused" })));
+  assert.equal(text("text-deposit-request-headline"), "Request not made · ฿3,000");
+  assert.match(text("text-deposit-request-state")!, /The payment page could not be opened/);
+  assert.ok(byTestId("button-request-deposit"));
 });
 
 await check("Request deposit: the amount is checked first (empty, a fraction, too much: said, nothing sent); then ONE POST with the baht and a press id", async () => {
@@ -236,17 +247,33 @@ await check("Request deposit: the amount is checked first (empty, a fraction, to
   assert.match(text("text-deposit-request-note")!, /the payment link is in the family's chat/);
 });
 
-await check("a refusal is said in the server's words, and the same press id is kept for the retry", async () => {
+await check("a refusal is said in the server's words; a 4xx ends the press (the next is a new one), while the till out of reach or a lost connection keeps it for the retry", async () => {
   await mountPanel(ok(null));
-  answerPress = () => json({ code: "PLATFORM_UNREACHABLE", message: "The till did not answer, so the deposit was not requested. Try again in a moment: the same press never asks twice." }, 502);
+  answerPress = () => json({ code: "DEPOSIT_PAGE_NOT_OPENED", message: "The payment page could not be opened, so nothing was sent to the family. Press Request deposit again in a moment." }, 400);
   await fill("input-deposit-request-amount", "3000");
   await click("button-request-deposit");
-  assert.match(text("text-deposit-request-error")!, /The till did not answer, so the deposit was not requested/);
-  const first = presses()[0]!.body.actionId;
-  answerPress = () => json({ request: request("requested"), replayed: false });
+  assert.match(text("text-deposit-request-error")!, /The payment page could not be opened/);
+  const refused = presses()[0]!.body.actionId;
+  // This app's server could not reach the till: the press may have landed there.
+  answerPress = () => json({ code: "PLATFORM_UNREACHABLE", message: "The till did not answer, so the deposit was not requested. Try again in a moment: the same press never asks twice." }, 502);
   await click("button-request-deposit");
   assert.equal(presses().length, 2);
-  assert.equal(presses()[1]!.body.actionId, first, "the retry is the same press");
+  const unanswered = presses()[1]!.body.actionId;
+  assert.match(String(unanswered), /^[0-9a-f-]{36}$/);
+  assert.notEqual(unanswered, refused, "a refused press is over: the platform closed it, so the next press is a new one");
+  assert.match(text("text-deposit-request-error")!, /The till did not answer/);
+  // The connection drops: no answer at all.
+  answerPress = () => {
+    throw new TypeError("Failed to fetch");
+  };
+  await click("button-request-deposit");
+  assert.equal(presses().length, 3);
+  assert.equal(presses()[2]!.body.actionId, unanswered, "the till out of reach keeps the press");
+  assert.ok(text("text-deposit-request-error"));
+  answerPress = () => json({ request: request("requested"), replayed: false });
+  await click("button-request-deposit");
+  assert.equal(presses().length, 4);
+  assert.equal(presses()[3]!.body.actionId, unanswered, "after a lost connection the retry is the same press");
   assert.equal(text("text-deposit-request-error"), null);
 });
 

@@ -48,6 +48,13 @@ export const PartyDepositRequestSchema = z.object({
   depositBeforeSatang: Int.nullable(),
   depositAfterSatang: Int.nullable(),
   writeBack: z.object({ editId: z.string(), syncState: z.enum(["synced", "pending", "failed"]), syncError: z.string().nullable() }).nullable(),
+  /**
+   * Where the assistant's request line stands with the family's channel
+   * (`PARTY_LINE_STATUSES` on the platform): `queued` until the channel took
+   * it, `sent` / `delivered` / `read` once it did, `failed` or `withdrawn`
+   * when it never left. Optional for a platform built before it.
+   */
+  requestLineStatus: z.enum(["queued", "sent", "delivered", "read", "failed", "withdrawn"]).nullable().optional(),
 });
 export type PartyDepositRequest = z.infer<typeof PartyDepositRequestSchema>;
 
@@ -132,9 +139,11 @@ export interface DepositStateWords {
 
 /**
  * "Deposit requested ฿3,000 · in the family's chat" while the link can be
- * paid; "Deposit overdue" once the thread went to a person; "Deposit paid"
- * when the money landed (and whether the app has it yet); "Link expired" or
- * "Request cancelled" when it closed unpaid.
+ * paid — or on its way, or NOT sent, as the line's delivery state says;
+ * "Deposit overdue" once the thread went to a person; "Deposit paid" when the
+ * money landed (and whether the app has it yet); "Link expired", "Request
+ * cancelled" or "Request not made" (the payment page would not open) when it
+ * closed unpaid.
  */
 export function depositStateWordsOf(r: PartyDepositRequest): DepositStateWords {
   const amount = bahtOfSatang(r.amountSatang);
@@ -144,9 +153,21 @@ export function depositStateWordsOf(r: PartyDepositRequest): DepositStateWords {
       if (r.handedOverAt) {
         return { headline: `Deposit overdue · ${amount}`, detail: "Unpaid after the reminder: the chat is with the birthday manager.", tone: "overdue" };
       }
+      const reminded = r.remindedAt ? "Reminded once. " : "";
+      const validity = until ? `, valid until ${until}` : "";
+      if (r.requestLineStatus === "failed" || r.requestLineStatus === "withdrawn") {
+        return {
+          headline: `Deposit requested · ${amount}`,
+          detail: `${reminded}The payment link could not be sent to the family's chat: press Resend, or send it another way${validity}.`,
+          tone: "overdue",
+        };
+      }
+      if (r.requestLineStatus === "queued") {
+        return { headline: `Deposit requested · ${amount}`, detail: `${reminded}The payment link is on its way to the family's chat${validity}.`, tone: "open" };
+      }
       return {
         headline: `Deposit requested · ${amount}`,
-        detail: `${r.remindedAt ? "Reminded once. " : ""}The payment link is in the family's chat${until ? `, valid until ${until}` : ""}.`,
+        detail: `${reminded}The payment link is in the family's chat${validity}.`,
         tone: "open",
       };
     }
@@ -158,6 +179,9 @@ export function depositStateWordsOf(r: PartyDepositRequest): DepositStateWords {
     case "expired":
       return { headline: `Link expired · ${amount}`, detail: "The payment link ran out unpaid. Press Request deposit to send a fresh one.", tone: "closed" };
     default:
+      if (r.closeReason === "gateway_refused") {
+        return { headline: `Request not made · ${amount}`, detail: "The payment page could not be opened, so nothing was sent to the family. Press Request deposit to try again.", tone: "closed" };
+      }
       return { headline: `Request cancelled · ${amount}`, detail: "Withdrawn from the BEO. Press Request deposit to ask again.", tone: "closed" };
   }
 }

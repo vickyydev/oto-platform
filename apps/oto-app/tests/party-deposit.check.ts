@@ -83,6 +83,7 @@ function request(state: PartyDepositRequest["state"], over: Partial<PartyDeposit
     depositBeforeSatang: null,
     depositAfterSatang: null,
     writeBack: null,
+    requestLineStatus: state === "requested" ? "sent" : null,
     ...over,
   };
 }
@@ -118,6 +119,20 @@ await check("the amount rule: whole baht from ฿1 to ฿1,000,000; the field re
   assert.equal(depositStateWordsOf(request("expired")).headline, "Link expired · ฿3,000");
   assert.equal(depositStateWordsOf(request("cancelled")).headline, "Request cancelled · ฿3,000");
   assert.equal(depositStateWordsOf(request("cancelled")).tone, "closed");
+  // Where the line stands: on its way, or never sent — and a page the gateway would not open.
+  const queued = depositStateWordsOf(request("requested", { requestLineStatus: "queued" }));
+  assert.match(queued.detail, /on its way to the family's chat, valid until 14 Nov/);
+  assert.equal(queued.tone, "open");
+  const unsent = depositStateWordsOf(request("requested", { requestLineStatus: "failed" }));
+  assert.equal(unsent.headline, "Deposit requested · ฿3,000");
+  assert.match(unsent.detail, /could not be sent to the family's chat: press Resend/);
+  assert.equal(unsent.tone, "overdue");
+  assert.equal(depositStateWordsOf(request("requested", { requestLineStatus: "withdrawn" })).tone, "overdue");
+  assert.match(depositStateWordsOf(request("requested", { requestLineStatus: undefined })).detail, /is in the family's chat/);
+  const notMade = depositStateWordsOf(request("cancelled", { closeReason: "gateway_refused" }));
+  assert.equal(notMade.headline, "Request not made · ฿3,000");
+  assert.match(notMade.detail, /The payment page could not be opened/);
+  assert.equal(notMade.tone, "closed");
 });
 
 // ─── The stand-in platform ────────────────────────────────────────────────────
