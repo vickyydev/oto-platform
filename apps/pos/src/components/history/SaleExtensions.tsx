@@ -86,6 +86,7 @@ export function useSaleExtensions({
   compact = false,
   bandScans,
   displayHandoff,
+  onPaid,
 }: {
   saleId: string;
   /** A ticket admission with bracelets; a time charge itself has no Add time. */
@@ -99,6 +100,8 @@ export function useSaleExtensions({
   bandScans?: BandScanSlot | undefined;
   /** SCRUM-797 — the station's customer display, shown a QR or card tender as any sale's. */
   displayHandoff?: StationDisplayHandoff | undefined;
+  /** SCRUM-802 — notify the containing History list only after payment completes. */
+  onPaid?: (() => void) | undefined;
 }): { card: ReactNode; button: ReactNode; dialogs: ReactNode } {
   const { can, operator } = useOperator();
   const { active: station } = useStation();
@@ -258,6 +261,7 @@ export function useSaleExtensions({
           onPaid={({ label, braceletCount }) => {
             const total = data.eligibleBands.length;
             setFlash(`Added ${label} to ${braceletCount} of ${plural(total)}`);
+            onPaid?.();
           }}
         />
       )}

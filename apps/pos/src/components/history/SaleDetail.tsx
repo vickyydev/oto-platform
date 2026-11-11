@@ -710,6 +710,8 @@ export interface SaleDetailProps {
   onBack: () => void;
   onVoided?: (saleId: string) => void;
   onRefunded?: (saleId: string, sale: ApiSale) => void;
+  /** SCRUM-802 — reread History after the separate time charge is paid. */
+  onExtensionPaid?: () => void;
   layout?: 'columns' | 'stacked';
   /** Where History's station channel hands a band while Add time is open. */
   bandScans?: BandScanSlot;
@@ -1236,6 +1238,7 @@ export function SaleDetail(props: SaleDetailProps) {
     fmt,
     bandScans: props.bandScans,
     displayHandoff: props.displayHandoff,
+    onPaid: props.onExtensionPaid,
   });
 
   const contents = error ? (

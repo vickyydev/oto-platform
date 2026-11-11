@@ -92,7 +92,7 @@ describe('the details screen before payment', () => {
   it('shows the number given at the start instead of asking for it again', () => {
     const html = display('ru', 'input', { phone: '+66812345678', fixedPhone: '+66812345678' });
     expect(html).toContain('data-testid="input-kept-phone"');
-    expect(html).toContain('+66812345678');
+    expect(html).toContain('+66 81 234 5678');
     expect(html).toContain(tFor('ru')('till.input.phoneKept'));
     // The keypad the number is typed on is not there.
     expect(html).not.toContain('aria-label="Select country code"');
@@ -102,6 +102,13 @@ describe('the details screen before payment', () => {
     const html = display('en', 'input');
     expect(html).not.toContain('data-testid="input-kept-phone"');
     expect(html).toContain('aria-label="Select country code"');
+  });
+
+  it('SCRUM-783: shows the stored form of a ZZ TEST number typed with a leading zero', () => {
+    const raw = '+660898020001';
+    const html = display('en', 'input', { phone: raw, fixedPhone: raw });
+    expect(html).toContain('+66 89 802 0001');
+    expect(html).not.toContain(raw);
   });
 
   it('keeps Done off until there is a number: the details screen is no way past it', () => {
@@ -146,13 +153,21 @@ describe('the drop-off and nanny forms', () => {
   it('the customer sees the number from the start and is not asked for it', () => {
     const html = under('th', createElement(ConsentCapture, { ...consentProps, parentPhoneKept: true } as never));
     expect(html).toContain('data-testid="consent-kept-phone"');
-    expect(html).toContain('+66812345678');
+    expect(html).toContain('+66 81 234 5678');
     expect(html).toContain(tFor('th')('till.input.phoneKept'));
   });
 
   it('staff can still correct it on their own copy', () => {
     const html = under('en', createElement(ConsentCapture, { ...consentProps, parentPhoneKept: true, staffScreen: true } as never));
     expect(html).not.toContain('data-testid="consent-kept-phone"');
+  });
+
+  it('SCRUM-783: formats the ZZ TEST number only in the read-only agreement label', () => {
+    const html = under('en', createElement(ConsentCapture, {
+      ...consentProps, parentPhone: '+660898020001', parentPhoneKept: true,
+    } as never));
+    expect(html).toContain('+66 89 802 0001');
+    expect(html).not.toContain('+660898020001');
   });
 });
 

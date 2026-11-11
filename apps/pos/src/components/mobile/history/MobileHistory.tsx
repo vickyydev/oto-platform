@@ -29,6 +29,7 @@ import { MobileTransactionDetail } from './MobileTransactionDetail';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/shared/PhoneInput';
+import { useScanField } from '@/lib/useScanField';
 import {
   Search,
   X,
@@ -220,10 +221,9 @@ export function MobileHistory() {
   };
 
   /** The bracelet scan (S2-11): the platform finds the band and its sale. */
-  const submitScan = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      const search = parseHistorySearch(scanInput);
+  const loadScan = useCallback(
+    async (value: string) => {
+      const search = parseHistorySearch(value);
       if (search.kind !== 'band') {
         setScanError(
           'That is not a bracelet code. Scan the QR on the band, or type the short code printed under it — for example T1-7KMQ4X.',
@@ -249,8 +249,14 @@ export function MobileHistory() {
         setBandError(explainLookup(err, 'band'));
       }
     },
-    [scanInput, branchApiId, branch.id, branch.name],
+    [branchApiId, branch.id, branch.name],
   );
+  const scanField = useScanField(loadScan, view === 'scan' && selected === null);
+  const submitScan = (event: React.FormEvent) => {
+    event.preventDefault();
+    scanField.stopWaiting();
+    void loadScan(scanInput);
+  };
 
   /**
    * A member's orders, from the ledger: the phone finds the member, and the
@@ -366,6 +372,7 @@ export function MobileHistory() {
           onBack={() => setSelected(null)}
           onVoided={onVoided}
           onRefunded={onRefunded}
+          onExtensionPaid={() => setReread((value) => value + 1)}
         />
       </div>
     );
@@ -391,9 +398,15 @@ export function MobileHistory() {
             <form onSubmit={submitScan} className="flex flex-col gap-3">
               <Input
                 autoFocus
+                data-reads-scans=""
+                ref={scanField.field}
+                onKeyDown={scanField.onKeyDown}
                 value={scanInput}
                 onChange={(e) => {
-                  setScanInput(e.target.value);
+                  const next = e.target.value;
+                  const native = e.nativeEvent as InputEvent;
+                  scanField.noteChange(next, next.length - scanInput.length, native.timeStamp, native.inputType === 'insertFromPaste');
+                  setScanInput(next);
                   if (scanError) setScanError(null);
                 }}
                 placeholder="e.g. T1-7KMQ4X"

@@ -318,7 +318,9 @@ describe('the till is wired to it', () => {
   });
 
   it('the wristband field notes only a run at a scanner’s pace, on its quiet and on its Enter', () => {
-    const text = source('components/fnb/ScanWristband.tsx');
+    // SCRUM-802 moved the field rule intact into the shared hook used by F&B and History.
+    expect(source('components/fnb/ScanWristband.tsx')).toContain('useScanField((value) => submit(value))');
+    const text = source('lib/useScanField.ts');
     expect(text).toContain('paced.current = nextPacedRun(paced.current, { added, at, pasted });');
     expect(text.match(/noteScannerUse\(\)/g)).toHaveLength(2);
     expect(text.match(/if \(byScanner\) noteScannerUse\(\);/g)).toHaveLength(2);

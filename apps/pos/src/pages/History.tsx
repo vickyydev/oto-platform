@@ -38,6 +38,7 @@ import { MemberActivity } from '@/components/history/MemberActivity';
 import { ClientActivity } from '@/components/history/ClientActivity';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { PhoneInput } from '@/components/shared/PhoneInput';
+import { useScanField } from '@/lib/useScanField';
 import {
   Search,
   X,
@@ -359,10 +360,9 @@ export default function History() {
     [branchApiId, branch.id, branch.name],
   );
 
-  const submitScan = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      const search = parseHistorySearch(scanInput);
+  const loadScan = useCallback(
+    async (value: string) => {
+      const search = parseHistorySearch(value);
       if (search.kind !== 'band') {
         setScanError(
           'That is not a bracelet code. Scan the QR on the band, or type the short code printed under it — for example T1-7KMQ4X.',
@@ -371,8 +371,14 @@ export default function History() {
       }
       await openBand(search);
     },
-    [scanInput, openBand],
+    [openBand],
   );
+  const scanField = useScanField(loadScan, view === 'scan' && selected === null);
+  const submitScan = (event: React.FormEvent) => {
+    event.preventDefault();
+    scanField.stopWaiting();
+    void loadScan(scanInput);
+  };
 
   /**
    * SCRUM-731 — THE SAME BRACELET, READ BY THE COUNTER'S SCANNER. The box hands
@@ -466,6 +472,7 @@ export default function History() {
               onBack={() => setSelected(null)}
               onVoided={onVoided}
               onRefunded={onRefunded}
+              onExtensionPaid={() => setReread((value) => value + 1)}
               bandScans={addTimeScan}
               displayHandoff={linkedDisplay.handover}
             />
@@ -486,10 +493,15 @@ export default function History() {
                   <form onSubmit={submitScan} className="flex gap-3 mb-3">
                     <Input
                       autoFocus
+                      ref={scanField.field}
+                      onKeyDown={scanField.onKeyDown}
                       data-reads-scans=""
                       value={scanInput}
                       onChange={(e) => {
-                        setScanInput(e.target.value);
+                        const next = e.target.value;
+                        const native = e.nativeEvent as InputEvent;
+                        scanField.noteChange(next, next.length - scanInput.length, native.timeStamp, native.inputType === 'insertFromPaste');
+                        setScanInput(next);
                         if (scanError) setScanError(null);
                       }}
                       placeholder="Bracelet code e.g. T1-7KMQ4X"

@@ -1,3 +1,4 @@
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn } from '@/types';
@@ -4302,7 +4303,7 @@ export default function Till() {
             </DialogTitle>
             <DialogDescription>
               No membership found for{' '}
-              <span className="font-medium text-foreground">{customerPhone.trim()}</span>. Create one
+              <span className="font-medium text-foreground">{formatStoredPhone(customerPhone)}</span>. Create one
               from just the phone and a name — details can be added later.
             </DialogDescription>
           </DialogHeader>

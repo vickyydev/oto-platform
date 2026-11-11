@@ -8,7 +8,7 @@
  * is treated as +66 so existing seeds and older stored values still match.
  */
 
-import { normalizePhone as normalizeE164 } from '@oto/shared';
+import { normalizePhone as normalizeE164, formatDisplayPhone as formatSharedPhone } from '@oto/shared';
 import { COUNTRIES, type CountryOption, DEFAULT_COUNTRY } from '@/data/countries';
 
 // ---------------------------------------------------------------------------
@@ -116,4 +116,9 @@ export function formatDisplayPhone(value: string): string {
 export function storedPhoneHint(value: string): string {
   if (!value) return '';
   return normalizeE164(value) ?? value;
+}
+
+/** SCRUM-783 — show the stored form without changing the number being edited. */
+export function formatStoredPhone(value: string): string {
+  return formatSharedPhone(storedPhoneHint(value));
 }

@@ -1,3 +1,4 @@
+import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useRef, useState } from 'react';
 import { Sale, Member, ChargeTarget, ContactChannel } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -705,7 +706,7 @@ export function CustomerDisplay({
                 <label className="text-foreground/70 text-lg">{t('superviseConsent.phoneNumber')}</label>
                 <div className="mt-2 flex h-16 items-center gap-3 rounded-md border border-foreground/10 bg-foreground/5 px-5 text-2xl font-semibold tabular-nums">
                   <Smartphone className="h-6 w-6 shrink-0 text-foreground/50" />
-                  {keptPhone}
+                  {formatStoredPhone(keptPhone)}
                 </div>
                 <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
               </div>
