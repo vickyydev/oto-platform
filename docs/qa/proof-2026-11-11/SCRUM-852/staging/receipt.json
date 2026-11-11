@@ -1,0 +1,662 @@
+{
+  "ticket": "SCRUM-852",
+  "expectedSha": "70d45d0d18d95d061e4a7abe079d90dbc1932a18",
+  "startedAt": "2026-11-11T17:25:05.866Z",
+  "phase": "clean up the ZZ TEST rows and sign out",
+  "requests": [
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/qa-reports/config",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/branches",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/support/by-phone?phone=[not recorded]",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts?q=[not recorded]",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "POST",
+      "path": "/api/employees",
+      "status": 201
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "POST",
+      "path": "/api/admin/login-lifecycle/send-again",
+      "status": 409
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "POST",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18/offboarding",
+      "status": 201
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "DELETE",
+      "path": "/api/admin/apps/oto_app/users/01a1cba4-a3ba-7164-bc94-87a8dce2dedd",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/accounts/01a1cba4-a3ba-7164-bc94-87a8dce2dedd/permissions",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "DELETE",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+      "status": 204
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/employees/eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+      "status": 404
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/admin/login-lifecycle?userId=00015da2-04d5-4223-912b-ac4e198800f5",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "POST",
+      "path": "/api/logout",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/user",
+      "status": 401
+    },
+    {
+      "at": "app",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "at": "app",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "at": "console",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "status": 200
+    },
+    {
+      "at": "console",
+      "method": "GET",
+      "path": "/api/me",
+      "status": 401
+    }
+  ],
+  "created": {
+    "employeeId": "eb6ef24f-61b7-4276-9dc8-71e0688f6a18",
+    "userId": "00015da2-04d5-4223-912b-ac4e198800f5",
+    "personId": "fe5dadea-9e2c-45bc-998c-13005edfb438",
+    "accessPolicyId": "88a1b733-9f69-485a-97d4-60e5e279d3e7",
+    "accountId": "01a1cba4-a3ba-7164-bc94-87a8dce2dedd"
+  },
+  "steps": {
+    "step2": {
+      "employee": 201,
+      "enableLogin": 200,
+      "success": true,
+      "replayed": false,
+      "platformManaged": false,
+      "platformAccount": {
+        "status": 200,
+        "listed": true,
+        "accountStatus": "active"
+      },
+      "profile": {
+        "status": 200,
+        "employeeStatus": "pending",
+        "employmentState": "ACTIVE",
+        "hasLogin": true,
+        "loginActive": true,
+        "userId": "00015da2-04d5-4223-912b-ac4e198800f5"
+      },
+      "lifecycleBefore": {
+        "status": 200,
+        "events": []
+      }
+    },
+    "step3": {
+      "panelBefore": {
+        "panelLifecycleReads": [
+          200
+        ],
+        "toggleReads": "Disable Login",
+        "parkedLines": 0,
+        "sendAgainButtons": 0,
+        "notToldTextOnPage": false,
+        "sendAgainTextInPanel": false
+      },
+      "disableLogin": {
+        "status": 200,
+        "isActive": false,
+        "message": "Login disabled successfully"
+      },
+      "delivery": {
+        "waitedSeconds": 30,
+        "reads": [
+          {
+            "afterSeconds": 0,
+            "status": 200,
+            "state": "pending",
+            "attemptCount": 0,
+            "lastErrorCode": null,
+            "parked": false
+          },
+          {
+            "afterSeconds": 15,
+            "status": 200,
+            "state": "pending",
+            "attemptCount": 0,
+            "lastErrorCode": null,
+            "parked": false
+          },
+          {
+            "afterSeconds": 30,
+            "status": 200,
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false
+          }
+        ],
+        "event": {
+          "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+          "kind": "deactivate",
+          "state": "delivered",
+          "attemptCount": 1,
+          "lastErrorCode": null,
+          "parked": false,
+          "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+          "createdAt": "2026-11-11T17:25:31.552Z",
+          "settledAt": "2026-11-11T17:26:01.167Z"
+        }
+      },
+      "profile": {
+        "status": 200,
+        "employeeStatus": "pending",
+        "employmentState": "ACTIVE",
+        "hasLogin": true,
+        "loginActive": false,
+        "userId": "00015da2-04d5-4223-912b-ac4e198800f5"
+      },
+      "platformAccount": {
+        "status": 200,
+        "listed": true,
+        "accountStatus": "inactive"
+      },
+      "panelAfter": {
+        "panelLifecycleReads": [
+          200
+        ],
+        "toggleReads": "Enable Login",
+        "parkedLines": 0,
+        "sendAgainButtons": 0,
+        "notToldTextOnPage": false,
+        "sendAgainTextInPanel": false
+      },
+      "passed": true
+    },
+    "step5": {
+      "eventId": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+      "eventStateBefore": "delivered",
+      "status": 409,
+      "message": "This is no longer waiting: it was already sent again, or the platform has it now.",
+      "ok": null,
+      "lifecycleBefore": {
+        "status": 200,
+        "events": [
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      },
+      "lifecycleAfter": {
+        "status": 200,
+        "events": [
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      },
+      "lifecycleIdentical": true,
+      "platformAccountAfter": {
+        "status": 200,
+        "listed": true,
+        "accountStatus": "inactive"
+      },
+      "passed": true
+    },
+    "step4": {
+      "enableLogin": {
+        "status": 200,
+        "isActive": true,
+        "message": "Login enabled successfully"
+      },
+      "lifecycleAfterEnable": {
+        "status": 200,
+        "events": [
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      },
+      "platformAccountAfterEnable": {
+        "status": 200,
+        "listed": true,
+        "accountStatus": "inactive"
+      },
+      "offboard": {
+        "status": 201,
+        "offboardingId": "b22c5b3f-0c45-4b3f-8e2a-ec10e4b074f5",
+        "lastWorkingDay": "yesterday (Bangkok)"
+      },
+      "delivery": {
+        "waitedSeconds": 30,
+        "reads": [
+          {
+            "afterSeconds": 0,
+            "status": 200,
+            "state": "pending",
+            "attemptCount": 0,
+            "lastErrorCode": null,
+            "parked": false
+          },
+          {
+            "afterSeconds": 15,
+            "status": 200,
+            "state": "pending",
+            "attemptCount": 0,
+            "lastErrorCode": null,
+            "parked": false
+          },
+          {
+            "afterSeconds": 30,
+            "status": 200,
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false
+          }
+        ],
+        "event": {
+          "id": "1cadb59c-6cf4-445f-ba90-a67ec74dd10f",
+          "kind": "restrict",
+          "state": "delivered",
+          "attemptCount": 1,
+          "lastErrorCode": null,
+          "parked": false,
+          "nextAttemptAt": "2026-11-11T17:27:01.128Z",
+          "createdAt": "2026-11-11T17:26:09.245Z",
+          "settledAt": "2026-11-11T17:26:31.176Z"
+        }
+      },
+      "profile": {
+        "status": 200,
+        "employeeStatus": "resigned",
+        "employmentState": "LEFT",
+        "hasLogin": true,
+        "loginActive": true,
+        "userId": "00015da2-04d5-4223-912b-ac4e198800f5"
+      },
+      "lifecycle": {
+        "status": 200,
+        "events": [
+          {
+            "id": "1cadb59c-6cf4-445f-ba90-a67ec74dd10f",
+            "kind": "restrict",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:27:01.128Z",
+            "createdAt": "2026-11-11T17:26:09.245Z",
+            "settledAt": "2026-11-11T17:26:31.176Z"
+          },
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      },
+      "platformAccount": {
+        "status": 200,
+        "listed": true,
+        "accountStatus": "inactive"
+      },
+      "panelAfter": {
+        "panelLifecycleReads": [
+          200
+        ],
+        "toggleReads": "Disable Login",
+        "parkedLines": 0,
+        "sendAgainButtons": 0,
+        "notToldTextOnPage": false,
+        "sendAgainTextInPanel": false
+      },
+      "passed": true
+    }
+  },
+  "cleanup": [
+    {
+      "label": "before clean-up: the lifecycle events as they stand",
+      "passed": true,
+      "lifecycle": {
+        "status": 200,
+        "events": [
+          {
+            "id": "1cadb59c-6cf4-445f-ba90-a67ec74dd10f",
+            "kind": "restrict",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:27:01.128Z",
+            "createdAt": "2026-11-11T17:26:09.245Z",
+            "settledAt": "2026-11-11T17:26:31.176Z"
+          },
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      }
+    },
+    {
+      "label": "platform account: switch off on the Console (only if it is not off already)",
+      "passed": true,
+      "alreadyInactive": true
+    },
+    {
+      "label": "platform account: withdraw the OTO App link",
+      "passed": true,
+      "unlink": 200
+    },
+    {
+      "label": "platform account: read back",
+      "passed": true,
+      "accountStatus": "inactive",
+      "permissionsRead": 200,
+      "permissionKeys": [
+        "assignments",
+        "effective"
+      ],
+      "counts": {
+        "assignments": 0,
+        "effective": 0
+      }
+    },
+    {
+      "label": "ZZ TEST employee: delete through the app's own delete",
+      "passed": true,
+      "readBack": 404
+    },
+    {
+      "label": "what stays: the lifecycle events of the deleted login",
+      "passed": true,
+      "lifecycle": {
+        "status": 200,
+        "events": [
+          {
+            "id": "1cadb59c-6cf4-445f-ba90-a67ec74dd10f",
+            "kind": "restrict",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:27:01.128Z",
+            "createdAt": "2026-11-11T17:26:09.245Z",
+            "settledAt": "2026-11-11T17:26:31.176Z"
+          },
+          {
+            "id": "96b583ea-5aaa-425d-9e36-d0f13bdc246f",
+            "kind": "deactivate",
+            "state": "delivered",
+            "attemptCount": 1,
+            "lastErrorCode": null,
+            "parked": false,
+            "nextAttemptAt": "2026-11-11T17:26:31.128Z",
+            "createdAt": "2026-11-11T17:25:31.552Z",
+            "settledAt": "2026-11-11T17:26:01.167Z"
+          }
+        ]
+      }
+    },
+    {
+      "label": "sign out app",
+      "passed": true
+    },
+    {
+      "label": "sign out launcher",
+      "passed": true
+    },
+    {
+      "label": "sign out console",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "appVersion": {
+    "status": 200,
+    "sha": "70d45d0d18d95d061e4a7abe079d90dbc1932a18"
+  },
+  "chosen": {
+    "branchId": "57927bae-1d48-4797-8489-8c8aa3810fa5",
+    "departmentId": "77c49e67-9d03-420b-8f77-9aa957fd5514"
+  },
+  "phoneChecks": [
+    {
+      "app": 200,
+      "appRecords": 0,
+      "platform": 200,
+      "platformAccounts": 0
+    }
+  ],
+  "behaviorRecorded": true,
+  "finishedAt": "2026-11-11T17:26:51.029Z"
+}

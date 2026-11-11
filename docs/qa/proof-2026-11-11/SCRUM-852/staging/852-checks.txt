@@ -1,0 +1,30 @@
+THE LANDING RUN OF THE APP CHECKS (the runner output, at the landed source)
+  PASS 3s migrate-1 :: npm run db:migrate
+  PASS 1s migrate-2 :: npm run db:migrate
+  PASS 19s The legacy password door checks :: npx tsx tests/legacy-password-doors.check.ts
+  PASS 55s The app's Onboard Again and profile fold checks :: npx tsx tests/employee-onboard-again.check.ts
+  PASS 29s The app's Onboard Again screen check :: npx tsx tests/employee-onboard-again-ui.check.ts
+  PASS 49s s633-suite :: npx tsx tests/s633-suite.check.ts
+  DONE 6 run, 0 failed
+
+THE SUITE, AS IT RECORDED THE LIFECYCLE CHECK FILE AND ITS OWN TOTAL
+  {"stage":"s778-lifecycle.check.ts","passed":true,"exitCode":0,"signal":null,
+   "timedOut":false,"failedToSpawn":false,"outputLimited":false,"expectedChecks":20,"checksPassed":20,"checksTotal":20,
+   "stdoutSha256":"7e24819f0ac88651c1d749b629af827b649b3474b966f594309e7cf69b58c13f"}
+  {"suite":"s633","passed":true,"checks":62,"ownDatabaseRemoved":true}
+
+THE LIFECYCLE CHECK FILE, CASE BY CASE (its own output; its sha256 is the stdoutSha256 above)
+  ok lifecycle retry: HIGH: a refusal from the platform backs off through six attempts, then parks under the platform's own code
+  ok lifecycle retry: HIGH: absent transport configuration backs off the same, stores no secret detail and never parks (SCRUM-852)
+  ok lifecycle retry: HIGH (852): an unreachable platform for 20 attempts never parks and the delay holds at the 15 minute cap
+  ok lifecycle retry: HIGH (852): a 5xx for 20 attempts never parks; a busy platform, a refused key and an unreadable answer never park either
+  ok lifecycle retry: HIGH (852): the classification — only a 4xx carrying the platform's own code is a refusal
+  ok lifecycle retry: HIGH (852): a forged or unsafe platform code is never stored and never parks
+  ok lifecycle retry: HIGH (852): refusals below the ceiling followed by an outage never park; a refusal after a long outage parks at once
+  ok lifecycle retry: HIGH (852): a row the older rule parked without a refusal goes back in the queue; a refused one stays parked
+  ok lifecycle retry: HIGH (852): Send again re-queues the parked event once, with its activity row; it is tried again and delivers
+  ok lifecycle retry: HIGH (852): Send again never sends a stale event — a login switched back on, re-stamped, replaced by a newer event, or out of pay only
+  ok lifecycle retry: HIGH (852): a day-long outage writes one log line an hour for its cause, a new cause is named at once, and nothing else
+  ok lifecycle retry: HIGH (852): the panel says one plain line per parked event with a Send again button, and nothing otherwise
+  ok lifecycle retry: HIGH (852): the Send again route — signed in, an administrator, their own park group, a parked event; two presses at once send one
+  s778-lifecycle.check: 20/20 checks passed

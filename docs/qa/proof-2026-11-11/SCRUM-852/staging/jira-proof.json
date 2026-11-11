@@ -1,0 +1,47 @@
+{
+  "before": {
+    "status": "In Progress",
+    "summary": "A login switch-off that could not reach the platform keeps trying through an outage, and one that was refused is shown with a Send again action"
+  },
+  "attach": {
+    "status": 200,
+    "files": [
+      {
+        "id": "13188",
+        "name": "852-01-panel-login-on.png"
+      },
+      {
+        "id": "13189",
+        "name": "852-02-panel-after-switch-off.png"
+      },
+      {
+        "id": "13190",
+        "name": "852-03-profile-after-switch-off.png"
+      },
+      {
+        "id": "13191",
+        "name": "852-04-panel-after-offboard.png"
+      },
+      {
+        "id": "13192",
+        "name": "852-05-checks.png"
+      }
+    ]
+  },
+  "comment": {
+    "status": 201
+  },
+  "images": [
+    "852-01-panel-login-on.png",
+    "852-02-panel-after-switch-off.png",
+    "852-03-profile-after-switch-off.png",
+    "852-04-panel-after-offboard.png",
+    "852-05-checks.png"
+  ],
+  "afterTesting": "Testing",
+  "afterDeployed": "Deployed",
+  "final": {
+    "status": "Deployed",
+    "summary": "A login switch-off that could not reach the platform keeps trying through an outage, and one that was refused is shown with a Send again action"
+  }
+}
