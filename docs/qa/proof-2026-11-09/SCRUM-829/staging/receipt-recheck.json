@@ -1,0 +1,946 @@
+{
+  "unit": "SCRUM-829 re-check of the AI fill after the fold (8e4c41ee3)",
+  "ran": {
+    "from": "2026-11-11T06:24:44.834Z",
+    "to": "2026-11-11T06:30:02.432Z",
+    "timezone": "Asia/Bangkok",
+    "browser": "Chromium 153.0.8010.12"
+  },
+  "code": "8e4c41ee35713ac248fc087871637b8bf1c4e234",
+  "deploys": {
+    "liveBeforeRecheck2": {
+      "at": "2026-11-11T06:24:44.834Z",
+      "deploys": {
+        "oto-api-staging": [
+          {
+            "id": "dep-dbq0bjlg1s2s73bg32n0",
+            "status": "live",
+            "sha": "b37f063343102808456733501925e0284501a3b8",
+            "finishedAt": "2026-11-11T06:10:16.12554Z"
+          },
+          {
+            "id": "dep-dbq00eou01pc739e56q0",
+            "status": "deactivated",
+            "sha": "3ac4658cdd5f00a965c004db027cfac775495a19",
+            "finishedAt": "2026-11-11T05:46:29.189073Z"
+          },
+          {
+            "id": "dep-dbpvpq3d642c73aa4q70",
+            "status": "deactivated",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:33:17.58858Z"
+          },
+          {
+            "id": "dep-dbpvo3gn74is7398qan0",
+            "status": "deactivated",
+            "sha": "c554fac85642f296437f44c8e276c199fa0a9881",
+            "finishedAt": "2026-11-11T05:28:49.035265Z"
+          }
+        ],
+        "oto-app-staging": [
+          {
+            "id": "dep-dbq0hh6tehms73b5qji0",
+            "status": "live",
+            "sha": "8e4c41ee35713ac248fc087871637b8bf1c4e234",
+            "finishedAt": "2026-11-11T06:23:51.817956Z"
+          },
+          {
+            "id": "dep-dbq0ha8u01pc739fo0tg",
+            "status": "deactivated",
+            "sha": "ec3194a2e0d7d574f2db564bcf9230246cf089a1",
+            "finishedAt": "2026-11-11T06:20:55.90797Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1crg",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:31:53.056489Z"
+          },
+          {
+            "id": "dep-dbppvoei0phs739ao6eg",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:53:57.446679Z"
+          }
+        ],
+        "oto-pos-staging": [
+          {
+            "id": "dep-dbq08sijnfac739lghh0",
+            "status": "live",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T06:01:42.266949Z"
+          },
+          {
+            "id": "dep-dbpvptoae00c73cs8cu0",
+            "status": "deactivated",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:29:18.560606Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1dig",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:30:16.463764Z"
+          },
+          {
+            "id": "dep-dbppvogn74is738mhbp0",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:05.159698Z"
+          }
+        ],
+        "oto-pos-web-staging": [
+          {
+            "id": "dep-dbq08sijnfac739lghd0",
+            "status": "live",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T06:03:54.405051Z"
+          },
+          {
+            "id": "dep-dbpvpuajnfac73el2q9g",
+            "status": "deactivated",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:31:19.774863Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1cng",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:31:57.557407Z"
+          },
+          {
+            "id": "dep-dbppvot6e07s73b4gaeg",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:54:00.076582Z"
+          }
+        ],
+        "oto-console-staging": [
+          {
+            "id": "dep-dbq08sijnfac739lghk0",
+            "status": "live",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T06:01:41.840581Z"
+          },
+          {
+            "id": "dep-dbpvpt8ae00c73cs8bm0",
+            "status": "deactivated",
+            "sha": "acb096f723131ffbc3b9b2b461193242f70a79ce",
+            "finishedAt": "2026-11-11T05:29:14.674384Z"
+          },
+          {
+            "id": "dep-dbpqhgff3r2c73at1df0",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T23:30:13.121898Z"
+          },
+          {
+            "id": "dep-dbppvp8n74is738mhe20",
+            "status": "deactivated",
+            "sha": "fcd1a08b3bcc75b1afbda8d6ef548db1bbd438e3",
+            "finishedAt": "2026-11-10T22:52:06.05289Z"
+          }
+        ]
+      }
+    },
+    "inbox": {
+      "deploy": "dep-dbq00f6k1f9s73d6j4l0",
+      "sha": "3ac4658c",
+      "status": "live"
+    },
+    "apiDuringTheFills": {
+      "deploy": "dep-dbq0bjlg1s2s73bg32n0",
+      "sha": "b37f0633",
+      "liveSince": "2026-11-11T06:10:16Z",
+      "note": "the api's restart deploy dep-dbq0n8jl550s73971ea0 at 7d88e194 (the same api code plus a setting restart) was created at 06:30:58Z, after the fills (06:24-06:30Z) and the sign-outs; it did not serve this run; no fill answered inbox_unreachable"
+    }
+  },
+  "threads": {
+    "same3": {
+      "conversationId": "01a1c943-c466-7de4-b6bb-b659f78aceee",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi! A party for ZZ Test Child turning 6 on Monday 30 November at 1pm: party for 10 kids and 4 adults, nuggets and juice for the kids, and the adults will eat the same (ZZ TEST)",
+          "status": 200,
+          "outcome": "processed"
+        },
+        {
+          "n": 2,
+          "by": "team",
+          "text": "Confirmed: ZZ Test Child's 6th birthday party on Monday 30 November 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets and juice for the kids, and the adults will eat the same. (ZZ TEST)",
+          "status": 200,
+          "outcome": null
+        }
+      ]
+    },
+    "differ2": {
+      "conversationId": "01a1c944-06fa-702e-a1c6-2b7970d24ca8",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi! A party for ZZ Test Child turning 6 on Tuesday 1 December at 1pm: 10 kids and 4 adults, nuggets for the kids, pasta for the adults (ZZ TEST)",
+          "status": 200,
+          "outcome": "processed"
+        },
+        {
+          "n": 2,
+          "by": "team",
+          "text": "Confirmed: ZZ Test Child's 6th birthday party on Tuesday 1 December 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets for the kids, pasta for the adults. (ZZ TEST)",
+          "status": 200,
+          "outcome": null
+        }
+      ]
+    },
+    "none": {
+      "conversationId": "01a1c944-3b2f-77ed-948d-3889a22ac64d",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi! A party for ZZ Test Child turning 6 on Wednesday 2 December at 1pm: 10 kids and 4 adults, nuggets and juice for the kids please (ZZ TEST)",
+          "status": 200,
+          "outcome": "processed"
+        },
+        {
+          "n": 2,
+          "by": "team",
+          "text": "Confirmed: ZZ Test Child's 6th birthday party on Wednesday 2 December 2026 at 13:00, 10 kids and 4 adults, Birthday package Central Floresta; nuggets and juice for the kids. (ZZ TEST)",
+          "status": 200,
+          "outcome": null
+        }
+      ]
+    }
+  },
+  "book": {
+    "same3": {
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "date": "2026-11-30",
+        "startTime": "13:00",
+        "park": "Central Floresta",
+        "kids": "10",
+        "adults": "4",
+        "childAge": "6",
+        "childNameIsZz": true,
+        "bookingNameIsZz": true
+      },
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "event": {
+          "id": ":eventId",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-11-30",
+          "startTime": "13:00",
+          "kids": 10,
+          "adults": 4
+        }
+      }
+    },
+    "differ2": {
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "date": "2026-12-01",
+        "startTime": "13:00",
+        "park": "Central Floresta",
+        "kids": "10",
+        "adults": "4",
+        "childAge": "6",
+        "childNameIsZz": true,
+        "bookingNameIsZz": true
+      },
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "event": {
+          "id": ":eventId",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-01",
+          "startTime": "13:00",
+          "kids": 10,
+          "adults": 4
+        }
+      }
+    },
+    "none": {
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "date": "2026-12-02",
+        "startTime": "13:00",
+        "park": "Central Floresta",
+        "kids": "10",
+        "adults": "4",
+        "childAge": "6",
+        "childNameIsZz": true,
+        "bookingNameIsZz": true
+      },
+      "save": {
+        "route": "POST /api/inbox/conversations/:id/book-date (the dialog's Book date)",
+        "status": 200,
+        "event": {
+          "id": ":eventId",
+          "title": "ZZ Test Child's 6th Birthday",
+          "date": "2026-12-02",
+          "startTime": "13:00",
+          "kids": 10,
+          "adults": 4
+        }
+      }
+    }
+  },
+  "caseA_theSame": {
+    "createBeo": {
+      "conversationId": "01a1c943-c466-7de4-b6bb-b659f78aceee",
+      "eventId": ":eventId",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 11.6,
+        "shape": "free-text preview (Review & Confirm, Load into Editor)",
+        "error": null,
+        "kitchenPlanInAnswer": null
+      },
+      "confirm": {
+        "kitchenPlanProposed": "Kitchen Plan Kids Menu: 10x Nuggets 10x Juice ",
+        "summaryLine": "ZZ Test Child's 6th birthday party confirmed for Monday 30 November 2026 at 13:00 with 10 kids and 4 adults on the Birthday package at Central Floresta, with nuggets and juice for both kids and adults.",
+        "editorAfterLoad": {
+          "kids": {
+            "tab": "Kids Menu (2)",
+            "rows": [
+              "EXTRA 10 Nuggets",
+              "EXTRA 10 Juice"
+            ]
+          },
+          "adults": {
+            "tab": "Adults Menu (2)",
+            "switch": "unchecked",
+            "mirror": {
+              "text": "Same as the kids' menu",
+              "items": [
+                "10 Nuggets",
+                "10 Juice"
+              ]
+            },
+            "editableRows": [],
+            "buttons": {
+              "addFirst": 0,
+              "extra": 0,
+              "newItem": 0,
+              "nameInputs": 0,
+              "removeButtons": 0
+            },
+            "clickHereToAddFirst": false
+          }
+        },
+        "save": {
+          "status": 200,
+          "sent": {
+            "adultsDiffer": false,
+            "kids": [
+              [
+                "Nuggets",
+                10,
+                null
+              ],
+              [
+                "Juice",
+                10,
+                null
+              ]
+            ],
+            "adults": []
+          }
+        },
+        "kitchenPlanRead": {
+          "route": "GET /api/events/:eventId/beo/kitchen-plan",
+          "status": 200,
+          "adultsDiffer": false,
+          "kids": [
+            [
+              "Nuggets",
+              10,
+              null,
+              ""
+            ],
+            [
+              "Juice",
+              10,
+              null,
+              ""
+            ]
+          ],
+          "adults": []
+        }
+      }
+    },
+    "pasteFill": {
+      "eventKey": "ai_same3",
+      "route": {
+        "route": "POST /api/ai/parse-beo",
+        "status": 200
+      },
+      "answerKitchenPlan": {
+        "kids": [],
+        "adults": [],
+        "adultsDiffer": "(no key)"
+      },
+      "reviewShown": "catalogue",
+      "loadInsteadPressed": true,
+      "previewKitchenPlan": "Kitchen Plan Kids Menu: 10x Nuggets 10x Juice ",
+      "editorAfterLoad": {
+        "kids": {
+          "tab": "Kids Menu (2)",
+          "rows": [
+            "EXTRA 10 Nuggets",
+            "EXTRA 10 Juice"
+          ]
+        },
+        "adults": {
+          "tab": "Adults Menu (2)",
+          "switch": "unchecked",
+          "mirror": {
+            "text": "Same as the kids' menu",
+            "items": [
+              "10 Nuggets",
+              "10 Juice"
+            ]
+          },
+          "editableRows": [],
+          "buttons": {
+            "addFirst": 0,
+            "extra": 0,
+            "newItem": 0,
+            "nameInputs": 0,
+            "removeButtons": 0
+          },
+          "clickHereToAddFirst": false
+        }
+      },
+      "save": {
+        "status": 200,
+        "sent": {
+          "adultsDiffer": false,
+          "kids": [
+            [
+              "Nuggets",
+              10,
+              null
+            ],
+            [
+              "Juice",
+              10,
+              null
+            ]
+          ],
+          "adults": []
+        }
+      },
+      "kitchenPlanRead": {
+        "route": "GET /api/events/:eventId/beo/kitchen-plan",
+        "status": 200,
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "Nuggets",
+            10,
+            null,
+            ""
+          ],
+          [
+            "Juice",
+            10,
+            null,
+            ""
+          ]
+        ],
+        "adults": []
+      }
+    }
+  },
+  "caseB_pastaForTheAdults": {
+    "createBeo": {
+      "conversationId": "01a1c944-06fa-702e-a1c6-2b7970d24ca8",
+      "eventId": ":eventId",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 9.9,
+        "shape": "free-text preview (Review & Confirm, Load into Editor)",
+        "error": null,
+        "kitchenPlanInAnswer": null
+      },
+      "confirm": {
+        "kitchenPlanProposed": "Kitchen Plan Kids Menu: 1x Nuggets Adults Menu: 1x Pasta ",
+        "summaryLine": "ZZ Test Child's 6th birthday party is confirmed for Tuesday 1 December 2026 at 13:00 with 10 kids and 4 adults on the Birthday package at Central Floresta, with nuggets for the kids and pasta for the adults.",
+        "editorAfterLoad": {
+          "kids": {
+            "tab": "Kids Menu (1)",
+            "rows": [
+              "EXTRA 1 Nuggets"
+            ]
+          },
+          "adults": {
+            "tab": "Adults Menu (1)",
+            "switch": "checked",
+            "mirror": null,
+            "editableRows": [
+              "EXTRA 1 Pasta"
+            ],
+            "buttons": {
+              "addFirst": 0,
+              "extra": 1,
+              "newItem": 1,
+              "nameInputs": 1,
+              "removeButtons": 1
+            },
+            "clickHereToAddFirst": false
+          }
+        },
+        "save": {
+          "status": 200,
+          "sent": {
+            "adultsDiffer": true,
+            "kids": [
+              [
+                "Nuggets",
+                1,
+                null
+              ]
+            ],
+            "adults": [
+              [
+                "Pasta",
+                1,
+                null
+              ]
+            ]
+          }
+        },
+        "kitchenPlanRead": {
+          "route": "GET /api/events/:eventId/beo/kitchen-plan",
+          "status": 200,
+          "adultsDiffer": true,
+          "kids": [
+            [
+              "Nuggets",
+              1,
+              null,
+              ""
+            ]
+          ],
+          "adults": [
+            [
+              "Pasta",
+              1,
+              null,
+              ""
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "caseC_nothingSaidOfTheAdults": {
+    "createBeo": {
+      "conversationId": "01a1c944-3b2f-77ed-948d-3889a22ac64d",
+      "eventId": ":eventId",
+      "openBeo": {
+        "route": "POST /api/inbox/conversations/:id/open-beo",
+        "status": 200
+      },
+      "aiFill": {
+        "route": "POST /api/events/:id/beo/ai-fill/inbox",
+        "status": 200,
+        "seconds": 9.7,
+        "shape": "catalogue review (Review, edit and approve)",
+        "error": null,
+        "kitchenPlanInAnswer": null
+      },
+      "review": {
+        "notInMenu": [
+          {
+            "i": 0,
+            "menuChosen": "Kids",
+            "text": "Kids Adults Bar from the team Not in the menu: keep it as a free line in the conversation's words, or leave it out. Keep as a free line Leave out"
+          },
+          {
+            "i": 1,
+            "menuChosen": "Bar",
+            "text": "Kids Adults Bar from the team Not in the menu: keep it as a free line in the conversation's words, or leave it out. Keep as a free line Leave out"
+          }
+        ],
+        "approve": {
+          "route": "POST /api/events/:id/beo/ai-fill/approve",
+          "status": 200,
+          "sent": {
+            "menuLines": [
+              {
+                "menu": "kids",
+                "itemName": "nuggets",
+                "quantity": 1,
+                "decision": null
+              },
+              {
+                "menu": "bar",
+                "itemName": "juice",
+                "quantity": 1,
+                "decision": null
+              }
+            ],
+            "keys": [
+              "conversationId",
+              "messageId",
+              "package",
+              "setMenu",
+              "menuLines",
+              "entertainment",
+              "otherLines",
+              "event",
+              "cake",
+              "deposit",
+              "sources"
+            ]
+          },
+          "keys": [
+            "written"
+          ]
+        },
+        "restKitchenPlan": "",
+        "kitchenPlanRead": {
+          "route": "GET /api/events/:eventId/beo/kitchen-plan",
+          "status": 200,
+          "adultsDiffer": false,
+          "kids": [
+            [
+              "French fries",
+              1,
+              null,
+              ""
+            ],
+            [
+              "Veggie sticks",
+              1,
+              null,
+              ""
+            ],
+            [
+              "Fruit skewers",
+              1,
+              null,
+              ""
+            ],
+            [
+              "nuggets",
+              1,
+              null,
+              "Not in the menu"
+            ]
+          ],
+          "adults": []
+        },
+        "editor": {
+          "kids": {
+            "tab": "Kids Menu (4)",
+            "rows": [
+              "EXTRA 1 nuggets Not in the menu"
+            ]
+          },
+          "adults": {
+            "tab": "Adults Menu (4)",
+            "switch": "unchecked",
+            "mirror": {
+              "text": "Same as the kids' menu",
+              "items": [
+                "1 French fries",
+                "1 Veggie sticks",
+                "1 Fruit skewers",
+                "1 nuggets Not in the menu"
+              ]
+            },
+            "editableRows": [],
+            "buttons": {
+              "addFirst": 0,
+              "extra": 0,
+              "newItem": 0,
+              "nameInputs": 0,
+              "removeButtons": 0
+            },
+            "clickHereToAddFirst": false
+          }
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-11T06:29:58.545Z",
+    "events": [
+      {
+        "key": "ai_same3",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T06:30:01.266Z"
+        }
+      },
+      {
+        "key": "ai_differ2",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T06:30:01.446Z"
+        }
+      },
+      {
+        "key": "ai_none",
+        "title": "ZZ Test Child's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive {archived:true}",
+          "status": 200,
+          "err": null
+        },
+        "readBack": {
+          "status": 200,
+          "isArchived": true,
+          "archivedAt": "2026-11-11T06:30:01.594Z"
+        }
+      }
+    ],
+    "conversations": {
+      "same3": {
+        "id": "01a1c943-c466-7de4-b6bb-b659f78aceee",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:30:02.008Z"
+        }
+      },
+      "differ2": {
+        "id": "01a1c944-06fa-702e-a1c6-2b7970d24ca8",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:30:03.014Z"
+        }
+      },
+      "none": {
+        "id": "01a1c944-3b2f-77ed-948d-3889a22ac64d",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-11T06:30:04.002Z"
+        }
+      }
+    },
+    "finishedAt": "2026-11-11T06:30:02.432Z"
+  },
+  "signOuts": {
+    "at": "2026-11-11T06:30:05.994Z",
+    "appUserBefore": 200,
+    "appLogout": 200,
+    "launcherSignOut": 200,
+    "appUserAfter": 401,
+    "launcherMeAfter": 401,
+    "inboxMeBefore": 200,
+    "inboxAppLogout": 200,
+    "inboxLauncherSignOut": 200,
+    "inboxMeAfter": 401,
+    "inboxLauncherMeAfter": 401,
+    "beoPopupUserAfter": 401,
+    "adminApi": {
+      "status": 200,
+      "meAfter": 401,
+      "at": "2026-11-11T06:30:15.355Z"
+    }
+  },
+  "created": [
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-11T06:20:35.056Z"
+    },
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-11T06:20:48.365Z"
+    },
+    {
+      "kind": "oto-app event (booked from the inbox)",
+      "id": ":eventId",
+      "title": "ZZ Test Child's 6th Birthday",
+      "at": "2026-11-11T06:21:01.274Z"
+    }
+  ],
+  "writes": [
+    {
+      "at": "2026-11-11T06:26:00.239Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "Nuggets",
+            10,
+            null
+          ],
+          [
+            "Juice",
+            10,
+            null
+          ]
+        ],
+        "adults": []
+      }
+    },
+    {
+      "at": "2026-11-11T06:26:37.103Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": false,
+        "kids": [
+          [
+            "Nuggets",
+            10,
+            null
+          ],
+          [
+            "Juice",
+            10,
+            null
+          ]
+        ],
+        "adults": []
+      }
+    },
+    {
+      "at": "2026-11-11T06:27:43.210Z",
+      "by": "OTO App (admin)",
+      "what": "BEO Save, PUT /api/events/:eventId/beo",
+      "status": 200,
+      "sent": {
+        "adultsDiffer": true,
+        "kids": [
+          [
+            "Nuggets",
+            1,
+            null
+          ]
+        ],
+        "adults": [
+          [
+            "Pasta",
+            1,
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "at": "2026-11-11T06:28:47.453Z",
+      "by": "OTO App (admin), Create BEO › Approve and create",
+      "what": "POST /api/events/:id/beo/ai-fill/approve",
+      "status": 200,
+      "sent": null
+    }
+  ],
+  "pageErrors": [],
+  "images": [
+    {
+      "file": "13-ai-fill-same-after-fold.png",
+      "at": "2026-11-11T06:26:00.022Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from the chat \"the adults will eat the same\" after the fold, the free-text preview loaded: the Adults tab reads Same as the kids' menu, the switch off",
+      "masked": {
+        "boxes": 1,
+        "note": "the ZZ TEST simulator number in the WhatsApp field blacked out; the events board behind the sheet hidden"
+      }
+    },
+    {
+      "file": "14-ai-fill-differ-after-fold.png",
+      "at": "2026-11-11T06:27:42.973Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from the chat \"nuggets for the kids, pasta for the adults\" after the fold: the Adults tab holds the pasta with the switch on",
+      "masked": {
+        "boxes": 1,
+        "note": "the ZZ TEST simulator number in the WhatsApp field blacked out; the events board behind the sheet hidden"
+      }
+    },
+    {
+      "file": "15-ai-fill-nothing-said-after-fold.png",
+      "at": "2026-11-11T06:28:59.037Z",
+      "page": "BEO",
+      "url": "https://oto-app-staging.onrender.com/studio/events/kanban",
+      "viewport": {
+        "width": 1440,
+        "height": 1500
+      },
+      "shows": "Create BEO from a chat that says nothing of the adults' food, the catalogue review approved: the Adults tab reads Same as the kids' menu, the switch off",
+      "masked": {
+        "boxes": 1,
+        "note": "the ZZ TEST simulator number in the WhatsApp field blacked out; the events board behind the sheet hidden"
+      }
+    }
+  ]
+}
