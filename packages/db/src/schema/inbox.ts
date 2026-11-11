@@ -479,6 +479,16 @@ export const channelAccount = inbox.table(
  * operator for WhatsApp). PDPA erasure anonymises in place: the name becomes
  * "Erased contact", the handle a hash, phone and member link null, and
  * `erased_at` is set — the row stays so the counts still add up.
+ *
+ * THE NAME (SCRUM-860, `0116_inbox_contact_name`). `display_name` is the name
+ * the inbox SHOWS, everywhere, and the only name any reader looks at: the
+ * channel's profile name as it first arrived, or the name staff set over it.
+ * `profile_name` is the channel's own profile name as last seen, kept in its
+ * own column so a staff correction loses nothing; `name_set_by_account_id`
+ * and `name_set_at` say that staff set the shown name (both set or both
+ * null). The ingest fills `display_name` only while it is null, so a name
+ * staff set is never overwritten by a later message; clearing the staff name
+ * puts `profile_name` back. An erased contact carries none of the three.
  */
 export const contact = inbox.table(
   'contact',
@@ -490,6 +500,11 @@ export const contact = inbox.table(
     channel: text('channel').$type<InboxChannel>().notNull(),
     externalHandle: text('external_handle').notNull(),
     displayName: text('display_name'),
+    /** The channel's own profile name, as last seen (SCRUM-860). */
+    profileName: text('profile_name'),
+    /** Who set `display_name` by hand; null when it is the channel's (SCRUM-860). */
+    nameSetByAccountId: uuid('name_set_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    nameSetAt: timestamp('name_set_at', { withTimezone: true, mode: 'date' }),
     avatarFileId: uuid('avatar_file_id').references(() => fileObject.id, { onDelete: 'restrict' }),
     /** E.164 when known. */
     phone: text('phone'),
@@ -510,12 +525,18 @@ export const contact = inbox.table(
     index('contact_member_idx').on(t.memberId),
     index('contact_avatar_file_idx').on(t.avatarFileId),
     index('contact_erased_by_idx').on(t.erasedByAccountId),
+    index('contact_name_set_by_idx').on(t.nameSetByAccountId),
     check('contact_channel_check', sql`${t.channel} in (${inList(INBOX_CHANNELS)})`),
     check('contact_phone_check', sql`${t.phone} is null or ${t.phone} ~ ${E164}`),
-    /** An erased contact carries no phone and no member link (PDPA). */
+    /** A staff-set name names who set it and when, together or not at all (SCRUM-860). */
+    check(
+      'contact_name_set_check',
+      sql`(${t.nameSetAt} is null) = (${t.nameSetByAccountId} is null)`,
+    ),
+    /** An erased contact carries no phone, no member link and no name of its own (PDPA). */
     check(
       'contact_erased_check',
-      sql`${t.erasedAt} is null or (${t.phone} is null and ${t.memberId} is null)`,
+      sql`${t.erasedAt} is null or (${t.phone} is null and ${t.memberId} is null and ${t.profileName} is null and ${t.nameSetByAccountId} is null)`,
     ),
   ],
 );

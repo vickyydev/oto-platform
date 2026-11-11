@@ -90794,6 +90794,44 @@
                       ],
                       "additionalProperties": false,
                       "nullable": true
+                    },
+                    "contactChannels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "displayName",
+                          "branchId"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -95876,6 +95914,402 @@
                     "contactId",
                     "alreadyErased",
                     "erasedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/contact": {
+      "get": {
+        "description": "The contact behind a conversation, with what the list does not carry: the channel’s own profile name (`profileName`, as last seen) and whether the shown name was set by staff (`nameSetByStaff`, `nameSetAt`). Needs inbox:conversation:read somewhere in the operator; 404 when the conversation is not the caller’s to see.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ]
+                    },
+                    "handle": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "phone": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "language": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "erased": {
+                      "type": "boolean"
+                    },
+                    "profileName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "nameSetByStaff": {
+                      "type": "boolean"
+                    },
+                    "nameSetAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "channel",
+                    "handle",
+                    "displayName",
+                    "phone",
+                    "language",
+                    "erased",
+                    "profileName",
+                    "nameSetByStaff",
+                    "nameSetAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "description": "Set the name the inbox shows for this conversation’s contact — everywhere it is shown: the list, the header, the search — or clear it (`displayName: null` or blank) to show the channel’s profile name again. A name staff set is never overwritten by a later message’s profile name, which is kept beside it as `profileName`. An erased contact answers 409 CONTACT_ERASED. Nothing changes, and no audit row is written, when the name is already as asked. One `inbox.contact.rename` audit row with before and after. Needs inbox:conversation:reply at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "displayName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "whatsapp",
+                        "instagram",
+                        "facebook",
+                        "line",
+                        "telegram",
+                        "webform"
+                      ]
+                    },
+                    "handle": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "phone": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "language": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "erased": {
+                      "type": "boolean"
+                    },
+                    "profileName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "nameSetByStaff": {
+                      "type": "boolean"
+                    },
+                    "nameSetAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "channel",
+                    "handle",
+                    "displayName",
+                    "phone",
+                    "language",
+                    "erased",
+                    "profileName",
+                    "nameSetByStaff",
+                    "nameSetAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/contacts": {
+      "post": {
+        "description": "A new contact and its conversation on one channel account (one of `GET /inbox/me`’s `contactChannels`). On WhatsApp `identity` is the phone number in any shape the phone helper reads, stored E.164 so the customer’s first message lands on this contact; elsewhere it is the channel’s own handle. The name is marked staff-set. The conversation is laid as a check-in notice thread is — the account’s park and default category, its reception desk, no owner — and is routed like a new thread when the customer first writes; nothing is sent to the customer and no assistant turn starts. A duplicate (same channel and identity in the operator) answers 409 CONTACT_EXISTS with the existing contact and, when the caller can see one, its conversation in `details`; 400 for a phone number the helper cannot read; 404 for a channel account that is not the operator’s; 409 CHANNEL_CANNOT_CARRY_CONTACT for the console sender. Audit rows `inbox.contact.create` and `inbox.conversation.create`. Needs inbox:conversation:reply somewhere in the operator.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channelAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "identity": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 190
+                  }
+                },
+                "required": [
+                  "channelAccountId",
+                  "displayName",
+                  "identity"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contact": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "channel": {
+                          "type": "string",
+                          "enum": [
+                            "whatsapp",
+                            "instagram",
+                            "facebook",
+                            "line",
+                            "telegram",
+                            "webform"
+                          ]
+                        },
+                        "handle": {
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "phone": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "language": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "erased": {
+                          "type": "boolean"
+                        },
+                        "profileName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "nameSetByStaff": {
+                          "type": "boolean"
+                        },
+                        "nameSetAt": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "channel",
+                        "handle",
+                        "displayName",
+                        "phone",
+                        "language",
+                        "erased",
+                        "profileName",
+                        "nameSetByStaff",
+                        "nameSetAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "visible": {
+                      "type": "boolean"
+                    },
+                    "teamName": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "contact",
+                    "conversationId",
+                    "visible",
+                    "teamName"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
                   ],
                   "additionalProperties": false
                 }

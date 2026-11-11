@@ -776,6 +776,24 @@ export const InboxMeSchema = z.object({
       ),
     })
     .nullable(),
+  /**
+   * SCRUM-860 — the numbers and accounts a staff-made contact can be put on:
+   * every live channel account of the operator that can carry a reply (never
+   * the console sender of the check-in notices). Empty for a viewer who
+   * holds `inbox:conversation:reply` nowhere, so the shell shows "New
+   * contact" only to someone the api would let create one. Absent from an
+   * api that predates it.
+   */
+  contactChannels: z
+    .array(
+      z.object({
+        id: Uuid,
+        channel: InboxChannelSchema,
+        displayName: z.string(),
+        branchId: Uuid.nullable(),
+      }),
+    )
+    .optional(),
 });
 export type InboxMe = z.infer<typeof InboxMeSchema>;
 
@@ -845,3 +863,66 @@ export const InboxEraseContactSchema = InboxErasureCountsSchema.extend({
 });
 export type InboxEraseContact = z.infer<typeof InboxEraseContactSchema>;
 export type InboxErasureCounts = z.infer<typeof InboxErasureCountsSchema>;
+
+// --- Contacts: a contact made by staff, a name set by staff (SCRUM-860) ----------
+//
+// Until now a contact came to exist only from an incoming message, a till
+// notice or the simulator, and its name was the channel's profile name,
+// filled once and never changed. The owner (8 and 12 November 2026): "Allow
+// users to create contacts and edit contact names from the unified inbox."
+//
+//   PATCH /inbox/conversations/{id}/contact   the shown name, set or cleared
+//   GET   /inbox/conversations/{id}/contact   the contact with its profile name
+//   POST  /inbox/contacts                     a new contact and its thread
+//
+// `displayName` stays THE name every reader looks at — the thread list, the
+// header, the search, the simulator, the assistant's bookings — so a name
+// staff set reaches all of them without a reader changing. The channel's own
+// profile name is kept beside it (`profileName`) and never overwrites it.
+
+/** The longest name staff can set; the channels' own names are shorter. */
+export const INBOX_CONTACT_NAME_MAX = 120;
+/** The longest phone number or channel handle a staff-made contact can carry. */
+export const INBOX_CONTACT_IDENTITY_MAX = 190;
+
+export const InboxContactViewSchema = InboxContactSchema.extend({
+  /** The channel's own profile name as last seen; null until the channel said one. */
+  profileName: z.string().nullable(),
+  /** True when `displayName` is a name staff set; false when it is the channel's. */
+  nameSetByStaff: z.boolean(),
+  nameSetAt: Iso.nullable(),
+});
+export type InboxContactView = z.infer<typeof InboxContactViewSchema>;
+
+export const InboxContactNameBodySchema = z.object({
+  /**
+   * The name to show, or null to clear the staff-set name and show the
+   * channel's profile name again. Trimmed; blank counts as null.
+   */
+  displayName: z.string().max(INBOX_CONTACT_NAME_MAX).nullable(),
+});
+export type InboxContactNameBody = z.infer<typeof InboxContactNameBodySchema>;
+
+export const InboxContactCreateBodySchema = z.object({
+  /** One of `GET /inbox/me`'s `contactChannels`: the number or account the contact is on. */
+  channelAccountId: Uuid,
+  displayName: z.string().trim().min(1).max(INBOX_CONTACT_NAME_MAX),
+  /**
+   * On WhatsApp the phone number, in any shape the phone helper reads
+   * (`081 234 5678`, `+66…`); on every other channel the channel's own
+   * handle for the person, as the channel would deliver it.
+   */
+  identity: z.string().trim().min(1).max(INBOX_CONTACT_IDENTITY_MAX),
+});
+export type InboxContactCreateBody = z.infer<typeof InboxContactCreateBodySchema>;
+
+export const InboxContactCreatedSchema = z.object({
+  contact: InboxContactViewSchema,
+  /** The contact's new thread on that channel account. */
+  conversationId: Uuid,
+  /** Whether the caller can see that thread (its park's desk may be outside their scope). */
+  visible: z.boolean(),
+  /** The team the thread starts with, by name, for the shell's line when it is not visible. */
+  teamName: z.string().nullable(),
+});
+export type InboxContactCreated = z.infer<typeof InboxContactCreatedSchema>;

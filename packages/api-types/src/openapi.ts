@@ -35444,6 +35444,15 @@ export interface paths {
                                     branchId: string | null;
                                 }[];
                             } | null;
+                            contactChannels?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                displayName: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                            }[];
                         };
                     };
                 };
@@ -37389,6 +37398,196 @@ export interface paths {
                             contactId: string;
                             alreadyErased: boolean;
                             erasedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The contact behind a conversation, with what the list does not carry: the channel’s own profile name (`profileName`, as last seen) and whether the shown name was set by staff (`nameSetByStaff`, `nameSetAt`). Needs inbox:conversation:read somewhere in the operator; 404 when the conversation is not the caller’s to see. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                            handle: string;
+                            displayName: string | null;
+                            phone: string | null;
+                            language: string | null;
+                            erased: boolean;
+                            profileName: string | null;
+                            nameSetByStaff: boolean;
+                            nameSetAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Set the name the inbox shows for this conversation’s contact — everywhere it is shown: the list, the header, the search — or clear it (`displayName: null` or blank) to show the channel’s profile name again. A name staff set is never overwritten by a later message’s profile name, which is kept beside it as `profileName`. An erased contact answers 409 CONTACT_ERASED. Nothing changes, and no audit row is written, when the name is already as asked. One `inbox.contact.rename` audit row with before and after. Needs inbox:conversation:reply at the conversation. Refusals: 404 when the conversation is not the caller’s to see (or not in their operator); 403 when the permission is not held at this conversation. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        displayName: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                            handle: string;
+                            displayName: string | null;
+                            phone: string | null;
+                            language: string | null;
+                            erased: boolean;
+                            profileName: string | null;
+                            nameSetByStaff: boolean;
+                            nameSetAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A new contact and its conversation on one channel account (one of `GET /inbox/me`’s `contactChannels`). On WhatsApp `identity` is the phone number in any shape the phone helper reads, stored E.164 so the customer’s first message lands on this contact; elsewhere it is the channel’s own handle. The name is marked staff-set. The conversation is laid as a check-in notice thread is — the account’s park and default category, its reception desk, no owner — and is routed like a new thread when the customer first writes; nothing is sent to the customer and no assistant turn starts. A duplicate (same channel and identity in the operator) answers 409 CONTACT_EXISTS with the existing contact and, when the caller can see one, its conversation in `details`; 400 for a phone number the helper cannot read; 404 for a channel account that is not the operator’s; 409 CHANNEL_CANNOT_CARRY_CONTACT for the console sender. Audit rows `inbox.contact.create` and `inbox.conversation.create`. Needs inbox:conversation:reply somewhere in the operator. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        channelAccountId: string;
+                        displayName: string;
+                        identity: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            contact: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                handle: string;
+                                displayName: string | null;
+                                phone: string | null;
+                                language: string | null;
+                                erased: boolean;
+                                profileName: string | null;
+                                nameSetByStaff: boolean;
+                                nameSetAt: string | null;
+                            };
+                            /** Format: uuid */
+                            conversationId: string;
+                            visible: boolean;
+                            teamName: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
                         };
                     };
                 };

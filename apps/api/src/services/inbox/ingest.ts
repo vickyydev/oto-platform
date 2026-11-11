@@ -530,6 +530,8 @@ async function receiveMessage(
       channel: account.channel,
       externalHandle: handle,
       displayName: event.displayName,
+      // SCRUM-860: the channel's own name in its own column, latest seen.
+      profileName: event.displayName,
       phone,
       language: hintLanguage,
       firstSeenAt: at,
@@ -562,7 +564,11 @@ async function receiveMessage(
       .update(contact)
       .set({
         lastSeenAt: sql`greatest(${contact.lastSeenAt}, ${at.toISOString()}::timestamptz)`,
+        // The shown name is filled only while empty: a name staff set
+        // (SCRUM-860) is never overwritten by a later message's profile name,
+        // which goes to `profile_name` instead, where the latest one is kept.
         displayName: sql`coalesce(${contact.displayName}, ${event.displayName})`,
+        profileName: sql`coalesce(${event.displayName}, ${contact.profileName})`,
         language: sql`coalesce(${contact.language}, ${hintLanguage})`,
         memberId,
         updatedAt: c.now,

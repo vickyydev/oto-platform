@@ -881,6 +881,29 @@ export async function inboxMe(
         }
       : null;
 
+  // SCRUM-860: where a staff-made contact can be put — every live account that
+  // can carry a reply (the console sender of the check-in notices cannot), for
+  // a viewer the create route would let in (`inbox:conversation:reply` held
+  // somewhere in the operator). Empty otherwise, so the shell offers nothing.
+  const contactChannels = holdsAnywhere(effective, 'inbox:conversation:reply', viewer.operatorId)
+    ? await db
+        .select({
+          id: s.channelAccount.id,
+          channel: s.channelAccount.channel,
+          displayName: s.channelAccount.displayName,
+          branchId: s.channelAccount.branchId,
+        })
+        .from(s.channelAccount)
+        .where(
+          and(
+            eq(s.channelAccount.operatorId, viewer.operatorId),
+            eq(s.channelAccount.canReply, true),
+            isNull(s.channelAccount.archivedAt),
+          ),
+        )
+        .orderBy(asc(s.channelAccount.displayName), asc(s.channelAccount.id))
+    : [];
+
   return {
     accountId: viewer.accountId,
     name: names.get(viewer.accountId) ?? null,

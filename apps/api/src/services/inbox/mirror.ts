@@ -293,6 +293,8 @@ async function upsertContact(
       channel,
       externalHandle: input.phone,
       displayName: input.displayName?.trim() || null,
+      // SCRUM-860: the till's name for the guardian is this channel's profile name.
+      profileName: input.displayName?.trim() || null,
       phone: input.phone,
       memberId,
       firstSeenAt: input.sentAt,
@@ -301,7 +303,13 @@ async function upsertContact(
     .returning({ id: contact.id });
   if (made) return { id: made.id, created: true };
   const [found] = await sp
-    .select({ id: contact.id, memberId: contact.memberId, displayName: contact.displayName, erasedAt: contact.erasedAt })
+    .select({
+      id: contact.id,
+      memberId: contact.memberId,
+      displayName: contact.displayName,
+      profileName: contact.profileName,
+      erasedAt: contact.erasedAt,
+    })
     .from(contact)
     .where(
       and(
@@ -312,14 +320,22 @@ async function upsertContact(
     )
     .limit(1);
   if (!found) throw new Error('the contact vanished between its insert and its read');
-  // Fill what is missing, never overwrite: staff may have corrected the name.
+  // Fill what is missing, never overwrite: staff may have corrected the name
+  // (SCRUM-860 keeps the till's latest name in `profile_name` beside it).
   // An erased contact keeps its handle hashed, so it never matches here.
-  if (found.erasedAt === null && ((memberId && !found.memberId) || (!found.displayName && input.displayName?.trim()))) {
+  const noticeName = input.displayName?.trim() || null;
+  if (
+    found.erasedAt === null &&
+    ((memberId && !found.memberId) ||
+      (!found.displayName && noticeName) ||
+      (noticeName && noticeName !== found.profileName))
+  ) {
     await sp
       .update(contact)
       .set({
         memberId: found.memberId ?? memberId,
-        displayName: found.displayName ?? (input.displayName?.trim() || null),
+        displayName: found.displayName ?? noticeName,
+        profileName: noticeName ?? found.profileName,
         updatedAt: new Date(),
       })
       .where(eq(contact.id, found.id));

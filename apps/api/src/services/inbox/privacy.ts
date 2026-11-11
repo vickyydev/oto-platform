@@ -509,6 +509,10 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
       .update(s.contact)
       .set({
         displayName: INBOX_ERASED_CONTACT_NAME,
+        // SCRUM-860: the channel's name and the staff-set mark go with it.
+        profileName: null,
+        nameSetByAccountId: null,
+        nameSetAt: null,
         externalHandle: erasedHandleOf(c.id),
         phone: null,
         memberId: null,
