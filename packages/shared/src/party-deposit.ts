@@ -25,6 +25,17 @@ import { z } from 'zod';
 export const PARTY_DEPOSIT_STATES = ['requested', 'paid', 'expired', 'cancelled'] as const;
 export type PartyDepositState = (typeof PARTY_DEPOSIT_STATES)[number];
 
+/**
+ * SCRUM-838 — the close reason of an open request whose party was deleted or
+ * archived in the Events module: the platform closed it (state `cancelled`),
+ * the link can no longer be paid, and nothing was said to the family. On the
+ * request's `closeReason` and on the thread's `deposit_cancelled` pill
+ * (`payload.reason`). The other words there: `staff` (withdrawn from the
+ * BEO), `gateway_refused` (the page never opened), `gateway_<state>` (the
+ * link ran out).
+ */
+export const PARTY_DEPOSIT_CLOSE_PARTY_REMOVED = 'party_removed';
+
 /** The largest deposit the door takes: ฿1,000,000. */
 export const PARTY_DEPOSIT_MAX_SATANG = 100_000_000;
 
@@ -172,6 +183,11 @@ export const PARTY_DEPOSIT_REFUSALS = {
   NOT_CONFIGURED: {
     code: 'DEPOSIT_NOT_CONFIGURED',
     message: 'Online payment is not set up on this deployment yet (no return address for the payment page).',
+  },
+  /** SCRUM-838: the party was deleted or archived in the Events module; its open request was closed and nothing was posted. */
+  PARTY_REMOVED: {
+    code: 'DEPOSIT_PARTY_REMOVED',
+    message: 'This party was removed in the Events module, so its deposit request was closed and nothing was sent to the family.',
   },
   /** The gateway would not open its page: nothing was posted, and the same press again is answered this again (400). */
   PAGE_NOT_OPENED: {

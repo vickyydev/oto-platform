@@ -69,7 +69,7 @@ export async function otoAppPartyDepositRoutes(app: App): Promise<void> {
       config: { credential: 'otoapp-provision' },
       schema: {
         description:
-          'OTO App server only (provisioning key): "Request deposit" from the BEO. Mints a gateway payment link for the amount (a station-less invoice on the WEB segment, the hosted page valid PARTY_DEPOSIT_LINK_VALIDITY_MIN), records the request, and has the inbox assistant post ONE message in the family\'s linked conversation — the amount, the party\'s date, the link and its validity, in the family\'s language — with a "deposit requested" pill. Idempotent on the Idempotency-Key the app sends: the same key answers the same request; a different body under it is refused 409. One open request per party (409 DEPOSIT_REQUEST_OPEN); a party with no linked conversation is refused (409 PARTY_NO_CONVERSATION).',
+          'OTO App server only (provisioning key): "Request deposit" from the BEO. Mints a gateway payment link for the amount (a station-less invoice on the WEB segment, the hosted page valid PARTY_DEPOSIT_LINK_VALIDITY_MIN), records the request, and has the inbox assistant post ONE message in the family\'s linked conversation — the amount, the party\'s date, the link and its validity, in the family\'s language — with a "deposit requested" pill. Idempotent on the Idempotency-Key the app sends: the same key answers the same request; a different body under it is refused 409. One open request per party (409 DEPOSIT_REQUEST_OPEN); a party with no linked conversation is refused (409 PARTY_NO_CONVERSATION). A party deleted or archived in the Events module while a request is open has that request closed (close reason party_removed, its payment link closed, nothing said to the family) and the press refused (409 DEPOSIT_PARTY_REMOVED).',
         params: PartyDepositParamsSchema,
         body: PartyDepositRequestBodySchema,
         response: { 200: PartyDepositActionAnswerSchema },
@@ -94,7 +94,7 @@ export async function otoAppPartyDepositRoutes(app: App): Promise<void> {
       config: { credential: 'otoapp-provision' },
       schema: {
         description:
-          'OTO App server only (provisioning key): "Resend" — the open request\'s link posted again by the assistant, ONE line per Idempotency-Key. Refused 409 for a request that is no longer open, or whose link has run out (press Request deposit for a fresh one).',
+          'OTO App server only (provisioning key): "Resend" — the open request\'s link posted again by the assistant, ONE line per Idempotency-Key. Refused 409 for a request that is no longer open, or whose link has run out (press Request deposit for a fresh one). A party deleted or archived in the Events module has its open request closed instead (close reason party_removed) and the press refused (409 DEPOSIT_PARTY_REMOVED): no link is posted for a removed party.',
         params: PartyDepositRequestParamsSchema,
         body: PartyDepositActionBodySchema,
         response: { 200: PartyDepositActionAnswerSchema },
@@ -102,7 +102,7 @@ export async function otoAppPartyDepositRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { operatorId } = otoAppProvisionerOf(req);
-      return resendPartyDeposit(app.db, req.log, opCtx(req), {
+      return resendPartyDeposit(app.db, app.env, req.log, opCtx(req), {
         operatorId,
         eventId: req.params.eventId,
         requestId: req.params.requestId,

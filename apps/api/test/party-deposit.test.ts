@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, branch, otoappUsers, partyDepositRequest, partyEdit, paymentAttempt, schema as s } from '@oto/db';
+import { alert, auditLog, branch, otoappUsers, partyDepositRequest, partyEdit, paymentAttempt, schema as s } from '@oto/db';
 import { PartyDepositActionAnswerSchema, PartyDepositAnswerSchema, PartyMessageAnswerSchema, newId, type PartyDepositActionAnswer } from '@oto/shared';
 import { signJwt } from '@oto/payments-2c2p';
 import { otoAppProvisionKeyDigest } from '../src/lib/otoapp-provision-keys';
-import { conversationEventOf } from '../src/services/inbox/book-date';
+import { conversationEventOf, eventStandingOf } from '../src/services/inbox/book-date';
 import { runInboxSendJob, sendQueuedMessage } from '../src/services/inbox/send';
 import type { DirectoryEventEditAnswer, DirectoryEventEditBody, DirectoryNotificationBody, DirectoryOutcome, OtoAppDirectory } from '../src/services/otoapp-directory';
 import { configurePartyDeposit, partyDepositLinkOf, partyDepositReturnUrlOf, runPartyDepositFollowUpJob } from '../src/services/party-deposit';
@@ -69,6 +69,11 @@ import {
  *     bell — and nothing twice; a payment after the hand-over still pays;
  *   - the set-menu link posted with the right words, once per press, and the
  *     parent's choices confirmed once per submission;
+ *   - a party deleted or archived in the Events module (SCRUM-838): its open
+ *     request is closed `party_removed` with its attempt and a pill, nothing
+ *     said to the family, no reminder or hand-over; Request and Resend are
+ *     refused by name; a standing that cannot be said closes nothing; money
+ *     that still lands on the closed link is handed to a person;
  *   - the family's browser return writes nothing and shows a plain page;
  *   - every act is one audit row.
  *
@@ -1125,5 +1130,252 @@ describe('the link a chat carries always has an address', () => {
     expect(partyDepositLinkOf(envOf('', ''), 'https://pay.example/p/1')).toBe('https://pay.example/p/1');
     expect(partyDepositLinkOf(envOf('https://api.example/webhooks/2c2p', 'https://own.example'), '/webhooks/2c2p/hosted/a1')).toBe('https://api.example/webhooks/2c2p/hosted/a1');
     expect(partyDepositLinkOf(envOf('', 'https://own.example'), '/webhooks/2c2p/hosted/a1')).toBe('https://own.example/webhooks/2c2p/hosted/a1');
+  });
+});
+
+// --- SCRUM-838: the party removed in the Events module -----------------------------------------
+
+/**
+ * AN OPEN REQUEST WHOSE PARTY WAS DELETED OR ARCHIVED IN THE EVENTS MODULE IS
+ * CLOSED BY THE PLATFORM (`party_removed`): the attempt closed with it, a pill
+ * on the thread, nothing said to the family, no reminder and no hand-over.
+ * Seen by the follow-up job and at a person's Request or Resend. A standing
+ * that cannot be said (`unknown`) closes nothing. Money that still lands on
+ * the closed link is recorded and handed to a person.
+ */
+describe('a party removed in the Events module closes its open deposit request (SCRUM-838)', () => {
+  const remindMin = () => ctx.app.env.PARTY_DEPOSIT_REMINDER_MIN;
+  const handMin = () => ctx.app.env.PARTY_DEPOSIT_HANDOVER_MIN;
+  const archive = (eventId: string) =>
+    ctx.db.execute(sql`update otoapp.core_events set is_archived = true, archived_at = now() at time zone 'UTC' where id = ${eventId}`);
+  const remove = (eventId: string) => ctx.db.execute(sql`delete from otoapp.core_events where id = ${eventId}`);
+  const requestsOf = (eventId: string) => ctx.db.select().from(partyDepositRequest).where(eq(partyDepositRequest.otoappEventId, eventId));
+  const lateAlerts = async (attemptId: string) => (await ctx.db.select().from(alert)).filter((a) => a.key === `payments.late_payment:${attemptId}`);
+
+  it('archived with the reminder due: closed party_removed with its attempt, a pill, no reminder and no line; the next tick does nothing', async () => {
+    const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+    const made = await requestOk(eventId);
+    const requestedAt = (await requestRow(made.request.id)).requestedAt;
+    await archive(eventId);
+
+    const due = new Date(requestedAt.getTime() + minutes(remindMin() + 1));
+    const sweep = await followUp(due);
+    expect(sweep.removedClosed).toBe(1);
+    const row = await requestRow(made.request.id);
+    expect(row).toMatchObject({ state: 'cancelled', closeReason: 'party_removed', remindedAt: null, reminderMessageId: null, handedOverAt: null });
+    expect(row.closedAt?.toISOString()).toBe(due.toISOString());
+    // The attempt is closed with it, and says what closed it.
+    const attempt = await attemptRow(row.paymentAttemptId);
+    expect(attempt.status).toBe('cancelled');
+    expect((attempt.payload as { cancelledBy?: unknown }).cancelledBy).toEqual({ accountId: null, reason: 'party_removed', standing: 'archived' });
+    expect(await audits(attempt.id, 'payment.qr.cancel')).toHaveLength(1);
+    // The gateway was told: the link in the family's chat opens a page with nothing to pay.
+    const page = await ctx.app.inject({ method: 'GET', url: `/webhooks/2c2p/hosted/${attempt.id}` });
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toContain('This payment is cancelled');
+    expect(page.body).not.toContain('value="pay"');
+    // Nothing is said to the family: the request line is the only line, and no reminder pill.
+    expect(await linesOf(conversationId)).toHaveLength(1);
+    expect(await pillsOf(conversationId, 'deposit_reminded')).toHaveLength(0);
+    const pills = await pillsOf(conversationId, 'deposit_cancelled');
+    expect(pills).toHaveLength(1);
+    expect(pills[0]).toMatchObject({ actorKind: 'system', actorAccountId: null });
+    expect(pills[0]!.payload).toMatchObject({ requestId: made.request.id, eventId, amountSatang: THB_3000, reason: 'party_removed', standing: 'archived', seenAt: 'follow_up' });
+    expect(JSON.stringify(pills[0]!.payload)).not.toContain(made.request.paymentLink!);
+    const closes = await audits(made.request.id, 'party_deposit.cancel');
+    expect(closes).toHaveLength(1);
+    expect(closes[0]!.actorAccountId).toBeNull();
+    expect(closes[0]!.after).toMatchObject({ state: 'cancelled', reason: 'party_removed', standing: 'archived', seenAt: 'follow_up' });
+    // The BEO of the archived party reads it closed, by its reason.
+    expect(PartyDepositAnswerSchema.parse((await readDeposit(eventId)).json()).current).toMatchObject({ id: made.request.id, state: 'cancelled', closeReason: 'party_removed' });
+
+    // Replay: the same tick again, and a later one, find nothing to close, remind or hand over for it.
+    const again = await followUp(due);
+    expect(again.removedClosed).toBe(0);
+    const later = await followUp(new Date(due.getTime() + minutes(remindMin() + handMin() + 10)));
+    expect(later.removedClosed).toBe(0);
+    expect(await linesOf(conversationId)).toHaveLength(1);
+    expect(await pillsOf(conversationId, 'deposit_cancelled')).toHaveLength(1);
+    expect(await pillsOf(conversationId, 'deposit_overdue')).toHaveLength(0);
+    expect(await audits(made.request.id, 'party_deposit.cancel')).toHaveLength(1);
+    expect(await audits(attempt.id, 'payment.qr.cancel')).toHaveLength(1);
+  });
+
+  it('deleted with the hand-over due: closed party_removed, no holding line, no hand-over, no bell, the thread not moved', async () => {
+    const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+    const made = await requestOk(eventId);
+    const requestedAt = (await requestRow(made.request.id)).requestedAt;
+    const reminded = new Date(requestedAt.getTime() + minutes(remindMin() + 1));
+    await followUp(reminded);
+    expect((await requestRow(made.request.id)).remindedAt?.toISOString()).toBe(reminded.toISOString());
+    expect(await linesOf(conversationId)).toHaveLength(2);
+    const [before] = await ctx.db.select().from(s.conversation).where(eq(s.conversation.id, conversationId));
+    const rung = bells.filter((b) => b.referenceId === conversationId).length;
+
+    await remove(eventId);
+    const due = new Date(reminded.getTime() + minutes(handMin() + 1));
+    const sweep = await followUp(due);
+    expect(sweep.removedClosed).toBe(1);
+    const row = await requestRow(made.request.id);
+    expect(row).toMatchObject({ state: 'cancelled', closeReason: 'party_removed', handedOverAt: null });
+    expect((await attemptRow(row.paymentAttemptId)).status).toBe('cancelled');
+    expect(await linesOf(conversationId)).toHaveLength(2);
+    expect(await pillsOf(conversationId, 'deposit_overdue')).toHaveLength(0);
+    expect(await pillsOf(conversationId, 'ai_handover')).toHaveLength(0);
+    expect((await pillsOf(conversationId, 'deposit_cancelled'))[0]!.payload).toMatchObject({ reason: 'party_removed', standing: 'gone', amountSatang: THB_3000 });
+    expect(bells.filter((b) => b.referenceId === conversationId)).toHaveLength(rung);
+    const [after] = await ctx.db.select().from(s.conversation).where(eq(s.conversation.id, conversationId));
+    expect({ teamId: after!.teamId, category: after!.category }).toEqual({ teamId: before!.teamId, category: before!.category });
+
+    const again = await followUp(new Date(due.getTime() + minutes(60)));
+    expect(again.removedClosed).toBe(0);
+    expect(await linesOf(conversationId)).toHaveLength(2);
+    expect(await pillsOf(conversationId, 'deposit_cancelled')).toHaveLength(1);
+  });
+
+  it('removed before any window: the next tick closes the link, whichever window the request is in', async () => {
+    const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+    const made = await requestOk(eventId);
+    const requestedAt = (await requestRow(made.request.id)).requestedAt;
+    const calm = await followUp(new Date(requestedAt.getTime() + minutes(1)));
+    expect(calm.removedClosed).toBe(0);
+    expect((await requestRow(made.request.id)).state).toBe('requested');
+    await remove(eventId);
+    const sweep = await followUp(new Date(requestedAt.getTime() + minutes(2)));
+    expect(sweep.removedClosed).toBe(1);
+    expect(sweep.reminded).toBe(0);
+    expect(await requestRow(made.request.id)).toMatchObject({ state: 'cancelled', closeReason: 'party_removed' });
+    expect(await linesOf(conversationId)).toHaveLength(1);
+  });
+
+  it('a standing that cannot be said closes nothing: the reminder goes as before', async () => {
+    const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+    const made = await requestOk(eventId);
+    const requestedAt = (await requestRow(made.request.id)).requestedAt;
+    // The event sits at a park that is no branch of this operator: SCRUM-820's `unknown`.
+    const appForeign = newId();
+    await ctx.db.execute(sql`
+      insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+      values (${appForeign}, ${appTenant}, 'ZZ TEST 838 not ours', 'Phuket', ${newId()})`);
+    try {
+      await ctx.db.execute(sql`update otoapp.core_events set branch_id = ${appForeign} where id = ${eventId}`);
+      expect(await eventStandingOf(ctx.db, operatorId, eventId)).toBe('unknown');
+      const due = new Date(requestedAt.getTime() + minutes(remindMin() + 1));
+      const sweep = await followUp(due);
+      expect(sweep.removedClosed).toBe(0);
+      expect(sweep.reminded).toBe(1);
+      const row = await requestRow(made.request.id);
+      expect(row.state).toBe('requested');
+      expect(row.remindedAt?.toISOString()).toBe(due.toISOString());
+      expect(await linesOf(conversationId)).toHaveLength(2);
+      expect(await pillsOf(conversationId, 'deposit_reminded')).toHaveLength(1);
+      expect(await pillsOf(conversationId, 'deposit_cancelled')).toHaveLength(0);
+      expect((await attemptRow(row.paymentAttemptId)).status).not.toBe('cancelled');
+    } finally {
+      await ctx.db.execute(sql`update otoapp.core_events set branch_id = ${appPark} where id = ${eventId}`);
+      await ctx.db.execute(sql`delete from otoapp.branches where id = ${appForeign}`);
+    }
+    // Back at its park the request is still open and payable: closed here by a person, so later ticks leave it alone.
+    expect((await act(eventId, made.request.id, 'cancel')).statusCode).toBe(200);
+  });
+
+  it('"Request deposit" for an archived party with a request open: that request is closed and the press refused, nothing minted or posted', async () => {
+    const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+    const made = await requestOk(eventId);
+    await archive(eventId);
+    const res = await request(eventId, { amountSatang: THB_3000, actorAppUserId: presser });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error).toMatchObject({ code: 'DEPOSIT_PARTY_REMOVED', details: { requestId: made.request.id, standing: 'archived' } });
+    expect(await requestsOf(eventId)).toHaveLength(1);
+    const row = await requestRow(made.request.id);
+    expect(row).toMatchObject({ state: 'cancelled', closeReason: 'party_removed' });
+    expect((await attemptRow(row.paymentAttemptId)).status).toBe('cancelled');
+    expect(await linesOf(conversationId)).toHaveLength(1);
+    const pills = await pillsOf(conversationId, 'deposit_cancelled');
+    expect(pills).toHaveLength(1);
+    // The platform's close, not the person's: no account on the pill, whoever pressed.
+    expect(pills[0]).toMatchObject({ actorKind: 'system', actorAccountId: null });
+    expect(pills[0]!.payload).toMatchObject({ reason: 'party_removed', standing: 'archived', seenAt: 'request' });
+    // Nothing open any more: a new press is the archived refusal as before, and the first press's own key reads the closed request.
+    const sameKey = await request(eventId, { amountSatang: THB_3000, actorAppUserId: presser }, { idem: newId() });
+    expect(sameKey.statusCode).toBe(409);
+    expect(sameKey.json().error.code).toBe('EVENT_ARCHIVED');
+    expect(PartyDepositActionAnswerSchema.parse((await request(eventId, { amountSatang: THB_3000, actorAppUserId: presser }, { idem: made.idem })).json())).toMatchObject({
+      replayed: true,
+      request: { id: made.request.id, state: 'cancelled', closeReason: 'party_removed' },
+    });
+    expect(await requestsOf(eventId)).toHaveLength(1);
+    expect(await linesOf(conversationId)).toHaveLength(1);
+    expect(await pillsOf(conversationId, 'deposit_cancelled')).toHaveLength(1);
+  });
+
+  it('"Resend" for a removed party: no link is posted again, the request is closed and the press refused; deleted and archived alike', async () => {
+    const gone = (await party()) as { eventId: string; conversationId: string };
+    const first = await requestOk(gone.eventId);
+    await remove(gone.eventId);
+    const res = await act(gone.eventId, first.request.id, 'resend');
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error).toMatchObject({ code: 'DEPOSIT_PARTY_REMOVED', details: { requestId: first.request.id, standing: 'gone' } });
+    expect(await requestRow(first.request.id)).toMatchObject({ state: 'cancelled', closeReason: 'party_removed' });
+    expect(await linesOf(gone.conversationId)).toHaveLength(1);
+    expect((await pillsOf(gone.conversationId, 'deposit_cancelled'))[0]!.payload).toMatchObject({ reason: 'party_removed', standing: 'gone', seenAt: 'resend' });
+    // Pressed again: nothing open any more, and the party is not there.
+    expect((await act(gone.eventId, first.request.id, 'resend')).statusCode).toBe(404);
+    expect(await pillsOf(gone.conversationId, 'deposit_cancelled')).toHaveLength(1);
+
+    const shelved = (await party()) as { eventId: string; conversationId: string };
+    const second = await requestOk(shelved.eventId);
+    await archive(shelved.eventId);
+    const refused = await act(shelved.eventId, second.request.id, 'resend');
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json().error.code).toBe('DEPOSIT_PARTY_REMOVED');
+    expect(await requestRow(second.request.id)).toMatchObject({ state: 'cancelled', closeReason: 'party_removed' });
+    expect(await linesOf(shelved.conversationId)).toHaveLength(1);
+    expect(await pillsOf(shelved.conversationId, 'deposit_requested')).toHaveLength(1);
+    // Closed now: the same press again is the request's own "no longer open".
+    const after = await act(shelved.eventId, second.request.id, 'resend');
+    expect(after.statusCode).toBe(409);
+    expect(after.json().error.code).toBe('DEPOSIT_REQUEST_NOT_OPEN');
+  });
+
+  it('money that still lands on a link closed for a removed party is recorded and handed to a person, never lost and never said as paid', async () => {
+    for (const how of ['archived', 'gone'] as const) {
+      const { eventId, conversationId } = (await party()) as { eventId: string; conversationId: string };
+      const made = await requestOk(eventId);
+      const requestedAt = (await requestRow(made.request.id)).requestedAt;
+      await (how === 'archived' ? archive(eventId) : remove(eventId));
+      expect((await followUp(new Date(requestedAt.getTime() + minutes(1)))).removedClosed).toBe(1);
+      const row = await requestRow(made.request.id);
+      expect(row).toMatchObject({ state: 'cancelled', closeReason: 'party_removed' });
+      expect(await lateAlerts(row.paymentAttemptId)).toHaveLength(0);
+
+      // A gateway that did not honour the cancel (its support for it is uncertain) takes the family's money on the old link.
+      const tranRef = `TR-ZZ-838-LATE-${how}`;
+      simulator().apply(row.invoiceNo, 'paid');
+      const res = await postNotification(notification({ invoiceNo: row.invoiceNo, amount: wire(THB_3000), tranRef }));
+      expect(res.statusCode, res.body).toBe(200);
+      expect(res.json().outcome).toBe('late_paid');
+      // Recorded on the attempt and waiting for a person, with an alert that names the invoice.
+      const attempt = await attemptRow(row.paymentAttemptId);
+      expect(attempt.status).toBe('awaiting_staff_confirmation');
+      expect(attempt.payload).toMatchObject({ flagged: 'late_payment' });
+      const needs = await audits(attempt.id, 'payment.needs_a_person');
+      expect(needs).toHaveLength(1);
+      expect(needs[0]!.after).toMatchObject({ status: 'awaiting_staff_confirmation', reason: 'late_payment', tranRef });
+      const raised = await lateAlerts(attempt.id);
+      expect(raised).toHaveLength(1);
+      expect(raised[0]!.summary).toContain(row.invoiceNo);
+      // The request stays closed, the party's deposit figure is not moved, and the family is told nothing by the assistant.
+      expect(await requestRow(made.request.id)).toMatchObject({ state: 'cancelled', closeReason: 'party_removed', paidAt: null, writeBackEditId: null });
+      expect(await ctx.db.select().from(partyEdit).where(eq(partyEdit.otoappEventId, eventId))).toHaveLength(0);
+      expect(await linesOf(conversationId)).toHaveLength(1);
+      expect(await pillsOf(conversationId, 'deposit_paid')).toHaveLength(0);
+      // The notification again changes nothing.
+      const replay = await postNotification(notification({ invoiceNo: row.invoiceNo, amount: wire(THB_3000), tranRef }));
+      expect(replay.statusCode).toBe(200);
+      expect(await lateAlerts(attempt.id)).toHaveLength(1);
+      expect(await audits(attempt.id, 'payment.needs_a_person')).toHaveLength(1);
+      expect((await attemptRow(row.paymentAttemptId)).status).toBe('awaiting_staff_confirmation');
+    }
   });
 });

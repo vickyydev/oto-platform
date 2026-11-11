@@ -13,6 +13,7 @@ import {
   type PartyDepositRequestState,
 } from '@oto/db';
 import {
+  PARTY_DEPOSIT_CLOSE_PARTY_REMOVED,
   PARTY_DEPOSIT_REFUSALS,
   PARTY_LINE_STATUSES,
   businessDate,
@@ -29,6 +30,7 @@ import {
 import type { Env } from '../env';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { eventStandingOf, isRemovedStanding } from './inbox/book-date';
 import { contactOf } from './inbox/handover-notice';
 import {
   lockedConversation,
@@ -95,6 +97,18 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  *              deposit" re-issues a fresh link as a new request.
  *   CANCELLED  `cancelPartyDeposit`: staff withdrew it; the attempt is closed
  *              and the gateway told, best effort.
+ *   REMOVED    SCRUM-838 — the party deleted or archived in the Events module
+ *              (SCRUM-820's definite standing, `gone` or `archived`; `unknown`
+ *              — no seam, a failed read — changes nothing): the open request
+ *              is closed `cancelled` (`party_removed`) through the same close
+ *              as a person's Cancel, so the attempt is closed and the gateway
+ *              told; a pill on the thread, NOTHING said to the family, no
+ *              reminder and no hand-over. Seen by the follow-up job (every
+ *              open request, each tick, and again under the lock before a
+ *              reminder or a hand-over) and at a person's Request or Resend,
+ *              which is refused by name. Money that still lands on the closed
+ *              link is the gateway's late payment: recorded on the attempt
+ *              and handed to a person (`flagForAPerson`), never lost.
  *   RESEND     `resendPartyDeposit`: the same link posted again, ONE line per
  *              press (the press's key names the line).
  *   FOLLOW-UP  `runPartyDepositFollowUpJob`, every minute: unpaid
@@ -118,6 +132,8 @@ export const PARTY_DEPOSIT_FOLLOW_UP_JOB = 'job:party.deposit_follow_up';
 export const PARTY_DEPOSIT_FOLLOW_UP_INTERVAL_S = 60;
 /** How many requests one tick reminds or hands over, each. A bound on the tick. */
 const FOLLOW_UP_BATCH = 25;
+/** How many open requests one tick asks the Events module about (SCRUM-838), oldest first. */
+const REMOVED_SWEEP_BATCH = 200;
 
 /** The return page the gateway sends the family's browser to, on this api. */
 export const PARTY_DEPOSIT_RETURN_PATH = '/public/parties/deposit/return';
@@ -384,6 +400,8 @@ export async function requestPartyDeposit(
   now: Date = new Date(),
 ): Promise<PartyDepositActionAnswer> {
   const requestId = partyDepositRequestId(input.operatorId, input.idempotencyKey);
+  // SCRUM-838: a removed party's open request is closed here and the press refused, before anything is minted or posted.
+  await refuseForRemovedParty(db, env, log, ctx, { operatorId: input.operatorId, eventId: input.eventId, seenAt: 'request' }, now);
   const party = await partyOfOperator(db, input.operatorId, input.eventId);
   const replay = async (row: RequestRow): Promise<PartyDepositActionAnswer> => {
     if (row.operatorId !== input.operatorId || row.otoappEventId !== party.id || row.amountSatang !== input.amountSatang) {
@@ -563,6 +581,8 @@ async function closeRequest(
   requestId: string | null,
   actorAccountId: string | null,
   now: Date,
+  /** More for the pill and the audit row, beside the reason: ids and words, never the link. */
+  extra: Record<string, unknown> = {},
 ): Promise<RequestRow | null> {
   const [after] = await tx
     .update(partyDepositRequest)
@@ -577,7 +597,7 @@ async function closeRequest(
     kind: state === 'expired' ? 'deposit_expired' : 'deposit_cancelled',
     actorKind: actorAccountId ? 'account' : 'system',
     actorAccountId,
-    payload: { ...pillPayload(row), reason },
+    payload: { ...pillPayload(row), reason, ...extra },
     createdAt: now,
   }).onConflictDoNothing();
   await audit.record(tx, {
@@ -589,9 +609,185 @@ async function closeRequest(
     entityId: row.id,
     requestId,
     before: { state: row.state },
-    after: { state, reason, eventId: row.otoappEventId, amountSatang: row.amountSatang, paymentAttemptId: row.paymentAttemptId },
+    after: { state, reason, eventId: row.otoappEventId, amountSatang: row.amountSatang, paymentAttemptId: row.paymentAttemptId, ...extra },
   });
   return after;
+}
+
+/**
+ * WITHDRAW AN OPEN REQUEST AND ITS ATTEMPT, inside the caller's transaction:
+ * the one close a person's Cancel and the platform's own (SCRUM-838, a party
+ * removed in the Events module) both go through. The caller holds the party's
+ * lock and the request's row lock (`live` read `for update`), in that order;
+ * the attempt's row is locked here, after them, as it always was. An attempt
+ * still waiting is closed `cancelled` with a note of who or what closed it; one
+ * the gateway already moved (paid, flagged, closed) is left as it stands.
+ * `closedAttempt` says the gateway is still to be told (`tellGatewayClosed`).
+ */
+async function withdrawWithin(
+  tx: Tx,
+  live: RequestRow,
+  o: {
+    reason: string;
+    actorAccountId: string | null;
+    /** What the attempt's payload keeps under `cancelledBy` — the ledger's way to tell this `cancelled` from an expiry. */
+    cancelledBy: Record<string, unknown>;
+    actionId?: string | null;
+    requestId: string | null;
+    extra?: Record<string, unknown>;
+    now: Date;
+  },
+): Promise<{ row: RequestRow | null; closedAttempt: boolean }> {
+  const [attempt] = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.id, live.paymentAttemptId)).for('update').limit(1);
+  let closedAttempt = false;
+  if (attempt && (attempt.status === 'created' || attempt.status === 'sent_to_terminal' || attempt.status === 'inquiring')) {
+    await failAttempt(tx, attempt.id, {
+      status: 'cancelled',
+      payload: { ...((attempt.payload as Record<string, unknown> | null) ?? {}), cancelledBy: o.cancelledBy },
+    });
+    await audit.record(tx, {
+      actorAccountId: o.actorAccountId,
+      operatorId: live.operatorId,
+      branchId: live.branchId,
+      action: 'payment.qr.cancel',
+      entityType: 'payment_attempt',
+      entityId: attempt.id,
+      ...(o.actionId ? { actionId: o.actionId } : {}),
+      requestId: o.requestId,
+      before: { status: attempt.status },
+      after: {
+        status: 'cancelled',
+        reason: o.reason === PARTY_DEPOSIT_CLOSE_PARTY_REMOVED ? 'party_deposit_party_removed' : 'party_deposit_cancelled',
+        partyDepositRequestId: live.id,
+      },
+    });
+    closedAttempt = true;
+  }
+  const row = await closeRequest(tx, live, 'cancelled', o.reason, o.requestId, o.actorAccountId, o.now, o.extra);
+  return { row, closedAttempt };
+}
+
+/** The gateway's own cancel, best effort (QR support is UNCERTAIN, U4): the row is closed either way. */
+async function tellGatewayClosed(env: Env, log: FastifyBaseLogger | undefined, invoiceNo: string): Promise<void> {
+  try {
+    await gatewayFor(env, log).qr.cancel({ invoiceNo });
+  } catch (err) {
+    log?.warn({ err, invoiceNo }, 'the gateway could not be told a deposit link was cancelled');
+  }
+}
+
+// --- SCRUM-838: the party removed in the Events module -----------------------------------------
+
+/** Where the platform saw it: the job's sweep, the job's reminder or hand-over, or a person's press. */
+type RemovedSeenAt = 'follow_up' | 'reminder' | 'hand_over' | 'request' | 'resend';
+
+interface RemovedClose {
+  requestId: string;
+  invoiceNo: string;
+  standing: 'gone' | 'archived';
+  /** True when this close shut a waiting attempt: the gateway is still to be told. */
+  closedAttempt: boolean;
+}
+
+/**
+ * CLOSE AN OPEN REQUEST WHOSE PARTY IS NO LONGER THERE, inside the caller's
+ * transaction, under the party's lock and the request's row lock. The
+ * standing is asked HERE, under the lock, and is SCRUM-820's: only `gone`
+ * (deleted there) or `archived` close anything. `unknown` — a deployment
+ * without the seam, a read that failed, an event at a branch that is not
+ * this operator's — is "still there": null, and the caller goes on as before.
+ * Null too when the party stands. No line is posted: what to tell the family
+ * is a person's own.
+ */
+async function closeIfPartyRemovedWithin(
+  tx: Tx,
+  live: RequestRow,
+  seenAt: RemovedSeenAt,
+  now: Date,
+  requestId: string | null = null,
+): Promise<RemovedClose | null> {
+  if (live.state !== 'requested') return null;
+  const standing = await eventStandingOf(tx, live.operatorId, live.otoappEventId);
+  if (standing !== 'gone' && standing !== 'archived') return null;
+  const done = await withdrawWithin(tx, live, {
+    reason: PARTY_DEPOSIT_CLOSE_PARTY_REMOVED,
+    // The platform's own act, whoever pressed: no person withdrew this.
+    actorAccountId: null,
+    cancelledBy: { accountId: null, reason: PARTY_DEPOSIT_CLOSE_PARTY_REMOVED, standing },
+    requestId,
+    extra: { standing, seenAt },
+    now,
+  });
+  if (!done.row) return null;
+  return { requestId: live.id, invoiceNo: live.invoiceNo, standing, closedAttempt: done.closedAttempt };
+}
+
+/** The same, in its own transaction, for a caller that holds none: the lock, the row, the standing, the close; then the gateway told. */
+async function closeIfPartyRemoved(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger | undefined,
+  row: Pick<RequestRow, 'id' | 'operatorId' | 'branchId' | 'otoappEventId'>,
+  seenAt: RemovedSeenAt,
+  now: Date,
+  requestId: string | null = null,
+): Promise<RemovedClose | null> {
+  const closed = await withTx(
+    db,
+    { operatorId: row.operatorId, branchId: row.branchId, actorAccountId: null, ...(requestId ? { requestId } : {}) },
+    'party_deposit.cancel',
+    async (tx) => {
+      await lockParty(tx, row.otoappEventId);
+      const [live] = await tx.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, row.id)).for('update').limit(1);
+      return live ? closeIfPartyRemovedWithin(tx, live, seenAt, now, requestId) : null;
+    },
+  );
+  if (closed?.closedAttempt) await tellGatewayClosed(env, log, closed.invoiceNo);
+  return closed;
+}
+
+/**
+ * A PERSON PRESSED REQUEST OR RESEND FOR A PARTY THAT WAS REMOVED: no link is
+ * posted for it. Asked only when the party has a request still open (one
+ * indexed read; no open request, nothing more is asked and the press is
+ * answered as it always was — "Party not found", or the archived refusal).
+ * With one open and the party definitely removed, the request is closed
+ * (`party_removed`) and the press refused by name, 409.
+ */
+async function refuseForRemovedParty(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger,
+  ctx: OpContext,
+  q: { operatorId: string; eventId: string; seenAt: 'request' | 'resend' },
+  now: Date,
+): Promise<void> {
+  if (!UUID.test(q.eventId)) return;
+  const open = await db
+    .select({
+      id: partyDepositRequest.id,
+      operatorId: partyDepositRequest.operatorId,
+      branchId: partyDepositRequest.branchId,
+      otoappEventId: partyDepositRequest.otoappEventId,
+    })
+    .from(partyDepositRequest)
+    .where(
+      and(
+        eq(partyDepositRequest.operatorId, q.operatorId),
+        eq(partyDepositRequest.otoappEventId, q.eventId.toLowerCase()),
+        eq(partyDepositRequest.state, 'requested'),
+      ),
+    );
+  if (open.length === 0) return;
+  // Asked once outside any lock, so a party that stands costs the press one read; decided again under the lock.
+  if (!isRemovedStanding(await eventStandingOf(db, q.operatorId, q.eventId))) return;
+  let closed: RemovedClose | null = null;
+  for (const row of open) closed = (await closeIfPartyRemoved(db, env, log, row, q.seenAt, now, ctx.requestId ?? null)) ?? closed;
+  if (!closed) return;
+  throw errors.conflict(PARTY_DEPOSIT_REFUSALS.PARTY_REMOVED.code, PARTY_DEPOSIT_REFUSALS.PARTY_REMOVED.message, {
+    requestId: closed.requestId,
+    standing: closed.standing,
+  });
 }
 
 /** A request of the operator, by id, for the party named; 404 for anyone else's. */
@@ -621,11 +817,14 @@ export interface PartyDepositActionInput {
  */
 export async function resendPartyDeposit(
   db: Db,
+  env: Env,
   log: FastifyBaseLogger,
   ctx: OpContext,
   input: PartyDepositActionInput,
   now: Date = new Date(),
 ): Promise<PartyDepositActionAnswer> {
+  // SCRUM-838: the link is never posted again for a party that was removed; its open request is closed instead.
+  await refuseForRemovedParty(db, env, log, ctx, { operatorId: input.operatorId, eventId: input.eventId, seenAt: 'resend' }, now);
   const party = await partyOfOperator(db, input.operatorId, input.eventId);
   const row = await requestOfParty(db, input.operatorId, party.id, input.requestId);
   const clock = await clockOf(db, input.operatorId, row.branchId);
@@ -698,38 +897,17 @@ export async function cancelPartyDeposit(
     if (live.state !== 'requested') {
       throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NOT_OPEN.code, PARTY_DEPOSIT_REFUSALS.NOT_OPEN.message, { state: live.state });
     }
-    const [attempt] = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.id, live.paymentAttemptId)).for('update').limit(1);
-    let closedAttempt = false;
-    if (attempt && (attempt.status === 'created' || attempt.status === 'sent_to_terminal' || attempt.status === 'inquiring')) {
-      await failAttempt(tx, attempt.id, {
-        status: 'cancelled',
-        payload: { ...((attempt.payload as Record<string, unknown> | null) ?? {}), cancelledBy: { accountId: actorAccountId, appUserId: input.actorAppUserId } },
-      });
-      await audit.record(tx, {
-        actorAccountId,
-        operatorId: live.operatorId,
-        branchId: live.branchId,
-        action: 'payment.qr.cancel',
-        entityType: 'payment_attempt',
-        entityId: attempt.id,
-        actionId: input.idempotencyKey,
-        requestId: ctx.requestId ?? null,
-        before: { status: attempt.status },
-        after: { status: 'cancelled', reason: 'party_deposit_cancelled', partyDepositRequestId: live.id },
-      });
-      closedAttempt = true;
-    }
-    const after = await closeRequest(tx, live, 'cancelled', 'staff', ctx.requestId ?? null, actorAccountId, now);
-    return { row: after ?? live, replayed: false, closedAttempt };
+    const withdrawn = await withdrawWithin(tx, live, {
+      reason: 'staff',
+      actorAccountId,
+      cancelledBy: { accountId: actorAccountId, appUserId: input.actorAppUserId },
+      actionId: input.idempotencyKey,
+      requestId: ctx.requestId ?? null,
+      now,
+    });
+    return { row: withdrawn.row ?? live, replayed: false, closedAttempt: withdrawn.closedAttempt };
   });
-  if (done.closedAttempt) {
-    // The gateway's own cancel is best effort (QR support is UNCERTAIN, U4); the row is closed either way.
-    try {
-      await gatewayFor(env, log).qr.cancel({ invoiceNo: row.invoiceNo });
-    } catch (err) {
-      log.warn({ err, invoiceNo: row.invoiceNo }, 'the gateway could not be told a deposit link was cancelled');
-    }
-  }
+  if (done.closedAttempt) await tellGatewayClosed(env, log, row.invoiceNo);
   return { request: await viewOf(db, done.row), replayed: done.replayed };
 }
 
@@ -1002,6 +1180,8 @@ export interface PartyDepositFollowUpSweep extends Record<string, unknown> {
   handoversDue: number;
   handedOver: number;
   skipped: number;
+  /** SCRUM-838: open requests closed because their party was removed in the Events module. */
+  removedClosed: number;
 }
 
 /** The birthdays team, operator-wide: where an overdue deposit's thread is handed. */
@@ -1021,6 +1201,14 @@ async function birthdaysTeamOf(tx: Tx, operatorId: string): Promise<{ id: string
  * reminder — each decided again under the party's lock, so two ticks never
  * post twice, and the line's id names the request and the step besides.
  * Counts only in the run's detail.
+ *
+ * SCRUM-838 — BEFORE EITHER, every open request is asked where its party
+ * stands in the Events module, and one whose party was deleted or archived
+ * there is closed (`party_removed`): the link stops being payable within a
+ * tick of the removal, whichever window the request is in. The reminder and
+ * the hand-over ask again under the party's lock, so a party removed between
+ * the two reads is never reminded. A standing that cannot be said (`unknown`)
+ * closes nothing, and a second tick finds nothing open to close.
  */
 export async function runPartyDepositFollowUpJob(
   db: Db,
@@ -1028,8 +1216,29 @@ export async function runPartyDepositFollowUpJob(
   deps: PartyDepositFollowUpDeps,
   now: Date = new Date(),
 ): Promise<PartyDepositFollowUpSweep> {
-  const sweep: PartyDepositFollowUpSweep = { remindersDue: 0, reminded: 0, handoversDue: 0, handedOver: 0, skipped: 0 };
+  const sweep: PartyDepositFollowUpSweep = { remindersDue: 0, reminded: 0, handoversDue: 0, handedOver: 0, skipped: 0, removedClosed: 0 };
   const log = deps.log;
+
+  const stillOpen = await db
+    .select({
+      id: partyDepositRequest.id,
+      operatorId: partyDepositRequest.operatorId,
+      branchId: partyDepositRequest.branchId,
+      otoappEventId: partyDepositRequest.otoappEventId,
+    })
+    .from(partyDepositRequest)
+    .where(eq(partyDepositRequest.state, 'requested'))
+    .orderBy(asc(partyDepositRequest.requestedAt))
+    .limit(REMOVED_SWEEP_BATCH);
+  for (const open of stillOpen) {
+    try {
+      // One read outside any lock; only a party definitely removed takes the lock, where it is asked again.
+      if (!isRemovedStanding(await eventStandingOf(db, open.operatorId, open.otoappEventId))) continue;
+      if (await closeIfPartyRemoved(db, env, log, open, 'follow_up', now)) sweep.removedClosed += 1;
+    } catch (err) {
+      log?.warn({ err, requestId: open.id }, 'a deposit request of a removed party could not be closed');
+    }
+  }
 
   const remindBy = new Date(now.getTime() - env.PARTY_DEPOSIT_REMINDER_MIN * 60_000);
   const dueReminders = await db
@@ -1048,10 +1257,15 @@ export async function runPartyDepositFollowUpJob(
   sweep.remindersDue = dueReminders.length;
   for (const due of dueReminders) {
     try {
-      const sent = await remindOne(db, env, due, now);
-      if (sent) sweep.reminded += 1;
+      const step = await remindOne(db, env, due, now);
+      if (step && typeof step !== 'string') {
+        sweep.removedClosed += 1;
+        if (step.closedAttempt) await tellGatewayClosed(env, log, step.invoiceNo);
+        continue;
+      }
+      if (step) sweep.reminded += 1;
       else sweep.skipped += 1;
-      await sendPartyMessages(db, deps.sender, log, sent ? [sent] : []);
+      await sendPartyMessages(db, deps.sender, log, step ? [step] : []);
     } catch (err) {
       sweep.skipped += 1;
       log?.warn({ err, requestId: due.id }, 'a party deposit reminder could not be posted');
@@ -1080,6 +1294,11 @@ export async function runPartyDepositFollowUpJob(
         sweep.skipped += 1;
         continue;
       }
+      if ('standing' in handed) {
+        sweep.removedClosed += 1;
+        if (handed.closedAttempt) await tellGatewayClosed(env, log, handed.invoiceNo);
+        continue;
+      }
       sweep.handedOver += 1;
       await sendPartyMessages(db, deps.sender, log, handed.messageIds);
       await ringBirthdayManager(db, log, deps.directory, {
@@ -1099,12 +1318,18 @@ export async function runPartyDepositFollowUpJob(
   return sweep;
 }
 
-/** The reminder, once, under the party's lock. The posted line's id, or null when nothing was due after all. */
-async function remindOne(db: Db, env: Env, due: RequestRow, now: Date): Promise<string | null> {
+/**
+ * The reminder, once, under the party's lock. The posted line's id, or null
+ * when nothing was due after all — or, the party removed in the Events module
+ * (SCRUM-838), the close made instead of the reminder.
+ */
+async function remindOne(db: Db, env: Env, due: RequestRow, now: Date): Promise<string | RemovedClose | null> {
   return withTx(db, { operatorId: due.operatorId, branchId: due.branchId, actorAccountId: null }, 'party_deposit.remind', async (tx) => {
     await lockParty(tx, due.otoappEventId);
     const [live] = await tx.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, due.id)).for('update').limit(1);
     if (!live || live.state !== 'requested' || live.remindedAt || !live.paymentLink) return null;
+    const removed = await closeIfPartyRemovedWithin(tx, live, 'reminder', now);
+    if (removed) return removed;
     if (live.linkExpiresAt && live.linkExpiresAt.getTime() <= now.getTime()) return null; // the gateway's close is on its way
     const conv = await lockedConversation(tx, live.operatorId, live.conversationId);
     const party = await partyOfRow(tx, live).catch(() => null);
@@ -1133,11 +1358,14 @@ async function remindOne(db: Db, env: Env, due: RequestRow, now: Date): Promise<
  * `ai_handover` the assistant stands back on (`aiEligibility` HANDED_OVER),
  * the thread moved to Birthdays & Events where it is not there already.
  */
-async function handOverOne(db: Db, due: RequestRow, now: Date): Promise<{ messageIds: string[]; partyDate: string } | null> {
+async function handOverOne(db: Db, due: RequestRow, now: Date): Promise<{ messageIds: string[]; partyDate: string } | RemovedClose | null> {
   return withTx(db, { operatorId: due.operatorId, branchId: due.branchId, actorAccountId: null }, 'party_deposit.hand_over', async (tx) => {
     await lockParty(tx, due.otoappEventId);
     const [live] = await tx.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, due.id)).for('update').limit(1);
     if (!live || live.state !== 'requested' || live.handedOverAt) return null;
+    // SCRUM-838: a removed party's thread is not handed to anyone as an unpaid deposit; the request is closed instead.
+    const removed = await closeIfPartyRemovedWithin(tx, live, 'hand_over', now);
+    if (removed) return removed;
     const conv = await lockedConversation(tx, live.operatorId, live.conversationId);
     const party = await partyOfRow(tx, live).catch(() => null);
     const dest = await birthdaysTeamOf(tx, live.operatorId);
