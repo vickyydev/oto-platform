@@ -52,6 +52,17 @@ describe('the deposit pills (SCRUM-825)', () => {
     expect(
       eventText(ev({ kind: 'deposit_cancelled', actorKind: 'account', actorAccountId: 'acc-1', actorName: 'Anya', payload: { amountSatang: 300_000, reason: 'staff' } }), ctx),
     ).toBe('Deposit request cancelled by Anya · ฿3,000');
+    // SCRUM-838: closed by the platform because the party was deleted or archived there — no person named, whoever the actor.
+    expect(
+      eventText(ev({ kind: 'deposit_cancelled', actorKind: 'system', payload: { amountSatang: 300_000, reason: 'party_removed', standing: 'gone', seenAt: 'follow_up' } }), ctx),
+    ).toBe('Deposit request closed · the party was removed in the Events module · ฿3,000');
+    expect(
+      eventText(ev({ kind: 'deposit_cancelled', actorKind: 'system', payload: { amountSatang: 300_000, reason: 'party_removed', standing: 'archived', seenAt: 'resend' } }), ctx),
+    ).toBe('Deposit request closed · the party was removed in the Events module · ฿3,000');
+    // Any other reason keeps the person's wording.
+    expect(
+      eventText(ev({ kind: 'deposit_cancelled', actorKind: 'account', actorAccountId: 'acc-1', actorName: 'Anya', payload: { amountSatang: 300_000 } }), ctx),
+    ).toBe('Deposit request cancelled by Anya · ฿3,000');
     expect(eventText(ev({ kind: 'deposit_overdue', payload: { amountSatang: 300_000, reroutedTeamId: T_BIRTHDAYS } }), ctx)).toBe(
       'Deposit overdue ฿3,000 · handed to Birthdays & Events',
     );

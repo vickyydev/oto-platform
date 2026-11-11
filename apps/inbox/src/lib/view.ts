@@ -617,6 +617,8 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     case 'deposit_expired':
       return `Deposit link ran out unpaid · ${bahtOf(p.amountSatang)}`;
     case 'deposit_cancelled':
+      // SCRUM-838: closed by the platform, not withdrawn by a person — the party was deleted or archived there.
+      if (p.reason === 'party_removed') return `Deposit request closed · the party was removed in the Events module · ${bahtOf(p.amountSatang)}`;
       return `Deposit request cancelled by ${actorOf(e, ctx)} · ${bahtOf(p.amountSatang)}`;
     case 'deposit_overdue': {
       const team = teamName(ctx, p.reroutedTeamId);
