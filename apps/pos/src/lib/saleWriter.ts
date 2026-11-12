@@ -117,7 +117,16 @@ export type SaleFailureCause =
   /** This sale's number was already spent on a different request body. */
   | 'stale-key'
   /** The platform looked at this sale and said no. */
-  | 'refused';
+  | 'refused'
+  /**
+   * SCRUM-887 — the counter's box answered, before any money moved, that it
+   * has not received a family the drop-off gate wrote online moments before
+   * the link dropped (`gateSaleFailure` in lib/gateOnline.ts). The box saved
+   * nothing and took nothing — it answered, so this is no "nothing answered" —
+   * and trying again once it has pulled them, or once the till is back
+   * online, finishes the sale under the same number.
+   */
+  | 'box-not-synced';
 
 export type SaleWriteState =
   | { kind: 'idle' }

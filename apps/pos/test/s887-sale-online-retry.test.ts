@@ -302,7 +302,8 @@ describe('SCRUM-887: the family\'s sale after a gate that wrote online', () => {
       const state = result.current.state as Extract<SaleWriteState, { kind: 'failed' }>;
       expect(state).toMatchObject({ kind: 'failed', answeredBy: 'box', code: 'NOT_FOUND', message: 'Member not found', retryable: false });
       const shown = gateSaleFailure(state, hold.startedOnline);
-      expect(shown).toMatchObject({ kind: 'failed', message: GATE_SALE_BOX_NOT_SYNCED, retryable: true, cause: 'connection' });
+      // The box answered: nothing saved, nothing taken — not a "nothing answered".
+      expect(shown).toMatchObject({ kind: 'failed', message: GATE_SALE_BOX_NOT_SYNCED, retryable: true, cause: 'box-not-synced' });
       expect(shown.message).not.toMatch(/Member not found/);
       expect(shown.message).toMatch(/Try again/);
     } finally {

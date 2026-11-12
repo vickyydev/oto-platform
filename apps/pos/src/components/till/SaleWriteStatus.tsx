@@ -45,9 +45,16 @@ import type { CartQuote } from '@/api/sales';
  * SCRUM-502 — a refusal names who gave it: on the box lane the counter's box
  * looked at the sale and said no, and sending staff after the platform for it
  * sends them after the wrong thing. The instruction is the same either way.
+ *
+ * SCRUM-887 — the box's "not received this family yet" carries its own
+ * instruction in its words (`GATE_SALE_BOX_NOT_SYNCED`): wait, then Try again.
+ * Nothing is added to it. The box answered, so the no-answer paragraph — "this
+ * sale may already be saved" — would contradict "the box saved nothing".
  */
 function advice(cause: SaleFailureCause, answeredBy?: 'box'): ReactNode {
   switch (cause) {
+    case 'box-not-synced':
+      return null;
     case 'connection':
       return (
         <>
@@ -134,7 +141,14 @@ export function SaleWriteFailure({
   // nothing anywhere, whichever call it answered. Its words stand as they came.
   const stockRefused = isStockRefusalCode(state.code);
   const receiptPrefixInUse = state.code === 'RECEIPT_PREFIX_IN_USE';
-  const boxPaymentUnconfirmed = state.stage === 'finalise' && state.heldOn === 'till' && state.cause !== 'refused';
+  // Whoever answered said no, so nothing was taken: a refusal, or the box's
+  // "not received this family yet" (SCRUM-887). Every other cause may hide a
+  // press that landed.
+  const answeredNo = state.cause === 'refused' || state.cause === 'box-not-synced';
+  const boxPaymentUnconfirmed = state.stage === 'finalise' && state.heldOn === 'till' && !answeredNo;
+  const instruction = receiptPrefixInUse
+    ? 'A manager needs to change this till’s receipt prefix in the Console. Then return to the order and confirm the payment again.'
+    : stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause, state.answeredBy);
   const headline =
     state.stage === 'commit' || stockRefused
       ? 'This sale has not been saved.'
@@ -156,17 +170,15 @@ export function SaleWriteFailure({
             <p className="mt-1 text-sm text-muted-foreground">
               {state.heldOn !== 'till'
                 ? 'The order itself is saved on the platform, as unpaid and without a receipt number.'
-                : state.cause === 'refused'
+                : answeredNo
                   ? 'The order is held on this till only, unpaid and without a receipt number — none of it has reached the platform.'
                   : 'The order was rung up on this counter’s box, not on the platform. The box may already hold this payment; if it does not, the order is still on this till only, unpaid and without a receipt number.'}
             </p>
           )}
           <p className="mt-1 text-sm text-muted-foreground">{state.message}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {receiptPrefixInUse
-              ? 'A manager needs to change this till’s receipt prefix in the Console. Then return to the order and confirm the payment again.'
-              : stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause, state.answeredBy)}
-          </p>
+          {instruction ? (
+            <p className="mt-2 text-sm text-muted-foreground">{instruction}</p>
+          ) : null}
           <p className="mt-2 font-mono text-xs text-muted-foreground">Sale {state.saleId}</p>
           <div className="mt-4 flex items-center gap-3">
             {state.retryable && (

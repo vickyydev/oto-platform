@@ -163,8 +163,10 @@ export const GATE_SALE_BOX_NOT_SYNCED =
 /**
  * The sale panel's failure, for a family this gate wrote online: the box's
  * "Member not found" becomes the words above, and a press to try again (the
- * box pulls the family within a minute, or the till moves back online). Every
- * other state stands as it came.
+ * box pulls the family within a minute, or the till moves back online). The
+ * box answered, so the cause says so (`box-not-synced`): the panel adds no
+ * "nothing answered, this sale may already be saved" to "the box saved
+ * nothing". Every other state stands as it came.
  */
 export function gateSaleFailure<S extends SaleWriteState>(state: S, startedOnline: boolean): S {
   if (
@@ -176,5 +178,5 @@ export function gateSaleFailure<S extends SaleWriteState>(state: S, startedOnlin
   ) {
     return state;
   }
-  return { ...state, message: GATE_SALE_BOX_NOT_SYNCED, cause: 'connection', retryable: true };
+  return { ...state, message: GATE_SALE_BOX_NOT_SYNCED, cause: 'box-not-synced', retryable: true };
 }
