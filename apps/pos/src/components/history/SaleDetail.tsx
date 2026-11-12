@@ -14,9 +14,12 @@ import {
 } from '@oto/shared';
 import {
   getSale,
+  amountLabelOf,
   baht,
+  balanceDueSatang,
   bandLabel,
   bookingReferenceOf,
+  openSaleBadgeOf,
   isVoucherDiscount,
   newActionId,
   refundItemOptions,
@@ -860,7 +863,8 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     status === 'voided'
       ? 'voided'
       : status === 'tendering'
-        ? 'unpaid'
+        // SCRUM-890 — money taken on it and still open: partly paid, not unpaid.
+        ? openSaleBadgeOf(attempts)
         : totals.refundedSatang > 0
           ? totals.refundedSatang >= totals.grossSatang
             ? 'refunded'
@@ -913,6 +917,8 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     (voided !== null && voided.releasedVoucherIds.length > 0);
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
+  /** SCRUM-890 — the figure under the badge: a part-paid sale's balance, else its gross. */
+  const amountShownSatang = badge === 'part_paid' ? balanceDueSatang(totals.grossSatang, attempts) : totals.grossSatang;
   const taxName =
     detail?.taxBreakdown?.categories?.find((c) => c.taxName)?.taxName ?? 'VAT';
 
@@ -1173,6 +1179,7 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     voucherHeld,
     tierClaim,
     taxTotal,
+    amountShownSatang,
     taxName,
     closed,
     remainingSatang,
@@ -1235,6 +1242,7 @@ export function SaleDetail(props: SaleDetailProps) {
     voucherHeld,
     tierClaim,
     taxTotal,
+    amountShownSatang,
     taxName,
     closed,
     remainingSatang,
@@ -1476,10 +1484,10 @@ export function SaleDetail(props: SaleDetailProps) {
             </div>
             <div className="flex items-end justify-between gap-3">
               <span className="text-base font-semibold text-muted-foreground">
-                {badge === 'unpaid' ? 'Amount due' : badge === 'voided' ? 'Total (voided)' : 'Total paid'}
+                {amountLabelOf(badge)}
               </span>
-              <span className="text-4xl font-black tabular-nums leading-none">
-                ฿{baht(totals.grossSatang)}
+              <span className="text-4xl font-black tabular-nums leading-none" data-testid="sale-amount-shown">
+                ฿{baht(amountShownSatang)}
               </span>
             </div>
             {totals.refundedSatang > 0 && (

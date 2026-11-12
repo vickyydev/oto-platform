@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  * "Paid" would put a figure in front of staff that nobody collected, so they get
  * their own words in the same badge.
  */
-type BadgeStatus = TxnStatus | 'unpaid' | 'voided';
+type BadgeStatus = TxnStatus | 'unpaid' | 'part_paid' | 'voided';
 
 const CONFIG: Record<BadgeStatus, { label: string; className: string }> = {
   paid: { label: 'Paid', className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
@@ -21,6 +21,11 @@ const CONFIG: Record<BadgeStatus, { label: string; className: string }> = {
   refunded: { label: 'Refunded', className: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
   unpaid: {
     label: 'Unpaid',
+    className: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  },
+  // SCRUM-890 — still open, with money taken on it: what is left is the balance.
+  part_paid: {
+    label: 'Partly paid',
     className: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   },
   voided: { label: 'Voided', className: 'bg-muted text-muted-foreground border-border' },

@@ -12,7 +12,7 @@ import {
   Plus,
   Check,
 } from 'lucide-react';
-import { baht } from '@/api/history';
+import { amountLabelOf, baht } from '@/api/history';
 import { getDiscountReasons } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
 import { pricedOnDocument } from '@/lib/tierProof';
@@ -271,13 +271,9 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             )}
             <div className="border-t pt-3 flex items-end justify-between">
               <span className="font-semibold text-muted-foreground">
-                {badge === 'unpaid'
-                  ? 'Amount due'
-                  : badge === 'voided'
-                    ? 'Total (voided)'
-                    : 'Total paid'}
+                {amountLabelOf(badge)}
               </span>
-              <span className="text-3xl font-black">฿{baht(totals.grossSatang)}</span>
+              <span className="text-3xl font-black">฿{baht(state.amountShownSatang)}</span>
             </div>
             {totals.refundedSatang > 0 && (
               <div className="flex justify-between text-rose-400 font-semibold">

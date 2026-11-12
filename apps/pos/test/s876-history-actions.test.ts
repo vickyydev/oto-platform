@@ -152,7 +152,8 @@ describe('History offers Void or Refund by what the sale took', () => {
       attempt({ id: 'w', method: 'wallet', status: 'approved', amountSatang: 5_000 }),
       attempt({ id: 'c', method: 'card', status: 'declined', amountSatang: 4_000 }),
     ]);
-    expect(state.badge).toBe('unpaid');
+    // SCRUM-890 - money taken and still open reads as partly paid, no longer unpaid.
+    expect(state.badge).toBe('part_paid');
     expect(state).toMatchObject({ closed: false, refundable: true, partPaidOpen: true, tookNoMoney: false, remainingSatang: 5_000 });
     // Nothing to pick by item: the dialog is locked to the whole sale.
     expect(state.refundOptions).toEqual([]);

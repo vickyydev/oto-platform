@@ -24,6 +24,7 @@
 // OTO-XXXX-XXXX" on the sale it files, and no read yet answers the booking
 // itself.
 import {
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
   bandShortCode,
   isBandCodeShape,
   normaliseBandCode,
@@ -51,7 +52,7 @@ export type LedgerStatus = 'tendering' | 'paid' | 'finalised' | 'voided' | 'refu
  * never paid for, and one that was voided — and calling either of those "Paid"
  * would be the same kind of lie as the sample data this ticket removes.
  */
-export type BadgeStatus = TxnStatus | 'unpaid' | 'voided';
+export type BadgeStatus = TxnStatus | 'unpaid' | 'part_paid' | 'voided';
 
 export interface ApiSaleTotals {
   subtotalSatang: number;
@@ -445,6 +446,41 @@ export function badgeOf(sale: ApiSaleListItem): BadgeStatus {
 }
 
 /**
+ * SCRUM-890 — WHERE AN OPEN SALE STANDS, read off its tenders in the detail.
+ *
+ * A sale still `tendering` that has taken money is part-paid, not unpaid: the
+ * badge says so and the figure under it is what is still to pay. Money is the
+ * sale's own when a tender took it; a party's deposit on its settlement
+ * (`partyDeposit`) is the party's (SCRUM-876), so a settlement holding only
+ * its deposit still reads as unpaid.
+ */
+export function openSaleBadgeOf(attempts: readonly PaymentAttemptView[]): 'unpaid' | 'part_paid' {
+  return attempts.some((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status) && !a.partyDeposit)
+    ? 'part_paid'
+    : 'unpaid';
+}
+
+/**
+ * SCRUM-890 — what a part-paid sale still asks for: its gross less every
+ * tender that took money on it, the party's deposit included (the deposit is
+ * on the sale as paid in advance, so the balance is after it). Never negative.
+ */
+export function balanceDueSatang(grossSatang: number, attempts: readonly PaymentAttemptView[]): number {
+  const taken = attempts
+    .filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status))
+    .reduce((sum, a) => sum + a.amountSatang, 0);
+  return Math.max(0, grossSatang - taken);
+}
+
+/** The words over the sale's figure in the detail, for its badge. */
+export function amountLabelOf(badge: BadgeStatus): string {
+  if (badge === 'unpaid') return 'Amount due';
+  if (badge === 'part_paid') return 'Balance due';
+  if (badge === 'voided') return 'Total (voided)';
+  return 'Total paid';
+}
+
+/**
  * The receipt number is the sale's visible id — never the uuid, which is a
  * database key and means nothing to anybody holding a paper receipt. A sale
  * rung up and not yet paid for has no number, because the number is allocated
@@ -491,7 +527,7 @@ export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: strin
     total: baht(sale.totals.grossSatang),
     // `TxnSummary.status` only has words for a sale that was paid for; `badge`
     // above carries the two the ledger adds, and is what the card renders.
-    status: badge === 'unpaid' || badge === 'voided' ? 'paid' : badge,
+    status: badge === 'unpaid' || badge === 'part_paid' || badge === 'voided' ? 'paid' : badge,
     badge,
     operatorName: sale.soldBy?.name ?? 'Unknown',
     ...(guest ? { customerLabel: guest } : {}),
@@ -704,7 +740,7 @@ export function mergeLookup(
  */
 export function spentOf(txns: readonly HistoryTxn[]): number {
   const satang = txns
-    .filter((t) => t.badge !== 'unpaid' && t.badge !== 'voided')
+    .filter((t) => t.badge !== 'unpaid' && t.badge !== 'part_paid' && t.badge !== 'voided')
     .reduce((sum, t) => sum + Math.max(0, t.ledger.totals.grossSatang - t.ledger.totals.refundedSatang), 0);
   return baht(satang);
 }
