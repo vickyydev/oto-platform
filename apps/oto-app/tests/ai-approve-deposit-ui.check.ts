@@ -237,8 +237,10 @@ const check = async (title: string, fn: () => Promise<void> | void) => {
 };
 
 const NOT_WRITTEN_3000 = "Not written: the deposit — it changed while this review was open (now ฿3,000).";
-const SAVED_WITHOUT = "the timeline's steps and the team you ticked.";
-const SAVED_WITH = "the team you ticked and the deposit.";
+// SCRUM-927 (the owner's rule of 12 November): the result names only the sections the server
+// says it wrote; this stub server writes the event, and the deposit when it is not kept.
+const SAVED_WITHOUT = "Saved: the event's details (name, counts, times).";
+const SAVED_WITH = "Saved: the event's details (name, counts, times) and the deposit.";
 
 await check("the review read with no deposit, the family pays ฿3,000, Approve and create: the deposit it was read with is sent, and the result says the deposit was not written", async () => {
   const id = party(NONE);
@@ -254,7 +256,7 @@ await check("the review read with no deposit, the family pays ฿3,000, Approve 
   assert.deepEqual(stored.get(id), { amountThb: 3000, date: DAY }, "the paid deposit stands");
   assert.ok(says("BEO created from the pasted message"));
   assert.ok(says(NOT_WRITTEN_3000), `the plain words are shown: ${page().slice(-400)}`);
-  assert.ok(says(`Saved: the event's name and details,`) && says(`${SAVED_WITHOUT} ${NOT_WRITTEN_3000}`), "the deposit is not among what was saved");
+  assert.ok(says(`${SAVED_WITHOUT} ${NOT_WRITTEN_3000}`), "the deposit is not among what was saved");
   assert.ok(!says(SAVED_WITH));
   assert.ok(marks, "the review closed and handed the form its marks");
   assert.ok(!Object.keys(marks!).some((k) => /deposit|prepayment/i.test(k)), `no mark for a deposit that was not written: ${JSON.stringify(marks)}`);
@@ -271,7 +273,7 @@ await check("a fresh review approving a deliberate higher figure: sent with the 
   assert.deepEqual(sent.expectedDeposit, { amountThb: 3000, date: DAY });
   assert.deepEqual(sent.deposit, { amount: 5000, paid: true, date: DAY });
   assert.deepEqual(stored.get(id), { amountThb: 5000, date: DAY });
-  assert.ok(says(`Saved: the event's name and details,`) && says(SAVED_WITH), "the usual words");
+  assert.ok(says(SAVED_WITH), "the usual words: what was written");
   assert.ok(!says("Not written"));
   assert.ok(Object.keys(marks ?? {}).length > 0);
 });

@@ -525,18 +525,47 @@ export const APPROVAL_WRITES =
  * review was open or would have gone below what the family paid through the chat.
  */
 export interface ApproveAnswer {
+  /** SCRUM-927: what the approval wrote, as the server counts it (absent from a server before this rule). */
+  written?: Record<string, number | boolean>;
   notWritten?: {
     timeline?: { message: string; steps: Array<{ time: string; label: string }> };
     deposit?: { reason?: string; message: string; amountThb?: number; date?: string | null };
   };
 }
 
+/**
+ * SCRUM-927: the sections an approval wrote, in the review's words and the
+ * form's order, from the server's own count (`written`): the toast names only
+ * these, never a section the review did not fill.
+ */
+const WRITTEN_SECTIONS: Array<[string, (w: Record<string, number | boolean>) => boolean]> = [
+  ["the event's details (name, counts, times)", (w) => w.event === true],
+  ["the date", (w) => w.eventDate === true],
+  ["the package", (w) => w.package === true],
+  ["the kitchen plan", (w) => w.setMenu === true || Number(w.kitchenLines) > 0 || w.cake === true || w.foodTimes === true],
+  ["the bar", (w) => Number(w.barLines) > 0 || w.barServiceTime === true],
+  ["the entertainment", (w) => Number(w.entertainment) > 0],
+  ["the setup plan", (w) => w.setup === true],
+  ["the POS box", (w) => w.pos === true],
+  ["the timeline's steps", (w) => Number(w.timelineLines) > 0],
+  ["the team you ticked", (w) => Number(w.team) > 0],
+  ["the deposit", (w) => w.deposit === true],
+];
+export function writtenSectionsWords(written: Record<string, number | boolean>): string {
+  const names = WRITTEN_SECTIONS.filter(([, wrote]) => wrote(written)).map(([name]) => name);
+  if (names.length === 0) return "nothing new: the BEO already held what the review showed";
+  return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
 /** The result's words after an approval: what was saved, then each thing that was not, and why. */
 export function approvalResultWords(answer: ApproveAnswer): string {
   const missing = answer.notWritten?.timeline;
   const kept = answer.notWritten?.deposit;
-  // A deposit that was kept is not among what was saved.
-  const saved = kept ? APPROVAL_WRITES.replace(", the team you ticked and the deposit", " and the team you ticked") : APPROVAL_WRITES;
+  // A deposit that was kept is not among what was saved. SCRUM-927: with the server's count, only
+  // the sections it wrote are named; a server before the rule is answered with the fixed words.
+  const saved = answer.written
+    ? writtenSectionsWords(answer.written)
+    : kept ? APPROVAL_WRITES.replace(", the team you ticked and the deposit", " and the team you ticked") : APPROVAL_WRITES;
   const steps = missing
     ? ` Not written: ${missing.steps.length === 1 ? "the timeline's step" : `the timeline's ${missing.steps.length} steps`} (${missing.steps.map((s) => `${s.time} ${s.label}`).join(", ")}) — ${missing.message}. Set the start time, then add them to the Timeline.`
     : "";

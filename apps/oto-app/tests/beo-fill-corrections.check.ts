@@ -34,7 +34,8 @@
 //      the Kitchen Plan does not say "Selections received" when no parent
 //      answered the menu link (the choices are marked as read from the chat);
 //      Billing's "Deposit from the family's chat" box agrees with the BEO (the
-//      deposit asked, not "No deposit asked yet").
+//      deposit asked, not "No deposit asked yet"); the approval's toast names
+//      only the sections that were written.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -67,7 +68,7 @@ const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { DepositRequestPanel, depositAskedOf, depositAskedWords } = await import("../client/src/components/beo/beo-till-billing");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
@@ -92,7 +93,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 11;
+const CHECKS = 12;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -101,7 +102,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -638,6 +639,29 @@ try {
     // The billing section hands the box the BEO's billing.
     const billingFile = readFileSync(new URL("../client/src/components/beo/beo-till-billing.tsx", import.meta.url), "utf8");
     assert.ok(billingFile.includes("asked={depositAskedOf(billing)}"));
+  });
+
+  // --- 9d. The toast names only what was written ----------------------------------------------
+  await check("theToastNamesOnlyWhatWasWritten", async () => {
+    // The proof's thread D: no setup, no POS box, no team, no deposit, no bar, no entertainment.
+    let res = await approve(ev.toast, bodyOf({
+      event: { numChildren: 14 },
+      package: { templateId: cat.pkg, addOns: [] },
+      setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Margherita"] }] },
+      cake: { mode: "EXTERNAL", notes: "their own cake", time: "17:00" },
+      details: { timeline: [{ time: "16:00", label: "Games" }] },
+    }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(
+      approvalResultWords(res.body),
+      "Saved: the event's details (name, counts, times), the package, the kitchen plan and the timeline's steps.",
+    );
+    res = await approve(ev.toast, bodyOf({ cake: { mode: "EXTERNAL", notes: "their own cake", time: "17:00" } }));
+    assert.equal(approvalResultWords(res.body), "Saved: the kitchen plan.");
+    res = await approve(ev.toast, bodyOf({ deposit: { amount: 3000, paid: false, date: null }, details: { setupReadyBy: "14:30" } }));
+    assert.equal(approvalResultWords(res.body), "Saved: the setup plan and the deposit.");
+    // A server before this rule answers no count: the fixed words, as before.
+    assert.ok(approvalResultWords({}).startsWith("Saved: the event's name and details, the counts"));
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
