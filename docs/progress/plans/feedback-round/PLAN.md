@@ -322,3 +322,22 @@ To try on the Pi, in order: the turn after a reboot; the touch in all four corne
 10. For Till 1, should the screen open the web address (photos can be sent, display changes arrive with a web deploy, it needs the Wi-Fi) or the box's own copy (works with no Wi-Fi, but photos cannot be sent yet and every display change needs a box release)? The park's line uses the web address.
 11. The waiting page is in English only. Do you want a Thai line on it?
 12. The display settings are changed only with the installer; editing them in the box's config file does nothing on its own. Acceptable?
+
+## The display-fix lane landed (13 November 06:41, main 92d8e3977)
+Tickets: SCRUM-963 (the family's form on the counter display after its second proof), points 2 to 4 of SCRUM-962, points 7 and 8 of SCRUM-969 (the one-row categories with a mouse; the Shop says "sale"). Service: the till only (both staging tills); no migration. Left and ticketed: SCRUM-975.
+For the counter Pi: if its screen opens the staging web address, the display takes this with the web deploy after its screen service is restarted (the display page does not update itself while open); if it opens the box's own copy, it needs the next box release. Read on the Pi: grep OTO_KIOSK_URL /etc/oto-box/config.
+
+### Questions for the owner from this lane
+1. The language list now follows the screen's look everywhere the customer screens use it (also the till's own customer half and the phone's handed-over screens on a light look). Dark is unchanged. Keep it everywhere, or only on the paired display?
+2. On a light screen the chosen language is a deeper orange on its coral wash (the brand coral was too pale to read). Acceptable?
+3. The "Confirmed" badge also got a deeper green on a light screen. Keep?
+4. The age picker's back arrow was also made 44 pixels on the display's form. Keep?
+5. On the 600-wide first screen the content now starts 24 pixels lower, below the language button. Right, or should the language button scroll away with the heading?
+6. On a phone the gate puts the child's name on its own line with a full-width age button under it; Back and Continue stay at the foot. Right?
+7. The phone form's heading now scrolls away on any phone screen under 520 pixels tall (held sideways). Right?
+8. The category arrows are named "Earlier categories" and "More categories" and sit over the row's ends. Right?
+9. The one-row categories, with the arrows and the mouse wheel, also apply on a full-width desk window about 768 to 1005 pixels wide. Keep, or only in the split view?
+10. A language chosen offline on the first screen or the returning family's review still locks those screens until the connection is back (it now goes by itself then). Should they stay open as the form does?
+11. The Shop's dialog now reads "The sale is left as it is … this screen starts a new sale." Right?
+12. The display's own language always wins over the box's copy when they next talk. Wanted?
+13. On the counter display's first screen the WhatsApp / Telegram / LINE pills and language choices are still 40 pixels. Make them 44 as on the form?
