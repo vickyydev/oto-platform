@@ -245,6 +245,33 @@ function CountryPicker({
   );
 }
 
+/**
+ * SCRUM-880 — THE KEYPAD READOUT STAYS ON ONE LINE.
+ *
+ * The readout is the prototype's: `text-3xl` with `tracking-wider` beside the
+ * country picker, in the display's `max-w-md` column. That holds "+66" and a
+ * nine-digit Thai mobile; typed with its leading 0 the number wrapped ("+66"
+ * over "0898630041") and spilled out of its box, and the keypad takes up to
+ * fifteen digits after a dial code of up to four.
+ *
+ * So the type steps down, through the till's own sizes, as the number grows.
+ * The weight is the national digits plus each dial-code digit twice: a dial
+ * digit costs its own width in the readout and about as much again in the
+ * picker beside it, which narrows the box. Each step was measured in Inter
+ * with the widest digit (8) against the box at the column's width: the
+ * prototype's size is kept for every number it already held on one line, and
+ * the longest the keypad accepts ends at `text-base`.
+ * Measured in a browser in `test/scrum-880-readout-one-line.test.ts`.
+ */
+export function keypadReadoutSize(dialCode: string, nationalNumber: string): string {
+  const weight = nationalNumber.length + 2 * dialCode.length;
+  if (weight <= 13) return 'text-3xl';
+  if (weight <= 16) return 'text-2xl';
+  if (weight <= 19) return 'text-xl';
+  if (weight <= 21) return 'text-lg';
+  return 'text-base';
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -298,9 +325,9 @@ export function PhoneInput({
           <CountryPicker selected={country} onSelect={handleCountryChange} kiosk translate={translate} />
 
           {/* Number display */}
-          <div className="h-16 flex-1 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center px-5 text-3xl font-bold tracking-wider select-none">
+          <div className={cn('h-16 flex-1 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center px-5 font-bold tracking-wider select-none', keypadReadoutSize(country.dialCode, nationalNumber))}>
             {nationalNumber ? (
-              <span>
+              <span className="whitespace-nowrap">
                 <span className="text-foreground/50">+{country.dialCode} </span>
                 {nationalNumber}
               </span>
