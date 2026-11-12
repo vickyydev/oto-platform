@@ -333,7 +333,10 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
     await expect(page.getByText('Thai · verified')).toBeVisible();
     await signOut(page);
     await fixture.display.reload();
-    await expect(fixture.display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
+    // SCRUM-870 — the sign-out releases the lease, which returns the paired
+    // display to its welcome screen: no sale on it, still this station's.
+    await expect(fixture.display.getByRole('heading', { name: 'Welcome to OTO Park', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByRole('main')).toContainText(STATION_NAME);
     await signIn(page);
     const rejected = fixture.display.waitForResponse((response) => response.url().endsWith('/display/session') && response.status() === 401);
     await fixture.revoke();
