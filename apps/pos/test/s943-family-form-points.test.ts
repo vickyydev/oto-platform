@@ -152,16 +152,16 @@ describe('(b) staff go Back while the family’s Done is being saved', () => {
 
 describe('(c) the number is drawn one way on both screens', () => {
   it('a complete number typed with its trunk 0 is drawn as the till keeps it; one still being typed, as typed', () => {
-    expect(consentPhoneShown('+660898570210')).toBe('+66898570210');
-    expect(consentPhoneShown('+66898570210')).toBe('+66898570210');
+    expect(consentPhoneShown('+660898943002')).toBe('+66898943002');
+    expect(consentPhoneShown('+66898943002')).toBe('+66898943002');
     expect(consentPhoneShown('+6608985')).toBe('+6608985');
     expect(consentPhoneShown('')).toBe('');
   });
 
   it('the display’s form draws it so', () => {
-    const display = form(prompt({ familyStep: 'agreements', guardianPhone: '+660898570210' }));
+    const display = form(prompt({ familyStep: 'agreements', guardianPhone: '+660898943002' }));
     const phone = display.all().find((node) => node.type === PhoneInput)!;
-    expect(phone.props.value).toBe('+66898570210');
+    expect(phone.props.value).toBe('+66898943002');
     display.view.unmount();
     // The till's own customer half keeps SCRUM-783's rule: the field as typed, its stored form beside it.
     expect(src('components/till/ConsentCapture.tsx')).not.toContain('consentPhoneShown');

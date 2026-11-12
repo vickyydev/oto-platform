@@ -43,8 +43,8 @@ export function consentFormPhone(typed: string): string {
 
 /**
  * SCRUM-943 — THE NUMBER AS THE FORM DRAWS IT. A number typed with its trunk
- * 0 (0898570210 after +66) is the number the till keeps without it, and the
- * till's copy of the form and the check-in board draw it so (+66 898570210),
+ * 0 (0898943002 after +66) is the number the till keeps without it, and the
+ * till's copy of the form and the check-in board draw it so (+66 898943002),
  * as the prototype's keypad asks for it (its placeholder is 8X XXX XXXX). So
  * once what was typed reads as a number that can take messages, the form
  * draws it the same way; while it is still being typed, as typed.
