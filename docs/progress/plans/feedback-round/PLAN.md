@@ -130,3 +130,19 @@ Low points left by the reviews: the F&B and Shop panels, History's extra-time bl
 8. While the platform cannot price a party, Take balance stays off even if the tab has its own charges (before, those could be taken). Should they stay takeable?
 9. Should the tender panel, the display's payment stage, F&B, Shop, End of Day and the booking site move to the same money format (two places only when there is satang)?
 10. Should a resumed sale's Pay button show a dash while its balance loads, instead of a stand-in amount?
+
+## The printers and print lines lane landed (12 November 21:04, main d880f8f30)
+Tickets: SCRUM-930, 931, 932. Services: the platform, both tills and the Console; no migration; the counter box needs nothing.
+Left: the Health page's summary dot for a printer with no address; the phone till counts the drop-off child but does not say "Prints at check-in"; a few comments still say "Credit Grants to Print"; the till's station save sends no Idempotency-Key (older).
+
+### Questions for the owner from this lane
+1. The F&B credit prints on the one receipt and the paid screen now says "Credit Grants Issued". Keep it that way, or bring back a separate credit slip per wallet as the prototype printed?
+2. The desk till now counts a drop-off child's bracelet and adds the new line "Prints at check-in", matching the customer display; the same line shows for a nanny child and a self-sufficient registered child. Are these words right?
+3. The drop-off bracelet printer card shows on ticket tills, drop-off tills and tills with nothing ticked, and is hidden on F&B-only and parties-only tills (its printer is kept when hidden). Should the card show on every till, as the Console's form does?
+4. A till save made after someone saved the same station in the Console is refused with "changed since you opened it, close it and open it again". Is that right at the till?
+5. The till's printer cards list printers that have no address, while the Console greys them out as unusable. Should the till grey them too?
+6. An empty address on a device that is not a printer is now saved as "no address" (before, it was refused). All right?
+7. A printer with no address shows red "not set up" in the Console's box drawer. Right?
+8. Should staging's Robinson Chalong "Receipt Printer 1" be given an address, or left for you to set?
+9. Is the example address 192.0.2.10:9100 all right in the Console's hint and placeholder?
+10. On a till that does only F&B or only parties, a save at the till now keeps the kids, adult and drop-off printers whose cards are hidden; before, the kids and adult printers were cleared. For information.
