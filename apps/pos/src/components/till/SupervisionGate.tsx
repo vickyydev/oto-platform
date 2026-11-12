@@ -215,15 +215,17 @@ export function SupervisionGate({
   const canContinue = allIdentified && consentOk && confirmationsOk && contactOk;
 
   /*
-   * SCRUM-963 — on a phone (under 520 pixels) the gate grows with what it
-   * holds and its page scrolls it as one, so the children's cards keep their
-   * height where the "Before payment" list and the buttons below took the
-   * screen (a sliver at 360 by 740); each child's name has its own line, the
-   * age under it, so a name can be read as it is typed. The counter till is
-   * wider and draws it exactly as before.
+   * SCRUM-963 — on a phone (under 520 pixels) the heading, the children's
+   * cards and the "Before payment" list scroll as one part above Back and
+   * Continue, so each card keeps its height where the list and the buttons
+   * took the screen (a sliver at 360 by 740), and each child's name has its
+   * own line, the age under it, so a name can be read as it is typed. The
+   * part is `display: contents` from 520 pixels up: the counter till draws
+   * the gate exactly as before.
    */
   return (
-    <div className="flex h-full flex-col max-[520px]:h-auto max-[520px]:min-h-full">
+    <div className="flex h-full flex-col">
+      <div className="contents max-[520px]:flex max-[520px]:min-h-0 max-[520px]:flex-1 max-[520px]:flex-col max-[520px]:overflow-y-auto" data-testid="gate-scroll">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400">
           <ShieldAlert className="h-6 w-6" />
@@ -315,6 +317,7 @@ export function SupervisionGate({
           </ul>
         </div>
       )}
+      </div>
 
       {/* SCRUM-954 — on a phone "Continue to payment" was wider than what the
           row left it and ran to the screen's edge: it may now take less than
