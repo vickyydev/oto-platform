@@ -1922,6 +1922,9 @@ export async function editCheckin(
 ): Promise<CheckinEditResult> {
   const now = deps.now ?? new Date();
   const stay = await loadStayForUpdate(tx, actor.operatorId, checkinId);
+  // SCRUM-911 — a card read before another till cancelled the booking: refused
+  // in the counter's words, as Assign nanny is, and the board reads afresh.
+  if (stay.status === 'cancelled') throw notWaitingRefusal(stay);
   const [reg] = await tx.select().from(registration).where(eq(registration.id, stay.registrationId)).for('update').limit(1);
   if (!reg) throw errors.notFound('No such registration');
   const warnings: string[] = [];
