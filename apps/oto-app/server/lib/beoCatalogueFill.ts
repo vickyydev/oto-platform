@@ -291,8 +291,11 @@ function findInLine(line: string, hints: ReadonlyArray<string | number | null | 
     }
     const whole = at(new RegExp(escapeRe(text).replace(/ /g, "\\s+"), "iu"));
     if (whole) return whole;
-    // Words the model put in other words: the longest word of them the line holds.
-    const words = text.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4).sort((a, b) => b.length - a.length);
+  }
+  // None is written whole: the longest word of them the line holds (words the model put in other words).
+  for (const hint of hints) {
+    if (typeof hint !== "string") continue;
+    const words = hint.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4).sort((a, b) => b.length - a.length);
     for (const w of words) {
       const found = at(new RegExp(escapeRe(w), "iu"));
       if (found) return found;

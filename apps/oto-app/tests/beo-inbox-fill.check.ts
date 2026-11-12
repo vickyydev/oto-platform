@@ -361,16 +361,28 @@ try {
     }
   });
 
+  // SCRUM-904 (the owner's rule of 12 November: every Team row carries the chat's reason line):
+  // a proposal now carries `from`, the line that names the person with the name's own words in
+  // it. The who-and-match comparisons below read the proposal without it; the words are pinned apart.
+  const withoutFrom = (p: any) => {
+    if (!p) return p;
+    const { from: _from, ...rest } = p;
+    return rest;
+  };
   await check("teamProposedFromTheParksPeopleOnly", async () => {
     const en = (await fillFromInbox(ev.en)).body.fill.proposals;
-    assert.deepEqual(en.partyHost, { asked: "Nok", match: { kind: "employee", id: staff.nok, label: "Nok (ZZ TEST Siriporn)" }, why: null });
+    assert.deepEqual(withoutFrom(en.partyHost), { asked: "Nok", match: { kind: "employee", id: staff.nok, label: "Nok (ZZ TEST Siriporn)" }, why: null });
+    // SCRUM-904: the reason line quotes the name in the team's message, not the message's first characters.
+    assert.equal(en.partyHost.from.source, "team");
+    assert.equal(en.partyHost.from.quote, "Nok");
     assert.equal(en.entertainmentHost.match.id, staff.ploy);
     // Ying works at the other park: named, but not proposed.
-    assert.deepEqual(en.setupResponsible, { asked: "Ying", match: null, why: "no_match" });
+    assert.deepEqual(withoutFrom(en.setupResponsible), { asked: "Ying", match: null, why: "no_match" });
+    assert.equal(en.setupResponsible.from.quote, "Ying");
     const th = (await fillFromInbox(ev.th)).body.fill.proposals;
     assert.equal(th.partyHost.match.id, staff.nok, "the Thai name is the same person");
     const ru = (await fillFromInbox(ev.ru)).body.fill.proposals;
-    assert.deepEqual(ru.partyHost, { asked: "Нок", match: null, why: "no_match" }, "no name in Cyrillic: flagged, not guessed");
+    assert.deepEqual(withoutFrom(ru.partyHost), { asked: "Нок", match: null, why: "no_match" }, "no name in Cyrillic: flagged, not guessed");
     assert.deepEqual(ru.setupResponsible.match, { kind: "department", id: dept.ent, label: "Entertainment (Dept)" });
     // The candidates themselves: park A1's people and departments only.
     const candidates = await loadTeamCandidates(db, { tenantId: tenantA, branchId: parkA1 });
@@ -406,16 +418,17 @@ try {
       assert.ok(call.system.includes('leave out a role word, a title or "the" before it'), "the built-in advice asks for the bare name");
       assert.ok(call.system.includes("\n- team.partyHost: ") && call.system.includes('without a role word, a title or "the" before it (host, MC, พิธีกร, ведущий, аниматор)'));
       const p = res.body.fill.proposals;
-      assert.deepEqual(p.partyHost, { asked: "พิธีกร ZZ GM", match: { kind: "employee", id: staff.gm, label: "ZZ GM (ZZ TEST General Manager)" }, why: null });
-      assert.deepEqual(p.entertainmentHost, { asked: "Host: Ann", match: { kind: "employee", id: staff.ann, label: "Ann (ZZ TEST Ann)" }, why: null });
-      assert.deepEqual(p.setupResponsible, { asked: "the Event Department", match: { kind: "department", id: dept.event, label: "Event Department (Dept)" }, why: null });
+      assert.deepEqual(withoutFrom(p.partyHost), { asked: "พิธีกร ZZ GM", match: { kind: "employee", id: staff.gm, label: "ZZ GM (ZZ TEST General Manager)" }, why: null });
+      assert.deepEqual(withoutFrom(p.entertainmentHost), { asked: "Host: Ann", match: { kind: "employee", id: staff.ann, label: "Ann (ZZ TEST Ann)" }, why: null });
+      assert.deepEqual(withoutFrom(p.setupResponsible), { asked: "the Event Department", match: { kind: "department", id: dept.event, label: "Event Department (Dept)" }, why: null });
+      assert.equal(p.partyHost.from.quote, "พิธีกร ZZ GM", "the name's own words in the team's message");
       // A suggestion only: the fill writes no assignment (the preview starts every one unticked).
       const [host] = (await pool.query("select id from beo_party_host_assignments where event_id = $1", [ev.role])).rows;
       assert.equal(host, undefined, "nothing assigned by the fill");
       // A role word before a name that is nobody here is still no match; nothing fuzzy.
       modelReply = () => JSON.stringify({ summary: "x", team: { partyHost: "พิธีกร ZZ G", entertainmentHost: "ведущий ZZ GM" } });
       const near = (await fillFromInbox(ev.role)).body.fill.proposals;
-      assert.deepEqual(near.partyHost, { asked: "พิธีกร ZZ G", match: null, why: "no_match" }, "a near name is no match");
+      assert.deepEqual(withoutFrom(near.partyHost), { asked: "พิธีกร ZZ G", match: null, why: "no_match" }, "a near name is no match");
       assert.equal(near.entertainmentHost.match?.id, staff.gm, "a Russian role word before the roster's own name");
     } finally {
       modelReply = was;

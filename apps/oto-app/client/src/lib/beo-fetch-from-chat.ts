@@ -433,8 +433,13 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
 
   for (const l of p.menuLines) {
     const name = l.matchedName ?? l.itemName;
+    // SCRUM-926: a code several options share ("Fried rice" Veggie, Chicken, Pork) is the same dish only by its name too.
+    const shared = (cat.food.find((f) => !!l.productCode && f.code.toUpperCase() === l.productCode.toUpperCase())?.names.length ?? 0) > 1;
     const line = held.menuLines.find(
-      (h) => (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase()) || sameName(h.itemName, name) || sameName(h.itemName, l.itemName),
+      (h) =>
+        (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||
+        sameName(h.itemName, name) ||
+        sameName(h.itemName, l.itemName),
     );
     if (line && line.quantity === l.quantity) continue;
     // SCRUM-904: the chat's note on the dish rides with it.

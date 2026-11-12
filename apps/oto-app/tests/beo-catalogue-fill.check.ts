@@ -139,6 +139,19 @@ const clip120 = (text: string) => {
   return one.length <= 120 ? one : `${one.slice(0, 119).trimEnd()}…`;
 };
 
+/**
+ * SCRUM-904 (the owner's rule of 12 November): a line too long to quote whole
+ * is quoted around the value's own words — a piece of the line, 120
+ * characters at most, holding them — not by its first 120 characters, which
+ * can stop before the words that matter.
+ */
+const assertAround = (quote: string | undefined, line: string, words: string) => {
+  assert.ok(quote, "a quote");
+  assert.ok(quote!.length <= 120, `at most 120 characters: ${quote}`);
+  assert.ok(quote!.includes(words), `"${words}" in the quote: ${quote}`);
+  assert.ok(line.replace(/\s+/g, " ").includes(quote!.replace(/^…|…$/g, "")), `a piece of the line: ${quote}`);
+};
+
 const run = randomUUID().slice(0, 8);
 const tenantA = randomUUID();
 const tenantB = randomUUID();
@@ -1047,7 +1060,8 @@ try {
     assert.deepEqual(unquoted(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.face)?.from), { source: "team", at: at(3), line: null });
     // SCRUM-903: read alone, a value carries the ruling message's words for it, else the message.
     assert.equal(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.bubble)?.from.quote, WORDS.en.bubble);
-    assert.equal(plain.body.review.proposal.event.numAdults.from.quote, clip120(CONVERSATIONS.en[3]!.text));
+    // SCRUM-904: the count's own words in the long line, not its first 120 characters.
+    assertAround(plain.body.review.proposal.event.numAdults.from.quote, CONVERSATIONS.en[3]!.text, "6 adults");
   });
 
   await check("pastedTextMatchesTheCatalogue", async () => {
@@ -1132,7 +1146,8 @@ try {
     // SCRUM-903: the pasted message's words for each value, else the message clipped.
     assert.equal(review.ruling?.quote, clip120(PASTE_TEXT));
     assert.equal(review.proposal.package?.from.quote, "пакет Флореста");
-    assert.equal(review.proposal.event.numChildren?.from.quote, clip120(PASTE_TEXT));
+    // SCRUM-904: the count's own words in the long message, not its first 120 characters.
+    assertAround(review.proposal.event.numChildren?.from.quote, PASTE_TEXT, "10 детей");
     assert.equal(review.timeZone, "Asia/Bangkok");
 
     // SCRUM-903: a park with no catalogue opens the same review, every item a line to keep or leave out.
@@ -1513,8 +1528,9 @@ try {
     assert.equal(p.menuLines.find((l) => l.notInMenu)?.from.quote, WORDS.ru.sushi, "the family's sushi, in the family's words");
     assert.equal(p.entertainment.find((e) => e.templateId === cat.face)?.from.quote, WORDS.ru.face, "the family-only wish, in the family's words");
     assert.equal(p.event.childName?.from.quote, clip120(lines[0]!), "a value with no words of its own: its line");
-    assert.equal(p.event.numAdults?.from.quote, clip120(lines[3]!));
-    assert.equal(p.deposit?.from.quote, clip120(lines[3]!));
+    // SCRUM-904: a long line is quoted around the value (the count, the amount), not by its first 120 characters.
+    assertAround(p.event.numAdults?.from.quote, lines[3]!, "6 взрослых");
+    assertAround(p.deposit?.from.quote, lines[3]!, "5 000");
     assert.equal(p.cake?.from.quote, clip120(lines[3]!), "the model's notes are not in the line: the line");
     assert.equal(p.details.requests.find((r) => r.kind === "decoration")?.from.quote, clip120(lines[2]!));
     assert.equal(p.details.setup.readyBy?.from.quote, clip120(lines[3]!), "read from the ruling message: its words");

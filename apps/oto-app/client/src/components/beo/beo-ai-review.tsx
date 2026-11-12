@@ -466,12 +466,13 @@ function ReviewSections({
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{dayLabel(state.date.read)}</span>
-                {state.date.readText && (
+                {/* SCRUM-904: the older wording only where the chat's own reason line cannot show (no words of the chat's). */}
+                {state.date.readText && !(state.date.from !== undefined ? state.date.from : review.ruling)?.quote && (
                   <span className="text-xs text-muted-foreground">{`— the message says "${state.date.readText}"`}</span>
                 )}
                 <SourceMark field={{ from: state.date.from !== undefined ? state.date.from : review.ruling, changed: false }} />
               </div>
-              {/* SCRUM-904: the chat's words for the date, whose line and when. */}
+              {/* SCRUM-904: the chat's words for the date, whose line and when, as every other row has them. */}
               <ChatSays from={state.date.from !== undefined ? state.date.from : review.ruling} indent={false} />
               {state.date.differs ? (
                 <>
@@ -714,6 +715,12 @@ function ReviewSections({
                       {proposed.said && (
                         <div className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-match">
                           {beoAiMatchLabel(proposed.said, option, g.optionProductCodes[option] ?? g.productCode)}
+                        </div>
+                      )}
+                      {/* SCRUM-904: the chat's note on the dish, written on its line of the set menu. */}
+                      {proposed.notes && (
+                        <div className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-choice-notes">
+                          {`Note: ${proposed.notes} — written on the dish's line.`}
                         </div>
                       )}
                       <ChatSays from={proposed.from} />

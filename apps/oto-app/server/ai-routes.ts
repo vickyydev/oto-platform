@@ -472,6 +472,17 @@ export async function runBeoFill(
     // The fill stands; a lost row is said in the log, without the text.
     log().warn({ err: (error as Error)?.message ?? String(error) }, "the AI fill's activity row was not written");
   }
+  // SCRUM-904: the conversation gives no date and the ruling message's read does: the review's Date
+  // row is that one, with its own words in the ruling message (the reason line every row has),
+  // applied only when ticked as before. Put on after the activity row, whose counts stay the
+  // conversation's own.
+  const ruled = run.ok && formRun ? run.value.event : undefined;
+  if (proposal && !proposal.event.eventDate && ruling !== null && typeof ruled?.eventDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ruled.eventDate)) {
+    const said = typeof ruled.eventDateText === "string" && ruled.eventDateText.trim() ? ruled.eventDateText.trim() : null;
+    const base = input.fallbackFrom ?? { source: "team" as const, at: null, line: null };
+    const quote = quoteOf(said, ruling, [said]);
+    proposal.event.eventDate = { value: ruled.eventDate, said, from: { source: base.source, at: base.at, line: base.line, ...(quote ? { quote } : {}) } };
+  }
   return { run, proposals, proposal };
 }
 

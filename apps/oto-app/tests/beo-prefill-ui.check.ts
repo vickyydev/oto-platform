@@ -115,6 +115,8 @@ const E_PLAIN = "33333333-3333-4333-8333-333333333827";
 const E_EMPTY = "44444444-4444-4444-8444-444444444827";
 const E_TYPED = "55555555-5555-4555-8555-555555555827";
 const E_NORULING = "66666666-6666-4666-8666-666666666903";
+// SCRUM-904: the park's catalogue could not be read for this one's fill.
+const E_UNREAD = "77777777-7777-4777-8777-777777777904";
 const CONV = "cccccccc-cccc-4ccc-8ccc-cccccccc0827";
 const MSG = "dddddddd-dddd-4ddd-8ddd-dddddddd0827";
 const PARK = "33333333-3333-4333-8333-333333333333";
@@ -261,7 +263,8 @@ beos.set(E_PLAIN, freshBeo(E_PLAIN, "ZZ TEST plain"));
 beos.set(E_EMPTY, freshBeo(E_EMPTY, "ZZ TEST empty"));
 beos.set(E_TYPED, freshBeo(E_TYPED, "ZZ TEST typed"));
 beos.set(E_NORULING, freshBeo(E_NORULING, "ZZ TEST no ruling", { inboxConversationId: CONV }));
-for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY, E_TYPED, E_NORULING]) timelines.set(id, []);
+beos.set(E_UNREAD, freshBeo(E_UNREAD, "ZZ TEST unread catalogue", { inboxConversationId: CONV }));
+for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY, E_TYPED, E_NORULING, E_UNREAD]) timelines.set(id, []);
 let approvals = 0;
 
 /** The approval, as the server writes it: the event's fields, the setup plan, the POS box, the chat's step, the host, and the auto steps. */
@@ -329,6 +332,13 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
     // SCRUM-903: no message of the team's yet: no source, nothing of the form's own read, the review alone.
     if (fill[1] === E_NORULING) {
       return json({ source: null, chat: { newestMessageId: "line-2", lines: 2 }, fill: { proposals: { partyHost: null, entertainmentHost: null, setupResponsible: null } }, review: NO_RULING_REVIEW });
+    }
+    // SCRUM-904: the same, the park's catalogue not read (a database error): the review says so.
+    if (fill[1] === E_UNREAD) {
+      return json({
+        source: null, chat: { newestMessageId: "line-2", lines: 2 }, fill: { proposals: { partyHost: null, entertainmentHost: null, setupResponsible: null } },
+        review: { ...NO_RULING_REVIEW, catalogueUnread: true },
+      });
     }
     // The bare event's park has no catalogue: the free-text fill alone, the preview of before.
     if (fill[1] === E_BARE) return json({ source, chat, fill: { ...FILL, event: { ...FILL.event, internalStaffNotes: RULING } } });
@@ -740,6 +750,14 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: sent as asked, never as received");
   assert.ok(body.sources.length > 0 && body.sources.every((src) => src.source === "family" || src.source === "staff"), JSON.stringify(body.sources));
   assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes("NORULING-903"), "the chat's words never ride the approval");
+});
+
+await check("SCRUM-904: a catalogue that could not be read is said so, never called empty", async () => {
+  await open(E_UNREAD, "inbox");
+  assert.ok(required("button-ai-review-approve"), "the review in edit mode");
+  const said = text("text-ai-review-no-catalogue")!;
+  assert.match(said, /^This park's catalogue could not be read just now: every package, dish and show the chat names is a line to keep or leave out./);
+  assert.ok(!said.includes("catalogue is empty"), said);
 });
 
 await act(async () => { root.unmount(); });
