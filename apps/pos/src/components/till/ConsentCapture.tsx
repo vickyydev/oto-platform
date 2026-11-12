@@ -204,6 +204,11 @@ export function ConsentCapture({
   // brings the on-screen keys for every box, as the paired display does; the
   // staff copy is on the till's own screen and never does.
   const screenKeyboard = !staffScreen && kioskFlags.screenKeyboard;
+  // With those keys each box stops where the paired display's box does (the
+  // keys' own default is a hundred characters, short for allergies). Without
+  // them the boxes keep the bounds they always had, here, on the phone till
+  // and on the booking site.
+  const keysBound = (displayBound: number) => (screenKeyboard ? displayBound : undefined);
   // Customer-friendly wording for each resolved requirement (parents read this,
   // so it's warmer than the staff gate's terse "Nanny required").
   const REQUIREMENT_META = {
@@ -286,7 +291,7 @@ export function ConsentCapture({
                   value={slot.name}
                   onChange={(name) => onUpdateChild(slot.id, { name })}
                   placeholder={t('superviseConsent.fullName')}
-                  screenKeyboard={screenKeyboard} testId="consent-child-name"
+                  screenKeyboard={screenKeyboard} maxLength={keysBound(100)} testId="consent-child-name"
                   className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
                 />
               </div>
@@ -360,7 +365,7 @@ export function ConsentCapture({
                         value={slot.allergiesMedical}
                         onChange={(allergiesMedical) => onUpdateChild(slot.id, { allergiesMedical })}
                         placeholder={t('superviseConsent.allergiesPlaceholder')}
-                        screenKeyboard={screenKeyboard} testId="consent-allergies"
+                        screenKeyboard={screenKeyboard} maxLength={keysBound(500)} testId="consent-allergies"
                         className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
@@ -372,7 +377,7 @@ export function ConsentCapture({
                         value={slot.foodRestrictions}
                         onChange={(foodRestrictions) => onUpdateChild(slot.id, { foodRestrictions })}
                         placeholder={t('superviseConsent.dietaryPlaceholder')}
-                        screenKeyboard={screenKeyboard} testId="consent-dietary"
+                        screenKeyboard={screenKeyboard} maxLength={keysBound(200)} testId="consent-dietary"
                         className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
@@ -419,7 +424,7 @@ export function ConsentCapture({
                 value={parentName}
                 onChange={onParentNameChange}
                 placeholder={t('superviseConsent.yourFullName')}
-                screenKeyboard={screenKeyboard} testId="consent-guardian"
+                screenKeyboard={screenKeyboard} maxLength={keysBound(100)} testId="consent-guardian"
                 className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
               />
             </div>

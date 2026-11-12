@@ -9,6 +9,8 @@ import { ScreenKeyboard } from '@/components/till/ScreenKeyboard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
+import { ConsentCapture } from '@/components/till/ConsentCapture';
+import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 
 /**
  * SCRUM-893 / SCRUM-894 — EVERY BOX OF THE FAMILY'S FORM OPENS THE ON-SCREEN
@@ -28,7 +30,9 @@ import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
  * `s893-family-form-touch-browser.test.ts`.
  */
 const seam = vi.hoisted(() => ({ flags: { screenKeyboard: false } }));
-vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'), ...await import('./support/hooks') }));
+// The till's customer half names its boxes with useId; one fixed id serves here.
+vi.mock('react', async () => ({ ...await vi.importActual<typeof import('react')>('react'), ...await import('./support/hooks'),
+  useId: () => 'zz-893' }));
 vi.mock('@/lib/kioskFlags', async () => ({
   ...await vi.importActual<typeof import('@/lib/kioskFlags')>('@/lib/kioskFlags'),
   kioskFlags: seam.flags,
@@ -151,6 +155,36 @@ describe('the paired display’s care step', () => {
     expect(dietary?.props.maxLength).toBe(200);
     // No plain textarea is left on the form for a family with no keyboard.
     expect(nodes(view.result.current).some((node) => node.type === Textarea)).toBe(false);
+    view.unmount();
+  });
+});
+
+describe('the till’s customer half', () => {
+  const half = () => renderHook(() => ConsentCapture({
+    slots: [{ id: 'a', sourceLineId: 'zz-893-line', ticketType: {} as SupervisedSlot['ticketType'], name: 'ZZ TEST Mai', age: '6',
+      waived: false, optIn: false, allergiesMedical: '', foodRestrictions: '', mayOrderFood: false }],
+    parentName: '', consentAck: false,
+    policy: {
+      bands: [{ id: 'b', label: 'All', minAge: 0, maxAge: null, requirement: 'drop_off' }],
+      siblingWaiver: { enabled: false, guardianMinAge: 18, waivableRequirement: 'drop_off', staffOnly: true }, confirmations: [],
+    },
+    parentPhone: '+66898930001', onParentPhoneChange: () => undefined,
+    onParentNameChange: () => undefined, onConsentAckChange: () => undefined, onUpdateChild: () => undefined,
+    acknowledgedConfirmationIds: [], onToggleConfirmation: () => undefined,
+  } as Parameters<typeof ConsentCapture>[0]));
+  const bounds = (view: ReturnType<typeof half>) => Object.fromEntries(nodes(view.result.current)
+    .filter((node) => node.type === TouchText).map((node) => [node.props.testId, node.props.maxLength]));
+
+  it('with the on-screen keys, each box stops where the paired display’s box does, not at the keys’ hundred', () => {
+    seam.flags.screenKeyboard = true;
+    const view = half();
+    expect(bounds(view)).toEqual({ 'consent-child-name': 100, 'consent-allergies': 500, 'consent-dietary': 200, 'consent-guardian': 100 });
+    view.unmount();
+  });
+
+  it('without them the boxes keep the bounds they always had (the phone till and the booking site)', () => {
+    const view = half();
+    expect(Object.values(bounds(view))).toEqual([undefined, undefined, undefined, undefined]);
     view.unmount();
   });
 });
