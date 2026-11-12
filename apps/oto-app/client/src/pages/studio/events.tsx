@@ -3812,6 +3812,8 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       {/* BEO Editor Sheet - used for Birthday / Private Event only */}
       <Sheet open={showBeoEditor} onOpenChange={(open) => { if (!open) { setShowBeoEditor(false); setBeoAutoFill(null); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); } else { setShowBeoEditor(true); } }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-hidden">
+          {/* SCRUM-958 (SCRUM-940 point 5): the sheet's title for screen readers; nothing visible changes. */}
+          <SheetTitle className="sr-only">BEO editor</SheetTitle>
           {viewingStudioEvent && (
             <BeoEventEditor
               eventId={viewingStudioEvent.id}
@@ -3829,6 +3831,7 @@ export default function StudioEventsPage({ Layout }: { Layout?: ({ children }: {
       {/* BEO Day-of View Sheet */}
       <Sheet open={showBeoDayOf} onOpenChange={(open) => { if (!open) { setShowBeoDayOf(false); setViewingStudioEvent(null); setStudioEventDetails(null); setStudioEventTasks([]); setStudioEventBookings([]); } else { setShowBeoDayOf(true); } }}>
         <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
+          <SheetTitle className="sr-only">BEO day-of view</SheetTitle>
           {viewingStudioEvent && (
             <BeoDayOfView
               eventId={viewingStudioEvent.id}

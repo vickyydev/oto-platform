@@ -287,7 +287,9 @@ try {
     // The activity row counts the till's matches, never the chat's words.
     const rows = await beoRows(ev.till);
     const meta = JSON.parse(rows.activity.at(-1)!.metadata_json);
-    assert.equal(meta.catalogue.tillLines, 2, "Calamari and Coke: on the till, on no set menu");
+    // SCRUM-958 (the proof read 3 for 4 coded lines): every line matched to the till's menu, a code a set
+    // menu names too among them (Margherita, Vegetable sticks); the adults' fried rice is the set menu's.
+    assert.equal(meta.catalogue.tillLines, 4, "Calamari, Coke, Margherita and Vegetable sticks: on the till");
     for (const w of CHAT_WORDS) {
       assert.ok(!rows.activity.some((r) => r.metadata_json.includes(w) || r.summary_text.includes(w)), `no "${w}" in the activity row`);
       assert.ok(!logged.some((l) => l.includes(w)), `no "${w}" in the logs`);
@@ -367,6 +369,9 @@ try {
     const meta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.ok(meta.matches.some((m: any) => m.kind === "menu" && m.code === "CF-14" && m.name === "Calamari"));
     assert.ok(meta.matches.some((m: any) => m.kind === "bar" && m.code === "CF-65-1"));
+    // SCRUM-958: the approval's row counts every line it wrote with a till code: the kids' Margherita and
+    // Vegetable sticks (codes a set menu names too), the adults' Calamari and the Coke at the bar.
+    assert.deepEqual([res.body.written.tillLines, meta.written.tillLines], [4, 4]);
     for (const w of CHAT_WORDS) assert.ok(!rows.activity.some((r) => r.metadata_json.includes(w)), `no "${w}" in the activity row`);
   });
 

@@ -23,6 +23,9 @@
 //      words) and in the toast after Approve.
 //   4. thread I, "2 Margherita pizzas for 900": written at the till's price
 //      each, and the review names the chat's 900 in the line's reason.
+//   6. the BEO's sheet has a title for screen readers (the proof's console
+//      warning); the approval counts every line it writes with a till code
+//      (beo-fill-till-menu.check.ts).
 //
 // Every model answer here is scripted (the proof's own words): no model key is used.
 //
@@ -36,6 +39,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import pg from "pg";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -77,7 +81,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 7;
+const CHECKS = 8;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -529,6 +533,18 @@ try {
     assert.equal(ok.status, 200, JSON.stringify(ok.body));
     const adults = ((await kitchenOf(ev.I)).menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => [l.itemName, l.quantity, l.price]);
     assert.deepEqual(adults, [["Pepperoni", 1, 300], ["Margherita", 2, 400]], "2 at 400 each, never 900 each, never 450 made up");
+  });
+
+  // --- 6. The BEO sheet's dialog has a title for screen readers (SCRUM-940 point 5) ---------------
+  await check("theBeoSheetsHaveATitleForScreenReaders", () => {
+    // The proof's console read "`DialogContent` requires a `DialogTitle`" on every BEO tab: the sheet
+    // the BEO opens in (Radix's dialog) had none. A visually hidden one, nothing visible changes.
+    const page = readFileSync(new URL("../client/src/pages/studio/events.tsx", import.meta.url), "utf8");
+    for (const [opens, title] of [["<BeoEventEditor", "BEO editor"], ["<BeoDayOfView", "BEO day-of view"]] as const) {
+      const at = page.indexOf(opens);
+      const sheet = page.slice(page.lastIndexOf("<SheetContent", at), at);
+      assert.ok(sheet.includes(`<SheetTitle className="sr-only">${title}</SheetTitle>`), `${title}: a hidden title inside its sheet`);
+    }
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

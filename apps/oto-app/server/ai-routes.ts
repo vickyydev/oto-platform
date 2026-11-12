@@ -275,8 +275,10 @@ const catalogueCounts = (p: BeoAiProposal, c?: BeoCatalogue | null) => ({
   ...countOf("event", (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length),
   ...countOf("allergies", p.details.requests.filter((r) => r.kind === "allergy").length),
   ...countOf("acts", p.entertainment.filter((e) => e.time).length),
-  // SCRUM-944: the dishes and drinks matched to the till's menu that no set menu codes, as a count.
-  ...countOf("tillLines", p.menuLines.filter((l) => !!l.productCode && !!c && !!tillItemOf(c, l.productCode) && !c.food.some((f) => f.code.toUpperCase() === l.productCode!.toUpperCase())).length),
+  // SCRUM-944: the dishes and drinks matched to the till's menu, as a count. SCRUM-958 (the proof read
+  // 3 for 4 coded lines): every one, a code a set menu names too among them; an adults' SET line of a
+  // set-menu dish is the set menu's, not a till line.
+  ...countOf("tillLines", p.menuLines.filter((l) => !!l.productCode && !l.setMenuItemId && !!c && !!tillItemOf(c, l.productCode)).length),
 });
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */

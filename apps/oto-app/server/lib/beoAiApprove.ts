@@ -617,6 +617,10 @@ export async function approveBeoAiFill(
       const adultsWritten = adultsOwn ? adultsSaidLines : [];
       written.kitchenLines = kidsExtra.length + adultsWritten.length + adultsSetOwn.length;
       written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
+      // SCRUM-958 (the proof read 3 for 4 coded lines): every line written with a till code, a code a
+      // set menu names too among them.
+      const tillCoded = [...kidsExtra, ...(adultsOwn ? adultsExtra : [])].filter((l) => typeof l.productCode === "string").length;
+      if (tillCoded > 0) written.tillLines = tillCoded;
       if (adultsSetOwn.length > 0) written.adultsSetLines = adultsSetOwn.length;
       // SCRUM-958: and the lines the review showed folded before it (`adultsFolded`, a count).
       const folded = adultsExtra.length - adultsWritten.length + (adultsSet.length - adultsSetOwn.length) + (body.adultsFolded ?? 0);
@@ -700,6 +704,9 @@ export async function approveBeoAiFill(
       if (bar) await tx.update(beoBarPlans).set({ items, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
       else await tx.insert(beoBarPlans).values({ eventId: event.id, items, ...serviceTime });
       written.barLines = items.length;
+      // SCRUM-958: and the drinks written with a till code.
+      const barCoded = items.filter((l) => typeof l.productCode === "string").length;
+      if (barCoded > 0) written.tillLines = (Number(written.tillLines) || 0) + barCoded;
       if (service.barServiceTime) written.barServiceTime = true;
     }
 
