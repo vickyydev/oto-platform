@@ -1011,7 +1011,8 @@ export function CustomerDisplay({
                   key={v.id}
                   className="flex items-center gap-4 bg-foreground/5 rounded-2xl p-4 border border-foreground/10"
                 >
-                  {showGrantQr && <QrCode seed={v.id} className="w-16 h-16" />}
+                  {/* SCRUM-883 — the wallet's own QR, only for a grant the platform made. */}
+                  {showGrantQr && v.qrCode && <QrCode seed={v.qrCode} className="w-16 h-16" />}
                   <div className="flex-1">
                     <div className="text-foreground/60">{customerGrantLabel(v, t)}</div>
                     <div className="text-3xl font-black text-primary">฿{v.valueTHB}</div>

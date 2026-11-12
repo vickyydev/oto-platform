@@ -21,6 +21,7 @@ import {
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied } from '@/lib/supervision';
 import { buildSale } from '@/lib/sale';
+import { withPlatformCredit } from '@/lib/saleCredit';
 import { shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
@@ -79,7 +80,7 @@ import { setPaymentContextLocked, setSaleOpen } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
-import { saleNumberLabel, type SaleNumber } from '@/components/till/StepConfirmation';
+import { saleNumberLabel, useSaleIssue, type SaleNumber } from '@/components/till/StepConfirmation';
 import { toast } from '@/hooks/use-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -227,7 +228,10 @@ function MobileConfirmation({
               <div className="space-y-2">
                 {sale.creditGrants.map((v, i) => (
                   <div key={v.id} className="flex items-center gap-3 bg-card border rounded-xl p-3">
-                    <QrCode seed={v.id} className="w-10 h-10 shrink-0" />
+                    {/* SCRUM-883 — a credit row's QR is its wallet's, only once the platform granted it. */}
+                    {v.type === 'fnb_credit'
+                      ? v.qrCode && <QrCode seed={v.qrCode} className="w-10 h-10 shrink-0" />
+                      : <QrCode seed={v.id} className="w-10 h-10 shrink-0" />}
                     <div className="min-w-0 flex-1">
                       <div className="text-xs text-muted-foreground truncate">{v.label}</div>
                       {v.type === 'fnb_credit' ? (
@@ -2095,11 +2099,18 @@ export default function MobileTill() {
     completeSale(completionRetry.sale, completionRetry.settlements);
   };
 
+  // SCRUM-883 — the platform's answer for the finished sale: the phone's
+  // confirmation and the customer's screens show the credit it granted.
+  const saleIssue = useSaleIssue(saleResult?.id ?? '', undefined, null);
+  const shownResult = saleResult
+    ? withPlatformCredit(saleResult, saleIssue.grants, !!laneSale(saleResult.id)?.answer?.finalised)
+    : null;
+
   // Build a live, Sale-shaped view model for the customer's screen — the
   // phone's own overlay and a paired display alike. Once the sale is finalized
   // the locked-in result is used so credit grants and ids stay stable.
   const liveSale: Sale =
-    saleResult ?? {
+    shownResult ?? {
       ...buildSale({
         id: 'PREVIEW',
         operatorId: operator?.id ?? '',
@@ -2552,11 +2563,11 @@ export default function MobileTill() {
         );
 
       case 'done':
-        return saleResult ? (
+        return shownResult ? (
           <div className="flex h-full min-h-0 flex-col">
             <SaleNotSavedNotice state={saleWriter.state} />
             <div className="min-h-0 flex-1">
-              <MobileConfirmation sale={saleResult} saleNumber={saleNumber} onNewSale={resetSale} />
+              <MobileConfirmation sale={shownResult} saleNumber={saleNumber} onNewSale={resetSale} />
             </div>
           </div>
         ) : null;

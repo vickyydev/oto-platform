@@ -19,6 +19,7 @@ import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
 import { buildSale } from '@/lib/sale';
+import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { savedRateSummary } from '@/lib/tierApproval';
@@ -143,7 +144,7 @@ import { DropOffLineConfig, type DropOffLineUpdate } from '@/components/till/Dro
 import { AddDropOffModal } from '@/components/till/AddDropOffModal';
 import { StepAwaitCustomer } from '@/components/till/StepAwaitCustomer';
 import { StepPayment } from '@/components/till/StepPayment';
-import { StepConfirmation } from '@/components/till/StepConfirmation';
+import { StepConfirmation, useSaleIssue } from '@/components/till/StepConfirmation';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
 import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDisplay';
@@ -3382,10 +3383,17 @@ export default function Till() {
     allNanniesAssigned &&
     !voucherHoldsPay;
 
+  // SCRUM-883 — the platform's answer for the finished sale, read once: both
+  // halves show the credit it granted, never the till's own list.
+  const saleIssue = useSaleIssue(saleResult?.id ?? '', undefined, saleResult ? boxSaleIssue(saleResult.id) : null);
+  const shownResult = saleResult
+    ? withPlatformCredit(saleResult, saleIssue.grants, !!laneSale(saleResult.id)?.answer?.finalised)
+    : null;
+
   // Build a live, Sale-shaped view model for the customer display. Once the sale
   // is finalized (step 6) we use the locked-in result so credit grants/ids stay stable.
   const liveSale: Sale =
-    saleResult ?? {
+    shownResult ?? {
       ...buildSale({
         id: 'PREVIEW',
         operatorId: operator?.id ?? '',
@@ -3796,15 +3804,16 @@ export default function Till() {
               /></div>
             </div>
           )}
-          {step === 6 && saleResult && (
+          {step === 6 && shownResult && (
             <div className="flex h-full min-h-0 flex-col">
               <SaleNotSavedNotice state={saleWriter.state} />
               <div className="min-h-0 flex-1">
                 <StepConfirmation
-                  sale={saleResult}
+                  sale={shownResult}
                   onNewSale={resetSale}
                   note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
-                  boxIssue={boxSaleIssue(saleResult.id)}
+                  boxIssue={boxSaleIssue(shownResult.id)}
+                  issue={saleIssue}
                 />
               </div>
             </div>

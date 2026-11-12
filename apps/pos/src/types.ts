@@ -641,6 +641,12 @@ export interface CreditGrant {
   // line's ticket package, not a park-wide config.
   role?: 'adult' | 'kid';
   gateAccess?: boolean;
+  /**
+   * SCRUM-883 — an fnb_credit grant the platform made: its wallet's ONE
+   * voucher QR, the one the receipt prints. Absent on a grant the platform
+   * has not made (the till's own preview), which then shows no QR.
+   */
+  qrCode?: string;
 }
 
 /**

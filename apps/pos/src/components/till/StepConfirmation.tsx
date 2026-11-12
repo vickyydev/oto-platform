@@ -19,6 +19,7 @@ import { SoldVoucherCodes } from './SoldVoucherCodes';
 import type { BoxSaleIssue } from '@/api/boxSales';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
 import { grantsOf, walletQrFor, type ApiWalletGrant } from '@/api/wallet';
+import { withPlatformCredit } from '@/lib/saleCredit';
 import { platformId, shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
 
@@ -83,8 +84,14 @@ export interface SaleIssue {
   issuedVouchers: ApiIssuedVoucher[] | null;
 }
 
+const NOT_ASKED: SaleIssue = { number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null, issuedVouchers: null };
+
 export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIssue | null): SaleIssue {
-  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null, issuedVouchers: null });
+  // SCRUM-883 — the answer is kept with the sale it answers, so a caller whose
+  // sale changes under the same hook (the till's next sale) never reads the
+  // last sale's grants for the render before the new read starts.
+  const [answered, setAnswered] = useState<{ saleId: string; issue: SaleIssue }>({ saleId: '', issue: NOT_ASKED });
+  const asked = answered.saleId === saleId ? answered.issue : NOT_ASKED;
 
   useEffect(() => {
     // The box lane already answered with its bands (offline finding 3): the
@@ -92,11 +99,11 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
     // from the finalise answer instead, drawn by the same rows below.
     if (box || !PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
-    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null, issuedVouchers: null });
+    setAnswered({ saleId, issue: NOT_ASKED });
     void getSale(saleId)
       .then((detail) => {
         if (!live) return;
-        setAsked({
+        setAnswered({ saleId, issue: {
           number: detail.sale.receiptNumber
             ? { kind: 'receipt', number: detail.sale.receiptNumber }
             : { kind: 'recorded' },
@@ -105,7 +112,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
           printJobs: detail.printJobs ?? null,
           grants: grantsOf(detail),
           issuedVouchers: detail.issuedVouchers ?? null,
-        });
+        } });
       })
       .catch(() => {
         // Nothing to say about the number or the codes, which is what `unknown` means.
@@ -159,6 +166,12 @@ interface StepConfirmationProps {
    * sale read, which is unreachable offline.
    */
   boxIssue?: BoxSaleIssue | null;
+  /**
+   * SCRUM-883 — the platform's answer for this sale where the caller already
+   * reads it (the till, whose customer half shows the same grants). Left out,
+   * this screen asks the platform for it once.
+   */
+  issue?: SaleIssue;
 }
 
 /**
@@ -243,8 +256,11 @@ function CreditGrantRow({ voucher: grant, index, qrCode }: { voucher: CreditGran
   );
 }
 
-export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }: StepConfirmationProps) {
-  const issue = useSaleIssue(sale.id, saleNumber, boxIssue);
+export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, issue: given }: StepConfirmationProps) {
+  const asked = useSaleIssue(given ? '' : sale.id, saleNumber, given ? null : boxIssue);
+  const issue = given ? (saleNumber ? { ...given, number: saleNumber } : given) : asked;
+  // SCRUM-883 — the credit rows are the platform's grants, never the till's own list.
+  const creditGrants = withPlatformCredit(sale, issue.grants, !!boxIssue).creditGrants;
   const numberLabel = saleNumberLabel(issue.number);
   // S2-11 — the codes the platform minted, on the rows they belong to, so a
   // band that fails to print can be read out and reprinted from History. The
@@ -295,11 +311,11 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
   const platformPrintsCredit = reportsCreditVoucher(
     issue.printJobs ?? [],
     issue.grants,
-    sale.creditGrants.some((grant) => grant.type === 'item'),
+    creditGrants.some((grant) => grant.type === 'item'),
   );
   /** The i-th grant row's place among the F&B-credit rows — the platform's person order. */
   const creditIndexOf = (i: number): number =>
-    sale.creditGrants.slice(0, i).filter((g) => g.type === 'fnb_credit').length;
+    creditGrants.slice(0, i).filter((g) => g.type === 'fnb_credit').length;
 
   return (
     <div className="flex flex-col h-full animate-in zoom-in-95 duration-500">
@@ -404,21 +420,21 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
                 <h3 className="text-2xl font-bold">Credit Grants to Print</h3>
               </div>
               <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                {sale.creditGrants.length} total
+                {creditGrants.length} total
               </span>
             </div>
             {!showCreditInfo ? (
               <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
                 Credit details hidden by the receipt template.
               </div>
-            ) : sale.creditGrants.length === 0 ? (
+            ) : creditGrants.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
                 No credit grants for this order.
               </div>
             ) : (
               <ScrollArea className={ROWS_SCROLL}>
                 <div className="space-y-3">
-                  {sale.creditGrants.map((v, i) => (
+                  {creditGrants.map((v, i) => (
                     <CreditGrantRow
                       key={v.id}
                       voucher={v}
