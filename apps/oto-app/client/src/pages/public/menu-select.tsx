@@ -29,6 +29,37 @@ type GroupSelection = {
   chosenOptions: string[];
 };
 
+/**
+ * SCRUM-970 (the staging proof: right after the family pressed Confirm the page said
+ * "Selections Received!" and listed nothing, the list only coming on a reload): the choices
+ * shown under it — the ones the team now holds once the link reads them back (SCRUM-906), else,
+ * just sent, the family's own — each group with what was chosen, read-only.
+ */
+export function submittedChoicesOf(
+  groups: ReadonlyArray<{ id: string; label: string }>,
+  held: { isSubmitted: boolean; selections: GroupSelection[] | null },
+  sent: Record<string, string[]> | null,
+): Array<{ id: string; label: string; chosen: string[] }> {
+  const chosenOf = (id: string) =>
+    held.isSubmitted ? held.selections?.find((s) => s.groupId === id)?.chosenOptions ?? [] : sent?.[id] ?? [];
+  return groups.map((g) => ({ id: g.id, label: g.label, chosen: chosenOf(g.id) })).filter((g) => g.chosen.length > 0);
+}
+
+/** SCRUM-906 (decision 3), SCRUM-970: the choices under "Selections Received!", in the page's own list style. */
+export function SubmittedChoices({ choices }: { choices: ReadonlyArray<{ id: string; label: string; chosen: string[] }> }) {
+  if (choices.length === 0) return null;
+  return (
+    <ul className="space-y-1 pt-2 text-left inline-block" data-testid="list-submitted-choices">
+      {choices.map(({ id, label, chosen }) => (
+        <li key={id} className="flex items-center gap-2 text-sm" data-testid={`text-submitted-choice-${id}`}>
+          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+          <span>{label}: {chosen.join(", ")}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function MenuSelectPage() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
@@ -180,22 +211,9 @@ export default function MenuSelectPage() {
                   Submitted on {new Date(data.submittedAt).toLocaleDateString()}
                 </p>
               )}
-              {/* SCRUM-906 (decision 3): the choices as the team now has them, the same the BEO and the till show. */}
-              {data.isSubmitted && (() => {
-                const chosenGroups = choiceGroups
-                  .map((group) => ({ group, chosen: data.selections?.find((s) => s.groupId === group.id)?.chosenOptions ?? [] }))
-                  .filter(({ chosen }) => chosen.length > 0);
-                return chosenGroups.length > 0 ? (
-                  <ul className="space-y-1 pt-2 text-left inline-block" data-testid="list-submitted-choices">
-                    {chosenGroups.map(({ group, chosen }) => (
-                      <li key={group.id} className="flex items-center gap-2 text-sm" data-testid={`text-submitted-choice-${group.id}`}>
-                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span>{group.label}: {chosen.join(", ")}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null;
-              })()}
+              {/* SCRUM-906 (decision 3): the choices as the team now has them, the same the BEO and the till show.
+                  SCRUM-970: and, just sent, the family's own choices, read-only. */}
+              <SubmittedChoices choices={submittedChoicesOf(choiceGroups, data, submitted ? selections : null)} />
             </CardContent>
           </Card>
         ) : (
