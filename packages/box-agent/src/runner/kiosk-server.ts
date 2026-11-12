@@ -64,6 +64,47 @@ export const KIOSK_HOST_META = 'oto-booth-host';
 /** A request body larger than this is not something the booth page sends. */
 const MAX_BODY_BYTES = 16 * 1024;
 
+/**
+ * The box's own waiting page (SCRUM-895): what the screen shows while the web
+ * address it opens (the platform's customer display) does not answer, instead
+ * of the browser's "no internet". Nothing on it moves the screen on: the
+ * television's launcher (`scripts/pi/oto-kiosk.sh`) asks the address every few
+ * seconds and opens it in this page's place once it answers. `?for=` names the
+ * host it waits for, shown so a person at the counter can tell what is missing.
+ */
+export const KIOSK_WAITING_PATH = '/kiosk/waiting';
+
+/** A host name, with its port: nothing else is ever written into the page. */
+const WAITING_HOST = /^[A-Za-z0-9.-]{1,253}(?::\d{1,5})?$/;
+
+/** The waiting page, in the plain style of the box's display "Connecting" screen. */
+export function kioskWaitingPage(host: string | null): string {
+  const named = host !== null && WAITING_HOST.test(host) ? host : null;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Waiting for the connection</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; color: #0f172a; }
+  body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { padding: 2rem; }
+  h1 { margin: 0 0 0.5rem; font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+  p { margin: 0 0 0.5rem; font-size: 1rem; line-height: 1.5rem; }
+  .for { color: #64748b; font-size: 0.875rem; line-height: 1.25rem; }
+</style>
+</head>
+<body>
+<main role="status">
+<h1>Waiting for the connection</h1>
+<p>This display opens by itself as soon as the connection is back. Nothing needs pressing.</p>
+${named ? `<p class="for" data-waiting-for>Waiting for ${named}</p>\n` : ''}</main>
+</body>
+</html>
+`;
+}
+
 export interface KioskBoothSummary {
   stationId: string;
   name: string;
@@ -385,6 +426,20 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     return refuse(res, 404, 'not_found', 'No such route on this box');
   }
 
+  function serveWaiting(res: ServerResponse, method: string, host: string | null): void {
+    if (method !== 'GET' && method !== 'HEAD') return refuse(res, 405, 'method_not_allowed', 'Use GET');
+    const bytes = Buffer.from(kioskWaitingPage(host), 'utf8');
+    res.statusCode = 200;
+    res.setHeader('content-type', CONTENT_TYPES['.html']!);
+    res.setHeader('cache-control', 'no-store');
+    res.setHeader('x-content-type-options', 'nosniff');
+    res.setHeader('x-frame-options', 'DENY');
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'");
+    res.setHeader('content-length', String(bytes.length));
+    res.end(method === 'HEAD' ? undefined : bytes);
+  }
+
   async function serveStatic(res: ServerResponse, route: string, method: string, root = pageRoot, display = false): Promise<void> {
     const pageRoot = root;
     if (method !== 'GET' && method !== 'HEAD') return refuse(res, 405, 'method_not_allowed', 'Use GET');
@@ -470,6 +525,8 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
         if (refusedUntilRunning(res)) return;
         return await serveBooth(req, res, route.slice('/booth'.length), method);
       }
+      // Served whatever state the box is in: it needs nothing but this server.
+      if (route === KIOSK_WAITING_PATH) return serveWaiting(res, method, url.searchParams.get('for'));
       if (route.startsWith('/kiosk/')) return await serveKiosk(req, res, route, method);
       if (displayApi) {
         if (refusedUntilRunning(res)) return;

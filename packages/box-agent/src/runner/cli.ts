@@ -22,7 +22,7 @@
  * and which box it names, nothing more.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
@@ -90,6 +90,84 @@ function defaultPageDir(page = 'booth'): string | null {
   } catch {
     return null;
   }
+}
+
+/** A folder by its real path (`/opt/oto-box/current` is a link to the release), or as given. */
+function realDir(dir: string | null): string | null {
+  if (!dir) return null;
+  try {
+    return realpathSync(dir);
+  } catch {
+    return dir;
+  }
+}
+
+/** What the installer keeps in /etc/oto-box/config about the screen, as the environment hands it over. */
+export interface ScreenSettings {
+  /** `OTO_KIOSK_SCREEN`: `off` for a box installed with --no-kiosk; unset on a box installed before it was written. */
+  screen?: string;
+  /** `OTO_KIOSK_URL`: empty for the box's own booth page. */
+  url?: string;
+  /** The box's own port, `OTO_BOX_PORT`. */
+  port: number;
+  /** Where the box serves its booth page and its copy of the display page from. */
+  boothDir: string | null;
+  displayDir: string | null;
+  /** `OTO_DISPLAY_ROTATE`, `OTO_DISPLAY_OUTPUT`, `OTO_DISPLAY_CAMERA` (SCRUM-928, SCRUM-896). */
+  rotate?: string;
+  output?: string;
+  camera?: string;
+}
+
+const LOOPBACK_NAMES = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+/**
+ * Which page the screen opens, and where that page comes from (SCRUM-962
+ * point 6): a web address takes a display change with a web deploy; the box's
+ * own pages are served from the release on disk and change only with a new
+ * box release. The installer's summary says the same on its "Screen:" line.
+ */
+export function screenLines(settings: ScreenSettings): string[] {
+  if (settings.screen === 'off') {
+    return ['screen      none: installed with --no-kiosk, this box draws nothing on a screen'];
+  }
+  const url = settings.url?.trim() ?? '';
+  let parsed: URL | null = null;
+  try {
+    parsed = url === '' ? null : new URL(url);
+  } catch {
+    parsed = null;
+  }
+  const own =
+    parsed !== null &&
+    parsed.protocol === 'http:' &&
+    LOOPBACK_NAMES.has(parsed.hostname) &&
+    Number(parsed.port || 80) === settings.port;
+  const from = (dir: string | null, what: string) =>
+    dir ? `served from ${dir}, this release's page folder` : `${what} is not in this release`;
+  const lines: string[] = [];
+  if (url === '') {
+    lines.push(
+      `screen      the box's own booth page, http://127.0.0.1:${settings.port}/, ${from(settings.boothDir, 'the booth page')}: a change to it needs a new box release`,
+    );
+  } else if (own && parsed !== null && (parsed.pathname === '/display' || parsed.pathname.startsWith('/display/'))) {
+    lines.push(
+      `screen      ${url}: the box's own copy of the display page, ${from(settings.displayDir, 'the display page')}: a display change needs a new box release`,
+    );
+  } else if (own) {
+    lines.push(`screen      ${url}: a page of the box's own, from this release: a change to it needs a new box release`);
+  } else {
+    lines.push(`screen      ${url}: a web address: a display change reaches it with a web deploy, no box release`);
+  }
+  if (settings.rotate === '90' || settings.rotate === '180' || settings.rotate === '270') {
+    lines.push(
+      `display     turned ${settings.rotate} by the desktop on ${settings.output || 'its output'}, the touch mapped to the same output`,
+    );
+  }
+  if (settings.camera === 'allow' && parsed !== null) {
+    lines.push(`camera      allowed without a tap for ${parsed.origin} only`);
+  }
+  return lines;
 }
 
 /** One JSON line per event, to stdout, which is what journald keeps. */
@@ -168,7 +246,7 @@ const USAGE = `oto-box ${BOX_AGENT_BUILD.id} — the OTO booth box
       Run the box and serve the booth page at http://127.0.0.1:${KIOSK_DEFAULT_PORT}/.
   oto-box status [--home <dir>]
       Say which build this is, whether this box is registered, which booth it
-      runs and what it holds.
+      runs, what it holds and which page its screen opens.
   oto-box store mirror-now [--home <dir>]
       Make a checked store mirror in OTO_BOX_MIRROR_DIR.
   oto-box store restore FILE [--home <dir>] [--other-box] [--accept-refused]
@@ -363,6 +441,19 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       out(`config      ${bundle?.configVersion ? `held (${bundle.configVersion}), box "${bundle.box?.name ?? '?'}"` : 'none held yet'}`);
       out(`booths      ${booths.length === 0 ? 'none on this box' : booths.map((b) => `${b.name} (${b.codePrefix ?? '—'})${b.id === state.stationId || booths.length === 1 ? ' ← running' : ''}`).join(', ')}`);
       out(`printer     ${overrides.printer ? `override ${overrides.printer.host}:${overrides.printer.port}, ${overrides.printer.widthDots} dots` : 'from the Console'}${problem ? ` (config.json ignored: ${problem})` : ''}`);
+      const boxPort = Number(option(parsed, 'port', 'OTO_BOX_PORT') ?? KIOSK_DEFAULT_PORT);
+      for (const line of screenLines({
+        screen: process.env.OTO_KIOSK_SCREEN,
+        url: process.env.OTO_KIOSK_URL,
+        port: Number.isInteger(boxPort) ? boxPort : KIOSK_DEFAULT_PORT,
+        boothDir: realDir(option(parsed, 'page', 'OTO_BOX_PAGE') ?? defaultPageDir()),
+        displayDir: realDir(option(parsed, 'display-page', 'OTO_BOX_DISPLAY_PAGE') ?? defaultPageDir('display')),
+        rotate: process.env.OTO_DISPLAY_ROTATE,
+        output: process.env.OTO_DISPLAY_OUTPUT,
+        camera: process.env.OTO_DISPLAY_CAMERA,
+      })) {
+        out(line);
+      }
       if (existsSync(paths.database)) {
         // The same look the running box takes before it opens its store
         // (SCRUM-403): read-only, and with the integrity check, because a

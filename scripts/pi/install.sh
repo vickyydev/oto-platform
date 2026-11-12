@@ -34,6 +34,24 @@
 #   --kiosk-scale N       how large the screen draws the page: Chromium's device
 #                         scale factor, 1 by default (the booth); the counter's
 #                         customer display uses 1.25
+#   --display-rotate 90|180|270|off
+#                         the customer display's SCREEN turned by the desktop,
+#                         for a monitor standing on its end (SCRUM-928): the
+#                         box's own kanshi profile in the desktop user's
+#                         ~/.config/kanshi/config, and the touch mapped to the
+#                         same output in ~/.config/labwc/rc.xml, so a press lands
+#                         where it is pressed. For a screen that opens a display
+#                         address (--kiosk-url) with --rotate off: the page does
+#                         not turn as well. Try 90; if the picture is on its side
+#                         the wrong way, 270. off takes the box's lines out again.
+#                         An update keeps what the box has. From the next boot
+#   --display-output NAME the output the screen is on (HDMI-A-1, HDMI-A-2), when
+#                         the installer cannot tell: no screen seen, or two
+#   --display-camera allow|off
+#                         allow lets the screen's address, and no other site, use
+#                         the camera without a tap (SCRUM-896): a Chromium policy
+#                         for that origin. Default off: the page asks once.
+#                         An update keeps what the box has
 #   --mirror-uuid UUID    the second drive the box copies its store to, by its
 #                         filesystem UUID (sudo blkid), ext4. Mounted at
 #                         /mnt/oto-mirror; nofail, so a missing drive never stops
@@ -97,6 +115,11 @@ ROTATE=""
 KIOSK_URL=""
 KIOSK_URL_GIVEN=0
 KIOSK_SCALE=""
+DISPLAY_ROTATE=""
+DISPLAY_OUTPUT=""
+DISPLAY_CAMERA=""
+DISPLAY_NOTE=""
+CAMERA_NOTE=""
 BLANKING_NOTE=""
 PRINTER_DIRECT=0
 PRINTER_IFACE="eth0"
@@ -134,6 +157,9 @@ while [ $# -gt 0 ]; do
     --rotate) ROTATE="${2:?--rotate needs cw, ccw or off}"; shift 2 ;;
     --kiosk-url) KIOSK_URL="${2?--kiosk-url needs a URL}"; KIOSK_URL_GIVEN=1; shift 2 ;;
     --kiosk-scale) KIOSK_SCALE="${2:?--kiosk-scale needs a number}"; shift 2 ;;
+    --display-rotate) DISPLAY_ROTATE="${2:?--display-rotate needs 90, 180, 270 or off}"; shift 2 ;;
+    --display-output) DISPLAY_OUTPUT="${2:?--display-output needs the name of the output, e.g. HDMI-A-1}"; shift 2 ;;
+    --display-camera) DISPLAY_CAMERA="${2:?--display-camera needs allow or off}"; shift 2 ;;
     --printer-direct) PRINTER_DIRECT=1; shift ;;
     --tailscale-authkey) TS_AUTHKEY="${2:?--tailscale-authkey needs a key}"; shift 2 ;;
     --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
@@ -187,6 +213,19 @@ if [ -n "$KIOSK_SCALE" ]; then
   { printf '%s' "$KIOSK_SCALE" | grep -Eq '^[0-9]+(\.[0-9]+)?$' && printf '%s' "$KIOSK_SCALE" | grep -q '[1-9]'; } \
     || die "--kiosk-scale wants a number such as 1.25, got $KIOSK_SCALE"
 fi
+case "$DISPLAY_ROTATE" in
+  ""|90|180|270|off) ;;
+  *) die "--display-rotate wants 90, 180, 270 or off, got $DISPLAY_ROTATE" ;;
+esac
+case "$DISPLAY_CAMERA" in
+  ""|allow|off) ;;
+  *) die "--display-camera wants allow or off, got $DISPLAY_CAMERA" ;;
+esac
+if [ -n "$DISPLAY_OUTPUT" ]; then
+  # It goes into /etc/oto-box/config and the desktop's files: a name only.
+  printf '%s' "$DISPLAY_OUTPUT" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$' \
+    || die "--display-output wants an output's name such as HDMI-A-1, got $DISPLAY_OUTPUT"
+fi
 if [ -n "$MIRROR_UUID" ]; then
   # It goes into /etc/fstab: only what a filesystem UUID is made of.
   printf '%s' "$MIRROR_UUID" | grep -Eq '^[A-Fa-f0-9-]{8,36}$' \
@@ -226,6 +265,14 @@ RELEASE="$(awk 'NR == 1 { if ($3 == "built") print $2; else print $2"-"$3 }' "$S
 if [ -n "$BRIDGE_HOST" ]; then
   . "$SOURCE/pi/bridge-install.sh"
   bridge_preflight
+fi
+# The customer display's turn and camera (SCRUM-928, SCRUM-896), settled and
+# refused here, before anything on the box changes: scripts/pi/display-install.sh.
+if [ -f "$SOURCE/pi/display-install.sh" ]; then
+  . "$SOURCE/pi/display-install.sh"
+  display_preflight /etc/oto-box/config /sys/class/drm
+elif [ -n "$DISPLAY_ROTATE$DISPLAY_CAMERA" ]; then
+  die "this release has no pi/display-install.sh, so it cannot turn the display or allow its camera: use a release built after SCRUM-928"
 fi
 
 # --- Packages, time and the screen ------------------------------------------
@@ -629,6 +676,14 @@ fi
 # --- Configuration ------------------------------------------------------------
 say "/etc/oto-box/config"
 install -d -m 0755 /etc/oto-box
+# Only what this run names: an update keeps the screen the box has.
+config_set() {
+  if grep -q "^$1=" /etc/oto-box/config; then
+    sed -i "s|^$1=.*|$1=$2|" /etc/oto-box/config
+  else
+    printf '%s=%s\n' "$1" "$2" >>/etc/oto-box/config
+  fi
+}
 if [ ! -f /etc/oto-box/config ]; then
   cat >/etc/oto-box/config <<EOF
 # The OTO booth box. Read by oto-box.service and by the oto-box command.
@@ -648,25 +703,30 @@ OTO_KIOSK_ROTATE=${ROTATE:-cw}
 # scale factor. Each followed by the same restart.
 OTO_KIOSK_URL=$KIOSK_URL
 OTO_KIOSK_SCALE=${KIOSK_SCALE:-1}
+# The customer display standing on its end (SCRUM-928) and its camera
+# (SCRUM-896): OTO_DISPLAY_ROTATE, OTO_DISPLAY_OUTPUT and OTO_DISPLAY_CAMERA
+# are set by the installer's --display-rotate, --display-output and
+# --display-camera, which write the desktop's files from them: change them
+# with the installer, not here.
 ${MIRROR_UUID:+OTO_BOX_MIRROR_DIR=$MIRROR_DIR}
 EOF
 else
   if [ "$API_GIVEN" -eq 1 ]; then
     sed -i "s|^OTO_BOX_API=.*|OTO_BOX_API=$API_URL|" /etc/oto-box/config
   fi
-  # Only what this run names: an update keeps the screen the box has.
-  config_set() {
-    if grep -q "^$1=" /etc/oto-box/config; then
-      sed -i "s|^$1=.*|$1=$2|" /etc/oto-box/config
-    else
-      printf '%s=%s\n' "$1" "$2" >>/etc/oto-box/config
-    fi
-  }
   [ -z "$ROTATE" ] || config_set OTO_KIOSK_ROTATE "$ROTATE"
   [ "$KIOSK_URL_GIVEN" -eq 0 ] || config_set OTO_KIOSK_URL "$KIOSK_URL"
   [ -z "$KIOSK_SCALE" ] || config_set OTO_KIOSK_SCALE "$KIOSK_SCALE"
   [ -z "$MIRROR_UUID" ] || config_set OTO_BOX_MIRROR_DIR "$MIRROR_DIR"
 fi
+# Whether this run gave the box a screen (SCRUM-962: `oto-box status` says
+# which page the screen opens, or that there is none), and the customer
+# display's turn and camera (SCRUM-928, SCRUM-896): what this run names, and
+# the output the turn is on, as display_preflight found it.
+config_set OTO_KIOSK_SCREEN "$([ "$WITH_KIOSK" -eq 1 ] && echo on || echo off)"
+[ -z "$DISPLAY_ROTATE" ] || config_set OTO_DISPLAY_ROTATE "$DISPLAY_ROTATE"
+[ -z "$DISPLAY_CAMERA" ] || config_set OTO_DISPLAY_CAMERA "$DISPLAY_CAMERA"
+[ -z "${DISPLAY_OUTPUT_NOW:-}" ] || config_set OTO_DISPLAY_OUTPUT "$DISPLAY_OUTPUT_NOW"
 chmod 0644 /etc/oto-box/config
 [ -z "$BRIDGE_HOST" ] || bridge_install
 # What the screen opens from here on, whichever run set it.
@@ -682,6 +742,7 @@ set -a; . /etc/oto-box/config; set +a
 if [ "\$(id -u)" -ne 0 ] && [ "\$(id -un)" != oto-box ]; then exec sudo "\$0" "\$@"; fi
 if [ "\$(id -u)" -eq 0 ]; then
   exec runuser -u oto-box -- env OTO_BOX_API="\$OTO_BOX_API" OTO_BOX_HOME="\$OTO_BOX_HOME" OTO_BOX_PORT="\$OTO_BOX_PORT" OTO_BOX_PAGE="\$OTO_BOX_PAGE" OTO_BOX_MIRROR_DIR="\$OTO_BOX_MIRROR_DIR" \\
+    OTO_KIOSK_SCREEN="\$OTO_KIOSK_SCREEN" OTO_KIOSK_URL="\$OTO_KIOSK_URL" OTO_DISPLAY_ROTATE="\$OTO_DISPLAY_ROTATE" OTO_DISPLAY_OUTPUT="\$OTO_DISPLAY_OUTPUT" OTO_DISPLAY_CAMERA="\$OTO_DISPLAY_CAMERA" \\
     "$NODE_BIN" --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-box.mjs "\$@"
 fi
 exec "$NODE_BIN" --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-box.mjs "\$@"
@@ -750,6 +811,16 @@ if [ "$WITH_KIOSK" -eq 1 ]; then
   else
     warn "raspi-config not found: set desktop autologin and switch screen blanking off by hand"
     BLANKING_NOTE="NOT switched off: raspi-config is not on this system; switch it off by hand"
+  fi
+  # The customer display standing on its end (SCRUM-928) and its camera
+  # (SCRUM-896), as display_preflight settled them: written for the desktop
+  # user, or taken out again when off. A box with neither has no file touched.
+  if declare -F display_turn_apply >/dev/null; then
+    KIOSK_HOME="$(getent passwd "$KIOSK_USER" | cut -d: -f6 || true)"
+    [ -n "$KIOSK_HOME" ] || die "no home folder for $KIOSK_USER"
+    display_turn_apply "$KIOSK_HOME" "$KIOSK_USER:$(id -gn "$KIOSK_USER")" /proc/bus/input/devices \
+      /etc/xdg/labwc/rc.xml "/etc/xdg/labwc/autostart $KIOSK_HOME/.config/labwc/autostart" /etc/udev/rules.d
+    display_camera_apply /etc/chromium /etc/chromium-browser
   fi
 fi
 
@@ -847,13 +918,42 @@ CLAIM_WHERE='Type it on the television ("Set up this box"), or here:'
 FIRST_BOOT_STEP="  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
      the television opens the booth; every boot after that does the same."
 SCREEN_LINE=""
+# Which page the screen opens and where that page comes from, so whether a
+# change to it reaches the screen with a web deploy or needs a box release
+# (SCRUM-962 point 6). `oto-box status` says the same on its "screen" line.
+SCREEN_PORT="$(sed -n 's/^OTO_BOX_PORT=//p' /etc/oto-box/config | tail -n 1)"
+SCREEN_PORT="${SCREEN_PORT:-8780}"
+PAGE_TURN="$(sed -n 's/^OTO_KIOSK_ROTATE=//p' /etc/oto-box/config | tail -n 1)"
 if [ "$WITH_KIOSK" -eq 1 ] && [ -n "$KIOSK_URL_NOW" ]; then
   CLAIM_WHERE="The screen is showing another page, not the box's set-up, so here:"
   FIRST_BOOT_STEP="  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
      the screen opens its page; every boot after that does the same. It shows a
      pairing code: Console -> Devices -> Pair a display, enter the code, choose
      the station. The pairing is kept across reboots and updates."
-  SCREEN_LINE="Screen: opens $KIOSK_URL_NOW, scale $(sed -n 's/^OTO_KIOSK_SCALE=//p' /etc/oto-box/config | tail -n 1), turn $(sed -n 's/^OTO_KIOSK_ROTATE=//p' /etc/oto-box/config | tail -n 1). Screen blanking: $BLANKING_NOTE. The monitor's own sleep timer is set in its own menu.
+  case "$KIOSK_URL_NOW" in
+    "http://127.0.0.1:$SCREEN_PORT/display"*|"http://localhost:$SCREEN_PORT/display"*)
+      SCREEN_FROM="the box's own copy of the display page, served from this release's page folder /opt/oto-box/releases/$RELEASE/display: a display change reaches this screen only with a new box release" ;;
+    "http://127.0.0.1:$SCREEN_PORT"*|"http://localhost:$SCREEN_PORT"*)
+      SCREEN_FROM="a page of the box's own, served from this release (/opt/oto-box/releases/$RELEASE): a change reaches this screen only with a new box release" ;;
+    *)
+      SCREEN_FROM="a web address: a display change reaches this screen with a web deploy, no box release; while it does not answer, the screen shows the box's own waiting page and opens it by itself once it does" ;;
+  esac
+  [ -n "$DISPLAY_NOTE" ] || DISPLAY_NOTE="none: the desktop shows the screen as it is made, or as its own settings turn it (--display-rotate turns it)"
+  [ -n "$CAMERA_NOTE" ] || CAMERA_NOTE="the display's page asks before it uses the camera (--display-camera allow allows it for this address only)"
+  SCREEN_LINE="Screen: opens $KIOSK_URL_NOW ($SCREEN_FROM), scale $(sed -n 's/^OTO_KIOSK_SCALE=//p' /etc/oto-box/config | tail -n 1), page turn ${PAGE_TURN:-cw}. Screen blanking: $BLANKING_NOTE. The monitor's own sleep timer is set in its own menu.
+Display turn: $DISPLAY_NOTE.
+Camera: $CAMERA_NOTE.
+"
+elif [ "$WITH_KIOSK" -eq 1 ]; then
+  SCREEN_LINE="Screen: opens the box's own booth page, http://127.0.0.1:$SCREEN_PORT/ (served from this release's page folder /opt/oto-box/releases/$RELEASE/booth: a change to it needs a new box release), page turn ${PAGE_TURN:-cw}.
+"
+  # Only when this run took something of the display's out again.
+  [ -z "$DISPLAY_NOTE" ] || SCREEN_LINE="${SCREEN_LINE}Display turn: $DISPLAY_NOTE.
+"
+  [ -z "$CAMERA_NOTE" ] || SCREEN_LINE="${SCREEN_LINE}Camera: $CAMERA_NOTE.
+"
+else
+  SCREEN_LINE="Screen: none (--no-kiosk): this box draws nothing on a screen.
 "
 fi
 
