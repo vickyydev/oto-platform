@@ -63,7 +63,7 @@ describe('SCRUM-963 (2) — the language list follows the screen’s look', () =
     expect(block('.dark {')).toContain(`--cd-menu: ${tailwind('slate-900')};`);
     expect(block('.dark {')).toContain('--cd-menu-chosen: hsl(var(--primary));');
     expect(block(':root,\n.light {')).toContain('--cd-menu: hsl(var(--popover));');
-    expect(block(':root,\n.light {')).toContain(`--cd-menu-chosen: ${tailwind('orange-700')};`);
+    expect(block(':root,\n.light {')).toContain(`--cd-menu-chosen: ${tailwind('orange-800')};`);
   });
 
   it('the display’s form gives its choices the finger’s height its pill has', () => {
@@ -82,7 +82,7 @@ describe('SCRUM-963 (3) — the returning family’s badges read on a light scre
     expect(block('.dark {')).toContain(`--cd-badge-check: ${tailwind('amber-300')};`);
     expect(block('.dark {')).toContain(`--cd-badge-done: ${tailwind('emerald-300')};`);
     expect(block(':root,\n.light {')).toContain(`--cd-badge-check: ${tailwind('amber-800')};`);
-    expect(block(':root,\n.light {')).toContain(`--cd-badge-done: ${tailwind('emerald-700')};`);
+    expect(block(':root,\n.light {')).toContain(`--cd-badge-done: ${tailwind('emerald-800')};`);
   });
 });
 

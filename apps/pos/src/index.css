@@ -133,14 +133,14 @@
   --cd-camera-veil: rgb(255 255 255 / 0.82);
   /* SCRUM-963 — the customer screens' language list (LanguageSwitcher) on a
      light screen: the card's cream under the screen's dark ink, the chosen
-     language in a deeper coral (orange-700) so it reads on its coral wash. */
+     language in a deeper coral (orange-800) so it reads on its coral wash. */
   --cd-menu: hsl(var(--popover));
-  --cd-menu-chosen: oklch(55.3% 0.195 38.402);
+  --cd-menu-chosen: oklch(47% 0.157 37.304);
   /* SCRUM-963 — the returning family's badges on a light screen ("Saved —
-     still correct?", "Confirmed"): amber-800 and emerald-700, which read on
+     still correct?", "Confirmed"): amber-800 and emerald-800, which read on
      the cream where amber-300 and emerald-300 did not. */
   --cd-badge-check: oklch(47.3% 0.137 46.201);
-  --cd-badge-done: oklch(50.8% 0.118 165.612);
+  --cd-badge-done: oklch(43.2% 0.095 166.913);
 
   /* Branded "cinema" backdrop for the customer display(s). Flips with the
      surface's .dark/.light wrapper, so a light display nested in a dark staff
