@@ -1,0 +1,52 @@
+{
+  "oto-api-staging": {
+    "named": {
+      "id": "dep-dbqt05hsrm7s738s5vr0",
+      "status": "live",
+      "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+      "createdAt": "2026-11-12T14:41:27.017781Z",
+      "finishedAt": "2026-11-12T14:47:23.641246Z"
+    },
+    "serving": {
+      "id": "dep-dbqti049v7es73c9lvtg",
+      "status": "pre_deploy_in_progress",
+      "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+      "createdAt": "2026-11-12T15:19:28.410848Z"
+    },
+    "readAt": "2026-11-12T15:21:52.469Z"
+  },
+  "oto-pos-web-staging": {
+    "named": {
+      "id": "dep-dbqt065ckfvc739q94sg",
+      "status": "live",
+      "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+      "createdAt": "2026-11-12T14:41:28.867592Z",
+      "finishedAt": "2026-11-12T14:45:37.942452Z"
+    },
+    "serving": {
+      "id": "dep-dbqt065ckfvc739q94sg",
+      "status": "live",
+      "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+      "createdAt": "2026-11-12T14:41:28.867592Z",
+      "finishedAt": "2026-11-12T14:45:37.942452Z"
+    },
+    "readAt": "2026-11-12T15:21:53.059Z"
+  },
+  "oto-pos-staging": {
+    "named": {
+      "id": "dep-dbqt06h5efls73ag52sg",
+      "status": "live",
+      "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+      "createdAt": "2026-11-12T14:41:30.282078Z",
+      "finishedAt": "2026-11-12T14:42:45.561894Z"
+    },
+    "serving": {
+      "id": "dep-dbqt06h5efls73ag52sg",
+      "status": "live",
+      "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+      "createdAt": "2026-11-12T14:41:30.282078Z",
+      "finishedAt": "2026-11-12T14:42:45.561894Z"
+    },
+    "readAt": "2026-11-12T15:21:53.691Z"
+  }
+}

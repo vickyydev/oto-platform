@@ -1,0 +1,2011 @@
+{
+  "tickets": [
+    "SCRUM-893",
+    "SCRUM-894",
+    "SCRUM-914",
+    "SCRUM-915",
+    "SCRUM-942 (lock-screen part)",
+    "SCRUM-943"
+  ],
+  "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+  "startedAt": "2026-11-12T14:51:30.058Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqt05hsrm7s738s5vr0",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:27.017781Z",
+        "finishedAt": "2026-11-12T14:47:23.641246Z"
+      },
+      "serving": {
+        "id": "dep-dbqt05hsrm7s738s5vr0",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:27.017781Z",
+        "finishedAt": "2026-11-12T14:47:23.641246Z"
+      },
+      "readAt": "2026-11-12T14:48:12.092Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqt065ckfvc739q94sg",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:28.867592Z",
+        "finishedAt": "2026-11-12T14:45:37.942452Z"
+      },
+      "serving": {
+        "id": "dep-dbqt065ckfvc739q94sg",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:28.867592Z",
+        "finishedAt": "2026-11-12T14:45:37.942452Z"
+      },
+      "readAt": "2026-11-12T14:48:12.737Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqt06h5efls73ag52sg",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:30.282078Z",
+        "finishedAt": "2026-11-12T14:42:45.561894Z"
+      },
+      "serving": {
+        "id": "dep-dbqt06h5efls73ag52sg",
+        "status": "live",
+        "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+        "createdAt": "2026-11-12T14:41:30.282078Z",
+        "finishedAt": "2026-11-12T14:42:45.561894Z"
+      },
+      "readAt": "2026-11-12T14:48:13.304Z"
+    }
+  },
+  "numbers": {
+    "H": "0898930210",
+    "Hnew": "0898930211",
+    "D": "0898930212",
+    "E": "0898930213",
+    "N": "0898930214",
+    "R": "0898930215",
+    "P": "0898930216",
+    "T": "0898930217",
+    "W": "0898930218",
+    "O": "0898930219"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1",
+      "name": "ZZ TEST SCRUM-893 proof till 1794495109240",
+      "prefix": "Z89301"
+    },
+    {
+      "kind": "dropoff-sale-H",
+      "id": "01a1d041-52f3-799d-b7a9-9209e4f85ac6",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "registration",
+      "family": "H",
+      "id": "01a1d041-4dd7-7214-b76f-56e3ce3458e8"
+    },
+    {
+      "kind": "display",
+      "label": "main",
+      "id": "01a1d044-bec5-7b97-9ba6-74dab7923aa6",
+      "camera": "fake",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "dropoff-sale-D",
+      "id": "01a1d04b-8401-75b0-aed0-b1f807104649",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "registration",
+      "family": "D",
+      "id": "01a1d04b-80f3-7ee1-93c6-403204bb5c72"
+    },
+    {
+      "kind": "dropoff-sale-E",
+      "id": "01a1d04e-c17c-7177-a351-0d56d6181159",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "registration",
+      "family": "E",
+      "id": "01a1d04e-6d39-73d5-a1c7-ceddecb70593"
+    },
+    {
+      "kind": "display",
+      "label": "nocam",
+      "id": "01a1d04f-1ed4-70ec-aad3-98e369dc2a2f",
+      "camera": "none",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "display",
+      "label": "refused",
+      "id": "01a1d04f-f097-7651-be11-7c95911c7aba",
+      "camera": "refused",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d051-88fa-72b1-a7cd-7fc0ed908ee6",
+      "name": "ZZ TEST SCRUM-893 phone till 1794496366098",
+      "prefix": "Z89302"
+    },
+    {
+      "kind": "registration",
+      "family": "P",
+      "id": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5"
+    },
+    {
+      "kind": "dropoff-sale-P",
+      "id": "01a1d052-ba7e-7b56-b6ad-1ba6163904b6",
+      "station": "01a1d051-88fa-72b1-a7cd-7fc0ed908ee6"
+    },
+    {
+      "kind": "display",
+      "label": "thai",
+      "id": "01a1d053-f8b8-74d8-9c60-0296928cb85b",
+      "camera": "fake",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "registration",
+      "family": "T",
+      "id": "01a1d055-4e29-7348-8a3f-f06a238df356"
+    },
+    {
+      "kind": "dropoff-sale-T",
+      "id": "01a1d055-55e5-7f0a-a94e-1fd9c73746b8",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "dropoff-sale-W",
+      "id": "01a1d056-1edd-7621-ac8c-ae170e3906ad",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    },
+    {
+      "kind": "registration",
+      "family": "W",
+      "id": "01a1d056-1bcb-7132-a748-3e9bce08079b"
+    },
+    {
+      "kind": "ordinary-sale-O",
+      "id": "01a1d056-6d0a-7bce-b0a4-9af4260adb8e",
+      "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+    }
+  ],
+  "points": {
+    "1 SCRUM-893 paired display 600x1024": {
+      "pass": "PASS",
+      "pictures": [
+        "01a-form-opened-both-screens.png",
+        "01b-600-child-name-keys-typed-till-follows.png",
+        "01c-600-keyboard-close-up.png",
+        "01d-600-allergies-keys-typed-till-follows.png",
+        "01e-600-dietary-keys-typed-till-follows.png",
+        "01f-600-guardian-keys-typed-till-follows.png"
+      ],
+      "seen": "Each of the four boxes opened the keys under it on a touch; typing with the keys reached the box and the till copy ~0.5-1.0 s after the last key (child name 995 ms, allergies 1010 ms, dietary 1022 ms, guardian 502 ms; poll granularity ~0.5 s). Owner case: allergy \"Peanuts And Eggs\" typed and on the till copy. Keys: Q-P, A-L, Z-M (26 capital letters), Backspace, Space, Done; no digits, no punctuation, no Thai."
+    },
+    "2 SCRUM-894 600x1024 and 1024x600": {
+      "pass": "PASS (with a finding)",
+      "pictures": [
+        "01b..01f (600x1024)",
+        "02a-1024x600-child-name-keys.png",
+        "02b-1024x600-allergies-keys.png",
+        "02c-1024x600-dietary-keys.png",
+        "02d-1024x600-guardian-keys.png",
+        "02e-1024x600-agreements-both-screens.png",
+        "hunt-a-1024x600-agreements-opened-after-scrolled-care.png",
+        "08h-th-agreements-as-it-opens.png"
+      ],
+      "seen": "Every box: field and keys inside the scroll area, keys under the field, both above the bar; the field did not move while typing (0 px, scrollTop unchanged). Finding: a new step keeps the previous step's scroll, so Agreements can open with the guardian box hidden above (1024x600 one child; 600x1024 two children)."
+    },
+    "3 till customer half ?keyboard=screen": {
+      "pass": "PASS",
+      "pictures": [
+        "03a-half-form-opened-keyboard-flag.png",
+        "03b-half-child-name-keys-open.png",
+        "03c-half-allergies-keys-open.png",
+        "03d-half-allergies-past-100-typed.png",
+        "03e-half-dietary-keys-typed.png",
+        "03f-half-guardian-keys-typed.png",
+        "03g-half-family-h-paid-checked-in.png"
+      ],
+      "seen": "All four boxes inputmode none and open the keys; allergies took 127 characters (maxlength 500) and the registration stored all 127."
+    },
+    "4 SCRUM-914": {
+      "pass": "PASS",
+      "pictures": [
+        "04a-half-whatsapp-ticked.png",
+        "04b-half-telegram-and-back-unticked.png",
+        "04c-half-digit-edited-and-typed-back-unticked.png",
+        "04d-board-family-h-found.png",
+        "04e-board-edit-landline-refused-save-disabled.png",
+        "04f-board-edit-new-mobile-withdraw-warning.png",
+        "04g-board-saved-toast-confirmation-withdrawn.png",
+        "hunt-c-board-card-after-number-change.png"
+      ],
+      "seen": "Half: tick -> Telegram -> WhatsApp = unticked; tick -> Backspace -> 0 typed back = unticked. Board: landline 21234567 refused under the field, Save disabled; new mobile: withdraw warning; PATCH 200 warnings[...withdrawn...]; toast says withdrawn; registration contactConfirmedAt/By cleared."
+    },
+    "5 SCRUM-915 phone till 390x844": {
+      "pass": "PASS",
+      "pictures": [
+        "05a-phone-till-start.png",
+        "05b-phone-after-continue.png",
+        "05c-phone-gate-child-aged-6.png",
+        "05d-phone-hand-to-customer.png",
+        "05e-phone-family-form-top.png",
+        "05f-phone-camera-live-fake.png",
+        "05g-phone-number-tick-and-still-needed.png",
+        "05h-phone-everything-given-done-and-return-button.png",
+        "05i-phone-back-to-staff-review-drop-off-line.png",
+        "05j-phone-payment-step.png",
+        "05k-phone-paid.png",
+        "05l-phone-half-filled-before-return.png",
+        "05m-phone-after-return-what-staff-see.png",
+        "05n-phone-sale-cancelled.png"
+      ],
+      "seen": "Hand the phone to the customer -> Customer is ready -> the family form with camera, allergies, guardian, number tick, Still needed line, Done; wide bottom button \"Return phone to staff\". Done -> Review Order with Drop-off service ฿225; cash Z89302-000001 ฿915; one registration (one POST 200) with photo, in park. Return half-way: staff back at the gate (Children playing alone, Before payment list), nothing posted; reopening keeps what was typed; sale cancelled, nothing written."
+    },
+    "6 SCRUM-942 lock lines": {
+      "pass": "PASS",
+      "pictures": [
+        "06a-till-locked-family-filling-line.png",
+        "06b-locked-family-pressed-done-both-lines.png",
+        "06c-after-unlock-registered-amount-due.png"
+      ],
+      "seen": "Locked 120.2 s after the last touch; line 1 \"A family is filling in the drop-off form on the display.\"; family Done -> display \"Thank you. The team will be with you in a moment.\" in 0.5 s, lock line \"The family has pressed Done: unlock to carry on.\" in 2.9 s; nothing posted while locked; unlock -> registration POST 200 and Amount Due ฿915."
+    },
+    "7 SCRUM-943": {
+      "pass": "PASS",
+      "pictures": [
+        "07a1-no-camera-display-line-and-staff-line.png",
+        "07b1-done-pressed-write-held.png",
+        "07b2-staff-back-display-keeps-saving.png",
+        "07b3-after-release.png",
+        "07c1-number-while-typed-both-screens.png",
+        "07c2-number-complete-both-screens.png",
+        "07d1-display-offline-reconnecting-line-over-form.png",
+        "07d2-offline-tick-pressed-till-not-yet.png",
+        "07d3-online-again-till-caught-up.png",
+        "07f1-camera-refused-notice-dark.png",
+        "07f2-camera-refused-staff-line.png",
+        "07f3-camera-refused-notice-light.png"
+      ],
+      "seen": "a) display: \"No camera available · Reception will take the photo...\"; till: \"The display has no camera. Take each child's photo with the family here, in Private child details.\" (refused: \"The camera on the display was refused. ...\"). b) held write: display kept \"Thank you — saving your details...\" after staff Back; release -> one POST 200, cart carried the drop-off ฿915. c) typed 0898: both \"+66 0898\"; complete: display \"+66 898930212\", till copy \"898930212 / Stored as +66898930212\". d) line over the form in 0.5 s, no Retry, tick position unchanged; tick given offline reached the till ~1 s after online. e) copy buttons disabled at opacity 0.5. f) light: title rgb(146,64,14) / note rgba(59,40,28,.85) on a white .82 veil; dark: amber-300 title, note at half strength, no veil."
+    },
+    "8 Thai journey 600x1024": {
+      "pass": "PASS (with findings)",
+      "pictures": [
+        "08a-th-language-choice.png",
+        "08b-th-form-step1-empty.png",
+        "08c-th-keys-open-child-a.png",
+        "08d-th-age-picker.png",
+        "08e-th-step1-two-children-aged.png",
+        "08f-th-care-step-top.png",
+        "08g-th-care-allergy-keys.png",
+        "08h-th-agreements-as-it-opens.png",
+        "08i-th-guardian-keys.png",
+        "08j-th-all-ticked-done-ready.png",
+        "08k-th-done-saving-line.png",
+        "08l-th-amount-due-both-screens.png",
+        "08m-th-paid-checked-in-both-screens.png"
+      ],
+      "seen": "Two children, keys labelled in Thai (Space เว้นวรรค, Backspace ลบตัวอักษร, Done เสร็จสิ้น), letters English; cash ฿1830 Z89301-000004; both in park with photos. Untranslated at 600 wide: the park's three confirmation texts stay English; nothing cut or overlapping found."
+    },
+    "9 nothing else moved": {
+      "pass": "PASS",
+      "pictures": [
+        "09a-staff-filled-dropoff-continue.png",
+        "09b-staff-filled-dropoff-paid.png",
+        "09c-ordinary-sale-straight-to-payment.png",
+        "09d-ordinary-sale-paid-cash.png"
+      ],
+      "seen": "Staff-filled drop-off with Continue (no keys without the flag): POST 200, cash Z89301-000005 ฿915, in park. Ordinary 1 kid + 1 adult: straight to payment, no form, no registration, cash Z89301-000006 ฿1040."
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "lockFilling": 1,
+      "lockDone": 1,
+      "teamInAMoment": 1,
+      "returnPhone": 1,
+      "reconnectSends": 1,
+      "screenKeyboard": 1,
+      "withdraws": 1,
+      "noPhotoHere": 1
+    },
+    "lockIdleFrom": "2026-11-12T15:03:50.019Z"
+  },
+  "odd": [
+    {
+      "what": "hunt-b picture renamed to ...-opens-at-top.png: at 600x1024 Agreements opened at its top (scrollTop 0)"
+    }
+  ],
+  "defects": [],
+  "hunt": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "setup: numbers, own till, sign in the desk till (no keyboard flag)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "setup: numbers, own till, sign in the desk till (no keyboard flag)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "phone",
+      "at": "5: SCRUM-915 the phone till (390x844): own ZZ TEST phone till, 1 Kid no adult",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "5: SCRUM-915 the phone till (390x844): own ZZ TEST phone till, 1 Kid no adult",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "5: phone till signed out (its context closed to spare memory)",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "phone",
+      "at": "5: phone till signed out (its context closed to spare memory)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "manager",
+      "at": "clean up: the staging manager, signed in at the own ZZ TEST till, refunds every own cash sale whole",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager",
+      "at": "clean up: the staging manager, signed in at the own ZZ TEST till, refunds every own cash sale whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [
+    {
+      "till": "till",
+      "at": "3/4: family H finishes on the half (photo, ticks, Done), pays cash, Check in now",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d041-4dd7-7214-b76f-56e3ce3458e8",
+      "finishedAt": "2026-11-12T14:55:03.249Z"
+    },
+    {
+      "till": "till",
+      "at": "6: SCRUM-942 the family presses Done while the till is locked; then staff unlock",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d04b-80f3-7ee1-93c6-403204bb5c72",
+      "finishedAt": "2026-11-12T15:06:11.691Z"
+    },
+    {
+      "till": "till",
+      "at": "7b: SCRUM-943 the family presses Done; the till's registration write is held; staff press Back; the display keeps \"saving\"",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d04e-6d39-73d5-a1c7-ceddecb70593",
+      "finishedAt": "2026-11-12T15:09:27.954Z"
+    },
+    {
+      "till": "phone",
+      "at": "5: phone till: the parent fills the form on the phone (fake camera, allergies, guardian, number, ticks), Done",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+      "finishedAt": "2026-11-12T15:13:44.415Z"
+    },
+    {
+      "till": "till",
+      "at": "8: Thai: step 3 agreements: guardian with the keys, ticks, Done; the till moves on",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d055-4e29-7348-8a3f-f06a238df356",
+      "finishedAt": "2026-11-12T15:16:54.091Z"
+    },
+    {
+      "till": "till",
+      "at": "9: nothing else moved: a drop-off filled wholly by staff on the till (no paired display, no keyboard flag) with Continue",
+      "status": 200,
+      "replay": false,
+      "id": "01a1d056-1bcb-7132-a748-3e9bce08079b",
+      "finishedAt": "2026-11-12T15:17:46.677Z"
+    }
+  ],
+  "photoFiles": [
+    {
+      "till": "till",
+      "at": "3/4: family H finishes on the half (photo, ticks, Done), pays cash, Check in now",
+      "ownerEntityId": "01a1d041-4dd7-7214-b76f-56e3ce3458e8",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "till",
+      "at": "6: SCRUM-942 the family presses Done while the till is locked; then staff unlock",
+      "ownerEntityId": "01a1d04b-80f3-7ee1-93c6-403204bb5c72",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "till",
+      "at": "7b: SCRUM-943 the family presses Done; the till's registration write is held; staff press Back; the display keeps \"saving\"",
+      "ownerEntityId": "01a1d04e-6d39-73d5-a1c7-ceddecb70593",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "phone",
+      "at": "5: phone till: the parent fills the form on the phone (fake camera, allergies, guardian, number, ticks), Done",
+      "ownerEntityId": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "till",
+      "at": "8: Thai: step 3 agreements: guardian with the keys, ticks, Done; the till moves on",
+      "ownerEntityId": "01a1d055-4e29-7348-8a3f-f06a238df356",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "till",
+      "at": "8: Thai: step 3 agreements: guardian with the keys, ticks, Done; the till moves on",
+      "ownerEntityId": "01a1d055-4e29-7348-8a3f-f06a238df356",
+      "contentType": "image/jpeg"
+    },
+    {
+      "till": "till",
+      "at": "9: nothing else moved: a drop-off filled wholly by staff on the till (no paired display, no keyboard flag) with Continue",
+      "ownerEntityId": "01a1d056-1bcb-7132-a748-3e9bce08079b",
+      "contentType": "image/jpeg"
+    }
+  ],
+  "displayPhotoUploads": [
+    {
+      "display": "main",
+      "at": "1/2: 600x1024 care pictures with the till copy scrolled to the box; the family photo; the guardian box",
+      "status": 200
+    },
+    {
+      "display": "main",
+      "at": "7b: family E fills the whole form on the display with the keys (photo included)",
+      "status": 200
+    },
+    {
+      "display": "thai",
+      "at": "8: Thai: step 2 care for two children: photos (fake camera), an allergy typed with the keys; then Continue from the bottom of the long step",
+      "status": 200
+    },
+    {
+      "display": "thai",
+      "at": "8: Thai: step 2 care for two children: photos (fake camera), an allergy typed with the keys; then Continue from the bottom of the long step",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "main",
+        "id": "01a1d044-bec5-7b97-9ba6-74dab7923aa6",
+        "revoked": true
+      },
+      {
+        "label": "nocam",
+        "id": "01a1d04f-1ed4-70ec-aad3-98e369dc2a2f",
+        "revoked": true
+      },
+      {
+        "label": "refused",
+        "id": "01a1d04f-f097-7651-be11-7c95911c7aba",
+        "revoked": true
+      },
+      {
+        "label": "thai",
+        "id": "01a1d053-f8b8-74d8-9c60-0296928cb85b",
+        "revoked": true
+      }
+    ],
+    "sessions": [
+      {
+        "label": "phone",
+        "before": 200,
+        "after": 401
+      },
+      {
+        "label": "till",
+        "before": 200,
+        "after": 401
+      },
+      {
+        "label": "manager",
+        "before": 200,
+        "after": 401
+      }
+    ],
+    "registrations": [
+      {
+        "fam": "H",
+        "reg": "01a1d041-4dd7-7214-b76f-56e3ce3458e8",
+        "actions": [
+          {
+            "child": "Zz Test Half",
+            "status": 200
+          }
+        ],
+        "children": [
+          "Zz Test Half:out"
+        ]
+      },
+      {
+        "fam": "D",
+        "reg": "01a1d04b-80f3-7ee1-93c6-403204bb5c72",
+        "actions": [
+          {
+            "child": "Zz Test Keys",
+            "status": 200
+          }
+        ],
+        "children": [
+          "Zz Test Keys:out"
+        ]
+      },
+      {
+        "fam": "E",
+        "reg": "01a1d04e-6d39-73d5-a1c7-ceddecb70593",
+        "actions": [
+          {
+            "child": "Zz Test Hold",
+            "status": 200
+          }
+        ],
+        "children": [
+          "Zz Test Hold:out"
+        ]
+      },
+      {
+        "fam": "P",
+        "reg": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+        "actions": [
+          {
+            "child": "ZZ TEST PHONE",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST PHONE:out"
+        ]
+      },
+      {
+        "fam": "T",
+        "reg": "01a1d055-4e29-7348-8a3f-f06a238df356",
+        "actions": [
+          {
+            "child": "Zz Test Thai A",
+            "status": 200
+          },
+          {
+            "child": "Zz Test Thai B",
+            "status": 200
+          }
+        ],
+        "children": [
+          "Zz Test Thai A:out",
+          "Zz Test Thai B:out"
+        ]
+      },
+      {
+        "fam": "W",
+        "reg": "01a1d056-1bcb-7132-a748-3e9bce08079b",
+        "actions": [
+          {
+            "child": "ZZ TEST 893 staff W1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 893 staff W1:out"
+        ]
+      }
+    ],
+    "refunds": [
+      {
+        "id": "01a1d056-6d0a-7bce-b0a4-9af4260adb8e",
+        "receipt": "Z89301-000006",
+        "gross": 104000,
+        "status": 200,
+        "errorCode": null,
+        "refund": 104000,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d056-1edd-7621-ac8c-ae170e3906ad",
+        "receipt": "Z89301-000005",
+        "gross": 91500,
+        "status": 200,
+        "errorCode": null,
+        "refund": 91500,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d055-55e5-7f0a-a94e-1fd9c73746b8",
+        "receipt": "Z89301-000004",
+        "gross": 183000,
+        "status": 200,
+        "errorCode": null,
+        "refund": 183000,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d04e-c17c-7177-a351-0d56d6181159",
+        "receipt": "Z89301-000003",
+        "gross": 91500,
+        "status": 200,
+        "errorCode": null,
+        "refund": 91500,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d04b-8401-75b0-aed0-b1f807104649",
+        "receipt": "Z89301-000002",
+        "gross": 91500,
+        "status": 200,
+        "errorCode": null,
+        "refund": 91500,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d041-52f3-799d-b7a9-9209e4f85ac6",
+        "receipt": "Z89301-000001",
+        "gross": 91500,
+        "status": 200,
+        "errorCode": null,
+        "refund": 91500,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "id": "01a1d052-ba7e-7b56-b6ad-1ba6163904b6",
+        "receipt": "Z89302-000001",
+        "gross": 91500,
+        "status": 200,
+        "errorCode": null,
+        "refund": 91500,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "refundable": 0
+      }
+    ],
+    "rest": {
+      "ordinarySaleKeys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "issuedVouchers",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "ordinaryGrants": {
+        "grants": "[one adult credit grant ฿350, its code withheld]"
+      },
+      "members": [
+        {
+          "n": "0898930210",
+          "member": "01a1d041-4c8f-7b31-b871-5e72ebc0161b"
+        },
+        {
+          "n": "0898930211",
+          "member": null
+        },
+        {
+          "n": "0898930212",
+          "member": "01a1d04b-7fcd-7eb9-9af6-50796982fad4"
+        },
+        {
+          "n": "0898930213",
+          "member": "01a1d04e-6c12-7b52-aa72-6d76429da1ac"
+        },
+        {
+          "n": "0898930214",
+          "member": null
+        },
+        {
+          "n": "0898930215",
+          "member": null
+        },
+        {
+          "n": "0898930216",
+          "member": null
+        },
+        {
+          "n": "0898930217",
+          "member": "01a1d055-4c88-7e88-9adc-90af27af84e2"
+        },
+        {
+          "n": "0898930218",
+          "member": "01a1d056-1ac2-7382-b7e6-477d12ba5822"
+        },
+        {
+          "n": "0898930219",
+          "member": null
+        },
+        {
+          "n": "0898930220",
+          "member": null
+        },
+        {
+          "n": "0898930221",
+          "member": null
+        }
+      ],
+      "displaysOpen": [],
+      "displays": [
+        {
+          "label": "main",
+          "revoked": true
+        },
+        {
+          "label": "nocam",
+          "revoked": true
+        },
+        {
+          "label": "refused",
+          "revoked": true
+        },
+        {
+          "label": "thai",
+          "revoked": true
+        }
+      ],
+      "sessions": [
+        {
+          "label": "till",
+          "before": 200,
+          "after": 401
+        },
+        {
+          "label": "manager",
+          "before": 200,
+          "after": 401
+        }
+      ],
+      "stations": [
+        {
+          "id": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1",
+          "patch": 200,
+          "del": 200,
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "id": "01a1d051-88fa-72b1-a7cd-7fc0ed908ee6",
+          "patch": 200,
+          "del": 200,
+          "archived": true,
+          "devices": 0
+        }
+      ]
+    },
+    "members": [
+      {
+        "n": "0898930210",
+        "id": "01a1d041-4c8f-7b31-b871-5e72ebc0161b",
+        "name": "Zz Test Parent Half",
+        "del": 200,
+        "afterLookup": null
+      },
+      {
+        "n": "0898930212",
+        "id": "01a1d04b-7fcd-7eb9-9af6-50796982fad4",
+        "name": "Zz Test Parent Keys",
+        "del": 200,
+        "afterLookup": null
+      },
+      {
+        "n": "0898930213",
+        "id": "01a1d04e-6c12-7b52-aa72-6d76429da1ac",
+        "name": "Zz Test Parent Hold",
+        "del": 200,
+        "afterLookup": null
+      },
+      {
+        "n": "0898930217",
+        "id": "01a1d055-4c88-7e88-9adc-90af27af84e2",
+        "name": "Zz Test Parent Thai",
+        "del": 200,
+        "afterLookup": null
+      },
+      {
+        "n": "0898930218",
+        "id": "01a1d056-1ac2-7382-b7e6-477d12ba5822",
+        "name": "ZZ TEST 893 guardian W",
+        "del": 200,
+        "afterLookup": null
+      }
+    ],
+    "admin": {
+      "signOut": 200,
+      "me": 401
+    }
+  },
+  "checks": {
+    "numbersCheckedUnused": 30,
+    "first": "0898930210",
+    "last": "0898930239"
+  },
+  "finishedAt": "2026-11-12T15:21:41.061Z"
+}

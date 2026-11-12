@@ -1,0 +1,4337 @@
+
+=== 2026-11-12T14:51:46.001Z setup: numbers, own till, sign in the desk till (no keyboard flag)
+S.phase = 'setup: numbers, own till, sign in the desk till (no keyboard flag)';
+const r = await S.setup();
+const till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1680, height: 1050 });
+S.till = till;
+const bundle = await till.evaluate(async () => {
+  const urls = [...new Set(performance.getEntriesByType('resource').map(e => e.name).filter(n => /\.js(\?|$)/.test(n)))];
+  const found = { files: urls.length };
+  const needles = { lockFilling: 'A family is filling in the drop-off form on the display.', lockDone: 'The family has pressed Done: unlock to carry on.', teamInAMoment: 'Thank you. The team will be with you in a moment.', returnPhone: 'Return phone to staff', reconnectSends: 'what you enter is sent by itself', screenKeyboard: 'screen-keyboard', withdraws: 'withdraws the family', noPhotoHere: 'The display does not take the photo at this station' };
+  for (const k of Object.keys(needles)) found[k] = 0;
+  for (const url of urls) { const t = await (await fetch(url, { cache: 'no-store' })).text(); for (const [k, v] of Object.entries(needles)) found[k] += t.split(v).length - 1; }
+  return found;
+});
+S.receipt.reads.bundle = bundle;
+await S.landing(till).waitFor();
+await S.shot(till, '00-desk-till-signed-in-landing.png');
+S.keepAlive = () => S.till.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))).catch(() => null);
+clearInterval(S.alive);
+S.alive = setInterval(S.keepAlive, 40000);
+S.fam = {};
+return { r, bundle };
+--> {
+ "ok": true,
+ "value": {
+  "r": {
+   "free": 30,
+   "first": "0898930210",
+   "last": "0898930239",
+   "station": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1"
+  },
+  "bundle": {
+   "files": 1,
+   "lockFilling": 1,
+   "lockDone": 1,
+   "teamInAMoment": 1,
+   "returnPhone": 1,
+   "reconnectSends": 1,
+   "screenKeyboard": 1,
+   "withdraws": 1,
+   "noPhotoHere": 1
+  }
+ }
+}
+
+=== 2026-11-12T14:52:21.906Z 3: the till customer half with ?keyboard=screen, no paired display: family H, 1 Kid, no adult
+const { expect } = S;
+S.phase = '3: the till customer half with ?keyboard=screen, no paired display: family H, 1 Kid, no adult';
+const till = S.till;
+await S.keepAlive();
+// A press on the desk (no touch screen): click; on a touch context: tap.
+S.typeKeys = async (page, text, { space = /^(Space|เว้นวรรค)$/, scope = null } = {}) => {
+  const k = scope ? scope.getByTestId('screen-keyboard') : S.keys(page);
+  const touch = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  const t0 = Date.now();
+  for (const ch of text) {
+    const b = ch === ' ' ? k.getByRole('button', { name: space }) : k.getByRole('button', { name: ch.toUpperCase(), exact: true });
+    if (touch) await b.tap(); else await b.click();
+  }
+  return Date.now() - t0;
+};
+await till.goto('/?keyboard=screen'); await S.landing(till).waitFor({ timeout: 30000 });
+const flag = await till.evaluate(() => location.search);
+S.receipt.numbers.H = S.free[0];
+await S.firstScreen(till, till, S.free[0]);
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(1200);
+const half = S.halfOf(till.getByTestId('consent-child-name').first());
+S.half = half;
+const boxes = {};
+for (const id of ['consent-child-name', 'consent-allergies', 'consent-dietary', 'consent-guardian']) {
+  const el = half.getByTestId(id);
+  boxes[id] = { count: await el.count(), inputMode: await el.getAttribute('inputmode'), maxLength: await el.getAttribute('maxlength') };
+}
+await S.shot(till, '03a-half-form-opened-keyboard-flag.png');
+return { flag, boxes, keysBefore: await half.getByTestId('screen-keyboard').count() };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.getAttribute: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('consent-child-name').first().locator('xpath=ancestor::div[contains(concat(\" \", normalize-space(@class), \" \"), \" w-1/2 \")][1]').getByTestId('consent-allergies')\u001b[22m | "
+}
+
+=== 2026-11-12T14:53:02.567Z 3: the till customer half with ?keyboard=screen, no paired display: family H, 1 Kid, no adult
+const till = S.till;
+await S.keepAlive();
+await S.shot(till, '03a-half-form-opened-keyboard-flag.png');
+const half = S.half;
+return { ids: await half.locator('[data-testid]').evaluateAll(es => es.map(e => e.getAttribute('data-testid')).filter(x => /consent|keyboard/.test(x))) };
+--> {
+ "ok": true,
+ "value": {
+  "ids": [
+   "consent-child-name-holder",
+   "consent-child-name",
+   "consent-done-bar",
+   "consent-missing"
+  ]
+ }
+}
+
+=== 2026-11-12T14:53:18.084Z 3: the half: each text box opens the keys; typing reaches the till
+const { expect } = S;
+S.phase = '3: the half: each text box opens the keys; typing reaches the till';
+const till = S.till, half = S.half;
+await S.keepAlive();
+const res = {};
+const keysIn = () => half.getByTestId('screen-keyboard');
+// 1. the child's name
+await half.getByTestId('consent-child-name').click();
+await expect.poll(() => keysIn().count()).toBe(1);
+res.nameKeys = await keysIn().locator('button').evaluateAll(bs => bs.map(b => b.getAttribute('aria-label') || b.textContent.trim()));
+res.namePlacing = await S.placing(till, 'consent-child-name');
+await S.shot(till, '03b-half-child-name-keys-open.png');
+res.nameMs = await S.typeKeys(till, 'ZZ TEST HALF', { scope: half });
+res.nameValue = await half.getByTestId('consent-child-name').inputValue();
+await keysIn().getByRole('button', { name: 'Done', exact: true }).click();
+res.keysAfterDone = await keysIn().count();
+await S.setAge(till, half, 6);
+await half.getByTestId('consent-allergies').waitFor({ timeout: 15000 });
+// 2. allergies past 100 characters
+await half.getByTestId('consent-allergies').click();
+await expect.poll(() => keysIn().count()).toBe(1);
+res.allergiesPlacing = await S.placing(till, 'consent-allergies');
+await S.shot(till, '03c-half-allergies-keys-open.png');
+const long = 'PEANUT ALLERGY CARRIES AN EPIPEN IN THE BLUE BAG PLEASE CALL MUM BEFORE ANY SNACK WITH NUTS OR EGGS THANK YOU VERY MUCH';
+res.allergiesMs = await S.typeKeys(till, long, { scope: half });
+res.allergiesValue = await half.getByTestId('consent-allergies').inputValue();
+res.allergiesLength = res.allergiesValue.length;
+res.allergiesMaxLength = await half.getByTestId('consent-allergies').getAttribute('maxlength');
+await S.shot(till, '03d-half-allergies-past-100-typed.png');
+// 3. dietary
+await half.getByTestId('consent-dietary').click();
+await expect.poll(() => keysIn().count()).toBe(1);
+res.dietaryPlacing = await S.placing(till, 'consent-dietary');
+res.dietaryMs = await S.typeKeys(till, 'NO PORK', { scope: half });
+res.dietaryValue = await half.getByTestId('consent-dietary').inputValue();
+await S.shot(till, '03e-half-dietary-keys-typed.png');
+// 4. the guardian
+await half.getByTestId('consent-guardian').scrollIntoViewIfNeeded();
+await half.getByTestId('consent-guardian').click();
+await expect.poll(() => keysIn().count()).toBe(1);
+res.guardianPlacing = await S.placing(till, 'consent-guardian');
+res.guardianMs = await S.typeKeys(till, 'ZZ TEST PARENT HALF', { scope: half });
+res.guardianValue = await half.getByTestId('consent-guardian').inputValue();
+await S.shot(till, '03f-half-guardian-keys-typed.png');
+res.keyCount = await keysIn().count();
+res.staffSide = S.flat(await till.locator('div.w-1\/2').first().innerText()).slice(0, 700);
+return res;
+--> {
+ "ok": false,
+ "error": "Error: locator.innerText: Unexpected token \"/\" while parsing css selector \"div.w-1/2\". Did you mean to CSS.escape it? | Call log: | \u001b[2m  - waiting for div.w-1/2 >> nth=0\u001b[22m | "
+}
+
+=== 2026-11-12T14:53:32.757Z 3: the half: read back what the keys typed (the step above answered nothing after its last line failed)
+S.phase = '3: the half: read back what the keys typed (the step above answered nothing after its last line failed)';
+const till = S.till, half = S.half;
+await S.keepAlive();
+const res = {};
+for (const id of ['consent-child-name', 'consent-allergies', 'consent-dietary', 'consent-guardian']) {
+  const el = half.getByTestId(id);
+  const v = await el.inputValue();
+  res[id] = { value: v, length: v.length, maxLength: await el.getAttribute('maxlength'), inputMode: await el.getAttribute('inputmode') };
+}
+res.keysOpen = await half.getByTestId('screen-keyboard').count();
+res.guardianPlacing = await S.placing(till, 'consent-guardian');
+res.staffSide = S.flat(await till.locator('xpath=//div[contains(@class,"w-1/2")]').first().innerText()).slice(0, 900);
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "consent-child-name": {
+   "value": "Zz Test Half",
+   "length": 12,
+   "maxLength": "100",
+   "inputMode": "none"
+  },
+  "consent-allergies": {
+   "value": "Peanut Allergy Carries An Epipen In The Blue Bag Please Call Mum Before Any Snack With Nuts Or Eggs Thank You Very Much",
+   "length": 119,
+   "maxLength": "500",
+   "inputMode": "none"
+  },
+  "consent-dietary": {
+   "value": "No Pork",
+   "length": 7,
+   "maxLength": "200",
+   "inputMode": "none"
+  },
+  "consent-guardian": {
+   "value": "Zz Test Parent Half",
+   "length": 19,
+   "maxLength": "100",
+   "inputMode": "none"
+  },
+  "keysOpen": 1,
+  "guardianPlacing": {
+   "fieldInView": true,
+   "keysInView": true,
+   "keysBelowField": true,
+   "clearOfBar": true,
+   "viewport": "1680x1050",
+   "scrollTop": 685,
+   "scroller": [
+    358,
+    919
+   ],
+   "field": [
+    610,
+    666
+   ],
+   "keys": [
+    678,
+    888
+   ],
+   "bar": [
+    919,
+    1050
+   ],
+   "barButtons": [
+    "Done"
+   ]
+  },
+  "staffSide": "Agreements — ticked by the family on their screen Supervision and photo consent · not ticked yet WhatsApp number +66 89 893 0210 · not confirmed yet I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • Zz Test Half (age 6) needs drop-off supervision. • Zz Test Half needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen. Back Continue to payment"
+ }
+}
+
+=== 2026-11-12T14:53:50.190Z harness: which of my own typed words a mask name matches (only my words are answered, never a name)
+S.phase = 'harness: which of my own typed words a mask name matches (only my words are answered, never a name)';
+const mine = 'Peanut Allergy Carries An Epipen In The Blue Bag Please Call Mum Before Any Snack With Nuts Or Eggs Thank You Very Much No Pork Zz Test Half Parent'.split(' ');
+const staff = [...S.names].filter(s => s.length >= 3 && !/^(ZZ|TEST|SCRUM|proof|till|OTO|Till|Manager|Reception|Staging|Admin|Park)$/i.test(s));
+const all = [...S.hidden, ...staff].map(s => s.toLowerCase());
+return { hiddenCount: S.hidden.length, staffCount: staff.length, myWordsThatMatch: mine.filter(w => all.includes(w.toLowerCase())), viaStaff: mine.filter(w => staff.map(s => s.toLowerCase()).includes(w.toLowerCase())).length };
+--> {
+ "ok": true,
+ "value": {
+  "hiddenCount": 40,
+  "staffCount": 3,
+  "myWordsThatMatch": ["[one of my own words, withheld: it is part of a real family's name on the board]"],
+  "viaStaff": 0
+ }
+}
+
+=== 2026-11-12T14:54:01.388Z 3: the half: allergies retyped without a word a real family on the board shares (the picture masked it)
+const { expect } = S;
+S.phase = '3: the half: allergies retyped without a word a real family on the board shares (the picture masked it)';
+const till = S.till, half = S.half;
+await S.keepAlive();
+S.myWordsClash = text => { const staff = [...S.names].filter(s => s.length >= 3); const all = [...S.hidden, ...staff].map(s => s.toLowerCase()); return text.split(/\s+/).filter(w => all.includes(w.toLowerCase())); };
+const long = 'PEANUT ALLERGY CARRIES AN EPIPEN IN THE BLUE BAG PLEASE CALL THE PARENTS BEFORE ANY SNACK WITH NUTS OR EGGS THANK YOU VERY MUCH';
+const clash = S.myWordsClash(long);
+if (clash.length) return { clash };
+await half.getByTestId('consent-allergies').scrollIntoViewIfNeeded();
+await half.getByTestId('consent-allergies').click();
+await expect.poll(() => half.getByTestId('screen-keyboard').count()).toBe(1);
+const before = (await half.getByTestId('consent-allergies').inputValue()).length;
+const bs = half.getByTestId('screen-keyboard').getByRole('button', { name: 'Backspace' });
+for (let i = 0; i < before; i++) await bs.click();
+const cleared = await half.getByTestId('consent-allergies').inputValue();
+const ms = await S.typeKeys(till, long, { scope: half });
+const value = await half.getByTestId('consent-allergies').inputValue();
+const placing = await S.placing(till, 'consent-allergies');
+await S.shot(till, '03d-half-allergies-past-100-typed.png');
+return { before, cleared, ms, value, length: value.length, placing };
+--> {
+ "ok": true,
+ "value": {
+  "before": 119,
+  "cleared": "",
+  "ms": 3092,
+  "value": "Peanut Allergy Carries An Epipen In The Blue Bag Please Call The Parents Before Any Snack With Nuts Or Eggs Thank You Very Much",
+  "length": 127,
+  "placing": {
+   "fieldInView": true,
+   "keysInView": true,
+   "keysBelowField": true,
+   "clearOfBar": true,
+   "viewport": "1680x1050",
+   "scrollTop": 12,
+   "scroller": [
+    358,
+    919
+   ],
+   "field": [
+    594,
+    682
+   ],
+   "keys": [
+    694,
+    904
+   ],
+   "bar": [
+    919,
+    1050
+   ],
+   "barButtons": [
+    "Done"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T14:54:26.401Z 4a: SCRUM-914 on the half: the WhatsApp tick, Telegram and back, one digit edited and typed back
+const { expect } = S;
+S.phase = '4a: SCRUM-914 on the half: the WhatsApp tick, Telegram and back, one digit edited and typed back';
+const till = S.till, half = S.half;
+await S.keepAlive();
+const res = {};
+const keys = half.getByTestId('screen-keyboard');
+if (await keys.count()) await keys.getByRole('button', { name: 'Done', exact: true }).click();
+const tick = half.getByTestId('consent-contact-confirm');
+await tick.scrollIntoViewIfNeeded();
+const state = async () => ({ tick: await tick.getAttribute('data-state'), enabled: await tick.isEnabled(), line: S.flat(await tick.locator('xpath=ancestor::label[1]').innerText()),
+  staffRow: S.flat(await till.getByText(/^(WhatsApp|Telegram|LINE) number/).first().locator('xpath=..').innerText().catch(() => '')) });
+res.start = await state();
+await tick.click();
+await till.waitForTimeout(500);
+res.ticked = await state();
+await S.shot(till, '04a-half-whatsapp-ticked.png');
+const telegram = half.getByTitle('Telegram', { exact: true });
+await telegram.click(); await till.waitForTimeout(500);
+res.telegram = await state();
+await half.getByTitle('WhatsApp', { exact: true }).click(); await till.waitForTimeout(500);
+res.backToWhatsapp = await state();
+await S.shot(till, '04b-half-telegram-and-back-unticked.png');
+// tick again, then one digit edited on the keypad and typed back
+await tick.click(); await till.waitForTimeout(500);
+res.tickedAgain = await state();
+const pad = half.locator('xpath=.//button[@aria-label="Backspace" or normalize-space(.)="Clear"]/ancestor::div[.//button[normalize-space(.)="9"]][1]');
+const readout = async () => S.flat(await half.getByText(/^\+66/).first().locator('xpath=..').innerText().catch(() => ''));
+res.readoutBefore = await readout();
+await half.getByRole('button', { name: 'Backspace', exact: true }).last().click(); await till.waitForTimeout(400);
+res.afterBackspace = { ...(await state()), readout: await readout() };
+await half.getByRole('button', { name: '0', exact: true }).last().click(); await till.waitForTimeout(600);
+res.typedBack = { ...(await state()), readout: await readout() };
+await S.shot(till, '04c-half-digit-edited-and-typed-back-unticked.png');
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "start": {
+   "tick": "unchecked",
+   "enabled": true,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 0210 · not confirmed yet"
+  },
+  "ticked": {
+   "tick": "checked",
+   "enabled": true,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 0210 · confirmed by the family"
+  },
+  "telegram": {
+   "tick": "unchecked",
+   "enabled": true,
+   "line": "This is my Telegram number — send messages about my child here.",
+   "staffRow": "Telegram number +66 89 893 0210 · not confirmed yet"
+  },
+  "backToWhatsapp": {
+   "tick": "unchecked",
+   "enabled": true,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 0210 · not confirmed yet"
+  },
+  "tickedAgain": {
+   "tick": "checked",
+   "enabled": true,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 0210 · confirmed by the family"
+  },
+  "readoutBefore": "🇹🇭 +66",
+  "afterBackspace": {
+   "tick": "unchecked",
+   "enabled": false,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 021 · doesn't look like a mobile that can receive messages",
+   "readout": "🇹🇭 +66"
+  },
+  "typedBack": {
+   "tick": "unchecked",
+   "enabled": true,
+   "line": "This is my WhatsApp number — send messages about my child here.",
+   "staffRow": "WhatsApp number +66 89 893 0210 · not confirmed yet",
+   "readout": "🇹🇭 +66"
+  }
+ }
+}
+
+=== 2026-11-12T14:55:02.117Z 3/4: family H finishes on the half (photo, ticks, Done), pays cash, Check in now
+const { expect } = S;
+S.phase = '3/4: family H finishes on the half (photo, ticks, Done), pays cash, Check in now';
+const till = S.till, half = S.half;
+await S.keepAlive();
+await half.getByRole('button', { name: 'Start camera', exact: true }).click();
+await half.getByRole('button', { name: 'Take photo', exact: true }).click();
+await half.getByAltText('Captured', { exact: true }).waitFor({ timeout: 20000 });
+for (const box of await half.getByRole('checkbox').all()) if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') await box.click();
+const bar = half.getByTestId('consent-done-bar');
+const doneBtn = bar.getByRole('button', { name: 'Done', exact: true });
+await expect(doneBtn).toBeEnabled({ timeout: 10000 });
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await doneBtn.click();
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const sale = await S.saleWritten('dropoff-sale-H');
+S.fam.H = { reg: regBody?.id, sale: sale.id, number: S.free[0] };
+S.receipt.created.push({ kind: 'registration', family: 'H', id: regBody?.id }); S.save();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(regBody.id)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(regBody.id);
+const s = (await S.sale(sale.id)).sale;
+await till.waitForTimeout(1000);
+await S.shot(till, '03g-half-family-h-paid-checked-in.png');
+return { regStatus: r.status(), reg: { id: reg.id, guardian: reg.guardianName, phone: reg.guardianPhone, channel: reg.contactMethod ?? reg.contactChannel ?? null, contactConfirmedBy: reg.contactConfirmedBy, photo: !!reg.photoFileId,
+  children: reg.children.map(c => ({ name: c.childName, status: c.status, allergiesLength: (c.allergiesMedical ?? '').length, allergies: c.allergiesMedical, dietary: c.foodRestrictions })) }, sale: { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "regStatus": 200,
+  "reg": {
+   "id": "01a1d041-4dd7-7214-b76f-56e3ce3458e8",
+   "guardian": "Zz Test Parent Half",
+   "phone": "+66898930210",
+   "channel": "whatsapp",
+   "contactConfirmedBy": "family",
+   "photo": true,
+   "children": [
+    {
+     "name": "Zz Test Half",
+     "status": "in_park",
+     "allergiesLength": 0,
+     "dietary": "No Pork"
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89301-000001",
+   "gross": 91500
+  }
+ }
+}
+
+=== 2026-11-12T14:55:12.692Z 3: read back family H registration child fields
+S.phase = '3: read back family H registration child fields';
+const reg = await S.registration(S.fam.H.reg);
+const c = reg.children[0];
+return { regKeys: Object.keys(reg), childKeys: Object.keys(c), allergyLike: Object.fromEntries(Object.entries(c).filter(([k]) => /aller|medic|food|diet/i.test(k))) };
+--> {
+ "ok": true,
+ "value": {
+  "regKeys": [
+   "id",
+   "branchId",
+   "memberId",
+   "guardianName",
+   "guardianPhone",
+   "contactChannel",
+   "contactConfirmedAt",
+   "contactConfirmedBy",
+   "consentRecordedAt",
+   "acknowledgedConfirmations",
+   "source",
+   "photoFileId",
+   "createdAt",
+   "children"
+  ],
+  "childKeys": [
+   "id",
+   "registrationId",
+   "childId",
+   "childName",
+   "childAgeYears",
+   "dateOfBirth",
+   "allergies",
+   "foodRestrictions",
+   "mayOrderFood",
+   "foodProvision",
+   "service",
+   "status",
+   "scheduledFor",
+   "bookedMinutes",
+   "nannyId",
+   "checkedInAt",
+   "saleId",
+   "bandId",
+   "visitId",
+   "photoFileId"
+  ],
+  "allergyLike": {
+   "allergies": "Peanut Allergy Carries An Epipen In The Blue Bag Please Call The Parents Before Any Snack With Nuts Or Eggs Thank You Very Much",
+   "foodRestrictions": "No Pork",
+   "mayOrderFood": false,
+   "foodProvision": {
+    "mode": "none",
+    "paidSatang": 0
+   }
+  }
+ }
+}
+
+=== 2026-11-12T14:56:19.702Z 4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation
+const { expect } = S;
+S.phase = '4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation';
+const till = S.till;
+await S.keepAlive();
+await S.boardApi();
+await till.goto('/');
+await till.getByRole('button', { name: 'Check-in', exact: true }).click();
+await S.search(till).waitFor({ timeout: 20000 });
+const dropOff = till.getByRole('button', { name: 'Drop-off', exact: true }).first();
+if (await dropOff.isVisible().catch(() => false)) await dropOff.click();
+await till.getByRole('button', { name: /^In park\s*\d+$/ }).first().click().catch(() => null);
+await till.waitForTimeout(2000);
+await S.searchBoard(till, 'Zz Test Half');
+const card = till.getByRole('button', { name: 'Edit registration' }).first();
+await card.waitFor({ timeout: 20000 });
+await S.shot(till, '04d-board-family-h-found.png');
+await card.click();
+const dialog = till.getByRole('dialog', { name: /Edit registration/ });
+await dialog.waitFor();
+const tel = dialog.locator('input[type="tel"]');
+const save = dialog.getByRole('button', { name: 'Save changes' });
+const res = { before: { number: await tel.inputValue(), saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() } };
+// a landline (Bangkok 02 123 4567, an invented one): refused under the field, Save disabled
+await tel.fill('21234567'); await till.waitForTimeout(500);
+res.landline = { invalid: (await dialog.getByTestId('edit-phone-invalid').count()) ? S.flat(await dialog.getByTestId('edit-phone-invalid').innerText()) : null, saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() };
+await S.shot(till, '04e-board-edit-landline-refused-save-disabled.png');
+// a new mobile (this run's own unused invented ZZ number)
+const fresh = S.free[1];
+S.receipt.numbers.Hnew = fresh;
+await tel.fill(fresh.replace(/^0/, '')); await till.waitForTimeout(500);
+res.newMobile = { invalid: await dialog.getByTestId('edit-phone-invalid').count(), saveEnabled: await save.isEnabled(), withdrawnLine: (await dialog.getByTestId('edit-confirmation-withdrawn').count()) ? S.flat(await dialog.getByTestId('edit-confirmation-withdrawn').innerText()) : null };
+await S.shot(till, '04f-board-edit-new-mobile-withdraw-warning.png');
+const before = await S.registration(S.fam.H.reg);
+res.regBefore = { phone: before.guardianPhone, contactConfirmedAt: !!before.contactConfirmedAt, contactConfirmedBy: before.contactConfirmedBy };
+const patch = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'PATCH', { timeout: 30000 });
+await save.click();
+const pr = await patch; const pbody = await pr.json().catch(() => null);
+res.patch = { status: pr.status(), warnings: pbody?.warnings ?? null, changed: pbody?.changed ?? null, contact: pbody?.contact ?? null };
+const toast = till.locator('[role="status"], li[data-state="open"], ol li').filter({ hasText: /Changes saved|withdrawn/ }).first();
+await toast.waitFor({ timeout: 10000 }).catch(() => null);
+res.toast = S.flat(await toast.innerText().catch(() => ''));
+await S.shot(till, '04g-board-saved-toast-confirmation-withdrawn.png');
+const after = await S.registration(S.fam.H.reg);
+res.regAfter = { phone: after.guardianPhone, contactConfirmedAt: !!after.contactConfirmedAt, contactConfirmedBy: after.contactConfirmedBy };
+return res;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 20000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Edit registration' }).first() to be visible\u001b[22m | "
+}
+
+=== 2026-11-12T14:57:20.460Z 4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation
+const till = S.till;
+await S.keepAlive();
+await S.shot(till, 'x-board-look.png');
+const tabs = await till.getByRole('button').evaluateAll(bs => bs.map(b => b.textContent.trim()).filter(t => /^(Upcoming|In park|Booked|Waiting|All|Picked|Out|Drop-off|Nanny)/.test(t)));
+return { tabs, edits: await till.getByRole('button', { name: /Edit/ }).count(), zz: await till.getByText(/Zz Test Half/).count() };
+--> {
+ "ok": true,
+ "value": {
+  "tabs": [
+   "Drop-off",
+   "All",
+   "Nanny",
+   "Upcoming11",
+   "Out52"
+  ],
+  "edits": 0,
+  "zz": 0
+ }
+}
+
+=== 2026-11-12T14:57:39.734Z 4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation
+const { expect } = S;
+S.phase = '4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation';
+const till = S.till;
+await S.keepAlive();
+await S.boardApi();
+await till.goto('/');
+await till.getByRole('button', { name: 'Check-in', exact: true }).click();
+await S.search(till).waitFor({ timeout: 20000 });
+const dropOff = till.getByRole('button', { name: 'Drop-off', exact: true }).first();
+if (await dropOff.isVisible().catch(() => false)) await dropOff.click();
+await till.getByRole('button', { name: /^In Park\s*\d+$/i }).first().click();
+await till.waitForTimeout(2000);
+await S.searchBoard(till, 'Zz Test Half');
+const card = till.getByRole('button', { name: 'Edit registration' }).first();
+await card.waitFor({ timeout: 20000 });
+await S.shot(till, '04d-board-family-h-found.png');
+await card.click();
+const dialog = till.getByRole('dialog', { name: /Edit registration/ });
+await dialog.waitFor();
+const tel = dialog.locator('input[type="tel"]');
+const save = dialog.getByRole('button', { name: 'Save changes' });
+const res = { before: { number: await tel.inputValue(), saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() } };
+// a landline (Bangkok 02 123 4567, an invented one): refused under the field, Save disabled
+await tel.fill('21234567'); await till.waitForTimeout(500);
+res.landline = { invalid: (await dialog.getByTestId('edit-phone-invalid').count()) ? S.flat(await dialog.getByTestId('edit-phone-invalid').innerText()) : null, saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() };
+await S.shot(till, '04e-board-edit-landline-refused-save-disabled.png');
+// a new mobile (this run's own unused invented ZZ number)
+const fresh = S.free[1];
+S.receipt.numbers.Hnew = fresh;
+await tel.fill(fresh.replace(/^0/, '')); await till.waitForTimeout(500);
+res.newMobile = { invalid: await dialog.getByTestId('edit-phone-invalid').count(), saveEnabled: await save.isEnabled(), withdrawnLine: (await dialog.getByTestId('edit-confirmation-withdrawn').count()) ? S.flat(await dialog.getByTestId('edit-confirmation-withdrawn').innerText()) : null };
+await S.shot(till, '04f-board-edit-new-mobile-withdraw-warning.png');
+const before = await S.registration(S.fam.H.reg);
+res.regBefore = { phone: before.guardianPhone, contactConfirmedAt: !!before.contactConfirmedAt, contactConfirmedBy: before.contactConfirmedBy };
+const patch = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'PATCH', { timeout: 30000 });
+await save.click();
+const pr = await patch; const pbody = await pr.json().catch(() => null);
+res.patch = { status: pr.status(), warnings: pbody?.warnings ?? null, changed: pbody?.changed ?? null, contact: pbody?.contact ?? null };
+const toast = till.locator('[role="status"], li[data-state="open"], ol li').filter({ hasText: /Changes saved|withdrawn/ }).first();
+await toast.waitFor({ timeout: 10000 }).catch(() => null);
+res.toast = S.flat(await toast.innerText().catch(() => ''));
+await S.shot(till, '04g-board-saved-toast-confirmation-withdrawn.png');
+const after = await S.registration(S.fam.H.reg);
+res.regAfter = { phone: after.guardianPhone, contactConfirmedAt: !!after.contactConfirmedAt, contactConfirmedBy: after.contactConfirmedBy };
+return res;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 20000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Edit registration' }).first() to be visible\u001b[22m | "
+}
+
+=== 2026-11-12T14:58:09.332Z 4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation
+const till = S.till;
+await S.keepAlive();
+await S.shot(till, 'x-board-look.png');
+const labels = await till.locator('button[aria-label]').evaluateAll(bs => [...new Set(bs.map(b => b.getAttribute('aria-label')))]);
+return { labels, zz: await till.getByText(/Zz Test Half/).count() };
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "1 people in park. No gate is reporting at this branch.",
+   "Theme settings",
+   "Lock screen",
+   "Select country code",
+   "Edit Zz Test Half"
+  ],
+  "zz": 1
+ }
+}
+
+=== 2026-11-12T14:58:18.660Z 4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation
+const { expect } = S;
+S.phase = '4b: SCRUM-914 on the Check-in board: edit family H, a landline refused, a new mobile withdraws the confirmation';
+const till = S.till;
+await S.keepAlive();
+await S.boardApi();
+await till.goto('/');
+await till.getByRole('button', { name: 'Check-in', exact: true }).click();
+await S.search(till).waitFor({ timeout: 20000 });
+const dropOff = till.getByRole('button', { name: 'Drop-off', exact: true }).first();
+if (await dropOff.isVisible().catch(() => false)) await dropOff.click();
+await till.getByRole('button', { name: /^In Park\s*\d+$/i }).first().click();
+await till.waitForTimeout(2000);
+await S.searchBoard(till, 'Zz Test Half');
+const card = till.getByRole('button', { name: 'Edit Zz Test Half', exact: true }).first();
+await card.waitFor({ timeout: 20000 });
+await S.shot(till, '04d-board-family-h-found.png');
+await card.click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Edit registration' });
+await dialog.waitFor();
+const tel = dialog.locator('input[type="tel"]');
+const save = dialog.getByRole('button', { name: 'Save changes' });
+const res = { before: { number: await tel.inputValue(), saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() } };
+// a landline (Bangkok 02 123 4567, an invented one): refused under the field, Save disabled
+await tel.fill('21234567'); await till.waitForTimeout(500);
+res.landline = { invalid: (await dialog.getByTestId('edit-phone-invalid').count()) ? S.flat(await dialog.getByTestId('edit-phone-invalid').innerText()) : null, saveEnabled: await save.isEnabled(), withdrawnLine: await dialog.getByTestId('edit-confirmation-withdrawn').count() };
+await S.shot(till, '04e-board-edit-landline-refused-save-disabled.png');
+// a new mobile (this run's own unused invented ZZ number)
+const fresh = S.free[1];
+S.receipt.numbers.Hnew = fresh;
+await tel.fill(fresh.replace(/^0/, '')); await till.waitForTimeout(500);
+res.newMobile = { invalid: await dialog.getByTestId('edit-phone-invalid').count(), saveEnabled: await save.isEnabled(), withdrawnLine: (await dialog.getByTestId('edit-confirmation-withdrawn').count()) ? S.flat(await dialog.getByTestId('edit-confirmation-withdrawn').innerText()) : null };
+await S.shot(till, '04f-board-edit-new-mobile-withdraw-warning.png');
+const before = await S.registration(S.fam.H.reg);
+res.regBefore = { phone: before.guardianPhone, contactConfirmedAt: !!before.contactConfirmedAt, contactConfirmedBy: before.contactConfirmedBy };
+const patch = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'PATCH', { timeout: 30000 });
+await save.click();
+const pr = await patch; const pbody = await pr.json().catch(() => null);
+res.patch = { status: pr.status(), warnings: pbody?.warnings ?? null, changed: pbody?.changed ?? null, contact: pbody?.contact ?? null };
+const toast = till.locator('[role="status"], li[data-state="open"], ol li').filter({ hasText: /Changes saved|withdrawn/ }).first();
+await toast.waitFor({ timeout: 10000 }).catch(() => null);
+res.toast = S.flat(await toast.innerText().catch(() => ''));
+await S.shot(till, '04g-board-saved-toast-confirmation-withdrawn.png');
+const after = await S.registration(S.fam.H.reg);
+res.regAfter = { phone: after.guardianPhone, contactConfirmedAt: !!after.contactConfirmedAt, contactConfirmedBy: after.contactConfirmedBy };
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "number": "898930210",
+   "saveEnabled": true,
+   "withdrawnLine": 0
+  },
+  "landline": {
+   "invalid": "That number doesn't look like a mobile that can receive WhatsApp, Telegram or LINE messages — check it with the guardian.",
+   "saveEnabled": false,
+   "withdrawnLine": 0
+  },
+  "newMobile": {
+   "invalid": 0,
+   "saveEnabled": true,
+   "withdrawnLine": "Saving a new number or channel withdraws the family's confirmation of their messaging number, if they gave one: ask them to confirm the new one."
+  },
+  "regBefore": {
+   "phone": "+66898930210",
+   "contactConfirmedAt": true,
+   "contactConfirmedBy": "family"
+  },
+  "patch": {
+   "status": 200,
+   "warnings": [
+    "The family's confirmation of their messaging number was withdrawn by this change — ask them to confirm the new number."
+   ],
+   "changed": 1,
+   "contact": {
+    "status": "pending",
+    "sentAt": "2026-11-12T14:58:25.807Z",
+    "confirmedAt": null
+   }
+  },
+  "toast": "Changes saved 1 field updated for Zz Test Half. The family's confirmation of their messaging number was withdrawn by this change — ask them to confirm the new number.",
+  "regAfter": {
+   "phone": "+66898930211",
+   "contactConfirmedAt": false,
+   "contactConfirmedBy": null
+  }
+ }
+}
+
+=== 2026-11-12T14:58:43.582Z 1: pair the counter display (600x1024, touch, ?keyboard=screen), family D on the display, 1 Kid no adult
+const { expect } = S;
+S.phase = '1: pair the counter display (600x1024, touch, ?keyboard=screen), family D on the display, 1 Kid no adult';
+const till = S.till;
+await S.keepAlive();
+await S.boardApi();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+const d = await S.pairDisplay('main', { camera: 'fake' });
+const facts = await d.evaluate(() => ({ url: location.pathname + location.search, touch: navigator.maxTouchPoints, w: innerWidth, h: innerHeight }));
+S.receipt.numbers.D = S.free[2];
+await S.firstScreen(d, till, S.free[2], { tap: true });
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+await d.getByTestId('display-consent').waitFor({ timeout: 30000 });
+await till.getByTestId('consent-mirror').waitFor({ timeout: 20000 });
+await till.waitForTimeout(1000);
+await S.pair('01a-form-opened-both-screens.png', till, d, { caption: 'Point 1 — the family form opens on the counter display (600x1024, touch, ?keyboard=screen); the till shows its read-only copy' });
+return { facts, mirror: await S.mirrorState(till), display: await S.displayState(d), staffLine: await S.staffLine(till), keysBefore: await S.keys(d).count() };
+--> {
+ "ok": true,
+ "value": {
+  "facts": {
+   "url": "/display?keyboard=screen",
+   "touch": 1,
+   "w": 600,
+   "h": 1024
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "1. Your children",
+   "childName": "",
+   "allergies": null,
+   "dietary": null,
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true,
+   "buttons": [
+    {
+     "text": "1. Your children",
+     "disabled": false,
+     "opacity": "1"
+    },
+    {
+     "text": "2. Care details",
+     "disabled": true,
+     "opacity": "1"
+    },
+    {
+     "text": "3. Agreements",
+     "disabled": true,
+     "opacity": "1"
+    },
+    {
+     "text": "Tap to set age",
+     "disabled": false,
+     "opacity": "1"
+    },
+    {
+     "text": "Ask the team",
+     "disabled": true,
+     "opacity": "0.5"
+    },
+    {
+     "text": "Continue",
+     "disabled": true,
+     "opacity": "0.5"
+    }
+   ]
+  },
+  "display": {
+   "shown": true,
+   "step": "1. Your children",
+   "childName": "",
+   "allergies": null,
+   "dietary": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+  "keysBefore": 0
+ }
+}
+
+=== 2026-11-12T14:59:17.035Z 1/2: SCRUM-893/894 on the counter display at 600x1024: each box opens the keys; typing reaches the box and the till copy
+const { expect } = S;
+S.phase = '1/2: SCRUM-893/894 on the counter display at 600x1024: each box opens the keys; typing reaches the box and the till copy';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+/** One box: touch it, the keys open; where box, keys and bar sit; type with the keys; how long until the till copy has it; does the page move while typing. */
+S.boxProof = async (d, testId, text, picture, caption) => {
+  const r = { testId };
+  const box = d.getByTestId('display-consent').getByTestId(testId);
+  r.keysBefore = await S.keys(d).count();
+  await box.tap();
+  await expect.poll(() => S.keys(d).count()).toBe(1);
+  await d.waitForTimeout(400);
+  r.opened = await S.placing(d, testId);
+  const before = (await box.inputValue());
+  const t0 = Date.now();
+  r.typeMs = await S.typeKeys(d, text);
+  const typed = Date.now();
+  const want = before + text.split(' ').map(w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w).join(' ');
+  r.value = await box.inputValue();
+  r.expected = want;
+  await expect.poll(async () => (await S.mirrorState(S.till))[{ 'consent-child-name': 'childName', 'consent-allergies': 'allergies', 'consent-dietary': 'dietary', 'consent-guardian': 'guardian' }[testId]], { timeout: 15000 }).toBe(want.trim());
+  r.tillCopyMsAfterLastKey = Date.now() - typed;
+  r.afterTyping = await S.placing(d, testId);
+  r.moved = { field: r.afterTyping.field[0] - r.opened.field[0], scrollTop: r.afterTyping.scrollTop - r.opened.scrollTop };
+  await S.pair(picture, S.till, d, { caption });
+  return r;
+};
+const out = {};
+out.name = await S.boxProof(d, 'consent-child-name', 'ZZ TEST KEYS', '01b-600-child-name-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the child name box touched, the on-screen keys open under it; typed with the keys; the till copy has it');
+out.keyNames = await S.keyNames(d);
+await S.shot(d, '01c-600-keyboard-close-up.png');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+out.keysAfterDone = await S.keys(d).count();
+await S.setAge(d, d.getByTestId('display-consent'), 6, { tap: true });
+await d.getByTestId('display-consent').getByRole('button', { name: 'Continue', exact: true }).tap();
+await d.getByTestId('display-consent').getByTestId('consent-allergies').waitFor();
+await d.waitForTimeout(800);
+out.allergies = await S.boxProof(d, 'consent-allergies', 'PEANUTS AND EGGS', '01d-600-allergies-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the owner\'s case, an allergy typed with the on-screen keys; the till copy has it');
+out.dietary = await S.boxProof(d, 'consent-dietary', 'NO PORK', '01e-600-dietary-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the dietary box touched (the allergies keys put away), typed; the till copy has it');
+out.allergyKeysClosedWhenDietaryOpened = await S.keys(d).count();
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "name": {
+   "testId": "consent-child-name",
+   "keysBefore": 0,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 0,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     323,
+     379
+    ],
+    "keys": [
+     391,
+     601
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Continue"
+    ]
+   },
+   "typeMs": 637,
+   "value": "Zz Test Keys",
+   "expected": "Zz Test Keys",
+   "tillCopyMsAfterLastKey": 995,
+   "afterTyping": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 0,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     323,
+     379
+    ],
+    "keys": [
+     391,
+     601
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Continue"
+    ]
+   },
+   "moved": {
+    "field": 0,
+    "scrollTop": 0
+   }
+  },
+  "keyNames": [
+   "Q",
+   "W",
+   "E",
+   "R",
+   "T",
+   "Y",
+   "U",
+   "I",
+   "O",
+   "P",
+   "A",
+   "S",
+   "D",
+   "F",
+   "G",
+   "H",
+   "J",
+   "K",
+   "L",
+   "Z",
+   "X",
+   "C",
+   "V",
+   "B",
+   "N",
+   "M",
+   "Backspace",
+   "Space",
+   "Done"
+  ],
+  "keysAfterDone": 0,
+  "allergies": {
+   "testId": "consent-allergies",
+   "keysBefore": 0,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 233,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     643,
+     731
+    ],
+    "keys": [
+     743,
+     953
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "typeMs": 507,
+   "value": "Peanuts And Eggs",
+   "expected": "Peanuts And Eggs",
+   "tillCopyMsAfterLastKey": 1010,
+   "afterTyping": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 233,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     643,
+     731
+    ],
+    "keys": [
+     743,
+     953
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "moved": {
+    "field": 0,
+    "scrollTop": 0
+   }
+  },
+  "dietary": {
+   "testId": "consent-dietary",
+   "keysBefore": 1,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 382,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     634,
+     682
+    ],
+    "keys": [
+     694,
+     904
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "typeMs": 214,
+   "value": "No Pork",
+   "expected": "No Pork",
+   "tillCopyMsAfterLastKey": 1022,
+   "afterTyping": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 382,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     634,
+     682
+    ],
+    "keys": [
+     694,
+     904
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "moved": {
+    "field": 0,
+    "scrollTop": 0
+   }
+  },
+  "allergyKeysClosedWhenDietaryOpened": 1
+ }
+}
+
+=== 2026-11-12T14:59:49.018Z 1/2: 600x1024 care pictures with the till copy scrolled to the box; the family photo; the guardian box
+const { expect } = S;
+S.phase = '1/2: 600x1024 care pictures with the till copy scrolled to the box; the family photo; the guardian box';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const m = till.getByTestId('consent-mirror');
+const out = {};
+for (const [id, pic, cap] of [['consent-allergies', '01d-600-allergies-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the owner\'s case, the allergy "Peanuts And Eggs" typed with the on-screen keys (keys open under the box, above the bar); the till copy (scrolled to the box) has it'],
+  ['consent-dietary', '01e-600-dietary-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the dietary box, keys open under it above the bar; the till copy (scrolled to the box) has "No Pork"']]) {
+  await c.getByTestId(id).tap();
+  await expect.poll(() => S.keys(d).count()).toBe(1);
+  await d.waitForTimeout(500);
+  await m.getByTestId(id).scrollIntoViewIfNeeded();
+  out[id] = { placing: await S.placing(d, id), tillCopy: await m.getByTestId(id).inputValue() };
+  await S.pair(pic, till, d, { caption: cap });
+}
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+// the family takes the photo on the display (fake camera of colour bars)
+const photo = c.getByTestId('consent-photo');
+await photo.getByRole('button', { name: 'Start camera', exact: true }).tap();
+await photo.getByRole('button', { name: 'Take photo', exact: true }).waitFor({ timeout: 15000 });
+await d.waitForTimeout(1000);
+await photo.getByRole('button', { name: 'Take photo', exact: true }).tap();
+await expect(photo.getByTestId('consent-photo-received')).toHaveText('The team has this photo.', { timeout: 30000 });
+out.photo = 'The team has this photo.';
+await c.getByRole('button', { name: 'Continue', exact: true }).tap();
+await c.getByTestId('consent-guardian').waitFor();
+await d.waitForTimeout(800);
+out.guardian = await S.boxProof(d, 'consent-guardian', 'ZZ TEST PARENT KEYS', '01f-600-guardian-keys-typed-till-follows.png', 'Points 1/2 — 600x1024: the guardian box on Agreements, keys open under it above the bar; the till copy has it');
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "consent-allergies": {
+   "placing": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 233,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     643,
+     731
+    ],
+    "keys": [
+     743,
+     953
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "tillCopy": "Peanuts And Eggs"
+  },
+  "consent-dietary": {
+   "placing": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 382,
+    "scroller": [
+     262,
+     953
+    ],
+    "field": [
+     634,
+     682
+    ],
+    "keys": [
+     694,
+     904
+    ],
+    "bar": [
+     953,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "tillCopy": "No Pork"
+  },
+  "photo": "The team has this photo.",
+  "guardian": {
+   "testId": "consent-guardian",
+   "keysBefore": 0,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 0,
+    "scroller": [
+     262,
+     893
+    ],
+    "field": [
+     323,
+     379
+    ],
+    "keys": [
+     391,
+     601
+    ],
+    "bar": [
+     893,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Done"
+    ]
+   },
+   "typeMs": 1377,
+   "value": "Zz Test Parent Keys",
+   "expected": "Zz Test Parent Keys",
+   "tillCopyMsAfterLastKey": 502,
+   "afterTyping": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "600x1024",
+    "scrollTop": 0,
+    "scroller": [
+     262,
+     893
+    ],
+    "field": [
+     323,
+     379
+    ],
+    "keys": [
+     391,
+     601
+    ],
+    "bar": [
+     893,
+     1024
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "moved": {
+    "field": 0,
+    "scrollTop": 0
+   }
+  }
+ }
+}
+
+=== 2026-11-12T15:00:20.410Z 2: SCRUM-894 at 1024x600 (the short screen): each box and its keys above the bar
+const { expect } = S;
+S.phase = '2: SCRUM-894 at 1024x600 (the short screen): each box and its keys above the bar';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+if (await S.keys(d).count()) await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await d.setViewportSize({ width: 1024, height: 600 });
+await d.waitForTimeout(1000);
+S.shortBox = async (id, pic) => {
+  const box = c.getByTestId(id);
+  const scrollBefore = await d.evaluate(i => { let s = document.querySelector(`[data-testid="${i}"]`).parentElement; while (s && getComputedStyle(s).overflowY !== 'auto') s = s.parentElement; return Math.round(s.scrollTop); }, id);
+  await box.tap();
+  await expect.poll(() => S.keys(d).count()).toBe(1);
+  await d.waitForTimeout(500);
+  const opened = await S.placing(d, id);
+  await S.typeKeys(d, ' X');
+  const typed = await S.placing(d, id);
+  await S.backspace(d, 2);
+  const after = await S.placing(d, id);
+  await S.shot(d, pic);
+  return { scrollBeforeTap: scrollBefore, opened, whileTyping: { field: typed.field, keys: typed.keys, scrollTop: typed.scrollTop }, afterBackspace: { field: after.field, scrollTop: after.scrollTop }, value: await box.inputValue() };
+};
+const out = { subtitleShown: await c.getByText("Add each child's name and age so our team can keep them safe.").isVisible() };
+await c.getByRole('button', { name: 'Back', exact: true }).tap(); await d.waitForTimeout(500);
+await c.getByRole('button', { name: 'Back', exact: true }).tap(); await d.waitForTimeout(800);
+out.name = await S.shortBox('consent-child-name', '02a-1024x600-child-name-keys.png');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await c.getByRole('button', { name: 'Continue', exact: true }).tap(); await d.waitForTimeout(800);
+out.allergies = await S.shortBox('consent-allergies', '02b-1024x600-allergies-keys.png');
+out.dietary = await S.shortBox('consent-dietary', '02c-1024x600-dietary-keys.png');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await c.getByRole('button', { name: 'Continue', exact: true }).tap(); await d.waitForTimeout(800);
+out.guardian = await S.shortBox('consent-guardian', '02d-1024x600-guardian-keys.png');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await S.pair('02e-1024x600-agreements-both-screens.png', till, d, { caption: 'Point 2 — the short screen (1024x600): the agreements step, keys put away; the till copy follows' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "subtitleShown": false,
+  "name": {
+   "scrollBeforeTap": 0,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "1024x600",
+    "scrollTop": 0,
+    "scroller": [
+     202,
+     529
+    ],
+    "field": [
+     263,
+     319
+    ],
+    "keys": [
+     331,
+     509
+    ],
+    "bar": [
+     529,
+     600
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Continue"
+    ]
+   },
+   "whileTyping": {
+    "field": [
+     263,
+     319
+    ],
+    "keys": [
+     331,
+     509
+    ],
+    "scrollTop": 0
+   },
+   "afterBackspace": {
+    "field": [
+     263,
+     319
+    ],
+    "scrollTop": 0
+   },
+   "value": "Zz Test Keys"
+  },
+  "allergies": {
+   "scrollBeforeTap": 0,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "1024x600",
+    "scrollTop": 156,
+    "scroller": [
+     202,
+     529
+    ],
+    "field": [
+     251,
+     339
+    ],
+    "keys": [
+     351,
+     529
+    ],
+    "bar": [
+     529,
+     600
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "whileTyping": {
+    "field": [
+     251,
+     339
+    ],
+    "keys": [
+     351,
+     529
+    ],
+    "scrollTop": 156
+   },
+   "afterBackspace": {
+    "field": [
+     251,
+     339
+    ],
+    "scrollTop": 156
+   },
+   "value": "Peanuts And Eggs"
+  },
+  "dietary": {
+   "scrollBeforeTap": 156,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "1024x600",
+    "scrollTop": 305,
+    "scroller": [
+     202,
+     529
+    ],
+    "field": [
+     242,
+     290
+    ],
+    "keys": [
+     302,
+     480
+    ],
+    "bar": [
+     529,
+     600
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Continue"
+    ]
+   },
+   "whileTyping": {
+    "field": [
+     242,
+     290
+    ],
+    "keys": [
+     302,
+     480
+    ],
+    "scrollTop": 305
+   },
+   "afterBackspace": {
+    "field": [
+     242,
+     290
+    ],
+    "scrollTop": 305
+   },
+   "value": "No Pork"
+  },
+  "guardian": {
+   "scrollBeforeTap": 115,
+   "opened": {
+    "fieldInView": true,
+    "keysInView": true,
+    "keysBelowField": true,
+    "clearOfBar": true,
+    "viewport": "1024x600",
+    "scrollTop": 61,
+    "scroller": [
+     202,
+     493
+    ],
+    "field": [
+     202,
+     258
+    ],
+    "keys": [
+     270,
+     448
+    ],
+    "bar": [
+     493,
+     600
+    ],
+    "barButtons": [
+     "Ask the team",
+     "Back",
+     "Done"
+    ]
+   },
+   "whileTyping": {
+    "field": [
+     202,
+     258
+    ],
+    "keys": [
+     270,
+     448
+    ],
+    "scrollTop": 61
+   },
+   "afterBackspace": {
+    "field": [
+     202,
+     258
+    ],
+    "scrollTop": 61
+   },
+   "value": "Zz Test Parent Keys"
+  }
+ }
+}
+
+=== 2026-11-12T15:00:56.984Z hunt: does a new step open at its top, after the family scrolled down the step before? (600x1024 and 1024x600)
+const { expect } = S;
+S.phase = 'hunt: does a new step open at its top, after the family scrolled down the step before? (600x1024 and 1024x600)';
+const d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const scrollOf = () => d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); return { top: Math.round(s.scrollTop), max: Math.round(s.scrollHeight - s.clientHeight) }; });
+const out = {};
+for (const [w, h] of [[600, 1024], [1024, 600]]) {
+  await d.setViewportSize({ width: w, height: h }); await d.waitForTimeout(600);
+  await c.getByRole('button', { name: 'Back', exact: true }).tap(); await d.waitForTimeout(600);
+  const careStart = await scrollOf();
+  await c.getByTestId('consent-dietary').scrollIntoViewIfNeeded();
+  await d.mouse.wheel(0, 2000).catch(() => null);
+  await d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); s.scrollTop = s.scrollHeight; });
+  await d.waitForTimeout(300);
+  const careBottom = await scrollOf();
+  await c.getByRole('button', { name: 'Continue', exact: true }).tap(); await d.waitForTimeout(800);
+  const agreementsOpened = await scrollOf();
+  const guardianTop = await c.getByTestId('consent-guardian').evaluate(e => Math.round(e.getBoundingClientRect().top));
+  const labelVisible = await c.getByText('Parent / guardian name', { exact: true }).evaluate(e => { const r = e.getBoundingClientRect(); const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(x => getComputedStyle(x).overflowY === 'auto').getBoundingClientRect(); return r.top >= s.top && r.bottom <= s.bottom; });
+  await S.shot(d, `hunt-a-${w}x${h}-agreements-opened-after-scrolled-care.png`);
+  out[`${w}x${h}`] = { careStart, careBottom, agreementsOpened, guardianTop, labelVisible };
+}
+await d.setViewportSize({ width: 600, height: 1024 }); await d.waitForTimeout(600);
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "600x1024": {
+   "careStart": {
+    "top": 0,
+    "max": 0
+   },
+   "careBottom": {
+    "top": 0,
+    "max": 0
+   },
+   "agreementsOpened": {
+    "top": 0,
+    "max": 665
+   },
+   "guardianTop": 323,
+   "labelVisible": true
+  },
+  "1024x600": {
+   "careStart": {
+    "top": 0,
+    "max": 115
+   },
+   "careBottom": {
+    "top": 115,
+    "max": 115
+   },
+   "agreementsOpened": {
+    "top": 115,
+    "max": 913
+   },
+   "guardianTop": 148,
+   "labelVisible": false
+  }
+ }
+}
+
+=== 2026-11-12T15:01:17.690Z hunt: 600x1024, the family types the dietary note and presses Continue with the keys still open: where does Agreements open?
+const { expect } = S;
+S.phase = 'hunt: 600x1024, the family types the dietary note and presses Continue with the keys still open: where does Agreements open?';
+const d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const scrollOf = () => d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); return { top: Math.round(s.scrollTop), max: Math.round(s.scrollHeight - s.clientHeight), box: [Math.round(s.getBoundingClientRect().top), Math.round(s.getBoundingClientRect().bottom)] }; });
+await c.getByRole('button', { name: 'Back', exact: true }).tap(); await d.waitForTimeout(600);
+await c.getByTestId('consent-dietary').tap();
+await expect.poll(() => S.keys(d).count()).toBe(1);
+await d.waitForTimeout(400);
+const careWithKeys = await scrollOf();
+await c.getByRole('button', { name: 'Continue', exact: true }).tap(); await d.waitForTimeout(800);
+const agreementsOpened = await scrollOf();
+const guardian = await c.getByTestId('consent-guardian').evaluate(e => { const r = e.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom)]; });
+await S.shot(d, 'hunt-b-600x1024-continue-with-keys-open-agreements-opens-mid-page.png');
+return { careWithKeys, agreementsOpened, guardian, keysNow: await S.keys(d).count() };
+--> {
+ "ok": true,
+ "value": {
+  "careWithKeys": {
+   "top": 0,
+   "max": 0,
+   "box": [
+    262,
+    953
+   ]
+  },
+  "agreementsOpened": {
+   "top": 0,
+   "max": 665,
+   "box": [
+    262,
+    893
+   ]
+  },
+  "guardian": [
+   323,
+   379
+  ],
+  "keysNow": 0
+ }
+}
+
+=== 2026-11-12T15:01:41.292Z 7c: SCRUM-943 the number while typed and when complete, on both screens (600x1024)
+const { expect } = S;
+S.phase = '7c: SCRUM-943 the number while typed and when complete, on both screens (600x1024)';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+S.odd('hunt-b picture renamed to ...-opens-at-top.png: at 600x1024 Agreements opened at its top (scrollTop 0)');
+const c = d.getByTestId('display-consent');
+const m = till.getByTestId('consent-mirror');
+const readout = async () => S.flat(await c.getByText(/^\+\d+/).first().locator('xpath=..').innerText().catch(() => ''));
+const mirrorPhone = async () => ({ input: await m.locator('input[type="tel"]').first().inputValue().catch(() => null), storedAs: S.flat(await m.getByText(/^Stored as:/).first().innerText().catch(() => '')) });
+const staffRow = async () => S.flat(await till.getByText(/^(WhatsApp|Telegram|LINE) number/).first().locator('xpath=..').innerText().catch(() => ''));
+const out = { start: { display: await readout(), mirror: await mirrorPhone(), staffRow: await staffRow() } };
+await c.getByRole('button', { name: 'Clear', exact: true }).tap(); await d.waitForTimeout(300);
+for (const k of '0898') await c.getByRole('button', { name: k, exact: true }).last().tap();
+await d.waitForTimeout(1600);
+await m.locator('input[type="tel"]').first().scrollIntoViewIfNeeded().catch(() => null);
+out.partial = { display: await readout(), mirror: await mirrorPhone(), staffRow: await staffRow(), invalid: (await c.getByTestId('consent-contact-invalid').count()) ? S.flat(await c.getByTestId('consent-contact-invalid').innerText()) : null };
+await S.pair('07c1-number-while-typed-both-screens.png', till, d, { caption: 'Point 7c — the number while it is typed (0898…) on the display, and the till copy' });
+for (const k of '930212') await c.getByRole('button', { name: k, exact: true }).last().tap();
+await d.waitForTimeout(1600);
+await m.locator('input[type="tel"]').first().scrollIntoViewIfNeeded().catch(() => null);
+out.complete = { display: await readout(), mirror: await mirrorPhone(), staffRow: await staffRow(), invalid: await c.getByTestId('consent-contact-invalid').count() };
+await S.pair('07c2-number-complete-both-screens.png', till, d, { caption: 'Point 7c — the number complete (typed 0898930212) on the display, and the till copy' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "start": {
+   "display": "🇹🇭 +66",
+   "mirror": {
+    "input": "898930212",
+    "storedAs": "Stored as: +66898930212"
+   },
+   "staffRow": "WhatsApp number +66 89 893 0212 · not confirmed yet"
+  },
+  "partial": {
+   "display": "🇹🇭 +66",
+   "mirror": {
+    "input": "0898",
+    "storedAs": "Stored as: +660898"
+   },
+   "staffRow": "WhatsApp number +66 0898 · doesn't look like a mobile that can receive messages",
+   "invalid": "This doesn't look like a mobile number that can receive messages — please check it."
+  },
+  "complete": {
+   "display": "🇹🇭 +66",
+   "mirror": {
+    "input": "898930212",
+    "storedAs": "Stored as: +66898930212"
+   },
+   "staffRow": "WhatsApp number +66 89 893 0212 · not confirmed yet",
+   "invalid": 0
+  }
+ }
+}
+
+=== 2026-11-12T15:02:10.912Z 7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up
+const { expect } = S;
+S.phase = '7d: SCRUM-943 the display offline a few seconds: the reconnecting line over the form, no Retry, no jump; a tick pressed then registers; the till catches up';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const m = till.getByTestId('consent-mirror');
+const consentTick = c.getByTestId('public-consent-ack');
+await consentTick.scrollIntoViewIfNeeded();
+await d.waitForTimeout(400);
+const rect = () => consentTick.evaluate(e => { const r = e.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.left)]; });
+const formTop = () => c.evaluate(e => Math.round(e.getBoundingClientRect().top));
+const staffConsent = async () => S.flat(await till.getByText(/^Supervision and photo consent/).first().innerText().catch(() => ''));
+const out = { before: { tick: await rect(), formTop: await formTop(), staff: await staffConsent() } };
+await ctx.setOffline(true);
+const offAt = Date.now();
+// wait for the display to notice
+let seen = null;
+for (let i = 0; i < 40 && !seen; i++) { await d.waitForTimeout(500); if (await d.getByTestId('display-form-reconnecting').count()) seen = Date.now() - offAt; }
+out.reconnectingSeenMs = seen;
+out.offline = { line: (await d.getByTestId('display-form-reconnecting').count()) ? S.flat(await d.getByTestId('display-form-reconnecting').innerText()) : null,
+  retryButtons: await d.getByRole('button', { name: /^(Retry|ลองอีกครั้ง)$/ }).count(), alert: (await d.getByRole('alert').count()) ? S.flat(await d.getByRole('alert').first().innerText()) : null,
+  tick: await rect(), formTop: await formTop() };
+await S.shot(d, '07d1-display-offline-reconnecting-line-over-form.png');
+// the family ticks consent while offline
+await consentTick.tap();
+await d.waitForTimeout(800);
+out.tickedOffline = { state: await consentTick.getAttribute('data-state'), tick: await rect(), retryButtons: await d.getByRole('button', { name: /^(Retry|ลองอีกครั้ง)$/ }).count(), staff: await staffConsent() };
+await S.pair('07d2-offline-tick-pressed-till-not-yet.png', till, d, { caption: 'Point 7d — offline: the reconnecting line lies over the form (no Retry, nothing moved); the family ticked consent; the till has not heard yet' });
+await d.waitForTimeout(3000);
+await ctx.setOffline(false);
+const onAt = Date.now();
+await expect.poll(staffConsent, { timeout: 60000 }).toMatch(/ticked|given|consented|✓/i).catch(() => null);
+out.tillCaughtUpMs = Date.now() - onAt;
+await expect.poll(async () => d.getByTestId('display-form-reconnecting').count(), { timeout: 30000 }).toBe(0).catch(() => null);
+out.after = { line: await d.getByTestId('display-form-reconnecting').count(), tick: await consentTick.getAttribute('data-state'), staff: await staffConsent(), mirrorTick: await m.getByTestId('public-consent-ack').getAttribute('data-state').catch(() => null), retryButtons: await d.getByRole('button', { name: /^(Retry)$/ }).count() };
+await S.pair('07d3-online-again-till-caught-up.png', till, d, { caption: 'Point 7d — online again: the line is gone and the till copy and the staff list have the consent tick given offline' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "tick": [
+    566,
+    74
+   ],
+   "formTop": 0,
+   "staff": "Supervision and photo consent · not ticked yet"
+  },
+  "reconnectingSeenMs": 509,
+  "offline": {
+   "line": "Reconnecting… what you enter is sent by itself when the connection returns.",
+   "retryButtons": 0,
+   "alert": null,
+   "tick": [
+    566,
+    74
+   ],
+   "formTop": 0
+  },
+  "tickedOffline": {
+   "state": "checked",
+   "tick": [
+    566,
+    74
+   ],
+   "retryButtons": 0,
+   "staff": "Supervision and photo consent · not ticked yet"
+  },
+  "tillCaughtUpMs": 2,
+  "after": {
+   "line": 0,
+   "tick": "checked",
+   "staff": "Supervision and photo consent · ticked",
+   "mirrorTick": "checked",
+   "retryButtons": 0
+  }
+ }
+}
+
+=== 2026-11-12T15:02:40.386Z 7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?
+const { expect } = S;
+S.phase = '7d (again, timed): offline 6 s, the family ticks the first confirmation; when does the till hear it?';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const box = c.getByText('I will remain within 15 minutes of the venue', { exact: true }).locator('xpath=ancestor::label[1]').getByRole('checkbox');
+await box.scrollIntoViewIfNeeded();
+const staff = async () => S.flat(await till.getByText(/^I will remain within 15 minutes of the venue/).first().innerText().catch(() => ''));
+const out = { before: await staff() };
+await ctx.setOffline(true);
+await d.waitForTimeout(1500);
+out.lineShown = await d.getByTestId('display-form-reconnecting').count();
+await box.tap();
+const tickedAt = Date.now();
+const timeline = [];
+for (let i = 0; i < 12; i++) { await d.waitForTimeout(500); timeline.push({ ms: Date.now() - tickedAt, offline: true, staff: /· ticked/.test(await staff()) }); }
+await ctx.setOffline(false);
+const onAt = Date.now();
+for (let i = 0; i < 30; i++) { const ok = /· ticked/.test(await staff()); timeline.push({ ms: Date.now() - tickedAt, offline: false, staff: ok }); if (ok) break; await d.waitForTimeout(500); }
+out.tillHeardMsAfterOnline = Date.now() - onAt;
+out.timeline = timeline;
+out.display = { state: await box.getAttribute('data-state'), line: await d.getByTestId('display-form-reconnecting').count() };
+await S.pair('07d3-online-again-till-caught-up.png', till, d, { caption: 'Point 7d — online again: the till has the consent tick and the confirmation tick the family gave while the display was offline' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "before": "I will remain within 15 minutes of the venue",
+  "lineShown": 1,
+  "tillHeardMsAfterOnline": 15275,
+  "timeline": [
+   {
+    "ms": 504,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 1009,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 1511,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 2019,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 2524,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 3042,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 3545,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 4049,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 4561,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 5066,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 5570,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 6083,
+    "offline": true,
+    "staff": false
+   },
+   {
+    "ms": 6088,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 6592,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 7098,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 7602,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 8108,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 8617,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 9135,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 9641,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 10145,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 10649,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 11159,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 11666,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 12172,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 12684,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 13186,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 13694,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 14198,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 14713,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 15231,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 15742,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 16247,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 16757,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 17270,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 17776,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 18281,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 18799,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 19313,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 19828,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 20346,
+    "offline": false,
+    "staff": false
+   },
+   {
+    "ms": 20849,
+    "offline": false,
+    "staff": false
+   }
+  ],
+  "display": {
+   "state": "checked",
+   "line": 0
+  }
+ }
+}
+
+=== 2026-11-12T15:03:11.360Z 7d: read the staff agreement rows now (the timed step read the label only, not its state)
+S.phase = '7d: read the staff agreement rows now (the timed step read the label only, not its state)';
+const till = S.till;
+await S.keepAlive();
+const rows = S.flat(await till.getByText('Agreements — ticked by the family on their screen').locator('xpath=..').innerText());
+return { rows };
+--> {
+ "ok": true,
+ "value": {
+  "rows": "Agreements — ticked by the family on their screen Supervision and photo consent · ticked WhatsApp number +66 89 893 0212 · not confirmed yet I will remain within 15 minutes of the venue · ticked I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet"
+ }
+}
+
+=== 2026-11-12T15:03:22.209Z 7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?
+const { expect } = S;
+S.phase = '7d (timed, read right): offline 6 s, the family ticks the second confirmation; when does the till hear it?';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const label = 'I understand early pickup does not qualify for refund';
+const box = c.getByText(label, { exact: true }).locator('xpath=ancestor::label[1]').getByRole('checkbox');
+await box.scrollIntoViewIfNeeded();
+const rowState = async () => { const rows = S.flat(await till.getByText('Agreements — ticked by the family on their screen').locator('xpath=..').innerText()); const i = rows.indexOf(label); return rows.slice(i + label.length, i + label.length + 18).trim(); };
+const out = { before: await rowState() };
+await ctx.setOffline(true);
+await d.waitForTimeout(1500);
+out.lineShown = await d.getByTestId('display-form-reconnecting').count();
+const tickRect = async () => box.evaluate(e => Math.round(e.getBoundingClientRect().top));
+const top0 = await tickRect();
+await box.tap();
+const tickedAt = Date.now();
+const timeline = [];
+for (let i = 0; i < 12; i++) { await d.waitForTimeout(500); timeline.push([Date.now() - tickedAt, 'off', await rowState()]); }
+out.tickTopBeforeAfter = [top0, await tickRect()];
+await ctx.setOffline(false);
+const onAt = Date.now();
+let heard = null;
+for (let i = 0; i < 60 && heard === null; i++) { const s = await rowState(); timeline.push([Date.now() - tickedAt, 'on', s]); if (/^· ticked/.test(s)) heard = Date.now() - onAt; else await d.waitForTimeout(500); }
+out.tillHeardMsAfterOnline = heard;
+out.timeline = timeline.filter((x, i) => i % 3 === 0 || /ticked$|· ticked/.test(x[2]));
+out.display = { state: await box.getAttribute('data-state'), line: await d.getByTestId('display-form-reconnecting').count() };
+await S.pair('07d3-online-again-till-caught-up.png', till, d, { caption: 'Point 7d — online again: the till has the ticks the family gave while the display was offline (consent, then two confirmations)' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "before": "· not ticked yet",
+  "lineShown": 1,
+  "tickTopBeforeAfter": [
+   869,
+   869
+  ],
+  "tillHeardMsAfterOnline": 1033,
+  "timeline": [
+   [
+    501,
+    "off",
+    "· not ticked yet"
+   ],
+   [
+    2015,
+    "off",
+    "· not ticked yet"
+   ],
+   [
+    3531,
+    "off",
+    "· not ticked yet"
+   ],
+   [
+    5057,
+    "off",
+    "· not ticked yet"
+   ],
+   [
+    6090,
+    "on",
+    "· not ticked yet"
+   ],
+   [
+    7122,
+    "on",
+    "· ticked I acknow"
+   ]
+  ],
+  "display": {
+   "state": "checked",
+   "line": 0
+  }
+ }
+}
+
+=== 2026-11-12T15:03:48.402Z 6: SCRUM-942 the family form open on the display, ready but Done not pressed; staff leave the till untouched until it locks
+const { expect } = S;
+S.phase = '6: SCRUM-942 the family form open on the display, ready but Done not pressed; staff leave the till untouched until it locks';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const last = c.getByText('I acknowledge the emergency evacuation point', { exact: true }).locator('xpath=ancestor::label[1]').getByRole('checkbox');
+await last.scrollIntoViewIfNeeded(); await last.tap();
+const num = c.getByTestId('public-consent-contact-confirm');
+await num.scrollIntoViewIfNeeded(); await num.tap();
+await d.waitForTimeout(1500);
+const ready = await S.displayState(d);
+clearInterval(S.alive); S.alive = null;
+const idleFrom = Date.now();
+S.receipt.reads.lockIdleFrom = new Date(idleFrom).toISOString();
+let lockedAt = null;
+for (let i = 0; i < 60 && !lockedAt; i++) { await till.waitForTimeout(5000); if (await till.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false)) lockedAt = Date.now(); }
+const lockLine = (await till.getByTestId('lock-family-form').count()) ? S.flat(await till.getByTestId('lock-family-form').innerText()) : null;
+await d.waitForTimeout(500);
+await S.pair('06a-till-locked-family-filling-line.png', till, d, { caption: 'Point 6 — the till left untouched locked itself; its lock screen says a family is filling in the form; the display still shows the form' });
+return { ready: { doneEnabled: ready.doneEnabled, missing: ready.missing }, lockedAfterMs: lockedAt ? lockedAt - idleFrom : null, lockLine };
+--> {
+ "ok": true,
+ "value": {
+  "ready": {
+   "doneEnabled": true,
+   "missing": null
+  },
+  "lockedAfterMs": 120235,
+  "lockLine": "A family is filling in the drop-off form on the display."
+ }
+}
+
+=== 2026-11-12T15:06:07.273Z 6: SCRUM-942 the family presses Done while the till is locked; then staff unlock
+const { expect } = S;
+S.phase = '6: SCRUM-942 the family presses Done while the till is locked; then staff unlock';
+const till = S.till, d = S.displays.main.page;
+const c = d.getByTestId('display-consent');
+const regsBefore = S.receipt.registrationsPosted.length;
+await c.getByRole('button', { name: 'Done', exact: true }).tap();
+const pressed = Date.now();
+let lineDoneMs = null, displayLineMs = null;
+for (let i = 0; i < 60 && (lineDoneMs === null || displayLineMs === null); i++) {
+  await till.waitForTimeout(250);
+  const l = (await till.getByTestId('lock-family-form').count()) ? S.flat(await till.getByTestId('lock-family-form').innerText()) : '';
+  if (lineDoneMs === null && /pressed Done/.test(l)) lineDoneMs = Date.now() - pressed;
+  const w = (await d.getByTestId('display-consent-wait').count()) ? S.flat(await d.getByTestId('display-consent-wait').innerText()) : '';
+  if (displayLineMs === null && /team will be with you/.test(w)) displayLineMs = Date.now() - pressed;
+}
+const lockLine = (await till.getByTestId('lock-family-form').count()) ? S.flat(await till.getByTestId('lock-family-form').innerText()) : null;
+const displayWait = (await d.getByTestId('display-consent-wait').count()) ? S.flat(await d.getByTestId('display-consent-wait').innerText()) : null;
+await S.pair('06b-locked-family-pressed-done-both-lines.png', till, d, { caption: 'Point 6 — the family pressed Done while the till is locked: the lock screen says so; the display says the team will be with them in a moment' });
+const whileLocked = { registrationsPosted: S.receipt.registrationsPosted.length - regsBefore };
+// staff unlock
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 }).catch(() => null);
+const unlocked = await S.unlock('till');
+const t0 = Date.now();
+const r = await regResp; const regBody = r ? await r.json().catch(() => null) : null;
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const amountDueMs = Date.now() - t0;
+await till.waitForTimeout(1500);
+await S.pair('06c-after-unlock-registered-amount-due.png', till, d, { caption: 'Point 6 — after the unlock: the family\'s Done is taken, the child registered, the till at Amount Due' });
+S.keepAlive(); S.alive = setInterval(S.keepAlive, 40000);
+const sale = await S.saleWritten('dropoff-sale-D');
+S.fam.D = { reg: regBody?.id, sale: sale.id, number: S.free[2] };
+S.receipt.created.push({ kind: 'registration', family: 'D', id: regBody?.id }); S.save();
+const reg = regBody?.id ? await S.registration(regBody.id) : null;
+return { lineDoneMs, displayLineMs, lockLine, displayWait, whileLocked, unlocked, regStatus: r?.status() ?? null, amountDueMs, due: await S.amountDue(till),
+  reg: reg && { id: reg.id, guardian: reg.guardianName, phone: reg.guardianPhone, contactConfirmedBy: reg.contactConfirmedBy, photo: !!reg.photoFileId, children: reg.children.map(x => ({ name: x.childName, status: x.status, allergies: x.allergies, food: x.foodRestrictions, photo: !!x.photoFileId })) } };
+--> {
+ "ok": true,
+ "value": {
+  "lineDoneMs": 2916,
+  "displayLineMs": 530,
+  "lockLine": "The family has pressed Done: unlock to carry on.",
+  "displayWait": "Thank you. The team will be with you in a moment.",
+  "whileLocked": {
+   "registrationsPosted": 0
+  },
+  "unlocked": true,
+  "regStatus": 200,
+  "amountDueMs": 3,
+  "due": "฿915",
+  "reg": {
+   "id": "01a1d04b-80f3-7ee1-93c6-403204bb5c72",
+   "guardian": "Zz Test Parent Keys",
+   "phone": "+66898930212",
+   "contactConfirmedBy": "family",
+   "photo": true,
+   "children": [
+    {
+     "name": "Zz Test Keys",
+     "status": "registered",
+     "allergies": "Peanuts And Eggs",
+     "food": "No Pork",
+     "photo": true
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T15:06:25.784Z 6: family D pays cash, Check in now
+const { expect } = S;
+S.phase = '6: family D pays cash, Check in now';
+const till = S.till;
+await S.keepAlive();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.D.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const s = (await S.sale(S.fam.D.sale)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+return { sale: { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang }, children: (await S.registration(S.fam.D.reg)).children.map(c => c.childName + ':' + c.status) };
+--> {
+ "ok": true,
+ "value": {
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89301-000002",
+   "gross": 91500
+  },
+  "children": [
+   "Zz Test Keys:in_park"
+  ]
+ }
+}
+
+=== 2026-11-12T15:06:42.886Z 7b: family E fills the whole form on the display with the keys (photo included)
+const { expect } = S;
+S.phase = '7b: family E fills the whole form on the display with the keys (photo included)';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+await S.landing(d).waitFor({ timeout: 30000 });
+S.receipt.numbers.E = S.free[3];
+await S.firstScreen(d, till, S.free[3], { tap: true });
+await S.ticket(till, 1, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+S.fillForm = async (d, { name, guardian, allergies = '', age = 6, photo = true, lang = 'en' }) => {
+  const c = d.getByTestId('display-consent');
+  const done = /^(Done|เสร็จสิ้น)$/, cont = /^(Continue|ดำเนินการต่อ)$/;
+  await c.getByTestId('consent-child-name').first().tap();
+  await S.typeKeys(d, name);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  await S.setAge(d, c, age, { tap: true });
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-care').first().waitFor();
+  if (allergies) { await c.getByTestId('consent-allergies').first().tap(); await S.typeKeys(d, allergies); await S.keys(d).getByRole('button', { name: done }).tap(); }
+  if (photo) {
+    const p = c.getByTestId('consent-photo');
+    await p.getByRole('button', { name: /Start camera|เปิดกล้อง/ }).tap();
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).waitFor({ timeout: 15000 });
+    await d.waitForTimeout(800);
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).tap();
+    await p.getByTestId('consent-photo-received').waitFor({ timeout: 30000 });
+  }
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-guardian').waitFor();
+  await c.getByTestId('consent-guardian').tap();
+  await S.typeKeys(d, guardian);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  for (const box of await c.getByRole('checkbox').all()) { if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') { await box.scrollIntoViewIfNeeded(); await box.tap(); await d.waitForTimeout(150); } }
+  await d.waitForTimeout(1500);
+  return S.displayState(d);
+};
+const st = await S.fillForm(d, { name: 'ZZ TEST HOLD', guardian: 'ZZ TEST PARENT HOLD' });
+return { st };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.tap: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('body').getByRole('button', { name: '0', exact: true }).last()\u001b[22m | \u001b[2m    - locator resolved to <button type=\"button\" class=\"h-20 rounded-2xl bg-foreground/5 border border-foreground/10 text-4xl font-bold text-foreground transition-transform active:scale-95 hover:bg-foreground/10\">0</button>\u001b[22m | \u001b[2m  - attempting tap action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m"
+}
+
+=== 2026-11-12T15:07:19.813Z 7b: family E fills the whole form on the display with the keys (photo included)
+const d = S.displays.main.page;
+await S.keepAlive();
+await S.shot(d, 'x-display-look.png');
+return { vp: d.viewportSize(), zeros: await d.getByRole('button', { name: '0', exact: true }).count() };
+--> {
+ "ok": true,
+ "value": {
+  "vp": {
+   "width": 600,
+   "height": 1024
+  },
+  "zeros": 0
+ }
+}
+
+=== 2026-11-12T15:07:28.054Z 7b: family E fills the whole form on the display with the keys (photo included)
+const { expect } = S;
+S.phase = '7b: family E fills the whole form on the display with the keys (photo included)';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+await S.landing(d).waitFor({ timeout: 30000 });
+S.receipt.numbers.E = S.free[3];
+await S.firstScreen(d, till, S.free[3], { tap: true });
+await S.ticket(till, 1, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+S.fillForm = async (d, { name, guardian, allergies = '', age = 6, photo = true, lang = 'en' }) => {
+  const c = d.getByTestId('display-consent');
+  const done = /^(Done|เสร็จสิ้น)$/, cont = /^(Continue|ดำเนินการต่อ)$/;
+  await c.getByTestId('consent-child-name').first().tap();
+  await S.typeKeys(d, name);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  await S.setAge(d, c, age, { tap: true });
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-care').first().waitFor();
+  if (allergies) { await c.getByTestId('consent-allergies').first().tap(); await S.typeKeys(d, allergies); await S.keys(d).getByRole('button', { name: done }).tap(); }
+  if (photo) {
+    const p = c.getByTestId('consent-photo');
+    await p.getByRole('button', { name: /Start camera|เปิดกล้อง/ }).tap();
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).waitFor({ timeout: 15000 });
+    await d.waitForTimeout(800);
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).tap();
+    await p.getByTestId('consent-photo-received').waitFor({ timeout: 30000 });
+  }
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-guardian').waitFor();
+  await c.getByTestId('consent-guardian').tap();
+  await S.typeKeys(d, guardian);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  for (const box of await c.getByRole('checkbox').all()) { if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') { await box.scrollIntoViewIfNeeded(); await box.tap(); await d.waitForTimeout(150); } }
+  await d.waitForTimeout(1500);
+  return S.displayState(d);
+};
+const st = await S.fillForm(d, { name: 'ZZ TEST HOLD', guardian: 'ZZ TEST PARENT HOLD' });
+return { st };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.tap: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('body').getByRole('button', { name: '0', exact: true }).last()\u001b[22m | \u001b[2m    - locator resolved to <button type=\"button\" class=\"h-20 rounded-2xl bg-foreground/5 border border-foreground/10 text-4xl font-bold text-foreground transition-transform active:scale-95 hover:bg-foreground/10\">0</button>\u001b[22m | \u001b[2m  - attempting tap action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m"
+}
+
+=== 2026-11-12T15:08:06.356Z 7b: family E fills the whole form on the display with the keys (photo included)
+const d = S.displays.main.page;
+await S.keepAlive();
+await S.shot(d, 'x-display-look.png');
+const zero = d.getByRole('button', { name: '0', exact: true }).last();
+const info = await zero.evaluate(e => { const r = e.getBoundingClientRect(); return { r: [r.top, r.bottom, r.left, r.right], vis: getComputedStyle(e).visibility, op: getComputedStyle(e).opacity, inert: !!e.closest('[inert]'), disabled: e.disabled, dialogs: document.querySelectorAll('[role="dialog"]').length }; }).catch(e => String(e));
+await S.shot(S.till, 'x-till-look.png');
+return { zeros: await d.getByRole('button', { name: '0', exact: true }).count(), info };
+--> {
+ "ok": true,
+ "value": {
+  "zeros": 0,
+  "info": "TimeoutError: locator.evaluate: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '0', exact: true }).last()\u001b[22m\n"
+ }
+}
+
+=== 2026-11-12T15:08:47.265Z 7b: family E fills the whole form on the display with the keys (photo included)
+const d = S.displays.main.page;
+await S.keepAlive();
+await d.getByTestId('language-choice-en').tap();
+await d.waitForTimeout(1500);
+await S.shot(d, 'x-display-look.png');
+const zero = d.getByRole('button', { name: '0', exact: true });
+return { zeros: await zero.count(), info: await zero.last().evaluate(e => { const r = e.getBoundingClientRect(); return { r: [Math.round(r.top), Math.round(r.bottom)], inert: !!e.closest('[inert]') }; }).catch(e => String(e).slice(0, 100)) };
+--> {
+ "ok": true,
+ "value": {
+  "zeros": 1,
+  "info": {
+   "r": [
+    696,
+    776
+   ],
+   "inert": false
+  }
+ }
+}
+
+=== 2026-11-12T15:08:59.111Z 7b: family E fills the whole form on the display with the keys (photo included)
+const { expect } = S;
+S.phase = '7b: family E fills the whole form on the display with the keys (photo included)';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+S.receipt.numbers.E = S.free[3];
+// The display is on its number screen already (English tapped in the step before).
+for (const k of S.free[3]) await d.getByRole('button', { name: k, exact: true }).last().tap();
+await d.getByRole('button', { name: 'Continue', exact: true }).tap();
+const offer = till.getByRole('dialog', { name: 'New member?', exact: true });
+await expect(offer).toContainText(S.spaced(S.free[3]));
+await offer.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+await S.ticket(till, 1, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+S.fillForm = async (d, { name, guardian, allergies = '', age = 6, photo = true, lang = 'en' }) => {
+  const c = d.getByTestId('display-consent');
+  const done = /^(Done|เสร็จสิ้น)$/, cont = /^(Continue|ดำเนินการต่อ)$/;
+  await c.getByTestId('consent-child-name').first().tap();
+  await S.typeKeys(d, name);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  await S.setAge(d, c, age, { tap: true });
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-care').first().waitFor();
+  if (allergies) { await c.getByTestId('consent-allergies').first().tap(); await S.typeKeys(d, allergies); await S.keys(d).getByRole('button', { name: done }).tap(); }
+  if (photo) {
+    const p = c.getByTestId('consent-photo');
+    await p.getByRole('button', { name: /Start camera|เปิดกล้อง/ }).tap();
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).waitFor({ timeout: 15000 });
+    await d.waitForTimeout(800);
+    await p.getByRole('button', { name: /Take photo|ถ่ายรูป/ }).tap();
+    await p.getByTestId('consent-photo-received').waitFor({ timeout: 30000 });
+  }
+  await c.getByRole('button', { name: cont }).tap();
+  await c.getByTestId('consent-guardian').waitFor();
+  await c.getByTestId('consent-guardian').tap();
+  await S.typeKeys(d, guardian);
+  await S.keys(d).getByRole('button', { name: done }).tap();
+  for (const box of await c.getByRole('checkbox').all()) { if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') { await box.scrollIntoViewIfNeeded(); await box.tap(); await d.waitForTimeout(150); } }
+  await d.waitForTimeout(1500);
+  return S.displayState(d);
+};
+const st = await S.fillForm(d, { name: 'ZZ TEST HOLD', guardian: 'ZZ TEST PARENT HOLD' });
+return { st };
+--> {
+ "ok": true,
+ "value": {
+  "st": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "allergies": null,
+   "dietary": null,
+   "guardian": "Zz Test Parent Hold",
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 1,
+   "doneEnabled": true
+  }
+ }
+}
+
+=== 2026-11-12T15:09:22.578Z 7b: SCRUM-943 the family presses Done; the till's registration write is held; staff press Back; the display keeps "saving"
+const { expect } = S;
+S.phase = '7b: SCRUM-943 the family presses Done; the till\'s registration write is held; staff press Back; the display keeps "saving"';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+let release; const gate = new Promise(r => { release = r; });
+let held = 0;
+await till.route('**/api/checkin/registrations', async route => { if (route.request().method() !== 'POST') return route.continue(); held++; await gate; await route.continue(); });
+await c.getByRole('button', { name: 'Done', exact: true }).tap();
+await expect.poll(() => held, { timeout: 20000 }).toBeGreaterThan(0);
+await d.waitForTimeout(800);
+const out = { heldPosts: held, displayAfterDone: await S.displayState(d), staffLineAfterDone: await S.staffLine(till) };
+await S.pair('07b1-done-pressed-write-held.png', till, d, { caption: 'Point 7b — the family pressed Done; the till\'s registration write is held (the harness holds it); the display says it is saving' });
+// staff press Back on the till
+const back = till.getByRole('button', { name: 'Back', exact: true }).first();
+out.backEnabled = await back.isEnabled();
+if (out.backEnabled) await back.click();
+await d.waitForTimeout(2500);
+out.displayAfterBack = await S.displayState(d);
+out.tillAfterBack = S.flat(await till.locator('main, body').first().innerText()).slice(0, 400);
+await S.pair('07b2-staff-back-display-keeps-saving.png', till, d, { caption: 'Point 7b — staff pressed Back on the till while the Done is still saving: the display keeps its saving line (the form stays finished)' });
+release();
+await till.waitForTimeout(4000);
+await till.unroute('**/api/checkin/registrations');
+out.posts = S.receipt.registrationsPosted.filter(x => /^7b/.test(x.at ?? '')).map(x => ({ status: x.status, id: x.id }));
+out.displayAfterRelease = await S.displayState(d);
+out.tillAfterRelease = S.flat(await till.locator('body').innerText()).slice(0, 500);
+await S.pair('07b3-after-release.png', till, d, { caption: 'Point 7b — the held write released: what the till and the display show' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "heldPosts": 1,
+  "displayAfterDone": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "allergies": null,
+   "dietary": null,
+   "guardian": "Zz Test Parent Hold",
+   "phone": null,
+   "missing": null,
+   "finished": "Thank you — saving your details. The next screen opens in a moment.",
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "staffLineAfterDone": "The family pressed Done: the children are being registered, then the sale moves on by itself.",
+  "backEnabled": true,
+  "displayAfterBack": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "allergies": null,
+   "dietary": null,
+   "guardian": "Zz Test Parent Hold",
+   "phone": null,
+   "missing": null,
+   "finished": "Thank you — saving your details. The next screen opens in a moment.",
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "tillAfterBack": "Display connected: ZZ TEST SCRUM-893 proof till 1794495109240 display main Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-893 proof till 1794495109240 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Add to Sale Add drop-off child ",
+  "posts": [
+   {
+    "status": 200,
+    "id": "01a1d04e-6d39-73d5-a1c7-ceddecb70593"
+   }
+  ],
+  "displayAfterRelease": {
+   "shown": false
+  },
+  "tillAfterRelease": "Display connected: ZZ TEST SCRUM-893 proof till 1794495109240 display main Hide customer display 2 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-893 proof till 1794495109240 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person"
+ }
+}
+
+=== 2026-11-12T15:09:44.678Z 7b: family E: staff press Pay, cash, Check in now; one registration
+const { expect } = S;
+S.phase = '7b: family E: staff press Pay, cash, Check in now; one registration';
+const till = S.till;
+await S.keepAlive();
+const regId = S.receipt.registrationsPosted.filter(x => /^7b/.test(x.at ?? '')).map(x => x.id).find(Boolean);
+await till.getByRole('button', { name: /^Pay ฿/ }).click();
+const sale = await S.saleWritten('dropoff-sale-E');
+S.fam.E = { reg: regId, sale: sale.id, number: S.free[3] };
+S.receipt.created.push({ kind: 'registration', family: 'E', id: regId }); S.save();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(regId)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const regs = await S.regsByPhone(S.free[3]);
+const s = (await S.sale(sale.id)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+return { regsForNumber: regs.map(r => r.id), sale: { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang }, children: (await S.registration(regId)).children.map(c => c.childName + ':' + c.status + (c.photoFileId ? ':photo' : '')) };
+--> {
+ "ok": true,
+ "value": {
+  "regsForNumber": [],
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89301-000003",
+   "gross": 91500
+  },
+  "children": [
+   "Zz Test Hold:in_park:photo"
+  ]
+ }
+}
+
+=== 2026-11-12T15:10:05.917Z 7a: SCRUM-943 a display with no camera (600x1024, touch, ?keyboard=screen): the display line and the staff line
+const { expect } = S;
+S.phase = '7a: SCRUM-943 a display with no camera (600x1024, touch, ?keyboard=screen): the display line and the staff line';
+const till = S.till;
+await S.keepAlive();
+// a sturdier first screen: wait for whichever first screen shows, settle, then the keypad
+S.firstScreen = async (surface, till, number, { lang = 'en', tap = true } = {}) => {
+  const press = async l => { if (tap) await l.tap(); else await l.click(); };
+  await S.landing(surface).waitFor({ timeout: 30000 });
+  await surface.waitForTimeout(1500);
+  if (await surface.getByTestId('language-choice').isVisible()) await press(surface.getByTestId(`language-choice-${lang}`));
+  await surface.getByTestId('identify-safety').waitFor();
+  await surface.getByRole('button', { name: '0', exact: true }).last().waitFor({ state: 'visible' });
+  await surface.waitForTimeout(500);
+  for (const k of number) await press(surface.getByRole('button', { name: k, exact: true }).last());
+  await press(surface.getByRole('button', { name: /^(Continue|ดำเนินการต่อ)$/ }).last());
+  const offer = till.getByRole('dialog', { name: 'New member?', exact: true });
+  await expect(offer).toContainText(S.spaced(number));
+  await offer.getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+};
+await S.dropDisplay('main');
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+const d = await S.pairDisplay('nocam', { camera: 'none' });
+S.receipt.numbers.N = S.free[4];
+await S.firstScreen(d, till, S.free[4]);
+await S.ticket(till, 1, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+await c.getByTestId('consent-child-name').tap();
+await S.typeKeys(d, 'ZZ TEST NOCAM');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await S.setAge(d, c, 6, { tap: true });
+await c.getByRole('button', { name: 'Continue', exact: true }).tap();
+await c.getByTestId('consent-care').waitFor();
+await d.waitForTimeout(3000);
+const out = { display: await S.displayState(d), staffLine: await S.staffLine(till), cameraLines: S.flat(await c.getByTestId('consent-care').innerText()).slice(0, 400) };
+out.staffCameraText = S.flat(await till.locator('body').innerText()).match(/The display (has no camera|does not take the photo|camera on the display)[^.]*\.[^.]*\./)?.[0] ?? null;
+await S.pair('07a1-no-camera-display-line-and-staff-line.png', till, d, { caption: 'Point 7a — a display with no camera: the display says reception takes the photo; the till tells staff where to take it' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "allergies": "",
+   "dietary": "",
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": "No camera available · Reception will take the photo of you both at the counter instead.",
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+  "cameraLines": "Zz Test Nocam Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No camera available · Reception will take the photo of you both at the counter instead. Allergies / medical Dietary notes",
+  "staffCameraText": "The display has no camera. Take each child's photo with the family here, in Private child details."
+ }
+}
+
+=== 2026-11-12T15:10:33.342Z 7a: family N cancelled on the till before anything is written; the no-camera display revoked
+const { expect } = S;
+S.phase = '7a: family N cancelled on the till before anything is written; the no-camera display revoked';
+const till = S.till;
+await S.keepAlive();
+const mark = S.receipt.registrationsPosted.length;
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await till.waitForTimeout(1000);
+await till.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await till.waitForTimeout(800);
+const dlg = till.getByRole('alertdialog').or(till.getByRole('dialog')).last();
+let dialogText = null;
+if (await dlg.count()) { dialogText = S.flat(await dlg.innerText()).slice(0, 300); const yes = dlg.getByRole('button', { name: /Cancel sale|Yes|Discard|Clear|Confirm/ }).first(); if (await yes.count()) await yes.click(); }
+await till.waitForTimeout(1500);
+const sales = (await S.stationSales()).filter(x => !S.knownSales.has(x.id)).map(x => ({ id: x.id, status: x.status }));
+const r = await S.dropDisplay('nocam');
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+return { dialogText, registrationsWritten: S.receipt.registrationsPosted.length - mark, unknownSales: sales, r };
+--> {
+ "ok": true,
+ "value": {
+  "dialogText": null,
+  "registrationsWritten": 0,
+  "unknownSales": [],
+  "r": {
+   "label": "nocam",
+   "revoked": true
+  }
+ }
+}
+
+=== 2026-11-12T15:11:00.640Z 7f: SCRUM-943 the camera notice on a display whose camera is refused, dark (as before) and LIGHT (Theme, Display on the till)
+const { expect } = S;
+S.phase = '7f: SCRUM-943 the camera notice on a display whose camera is refused, dark (as before) and LIGHT (Theme, Display on the till)';
+const till = S.till;
+await S.keepAlive();
+const d = await S.pairDisplay('refused', { camera: 'refused' });
+S.receipt.numbers.R = S.free[5];
+await S.firstScreen(d, till, S.free[5]);
+await S.ticket(till, 1, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+await c.getByTestId('consent-child-name').tap();
+await S.typeKeys(d, 'ZZ TEST REFUSED');
+await S.keys(d).getByRole('button', { name: 'Done', exact: true }).tap();
+await S.setAge(d, c, 6, { tap: true });
+await c.getByRole('button', { name: 'Continue', exact: true }).tap();
+await c.getByTestId('consent-care').waitFor();
+await c.getByRole('button', { name: 'Start camera', exact: true }).tap();
+await d.getByTestId('camera-notice').waitFor({ timeout: 15000 });
+await d.waitForTimeout(2500);
+const notice = async () => d.evaluate(() => {
+  const n = document.querySelector('[data-testid="camera-notice"]');
+  const [title, note] = [...n.querySelectorAll('span')];
+  return { words: `${title.textContent} / ${note.textContent}`, title: getComputedStyle(title).color, note: getComputedStyle(note).color, veil: getComputedStyle(n).backgroundColor, frame: getComputedStyle(n.parentElement).backgroundColor, themeClass: document.querySelector('[data-testid="separate-display"]').className.split(' ')[0] };
+});
+const out = { dark: await notice(), staffCameraText: S.flat(await till.locator('body').innerText()).match(/The (display has no camera|display does not take the photo|camera on the display)[^.]*\.[^.]*\./)?.[0] ?? null };
+await d.getByTestId('camera-notice').scrollIntoViewIfNeeded();
+await S.shot(d, '07f1-camera-refused-notice-dark.png');
+await S.pair('07f2-camera-refused-staff-line.png', till, d, { caption: 'Point 7f/7a — the display camera refused: the notice on the display; the till tells staff the camera on the display was refused' });
+// Theme, Display on the till
+await till.getByRole('button', { name: 'Theme settings' }).click();
+await till.waitForTimeout(500);
+const menu = S.flat(await till.getByRole('menu').innerText().catch(() => ''));
+out.menu = menu.slice(0, 200);
+await till.getByRole('menu').getByRole('button', { name: /Display/ }).first().click().catch(async () => { await till.getByRole('menu').getByText(/Display/).first().click(); });
+await till.keyboard.press('Escape');
+await d.waitForTimeout(2500);
+out.light = await notice();
+await d.getByTestId('camera-notice').scrollIntoViewIfNeeded();
+await S.shot(d, '07f3-camera-refused-notice-light.png');
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "dark": {
+   "words": "Camera access blocked / Reception will take the photo of you both at the counter instead.",
+   "title": "oklch(0.879 0.169 91.605)",
+   "note": "rgba(248, 250, 252, 0.5)",
+   "veil": "rgba(0, 0, 0, 0)",
+   "frame": "oklab(0 0 0 / 0.4)",
+   "themeClass": "dark"
+  },
+  "staffCameraText": "The camera on the display was refused. Take each child's photo with the family here, in Private child details.",
+  "menu": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+  "light": {
+   "words": "Camera access blocked / Reception will take the photo of you both at the counter instead.",
+   "title": "rgb(146, 64, 14)",
+   "note": "rgba(59, 40, 28, 0.85)",
+   "veil": "rgba(255, 255, 255, 0.82)",
+   "frame": "oklab(0 0 0 / 0.4)",
+   "themeClass": "light"
+  }
+ }
+}
+
+=== 2026-11-12T15:11:59.804Z 7f: Display theme back to dark; family R cancelled before anything is written; the refused display revoked
+const { expect } = S;
+S.phase = '7f: Display theme back to dark; family R cancelled before anything is written; the refused display revoked';
+const till = S.till, d = S.displays.refused.page;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Theme settings' }).click();
+await till.waitForTimeout(400);
+await till.getByRole('menu').getByRole('button', { name: /Display/ }).first().click().catch(async () => { await till.getByRole('menu').getByText(/Display/).first().click(); });
+await till.keyboard.press('Escape');
+await d.waitForTimeout(2000);
+const themeAfter = await d.evaluate(() => document.querySelector('[data-testid="separate-display"]').className.split(' ')[0]);
+const mark = S.receipt.registrationsPosted.length;
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await till.waitForTimeout(1000);
+await till.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await till.waitForTimeout(1500);
+const r = await S.dropDisplay('refused');
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+return { themeAfter, registrationsWritten: S.receipt.registrationsPosted.length - mark, unknownSales: (await S.stationSales()).filter(x => !S.knownSales.has(x.id)).map(x => x.status), r };
+--> {
+ "ok": true,
+ "value": {
+  "themeAfter": "dark",
+  "registrationsWritten": 0,
+  "unknownSales": [],
+  "r": {
+   "label": "refused",
+   "revoked": true
+  }
+ }
+}
+
+=== 2026-11-12T15:12:45.994Z 5: SCRUM-915 the phone till (390x844): own ZZ TEST phone till, 1 Kid no adult
+const { expect } = S;
+S.phase = '5: SCRUM-915 the phone till (390x844): own ZZ TEST phone till, 1 Kid no adult';
+await S.keepAlive();
+S.phoneStation = await S.makeStation('phone till');
+const p = await S.signIn('phone', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 390, height: 844 }, { station: S.phoneStation });
+S.phone = p;
+await p.waitForTimeout(2000);
+await S.shot(p, '05a-phone-till-start.png');
+const buttons = (await p.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 40);
+return { station: S.phoneStation.id, buttons, url: p.url() };
+--> {
+ "ok": true,
+ "value": {
+  "station": "01a1d051-88fa-72b1-a7cd-7fc0ed908ee6",
+  "buttons": [
+   "3 no gate",
+   "Redeem Online Booking",
+   "No items yet ฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "url": "https://oto-pos-web-staging.onrender.com/"
+ }
+}
+
+=== 2026-11-12T15:13:05.778Z 5: phone till: 1 Kid, no adult, child ZZ TEST aged 6; Continue opens Hand to customer
+const { expect } = S;
+S.phase = '5: phone till: 1 Kid, no adult, child ZZ TEST aged 6; Continue opens Hand to customer';
+const p = S.phone;
+await S.keepAlive();
+S.phoneAlive = () => p.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))).catch(() => null);
+await S.phoneAlive();
+await p.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await p.waitForTimeout(800);
+await p.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+await p.waitForTimeout(800);
+const kids = p.getByRole('button', { name: 'Add one Kids', exact: true }).first();
+const kval = kids.locator('xpath=preceding-sibling::span[1]');
+for (let i = 0; i < 4 && Number(await kval.textContent()) < 1; i++) { await kids.click(); await p.waitForTimeout(200); }
+const aadd = p.getByRole('button', { name: 'Add one Adults', exact: true }).first();
+const aval = aadd.locator('xpath=preceding-sibling::span[1]');
+for (let i = 0; i < 4 && Number(await aval.textContent()) > 0; i++) { await p.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click(); await p.waitForTimeout(200); }
+const counts = { kids: await kval.textContent(), adults: await aval.textContent() };
+await p.getByRole('button', { name: 'Continue', exact: true }).last().click();
+await p.waitForTimeout(1500);
+await S.shot(p, '05b-phone-after-continue.png');
+const buttons = (await p.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 30);
+const text = S.flat(await p.locator('body').innerText()).slice(0, 600);
+return { counts, buttons, text };
+--> {
+ "ok": true,
+ "value": {
+  "counts": {
+   "kids": "1",
+   "adults": "0"
+  },
+  "buttons": [
+   "3 no gate",
+   "Cancel",
+   "Tap to set age",
+   "Back",
+   "Continue to payment",
+   "1 1 item ฿690",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "3 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. Tap to set age Before payment • Every child needs a name. • Parent must accept every required confirmation on the customer screen. Back Continue to payment 1 1 item ฿690 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T15:13:17.099Z 5: phone till: child named and aged 6; the gate Continue opens Hand to customer; Customer ready shows the family form
+const { expect } = S;
+S.phase = '5: phone till: child named and aged 6; the gate Continue opens Hand to customer; Customer ready shows the family form';
+const p = S.phone;
+await S.phoneAlive();
+await p.getByPlaceholder("Child's name").first().fill('ZZ TEST PHONE');
+await S.setAge(p, p.locator('body'), 6, { tap: true });
+await p.waitForTimeout(800);
+const cont = p.getByRole('button', { name: 'Continue to payment', exact: true });
+const out = { continueEnabled: await cont.isEnabled() };
+await S.shot(p, '05c-phone-gate-child-aged-6.png');
+await cont.click();
+await p.waitForTimeout(1500);
+out.handText = S.flat(await p.locator('body').innerText()).slice(0, 400);
+await S.shot(p, '05d-phone-hand-to-customer.png');
+await p.getByRole('button', { name: /Customer is ready/ }).click();
+await p.waitForTimeout(2000);
+out.formText = S.flat(await p.locator('body').innerText()).slice(0, 1500);
+out.buttons = (await p.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean);
+await S.shot(p, '05e-phone-family-form-top.png');
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "continueEnabled": true,
+  "handText": "3 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST PHONE (age 6) needs drop-off supervision. • ZZ TEST PHONE needs a photo taken. • Parent must give their name and consent on the customer screen. • Pa",
+  "formText": "3 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST PHONE (age 6) needs drop-off supervision. • ZZ TEST PHONE needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must give the number for messages about their child on the customer screen. Back Continue to payment 1 1 item ฿690 English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. Child's name Age 6 yrs Drop-off supervision needed Required for this age — ฿225 one-time Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No photo yet Start camera Allergies / medical Dietary notes Food & drinks for ZZ TEST PHONE No food Prepaid credit Choose items Staff will not be able to place food orders for ZZ TEST PHONE without a manager override. Parent / guardian name Phone number 🇹🇭 +66 WhatsApp Telegram LINE Add the number we can message you on about your child. This is my WhatsApp number — send messages about my child here. I authorize Oto Play Park staff to supervise my child, and I consent to a photo of my child and me (parent / guardian) together being taken for safe check-in and pickup verification. Please",
+  "buttons": [
+   "3 no gate",
+   "Cancel",
+   "6 yrs",
+   "Back",
+   "Continue to payment",
+   "1 1 item ฿690",
+   "English",
+   "6 yrs",
+   "Start camera",
+   "No food",
+   "Prepaid credit",
+   "Choose items",
+   "🇹🇭 +66",
+   "WhatsApp",
+   "Telegram",
+   "LINE",
+   "Done",
+   "Return phone to staff",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ]
+ }
+}
+
+=== 2026-11-12T15:13:40.537Z 5: phone till: the parent fills the form on the phone (fake camera, allergies, guardian, number, ticks), Done
+const { expect } = S;
+S.phase = '5: phone till: the parent fills the form on the phone (fake camera, allergies, guardian, number, ticks), Done';
+const p = S.phone;
+await S.phoneAlive();
+const out = {};
+await p.getByRole('button', { name: 'Start camera', exact: true }).click();
+await p.getByRole('button', { name: 'Take photo', exact: true }).waitFor({ timeout: 15000 });
+await p.waitForTimeout(1000);
+await S.shot(p, '05f-phone-camera-live-fake.png');
+await p.getByRole('button', { name: 'Take photo', exact: true }).click();
+await p.getByAltText('Captured', { exact: true }).waitFor({ timeout: 20000 });
+await p.getByTestId('consent-allergies').fill('ZZ TEST mild hay fever, no medicine needed');
+await p.getByTestId('consent-guardian').fill('ZZ TEST PARENT PHONE');
+S.receipt.numbers.P = S.free[6];
+await p.locator('input[type="tel"]').first().fill(S.free[6].replace(/^0/, ''));
+await p.waitForTimeout(600);
+const tick = p.getByTestId('consent-contact-confirm');
+await tick.scrollIntoViewIfNeeded();
+out.beforeTicks = { missing: (await p.getByTestId('consent-missing').count()) ? S.flat(await p.getByTestId('consent-missing').innerText()) : null };
+await S.shot(p, '05g-phone-number-tick-and-still-needed.png');
+for (const box of await p.getByRole('checkbox').all()) if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') { await box.scrollIntoViewIfNeeded(); await box.click(); await p.waitForTimeout(150); }
+await p.waitForTimeout(600);
+out.afterTicks = { missing: (await p.getByTestId('consent-missing').count()) ? S.flat(await p.getByTestId('consent-missing').innerText()) : null, tick: await tick.getAttribute('data-state') };
+const done = p.getByTestId('consent-done-bar').getByRole('button', { name: 'Done', exact: true });
+out.doneEnabled = await done.isEnabled();
+out.returnButton = S.flat(await p.getByRole('button', { name: /Return phone to staff/ }).innerText());
+await S.shot(p, '05h-phone-everything-given-done-and-return-button.png');
+const regResp = p.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await done.click();
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await p.waitForTimeout(2500);
+out.regStatus = r.status(); out.regId = regBody?.id ?? null;
+out.after = S.flat(await p.locator('body').innerText()).slice(0, 700);
+await S.shot(p, '05i-phone-back-to-staff-review-drop-off-line.png');
+S.fam.P = { reg: regBody?.id, number: S.free[6] };
+S.receipt.created.push({ kind: 'registration', family: 'P', id: regBody?.id }); S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "beforeTicks": {
+   "missing": "Still needed before Done: your consent · each confirmation · confirming your WhatsApp number"
+  },
+  "afterTicks": {
+   "missing": null,
+   "tick": "checked"
+  },
+  "doneEnabled": true,
+  "returnButton": "Return phone to staff",
+  "regStatus": 200,
+  "regId": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+  "after": "3 no gate Oto Play Park, Central Floresta [staff] Review Order Tourist Cancel Current Order TOURIST ZZ TEST PHONE ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure Apply Add manual discount Subtotal ฿915 VAT included ฿59.86 Total ฿915 Cancel Pay ฿915 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T15:14:05.033Z 5: phone till: pay cash; one registration with the photo
+const { expect } = S;
+S.phase = '5: phone till: pay cash; one registration with the photo';
+const p = S.phone;
+await S.phoneAlive();
+await p.getByRole('button', { name: /^Pay ฿/ }).click();
+await p.waitForTimeout(1500);
+const sale = await S.saleWritten('dropoff-sale-P', S.phoneStation);
+S.fam.P.sale = sale.id;
+await S.shot(p, '05j-phone-payment-step.png');
+const out = { text: S.flat(await p.locator('body').innerText()).slice(0, 400) };
+await p.getByRole('heading', { name: 'Cash', exact: true }).first().click().catch(async () => { await p.getByText('Cash', { exact: true }).first().click(); });
+await p.waitForTimeout(800);
+const confirm = p.getByRole('button', { name: /Confirm Payment Received|Confirm/ }).first();
+await expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded(); await confirm.click();
+await p.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 45000 });
+await p.waitForTimeout(1500);
+await S.shot(p, '05k-phone-paid.png');
+out.paidText = S.flat(await p.locator('body').innerText()).slice(0, 500);
+const now = p.getByRole('button', { name: 'Check in now', exact: true });
+out.checkInNow = await now.count();
+if (out.checkInNow) { await now.click(); await expect.poll(async () => (await S.registration(S.fam.P.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true).catch(() => null); }
+const reg = await S.registration(S.fam.P.reg);
+const s = (await S.sale(sale.id)).sale;
+out.reg = { id: reg.id, guardian: reg.guardianName, phone: reg.guardianPhone, contactConfirmedBy: reg.contactConfirmedBy, photo: !!reg.photoFileId, children: reg.children.map(c => ({ name: c.childName, status: c.status, allergies: c.allergies, photo: !!c.photoFileId })) };
+out.sale = { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang };
+out.postsFromPhone = S.receipt.registrationsPosted.filter(x => x.till === 'phone').map(x => ({ status: x.status, id: x.id }));
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "text": "3 no gate Oto Play Park, Central Floresta [staff] Payment Tourist Amount Due ฿915 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "paidText": "3 no gate Oto Play Park, Central Floresta [staff] Payment Successful Receipt Z89302-000001 · ฿915 · Cash VAT included ฿59.86 Bracelets to Print 1 total 1× Child bracelet 1 Hour · 1 Hour Play Start New Sale Tickets F&B Shop Check-in Events History Today 7 Messages Sending to printers Kids bracelet → Band Printer (kids) Receipt → Receipt Printer 1",
+  "checkInNow": 0,
+  "reg": {
+   "id": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+   "guardian": "ZZ TEST PARENT PHONE",
+   "phone": "+66898930216",
+   "contactConfirmedBy": "family",
+   "photo": true,
+   "children": [
+    {
+     "name": "ZZ TEST PHONE",
+     "status": "in_park",
+     "allergies": "ZZ TEST mild hay fever, no medicine needed",
+     "photo": true
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89302-000001",
+   "gross": 91500
+  },
+  "postsFromPhone": [
+   {
+    "status": 200,
+    "id": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T15:14:23.995Z 5: phone till, once more: the parent presses Return phone to staff half-way; what staff see; nothing registered
+const { expect } = S;
+S.phase = '5: phone till, once more: the parent presses Return phone to staff half-way; what staff see; nothing registered';
+const p = S.phone;
+await S.phoneAlive();
+await p.getByRole('button', { name: 'Start New Sale', exact: true }).click();
+await p.waitForTimeout(1500);
+await p.getByRole('heading', { name: 'Tourist', exact: true }).first().click(); await p.waitForTimeout(800);
+await p.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click(); await p.waitForTimeout(800);
+const kids = p.getByRole('button', { name: 'Add one Kids', exact: true }).first();
+const kval = kids.locator('xpath=preceding-sibling::span[1]');
+for (let i = 0; i < 4 && Number(await kval.textContent()) < 1; i++) { await kids.click(); await p.waitForTimeout(200); }
+const aval = p.getByRole('button', { name: 'Add one Adults', exact: true }).first().locator('xpath=preceding-sibling::span[1]');
+for (let i = 0; i < 4 && Number(await aval.textContent()) > 0; i++) { await p.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click(); await p.waitForTimeout(200); }
+await p.getByRole('button', { name: 'Continue', exact: true }).last().click(); await p.waitForTimeout(1200);
+await p.getByPlaceholder("Child's name").first().fill('ZZ TEST PHONE HALF');
+await S.setAge(p, p.locator('body'), 6, { tap: true });
+await p.getByRole('button', { name: 'Continue to payment', exact: true }).click(); await p.waitForTimeout(1000);
+await p.getByRole('button', { name: /Customer is ready/ }).click(); await p.waitForTimeout(1500);
+const mark = S.receipt.registrationsPosted.length;
+await p.getByTestId('consent-allergies').fill('ZZ TEST half way');
+await p.getByTestId('consent-guardian').fill('ZZ TEST PARENT HALF WAY');
+await p.waitForTimeout(500);
+await S.shot(p, '05l-phone-half-filled-before-return.png');
+await p.getByRole('button', { name: 'Return phone to staff', exact: true }).click();
+await p.waitForTimeout(2000);
+const out = { staffSees: S.flat(await p.locator('body').innerText()).slice(0, 900), buttons: (await p.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 20) };
+await S.shot(p, '05m-phone-after-return-what-staff-see.png');
+out.registrationsWritten = S.receipt.registrationsPosted.length - mark;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "staffSees": "4 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST PHONE HALF (age 6) needs drop-off supervision. • ZZ TEST PHONE HALF needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must give the number for messages about their child on the customer screen. Back Continue to payment 1 1 item ฿690 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "4 no gate",
+   "Cancel",
+   "6 yrs",
+   "Back",
+   "Continue to payment",
+   "1 1 item ฿690",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "registrationsWritten": 0
+ }
+}
+
+=== 2026-11-12T15:14:51.082Z 5: phone till: does the form keep what the parent typed when opened again; then Cancel the sale (nothing written)
+const { expect } = S;
+S.phase = '5: phone till: does the form keep what the parent typed when opened again; then Cancel the sale (nothing written)';
+const p = S.phone;
+await S.phoneAlive();
+const overflow = await p.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth }));
+await p.getByRole('button', { name: 'Continue to payment', exact: true }).click(); await p.waitForTimeout(1000);
+await p.getByRole('button', { name: /Customer is ready/ }).click(); await p.waitForTimeout(1500);
+const kept = { allergies: await p.getByTestId('consent-allergies').inputValue(), guardian: await p.getByTestId('consent-guardian').inputValue() };
+await p.getByRole('button', { name: 'Return phone to staff', exact: true }).click(); await p.waitForTimeout(1200);
+const mark = S.receipt.registrationsPosted.length;
+await p.getByRole('button', { name: 'Cancel', exact: true }).first().click(); await p.waitForTimeout(1200);
+const dlg = p.getByRole('alertdialog').or(p.getByRole('dialog')).last();
+let dialogText = null;
+if (await dlg.count()) { dialogText = S.flat(await dlg.innerText()).slice(0, 300); const yes = dlg.getByRole('button', { name: /Cancel sale|Yes|Discard|Clear|Confirm/ }).first(); if (await yes.count()) await yes.click(); }
+await p.waitForTimeout(1500);
+await S.shot(p, '05n-phone-sale-cancelled.png');
+return { overflow, kept, dialogText, registrationsWritten: S.receipt.registrationsPosted.length - mark, phoneStationSales: (await S.stationSales(S.phoneStation)).map(x => ({ id: x.id, status: x.status })) };
+--> {
+ "ok": true,
+ "value": {
+  "overflow": {
+   "scrollWidth": 390,
+   "innerWidth": 390
+  },
+  "kept": {
+   "allergies": "ZZ TEST half way",
+   "guardian": "ZZ TEST PARENT HALF WAY"
+  },
+  "dialogText": null,
+  "registrationsWritten": 0,
+  "phoneStationSales": [
+   {
+    "id": "01a1d052-ba7e-7b56-b6ad-1ba6163904b6",
+    "status": "finalised"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T15:15:23.123Z 5: phone till signed out (its context closed to spare memory)
+S.phase = '5: phone till signed out (its context closed to spare memory)';
+return await S.signOutPage('phone');
+--> {
+ "ok": true,
+ "value": {
+  "label": "phone",
+  "before": 200,
+  "after": 401
+ }
+}
+
+=== 2026-11-12T15:15:23.566Z 8: a whole family journey on the counter display shape, in Thai: language Thai, two children, 1 Hour Play
+const { expect } = S;
+S.phase = '8: a whole family journey on the counter display shape, in Thai: language Thai, two children, 1 Hour Play';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+const d = await S.pairDisplay('thai', { camera: 'fake' });
+S.receipt.numbers.T = S.free[7];
+await d.waitForTimeout(1500);
+await S.shot(d, '08a-th-language-choice.png');
+await S.firstScreen(d, till, S.free[7], { lang: 'th' });
+await S.ticket(till, 2, 0);
+const c = d.getByTestId('display-consent');
+await c.waitFor({ timeout: 30000 });
+await d.waitForTimeout(1000);
+S.englishLeft = async (page) => {
+  const t = await page.locator('body').innerText();
+  const words = (t.match(/[A-Za-z][A-Za-z'’.-]+(?:\s+[A-Za-z][A-Za-z'’.-]+)*/g) ?? []).filter(w => !/^(Zz|ZZ|Test|TEST|OTO|Oto|Play|Park|WhatsApp|Telegram|LINE|TH|English)$/.test(w) && !/^Zz Test/i.test(w) && !/Oto Play Park/.test(w));
+  return [...new Set(words)];
+};
+S.cutOrOverflow = (page) => page.evaluate(() => {
+  const outs = [];
+  for (const el of document.querySelectorAll('[data-testid="display-consent"] *, [data-testid="separate-display"] *')) {
+    if (!el.childNodes.length || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+    const s = getComputedStyle(el);
+    if (el.scrollWidth > el.clientWidth + 1 && (s.overflow === 'hidden' || s.overflowX === 'hidden' || s.textOverflow === 'ellipsis' || s.whiteSpace === 'nowrap')) outs.push({ text: el.textContent.trim().slice(0, 60), sw: el.scrollWidth, cw: el.clientWidth });
+    const r = el.getBoundingClientRect();
+    if (r.right > innerWidth + 1 && r.width > 0) outs.push({ offRight: el.textContent.trim().slice(0, 60), right: Math.round(r.right) });
+  }
+  return outs.slice(0, 20);
+});
+return { english: await S.englishLeft(d), cut: await S.cutOrOverflow(d) };
+--> {
+ "ok": true,
+ "value": {
+  "english": [
+   "proof till",
+   "display thai"
+  ],
+  "cut": [
+   {
+    "text": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-8",
+    "sw": 820,
+    "cw": 1
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T15:15:47.364Z 8: Thai: step 1, two children named with the on-screen keys and aged
+const { expect } = S;
+S.phase = '8: Thai: step 1, two children named with the on-screen keys and aged';
+const till = S.till, d = S.displays.thai.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const out = {};
+await S.shot(d, '08b-th-form-step1-empty.png');
+const kbDone = () => S.keys(d).getByRole('button').last();
+out.keyLabels = null;
+const names = c.getByTestId('consent-child-name');
+out.nameBoxes = await names.count();
+await names.nth(0).tap();
+out.keyLabels = await S.keyNames(d);
+await S.typeKeys(d, 'ZZ TEST THAI A');
+await S.shot(d, '08c-th-keys-open-child-a.png');
+await kbDone().tap();
+await names.nth(1).tap();
+await S.typeKeys(d, 'ZZ TEST THAI B');
+await kbDone().tap();
+const ageButtons = c.getByRole('button', { name: /Tap to set age|แตะเพื่อระบุอายุ/ });
+for (const age of [6, 7]) {
+  await ageButtons.first().tap();
+  const dialog = d.getByRole('dialog').last();
+  await dialog.waitFor();
+  if (age === 6) await S.shot(d, '08d-th-age-picker.png');
+  await dialog.getByRole('button', { name: String(age), exact: true }).tap(); await d.waitForTimeout(400);
+  await dialog.getByRole('button', { name: /^(Jan|ม\.ค\.)/ }).first().tap(); await d.waitForTimeout(400);
+  await dialog.getByRole('button', { name: '1', exact: true }).first().tap(); await d.waitForTimeout(400);
+  await dialog.getByRole('button', { name: /Confirm|ยืนยัน/ }).tap();
+  await dialog.waitFor({ state: 'hidden' });
+}
+await d.waitForTimeout(1200);
+await S.shot(d, '08e-th-step1-two-children-aged.png');
+out.values = await names.evaluateAll(es => es.map(e => e.value));
+out.english = await S.englishLeft(d);
+out.cut = await S.cutOrOverflow(d);
+out.small = await S.smallTargets(d, 40);
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "keyLabels": [
+   "Q",
+   "W",
+   "E",
+   "R",
+   "T",
+   "Y",
+   "U",
+   "I",
+   "O",
+   "P",
+   "A",
+   "S",
+   "D",
+   "F",
+   "G",
+   "H",
+   "J",
+   "K",
+   "L",
+   "Z",
+   "X",
+   "C",
+   "V",
+   "B",
+   "N",
+   "M",
+   "ลบตัวอักษร",
+   "เว้นวรรค",
+   "เสร็จสิ้น"
+  ],
+  "nameBoxes": 2,
+  "values": [
+   "Zz Test Thai A",
+   "Zz Test Thai B"
+  ],
+  "english": [
+   "proof till",
+   "display thai"
+  ],
+  "cut": [
+   {
+    "text": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-8",
+    "sw": 820,
+    "cw": 1
+   }
+  ],
+  "small": [
+   {
+    "tag": "button",
+    "role": null,
+    "text": "เปลี่ยนภาษา",
+    "w": 71,
+    "h": 34,
+    "withLabel": null
+   },
+   {
+    "tag": "button",
+    "role": null,
+    "text": "1. ลูก ๆ ของคุณ",
+    "w": 141,
+    "h": 38,
+    "withLabel": null
+   },
+   {
+    "tag": "button",
+    "role": null,
+    "text": "2. ข้อมูลการดูแล",
+    "w": 147,
+    "h": 38,
+    "withLabel": null
+   },
+   {
+    "tag": "button",
+    "role": null,
+    "text": "3. ข้อตกลง",
+    "w": 111,
+    "h": 38,
+    "withLabel": null
+   },
+   {
+    "tag": "button",
+    "role": null,
+    "text": "ขอความช่วยเหลือจากทีมงาน",
+    "w": 191,
+    "h": 38,
+    "withLabel": null
+   },
+   {
+    "tag": "button",
+    "role": null,
+    "text": "ดำเนินการต่อ",
+    "w": 107,
+    "h": 38,
+    "withLabel": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T15:16:19.204Z 8: Thai: step 2 care for two children: photos (fake camera), an allergy typed with the keys; then Continue from the bottom of the long step
+const { expect } = S;
+S.phase = '8: Thai: step 2 care for two children: photos (fake camera), an allergy typed with the keys; then Continue from the bottom of the long step';
+const till = S.till, d = S.displays.thai.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const kbDone = () => S.keys(d).getByRole('button').last();
+await c.getByRole('button', { name: /^(Continue|ดำเนินการต่อ)$/ }).tap();
+await c.getByTestId('consent-care').first().waitFor();
+await d.waitForTimeout(800);
+await S.shot(d, '08f-th-care-step-top.png');
+const out = { english: await S.englishLeft(d) };
+const photos = c.getByTestId('consent-photo');
+out.photoBlocks = await photos.count();
+for (let i = 0; i < out.photoBlocks; i++) {
+  const p = photos.nth(i);
+  await p.scrollIntoViewIfNeeded();
+  await p.getByRole('button').filter({ hasText: /กล้อง|camera/i }).first().tap();
+  await d.waitForTimeout(2500);
+  const take = p.getByRole('button').filter({ hasText: /ถ่าย|Take/i }).first();
+  await take.waitFor({ timeout: 15000 });
+  await take.tap();
+  await p.getByTestId('consent-photo-received').waitFor({ timeout: 30000 });
+  out[`photo${i}`] = S.flat(await p.getByTestId('consent-photo-received').innerText());
+}
+const allergies = c.getByTestId('consent-allergies');
+await allergies.first().scrollIntoViewIfNeeded();
+await allergies.first().tap();
+await S.typeKeys(d, 'SHELLFISH');
+out.allergyPlacing = await d.evaluate(() => { const f = document.querySelectorAll('[data-testid="consent-allergies"]')[0].getBoundingClientRect(); const k = document.querySelector('[data-testid="screen-keyboard"]').getBoundingClientRect(); return { field: [Math.round(f.top), Math.round(f.bottom)], keys: [Math.round(k.top), Math.round(k.bottom)] }; });
+await S.shot(d, '08g-th-care-allergy-keys.png');
+await kbDone().tap();
+out.allergyA = await allergies.first().inputValue();
+out.english2 = await S.englishLeft(d);
+out.cut = await S.cutOrOverflow(d);
+// to the bottom of the long care step, then Continue
+await d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); s.scrollTop = s.scrollHeight; });
+await d.waitForTimeout(400);
+out.careScroll = await d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); return { top: Math.round(s.scrollTop), max: Math.round(s.scrollHeight - s.clientHeight) }; });
+await c.getByRole('button', { name: /^(Continue|ดำเนินการต่อ)$/ }).tap();
+await c.getByTestId('consent-guardian').waitFor();
+await d.waitForTimeout(800);
+out.agreementsOpened = await d.evaluate(() => { const s = [...document.querySelectorAll('[data-testid="display-consent"] div')].find(e => getComputedStyle(e).overflowY === 'auto'); const g = document.querySelector('[data-testid="consent-guardian"]').getBoundingClientRect(); const sb = s.getBoundingClientRect(); return { top: Math.round(s.scrollTop), max: Math.round(s.scrollHeight - s.clientHeight), guardian: [Math.round(g.top), Math.round(g.bottom)], scroller: [Math.round(sb.top), Math.round(sb.bottom)] }; });
+await S.shot(d, '08h-th-agreements-as-it-opens.png');
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "english": [
+   "proof till",
+   "display thai"
+  ],
+  "photoBlocks": 2,
+  "photo0": "ทีมงานได้รับรูปภาพนี้แล้ว",
+  "photo1": "ทีมงานได้รับรูปภาพนี้แล้ว",
+  "allergyPlacing": {
+   "field": [
+    550,
+    638
+   ],
+   "keys": [
+    650,
+    860
+   ]
+  },
+  "allergyA": "Shellfish",
+  "english2": [
+   "proof till",
+   "display thai"
+  ],
+  "cut": [
+   {
+    "text": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-8",
+    "sw": 820,
+    "cw": 1
+   }
+  ],
+  "careScroll": {
+   "top": 1042,
+   "max": 1042
+  },
+  "agreementsOpened": {
+   "top": 612,
+   "max": 612,
+   "guardian": [
+    -317,
+    -261
+   ],
+   "scroller": [
+    234,
+    893
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T15:16:49.672Z 8: Thai: step 3 agreements: guardian with the keys, ticks, Done; the till moves on
+const { expect } = S;
+S.phase = '8: Thai: step 3 agreements: guardian with the keys, ticks, Done; the till moves on';
+const till = S.till, d = S.displays.thai.page;
+await S.keepAlive();
+const c = d.getByTestId('display-consent');
+const kbDone = () => S.keys(d).getByRole('button').last();
+const out = { englishAgreements: await S.englishLeft(d) };
+await c.getByTestId('consent-guardian').scrollIntoViewIfNeeded();
+await c.getByTestId('consent-guardian').tap();
+await S.typeKeys(d, 'ZZ TEST PARENT THAI');
+await S.shot(d, '08i-th-guardian-keys.png');
+await kbDone().tap();
+for (const box of await c.getByRole('checkbox').all()) { if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') { await box.scrollIntoViewIfNeeded(); await box.tap(); await d.waitForTimeout(200); } }
+await d.waitForTimeout(1500);
+out.state = await S.displayState(d);
+out.cut = await S.cutOrOverflow(d);
+await S.shot(d, '08j-th-all-ticked-done-ready.png');
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await c.getByRole('button', { name: /^(Done|เสร็จสิ้น)$/ }).last().tap();
+await d.waitForTimeout(300);
+out.finishing = (await c.getByTestId('consent-finished').count()) ? S.flat(await c.getByTestId('consent-finished').innerText()) : null;
+await S.shot(d, '08k-th-done-saving-line.png');
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+await d.waitForTimeout(2000);
+S.fam.T = { reg: regBody?.id, number: S.free[7] };
+S.receipt.created.push({ kind: 'registration', family: 'T', id: regBody?.id }); S.save();
+const sale = await S.saleWritten('dropoff-sale-T');
+S.fam.T.sale = sale.id;
+out.displayPayment = { english: await S.englishLeft(d), text: S.flat(await d.locator('body').innerText()).slice(0, 400) };
+await S.pair('08l-th-amount-due-both-screens.png', till, d, { caption: 'Point 8 — Thai family Done: the till at Amount Due; the display\'s payment screen in Thai' });
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "englishAgreements": [
+   "proof till",
+   "display thai",
+   "WhatsApp\nTelegram\nLINE",
+   "will remain within",
+   "minutes of the venue",
+   "understand early pickup does not qualify for refund",
+   "acknowledge the emergency evacuation point"
+  ],
+  "state": {
+   "shown": true,
+   "step": "3. ข้อตกลง",
+   "childName": null,
+   "allergies": null,
+   "dietary": null,
+   "guardian": "Zz Test Parent Thai",
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "wait": null,
+   "reconnecting": null,
+   "alert": null,
+   "keysOpen": 0,
+   "doneShown": 1,
+   "doneEnabled": true
+  },
+  "cut": [
+   {
+    "text": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-8",
+    "sw": 820,
+    "cw": 1
+   }
+  ],
+  "finishing": null,
+  "displayPayment": {
+   "english": [
+    "proof till",
+    "display thai"
+   ],
+   "text": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-893 proof till 1794495109240 display thai ลูกค้า Zz Test Parent Thai O Oto เพลย์พาร์ค คำสั่งซื้อของคุณ ไทย เล่น 1 ชั่วโมง ฿915 เด็ก1 × ฿690 ฿690 บริการรับฝากเด็ก1 × ฿225 ฿225 เล่น 1 ชั่วโมง ฿915 เด็ก1 × ฿690 ฿690 บริการรับฝากเด็ก1 × ฿225 ฿225 รวมภาษีมูลค่าเพิ่ม ฿119.72 ยอดรวม ฿1830 กรุณาชำระเงิน ฿1830.00 ให้กับพนักงานของเรา"
+  }
+ }
+}
+
+=== 2026-11-12T15:17:13.636Z 8: Thai family pays cash; Check in now; the display after payment in Thai
+const { expect } = S;
+S.phase = '8: Thai family pays cash; Check in now; the display after payment in Thai';
+const till = S.till, d = S.displays.thai.page;
+await S.keepAlive();
+await S.payCash(till);
+await d.waitForTimeout(2000);
+const out = { displayAfterPay: S.flat(await d.locator('body').innerText()).slice(0, 300), english: await S.englishLeft(d) };
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.T.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+await d.waitForTimeout(2000);
+await S.pair('08m-th-paid-checked-in-both-screens.png', till, d, { caption: 'Point 8 — the Thai family paid cash and were checked in; the display after payment' });
+const reg = await S.registration(S.fam.T.reg);
+const s = (await S.sale(S.fam.T.sale)).sale;
+out.reg = { guardian: reg.guardianName, phone: reg.guardianPhone, contactConfirmedBy: reg.contactConfirmedBy, children: reg.children.map(c => ({ name: c.childName, status: c.status, allergies: c.allergies, photo: !!c.photoFileId })) };
+out.sale = { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang };
+await till.goto('/'); await till.waitForTimeout(1500);
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "displayAfterPay": "ZZ TEST SCRUM-893 proof till 1794495109240 · ZZ TEST SCRUM-893 proof till 1794495109240 display thai ไทย ลูกค้า Zz Test Parent Thai ขอบคุณค่ะ/ครับ! นี่คือสิ่งที่คุณจะได้รับ — ขอให้สนุกกับการเล่น! 2 สายรัดข้อมือเด็ก 0 สายรัดข้อมือผู้ใหญ่",
+  "english": [
+   "proof till",
+   "display thai"
+  ],
+  "reg": {
+   "guardian": "Zz Test Parent Thai",
+   "phone": "+66898930217",
+   "contactConfirmedBy": "family",
+   "children": [
+    {
+     "name": "Zz Test Thai A",
+     "status": "in_park",
+     "allergies": "Shellfish",
+     "photo": true
+    },
+    {
+     "name": "Zz Test Thai B",
+     "status": "in_park",
+     "allergies": null,
+     "photo": true
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89301-000004",
+   "gross": 183000
+  }
+ }
+}
+
+=== 2026-11-12T15:17:38.390Z 9: nothing else moved: a drop-off filled wholly by staff on the till (no paired display, no keyboard flag) with Continue
+const { expect } = S;
+S.phase = '9: nothing else moved: a drop-off filled wholly by staff on the till (no paired display, no keyboard flag) with Continue';
+const till = S.till;
+await S.keepAlive();
+await S.dropDisplay('thai');
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+const flag = await till.evaluate(() => location.search);
+S.receipt.numbers.W = S.free[8];
+await S.firstScreen(till, till, S.free[8], { tap: false });
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+const nameField = till.getByPlaceholder('Full name', { exact: true }).first();
+const half = S.halfOf(nameField);
+const keysBefore = await half.getByTestId('screen-keyboard').count();
+await nameField.click();
+const keysAfterClick = await half.getByTestId('screen-keyboard').count();
+await nameField.fill('ZZ TEST 893 staff W1');
+await S.setAge(till, half, 6);
+await half.getByPlaceholder('Your full name', { exact: true }).fill('ZZ TEST 893 guardian W');
+await half.getByTestId('consent-allergies').fill('ZZ TEST 2 puffs of inhaler, peanuts & eggs');
+await half.getByRole('button', { name: 'Start camera', exact: true }).click();
+await half.getByRole('button', { name: 'Take photo', exact: true }).click();
+await half.getByAltText('Captured', { exact: true }).waitFor({ timeout: 20000 });
+for (const box of await half.getByRole('checkbox').all()) if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') await box.click();
+await till.waitForTimeout(800);
+const cont = till.getByRole('button', { name: 'Continue to payment', exact: true });
+await expect(cont).toBeEnabled({ timeout: 10000 });
+await S.shot(till, '09a-staff-filled-dropoff-continue.png');
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await cont.click();
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const sale = await S.saleWritten('dropoff-sale-W');
+S.fam.W = { reg: regBody?.id, sale: sale.id, number: S.free[8] };
+S.receipt.created.push({ kind: 'registration', family: 'W', id: regBody?.id }); S.save();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await till.waitForTimeout(800);
+await S.shot(till, '09b-staff-filled-dropoff-paid.png');
+await now.click();
+await expect.poll(async () => (await S.registration(regBody.id)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(regBody.id);
+const s = (await S.sale(sale.id)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+return { flag, keysBefore, keysAfterClick, regStatus: r.status(), reg: { guardian: reg.guardianName, contactConfirmedBy: reg.contactConfirmedBy, photo: !!reg.photoFileId, children: reg.children.map(c => ({ name: c.childName, status: c.status, allergies: c.allergies })) }, sale: { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "flag": "",
+  "keysBefore": 0,
+  "keysAfterClick": 0,
+  "regStatus": 200,
+  "reg": {
+   "guardian": "ZZ TEST 893 guardian W",
+   "contactConfirmedBy": "family",
+   "photo": true,
+   "children": [
+    {
+     "name": "ZZ TEST 893 staff W1",
+     "status": "in_park",
+     "allergies": "ZZ TEST 2 puffs of inhaler, peanuts & eggs"
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z89301-000005",
+   "gross": 91500
+  }
+ }
+}
+
+=== 2026-11-12T15:18:02.926Z 9: nothing else moved: an ordinary ticket sale, one child with an adult (no form)
+const { expect } = S;
+S.phase = '9: nothing else moved: an ordinary ticket sale, one child with an adult (no form)';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+S.receipt.numbers.O = S.free[9];
+const mark = S.receipt.registrationsPosted.length;
+await S.firstScreen(till, till, S.free[9], { tap: false });
+await S.ticket(till, 1, 1);
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const sale = await S.saleWritten('ordinary-sale-O');
+await till.waitForTimeout(1200);
+const formShown = await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count();
+await S.shot(till, '09c-ordinary-sale-straight-to-payment.png');
+await S.payCash(till);
+await till.waitForTimeout(1500);
+const checkInOffer = await till.getByRole('button', { name: 'Check in now', exact: true }).count();
+await S.shot(till, '09d-ordinary-sale-paid-cash.png');
+const s = (await S.sale(sale.id)).sale;
+S.fam.O = { sale: sale.id };
+await till.goto('/'); await till.waitForTimeout(1500);
+return { formShown, checkInOffer, registrationsWritten: S.receipt.registrationsPosted.length - mark, sale: { id: s.id, status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "formShown": 0,
+  "checkInOffer": 0,
+  "registrationsWritten": 0,
+  "sale": {
+   "id": "01a1d056-6d0a-7bce-b0a4-9af4260adb8e",
+   "status": "finalised",
+   "receipt": "Z89301-000006",
+   "gross": 104000
+  }
+ }
+}
+
+=== 2026-11-12T15:18:26.234Z harness: black out the two credit-grant QR codes on 09d (drawn over the saved picture); mask img/canvas QR codes from now on
+S.phase = 'harness: black out the two credit-grant QR codes on 09d (drawn over the saved picture); mask img/canvas QR codes from now on';
+const { readFileSync, writeFileSync } = await import('node:fs');
+const file = S.resolve(S.out, '09d-ordinary-sale-paid-cash.png');
+const b64 = readFileSync(file).toString('base64');
+const page = await S.browser.newPage({ viewport: { width: 1680, height: 1050 } });
+const out = await page.evaluate(async (src) => {
+  const img = new Image(); img.src = src; await img.decode();
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.fillStyle = '#18181b';
+  x.fillRect(466, 590, 72, 72); x.fillRect(982, 662, 78, 78);
+  return c.toDataURL('image/png').split(',')[1];
+}, 'data:image/png;base64,' + b64);
+await page.close();
+writeFileSync(file, Buffer.from(out, 'base64'));
+const old = S.masks;
+S.masks = p => [...old(p), p.locator('canvas'), p.locator('img[alt*="QR" i]')];
+return { ok: true };
+--> {
+ "ok": true,
+ "value": {
+  "ok": true
+ }
+}
+
+=== 2026-11-12T15:18:58.875Z hunt: does the board card show family H's new number now (the picture at the toast showed the old one)?
+S.phase = 'hunt: does the board card show family H\'s new number now (the picture at the toast showed the old one)?';
+const till = S.till;
+await S.keepAlive();
+await S.boardApi();
+await till.goto('/');
+await till.getByRole('button', { name: 'Check-in', exact: true }).click();
+await S.search(till).waitFor({ timeout: 20000 });
+await till.getByRole('button', { name: /^In Park\s*\d+$/i }).first().click();
+await till.waitForTimeout(1500);
+await S.searchBoard(till, 'Zz Test Half');
+await till.waitForTimeout(1500);
+const card = S.flat(await till.getByText('Zz Test Parent Half', { exact: true }).first().locator('xpath=ancestor::div[contains(@class,"rounded")][1]').innerText().catch(() => ''));
+await S.shot(till, 'hunt-c-board-card-after-number-change.png');
+const fam = (await S.boardApi()).families.find(f => f.registrationId === S.fam.H.reg);
+return { card: card.slice(0, 300), boardApiPhone: fam?.guardianPhone ?? null };
+--> {
+ "ok": true,
+ "value": {
+  "card": "Zz Test Parent Half +66898930211 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898930211 Save & re-send Resend Sim: parent confirms Couldn't reach Zz Test Half 6 yrs DROP-OFF Peanut Allergy Carries An Epipen In T",
+  "boardApiPhone": "+66898930211"
+ }
+}
+
+=== 2026-11-12T15:19:59.729Z record the points (facts read back in the steps above; see steps.log)
+S.phase = 'record the points (facts read back in the steps above; see steps.log)';
+S.point('1 SCRUM-893 paired display 600x1024', 'PASS', ['01a-form-opened-both-screens.png', '01b-600-child-name-keys-typed-till-follows.png', '01c-600-keyboard-close-up.png', '01d-600-allergies-keys-typed-till-follows.png', '01e-600-dietary-keys-typed-till-follows.png', '01f-600-guardian-keys-typed-till-follows.png'],
+  'Each of the four boxes opened the keys under it on a touch; typing with the keys reached the box and the till copy ~0.5-1.0 s after the last key (child name 995 ms, allergies 1010 ms, dietary 1022 ms, guardian 502 ms; poll granularity ~0.5 s). Owner case: allergy "Peanuts And Eggs" typed and on the till copy. Keys: Q-P, A-L, Z-M (26 capital letters), Backspace, Space, Done; no digits, no punctuation, no Thai.');
+S.point('2 SCRUM-894 600x1024 and 1024x600', 'PASS (with a finding)', ['01b..01f (600x1024)', '02a-1024x600-child-name-keys.png', '02b-1024x600-allergies-keys.png', '02c-1024x600-dietary-keys.png', '02d-1024x600-guardian-keys.png', '02e-1024x600-agreements-both-screens.png', 'hunt-a-1024x600-agreements-opened-after-scrolled-care.png', '08h-th-agreements-as-it-opens.png'],
+  'Every box: field and keys inside the scroll area, keys under the field, both above the bar; the field did not move while typing (0 px, scrollTop unchanged). Finding: a new step keeps the previous step\'s scroll, so Agreements can open with the guardian box hidden above (1024x600 one child; 600x1024 two children).');
+S.point('3 till customer half ?keyboard=screen', 'PASS', ['03a-half-form-opened-keyboard-flag.png', '03b-half-child-name-keys-open.png', '03c-half-allergies-keys-open.png', '03d-half-allergies-past-100-typed.png', '03e-half-dietary-keys-typed.png', '03f-half-guardian-keys-typed.png', '03g-half-family-h-paid-checked-in.png'],
+  'All four boxes inputmode none and open the keys; allergies took 127 characters (maxlength 500) and the registration stored all 127.');
+S.point('4 SCRUM-914', 'PASS', ['04a-half-whatsapp-ticked.png', '04b-half-telegram-and-back-unticked.png', '04c-half-digit-edited-and-typed-back-unticked.png', '04d-board-family-h-found.png', '04e-board-edit-landline-refused-save-disabled.png', '04f-board-edit-new-mobile-withdraw-warning.png', '04g-board-saved-toast-confirmation-withdrawn.png', 'hunt-c-board-card-after-number-change.png'],
+  'Half: tick -> Telegram -> WhatsApp = unticked; tick -> Backspace -> 0 typed back = unticked. Board: landline 21234567 refused under the field, Save disabled; new mobile: withdraw warning; PATCH 200 warnings[...withdrawn...]; toast says withdrawn; registration contactConfirmedAt/By cleared.');
+S.point('5 SCRUM-915 phone till 390x844', 'PASS', ['05a-phone-till-start.png', '05b-phone-after-continue.png', '05c-phone-gate-child-aged-6.png', '05d-phone-hand-to-customer.png', '05e-phone-family-form-top.png', '05f-phone-camera-live-fake.png', '05g-phone-number-tick-and-still-needed.png', '05h-phone-everything-given-done-and-return-button.png', '05i-phone-back-to-staff-review-drop-off-line.png', '05j-phone-payment-step.png', '05k-phone-paid.png', '05l-phone-half-filled-before-return.png', '05m-phone-after-return-what-staff-see.png', '05n-phone-sale-cancelled.png'],
+  'Hand the phone to the customer -> Customer is ready -> the family form with camera, allergies, guardian, number tick, Still needed line, Done; wide bottom button "Return phone to staff". Done -> Review Order with Drop-off service ฿225; cash Z89302-000001 ฿915; one registration (one POST 200) with photo, in park. Return half-way: staff back at the gate (Children playing alone, Before payment list), nothing posted; reopening keeps what was typed; sale cancelled, nothing written.');
+S.point('6 SCRUM-942 lock lines', 'PASS', ['06a-till-locked-family-filling-line.png', '06b-locked-family-pressed-done-both-lines.png', '06c-after-unlock-registered-amount-due.png'],
+  'Locked 120.2 s after the last touch; line 1 "A family is filling in the drop-off form on the display."; family Done -> display "Thank you. The team will be with you in a moment." in 0.5 s, lock line "The family has pressed Done: unlock to carry on." in 2.9 s; nothing posted while locked; unlock -> registration POST 200 and Amount Due ฿915.');
+S.point('7 SCRUM-943', 'PASS', ['07a1-no-camera-display-line-and-staff-line.png', '07b1-done-pressed-write-held.png', '07b2-staff-back-display-keeps-saving.png', '07b3-after-release.png', '07c1-number-while-typed-both-screens.png', '07c2-number-complete-both-screens.png', '07d1-display-offline-reconnecting-line-over-form.png', '07d2-offline-tick-pressed-till-not-yet.png', '07d3-online-again-till-caught-up.png', '07f1-camera-refused-notice-dark.png', '07f2-camera-refused-staff-line.png', '07f3-camera-refused-notice-light.png'],
+  'a) display: "No camera available · Reception will take the photo..."; till: "The display has no camera. Take each child\'s photo with the family here, in Private child details." (refused: "The camera on the display was refused. ..."). b) held write: display kept "Thank you — saving your details..." after staff Back; release -> one POST 200, cart carried the drop-off ฿915. c) typed 0898: both "+66 0898"; complete: display "+66 898930212", till copy "898930212 / Stored as +66898930212". d) line over the form in 0.5 s, no Retry, tick position unchanged; tick given offline reached the till ~1 s after online. e) copy buttons disabled at opacity 0.5. f) light: title rgb(146,64,14) / note rgba(59,40,28,.85) on a white .82 veil; dark: amber-300 title, note at half strength, no veil.');
+S.point('8 Thai journey 600x1024', 'PASS (with findings)', ['08a-th-language-choice.png', '08b-th-form-step1-empty.png', '08c-th-keys-open-child-a.png', '08d-th-age-picker.png', '08e-th-step1-two-children-aged.png', '08f-th-care-step-top.png', '08g-th-care-allergy-keys.png', '08h-th-agreements-as-it-opens.png', '08i-th-guardian-keys.png', '08j-th-all-ticked-done-ready.png', '08k-th-done-saving-line.png', '08l-th-amount-due-both-screens.png', '08m-th-paid-checked-in-both-screens.png'],
+  'Two children, keys labelled in Thai (Space เว้นวรรค, Backspace ลบตัวอักษร, Done เสร็จสิ้น), letters English; cash ฿1830 Z89301-000004; both in park with photos. Untranslated at 600 wide: the park\'s three confirmation texts stay English; nothing cut or overlapping found.');
+S.point('9 nothing else moved', 'PASS', ['09a-staff-filled-dropoff-continue.png', '09b-staff-filled-dropoff-paid.png', '09c-ordinary-sale-straight-to-payment.png', '09d-ordinary-sale-paid-cash.png'],
+  'Staff-filled drop-off with Continue (no keys without the flag): POST 200, cash Z89301-000005 ฿915, in park. Ordinary 1 kid + 1 adult: straight to payment, no form, no registration, cash Z89301-000006 ฿1040.');
+return Object.keys(S.receipt.points);
+--> {
+ "ok": true,
+ "value": [
+  "1 SCRUM-893 paired display 600x1024",
+  "2 SCRUM-894 600x1024 and 1024x600",
+  "3 till customer half ?keyboard=screen",
+  "4 SCRUM-914",
+  "5 SCRUM-915 phone till 390x844",
+  "6 SCRUM-942 lock lines",
+  "7 SCRUM-943",
+  "8 Thai journey 600x1024",
+  "9 nothing else moved"
+ ]
+}
+
+=== 2026-11-12T15:20:06.198Z clean up: release own ZZ TEST children in the park (synthetic pickup picture), read back
+S.phase = 'clean up: release own ZZ TEST children in the park (synthetic pickup picture), read back';
+clearInterval(S.alive); S.alive = null;
+const out = [];
+for (const [fam, v] of Object.entries(S.fam)) {
+  if (!v.reg) continue;
+  const reg = await S.registration(v.reg);
+  S.assert.ok(S.isZz(reg.guardianName) && reg.children.every(c => S.isZz(c.childName)), 'own ZZ TEST registration only');
+  const done = await S.releaseOwn(v.reg);
+  const after = await S.registration(v.reg);
+  out.push({ fam, reg: v.reg, actions: done, children: after.children.map(c => c.childName + ':' + c.status) });
+}
+S.receipt.cleanup.registrations = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "fam": "H",
+   "reg": "01a1d041-4dd7-7214-b76f-56e3ce3458e8",
+   "actions": [
+    {
+     "child": "Zz Test Half",
+     "status": 200
+    }
+   ],
+   "children": [
+    "Zz Test Half:out"
+   ]
+  },
+  {
+   "fam": "D",
+   "reg": "01a1d04b-80f3-7ee1-93c6-403204bb5c72",
+   "actions": [
+    {
+     "child": "Zz Test Keys",
+     "status": 200
+    }
+   ],
+   "children": [
+    "Zz Test Keys:out"
+   ]
+  },
+  {
+   "fam": "E",
+   "reg": "01a1d04e-6d39-73d5-a1c7-ceddecb70593",
+   "actions": [
+    {
+     "child": "Zz Test Hold",
+     "status": 200
+    }
+   ],
+   "children": [
+    "Zz Test Hold:out"
+   ]
+  },
+  {
+   "fam": "P",
+   "reg": "01a1d052-696b-72c7-a9f3-a29dd81c2ab5",
+   "actions": [
+    {
+     "child": "ZZ TEST PHONE",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST PHONE:out"
+   ]
+  },
+  {
+   "fam": "T",
+   "reg": "01a1d055-4e29-7348-8a3f-f06a238df356",
+   "actions": [
+    {
+     "child": "Zz Test Thai A",
+     "status": 200
+    },
+    {
+     "child": "Zz Test Thai B",
+     "status": 200
+    }
+   ],
+   "children": [
+    "Zz Test Thai A:out",
+    "Zz Test Thai B:out"
+   ]
+  },
+  {
+   "fam": "W",
+   "reg": "01a1d056-1bcb-7132-a748-3e9bce08079b",
+   "actions": [
+    {
+     "child": "ZZ TEST 893 staff W1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 893 staff W1:out"
+   ]
+  }
+ ]
+}
+
+=== 2026-11-12T15:20:22.207Z clean up: the staging manager, signed in at the own ZZ TEST till, refunds every own cash sale whole
+S.phase = 'clean up: the staging manager, signed in at the own ZZ TEST till, refunds every own cash sale whole';
+const mgr = await S.signIn('manager', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1440, height: 900 });
+const out = [];
+for (const st of [S.station, S.phoneStation]) {
+  for (const s of await S.stationSales(st)) {
+    S.assert.equal(s.stationId, st.id);
+    S.assert.ok(S.knownSales.has(s.id), 'own sale only');
+    if (s.status !== 'finalised') { out.push({ id: s.id, receipt: s.receiptNumber, status: s.status, skipped: true }); continue; }
+    const res = await mgr.request.fetch(`/api/sales/${s.id}/refunds`, { method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST SCRUM-893 proof clean-up' } });
+    const b = await res.json().catch(() => null);
+    const after = await S.sale(s.id);
+    out.push({ id: s.id, receipt: s.receiptNumber, gross: s.totals?.grossSatang, status: res.status(), errorCode: b?.error?.code ?? null, refund: b?.refund?.amountSatang ?? null, refundStatus: after.refundStatus ?? null, saleStatus: after.sale?.status, refundable: after.refundableSatang ?? null });
+  }
+}
+S.receipt.cleanup.refunds = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "id": "01a1d056-6d0a-7bce-b0a4-9af4260adb8e",
+   "receipt": "Z89301-000006",
+   "gross": 104000,
+   "status": 200,
+   "errorCode": null,
+   "refund": 104000,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d056-1edd-7621-ac8c-ae170e3906ad",
+   "receipt": "Z89301-000005",
+   "gross": 91500,
+   "status": 200,
+   "errorCode": null,
+   "refund": 91500,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d055-55e5-7f0a-a94e-1fd9c73746b8",
+   "receipt": "Z89301-000004",
+   "gross": 183000,
+   "status": 200,
+   "errorCode": null,
+   "refund": 183000,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d04e-c17c-7177-a351-0d56d6181159",
+   "receipt": "Z89301-000003",
+   "gross": 91500,
+   "status": 200,
+   "errorCode": null,
+   "refund": 91500,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d04b-8401-75b0-aed0-b1f807104649",
+   "receipt": "Z89301-000002",
+   "gross": 91500,
+   "status": 200,
+   "errorCode": null,
+   "refund": 91500,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d041-52f3-799d-b7a9-9209e4f85ac6",
+   "receipt": "Z89301-000001",
+   "gross": 91500,
+   "status": 200,
+   "errorCode": null,
+   "refund": 91500,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  },
+  {
+   "id": "01a1d052-ba7e-7b56-b6ad-1ba6163904b6",
+   "receipt": "Z89302-000001",
+   "gross": 91500,
+   "status": 200,
+   "errorCode": null,
+   "refund": 91500,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "refundable": 0
+  }
+ ]
+}
+
+=== 2026-11-12T15:20:40.390Z clean up: credit grant of the ordinary sale, members on the numbers, displays, the two tills retired, sessions signed out
+S.phase = 'clean up: credit grant of the ordinary sale, members on the numbers, displays, the two tills retired, sessions signed out';
+const res = {};
+const o = await S.sale(S.fam.O.sale);
+res.ordinarySaleKeys = Object.keys(o);
+const grantish = Object.fromEntries(Object.entries(o).filter(([k]) => /grant|credit|wallet|voucher/i.test(k)).map(([k, v]) => [k, JSON.stringify(v).slice(0, 300)]));
+res.ordinaryGrants = grantish;
+res.members = [];
+for (const n of S.free.slice(0, 12)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null;
+  res.members.push({ n, member: m ? m.id : null });
+}
+res.displaysOpen = Object.keys(S.displays);
+for (const label of Object.keys(S.displays)) await S.dropDisplay(label);
+const createdDisplays = S.receipt.created.filter(x => x.kind === 'display');
+res.displays = createdDisplays.map(dp => ({ label: dp.label, revoked: (S.receipt.cleanup.displays ?? []).some(c => c.id === dp.id && c.revoked) }));
+res.sessions = [];
+for (const label of Object.keys(S.pages)) res.sessions.push(await S.signOutPage(label));
+res.stations = [];
+for (const st of [S.station, S.phoneStation]) {
+  const p = await S.call('PATCH', `/stations/${st.id}`, { devices: [] });
+  const d = await S.call('DELETE', `/stations/${st.id}`);
+  const back = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === st.id);
+  res.stations.push({ id: st.id, patch: p.status, del: d.status, archived: back?.archived ?? null, devices: back?.devices?.length ?? null });
+}
+S.receipt.cleanup.rest = res; S.save();
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "ordinarySaleKeys": [
+   "timeExtension",
+   "sale",
+   "correctionBandShortCode",
+   "refundStatus",
+   "refundableSatang",
+   "refunds",
+   "printJobs",
+   "bands",
+   "grants",
+   "issuedVouchers",
+   "pickupCode",
+   "attempts",
+   "taxBreakdown",
+   "taxConfig",
+   "lines",
+   "discounts"
+  ],
+  "ordinaryGrants": {
+   "grants": "[{\"walletId\":\"01a1d056-76c3-7130-8801-3fe99d9b9579\",\"role\":\"adult\",\"personIndex\":0,\"creditSatang\":35000,\"qrCode\":\"QR-[withheld]\",\"holderName\":\"Walk-in guest\",\"gateAccess\":true,\"bandShortCode\":\"Z89301-5H6KSC\",\"expiresAt\":\"2026-11-12T22:00:00.000Z\"}]",
+   "issuedVouchers": "[]"
+  },
+  "members": [
+   {
+    "n": "0898930210",
+    "member": "01a1d041-4c8f-7b31-b871-5e72ebc0161b"
+   },
+   {
+    "n": "0898930211",
+    "member": null
+   },
+   {
+    "n": "0898930212",
+    "member": "01a1d04b-7fcd-7eb9-9af6-50796982fad4"
+   },
+   {
+    "n": "0898930213",
+    "member": "01a1d04e-6c12-7b52-aa72-6d76429da1ac"
+   },
+   {
+    "n": "0898930214",
+    "member": null
+   },
+   {
+    "n": "0898930215",
+    "member": null
+   },
+   {
+    "n": "0898930216",
+    "member": null
+   },
+   {
+    "n": "0898930217",
+    "member": "01a1d055-4c88-7e88-9adc-90af27af84e2"
+   },
+   {
+    "n": "0898930218",
+    "member": "01a1d056-1ac2-7382-b7e6-477d12ba5822"
+   },
+   {
+    "n": "0898930219",
+    "member": null
+   },
+   {
+    "n": "0898930220",
+    "member": null
+   },
+   {
+    "n": "0898930221",
+    "member": null
+   }
+  ],
+  "displaysOpen": [],
+  "displays": [
+   {
+    "label": "main",
+    "revoked": true
+   },
+   {
+    "label": "nocam",
+    "revoked": true
+   },
+   {
+    "label": "refused",
+    "revoked": true
+   },
+   {
+    "label": "thai",
+    "revoked": true
+   }
+  ],
+  "sessions": [
+   {
+    "label": "till",
+    "before": 200,
+    "after": 401
+   },
+   {
+    "label": "manager",
+    "before": 200,
+    "after": 401
+   }
+  ],
+  "stations": [
+   {
+    "id": "01a1d03e-5b5d-7cf1-8810-04b104b8dda1",
+    "patch": 200,
+    "del": 200,
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "id": "01a1d051-88fa-72b1-a7cd-7fc0ed908ee6",
+    "patch": 200,
+    "del": 200,
+    "archived": true,
+    "devices": 0
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T15:20:55.813Z clean up: the members the registrations made on this run's own numbers archived; the refunded sale's credit wallet read; the credit code scrubbed from the log
+S.phase = 'clean up: the members the registrations made on this run\'s own numbers archived; the refunded sale\'s credit wallet read; the credit code scrubbed from the log';
+const res = { members: [] };
+for (const n of S.free.slice(0, 12)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null;
+  if (!m) continue;
+  const label = `${m.nickname ?? ''} ${m.name ?? ''}`;
+  S.assert.ok(/ZZ TEST/i.test(label), 'only own named test members: ' + n);
+  const del = await S.call('DELETE', `/members/${m.id}`);
+  const again = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null;
+  res.members.push({ n, id: m.id, name: label.trim(), del: del.status, afterLookup: again ? again.id : null });
+}
+const o = await S.sale(S.fam.O.sale);
+const walletId = o.grants?.[0]?.walletId;
+for (const path of [`/wallets/${walletId}`, `/wallets?walletId=${walletId}`]) {
+  const r = await S.call('GET', path);
+  res[path.split('?')[0].replace(S.ID, ':id')] = { status: r.status, keys: r.body ? Object.keys(r.body).slice(0, 12) : null, state: r.body ? JSON.stringify(r.body).match(/"(status|state|voided[A-Za-z]*|balanceSatang|archivedAt|revokedAt)":[^,}]*/g)?.slice(0, 6) ?? null : null };
+}
+// scrub the credit code from the receipt (it was answered in the clean-up step's read)
+if (S.receipt.cleanup.rest?.ordinaryGrants) S.receipt.cleanup.rest.ordinaryGrants = { grants: '[one adult credit grant ฿350, its code withheld]' };
+S.save();
+S.receipt.cleanup.members = res.members; S.save();
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "members": [
+   {
+    "n": "0898930210",
+    "id": "01a1d041-4c8f-7b31-b871-5e72ebc0161b",
+    "name": "Zz Test Parent Half",
+    "del": 200,
+    "afterLookup": null
+   },
+   {
+    "n": "0898930212",
+    "id": "01a1d04b-7fcd-7eb9-9af6-50796982fad4",
+    "name": "Zz Test Parent Keys",
+    "del": 200,
+    "afterLookup": null
+   },
+   {
+    "n": "0898930213",
+    "id": "01a1d04e-6c12-7b52-aa72-6d76429da1ac",
+    "name": "Zz Test Parent Hold",
+    "del": 200,
+    "afterLookup": null
+   },
+   {
+    "n": "0898930217",
+    "id": "01a1d055-4c88-7e88-9adc-90af27af84e2",
+    "name": "Zz Test Parent Thai",
+    "del": 200,
+    "afterLookup": null
+   },
+   {
+    "n": "0898930218",
+    "id": "01a1d056-1ac2-7382-b7e6-477d12ba5822",
+    "name": "ZZ TEST 893 guardian W",
+    "del": 200,
+    "afterLookup": null
+   }
+  ],
+  "/wallets/:id": {
+   "status": 200,
+   "keys": [
+    "wallet",
+    "ledger"
+   ],
+   "state": [
+    "\"status\":\"active\"",
+    "\"balanceSatang\":35000"
+   ]
+  },
+  "/wallets": {
+   "status": 404,
+   "keys": [
+    "error"
+   ],
+   "state": null
+  }
+ }
+}
+
+=== 2026-11-12T15:21:39.269Z read-back picture, then sign the admin out
+S.phase = 'read-back picture, then sign the admin out';
+const rows = [];
+for (const [fam, v] of Object.entries(S.fam)) {
+  if (v.reg) { const r = await S.registration(v.reg); rows.push([`registration ${fam}`, r.children.map(c => `${c.childName}: ${c.status}`).join(', ')]); }
+  if (v.sale) { const s = await S.sale(v.sale); rows.push([`sale ${fam}`, `${s.sale.receiptNumber} ${s.sale.status} refund ${s.refundStatus} refundable ${s.refundableSatang}`]); }
+}
+const st = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.filter(s => [S.station.id, S.phoneStation.id].includes(s.id));
+for (const s of st) rows.push([`till ${s.codePrefix}`, `archived ${s.archived}, devices ${s.devices.length}`]);
+rows.push(['displays', (S.receipt.cleanup.displays ?? []).map(d => `${d.label}: revoked`).join(', ')]);
+rows.push(['members on own numbers', (S.receipt.cleanup.members ?? []).map(m => `${m.n} archived (lookup ${m.afterLookup ?? 'none'})`).join('; ')]);
+rows.push(['sessions', (S.receipt.cleanup.sessions ?? []).map(x => `${x.label} ${x.before}->${x.after}`).join(', ')]);
+rows.push(['credit wallet of the ordinary sale', 'active ฿350 after the whole refund (ticket give-back credit is kept by rule OD-W4), expires 05:00 Bangkok 13 Nov']);
+await S.facts('99-cleanup-read-back.png', 'SCRUM-893 family form lane proof — clean-up read back', rows);
+const out = await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+const me = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.admin = { signOut: out.status(), me }; S.receipt.finishedAt = new Date().toISOString(); S.save();
+return { rows, admin: S.receipt.cleanup.admin, pageErrors: S.receipt.pageErrors.length, pageErrorKinds: [...new Set(S.receipt.pageErrors.map(e => `${e.page} ${e.kind} ${e.text}`.slice(0, 140)))].slice(0, 25) };
+--> {
+ "ok": true,
+ "value": {
+  "rows": [
+   [
+    "registration H",
+    "Zz Test Half: out"
+   ],
+   [
+    "sale H",
+    "Z89301-000001 refunded refund refunded refundable 0"
+   ],
+   [
+    "registration D",
+    "Zz Test Keys: out"
+   ],
+   [
+    "sale D",
+    "Z89301-000002 refunded refund refunded refundable 0"
+   ],
+   [
+    "registration E",
+    "Zz Test Hold: out"
+   ],
+   [
+    "sale E",
+    "Z89301-000003 refunded refund refunded refundable 0"
+   ],
+   [
+    "registration P",
+    "ZZ TEST PHONE: out"
+   ],
+   [
+    "sale P",
+    "Z89302-000001 refunded refund refunded refundable 0"
+   ],
+   [
+    "registration T",
+    "Zz Test Thai A: out, Zz Test Thai B: out"
+   ],
+   [
+    "sale T",
+    "Z89301-000004 refunded refund refunded refundable 0"
+   ],
+   [
+    "registration W",
+    "ZZ TEST 893 staff W1: out"
+   ],
+   [
+    "sale W",
+    "Z89301-000005 refunded refund refunded refundable 0"
+   ],
+   [
+    "sale O",
+    "Z89301-000006 refunded refund refunded refundable 0"
+   ],
+   [
+    "till Z89302",
+    "archived true, devices 0"
+   ],
+   [
+    "till Z89301",
+    "archived true, devices 0"
+   ],
+   [
+    "displays",
+    "main: revoked, nocam: revoked, refused: revoked, thai: revoked"
+   ],
+   [
+    "members on own numbers",
+    "0898930210 archived (lookup none); 0898930212 archived (lookup none); 0898930213 archived (lookup none); 0898930217 archived (lookup none); 0898930218 archived (lookup none)"
+   ],
+   [
+    "sessions",
+    "phone 200->401, till 200->401, manager 200->401"
+   ],
+   [
+    "credit wallet of the ordinary sale",
+    "active ฿350 after the whole refund (ticket give-back credit is kept by rule OD-W4), expires 05:00 Bangkok 13 Nov"
+   ]
+  ],
+  "admin": {
+   "signOut": 200,
+   "me": 401
+  },
+  "pageErrors": 32,
+  "pageErrorKinds": [
+   "till http GET /api/me 401",
+   "till console.error Failed to load resource: the server responded with a status of 401 ()",
+   "display-main console.error Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+   "phone http GET /api/me 401",
+   "phone console.error Failed to load resource: the server responded with a status of 401 ()",
+   "phone http GET /api/stations/:id/displays 401",
+   "manager http GET /api/me 401",
+   "manager console.error Failed to load resource: the server responded with a status of 401 ()"
+  ]
+ }
+}
