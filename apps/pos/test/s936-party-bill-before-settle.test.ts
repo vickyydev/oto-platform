@@ -4,10 +4,11 @@ import type { EventView, PartyPlan, PartySettleQuote, PartySettlementView } from
 import { api } from '@/api/client';
 import { toOtoEvent } from '@/api/events';
 import { PartyDetail } from '@/components/parties/PartyDetail';
+import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import { PartySettleModal } from '@/components/parties/PartySettleModal';
 import { MobilePartyDetail } from '@/components/mobile/parties/MobilePartyDetail';
 import { StepPayment } from '@/components/till/StepPayment';
-import { partyBillShown, partyListFigure } from '@/lib/partySettlementBill';
+import { partyBillShown, partyListFigure, settlesOnTab } from '@/lib/partySettlementBill';
 import type { PartyBooking } from '@/types';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -378,6 +379,90 @@ describe('SCRUM-936 — the phone’s party page before Settle party', () => {
     const tree = MobilePartyDetail({ party: partyOf(OPEN), planned: null, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
     expect(buttonIn(tree, 'Settlement open · ฿15800') === null).toBe(false);
     expect(flat(tree)).toContain("Take it with Resume settlement on a counter till's party page.");
+  });
+});
+
+describe('SCRUM-936 — a party the platform settles on its tab reads the tab, as before', () => {
+  /** One walk-up guest the board put on the tab: the preview prices it, the settle refuses it. */
+  const WALK_UP_QUOTE: PartySettleQuote = { ...QUOTE, walkUps: 1, walkUpsSatang: 45_000 };
+  const walkUp = {
+    id: 'walk-up-1',
+    kind: 'ticket' as const,
+    items: [{ name: 'Walk-up guest — Ploy', qty: 1, lineTotal: 450 }],
+    total: 450,
+    chargedBy: 'Som',
+    chargedById: 'acc-som',
+    chargedAt: `${T}T08:00:00.000Z`,
+  };
+  const withWalkUp = (totalValueSatang: number) => ({ ...partyOf(null, totalValueSatang), partyExtraCharges: [walkUp] });
+  /** ฿5,000 of the package taken on the tab, which carries no charge of its own. */
+  const paidOnTab = (totalValueSatang: number) => ({
+    ...partyOf(null, totalValueSatang),
+    partyPayments: [{ id: 'pay-1', amount: 5_000, method: 'cash', takenBy: 'Som', takenById: 'acc-som', takenAt: `${T}T08:00:00.000Z` }],
+  });
+  const takenOnTab = (quote: PartySettleQuote) => {
+    postMock.mockImplementation((async (url: string) => {
+      if (url === `/parties/${PARTY}/settle/preview`) return { quote };
+      return undefined;
+    }) as unknown as typeof api.post);
+  };
+
+  it('walk-ups on the tab: the quote is set aside, and nothing is owed to Settle party', () => {
+    expect(settlesOnTab(withWalkUp(1_690_000), WALK_UP_QUOTE)).toBe(true);
+    expect(partyBillShown(withWalkUp(1_690_000), WALK_UP_QUOTE)).toEqual(partyBillShown(withWalkUp(1_690_000)));
+    expect(partyBillShown(withWalkUp(1_690_000), WALK_UP_QUOTE)).toEqual({
+      total: 17_350, deposit: 1_000, paid: 0, outstanding: 16_350, settlementOwed: 0,
+    });
+    expect(partyBillShown(withWalkUp(0), WALK_UP_QUOTE).settlementOwed).toBe(0);
+  });
+
+  it('money for the package already taken on the tab: the quote is set aside too', () => {
+    expect(settlesOnTab(paidOnTab(1_690_000), QUOTE)).toBe(true);
+    expect(partyBillShown(paidOnTab(1_690_000), QUOTE)).toEqual({
+      total: 16_900, deposit: 1_000, paid: 5_000, outstanding: 10_900, settlementOwed: 0,
+    });
+    // A tab paid no further than its own charges is still settled as one sale.
+    const chargedAndPaid = { ...paidOnTab(0), partyExtraCharges: [{ ...walkUp, id: 'fnb-1', kind: 'fnb' as const, total: 5_000 }] };
+    expect(settlesOnTab(chargedAndPaid, QUOTE)).toBe(false);
+    expect(partyBillShown(chargedAndPaid, QUOTE).settlementOwed).toBe(15_900);
+  });
+
+  it('the counter’s Take balance opens the tab’s balance screen, not Settle party (walk-ups)', async () => {
+    takenOnTab(WALK_UP_QUOTE);
+    const page = partyPage(withWalkUp(1_690_000));
+    await settle();
+    const take = buttonIn(page.result.current, 'Take balance ฿16350');
+    expect(take === null).toBe(false);
+    (take!.props.onClick as () => void)();
+    await settle();
+    expect(elementOf(page.result.current, PartyBalanceModal)?.props.open).toBe(true);
+    expect(elementOf(page.result.current, PartySettleModal)?.props.open).toBe(false);
+  });
+
+  it('the counter’s Take balance opens the tab’s balance screen, not Settle party (paid on the tab)', async () => {
+    const page = partyPage(paidOnTab(1_690_000));
+    await settle();
+    const take = buttonIn(page.result.current, 'Take balance ฿10900');
+    expect(take === null).toBe(false);
+    (take!.props.onClick as () => void)();
+    await settle();
+    expect(elementOf(page.result.current, PartyBalanceModal)?.props.open).toBe(true);
+    expect(elementOf(page.result.current, PartySettleModal)?.props.open).toBe(false);
+  });
+
+  it('the phone never sends staff to Settle party for them', () => {
+    for (const [party, quote] of [
+      [withWalkUp(1_690_000), WALK_UP_QUOTE],
+      [withWalkUp(0), WALK_UP_QUOTE],
+      [paidOnTab(1_690_000), QUOTE],
+    ] as const) {
+      const tree = MobilePartyDetail({ party, planned: quote, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+      const text = flat(tree);
+      expect(text.includes('Settle party')).toBe(false);
+      expect(text.includes('Not settled')).toBe(false);
+    }
+    const tree = MobilePartyDetail({ party: withWalkUp(1_690_000), planned: WALK_UP_QUOTE, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    expect(buttonIn(tree, 'Take payment · ฿16350') === null).toBe(false);
   });
 });
 

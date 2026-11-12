@@ -9,7 +9,7 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { partyBillShown } from '@/lib/partySettlementBill';
+import { billQuoteOf, partyBillShown } from '@/lib/partySettlementBill';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import { withPartyKitchen } from '@/api/events';
 import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
@@ -110,7 +110,7 @@ interface MobilePartyDetailProps {
 
 export function MobilePartyDetail({
   party: given,
-  planned = null,
+  planned: quote = null,
   onBack,
   onTakePayment,
   onAddFnb,
@@ -120,6 +120,9 @@ export function MobilePartyDetail({
   const planRead = usePartyPlanRead(given);
   const kitchenPlan = planRead?.kitchenPlan ?? planRead?.plan ?? null;
   const party = withPartyKitchen(given, kitchenPlan);
+  // A party the platform settles on its tab (walk-ups, money taken there)
+  // reads the tab's bill, and is taken on the tab here.
+  const planned = billQuoteOf(party, quote);
   // The tab's own balance: what Take payment takes on this phone.
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);

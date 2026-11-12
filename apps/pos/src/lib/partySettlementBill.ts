@@ -37,7 +37,8 @@ import {
  * `settlementOwed` is what Settle party will take.
  *
  * Anything else — no plan, no quote, or a settlement settled — is the tab's
- * bill exactly as the page read it before.
+ * bill exactly as the page read it before. So is a party the platform will
+ * not settle as one sale (`settlesOnTab`): its balance is taken on the tab.
  */
 export interface PartyBillShown {
   total: number;
@@ -54,11 +55,31 @@ export interface PartyBillShown {
 
 const satang = (baht: number) => Math.round(baht * 100);
 
-export function partyBillShown(party: PartyBooking, planned?: PartySettleQuote | null): PartyBillShown {
+/**
+ * SCRUM-936 — A PARTY THE PLATFORM WILL NOT SETTLE AS ONE SALE, though its
+ * preview prices it: walk-up guests already on its tab (`PARTY_WALK_UPS_ON_TAB`,
+ * which the preview reports as `walkUps`), or a tab that already took money
+ * beyond its own charges (`PARTY_PAID_ON_TAB`, which the preview does not
+ * flag) — the two refusals of `settleParty` (`services/party-settlement.ts`).
+ * Its balance is taken on the tab, as the platform's refusal says, so its
+ * page reads the tab's bill and Take balance opens the tab's balance screen.
+ */
+export function settlesOnTab(party: PartyBooking, quote: PartySettleQuote): boolean {
+  if (quote.walkUps > 0) return true;
+  return satang(partyPaymentsTotal(party)) > satang(partyLineItemsTotal(party) + partyExtraChargesTotal(party));
+}
+
+/** The quote a bill is read on: none for a party the platform settles on its tab. */
+export function billQuoteOf(party: PartyBooking, quote: PartySettleQuote | null | undefined): PartySettleQuote | null {
+  return quote && !settlesOnTab(party, quote) ? quote : null;
+}
+
+export function partyBillShown(party: PartyBooking, quote?: PartySettleQuote | null): PartyBillShown {
   const total = computePartyTotal(party);
   const outstanding = computePartyOutstanding(party);
   const paid = partyPaymentsTotal(party);
   const open = party.settlement?.state === 'open' ? party.settlement : null;
+  const planned = billQuoteOf(party, quote);
   if (!open) {
     if (planned && !partySettlementLive(party.settlement)) {
       const totalSatang = planned.totalSatang + satang(partyLineItemsTotal(party) + partyExtraChargesTotal(party));

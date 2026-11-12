@@ -20,7 +20,7 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { partyBillShown, usePlannedSettleQuote } from '@/lib/partySettlementBill';
+import { billQuoteOf, partyBillShown, usePlannedSettleQuote } from '@/lib/partySettlementBill';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
@@ -196,7 +196,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // and balance beside the tab's, never "Fully paid" while it is owed.
   // SCRUM-936 — before a settlement, the package the plan owes, priced by
   // the platform as Settle party will price it.
-  const planned = usePlannedSettleQuote(party, plan, station?.stationId ?? null);
+  // A party the platform settles on its tab (walk-ups, money taken there)
+  // reads the tab's bill, and Take balance takes it there.
+  const planned = billQuoteOf(party, usePlannedSettleQuote(party, plan, station?.stationId ?? null));
   const bill = partyBillShown(party, planned);
   const takesSettlement = bill.settlementOwed > 0;
 
