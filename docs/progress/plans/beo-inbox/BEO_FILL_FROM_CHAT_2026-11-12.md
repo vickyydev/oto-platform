@@ -112,3 +112,23 @@ Files the party edit lane (SCRUM-907) is changing and this lane must leave alone
 1. "Chicken fried rice for the adults": should the kids' fried rice stay "Not chosen yet" until someone chooses for them (to be built), or should the adults' choice count for the kids too (as it does today)?
 2. A set-menu dish asked for the adults with nothing more said: the adults' set-menu line at no charge (to be built), or a charged extra at the till's price (as it is today when no option is named)?
 3. "2 pizzas for 900": the till's price each is written and the chat's 900 is named beside it. Should 900 for 2 instead be written as 450 each?
+
+## State, 13 November 01:40: the follow-up lane is built and reviewed (SCRUM-958, 949, 940, the open points of 946); land preparation running
+- Lane beofill958 (C:/oto-lanes/beofill958-20261112, run wf_26d2979a-816, 15 commits before the land preparation), the OTO App only, no migration. Its full report is in the planner's scratchpad, l958/build-report.json.
+- Being fixed in the land preparation: the parent's later set-menu submit overwrote the adults' own choice (apps/oto-app/server/beo-routes.ts writeResolvedSetMenu); the count box on an adults' set line; the fold note after the kids' choice is changed in the review.
+- Left for a follow-up ticket: the price hint and the extras' total use the weekend price on a Saturday or Sunday only, while the till also uses it on a park holiday; an approval gives the adults the kids' set-menu lines but not the kids' extras, while the editor's switch copies the whole kids' list.
+
+### Questions for the owner from this lane
+1. "2 Margherita pizzas for 900" is written as 2 at the till's 400 each, and the review names the 900 beside it. Should a total ever become a price each (450)? Nothing is computed from a total today.
+2. The price of an EXTRA line sits on the line itself, per item, and the till charges it times the count. Is that right?
+3. For a Saturday or Sunday party the box shows the till's weekend price as what will be charged ('till price 310 (weekend)'), but the picker still writes the weekday price when an item is picked (SCRUM-905 question 5 stands). The app does not know the park's holidays, so on a weekday holiday it shows the weekday price while the till charges the weekend one. Should the app read the park's holidays?
+4. Should the Bar Plan's search offer kitchen dishes too (SCRUM-940 point 1)? Not built.
+5. A dish the set menu offers, asked for the adults with nothing more said ('a Pepperoni pizza for the adults' when the kids chose Margherita), is now the adults' SET line and is not charged. Only 'more', a price, a total or a count that is not the table's own makes it a charged EXTRA. Is that right?
+6. 'Chicken fried rice for the kids and the adults' stays the kids' choice, which the adults eat. The same option said for the kids and again for the adults is folded and said. Is that right?
+7. A dish the model put on the kids' list, in words the chat says only for the adults, is moved to the adults' menu. Is that right?
+8. For a one-choice group, the adults' own option replaces their copy of the kids' choice on their menu (kids Veggie, adults Chicken). Is that right?
+9. A kids' set-menu dish asked with no option and no kids' choice ('fried rice for the kids') is still a charged EXTRA, because only the adults' case was in scope. Should it become the kids' choice for staff to pick?
+10. An item made for one party (a PARTY- code) on the Bar Plan is charged nowhere by the settlement. The editor mirrors this and says 'not charged'. Should it be charged?
+11. On a food line with a PARTY- code the hint reads 'till price 120 (made for this party)', because the till charges its own price whatever is typed. Is that acceptable?
+12. Each plan shows its own total, 'Extras charged at the till: ฿X', under the Kitchen Plan and under the Bar Plan. Are the wording and the placement right?
+13. On staging's menu only Eggs your way and Veggie delight match 'egg', so Veggie delight stays second there. It now ranks below any category-word match. Should matches found only inside a word be dropped when a whole-word match exists? That would change the existing 'gri' search case.
