@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Request, type Route } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { walkInByPhone } from './walk-in';
@@ -19,6 +19,13 @@ import { walkInByPhone } from './walk-in';
  * payment in that one press. The box is never asked to register anyone, the
  * guardian holds each child once and there is one registration.
  *
+ * The long-outage test is the staging proof's point 2: the link stays down past
+ * the held retries, the till gives up ("press Continue again") and its other
+ * calls move it to the box. The link comes back for the till while the box's
+ * status still keeps the lane on the box. Continue again finishes the
+ * registration online, and the family's sale, its cash press and the door
+ * choice go online too: the box is never asked to price, sell or check in.
+ *
  * `pnpm --filter @oto/pos e2e e2e/dropoff-connection-drop.spec.ts`;
  * `POS_E2E_SHOTS` names a folder to keep the screens in.
  */
@@ -27,6 +34,7 @@ const PHONE = process.env.POS_E2E_PHONE ?? '';
 const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
 const SHOTS = process.env.POS_E2E_SHOTS ?? '';
 const FAMILY_DIGITS = '898870001';
+const LONG_OUTAGE_DIGITS = '898870002';
 
 test.use({ trace: 'off', video: 'off', screenshot: 'off', viewport: { width: 1680, height: 1100 } });
 test.setTimeout(180_000);
@@ -112,9 +120,8 @@ async function fillGate(page: Page, children: { name: string; age: number; aller
   for (const checkbox of await half.getByRole('checkbox').all()) await checkbox.check();
 }
 
-test('the registration request drops after the guardian and children were written: the till retries online and reaches payment', async ({ page }) => {
-  test.skip(!PHONE || !PASSWORD || !process.env.POS_E2E_DATABASE_URL, 'Runs on the isolated harness (e2e/run.mjs)');
-  // A camera the consent photo can use, as the smoke's local frame does.
+/** A camera the consent photo can use, as the smoke's local frame does. */
+async function withCamera(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const devices = navigator.mediaDevices;
     if (!devices) return;
@@ -134,6 +141,119 @@ test('the registration request drops after the guardian and children were writte
       },
     });
   });
+}
+
+// Runs first: the short-drop case below leaves its sale rung up at the payment
+// step, and the till resumes such a sale at the next sign-in at this station
+// (resumeSale), which would take the screen from under this walk-in.
+test('the link stays down past the retries: after Continue again the sale, the cash press and the check-in go online while the lane says box', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD || !process.env.POS_E2E_DATABASE_URL, 'Runs on the isolated harness (e2e/run.mjs)');
+  await withCamera(page);
+
+  // What the box is asked to write or price after the link is back, and what the platform answered.
+  let restored = false;
+  const boxWrites: string[] = [];
+  const answered: { path: string; status: number }[] = [];
+  page.on('request', (request: Request) => {
+    const path = new URL(request.url()).pathname;
+    if (!restored || request.method() !== 'POST') return;
+    if (/^\/api\/box\/v1\/station\/[^/]+\/intents$/.test(path)) {
+      const type = (request.postDataJSON() as { type?: string } | null)?.type ?? '';
+      if (/^(member|child|visit|checkin|waiver|sale|cart)\./.test(type)) boxWrites.push(type);
+    }
+  });
+  page.on('response', (response) => {
+    const path = new URL(response.url()).pathname;
+    if (!restored || response.request().method() !== 'POST') return;
+    if (path === '/api/sales' || /^\/api\/sales\/[^/]+\/finalise$/.test(path) || path === '/api/checkin/check-in-now') {
+      answered.push({ path: path.replace(/^\/api\/sales\/[^/]+\//, '/api/sales/:id/'), status: response.status() });
+    }
+  });
+
+  await signIn(page);
+  await walkInByPhone(page, LONG_OUTAGE_DIGITS);
+  await setKids(page, 2);
+  await fillGate(page, [{ name: 'ZZ TEST Mali 887', age: 7 }, { name: 'ZZ TEST Ton 887', age: 8 }], 'ZZ TEST guardian 887 long');
+
+  // From the registration request on, every /api request reaches nothing, until the till gives up.
+  let down = false;
+  const outage = async (route: Route) => {
+    const request = route.request();
+    if (!down && request.method() === 'POST' && new URL(request.url()).pathname === '/api/checkin/registrations') down = true;
+    if (down) {
+      await route.abort('failed');
+      return;
+    }
+    await route.continue();
+  };
+  await page.route('**/api/**', outage);
+  await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+  await expect(page.getByText("Couldn't register these children", { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/The connection dropped and has not come back yet/).first()).toBeVisible();
+  await shot(page, '887-11-gave-up-press-continue-again');
+
+  // The link is back for the till. The box has not seen it yet: its status
+  // read still finds nothing, so the lane stays on the box until it does.
+  let probes = 0;
+  await page.route('**/api/box/v1/station/*/status', async (route) => {
+    probes += 1;
+    await route.abort('failed');
+  });
+  await page.unroute('**/api/**', outage);
+  down = false;
+  restored = true;
+  // The till asks its box for the lane only while it works through the box.
+  await expect.poll(() => probes, { timeout: 40_000, message: 'the lane never moved to the box' }).toBeGreaterThan(0);
+
+  const registered = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST' && r.status() === 200,
+    { timeout: 60_000 },
+  );
+  await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+  const reg = (await (await registered).json()) as { id: string };
+  await expect(page.getByTestId('payment-step')).toBeVisible({ timeout: 30_000 });
+  // Entering the payment step is the Pay press: the sale is written online.
+  await expect.poll(() => answered.filter((a) => a.path === '/api/sales' && a.status === 200).length, { timeout: 30_000 }).toBe(1);
+  await expect(page.getByText('This sale has not been saved.')).toHaveCount(0);
+  await shot(page, '887-12-payment-online-lane-on-box');
+
+  await page.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 30_000 });
+  await confirm.click();
+  await expect(page.getByText('Payment Successful', { exact: true })).toBeVisible({ timeout: 60_000 });
+
+  await page.getByRole('button', { name: 'Check in now', exact: true }).click();
+  await expect.poll(() => answered.filter((a) => a.path === '/api/checkin/check-in-now' && a.status === 200).length, { timeout: 30_000 }).toBe(1);
+  await shot(page, '887-13-paid-and-checked-in-online');
+
+  // Still on the box lane all along: the box's status was asked again, and it was never asked to price, sell or check in.
+  expect(probes).toBeGreaterThan(0);
+  expect(boxWrites).toEqual([]);
+  expect(answered).toEqual([
+    { path: '/api/sales', status: 200 },
+    { path: '/api/sales/:id/finalise', status: 200 },
+    { path: '/api/checkin/check-in-now', status: 200 },
+  ]);
+  await expect(page.getByText('Member not found')).toHaveCount(0);
+  await expect(page.getByText(/no copy of that child/)).toHaveCount(0);
+
+  // The platform holds the family once, checked in, on one finalised sale.
+  const read = await page.request.get(`/api/checkin/registrations/${reg.id}`);
+  expect(read.status()).toBe(200);
+  const registration = (await read.json()) as { children: { childName: string; status: string }[] };
+  expect(registration.children.map((c) => [c.childName, c.status]).sort()).toEqual([
+    ['ZZ TEST Mali 887', 'in_park'],
+    ['ZZ TEST Ton 887', 'in_park'],
+  ]);
+  const lookup = await page.request.get(`/api/members/lookup?phone=${encodeURIComponent(`0${LONG_OUTAGE_DIGITS}`)}`);
+  const member = (await lookup.json()).member as { children: { name: string }[] };
+  expect(member.children.map((c) => c.name).sort()).toEqual(['ZZ TEST Mali 887', 'ZZ TEST Ton 887']);
+});
+
+test('the registration request drops after the guardian and children were written: the till retries online and reaches payment', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD || !process.env.POS_E2E_DATABASE_URL, 'Runs on the isolated harness (e2e/run.mjs)');
+  await withCamera(page);
 
   const boxWrites: string[] = [];
   const registrationIds: string[] = [];
