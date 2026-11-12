@@ -20,6 +20,12 @@ import { startFamilyFormHarness } from './support/family-form-harness/server';
  * notice reads, and the dark look is as it was (943 f); the display tells the
  * till it has no camera, or that the camera was refused (943 a).
  *
+ * SCRUM-963, at the end: the real display page with its connection dropped
+ * and a language chosen (1); the language list's and the returning family's
+ * badges' contrast at both looks (2, 3); the finger-sized presses (4); the
+ * number box clear of the language button (5); the phone's gate (6) and a
+ * phone held sideways (7).
+ *
  * Needs a browser: Edge, Chrome or Playwright's Chromium. With none it is
  * skipped and says so.
  */
@@ -477,4 +483,380 @@ describe.skipIf(!harness)('SCRUM-954 (6): the phone till’s form has the phone'
       }
     }, TAPS);
   }
+});
+
+// --- SCRUM-963: the family's form after its second proof (points 2 to 4 of SCRUM-962) -------------
+
+/** The stand-in box behind `?screen=paired` (`support/family-form-harness/station.ts`). */
+interface Boxed {
+  __zzBox: { document: { language: string; prompt: { slots?: { allergiesMedical: string }[] } }; heard: { type: string }[]; drop: () => void; restore: () => void };
+}
+const held = (page: Page) => page.evaluate(() => {
+  const box = (window as unknown as Boxed).__zzBox;
+  return { language: box.document.language, allergies: box.document.prompt.slots?.[0]?.allergiesMedical ?? '', heard: box.heard.map((intent) => intent.type) };
+});
+/** What the paired display shows round its form: a bar above it, a lock on it, a line under it. */
+const formState = (page: Page) => page.evaluate(() => ({
+  alerts: document.querySelectorAll('[role="alert"]').length,
+  locked: !!document.querySelector('[data-testid="display-consent"]')?.closest('[inert]'),
+  waitLine: !!document.querySelector('[data-testid="display-consent-wait"]'),
+}));
+
+describe.skipIf(!harness)('SCRUM-963 (1): a language chosen while the display reconnects leaves the form open', () => {
+  it('the counter display standing: no Retry bar, nothing locked or moved, and it goes by itself when the line returns', async () => {
+    const page = await harness!.open('screen=paired&keyboard=screen&step=care&theme=dark', { width: 600, height: 1024 });
+    await page.getByTestId('consent-allergies').waitFor({ timeout: 20_000 });
+    const before = await headingTop(page);
+    // The line drops, as the proof dropped it.
+    await page.evaluate(() => (window as unknown as Boxed).__zzBox.drop());
+    await page.getByTestId('display-form-reconnecting').waitFor({ timeout: 10_000 });
+    // The family chooses Thai: the screen is in Thai at once.
+    await page.getByRole('button', { name: LANGUAGE_BUTTON.en, exact: true }).click();
+    await page.getByRole('button', { name: 'ไทย', exact: true }).click();
+    await expect.poll(() => page.getByTestId('display-form-reconnecting').textContent()).toContain('กำลังเชื่อมต่อใหม่');
+    // The send failed against the dropped line by now (picture 06a's moment).
+    await page.waitForTimeout(1_500);
+    expect(await formState(page)).toEqual({ alerts: 0, locked: false, waitLine: false });
+    expect(await headingTop(page)).toBe(before);
+    // A box still takes a press: the allergies box opens its keys and takes a letter.
+    await page.getByTestId('consent-allergies').click();
+    await expect.poll(() => keys(page).count()).toBe(1);
+    await type(page, 'X');
+    await expect.poll(() => page.getByTestId('consent-allergies').inputValue()).toMatch(/x/i);
+    expect((await held(page)).language).toBe('en');
+    // The line returns: the box is told the language, then takes what was typed.
+    await page.evaluate(() => (window as unknown as Boxed).__zzBox.restore());
+    await expect.poll(async () => (await held(page)).language, { timeout: 10_000 }).toBe('th');
+    await expect.poll(async () => (await held(page)).allergies, { timeout: 10_000 }).toMatch(/x/i);
+    await expect.poll(() => page.getByTestId('display-form-reconnecting').count(), { timeout: 5_000 }).toBe(0);
+    expect(await formState(page)).toEqual({ alerts: 0, locked: false, waitLine: false });
+    const heard = (await held(page)).heard;
+    expect(heard.indexOf('display.set_language')).toBeGreaterThanOrEqual(0);
+    expect(heard.indexOf('display.set_language')).toBeLessThan(heard.indexOf('display.consent'));
+  }, TAPS);
+});
+
+/**
+ * The language list as drawn: the list's paint, and each choice's ink laid on
+ * its own paint over the list's, read back through a canvas so any colour the
+ * browser computes (oklch, a colour mix) is the sRGB it puts on the screen.
+ */
+async function languageList(page: Page) {
+  await page.getByRole('button', { name: LANGUAGE_BUTTON.en, exact: true }).click();
+  return page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1; canvas.height = 1;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    const paint = (layers: string[]) => {
+      ctx.clearRect(0, 0, 1, 1);
+      for (const colour of layers) { ctx.fillStyle = colour; ctx.fillRect(0, 0, 1, 1); }
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3);
+    };
+    const css = (c: number[]) => `rgb(${c.join(',')})`;
+    const lum = (c: number[]) => {
+      const [r, g, b] = c.map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const ratio = (a: number[], b: number[]) => { const [hi, lo] = [lum(a), lum(b)].sort((p, q) => q - p); return (hi! + 0.05) / (lo! + 0.05); };
+    const pill = document.querySelector('[aria-label="Change language"]')!;
+    const list = pill.nextElementSibling!;
+    const listPaint = paint(['#ffffff', getComputedStyle(list).backgroundColor]);
+    // The screen's own primary, read in the list (where the chosen language used to take it).
+    const probe = document.createElement('span');
+    probe.className = 'text-primary';
+    list.append(probe);
+    const primary = paint([css(listPaint), getComputedStyle(probe).color]);
+    probe.remove();
+    return {
+      list: listPaint, primary,
+      choices: Array.from(list.querySelectorAll('button')).map((choice) => {
+        const style = getComputedStyle(choice);
+        const back = paint([css(listPaint), style.backgroundColor]);
+        const ink = paint([css(back), style.color]);
+        return { text: choice.textContent!.trim(), ratio: Math.round(ratio(ink, back) * 100) / 100, back, ink,
+          height: Math.round(choice.getBoundingClientRect().height * 10) / 10 };
+      }),
+    };
+  });
+}
+
+/** A colour as this browser paints it, on white. */
+const painted = (page: Page, colour: string) => page.evaluate((value) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1; canvas.height = 1;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 1, 1);
+  ctx.fillStyle = value; ctx.fillRect(0, 0, 1, 1);
+  return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3);
+}, colour);
+const tailwindColour = (name: string) => readFileSync(path.resolve(import.meta.dirname, '../node_modules/tailwindcss/theme.css'), 'utf8')
+  .match(new RegExp(`--color-${name}: ([^;]+);`))![1]!;
+
+describe.skipIf(!harness)('SCRUM-963 (2): the language list reads on the display’s look, light and dark', () => {
+  for (const screen of ['display', 'half'] as const) {
+    const size = screen === 'display' ? { width: 600, height: 1024 } : { width: 1180, height: 820 };
+    it(`${screen}, light: every language reads on the list, the chosen one still marked`, async () => {
+      const seen = await languageList(await harness!.open(`screen=${screen}&step=children&theme=light`, size));
+      const detail = JSON.stringify(seen);
+      expect(seen.choices.map((c) => c.text)).toEqual(['English', '中文', 'ไทย', 'Русский', 'Français']);
+      for (const choice of seen.choices) expect(choice.ratio, `${choice.text}: ${detail}`).toBeGreaterThanOrEqual(4.5);
+      const [chosen, ...others] = seen.choices;
+      for (const other of others) expect(other.back, detail).not.toEqual(chosen!.back);
+      // A light list on a light display, not the navy one of picture 04c.
+      expect(seen.list.every((v) => v > 200), detail).toBe(true);
+    }, TAPS);
+
+    it(`${screen}, dark: the list as it always was — slate-900, the chosen language in primary`, async () => {
+      const page = await harness!.open(`screen=${screen}&step=children&theme=dark`, size);
+      const seen = await languageList(page);
+      const detail = JSON.stringify(seen);
+      expect(seen.list, detail).toEqual(await painted(page, tailwindColour('slate-900')));
+      const [chosen, ...others] = seen.choices;
+      expect(chosen!.ink, detail).toEqual(seen.primary);
+      for (const other of others) expect(other.ratio, `${other.text}: ${detail}`).toBeGreaterThanOrEqual(4.5);
+    }, TAPS);
+  }
+
+  it('the display’s form has its choices a finger’s height; the till’s own half keeps 40', async () => {
+    for (const shape of SHAPES) {
+      const seen = await languageList(await harness!.open('screen=display&keyboard=screen&step=children', shape));
+      for (const choice of seen.choices) expect(choice.height, `${shape.name}: ${choice.text}`).toBeGreaterThanOrEqual(44);
+    }
+    const half = await languageList(await harness!.open('screen=half', { width: 1180, height: 820 }));
+    expect(half.choices.map((c) => c.height)).toEqual([40, 40, 40, 40, 40]);
+  }, TAPS);
+});
+
+/** The two badges of the returning family's review, their ink on what lies under them. */
+async function reviewBadges(page: Page) {
+  await page.getByText('Confirmed', { exact: true }).waitFor({ timeout: 10_000 });
+  return page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1; canvas.height = 1;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    const paint = (layers: string[]) => {
+      ctx.clearRect(0, 0, 1, 1);
+      for (const colour of layers) { ctx.fillStyle = colour; ctx.fillRect(0, 0, 1, 1); }
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3);
+    };
+    const lum = (c: number[]) => {
+      const [r, g, b] = c.map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const ratio = (a: number[], b: number[]) => { const [hi, lo] = [lum(a), lum(b)].sort((p, q) => q - p); return (hi! + 0.05) / (lo! + 0.05); };
+    // The darkest stop of the light screen's cream gradient, and the dark one's.
+    const screenPaint = document.querySelector('.dark') ? '#020617' : '#ffe2cc';
+    const read = (words: string) => {
+      const badge = Array.from(document.querySelectorAll('div')).find((el) => el.textContent?.trim() === words && el.querySelector('svg'))!;
+      const card = badge.closest('[data-testid="saved-child-review-card"]')!;
+      const back = paint([screenPaint, getComputedStyle(card).backgroundColor, getComputedStyle(badge).backgroundColor]);
+      const ink = paint([`rgb(${back.join(',')})`, getComputedStyle(badge).color]);
+      return { ratio: Math.round(ratio(ink, back) * 100) / 100, ink, colour: getComputedStyle(badge).color };
+    };
+    return { check: read('Saved — still correct?'), done: read('Confirmed') };
+  });
+}
+
+describe.skipIf(!harness)('SCRUM-963 (3): the returning family’s badges', () => {
+  it('read on a light display (picture 04h)', async () => {
+    const seen = await reviewBadges(await harness!.open('screen=review&theme=light', { width: 600, height: 1024 }));
+    expect(seen.check.ratio, JSON.stringify(seen)).toBeGreaterThanOrEqual(4.5);
+    expect(seen.done.ratio, JSON.stringify(seen)).toBeGreaterThanOrEqual(4.5);
+  }, TAPS);
+
+  it('are amber-300 and emerald-300 on a dark display, as before', async () => {
+    const page = await harness!.open('screen=review&theme=dark', { width: 600, height: 1024 });
+    const seen = await reviewBadges(page);
+    const drawn = await page.evaluate((colours) => colours.map((colour) => {
+      const probe = document.createElement('span');
+      probe.style.color = colour;
+      document.body.append(probe);
+      const computed = getComputedStyle(probe).color;
+      probe.remove();
+      return computed;
+    }), [tailwindColour('amber-300'), tailwindColour('emerald-300')]);
+    expect([seen.check.colour, seen.done.colour]).toEqual(drawn);
+  }, TAPS);
+});
+
+/** The age picker's own presses: its close, its crumbs and (after an age) its back. */
+async function pickerPresses(page: Page) {
+  await page.locator('button', { hasText: /yrs|Tap to set age/ }).first().click();
+  await page.getByRole('dialog').waitFor({ timeout: 10_000 });
+  // Read once the dialog has finished opening (it zooms in from 95 per cent).
+  const settled = () => page.waitForFunction(() => document.querySelector('[role="dialog"]')!.getAnimations({ subtree: true })
+    .every((animation) => animation.playState === 'finished'), null, { timeout: 10_000 });
+  const read = async () => { await settled(); return page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]')!;
+    const close = dialog.lastElementChild!;
+    const header = dialog.firstElementChild!;
+    const crumbs = Array.from(header.querySelectorAll(':scope > div button'));
+    const back = header.querySelector('[aria-label="Back"]');
+    const box = (el: Element) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width * 10) / 10, height: Math.round(r.height * 10) / 10 }; };
+    const d = dialog.getBoundingClientRect();
+    return { close: box(close), crumbs: crumbs.map(box), back: back ? box(back) : null, inWindow: d.top >= 0 && d.bottom <= innerHeight };
+  }); };
+  const atAge = await read();
+  await page.getByRole('dialog').getByRole('button', { name: '6', exact: true }).click();
+  const atMonth = await read();
+  return { atAge, atMonth };
+}
+
+const channelHeights = (page: Page) => page.evaluate(() => ['WhatsApp', 'Telegram', 'LINE']
+  .map((name) => Math.round(document.querySelector(`button[title="${name}"]`)!.getBoundingClientRect().height * 10) / 10));
+
+describe.skipIf(!harness)('SCRUM-963 (4): a finger’s presses on the display’s form', () => {
+  for (const shape of SHAPES) {
+    it(`${shape.name}: the age picker’s close, crumbs and back are 44 pixels or more, and it fits the screen`, async () => {
+      const seen = await pickerPresses(await harness!.open('screen=display&keyboard=screen&step=children&theme=light', shape));
+      const detail = JSON.stringify(seen);
+      for (const step of [seen.atAge, seen.atMonth]) {
+        expect(step.close.width, detail).toBeGreaterThanOrEqual(44);
+        expect(step.close.height, detail).toBeGreaterThanOrEqual(44);
+        expect(step.crumbs, detail).toHaveLength(3);
+        for (const crumb of step.crumbs) {
+          expect(crumb.height, detail).toBeGreaterThanOrEqual(44);
+          expect(crumb.width, detail).toBeGreaterThanOrEqual(44);
+        }
+        expect(step.inWindow, detail).toBe(true);
+      }
+      expect(seen.atMonth.back!.height, detail).toBeGreaterThanOrEqual(44);
+      expect(seen.atMonth.back!.width, detail).toBeGreaterThanOrEqual(44);
+    }, TAPS);
+
+    it(`${shape.name}: WhatsApp, Telegram and LINE are 44 pixels tall`, async () => {
+      const heights = await channelHeights(await harness!.open('screen=display&keyboard=screen&step=agreements', shape));
+      for (const height of heights) expect(height, JSON.stringify(heights)).toBeGreaterThanOrEqual(44);
+    }, TAPS);
+  }
+
+  it('the phone till’s form draws the channel pills 44 pixels tall too', async () => {
+    const page = await harness!.open('screen=phone', { width: 390, height: 844 });
+    await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+    await page.locator('button[title="WhatsApp"]').waitFor();
+    const heights = await channelHeights(page);
+    for (const height of heights) expect(height, JSON.stringify(heights)).toBeGreaterThanOrEqual(44);
+  }, TAPS);
+
+  it('the till’s own customer half at a desk keeps its sizes: crumbs 28, the close 16, back 36, the pills 28', async () => {
+    const page = await harness!.open('screen=half', { width: 1180, height: 820 });
+    expect(await channelHeights(page)).toEqual([28, 28, 28]);
+    const seen = await pickerPresses(page);
+    expect(seen.atAge.close).toEqual({ width: 16, height: 16 });
+    expect(seen.atAge.crumbs.map((c) => c.height)).toEqual([28, 28, 28]);
+    expect(seen.atMonth.back).toEqual({ width: 36, height: 36 });
+  }, TAPS);
+});
+
+/**
+ * The phone number box against the language button on the display's first
+ * screen, at every place the screen can be scrolled to: the part of the box
+ * on screen never meets the button.
+ */
+async function numberBoxClear(page: Page) {
+  return page.evaluate(() => {
+    const box = Array.from(document.querySelectorAll('div')).find((el) => el.classList.contains('h-16') && el.textContent?.includes('8X XXX XXXX'))!;
+    const button = document.querySelector('[aria-label="Change language"]')!;
+    let scroller = box.parentElement;
+    while (scroller && getComputedStyle(scroller).overflowY !== 'auto') scroller = scroller.parentElement;
+    const was = scroller!.scrollTop;
+    const end = scroller!.scrollHeight - scroller!.clientHeight;
+    const overlaps: string[] = [];
+    for (let at = 0; at <= end + 8; at += 8) {
+      scroller!.scrollTop = Math.min(at, end);
+      const s = scroller!.getBoundingClientRect();
+      const r = box.getBoundingClientRect();
+      const b = button.getBoundingClientRect();
+      const top = Math.max(r.top, s.top);
+      const bottom = Math.min(r.bottom, s.bottom);
+      if (bottom <= top) continue;
+      const meets = Math.min(r.right, b.right) - Math.max(r.left, b.left) > 0.5 && Math.min(bottom, b.bottom) - Math.max(top, b.top) > 0.5;
+      if (meets) overlaps.push(`scrolled ${scroller!.scrollTop}: box ${Math.round(r.left)},${Math.round(top)}-${Math.round(r.right)},${Math.round(bottom)} button ${Math.round(b.left)},${Math.round(b.top)}-${Math.round(b.right)},${Math.round(b.bottom)}`);
+    }
+    scroller!.scrollTop = was;
+    return { overlaps, scrolls: end > 0 };
+  });
+}
+
+describe.skipIf(!harness)('SCRUM-963 (5): the language button clear of the number box on the first screen', () => {
+  for (const shape of SHAPES) {
+    it(`${shape.name}: with the keys closed and open, scrolled anywhere`, async () => {
+      const page = await harness!.open('screen=paired&doc=identify&keyboard=screen&theme=dark', shape);
+      await page.getByTestId('language-choice-en').click({ timeout: 20_000 });
+      const nickname = page.getByPlaceholder('e.g. Mama, John');
+      await nickname.waitFor();
+      expect((await numberBoxClear(page)).overlaps).toEqual([]);
+      await nickname.click();
+      await expect.poll(() => keys(page).count()).toBe(1);
+      const open = await numberBoxClear(page);
+      expect(open.overlaps).toEqual([]);
+      // With the keys open the screen does scroll, so every place was tried.
+      expect(open.scrolls).toBe(true);
+    }, TAPS);
+  }
+});
+
+describe.skipIf(!harness)('SCRUM-963 (6): the phone till’s gate gives the child’s name its room', () => {
+  for (const phone of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
+    it(`${phone.width}x${phone.height}: the whole name shows, the card is whole on screen, Back and Continue reachable`, async () => {
+      const page = await harness!.open('screen=gate', phone);
+      await page.getByPlaceholder("Child's name").fill('ZZ TEST PHONE P');
+      const seen = await page.evaluate(() => {
+        const input = document.querySelector<HTMLInputElement>('input[placeholder="Child\'s name"]')!;
+        const card = input.closest('.rounded-2xl')!;
+        const r = card.getBoundingClientRect();
+        let clipped = '';
+        for (let at = card.parentElement; at; at = at.parentElement) {
+          const style = getComputedStyle(at);
+          if (style.overflowY === 'visible' && style.overflowX === 'visible') continue;
+          const box = at.getBoundingClientRect();
+          if (r.top < box.top - 1 || r.bottom > box.bottom + 1) clipped = `card ${Math.round(r.top)}-${Math.round(r.bottom)} cut at ${Math.round(box.top)}-${Math.round(box.bottom)}`;
+        }
+        const reach = (name: string) => {
+          const button = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === name)!;
+          const b = button.getBoundingClientRect();
+          const hit = document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+          return b.bottom <= innerHeight + 1 && b.top >= 0 && !!hit && (button.contains(hit) || button.parentElement!.contains(hit));
+        };
+        return { fits: input.scrollWidth <= input.clientWidth, width: Math.round(input.clientWidth), clipped,
+          back: reach('Back'), go: reach('Continue to payment'), sideways: document.documentElement.scrollWidth > innerWidth };
+      });
+      expect(seen.fits, `input ${seen.width}px`).toBe(true);
+      expect(seen.clipped).toBe('');
+      expect(seen.back).toBe(true);
+      expect(seen.go).toBe(true);
+      expect(seen.sideways).toBe(false);
+    }, TAPS);
+  }
+
+  it('the counter till’s gate is as before: the name and the 144-pixel age button on one row', async () => {
+    const page = await harness!.open('screen=gate&desk=1', { width: 1440, height: 900 });
+    const seen = await page.evaluate(() => {
+      const input = document.querySelector('input[placeholder="Child\'s name"]')!.getBoundingClientRect();
+      const age = Array.from(document.querySelectorAll('button')).find((b) => /yrs|Tap to set age/.test(b.textContent ?? ''))!.getBoundingClientRect();
+      return { sameRow: Math.abs(input.top + input.height / 2 - (age.top + age.height / 2)) < 2, ageWidth: Math.round(age.width) };
+    });
+    expect(seen).toEqual({ sameRow: true, ageWidth: 144 });
+  }, TAPS);
+});
+
+describe.skipIf(!harness)('SCRUM-963 (7): a phone held sideways lets the heading scroll away', () => {
+  it('844x390: the form has most of the screen, and the heading leaves it as the family scrolls', async () => {
+    const page = await harness!.open('screen=phone', { width: 844, height: 390 });
+    await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+    await page.getByTestId('consent-child-name').waitFor();
+    const seen = await page.evaluate(() => {
+      let scroller = document.querySelector('[data-testid="consent-child-name"]')!.parentElement;
+      while (scroller && getComputedStyle(scroller).overflowY !== 'auto') scroller = scroller.parentElement;
+      const heading = Array.from(document.querySelectorAll('span')).find((span) => span.textContent === 'Playing with us today')!;
+      const room = scroller!.clientHeight;
+      scroller!.scrollTop = scroller!.scrollHeight;
+      const gone = heading.getBoundingClientRect().bottom <= scroller!.getBoundingClientRect().top + 1;
+      return { room, gone, sideways: document.documentElement.scrollWidth > innerWidth };
+    });
+    // The heading stood and left the form 50 pixels.
+    expect(seen.room).toBeGreaterThanOrEqual(150);
+    expect(seen.gone).toBe(true);
+    expect(seen.sideways).toBe(false);
+  }, TAPS);
 });

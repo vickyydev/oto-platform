@@ -5,7 +5,10 @@ import { ConsentCapture } from '../../../src/components/till/ConsentCapture';
 import { PublicConsentCapture } from '../../../src/components/till/PublicConsentCapture';
 import { FORM_RECONNECTING_LINE } from '../../../src/components/till/consentFormLayout';
 import { HandToCustomer } from '../../../src/components/mobile/HandToCustomer';
-import type { SupervisedSlot } from '../../../src/components/till/SupervisionGate';
+import { SavedChildrenReview } from '../../../src/components/shared/SavedChildrenReview';
+import { SupervisionGate, type SupervisedSlot } from '../../../src/components/till/SupervisionGate';
+import Display from '../../../src/pages/Display';
+import { installBox } from './station';
 import { LanguageProvider, useLanguage } from '../../../src/i18n/LanguageContext';
 import type { ContactChannel, SupervisionPolicy } from '../../../src/types';
 import '../../../src/index.css';
@@ -25,6 +28,15 @@ import '../../../src/index.css';
  *  &theme=light|dark  the display's look
  *  &camera=none|refused  a display with no camera, or one whose camera is refused
  *  &reconnecting=1   the display's reconnecting line over the form, as Display.tsx draws it
+ *
+ * SCRUM-963:
+ *  ?screen=paired    the display page itself (pages/Display.tsx), paired to a
+ *                    stand-in box (`station.ts`); &doc=identify for its first
+ *                    screen, else the family's form opened on &step
+ *  ?screen=review    the returning family's review (SavedChildrenReview, as the
+ *                    paired display draws it): one child to confirm, one confirmed
+ *  ?screen=gate      the phone till's supervision gate in its step's frame, under
+ *                    the phone's bars (&desk=1: the counter till's step instead)
  *
  * `#till` holds what the till has: the display's last fill, or the half's state.
  */
@@ -160,5 +172,66 @@ function PhoneForm() {
       children: h(ConsentCapture, { ...props, phoneScroll: true }) }));
 }
 
-createRoot(document.getElementById('root')!).render(h(LanguageProvider, null,
-  screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : h(DisplayForm)));
+/**
+ * SCRUM-963 — the returning family's review as the paired display draws it
+ * (`PublicSavedChildrenReview`: `publicMode`, the family's language): the
+ * first child still to confirm ("Saved — still correct?"), the second
+ * confirmed ("Confirmed"), on the display's look.
+ */
+function ReviewScreen() {
+  const { lang } = useLanguage();
+  const slots = [
+    { id: 'zz-review-a', savedChildId: 'zz-saved-a', name: 'ZZ TEST Aya', age: '6', dateOfBirth: '2020-01-01' },
+    { id: 'zz-review-b', savedChildId: 'zz-saved-b', name: 'ZZ TEST Ben', age: '8', dateOfBirth: '2018-01-01' },
+  ];
+  const saved = [
+    { id: 'zz-saved-a', childName: 'ZZ TEST Aya', dateOfBirth: '2020-01-01', childAge: 6 },
+    { id: 'zz-saved-b', childName: 'ZZ TEST Ben', dateOfBirth: '2018-01-01', childAge: 8 },
+  ];
+  return h('div', { className: `${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`, id: 'ready' },
+    h('div', { className: 'flex-1 min-h-0' },
+      h(SavedChildrenReview, {
+        slots, savedChildren: saved, confirmedIds: ['zz-review-b'], publicMode: true, lang, publicReferenceDate: '2026-11-13',
+        onUpdateSlot: () => undefined, onConfirmSlot: () => undefined, onAssignSaved: () => undefined, onMarkNew: () => undefined,
+        onRemoveSaved: () => undefined, onBack: () => undefined, onContinue: () => undefined, canContinue: false, onStaffHelp: () => undefined,
+      })));
+}
+
+/**
+ * SCRUM-963 — the phone till's supervision gate as `MobileTill.tsx` draws its
+ * step (`h-full overflow-y-auto p-4`), between the phone's bars at their
+ * staging heights (the header and the step's title, 108 pixels; the cart bar
+ * and the tabs, 110; pictures 12a, 12b). `&desk=1` draws the counter till's
+ * step instead (Till.tsx: the gate in its column, `p-6`).
+ */
+function GateScreen() {
+  const [name, setName] = useState('');
+  const gate = h(SupervisionGate, {
+    slots: [{ ...halfSlot, id: 'zz-gate', name }], parentName: '', consentAck: false, policy, acknowledgedConfirmationIds: [],
+    onUpdateSlot: (_id: string, patch: Partial<SupervisedSlot>) => { if (patch.name !== undefined) setName(patch.name); },
+    onToggleWaiver: () => undefined, onBack: () => undefined, onContinue: () => undefined,
+    continueOpensForm: true, contactConfirmed: false, contactPhoneProblem: 'empty',
+  });
+  if (query.get('desk') === '1') {
+    return h('div', { className: 'light h-[100dvh] w-full flex bg-background text-foreground', id: 'ready' },
+      h('div', { className: 'flex-1 overflow-hidden relative p-6' }, gate),
+      h('div', { className: 'w-[360px] shrink-0' }));
+  }
+  return h('div', { className: 'light h-[100dvh] w-full flex flex-col bg-background text-foreground', id: 'ready' },
+    h('div', { className: 'shrink-0', style: { height: 108 } }),
+    h('div', { className: 'flex-1 min-h-0' }, h('div', { className: 'h-full overflow-y-auto p-4', 'data-testid': 'phone-step' }, gate)),
+    h('div', { className: 'shrink-0', style: { height: 110 } }));
+}
+
+/** SCRUM-963 — the display page itself, paired to the stand-in box. */
+function PairedScreen() {
+  return h('div', { id: 'ready' }, h(Display));
+}
+if (screen === 'paired') installBox(query.get('doc') === 'identify' ? { identify: true } : { form: firstPrompt }, theme);
+
+createRoot(document.getElementById('root')!).render(
+  screen === 'paired'
+    ? h(LanguageProvider, { storageKey: 'oto.display.language', children: h(PairedScreen) })
+    : h(LanguageProvider, null,
+      screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : screen === 'review' ? h(ReviewScreen)
+        : screen === 'gate' ? h(GateScreen) : h(DisplayForm)));
