@@ -23,7 +23,10 @@
 //      line saying where it is chosen; it is never called "the same";
 //   6. the title: the fill's own `event.title` is the model's guess and is
 //      never offered; the park's default the proposal carries is, marked as
-//      the default, only where it differs from the form (SCRUM-827 review).
+//      the default, only where it differs from the form (SCRUM-827 review);
+//   7. SCRUM-903: under each change and each catalogue line, the chat's own
+//      words for it, whose line they are and when on the park's clock (the
+//      review's reason line); a value with no words of the chat's shows none.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/fetch-from-chat-ui.check.ts
@@ -382,6 +385,21 @@ await check("SCRUM-827: the model's own title is never offered; the park's defau
   assert.equal(current.title, "Emma's 6th Birthday");
 });
 
+await check("SCRUM-903: each change and each catalogue line shows the chat's words under it — whose line and when, on the park's clock", async () => {
+  const quoted = answerAt("line-9", 7, "16:00", [{ ...WITH_MAGICIAN[0]!, from: { ...from(5), quote: "please add the magician" } }]);
+  quoted.review!.proposal.event.numAdults = { value: 7, from: { ...from(4), quote: "7 adults now, please" } };
+  quoted.review!.timeZone = "Asia/Bangkok";
+  answer = () => Promise.resolve(quoted);
+  declined = NO_DECLINED;
+  await openDialog();
+  await click("button-fetch-read");
+  assert.equal(text("text-ai-review-chat-says", row("numAdults")), "The chat says “7 adults now, please”from the team· Mon 2 Nov 11:00");
+  assert.equal(text("text-ai-review-chat-says", required("fetch-catalogue-entertainment")), "The chat says “please add the magician”from the team· Mon 2 Nov 12:00");
+  assert.equal(doc.querySelectorAll('[data-testid="text-ai-review-chat-says"]').length, 2, "a value with no words of the chat's shows none");
+  answer = () => Promise.resolve(answerAt(LINE_4));
+  await click("button-fetch-cancel");
+});
+
 await check("the editor mounts the dialog with its own form, read, memory and apply, behind a Fetch from chat button shown for a BEO from the inbox", () => {
   const editor = readFileSync(APP + "client/src/components/beo/beo-event-editor.tsx", "utf8");
   assert.match(editor, /data-testid="button-fetch-from-chat"/);
@@ -393,4 +411,4 @@ await check("the editor mounts the dialog with its own form, read, memory and ap
 
 await act(async () => { root.unmount(); });
 console.log(`fetch-from-chat-ui.check: ${checks} checks passed`);
-process.exit(checks === 11 ? 0 : 1);
+process.exit(checks === 12 ? 0 : 1);

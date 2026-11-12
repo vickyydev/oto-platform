@@ -61,6 +61,17 @@
 //     the same transaction: nothing opens after it; a title the BEO holds is
 //     not overwritten unless the chat's is taken; a pasted message fills the
 //     same way.
+//   - SCRUM-903 (Phase A): with no message of the team's confirming the
+//     party, the conversation is read alone (the review's ruling null, Final
+//     Message to Parent empty, no form read), the family's pizza and show
+//     pre-selected and marked the family's; an empty catalogue no longer
+//     stops the conversation's read (inbox and pasted): every item is a line
+//     to keep or leave out, and Approve and create waits for each; the
+//     conversation's read is asked once more when its answer cannot be read
+//     or the model does not answer; every value carries the chat's words for
+//     it (the model's words when its line holds them, else the line clipped
+//     to 120 characters), shown under it, never in the activity row or the
+//     approval.
 //
 // Run from apps/oto-app:
 //   DATABASE_URL=<migrated scratch> TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-catalogue-fill.check.ts
@@ -87,7 +98,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { renderTranscript, resolveCatalogueAnswer, loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
+const { renderTranscript, resolveCatalogueAnswer, loadBeoCatalogue, quoteOf } = await import("../server/lib/beoCatalogueFill");
 const { laterLineWins } = await import("../shared/beoAiFill");
 const { REQUIRED_FIELDS_HEADING } = await import("../server/lib/aiFill");
 const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
@@ -114,7 +125,19 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 19;
+const CHECKS = 22;
+
+/**
+ * SCRUM-903: every value's `from` now carries the chat's words for it
+ * (`quote`). The checks of who said a value, when and on which line compare
+ * it without them; `theChatsWordsForEveryValue` checks the words themselves.
+ */
+const unquoted = <T>(value: T): T => JSON.parse(JSON.stringify(value, (k, v) => (k === "quote" ? undefined : v)));
+/** Book Date's clip, written out again here: one line, 120 characters at most, an ellipsis when cut. */
+const clip120 = (text: string) => {
+  const one = text.replace(/\s+/g, " ").trim();
+  return one.length <= 120 ? one : `${one.slice(0, 119).trimEnd()}…`;
+};
 
 const run = randomUUID().slice(0, 8);
 const tenantA = randomUUID();
@@ -135,7 +158,7 @@ const cat = {
   zombie: randomUUID(),
   otherPackage: randomUUID(), // park group B's: never matched for A
 };
-const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent", "paste", "noStart", "camp"] as const;
+const KEYS = ["ru", "th", "en", "junk", "refused", "b", "noTranscript", "multi", "parent", "paste", "noStart", "camp", "retry", "noRuling", "bNoRuling"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -277,8 +300,31 @@ const PASTE_ANSWER = {
   },
 };
 
+/**
+ * SCRUM-903: a conversation only the family has written yet — a date, a time,
+ * a pizza, a show and a dish the menu lacks — with no message of the team's.
+ */
+const NO_RULING_TEXTS = [
+  "Hi! Mia's birthday on Saturday 28 November at 15:00 please. NORULING-903",
+  "Margherita pizza for the kids, a bubble show, and some sushi too? NORULING-903",
+];
+const noRulingLines = (key: Key): TLine[] => NO_RULING_TEXTS.map((text, i) => ({ id: msgIds[key][i]!, author: "customer", at: at(i), text }));
+const NO_RULING_ANSWER = {
+  catalogue: {
+    setMenu: { templateId: cat.setMenu, line: 2, choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita pizza", line: 2, source: "family" }] },
+    menuLines: [{ productCode: null, itemName: "sushi", menu: "kids", quantity: 1, notInMenu: true, line: 2, source: "family" }],
+    // On purpose the model calls the family's show the team's: the line's author wins.
+    entertainment: [{ templateId: cat.bubble, said: "a bubble show", quantity: 1, line: 2, source: "team" }],
+    event: { childName: { value: "Mia", line: 1 }, startTime: { value: "15:00", line: 1 } },
+  },
+};
+
+/** SCRUM-903: what the next conversation reads answer instead: text that is not the answer, or no answer at all. */
+const conversationTrouble: Array<"unreadable" | "error"> = [];
+
 /** Which stub conversation a model call reads, by words its ruling message holds (both reads carry it). */
-function conversationOf(user: string): "ru" | "th" | "en" | "junk" | "multi" | "paste" | null {
+function conversationOf(user: string): "ru" | "th" | "en" | "junk" | "multi" | "paste" | "noRuling" | null {
+  if (user.includes("NORULING-903")) return "noRuling";
   if (user.includes("PASTE-818")) return "paste";
   if (user.includes("JUNK-815")) return "junk";
   if (user.includes("MULTI-815")) return "multi";
@@ -293,10 +339,14 @@ const ai = {
   configured: () => true,
   complete: async (call: AiCompleteOptions) => {
     modelCalls.push(call);
+    if (call.system.includes("THE CONVERSATION") && conversationTrouble.length > 0) {
+      if (conversationTrouble.shift() === "error") throw Object.assign(new Error("ZZ overloaded"), { status: 529 });
+      return "Sorry, I could not read that conversation.";
+    }
     const which = conversationOf(call.user);
     if (!which) return JSON.stringify({ summary: "ZZ plain", event: { childName: "Plain" } });
     const { catalogue, ...form } =
-      which === "junk" ? JUNK_ANSWER : which === "multi" ? MULTI_ANSWER : which === "paste" ? PASTE_ANSWER : answerFor(which);
+      which === "junk" ? JUNK_ANSWER : which === "multi" ? MULTI_ANSWER : which === "paste" ? PASTE_ANSWER : which === "noRuling" ? NO_RULING_ANSWER : answerFor(which);
     // The conversation's read answers the catalogue only; the form's read answers the form
     // (and, handed the catalogue with no conversation, the catalogue too).
     if (call.system.includes("THE CONVERSATION")) return JSON.stringify({ catalogue });
@@ -337,7 +387,15 @@ const inbox = new Map<string, InboxRead>([
   [conv.multi, confirmation("multi", ev.multi, MULTI_LINES)],
   [conv.parent, confirmation("parent", ev.parent, transcriptOf("en", msgIds.parent))],
   [conv.camp, confirmation("camp", ev.camp, transcriptOf("en", msgIds.camp))],
+  [conv.retry, confirmation("retry", ev.retry, transcriptOf("en", msgIds.retry))],
 ]);
+// SCRUM-903: no message of the team's confirms the party yet: the platform answers no message, and the family's lines.
+for (const key of ["noRuling", "bNoRuling"] as const) {
+  inbox.set(conv[key], {
+    ok: true,
+    confirmation: { conversationId: conv[key], eventId: ev[key], message: null, scanned: 2, transcript: noRulingLines(key), transcriptCut: false },
+  });
+}
 // A platform older than SCRUM-815: no transcript in its answer.
 {
   const ruling = { id: msgIds.noTranscript[3]!, text: CONVERSATIONS.en[3]!.text, at: at(3) };
@@ -492,8 +550,9 @@ try {
        values ($1, $2, $3, $7::core_event_type, $4, $6, $8, 'tentative', $5)`,
       [id, tenant, branch, title, conversation, BOOKED, kind.type ?? "birthday", kind.start ?? "10:00"],
     );
-  for (const k of KEYS) if (k !== "b" && k !== "noStart" && k !== "camp") await event(ev[k], tenantA, park, conv[k], `ZZ TEST 815 ${k}`);
+  for (const k of KEYS) if (k !== "b" && k !== "noStart" && k !== "camp" && k !== "bNoRuling") await event(ev[k], tenantA, park, conv[k], `ZZ TEST 815 ${k}`);
   await event(ev.b, tenantB, parkB, conv.b, "ZZ TEST 815 B");
+  await event(ev.bNoRuling, tenantB, parkB, conv.bNoRuling, "ZZ TEST 903 B no ruling");
   // SCRUM-827 review: a party booked with no start time yet (the column is NOT NULL text; "no start
   // time" is the empty string the app's own screens read as unset — server/routes.ts), and a camp.
   await event(ev.noStart, tenantA, park, conv.noStart, "ZZ TEST 815 noStart", { start: "" });
@@ -539,7 +598,10 @@ try {
       sources[lang] = res.body.source;
       assert.ok(res.body.review, `${lang}: a review`);
       assert.deepEqual(res.body.review.transcript, { lines: 4, cut: false });
-      assert.deepEqual(res.body.review.ruling, { source: "team", at: at(3), line: 4 }, `${lang}: the ruling message's place`);
+      // SCRUM-903: the ruling message's own words ride with it (the values read from it alone wear them).
+      assert.deepEqual(res.body.review.ruling, { source: "team", at: at(3), line: 4, quote: clip120(CONVERSATIONS[lang][3]!.text) }, `${lang}: the ruling message's place`);
+      assert.equal(res.body.review.conversationId, conv[lang], `${lang}: the conversation read`);
+      assert.equal(res.body.review.timeZone, "Asia/Bangkok", `${lang}: the park's clock`);
       assert.equal(res.body.review.parentSelection, null);
       assert.equal(res.body.review.finalMessage, CONVERSATIONS[lang][3]!.text, `${lang}: Final Message to Parent is the ruling message`);
       // The free-text fill of before still rides beside it, for Load into Editor and the rest after approval.
@@ -551,7 +613,7 @@ try {
 
   await check("idsMatchAndSourcesAreTheLines", () => {
     for (const lang of ["ru", "th", "en"] as const) {
-      const p = reviews[lang]!.proposal;
+      const p = unquoted(reviews[lang]!.proposal);
       const ruling = { source: "team", at: at(3), line: 4 };
       assert.deepEqual(p.package, { templateId: cat.floresta, said: WORDS[lang].pkg, chatPrice: 16900, from: ruling }, `${lang}: the package`);
       assert.equal(p.setMenu?.templateId, cat.setMenu);
@@ -595,7 +657,7 @@ try {
       assert.equal(d.bookingName, null);
       assert.equal(d.locationText, null);
     }
-    const ru = reviews.ru!.proposal;
+    const ru = unquoted(reviews.ru!.proposal);
     assert.deepEqual(ru.addOns, [{ lineId: cat.reservedTable, quantity: 1, said: "Стол для взрослых", chatPrice: null, from: { source: "team", at: at(3), line: 4 } }]);
     // The catalogue the review shows: A's park only, with its set menus' food codes.
     const view = reviews.ru!.catalogue;
@@ -914,22 +976,58 @@ try {
     await nothingWritten(ev.refused);
   });
 
-  await check("noCatalogueOrNoTranscriptAsBefore", async () => {
-    // Park B has no catalogue (park group B's one package is sold at its other park): the
-    // ruling message alone, as SCRUM-660 read it — the family's lines are never read, so no
-    // value in the preview is the family's unmarked — and no review.
+  await check("emptyCatalogueReadsTheConversationNoTranscriptAsBefore", async () => {
+    // SCRUM-903 (the owner's rule of 12 November, Phase A): park B has no catalogue (park group
+    // B's one package is sold at its other park), and the conversation is read all the same —
+    // the form's read of the ruling message beside it, as with a catalogue — so every item the
+    // chat names opens in the review as a line to keep or leave out, never lost. (Until now the
+    // ruling message alone was read here and no review opened.)
     const beforeB = modelCalls.length;
     const b = await fill(ev.b, "b");
     assert.equal(b.status, 200, JSON.stringify(b.body));
-    assert.equal(b.body.review, undefined);
     const bCalls = modelCalls.slice(beforeB);
-    assert.equal(bCalls.length, 1, "one read, as before");
-    assert.ok(bCalls[0]!.user.endsWith(CONVERSATIONS.en[3]!.text), "the ruling message");
-    assert.ok(!bCalls[0]!.user.includes("#1 [") && !bCalls[0]!.user.includes(CONVERSATIONS.en[0]!.text), "and nothing else");
-    assert.ok(!bCalls[0]!.system.includes("THE PARK'S CATALOGUE") && !bCalls[0]!.system.includes("THE CONVERSATION"));
+    assert.equal(bCalls.length, 2, "the form's read and the conversation's, as with a catalogue");
+    const bConversation = bCalls.find((c) => c.system.includes("THE CONVERSATION"))!;
+    const bForm = bCalls.find((c) => !c.system.includes("THE CONVERSATION"))!;
+    assert.ok(bConversation.user.includes(`#1 [family] 2026-11-03 14:00: ${CONVERSATIONS.en[0]!.text}`), "the family's lines are read");
+    assert.ok(bConversation.system.includes('{"packages":[],"setMenus":[],"entertainment":[],"food":[]}'), "the empty catalogue, handed as it is");
+    assert.ok(bForm.user.endsWith(CONVERSATIONS.en[3]!.text) && !bForm.user.includes("#1 ["), "the form's own fields from the ruling message alone");
     assert.equal(b.body.source.body, CONVERSATIONS.en[3]!.text, "the preview's 'message read' is what was read");
-    const [bRow] = await q("select summary_text from activity_log where activity_type = 'beo_ai_fill' and metadata_json like $1", [`%${ev.b}%`]);
-    assert.equal(bRow?.summary_text, `AI Fill read the inbox confirmation message for the BEO of "ZZ TEST 815 B"`);
+    const bReview: BeoAiReview = b.body.review;
+    assert.ok(bReview, "a review, with every item a line to keep or leave out");
+    assert.deepEqual(bReview.catalogue, { packages: [], setMenus: [], entertainment: [], food: [] });
+    assert.equal(bReview.finalMessage, CONVERSATIONS.en[3]!.text);
+    const bp = bReview.proposal;
+    assert.equal(bp.package, null);
+    assert.equal(bp.setMenu, null);
+    assert.deepEqual(bp.otherLines.map((o) => o.text), [WORDS.en.pkg], "the package the chat names, in its words");
+    assert.deepEqual(
+      bp.menuLines.map((l) => [l.itemName, l.notInMenu, l.productCode]),
+      [[WORDS.en.pizza, true, null], [WORDS.en.fries, true, null], [WORDS.en.sushi, true, null]],
+      "the set menu's pizza, the extra dish and the family's sushi: dishes the menu lacks, none dropped",
+    );
+    assert.deepEqual(bp.entertainment.map((e) => [e.templateId, e.name, e.notInCatalogue]), [[null, WORDS.en.bubble, true], [null, WORDS.en.face, true]]);
+    assert.equal(bp.entertainment[1]!.from.source, "family", "the family's wish stays the family's");
+    // Approve and create waits for every one of them; decided, it writes them as free lines.
+    const bState = initialReviewState(bReview, { fill: b.body.fill, bookedDate: BOOKED });
+    assert.equal(undecidedLines(bState), 6, "three dishes, two shows and the package wait for a decision");
+    bState.menuLines = bState.menuLines.map((l) => ({ ...l, decision: l.itemName === WORDS.en.sushi ? ("drop" as const) : ("keep" as const) }));
+    bState.entertainment = bState.entertainment.map((e) => ({ ...e, decision: "keep" as const }));
+    bState.otherLines = bState.otherLines.map((o) => ({ ...o, decision: "keep" as const }));
+    assert.equal(undecidedLines(bState), 0);
+    const bBody = approveBodyOf(bReview, bState, { conversationId: conv.b, messageId: b.body.source.messageId });
+    const bApproved = await approve(ev.b, bBody, "b");
+    assert.equal(bApproved.status, 200, JSON.stringify(bApproved.body));
+    const bRows = await beoRows(ev.b);
+    assert.deepEqual(
+      (bRows.kitchen.menus.kids as any[]).map((l) => [l.itemName, l.notes]),
+      [[WORDS.en.pizza, "Not in the menu"], [WORDS.en.fries, "Not in the menu"]],
+      "the kept dishes as free lines, the sushi left out",
+    );
+    assert.deepEqual(bRows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[null, WORDS.en.bubble, 0], [null, WORDS.en.face, 0]]);
+    assert.ok(String(bRows.event.special_requests).includes(WORDS.en.pkg), "the package's words kept in Special Requests");
+    const bRow = bRows.activity.find((r) => !JSON.parse(r.metadata_json).step);
+    assert.equal(bRow?.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 B"`);
     // A platform answer with no transcript: the ruling message alone, as before; with the catalogue, every value the team's.
     const before = modelCalls.length;
     const plain = await fill(ev.noTranscript);
@@ -942,7 +1040,10 @@ try {
     // SCRUM-816: that one read answers the form and the catalogue section, and its prompt names both.
     assert.ok(call.system.includes("\n- event.eventDate: ") && call.system.includes("\n- catalogue.package.templateId: "));
     assert.equal(plain.body.review.transcript.lines, 1);
-    assert.deepEqual(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.face)?.from, { source: "team", at: at(3), line: null });
+    assert.deepEqual(unquoted(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.face)?.from), { source: "team", at: at(3), line: null });
+    // SCRUM-903: read alone, a value carries the ruling message's words for it, else the message.
+    assert.equal(plain.body.review.proposal.entertainment.find((e: any) => e.templateId === cat.bubble)?.from.quote, WORDS.en.bubble);
+    assert.equal(plain.body.review.proposal.event.numAdults.from.quote, clip120(CONVERSATIONS.en[3]!.text));
   });
 
   await check("pastedTextMatchesTheCatalogue", async () => {
@@ -972,8 +1073,8 @@ try {
     assert.equal(review.finalMessage, null, "Final Message to Parent stays the person's to fill from a pasted text");
     assert.equal(review.ruling.source, "team");
     assert.equal(review.ruling.line, 1);
-    const team = review.ruling;
-    const p = review.proposal;
+    const team = unquoted(review.ruling);
+    const p = unquoted(review.proposal);
     assert.deepEqual(p.package, { templateId: cat.floresta, said: "пакет Флореста", chatPrice: null, from: team }, "the Floresta package, the team's whatever the model says");
     assert.deepEqual(p.setMenu?.templateId, cat.setMenu, "the package's set menu");
     assert.deepEqual(p.setMenu?.choices, [{ itemId: PIZZA, option: "Margherita", said: "Пицца Маргарита", from: team }], "Margherita, spelt as the menu lists it");
@@ -1024,9 +1125,26 @@ try {
     const approvedMeta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.equal(approvedMeta?.source, "pasted");
 
-    // The free-text review stays where there is nothing to match to: a park with no catalogue, or no event.
+    // SCRUM-903: the pasted message's words for each value, else the message clipped.
+    assert.equal(review.ruling?.quote, clip120(PASTE_TEXT));
+    assert.equal(review.proposal.package?.from.quote, "пакет Флореста");
+    assert.equal(review.proposal.event.numChildren?.from.quote, clip120(PASTE_TEXT));
+    assert.equal(review.timeZone, "Asia/Bangkok");
+
+    // SCRUM-903: a park with no catalogue opens the same review, every item a line to keep or leave out.
+    const at1 = modelCalls.length;
+    const empty = await post("/api/ai/parse-beo", { text: PASTE_TEXT, eventId: ev.b }, "b");
+    assert.equal(empty.status, 200, JSON.stringify(empty.body));
+    assert.equal(modelCalls.length, at1 + 2, "the form's read and the one-line conversation's");
+    const emptyReview: BeoAiReview = empty.body.review;
+    assert.equal(emptyReview.origin, "pasted");
+    assert.deepEqual(emptyReview.proposal.otherLines.map((o) => o.text), ["пакет Флореста"]);
+    assert.deepEqual(emptyReview.proposal.menuLines.map((l) => [l.itemName, l.notInMenu]), [["Пицца Маргарита", true]], "the pizza, never dropped");
+    assert.deepEqual(emptyReview.proposal.entertainment.map((e) => [e.name, e.notInCatalogue]), [["Зомби-игра", true]]);
+    assert.equal(undecidedLines(initialReviewState(emptyReview)), 3);
+
+    // The free-text review stays where there is nothing to match to: no event.
     for (const [what, payload, as] of [
-      ["a park with no catalogue", { text: PASTE_TEXT, eventId: ev.b }, "b"],
       ["no event", { text: PASTE_TEXT }, "manager"],
     ] as const) {
       const at0 = modelCalls.length;
@@ -1268,6 +1386,174 @@ try {
     assert.notEqual(rows.selection.token, token, "a new link");
   });
 
+  await check("noRulingReadsTheConversationAlone", async () => {
+    // SCRUM-903: only the family has written — a date, a time, a pizza, a show and sushi; no
+    // message of the team's confirms the party. The conversation is read alone.
+    const before = modelCalls.length;
+    const res = await fill(ev.noRuling);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const calls = modelCalls.slice(before);
+    assert.equal(calls.length, 1, "the conversation's read alone: there is no ruling message to read the form's fields from");
+    const call = calls[0]!;
+    assert.ok(call.system.includes("THE CONVERSATION") && call.system.includes("THE PARK'S CATALOGUE") && call.system.includes(cat.bubble));
+    assert.ok(call.user.includes(`#1 [family] 2026-11-03 14:00: ${NO_RULING_TEXTS[0]}`) && call.user.includes(`#2 [family] 2026-11-03 14:07: ${NO_RULING_TEXTS[1]}`));
+    assert.ok(!call.user.includes("RULING]"), "no line is marked the ruling");
+    const review: BeoAiReview = res.body.review;
+    assert.equal(review.ruling, null, "nothing is confirmed by the team yet");
+    assert.equal(review.finalMessage, null, "Final Message to Parent stays empty");
+    assert.equal(res.body.source, null, "no ruling message rides beside the review");
+    assert.equal(review.conversationId, conv.noRuling);
+    assert.deepEqual(review.transcript, { lines: 2, cut: false });
+    assert.deepEqual(res.body.fill, { proposals: { partyHost: null, entertainmentHost: null, setupResponsible: null } }, "nothing of the form's own is read, nobody proposed");
+    assert.equal(res.body.chat.newestMessageId, msgIds.noRuling[1], "the chat's newest line, for Fetch from chat's memory");
+    // The family's pizza and show are pre-selected, marked the family's, each with their words.
+    const family = (line: number, quote: string) => ({ source: "family", at: at(line - 1), line, quote });
+    const p = review.proposal;
+    assert.deepEqual(p.setMenu, {
+      templateId: cat.setMenu,
+      from: family(2, clip120(NO_RULING_TEXTS[1]!)),
+      choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita pizza", from: family(2, "Margherita pizza") }],
+    });
+    assert.deepEqual(p.entertainment.map((e) => [e.templateId, e.notInCatalogue, e.from]), [[cat.bubble, false, family(2, "a bubble show")]], "the show, the family's whatever the model says");
+    assert.deepEqual(p.event.startTime, { value: "15:00", from: family(1, clip120(NO_RULING_TEXTS[0]!)) });
+    assert.deepEqual(p.event.childName, { value: "Mia", from: family(1, clip120(NO_RULING_TEXTS[0]!)) });
+    assert.deepEqual(p.menuLines.map((l) => [l.itemName, l.notInMenu, l.from]), [["sushi", true, family(2, "sushi")]]);
+    assert.deepEqual(p.details.title, { value: "Mia's Birthday", from: { source: "default", at: null, line: null } });
+    const state = initialReviewState(review, { fill: res.body.fill, bookedDate: BOOKED, held: { ...NOTHING_HELD, specialRequests: "ZZ typed by staff" } });
+    assert.deepEqual(state.choices[PIZZA]?.value, ["Margherita"], "the pizza pre-selected");
+    assert.deepEqual(state.entertainment.map((e) => [e.templateId, e.decision]), [[cat.bubble, null]], "the show pre-selected, needing no decision");
+    assert.equal(state.startTime?.value, "15:00");
+    // Every guard of the review stands with no ruling.
+    assert.equal(undecidedLines(state), 1, "the sushi the menu lacks blocks Approve until it is decided");
+    assert.equal(state.date, null, "no date read: nothing to tick, the booked date stands");
+    assert.equal(Object.values(state.details.team.proposals).every((x) => x === null), true, "no host proposed");
+    assert.equal(state.details.specialRequests.value, "ZZ typed by staff", "typed text is never overwritten");
+    await nothingWritten(ev.noRuling);
+    const [row] = (await beoRows(ev.noRuling)).activity;
+    assert.equal(row?.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 noRuling"`);
+    const meta = JSON.parse(row!.metadata_json);
+    assert.equal(meta.ruling, false, "the row says no ruling message was read");
+    assert.equal(meta.inboxMessageId, null);
+    assert.equal(meta.outcome, "filled");
+    assert.equal(meta.catalogueRead.outcome, "filled");
+    for (const words of [...NO_RULING_TEXTS, "Margherita pizza", "a bubble show", "sushi", "Mia"]) {
+      assert.ok(!row!.metadata_json.includes(words) && !row!.summary_text.includes(words), `no "${words}" in the activity row`);
+    }
+    // Approve and create: the sushi left out; the family's pizza and show written; Final Message to Parent stays empty.
+    state.menuLines = state.menuLines.map((l) => ({ ...l, decision: "drop" as const }));
+    const body = approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null });
+    assert.equal(body.event.internalStaffNotes, undefined, "no ruling message for Final Message to Parent");
+    assert.equal(body.event.eventDate, undefined);
+    assert.equal(body.details?.team, undefined);
+    assert.equal(body.details?.specialRequests, undefined, "the typed text is the form's, not sent over the saved");
+    assert.ok(body.sources.some((s) => s.field === "entertainment:0" && s.source === "family"));
+    assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes(NO_RULING_TEXTS[1]!), "the chat's words never ride the approval");
+    const approved = await approve(ev.noRuling, body);
+    assert.equal(approved.status, 200, JSON.stringify(approved.body));
+    const after = await beoRows(ev.noRuling);
+    assert.deepEqual(after.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    assert.deepEqual(after.entertainment.map((e) => [e.template_id, e.name]), [[cat.bubble, "Bubble show"]]);
+    assert.equal(after.event.start_time, "15:00");
+    assert.equal(after.event.internal_staff_notes, null, "Final Message to Parent stays empty");
+    assert.equal(after.event.event_date, BOOKED, "the booked date stands");
+    const approvedMeta = after.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
+    assert.equal(approvedMeta?.source, "inbox", "the approval names the conversation, not a pasted message");
+    assert.equal(approvedMeta?.inboxConversationId, conv.noRuling);
+
+    // The same at a park with no catalogue: every item a line to keep or leave out.
+    const bRes = await fill(ev.bNoRuling, "b");
+    assert.equal(bRes.status, 200, JSON.stringify(bRes.body));
+    const bp = (bRes.body.review as BeoAiReview).proposal;
+    assert.equal(bRes.body.review.ruling, null);
+    assert.deepEqual(bp.menuLines.map((l) => [l.itemName, l.notInMenu]), [["Margherita pizza", true], ["sushi", true]]);
+    assert.deepEqual(bp.entertainment.map((e) => [e.name, e.notInCatalogue, e.from.source]), [["a bubble show", true, "family"]]);
+    assert.equal(undecidedLines(initialReviewState(bRes.body.review)), 3);
+    await nothingWritten(ev.bNoRuling);
+  });
+
+  await check("theChatsWordsForEveryValue", async () => {
+    // Book Date's rule (packages/assistant/src/book-date.ts): the model's words when the line holds them, else the line, 120 characters at most.
+    const long = `${"word ".repeat(40)}LONG-903`;
+    assert.equal(quoteOf("Margherita pizza", "Hi! Margherita  PIZZA for the kids"), "Margherita pizza", "the model's words, found case and spacing aside");
+    assert.equal(quoteOf("pepperoni", "Margherita pizza for the kids"), "Margherita pizza for the kids", "words the line lacks: the line");
+    assert.equal(quoteOf(null, "  two\n lines  "), "two lines", "one line");
+    assert.equal(quoteOf(undefined, long), clip120(long));
+    assert.equal(quoteOf(undefined, long)!.length, 120);
+    assert.ok(quoteOf(undefined, long)!.endsWith("…"));
+    assert.equal(quoteOf("x", ""), null, "no line, no words");
+    // Every value of the Russian conversation carries its words: the model's when the line holds them, else the line.
+    const p = reviews.ru!.proposal;
+    const lines = CONVERSATIONS.ru.map((l) => l.text);
+    assert.equal(p.package?.from.quote, WORDS.ru.pkg);
+    assert.equal(p.setMenu?.choices[0]?.from.quote, WORDS.ru.pizza, "its words, as the model gave them");
+    assert.equal(p.menuLines.find((l) => l.productCode === "CF-11")?.from.quote, WORDS.ru.fries);
+    assert.equal(p.menuLines.find((l) => l.notInMenu)?.from.quote, WORDS.ru.sushi, "the family's sushi, in the family's words");
+    assert.equal(p.entertainment.find((e) => e.templateId === cat.face)?.from.quote, WORDS.ru.face, "the family-only wish, in the family's words");
+    assert.equal(p.event.childName?.from.quote, clip120(lines[0]!), "a value with no words of its own: its line");
+    assert.equal(p.event.numAdults?.from.quote, clip120(lines[3]!));
+    assert.equal(p.deposit?.from.quote, clip120(lines[3]!));
+    assert.equal(p.cake?.from.quote, clip120(lines[3]!), "the model's notes are not in the line: the line");
+    assert.equal(p.details.requests.find((r) => r.kind === "decoration")?.from.quote, clip120(lines[2]!));
+    assert.equal(p.details.setup.readyBy?.from.quote, clip120(lines[3]!), "read from the ruling message: its words");
+    assert.equal(p.details.title?.from.quote, undefined, "the park's default carries no words of the chat's");
+    // A family-only catalogue item is pre-selected and marked the family's with their words (the owner's decision).
+    const state = initialReviewState(reviews.ru!, { fill: fills.ru, bookedDate: BOOKED });
+    const face = state.entertainment.find((e) => e.templateId === cat.face);
+    assert.equal(face?.notInCatalogue, false);
+    assert.equal(face?.from?.source, "family");
+    assert.equal(face?.from?.quote, WORDS.ru.face);
+    // The review shows them under each value, with whose line and when on the park's clock.
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review: reviews.ru!, state, onChange: () => undefined }));
+    assert.ok(html.includes(`The chat says “${WORDS.ru.pkg}”`), "under the package");
+    assert.ok(html.includes(`The chat says “${WORDS.ru.face}”`), "under the family's face painting");
+    assert.ok(html.includes(`The chat says “${WORDS.ru.sushi}”`), "under the sushi");
+    assert.ok(html.includes(`The chat says “${clip120(lines[0]!)}”`.replace(/'/g, "&#x27;")) || html.includes(`The chat says “${clip120(lines[0]!)}”`), "under the child: the family's line");
+    assert.ok(html.includes("· Tue 3 Nov 14:21"), "when the team's line was written, on the park's clock");
+    assert.ok(html.includes("· Tue 3 Nov 14:00"), "when the family's line was written");
+    assert.ok((html.match(/data-testid="text-ai-review-chat-says"/g)?.length ?? 0) >= 12, "a reason line under every value the chat gave");
+    // Never in the activity row, the approval or its sources.
+    const rows = await beoRows(ev.th);
+    for (const r of rows.activity) for (const line of CONVERSATIONS.th) assert.ok(!r.metadata_json.includes(clip120(line.text)), "no quote in the activity row");
+    const body = approveBodyOf(reviews.en!, initialReviewState(reviews.en!), { conversationId: conv.en, messageId: null });
+    assert.ok(body.sources.every((src) => Object.keys(src).sort().join() === "at,field,source"), "the sources carry who and when, never the words");
+    const quoted = { ...body, sources: [{ field: "package", source: "team", at: null, quote: "ZZ words" }] };
+    assert.equal((await approve(ev.en, quoted)).status, 400, "an approval carrying the chat's words is refused");
+  });
+
+  await check("theConversationReadIsAskedOnceMore", async () => {
+    // SCRUM-903: the conversation's answer could not be read once: asked once more, and the review opens.
+    const before = modelCalls.length;
+    conversationTrouble.push("unreadable");
+    const once = await fill(ev.retry);
+    assert.equal(once.status, 200, JSON.stringify(once.body));
+    assert.equal(modelCalls.length, before + 3, "the form's read, and the conversation's twice");
+    assert.ok(once.body.review, "the review opens from the second answer");
+    assert.equal(once.body.review.proposal.package?.templateId, cat.floresta);
+    let meta = JSON.parse((await beoRows(ev.retry)).activity.at(-1)!.metadata_json);
+    assert.deepEqual(meta.catalogueRead.attempts, 2, "the row says it was asked twice");
+    assert.equal(meta.catalogueRead.outcome, "filled");
+    // The model did not answer once: the same.
+    conversationTrouble.push("error");
+    const error = await fill(ev.retry);
+    assert.equal(error.status, 200, JSON.stringify(error.body));
+    assert.ok(error.body.review);
+    // Twice: the form's read stands — the free-text preview of before, as when it failed once before.
+    conversationTrouble.push("unreadable", "unreadable");
+    const twice = await fill(ev.retry);
+    assert.equal(twice.status, 200, JSON.stringify(twice.body));
+    assert.equal(twice.body.review, undefined, "no review: the preview of the ruling message");
+    assert.equal(twice.body.fill.event.childName, WORDS.en.child);
+    meta = JSON.parse((await beoRows(ev.retry)).activity.at(-1)!.metadata_json);
+    assert.deepEqual(meta.catalogueRead, { outcome: "unreadable", inputChars: meta.catalogueRead.inputChars, model: meta.catalogueRead.model, attempts: 2 });
+    // With no ruling message, the conversation's read is the only one: twice unreadable is the plain message.
+    conversationTrouble.push("unreadable", "unreadable");
+    const none = await fill(ev.noRuling);
+    assert.equal(none.status, 502, JSON.stringify(none.body));
+    assert.equal(none.body.reason, "unreadable");
+    assert.equal(conversationTrouble.length, 0);
+    await nothingWritten(ev.retry);
+  });
+
   await check("transcriptAndResolverUnits", async () => {
     // The ruling message the bounds left out goes back in its place; a long conversation loses its oldest lines first.
     const lines = transcriptOf("en", msgIds.en).slice(0, 3);
@@ -1281,6 +1567,13 @@ try {
     assert.equal(cut.cut, true);
     assert.ok(cut.refs.at(-1)!.ruling, "the ruling message is never cut");
     assert.ok(cut.text.length <= 40_000);
+    // SCRUM-903: no ruling message: no line marked, every line kept for its words.
+    const plain = renderTranscript(lines, null, "Asia/Bangkok");
+    assert.ok(!plain.text.includes("RULING"));
+    assert.deepEqual(plain.refs.map((ref) => [ref.line, ref.source, ref.ruling, ref.text]), lines.map((l, i) => [i + 1, l.author === "customer" ? "family" : "team", false, l.text]));
+    const unruled = renderTranscript(long, null, "Asia/Bangkok");
+    assert.equal(unruled.cut, true, "the oldest lines go first, with no ruling to keep");
+    assert.ok(unruled.text.length <= 40_000);
     // The set menu's lines, as the parent link has always written them (moved, not changed).
     const resolved = resolveSetMenuLines(
       [

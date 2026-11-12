@@ -32,7 +32,14 @@
 //   9. the Start Time, End Time, Cake and Setup Who marks: an edit turns each
 //      into "changed here", as the text fields' do (SCRUM-827 review; the Date
 //      edits the same way, but this fixture's chat date is the booked one, so
-//      it wears no mark to pin).
+//      it wears no mark to pin);
+//  10. SCRUM-903: only the family has written and the park's catalogue is
+//      empty: the review says nothing is confirmed by the team yet and that
+//      every item is a line to keep or leave out, shows the chat's words under
+//      each value with whose line and when (Book Date's reason line), offers
+//      no Load into Editor (no ruling message to load), keeps Approve and
+//      create shut until each line is decided, writes nothing before it, and
+//      the approval names the conversation and carries none of the words.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-prefill-ui.check.ts
@@ -107,6 +114,7 @@ const E_BARE = "22222222-2222-4222-8222-222222222827";
 const E_PLAIN = "33333333-3333-4333-8333-333333333827";
 const E_EMPTY = "44444444-4444-4444-8444-444444444827";
 const E_TYPED = "55555555-5555-4555-8555-555555555827";
+const E_NORULING = "66666666-6666-4666-8666-666666666903";
 const CONV = "cccccccc-cccc-4ccc-8ccc-cccccccc0827";
 const MSG = "dddddddd-dddd-4ddd-8ddd-dddddddd0827";
 const PARK = "33333333-3333-4333-8333-333333333333";
@@ -164,6 +172,40 @@ const review = (origin: "inbox" | "pasted"): BeoAiReview => ({
   replaces: [],
   parentSelection: null,
 });
+/** SCRUM-903: only the family has written; no message of the team's; the park's catalogue empty. */
+const NO_RULING_LINE_1 = "Hi! Mia's party on Saturday 21 November at 15:00, pizza for the kids, no nuts please. NORULING-903";
+const words = (line: number, quote: string) => ({ ...family(line), quote });
+const NO_RULING_REVIEW: BeoAiReview = {
+  origin: "inbox",
+  proposal: {
+    package: null,
+    addOns: [],
+    setMenu: null,
+    menuLines: [{ menu: "kids", itemName: "pizza", quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: words(1, "pizza") }],
+    entertainment: [{ templateId: null, name: "a magic show", said: "a magic show", quantity: 1, chatPrice: null, notInCatalogue: true, from: words(2, "a magic show") }],
+    otherLines: [],
+    event: { startTime: { value: "15:00", from: words(1, NO_RULING_LINE_1) } },
+    cake: null,
+    deposit: null,
+    details: {
+      title: null,
+      bookingName: null,
+      locationText: null,
+      requests: [{ kind: "special_request", text: "no nuts please", from: words(1, "no nuts please") }],
+      setup: { readyBy: null, responsible: null, tasks: [] },
+      pos: { name: null, notes: null, items: [] },
+      timeline: [],
+    },
+  },
+  catalogue: { packages: [], setMenus: [], entertainment: [], food: [] },
+  finalMessage: null,
+  ruling: null,
+  conversationId: CONV,
+  timeZone: "Asia/Bangkok",
+  transcript: { lines: 2, cut: false },
+  replaces: [],
+  parentSelection: null,
+};
 const FILL = {
   summary: "ZZ 827",
   event: { title: "Model's own title", childName: "Emma", numChildren: 12, startTime: "14:00", endTime: "17:00", eventDate: "2099-11-21", eventDateText: "21 November", bookingName: "Olga", locationText: "Jungle Room", activities: "treasure hunt" },
@@ -217,7 +259,8 @@ beos.set(E_BARE, freshBeo(E_BARE, "ZZ TEST bare", { inboxConversationId: CONV })
 beos.set(E_PLAIN, freshBeo(E_PLAIN, "ZZ TEST plain"));
 beos.set(E_EMPTY, freshBeo(E_EMPTY, "ZZ TEST empty"));
 beos.set(E_TYPED, freshBeo(E_TYPED, "ZZ TEST typed"));
-for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY, E_TYPED]) timelines.set(id, []);
+beos.set(E_NORULING, freshBeo(E_NORULING, "ZZ TEST no ruling", { inboxConversationId: CONV }));
+for (const id of [E_INBOX, E_BARE, E_PLAIN, E_EMPTY, E_TYPED, E_NORULING]) timelines.set(id, []);
 let approvals = 0;
 
 /** The approval, as the server writes it: the event's fields, the setup plan, the POS box, the chat's step, the host, and the auto steps. */
@@ -282,6 +325,10 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (fill && method === "POST") {
     const source = { conversationId: CONV, messageId: MSG, body: RULING, authorName: "ZZ TEST Manager", sentAt: at(2), createdAt: at(2), fillsFinalMessage: true };
     const chat = { newestMessageId: "line-3", lines: 3 };
+    // SCRUM-903: no message of the team's yet: no source, nothing of the form's own read, the review alone.
+    if (fill[1] === E_NORULING) {
+      return json({ source: null, chat: { newestMessageId: "line-2", lines: 2 }, fill: { proposals: { partyHost: null, entertainmentHost: null, setupResponsible: null } }, review: NO_RULING_REVIEW });
+    }
     // The bare event's park has no catalogue: the free-text fill alone, the preview of before.
     if (fill[1] === E_BARE) return json({ source, chat, fill: { ...FILL, event: { ...FILL.event, internalStaffNotes: RULING } } });
     // Fetch from chat (SCRUM-826): the chat moved — the team's line 4 says 8 adults.
@@ -644,6 +691,49 @@ await check("an empty BEO's sections say plain words, never a placeholder", asyn
   assert.equal(doc.querySelectorAll('[data-testid^="ai-from-chat-"]').length, 0, "a BEO nobody filled from the chat wears no chip");
 });
 
+await check("SCRUM-903: no team confirmation and an empty catalogue — the review says so, shows the chat's words under each value, offers no Load into Editor, and writes only on Approve and create", async () => {
+  asked.length = 0;
+  const before = approvals;
+  await open(E_NORULING, "inbox");
+  assert.ok(required("button-ai-review-approve"), "the review in edit mode");
+  assert.match(text("text-ai-review-no-ruling")!, /^Nothing is confirmed by the team yet/);
+  assert.match(text("text-ai-review-no-catalogue")!, /catalogue is empty: every package, dish and show the chat names is a line to keep or leave out/);
+  assert.equal(byTestId("button-ai-review-fallback"), null, "no ruling message: no free-text fill to load");
+  assert.equal(byTestId("text-ai-review-final-message"), null, "Final Message to Parent stays empty");
+  // Book Date's reason line under each value: the chat's words, whose line, when on the park's clock.
+  const says = [...doc.querySelectorAll('[data-testid="text-ai-review-chat-says"]')].map((el) => el.textContent!.replace(/\s+/g, " ").trim());
+  for (const line of [
+    `The chat says “${NO_RULING_LINE_1}”from the family· Mon 2 Nov 08:00`,
+    "The chat says “no nuts please”from the family· Mon 2 Nov 08:00",
+    "The chat says “pizza”from the family· Mon 2 Nov 08:00",
+    "The chat says “a magic show”from the family· Mon 2 Nov 09:00",
+  ]) {
+    assert.ok(says.includes(line), `"${line}" is under its value: ${JSON.stringify(says)}`);
+  }
+  const start = required("input-ai-review-startTime").parentElement!.parentElement!;
+  assert.match(text("text-ai-review-chat-says", start)!, /15:00, pizza for the kids/, "the start time's reason is under the start time");
+  // The lines the catalogue lacks keep Approve and create shut until each is decided; nothing is sent before it.
+  assert.equal((required("button-ai-review-approve") as HTMLButtonElement).disabled, true);
+  assert.match(text("text-ai-review-undecided")!, /Decide the 2 lines/);
+  for (const keep of [...doc.querySelectorAll('[data-testid="button-ai-review-keep"]')]) {
+    await act(async () => { (keep as HTMLButtonElement).click(); });
+  }
+  await settle();
+  assert.equal(approvals, before, "nothing written before Approve and create");
+  assert.equal(asked.filter((a) => a.path.endsWith("/beo/ai-fill/approve")).length, 0);
+  await click("button-ai-review-approve");
+  assert.equal(approvals, before + 1, "one press, one write");
+  const body = asked.find((a) => a.path.endsWith("/beo/ai-fill/approve"))!.body as unknown as BeoAiApproveBody;
+  assert.equal(body.conversationId, CONV, "the approval names the conversation that was read");
+  assert.equal(body.messageId, null);
+  assert.equal(body.event.internalStaffNotes, undefined, "Final Message to Parent is not written");
+  assert.equal(body.event.startTime, "15:00");
+  assert.deepEqual(body.menuLines.map((l) => [l.itemName, l.productCode]), [["pizza", null]]);
+  assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.name]), [[null, "a magic show"]]);
+  assert.ok(body.sources.length > 0 && body.sources.every((src) => src.source === "family" || src.source === "staff"), JSON.stringify(body.sources));
+  assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes("NORULING-903"), "the chat's words never ride the approval");
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
-process.exit(checks === 10 ? 0 : 1);
+process.exit(checks === 11 ? 0 : 1);

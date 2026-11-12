@@ -24,6 +24,9 @@
 //     answer names the party's date and the message's words for it, a date
 //     that is not a real day is dropped (never fatal), and the review line
 //     shows it beside the booked date, marked when they differ.
+//   - SCRUM-903: the conversation's read of a BEO fill (`retryOnce`) asks
+//     once more when its answer cannot be read or the model does not answer,
+//     never on a missing key or the quota, and says so in its log fields.
 //   - SCRUM-816: a park group's saved output format words the answer but
 //     never drops a key the code reads: every run's prompt names, after the
 //     format, each key of the schema the answer is read by (the party's date,
@@ -435,6 +438,55 @@ try {
     assert.equal(off.ok, false);
     if (!off.ok) assert.equal(off.reason, "not_configured");
     assert.equal(model.calls.length, 0, "no key, no call");
+  });
+
+  await check("aRunThatMayRetryAsksOnceMore", async () => {
+    // SCRUM-903: the conversation's read of a BEO fill asks once more when its answer could not be
+    // read or the model did not answer; never on a missing key or the quota; a run that may not, never.
+    const good = JSON.stringify(ANSWERS.en);
+    const replies = (...answers: Array<string | Error>) => {
+      const queue = [...answers];
+      return stubModel(() => {
+        const next = queue.shift() ?? good;
+        if (next instanceof Error) throw next;
+        return next;
+      });
+    };
+    const retrying = (d: AiDeps) =>
+      runAiHelper(d, { helper: "beo_parsing", schema: BeoFillSchema, user: "a conversation", inputChars: 14, retryOnce: true });
+    const unreadableOnce = replies("Sorry, no JSON here.");
+    const once = await retrying(deps(unreadableOnce.complete));
+    assert.equal(once.ok, true, "the second answer is read");
+    assert.equal(unreadableOnce.calls.length, 2);
+    assert.equal(once.facts.attempts, 2);
+    assert.equal(runLogFields(once.facts).attempts, 2, "the log says it was asked twice");
+    assert.equal(unreadableOnce.calls[0]!.system, unreadableOnce.calls[1]!.system, "the same prompt");
+    assert.equal(unreadableOnce.calls[0]!.user, unreadableOnce.calls[1]!.user);
+    const errorOnce = replies(Object.assign(new Error("overloaded"), { status: 529 }));
+    assert.equal((await retrying(deps(errorOnce.complete))).ok, true, "the model did not answer once: asked again");
+    assert.equal(errorOnce.calls.length, 2);
+    const twice = replies("nope", "still nope");
+    const failed = await retrying(deps(twice.complete));
+    assert.equal(failed.ok, false);
+    if (!failed.ok) assert.equal(failed.reason, "unreadable");
+    assert.equal(twice.calls.length, 2, "once more, never a third time");
+    assert.equal(failed.facts.attempts, 2);
+    for (const [error, reason] of [[Object.assign(new Error("rate limited"), { status: 429 }), "quota"], [Object.assign(new Error("invalid x-api-key"), { status: 401 }), "not_configured"]] as const) {
+      const model = replies(error);
+      const run = await retrying(deps(model.complete));
+      assert.equal(run.ok, false);
+      if (!run.ok) assert.equal(run.reason, reason);
+      assert.equal(model.calls.length, 1, `${reason}: not asked again`);
+    }
+    const plain = replies("Sorry, no JSON here.");
+    assert.equal((await beoRun(deps(plain.complete))).ok, false, "a run that may not retry stops at the first");
+    assert.equal(plain.calls.length, 1);
+    const firstTime = replies();
+    const ok = await retrying(deps(firstTime.complete));
+    assert.equal(ok.ok, true);
+    assert.equal(firstTime.calls.length, 1);
+    assert.equal(ok.facts.attempts, undefined, "asked once: nothing to say");
+    assert.equal("attempts" in runLogFields(ok.facts), false);
   });
 
   await check("logFieldsCarryNoText", async () => {
@@ -1089,4 +1141,4 @@ try {
 }
 
 console.log(JSON.stringify({ results, failures }, null, 2));
-if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 17) process.exit(1);
+if (Object.values(results).some((ok) => !ok) || Object.keys(results).length !== 18) process.exit(1);

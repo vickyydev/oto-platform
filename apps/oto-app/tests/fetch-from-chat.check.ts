@@ -37,6 +37,11 @@
 //     deterministic: this pins the code path), so an unchanged chat reads
 //     the same as the form, and a value accepted and saved is never offered
 //     back.
+//   - SCRUM-903: with no message of the team's confirming the party yet, a
+//     fetch reads the conversation alone and offers its own requests (the
+//     allergy, the decoration wish) beside its counts, each change carrying
+//     the chat's words for it; every proposed value carries them too, so the
+//     checks of who said a value compare it without them (`unquoted`).
 //
 // Run from apps/oto-app: DATABASE_URL=<migrated scratch> npx tsx tests/fetch-from-chat.check.ts
 import assert from "node:assert/strict";
@@ -81,6 +86,8 @@ type BeoCatalogue = import("../server/lib/beoCatalogueFill").BeoCatalogue;
 
 const results: Record<string, boolean> = {};
 const failures: Record<string, string> = {};
+/** SCRUM-903: a value's `from` without the chat's words (`quote`), for the checks of who said it, when and on which line. */
+const unquoted = <T>(value: T): T => JSON.parse(JSON.stringify(value, (k, v) => (k === "quote" ? undefined : v)));
 async function check(name: string, fn: () => Promise<void> | void) {
   try {
     await fn();
@@ -136,6 +143,21 @@ const MIRROR_LINES = [
   { id: mirrorIds[1]!, author: "staff" as const, at: at(21), text: "Confirmed: Emma's party on 21 November at 14:00, 5 adults. MIRROR-826" },
 ];
 const MIRROR_RULING = MIRROR_LINES[1]!;
+// SCRUM-903: only the family has written — no message of the team's confirms the party yet.
+const noRuling = { conv: randomUUID(), event: randomUUID() };
+const NO_RULING_LINES = [
+  { id: randomUUID(), author: "customer" as const, at: at(30), text: "Hi! Mia's party on 28 November, 6 adults, no nuts, Mia is allergic. NORULING-826" },
+  { id: randomUUID(), author: "customer" as const, at: at(31), text: "Could we have unicorn balloons? NORULING-826" },
+];
+const NO_RULING_ANSWER = {
+  catalogue: {
+    event: { numAdults: { value: 6, line: 1 } },
+    requests: [
+      { kind: "special_request", text: "no nuts, Mia is allergic", line: 1 },
+      { kind: "decoration", text: "unicorn balloons", line: 2 },
+    ],
+  },
+};
 /**
  * A reader that follows the prompt's rule to the letter: for each thing the
  * conversation speaks about, the value and line of the LATEST line that
@@ -172,6 +194,7 @@ const inbox = new Map<string, () => InboxRead>([
     const ruling = { id: MIRROR_RULING.id, body: MIRROR_RULING.text, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: MIRROR_RULING.at, createdAt: MIRROR_RULING.at };
     return { ok: true, confirmation: { conversationId: mirror.conv, eventId: mirror.event, message: ruling, scanned: 2, transcript: MIRROR_LINES, transcriptCut: false } };
   }],
+  [noRuling.conv, () => ({ ok: true, confirmation: { conversationId: noRuling.conv, eventId: noRuling.event, message: null, scanned: 2, transcript: NO_RULING_LINES, transcriptCut: false } })],
 ]);
 
 /** The ruling message read alone, the form as its baseline: the ruling's values, the rest carried forward. */
@@ -204,6 +227,7 @@ const ai = {
     if (call.system.includes("THE CONVERSATION")) {
       if (call.user.includes("PROOF-826")) return JSON.stringify(readLikeTheRule(PROOF_LINES.slice(0, proofLinesHeld)));
       if (call.user.includes("MIRROR-826")) return JSON.stringify(readLikeTheRule(MIRROR_LINES));
+      if (call.user.includes("NORULING-826")) return JSON.stringify(NO_RULING_ANSWER);
       return JSON.stringify(CONVERSATION_ANSWER);
     }
     return JSON.stringify(FORM_ANSWER);
@@ -235,6 +259,7 @@ registerAIRoutes(app, fakeAuth, {
     if (key) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: conv[key], eventType: "birthday" };
     if (eventId === proof.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: proof.conv, eventType: "birthday" };
     if (eventId === mirror.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Emma 826", inboxConversationId: mirror.conv, eventType: "birthday" };
+    if (eventId === noRuling.event) return { id: eventId, tenantId: tenant, branchId: park, title: "ZZ TEST Mia 903", inboxConversationId: noRuling.conv, eventType: "birthday" };
     return null;
   },
   teamCandidates: async () => ({ employees: [], departments: [], hostSource: "employee" as const }),
@@ -302,8 +327,9 @@ try {
     assert.deepEqual(r.body.chat, { newestMessageId: lineIds[3], lines: 4 });
     assert.equal(r.body.source.messageId, RULING.id, "the ruling message is still the team's confirmation");
     assert.equal(r.body.fill.event.numAdults, 4, "the form's own read is the ruling message's");
-    assert.deepEqual(r.body.review.proposal.event.numAdults, { value: 6, from: { source: "team", at: at(3), line: 4 } }, "the whole chat: the later line wins the adults");
-    assert.deepEqual(r.body.review.proposal.cake, { mode: null, notes: null, time: "16:00", from: { source: "team", at: at(3), line: 4 } });
+    assert.deepEqual(unquoted(r.body.review.proposal.event.numAdults), { value: 6, from: { source: "team", at: at(3), line: 4 } }, "the whole chat: the later line wins the adults");
+    assert.deepEqual(unquoted(r.body.review.proposal.cake), { mode: null, notes: null, time: "16:00", from: { source: "team", at: at(3), line: 4 } });
+    assert.equal(r.body.review.proposal.event.numAdults.from.quote, LINES[3]!.text, "SCRUM-903: with the chat's words for it");
     assert.equal(modelCalls.length, 2, "the form's read and the conversation's");
     assert.ok(modelCalls.some((c) => c.user.includes("#4 [team]") && c.user.includes("#2 [team, RULING]")), "the conversation as it is now, the ruling marked");
     assert.ok(modelCalls.some((c) => c.user.includes('"numAdults": 5')), "the form as it stands is the baseline");
@@ -403,8 +429,8 @@ try {
     assert.deepEqual(r.body.chat, { newestMessageId: proofIds[3], lines: 4 });
     assert.equal(r.body.source.messageId, PROOF_RULING.id, "the ruling message is still the team's confirmation");
     const p = r.body.review.proposal;
-    assert.deepEqual(p.event.numAdults, { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults: the family's line after the confirmation");
-    assert.deepEqual(p.cake, { mode: "INTERNAL", notes: null, time: "16:00", from: { source: "family", at: at(13), line: 4 } }, "the cake: the park's, at the family's later time");
+    assert.deepEqual(unquoted(p.event.numAdults), { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults: the family's line after the confirmation");
+    assert.deepEqual(unquoted(p.cake), { mode: "INTERNAL", notes: null, time: "16:00", from: { source: "family", at: at(13), line: 4 } }, "the cake: the park's, at the family's later time");
     assert.ok(modelCalls.at(-2)!.system.includes("The latest line wins, whoever wrote it") || modelCalls.at(-1)!.system.includes("The latest line wins, whoever wrote it"), "the conversation's prompt states the one rule");
 
     // The form as the proof left it: 7 adults typed (unsaved), the park's cake at 15:30 from the approval.
@@ -437,8 +463,8 @@ try {
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.deepEqual(r.body.chat, { newestMessageId: proofIds[5], lines: 6 });
     const p = r.body.review.proposal;
-    assert.deepEqual(p.cake, { mode: "NONE", notes: null, time: null, from: { source: "family", at: at(15), line: 6 } }, "no cake: the family's latest line");
-    assert.deepEqual(p.event.numAdults, { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults as before: no later line changed them");
+    assert.deepEqual(unquoted(p.cake), { mode: "NONE", notes: null, time: null, from: { source: "family", at: at(15), line: 6 } }, "no cake: the family's latest line");
+    assert.deepEqual(unquoted(p.event.numAdults), { value: 6, from: { source: "family", at: at(13), line: 4 } }, "the adults as before: no later line changed them");
     const saved = { ...FORM, numAdults: 7, cakeMode: "INTERNAL", cakeTime: "16:00" };
     const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, saved);
     assert.deepEqual(
@@ -459,7 +485,7 @@ try {
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.deepEqual(r.body.chat, { newestMessageId: mirrorIds[1], lines: 2 });
     assert.equal(r.body.source.messageId, MIRROR_RULING.id);
-    assert.deepEqual(r.body.review.proposal.event.numAdults, { value: 5, from: { source: "team", at: at(21), line: 2 } });
+    assert.deepEqual(unquoted(r.body.review.proposal.event.numAdults), { value: 5, from: { source: "team", at: at(21), line: 2 } });
     assert.equal(r.body.review.proposal.cake, null, "no cake spoken of");
     const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, { ...FORM, numAdults: 6 });
     assert.deepEqual(changes.map((c) => [c.field, c.was, c.now, c.from?.source, c.from?.line]), [["numAdults", "6", "5", "team", 2]]);
@@ -637,8 +663,35 @@ try {
     assert.deepEqual(fetchCatalogueChangesOf(fetched.review, none, FORM), []);
   });
 
+  await check("SCRUM-903: no team confirmation yet — the conversation read alone, its own requests offered beside its counts, each change with the chat's words", async () => {
+    const before = modelCalls.length;
+    const r = await fillOf(noRuling.event, "fetch");
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(modelCalls.length, before + 1, "the conversation's read alone");
+    assert.equal(r.body.source, null, "no ruling message");
+    assert.equal(r.body.review.ruling, null);
+    assert.deepEqual(r.body.chat, { newestMessageId: NO_RULING_LINES[1]!.id, lines: 2 });
+    const changes = fetchChangesOf({ fill: r.body.fill, review: r.body.review }, { ...FORM, title: "ZZ TEST Mia 903", childName: "Mia" });
+    assert.deepEqual(
+      changes.map((c) => [c.field, c.was, c.now, c.from?.source, c.from?.line, c.from?.quote]),
+      [
+        ["numAdults", "5", "6", "family", 1, NO_RULING_LINES[0]!.text],
+        ["specialRequests", "—", "no nuts, Mia is allergic", "family", 1, "no nuts, Mia is allergic"],
+        ["decoration", "—", "unicorn balloons", "family", 2, "unicorn balloons"],
+      ],
+      "the family's adults, allergy and decoration, each with their words",
+    );
+    // With a ruling, the text fields stay the ruling message's (the fill's), as before.
+    const ruled = fetchChangesOf({ fill: {}, review: { ...r.body.review, ruling: { source: "team", at: null, line: null } } }, { ...FORM, title: "ZZ TEST Mia 903", childName: "Mia" });
+    assert.deepEqual(ruled.map((c) => c.field), ["numAdults"], "a review with a ruling takes no text field from the conversation's requests");
+    // The activity row names the press and carries none of the chat's words.
+    const row = activity.at(-1)!;
+    assert.ok(row.summaryText.startsWith("Fetch from chat read the inbox conversation"));
+    for (const words of ["NORULING-826", "no nuts", "unicorn"]) assert.ok(!(row.summaryText + row.metadataJson).includes(words), `no "${words}" in the activity row`);
+  });
+
   await check("nothing is written by a fetch: no BEO row for the event", async () => {
-    for (const eventId of [ev.chat, proof.event, mirror.event]) {
+    for (const eventId of [ev.chat, proof.event, mirror.event, noRuling.event]) {
       const { rows } = await appDbPool.query<{ n: string }>(
         `select (select count(*) from beo_package_snapshots where event_id = $1) + (select count(*) from beo_kitchen_plans where event_id = $1) + (select count(*) from beo_event_billing where event_id = $1) as n`,
         [eventId],

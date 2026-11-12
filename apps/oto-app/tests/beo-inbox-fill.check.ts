@@ -32,7 +32,14 @@
 //     party date differs from the booked one comes back as read, shown beside
 //     it and marked, with nothing written;
 //   - SCRUM-827: a park with no catalogue still opens the free-text preview as
-//     its one and only step (no review, so no second pass).
+//     its one and only step (no review, so no second pass). SCRUM-903 (the
+//     owner's rule of 12 November) changes it: an empty catalogue opens the
+//     review too, every item a line to keep or leave out;
+//   - SCRUM-903: no message of the team's confirming the party yet is no
+//     reason to stop: the conversation is read alone (the review's ruling
+//     null, Final Message to Parent empty, every value the chat's with its
+//     words), and only a chat with no lines is refused; the chat's words
+//     never reach the activity row or the log.
 //
 // Run from apps/oto-app: DATABASE_URL=<migrated scratch> npx tsx tests/beo-inbox-fill.check.ts
 import assert from "node:assert/strict";
@@ -303,8 +310,13 @@ try {
       });
       // The form's Final Message to Parent was empty: the message goes there as read.
       assert.equal(res.body.fill.event.internalStaffNotes, MESSAGES[lang], `${lang}: the final message, word for word`);
-      // SCRUM-827: a park with no catalogue has no review — the preview of before is the one and only step, never a second.
-      assert.equal(res.body.review, undefined, `${lang}: no catalogue, no review`);
+      // SCRUM-903 (the owner's rule of 12 November): a park with no catalogue opens the review too —
+      // every item the message names a line to keep or leave out — read in the same one call, as
+      // this platform sends no transcript. (Until now: no catalogue, no review.)
+      assert.ok(res.body.review, `${lang}: a review`);
+      assert.deepEqual(res.body.review.catalogue, { packages: [], setMenus: [], entertainment: [], food: [] }, `${lang}: its catalogue empty`);
+      assert.equal(res.body.review.finalMessage, MESSAGES[lang], `${lang}: Final Message to Parent is the message`);
+      assert.equal(res.body.review.ruling.source, "team");
       assert.equal(modelCalls.length, before + 1, `${lang}: one model call`);
       const call = modelCalls.at(-1)!;
       assert.ok(call.user.includes(MESSAGES[lang]), `${lang}: the model reads the message`);
@@ -410,13 +422,78 @@ try {
     }
   });
 
-  await check("noConfirmationOpensAsBefore", async () => {
+  await check("noConfirmationFillsFromTheConversation", async () => {
+    // SCRUM-903 (the owner's rule of 12 November): no message of the team's names the date, the
+    // time and the party details yet, and the fill reads the conversation all the same. (Until
+    // now it refused "no_confirmation" here, before reading anything.) A chat with no lines at
+    // all is the one thing refused, before anything is read.
     const before = modelCalls.length;
     const res = await fillFromInbox(ev.none);
     assert.equal(res.status, 409);
-    assert.deepEqual(res.body, { reason: "no_confirmation", message: INBOX_FILL_MESSAGES.no_confirmation });
-    assert.equal(modelCalls.length, before, "no message, no model call");
+    assert.deepEqual(res.body, { reason: "no_conversation", message: INBOX_FILL_MESSAGES.no_conversation });
+    assert.equal(modelCalls.length, before, "no lines, no model call");
     assert.equal((await activityRows(ev.none)).length, 0, "nothing ran, nothing logged as a fill");
+    // Only the family has written: a date, a time, a pizza and a show.
+    const family = [
+      { id: randomUUID(), author: "customer" as const, at: "2026-11-05T07:00:00.000Z", text: "Hi! A birthday on Saturday 21 March at 15:00, with pizza for the kids. FAMILY-903" },
+      { id: randomUUID(), author: "customer" as const, at: "2026-11-05T07:02:00.000Z", text: "And could we book a magic show? FAMILY-903" },
+    ];
+    const was = modelReply;
+    const empty = inboxAnswers.get(conv.none)!;
+    inboxAnswers.set(conv.none, {
+      ok: true,
+      confirmation: { conversationId: conv.none, eventId: ev.none, message: null, scanned: 4, transcript: family, transcriptCut: false },
+    });
+    modelReply = () =>
+      JSON.stringify({
+        catalogue: {
+          menuLines: [{ itemName: "pizza", menu: "kids", notInMenu: true, line: 1 }],
+          entertainment: [{ said: "a magic show", quantity: 1, line: 2, source: "team" }],
+          event: { startTime: { value: "15:00", line: 1 } },
+        },
+      });
+    try {
+      let filled: Awaited<ReturnType<typeof fillFromInbox>> | null = null;
+      const out = await capturingLog(async () => {
+        filled = await fillFromInbox(ev.none);
+      });
+      const res2 = filled!;
+      assert.equal(res2.status, 200, JSON.stringify(res2.body));
+      assert.equal(modelCalls.length, before + 1, "one model call: the conversation's read");
+      const call = modelCalls.at(-1)!;
+      assert.ok(call.system.includes("THE CONVERSATION") && call.user.includes(`#1 [family] 2026-11-05 14:00: ${family[0]!.text}`));
+      assert.ok(!call.user.includes("RULING]"), "no line is the ruling");
+      // Nothing is confirmed by the team yet: no ruling, no Final Message to Parent, no message beside it.
+      assert.equal(res2.body.source, null);
+      assert.equal(res2.body.review.ruling, null);
+      assert.equal(res2.body.review.finalMessage, null);
+      assert.equal(res2.body.fill.event, undefined, "Final Message to Parent stays empty");
+      assert.equal(res2.body.chat.newestMessageId, family[1]!.id);
+      // Every value is the family's, with their words; the park has no catalogue, so each is a line to keep or leave out.
+      const p = res2.body.review.proposal;
+      assert.deepEqual(p.menuLines.map((l: any) => [l.itemName, l.notInMenu, l.from]), [
+        ["pizza", true, { source: "family", at: family[0]!.at, line: 1, quote: "pizza" }],
+      ]);
+      assert.deepEqual(p.entertainment.map((e: any) => [e.name, e.notInCatalogue, e.from]), [
+        ["a magic show", true, { source: "family", at: family[1]!.at, line: 2, quote: "a magic show" }],
+      ], "the family's show, whatever the model says");
+      assert.deepEqual(p.event.startTime, { value: "15:00", from: { source: "family", at: family[0]!.at, line: 1, quote: family[0]!.text } });
+      // One activity row that names the conversation and carries none of its words; the log neither.
+      const rows = await activityRows(ev.none);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]!.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST No Confirmation Yet"`);
+      const meta = JSON.parse(rows[0]!.metadata_json);
+      assert.equal(meta.ruling, false);
+      assert.equal(meta.inboxMessageId, null);
+      for (const phrase of ["FAMILY-903", "pizza", "magic show"]) {
+        assert.ok(!(rows[0]!.summary_text + rows[0]!.metadata_json).includes(phrase), `the activity row carries no "${phrase}"`);
+        assert.ok(!out.includes(phrase), `the log carries no "${phrase}"`);
+      }
+      assert.match(out, /ai fill run/, "the run is logged");
+    } finally {
+      modelReply = was;
+      inboxAnswers.set(conv.none, empty);
+    }
   });
 
   await check("eventMustBeTheCallersAndFromTheInbox", async () => {
