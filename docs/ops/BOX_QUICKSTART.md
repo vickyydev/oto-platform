@@ -404,7 +404,92 @@ laptop, has none.
 
 **Changing it later**: `sudo nano /etc/oto-box/config` (`OTO_KIOSK_URL`, `OTO_KIOSK_SCALE`,
 `OTO_KIOSK_ROTATE`), then `sudo systemctl restart oto-kiosk`. The installer with
-`--kiosk-url "" --kiosk-scale 1 --rotate cw` puts a box back on its own page.
+`--kiosk-url "" --kiosk-scale 1 --rotate cw` puts a box back on its own page. The screen's
+turn and the camera (below) are changed with the installer only, never in that file: the
+installer writes the desktop's own files from them.
+
+### I2. The 10-inch monitor standing on its end (Till 1)
+
+Till 1's customer display is the Edatec **10-inch** touch monitor, standing **vertically** on
+its stand. The box turns the picture and the touch for it, so nobody turns them by hand any
+more. It needs a box release built after SCRUM-928 (part G). Cables as above: the picture by
+HDMI, the touch by the monitor's USB cable (a **data** cable), its own power.
+
+**Install** with the box's usual options plus four (the address is staging's POS):
+
+```
+sudo bash oto-box/pi/install.sh --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 90
+```
+
+or from the laptop (part G):
+
+```
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-<release>.tgz -- --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 90
+```
+
+- `--display-rotate 90` turns the **screen**. `--rotate off` keeps the **page** from turning as
+  well; the installer refuses the two together, in a plain line, rather than turn it twice.
+- `--kiosk-scale 1`: the page is then 600 wide and 1024 tall, the size the display's screens
+  are built and tested for.
+- The installer finds which socket the monitor is on. If it says it cannot tell (the monitor
+  was off, or two screens are plugged in), switch the monitor on and run it again, or add
+  `--display-output HDMI-A-1` (the socket nearest the power cable on a Pi 5; the other is
+  `HDMI-A-2`).
+- Later updates need none of these again: the box keeps the turn, the address and the scale.
+
+The summary ends with three lines about the screen: `Screen:` (the address and where the
+page comes from, see "Which page" below), `Display turn:` (`90 on HDMI-A-1, from the next
+boot`) and `Camera:`. Then **`sudo reboot`** once: the turn takes effect when the desktop
+starts.
+
+**Check on the screen**, after the reboot:
+
+1. The picture stands upright and fills the screen. On its side the wrong way round: run the
+   installer again with `--display-rotate 270` and reboot. Upside down: `180`.
+2. Press each of the **four corners** and the **middle** of a button: each press lands under
+   the finger. A press that lands somewhere else: see "Touch in the wrong place" below.
+3. Type a phone number and a nickname with the screen's own keys.
+4. `sudo reboot` once more: it all comes back the same, paired, with nobody touching it.
+
+**If the screen was turned by hand before** (the park's Pi was, on 12 November, with the
+Screen Configuration tool): the installer leaves that setting where it is, in the desktop
+user's `~/.config/kanshi/config`, and puts the box's own above it, between two lines marked
+`oto-box display (SCRUM-928)`. The box's is the one the desktop uses; the summary's
+`Display turn:` line says the earlier one is kept. Using the Screen Configuration tool again
+afterwards may rewrite that file: run the installer again (part G) to put the box's turn back.
+
+**Touch in the wrong place.** The installer maps the touch to the turned screen in the
+desktop user's `~/.config/labwc/rc.xml` (again between marked lines). A touch calibration set
+by hand in `/etc/udev/rules.d` would turn the touch a second time: the installer warns about
+one in its output (`a touch calibration made by hand is in …`). Take that file out, reboot,
+and check the corners again.
+
+**Undo**: the installer with `--display-rotate off`, then `sudo reboot`. It takes out only the
+box's marked lines; the screen then shows as it is made, or as a setting made by hand that is
+still in the file turns it (the summary says which).
+
+**When the Wi-Fi is late or drops (SCRUM-895).** If the address does not answer when the
+screen starts (the park's Wi-Fi not up yet after a power cut, or the POS being deployed), the
+screen shows the box's own white page, **Waiting for the connection** ("This display opens by
+itself as soon as the connection is back. Nothing needs pressing.") with the address it waits
+for, never the browser's "no internet". Nobody needs to do anything: the box asks the address
+every few seconds, for as long as it takes, and opens the display a few seconds after it
+answers. This is only for a web address; the box's own copy of the display needs no Wi-Fi.
+To try it: Wi-Fi off at the router, `sudo reboot`, wait for the waiting page, Wi-Fi back on,
+and the display opens by itself within about ten seconds.
+
+**The camera (SCRUM-896).** By default the display's page asks the first time it wants the
+camera, and somebody taps **Allow** once on the screen; the answer is kept in the screen's
+browser profile. With `--display-camera allow` on the install line, the box allows the camera
+for the display's own address and no other site, and nobody needs to tap; `--display-camera
+off` takes that out again. Either way, the photo is sent only from the web address: the box's
+own copy of the display (`http://127.0.0.1:8780/display…`) cannot send it yet.
+
+**Which page the screen opens.** On the box, `oto-box status` has a `screen` line, and the
+installer's summary a `Screen:` line. An `https://…` address is the POS's web page: a
+display change reaches the screen with a web deploy, no box release. `http://127.0.0.1:8780/display…`
+is the box's own copy, served from the release's `display` folder: a display change reaches
+that screen only with a new box release (part G).
 
 **Still to prove on the real monitor (SCRUM-711):** the page fills the screen, touch lands
 where it is pressed, a nickname can be typed, it comes back paired after `sudo reboot` and
