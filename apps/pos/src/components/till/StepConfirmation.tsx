@@ -290,15 +290,17 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
   // "0 total" here while the customer display said "1 Child bracelet". The
   // child does get a bracelet: it prints when the child is checked in, on the
   // drop-off bracelet printer (SCRUM-861). So the row is listed and counted,
-  // and says when it prints (`atCheckIn`).
+  // and says when it prints (`atCheckIn`). Only the child's row: an adult on
+  // such a line (a redeemed booking can carry one) prints with the sale, as
+  // the till's own print rule holds back the drop-off kids alone (Till.tsx,
+  // `nonDropOffKids`).
   const braceletRows = sale.lines.flatMap((line) => {
-    const atCheckIn = !!line.dropOff;
     const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string; atCheckIn: boolean }[] = [];
     if (line.kids > 0) {
-      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn });
+      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: !!line.dropOff });
     }
     if (line.adults > 0) {
-      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn });
+      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn: false });
     }
     return rows;
   });

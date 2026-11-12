@@ -134,6 +134,22 @@ describe('SCRUM-931 — a drop-off child’s bracelet on the paid screen', () =>
     expect(till).toContain('No band codes came back for this sale. Reprint its bands from History to issue them.');
   });
 
+  it('an adult on a drop-off line (a redeemed booking can carry one) prints with the sale: only the child’s row says check-in', () => {
+    const withAdult: CartLine = { ...droppedOff, adults: 1, lineTotal: 770 };
+    const sale = saleOf([withAdult]);
+    const till = staffHalf(sale);
+    expect(tillTotal(till)).toBe(2);
+    expect(till).toContain('1× Child bracelet');
+    expect(till).toContain('1× Adult bracelet');
+    expect(till.match(/Prints at check-in/g)).toHaveLength(1);
+    // The child's row says it, the adult's does not.
+    const childRow = till.slice(till.indexOf('1× Child bracelet'), till.indexOf('1× Adult bracelet'));
+    expect(childRow).toContain('Prints at check-in');
+    expect(till.slice(till.indexOf('1× Adult bracelet'))).not.toContain('Prints at check-in');
+    // The adult's band is one the sale prints, so a sale whose bands did not come back says so.
+    expect(till).toContain('No band codes came back for this sale. Reprint its bands from History to issue them.');
+  });
+
   it('a drop-off child checked in with "Check in now" shows the code of the band it printed on its own row', () => {
     const band = { id: 'band-1', kind: 'kid', shortCode: 'T1-DROP01', childName: 'ZZ TEST child', status: 'active', saleLineId: 'sl-1' } as unknown as ApiSaleBand;
     const till = staffHalf(saleOf([droppedOff]), issueOf({ bands: [band], lines: [{ id: 'sl-1', cartLineId: DROPOFF_LINE }] }));
