@@ -75,8 +75,8 @@ describe('whether this screen can use a camera, asked before anyone presses anyt
 describe('a child’s photo block on the display', () => {
   const block = (props: Partial<Parameters<typeof DisplayChildPhoto>[0]> = {}) => {
     const stored: string[] = [];
-    const view = renderHook(() => DisplayChildPhoto({ mark: 'needed', presence: 'available', upload: async () => FILE_ID,
-      onStored: (fileId) => { stored.push(fileId); }, ...props }));
+    const view = renderHook((extra: Partial<Parameters<typeof DisplayChildPhoto>[0]>) => DisplayChildPhoto({ mark: 'needed',
+      presence: 'available', upload: async () => FILE_ID, onStored: (fileId) => { stored.push(fileId); }, ...props, ...extra }), {});
     const all = () => elements(view.result.current);
     return { view, all, stored, camera: () => all().find((node) => node.type === CameraCapture), text: () => words(view.result.current) };
   };
@@ -135,6 +135,23 @@ describe('a child’s photo block on the display', () => {
   it('says the team has the photo once the till holds one', () => {
     expect(block({ mark: 'taken' }).text()).toContain('superviseConsent.photoReceived');
     expect(block({ mark: 'needed' }).text()).not.toContain('superviseConsent.photoReceived');
+  });
+
+  it('a photo the team holds is not offered an empty camera, nor the no-camera line', () => {
+    const staffTook = block({ mark: 'taken' });
+    expect(staffTook.camera()).toBeUndefined();
+    const noCamera = block({ mark: 'taken', presence: 'none' });
+    expect(noCamera.all().some((node) => node.props['data-testid'] === 'consent-photo-fallback')).toBe(false);
+    expect(noCamera.text()).toContain('superviseConsent.photoReceived');
+  });
+
+  it('the family’s own picture stays on screen to retake once the team has it', () => {
+    const photo = block({ mark: 'needed' });
+    (photo.camera()!.props.onCapture as (url: string) => void)(PICTURE);
+    photo.view.rerender({ mark: 'taken' });
+    expect(photo.camera()!.props.value).toBe(PICTURE);
+    expect(photo.text()).toContain('superviseConsent.photoReceived');
+    photo.view.unmount();
   });
 });
 

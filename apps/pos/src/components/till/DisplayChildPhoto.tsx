@@ -75,16 +75,20 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
       throw new Error(notHere ? `${t('camera.saveFailed')} ${t('superviseConsent.photoByReception')}` : t('camera.saveFailed'));
     }
   };
+  // Once the team holds a photo the camera is offered only to retake the
+  // family's own picture still on this screen: a photo staff took, or one
+  // taken before the family moved between steps, is not shown here again,
+  // and an empty camera frame would read as no photo at all.
+  const camera = presence === 'available' && (mark === 'needed' || picture !== undefined);
   return <div data-testid="consent-photo">
     <label className="flex items-center gap-2 text-lg text-foreground/70"><Camera className="h-5 w-5" /> {t('superviseConsent.photoTitle')}</label>
     <p className="mt-1 text-sm text-foreground/50">{t('superviseConsent.photoInstructions')}</p>
-    {presence === 'none'
-      ? <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-fallback">
-        <Camera className="h-5 w-5 shrink-0" />{t('camera.none')} · {t('superviseConsent.photoByReception')}</p>
-      : presence === 'available' && <CameraCapture lang={lang} className="mt-2" maxEdge={DISPLAY_CONSENT_PHOTO_EDGE}
-        unavailableNote={t('superviseConsent.photoByReception')}
-        value={picture} onCapture={setPicture} onClear={() => setPicture(undefined)}
-        upload={send} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} />}
+    {presence === 'none' && mark === 'needed' && <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-fallback">
+      <Camera className="h-5 w-5 shrink-0" />{t('camera.none')} · {t('superviseConsent.photoByReception')}</p>}
+    {camera && <CameraCapture lang={lang} className="mt-2" maxEdge={DISPLAY_CONSENT_PHOTO_EDGE}
+      unavailableNote={t('superviseConsent.photoByReception')}
+      value={picture} onCapture={setPicture} onClear={() => setPicture(undefined)}
+      upload={send} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} />}
     {mark === 'taken' && <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-received">
       <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />{t('superviseConsent.photoReceived')}</p>}
   </div>;
