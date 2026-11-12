@@ -113,6 +113,35 @@ describe.skipIf(!harness)('every box of the form on the paired display opens the
     expect(below).toBe(true);
   }, TAPS);
 
+  /**
+   * SCRUM-954 — the steps share one scrolling part, and it kept the last
+   * step's place: a family at the bottom of the care step who pressed Continue
+   * landed on the confirmations with the guardian's name and number above the
+   * screen. Each step opens at its top.
+   */
+  it('a step opens at its top: after the bottom of the care step, Continue shows the guardian box', async () => {
+    const page = await harness!.open('screen=display&keyboard=screen&step=care', { width: 1024, height: 600 });
+    const scrolled = await page.evaluate(() => {
+      let scroller = document.querySelector('[data-testid="consent-allergies"]')!.parentElement;
+      while (scroller && getComputedStyle(scroller).overflowY !== 'auto') scroller = scroller.parentElement;
+      scroller!.scrollTop = scroller!.scrollHeight;
+      return scroller!.scrollTop;
+    });
+    expect(scrolled).toBeGreaterThan(0);
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect.poll(() => page.getByTestId('consent-guardian').count()).toBe(1);
+    const after = await page.evaluate(() => {
+      const field = document.querySelector('[data-testid="consent-guardian"]')!;
+      let scroller = field.parentElement;
+      while (scroller && getComputedStyle(scroller).overflowY !== 'auto') scroller = scroller.parentElement;
+      const s = scroller!.getBoundingClientRect();
+      const f = field.getBoundingClientRect();
+      return { top: scroller!.scrollTop, inView: f.top >= s.top - 1 && f.bottom <= s.bottom + 1 };
+    });
+    expect(after.top).toBe(0);
+    expect(after.inView).toBe(true);
+  }, TAPS);
+
   it('without the flag the boxes are the plain ones, the system keyboard’s', async () => {
     const page = await harness!.open('screen=display&step=care', { width: 1024, height: 600 });
     await page.getByTestId('consent-allergies').click();

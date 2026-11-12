@@ -316,6 +316,14 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const draft = mirror ? draftOf(prompt) : localDraft;
   const step: Step = mirror ? mirror.step ?? 'children' : localStep;
   const shows = (name: Step) => (mirror && mirror.step === null) || step === name;
+  // SCRUM-954 — each step opens at its top. The steps share one scrolling
+  // part, which kept the last step's place: after a long care step the
+  // agreements step opened at the confirmations, with the guardian's name and
+  // number above the screen (the counter display, two children).
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scroller.current) scroller.current.scrollTop = 0;
+  }, [step]);
   const [helpAsked, setHelpAsked] = useState(false);
   const lastRequest = useRef(prompt.requestId);
   /** Every form this screen sent on the copy it has, until the till's next copy arrives (`mergeConsentDraft`). */
@@ -602,7 +610,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       <p className="mt-2 text-sm text-foreground/50">{t('superviseConsent.stepOf', { n: index + 1, total: STEPS.length })} · {t('superviseConsent.teamFollowing')}</p>
     </div>
 
-    <div className="flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
+    <div ref={scroller} className="flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
       {shows('children') && prompt.slots.map((slot, at) => {
         const child = draft.slots[slot.id]!;
         const meta = requirementOf(slot);
