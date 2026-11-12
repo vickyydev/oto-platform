@@ -7,8 +7,8 @@
  * `packages/box-agent/src/printing/channel.ts`). So the three kinds of printer
  * the park has are one form of address:
  *
- *   - a printer on the park's network, at its own address:
- *     `192.168.88.204:9100`;
+ *   - a printer on the park's network, at its own address, such as
+ *     `192.168.88.204:9100` (the kids band printer at Central Floresta);
  *   - a USB printer on the Pi, through the box's USB bridge, which listens on
  *     the Pi itself: `127.0.0.1:9100` (and `127.0.0.1:9101` for a second);
  *   - a simulated printer, which the box finds by the address on its row
@@ -22,9 +22,17 @@
  * name; the port, when written, is 1 to 65535.
  */
 
+/**
+ * SCRUM-932 — the network address the forms and refusals give as an example.
+ * It was `192.168.88.204:9100`, the park's own kids band printer, so a person
+ * copying the example pointed a new printer at a real one. `192.0.2.10` is in
+ * TEST-NET-1 (RFC 5737), the range kept for documentation: nobody's printer.
+ */
+export const PRINTER_ADDRESS_EXAMPLE = '192.0.2.10:9100';
+
 /** What a printer's address field says to fill in. */
 export const PRINTER_ADDRESS_HINT =
-  'The address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box.';
+  `The address the box prints to, for example ${PRINTER_ADDRESS_EXAMPLE} for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box.`;
 
 /** The port the box uses when an address names none. */
 export const PRINTER_DEFAULT_PORT = 9100;
@@ -73,6 +81,6 @@ export function printerAddressProblem(address: string | null | undefined): Print
 /** The sentence for each problem, the same in the Console and in the api's refusal. */
 export function printerAddressWords(problem: PrinterAddressProblem): string {
   return problem === 'missing'
-    ? 'A printer needs the address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.'
-    : 'That is not an address the box can print to. Write it as 192.168.88.204:9100, the printer’s address and its port (9100 when left off).';
+    ? `A printer needs the address the box prints to, for example ${PRINTER_ADDRESS_EXAMPLE} for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.`
+    : `That is not an address the box can print to. Write the printer’s address and its port, for example ${PRINTER_ADDRESS_EXAMPLE} (9100 when left off).`;
 }

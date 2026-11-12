@@ -19,8 +19,10 @@ import { createHash } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import {
   businessDate,
+  isPrinterKind,
   newId,
   parseDayStart,
+  printerAddressProblem,
   normalizePhone,
   ROLE_BUNDLES,
   SYSTEM_ROLES,
@@ -1079,6 +1081,12 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
     branch?: string;
   }) => {
     const { box: onBox = boxId, branch: onBranch = branchId, ...fields } = d;
+    // SCRUM-932 — the api refuses a printer without an address the box can
+    // open (SCRUM-899), and the seed holds itself to the same rule: a seeded
+    // printer with none showed a green dot and "paper ok" and printed nothing.
+    if (isPrinterKind(d.kind) && printerAddressProblem(d.address)) {
+      throw new Error(`seed: printer "${d.label}" needs an address the box can print to`);
+    }
     const [found] = await db
       .select({ id: s.device.id })
       .from(s.device)
@@ -1296,17 +1304,21 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   // be distinct within a branch.
   const chalongBoxId = await mkBox('Virtual box 3', 'virtual-3', chalongId);
 
-  // No address, and no model. Nobody has surveyed Chalong's hardware — the
-  // models, addresses and terminal identifiers seeded above are Central
-  // Floresta's real units from DEVICE_INVENTORY §2, and there is no equivalent
-  // list for this park. `simulated` transport with an empty address is the
-  // honest shape: it prints in the simulator, and it claims nothing about a
-  // machine on a wall in Chalong. `escpos` is set because the renderer needs a
-  // dialect to speak; it is the one every 80 mm thermal unit here uses.
+  // No model, and an address that is nobody's. Nobody has surveyed Chalong's
+  // hardware — the models, addresses and terminal identifiers seeded above are
+  // Central Floresta's real units from DEVICE_INVENTORY §2, and there is no
+  // equivalent list for this park. `simulated` transport is the honest shape:
+  // it prints in the simulator and claims nothing about a machine on a wall in
+  // Chalong. Its address is in TEST-NET-1 (RFC 5737, kept for documentation)
+  // rather than empty: the box skips every job for a printer without one
+  // (`DEVICE_NO_ADDRESS`), and the api refuses to save one so (SCRUM-899,
+  // SCRUM-932). `escpos` is set because the renderer needs a dialect to
+  // speak; it is the one every 80 mm thermal unit here uses.
   const chalongPrinter = await mkDevice({
     kind: 'receipt_printer',
     label: 'Receipt Printer 1',
     protocol: 'escpos',
+    address: '192.0.2.31:9100',
     box: chalongBoxId,
     branch: chalongId,
   });

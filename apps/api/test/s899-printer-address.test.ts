@@ -72,7 +72,8 @@ describe('SCRUM-899 — a new printer', () => {
         const res = await post({ kind, label, transport, ...(address === undefined ? {} : { address }) });
         expect(res.statusCode, `${kind} ${String(address)}: ${res.body}`).toBe(400);
         expect(res.json().error.code).toBe('PRINTER_ADDRESS_REQUIRED');
-        expect(res.json().error.message).toContain('192.168.88.204:9100');
+        // SCRUM-932 — the example is nobody's address now, not the park's kids band printer.
+        expect(res.json().error.message).toContain('192.0.2.10:9100');
       }
       expect(await rowsLabelled(label)).toEqual([]);
     }

@@ -1,4 +1,12 @@
-import { PRINTER_ADDRESS_HINT, isPrinterKind, printerAddressProblem, printerAddressWords } from '@oto/shared';
+import {
+  PRINTER_ADDRESS_EXAMPLE,
+  PRINTER_ADDRESS_HINT,
+  isPrinterKind,
+  printerAddressProblem,
+  printerAddressWords,
+} from '@oto/shared';
+import type { Tone } from '@/components/Status';
+import { toneForReachability } from '@/lib/fleetWords';
 
 /**
  * SCRUM-899 — THE CONSOLE ASKS FOR A PRINTER'S ADDRESS.
@@ -17,8 +25,26 @@ export interface AddressField {
   blocks: boolean;
 }
 
-/** The Address field's hint before this ticket, for every device that is not a printer. */
-const OTHER_DEVICE_HINT = '192.168.88.204:9100, or /dev/ttyACM0.';
+/**
+ * The Address field's hint before this ticket, for every device that is not a
+ * printer — its network example nobody's address since SCRUM-932.
+ */
+const OTHER_DEVICE_HINT = `For example ${PRINTER_ADDRESS_EXAMPLE}, or /dev/ttyACM0.`;
+
+/**
+ * SCRUM-932 — the Add a device form's grey Address placeholder. It read
+ * "192.168.88.204:9100", the park's kids band printer, as if already filled
+ * in; it is an example, and says so.
+ */
+export const ADDRESS_PLACEHOLDER = `e.g. ${PRINTER_ADDRESS_EXAMPLE}`;
+
+/**
+ * SCRUM-932 — a printer with no address cannot be healthy, whatever the box
+ * last said about its reachability or its paper: nothing is ever sent to it.
+ * The device list shows it as not set up, in the "down" tone its
+ * `NO_ADDRESS_LINE` is written in, instead of a green dot and "paper ok".
+ */
+export const NOT_SET_UP = 'not set up';
 
 /** Adding a device: a printer cannot be added without an address the box can open. */
 export function newDeviceAddress(kind: string, address: string): AddressField {
@@ -55,6 +81,14 @@ export function printerWithoutAddress(device: { kind: string; address?: string |
 
 /** The line under such a printer in the box's device list, in place of the box's bare `DEVICE_NO_ADDRESS`. */
 export const NO_ADDRESS_LINE = 'No address, so nothing prints on it. Edit it and enter the address the box prints to.';
+
+/**
+ * SCRUM-932 — the dot a device's row draws: its reachability, except that a
+ * printer without an address is never "Healthy" (`NOT_SET_UP`).
+ */
+export function deviceDotTone(device: { kind: string; address?: string | null; reachability?: string | null }): Tone {
+  return printerWithoutAddress(device) ? 'down' : toneForReachability(device.reachability);
+}
 
 /** The colour each tone is drawn in, as the station drawer draws its own warnings. */
 export const toneColor = (tone: AddressField['tone']): string | undefined =>

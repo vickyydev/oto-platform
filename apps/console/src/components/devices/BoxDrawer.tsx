@@ -33,7 +33,10 @@ import { PrintPanel } from '@/components/devices/PrintPanel';
 import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
 import {
+  ADDRESS_PLACEHOLDER,
+  NOT_SET_UP,
   NO_ADDRESS_LINE,
+  deviceDotTone,
   editedDeviceAddress,
   newDeviceAddress,
   printerWithoutAddress,
@@ -70,7 +73,6 @@ import {
   toneForBoxStatus,
   toneForCommandState,
   toneForPaper,
-  toneForReachability,
   transportWord,
 } from '@/lib/fleetWords';
 import { elapsed, formatExact, formatWhen, timeAgo } from '@/lib/time';
@@ -576,12 +578,17 @@ export function DeviceRowItem({
   return (
     <li className="py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <StatusMark tone={toneForReachability(device.reachability)} />
+        <StatusMark tone={deviceDotTone(device)} />
         <span className="text-sm font-semibold min-w-0 break-words">{device.label}</span>
         <Chip>{deviceKindWord(device.kind)}</Chip>
         <Chip>{transportWord(device.transport)}</Chip>
-        {isPrinter && device.paperStatus && device.paperStatus !== 'unknown' && (
-          <StatusPill tone={toneForPaper(device.paperStatus)}>paper {device.paperStatus}</StatusPill>
+        {/* SCRUM-932 — a printer with no address is not set up, whatever its paper last said. */}
+        {printerWithoutAddress(device) ? (
+          <StatusPill tone="down">{NOT_SET_UP}</StatusPill>
+        ) : (
+          isPrinter && device.paperStatus && device.paperStatus !== 'unknown' && (
+            <StatusPill tone={toneForPaper(device.paperStatus)}>paper {device.paperStatus}</StatusPill>
+          )
         )}
         {canUpdate && (
           <button
@@ -904,7 +911,7 @@ export function AddDeviceForm({
           />
         </Field>
         <Field label="Address" hint={<AddressHint field={addressField} />}>
-          <TextInput value={address} onChange={setAddress} placeholder="192.168.88.204:9100" />
+          <TextInput value={address} onChange={setAddress} placeholder={ADDRESS_PLACEHOLDER} />
         </Field>
         <Field label="Model">
           <TextInput value={model} onChange={setModel} placeholder="Xprinter XP-80" />

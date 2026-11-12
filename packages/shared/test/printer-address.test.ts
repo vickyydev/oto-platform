@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PRINTER_ADDRESS_EXAMPLE,
+  PRINTER_ADDRESS_HINT,
   PRINTER_DEFAULT_PORT,
   isPrinterKind,
   parsePrinterAddress,
@@ -60,9 +62,22 @@ describe('printerAddressProblem', () => {
   });
 
   it('says each in words a manager can act on', () => {
-    expect(printerAddressWords('missing')).toContain('192.168.88.204:9100');
+    // SCRUM-932 — the network example is nobody's printer, no longer the park's kids band printer.
+    expect(printerAddressWords('missing')).toContain('192.0.2.10:9100');
     expect(printerAddressWords('missing')).toContain('127.0.0.1:9100');
     expect(printerAddressWords('invalid')).toContain('not an address the box can print to');
+  });
+});
+
+describe('SCRUM-932 — the example address', () => {
+  it('is in the documentation range, reads as an example, and is one the box could open', () => {
+    expect(PRINTER_ADDRESS_EXAMPLE).toBe('192.0.2.10:9100');
+    expect(parsePrinterAddress(PRINTER_ADDRESS_EXAMPLE)).toEqual({ host: '192.0.2.10', port: 9100 });
+    for (const words of [PRINTER_ADDRESS_HINT, printerAddressWords('missing'), printerAddressWords('invalid')]) {
+      expect(words).toContain(`for example ${PRINTER_ADDRESS_EXAMPLE}`);
+      // No address of the park's real printers (DEVICE_INVENTORY §2, 192.168.88.x) is given as the example.
+      expect(words).not.toMatch(/192\.168\.88\./);
+    }
   });
 });
 

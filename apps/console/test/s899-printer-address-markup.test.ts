@@ -38,7 +38,8 @@ describe('the rule the forms draw from', () => {
     expect(newDeviceAddress('receipt_printer', '')).toHaveProperty('hint', expect.stringContaining('Required for a printer'));
     expect(newDeviceAddress('band_printer', '/dev/usb/lp0')).toMatchObject({ blocks: true, tone: 'down' });
     expect(newDeviceAddress('band_printer', '127.0.0.1:9100')).toMatchObject({ blocks: false, tone: 'plain' });
-    expect(newDeviceAddress('scanner', '')).toEqual({ hint: '192.168.88.204:9100, or /dev/ttyACM0.', tone: 'plain', blocks: false });
+    // SCRUM-932 — the network example is nobody's printer now, and reads as an example.
+    expect(newDeviceAddress('scanner', '')).toEqual({ hint: 'For example 192.0.2.10:9100, or /dev/ttyACM0.', tone: 'plain', blocks: false });
     expect(newDeviceAddress('terminal', '/dev/ttyACM0')).toMatchObject({ blocks: false });
   });
 
