@@ -240,3 +240,16 @@ How it is proved without waiting twelve hours: two login users made only for the
 12. When the offer has locked itself, the ordinary lock screen offers "Sign out and hand over the till". Pressing it drops the kept sale for everyone, under the existing rule that a deliberate sign-out keeps nothing. Keep that, or keep the sale for the next person?
 13. On a sign-in form shown after a session ended, the family's Done line still says "unlock to carry on", although the form there asks for a sign-in. Keep or reword?
 14. The offer screen now shows the standard "Locking soon…" bar in its last 15 seconds. All right?
+
+## The Book Date lane landed (13 November 01:12, main b70798d3e)
+Ticket: SCRUM-955 (an empty count does not read as 0; a count the chat reads two ways is chosen before saving). Service: the inbox only; no platform change, no migration. Left and ticketed: SCRUM-965.
+
+### Questions for the owner from this lane
+1. May a party be booked with no kids count at all (the chat names none and staff leave the box empty), or must the box be filled? It still books with no count, exactly as today.
+2. An empty count box now shows the dash '—', the same mark the window already gives an empty 'Turning (age)', rather than a completely blank box. Is the dash right?
+3. The line beside the disabled Book date reuses the window's existing words, 'The chat reads two ways for the number of kids: choose one.', rather than the ticket's example 'Choose the number of kids first: the chat reads it two ways.' Keep the existing words?
+4. That line sits in the footer, left of Cancel, in the window's small grey note style, and the disabled button carries the same words as its hover title. Is that the right place and look?
+5. If staff type a figure over a two-way count and then empty the box again, the two readings come back and Book date is held again, as if they had never typed. Should an emptied box instead stay empty and book with no count?
+6. The hold applies to every field the window can read two ways (date, start time, park, adults, child's name, age), not only the kids. Those fields already refused on press with the same words; the button is now disabled up front. Agreed?
+7. 'Fetch from chat' still settles an open two-way choice with the chat's fresh reading, the SCRUM-826 rule, so after a fetch nothing is held because the box has the chat's current value. Keep that?
+8. A reading that was picked and then cleared frees Book date with an empty count; a figure typed and then cleared brings the two readings back and holds it. Which rule should both follow?
