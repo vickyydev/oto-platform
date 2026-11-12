@@ -266,10 +266,12 @@ export function BookDateDialog({
     return otherwise;
   };
 
+  // SCRUM-955: while a field is read two ways and the person has neither
+  // picked a reading nor typed their own, Save waits, and says for what.
+  const waiting = pendingChoice(state);
   const save = () => {
-    const pending = pendingChoice(state);
-    if (pending) {
-      setProblem(pending);
+    if (waiting) {
+      setProblem(waiting);
       return;
     }
     const read = readDraft(draft);
@@ -292,13 +294,19 @@ export function BookDateDialog({
       wide
       footer={
         <>
+          {waiting && (
+            <span className={`min-w-0 flex-1 self-center ${HINT}`} data-testid="book-date-waiting">
+              {waiting}
+            </span>
+          )}
           <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>
             Cancel
           </button>
           <button
             type="button"
             onClick={save}
-            disabled={busy}
+            disabled={busy || waiting !== null}
+            title={waiting ?? undefined}
             className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-amber-600 disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />}
@@ -386,11 +394,12 @@ export function BookDateDialog({
             ))}
           </select>
         </Field>
+        {/* SCRUM-955: an empty count shows the window's dash (as the age does), never a 0 that reads as none. */}
         <Field icon={Hash} label="# of kids" hint={hint('kids')}>
-          <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder={reading ? 'reading…' : '0'} aria-label="Kids" className={INPUT} />
+          <input inputMode="numeric" value={draft.kids} onChange={(e) => set('kids', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Kids" className={INPUT} />
         </Field>
         <Field icon={Hash} label="# of adults" hint={hint('adults')}>
-          <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder={reading ? 'reading…' : '0'} aria-label="Adults" className={INPUT} />
+          <input inputMode="numeric" value={draft.adults} onChange={(e) => set('adults', e.target.value)} placeholder={reading ? 'reading…' : '—'} aria-label="Adults" className={INPUT} />
         </Field>
         <Field icon={Users} label="Booking name">
           <input value={draft.contactName} onChange={(e) => set('contactName', e.target.value)} aria-label="Booking name" className={INPUT} />

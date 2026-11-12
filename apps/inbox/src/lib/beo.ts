@@ -330,6 +330,11 @@ export interface BookDateState {
   sources: Partial<Record<ProposedField, FieldSource>>;
   /** The fields the two readings disagree on: the person picks. */
   choices: Partial<Record<ProposedField, readonly FieldOption[]>>;
+  /**
+   * The two readings the person settled by typing a value of their own
+   * (SCRUM-955): emptying that box again opens them again (`editBookDate`).
+   */
+  typedOver: Partial<Record<ProposedField, readonly FieldOption[]>>;
   /** The park the chat names when it is none the person can choose: its words only. */
   parkHint: FieldSource | null;
   /** The answer already merged, so the same one is never merged twice. */
@@ -340,7 +345,7 @@ export interface BookDateState {
 
 /** The dialog's state as it opens: the pattern reading, nothing edited. */
 export function freshBookDate(draft: BookDateDraft): BookDateState {
-  return { draft, edited: [], sources: {}, choices: {}, parkHint: null, merged: null, fetched: null };
+  return { draft, edited: [], sources: {}, choices: {}, typedOver: {}, parkHint: null, merged: null, fetched: null };
 }
 
 const sameName = (a: string, b: string) => a.normalize('NFC').trim().toLowerCase() === b.normalize('NFC').trim().toLowerCase();
@@ -487,17 +492,36 @@ export function bookDateFetchLine(fetched: BookDateFetch): string {
   return `Filled from the chat: ${names(fetched.filled)}${kept}.`;
 }
 
-/** The person typed in a field: it is theirs, and a choice on it is settled. */
+/**
+ * The person typed in a field: it is theirs, and a choice on it is settled.
+ * SCRUM-955: a choice is settled by what the box holds. The two readings a
+ * typed value settled are kept aside (`typedOver`); when the person empties
+ * that box again, the field is as it was before the first key: the two
+ * readings are offered again, the field is not theirs, and Save waits for a
+ * choice once more. A box with no choice on it, emptied, stays empty and
+ * theirs, as before.
+ */
 export function editBookDate<K extends keyof BookDateDraft>(state: BookDateState, key: K, value: BookDateDraft[K]): BookDateState {
   const field = (PROPOSED_FIELDS as readonly string[]).includes(key) ? (key as ProposedField) : null;
   if (!field) return { ...state, draft: { ...state.draft, [key]: value } };
+  const draft = { ...state.draft, [key]: value };
   const choices = { ...state.choices };
+  const typedOver = { ...state.typedOver };
+  const settled = typedOver[field];
+  if (settled && value.trim() === '') {
+    delete typedOver[field];
+    choices[field] = settled;
+    return { ...state, draft, edited: state.edited.filter((f) => f !== field), choices, typedOver };
+  }
+  const open = choices[field];
+  if (open) typedOver[field] = open;
   delete choices[field];
   return {
     ...state,
-    draft: { ...state.draft, [key]: value },
+    draft,
     edited: state.edited.includes(field) ? state.edited : [...state.edited, field],
     choices,
+    typedOver,
   };
 }
 
@@ -505,6 +529,8 @@ export function editBookDate<K extends keyof BookDateDraft>(state: BookDateState
 export function pickBookDateChoice(state: BookDateState, field: ProposedField, option: FieldOption): BookDateState {
   const choices = { ...state.choices };
   delete choices[field];
+  const typedOver = { ...state.typedOver };
+  delete typedOver[field];
   const sources = { ...state.sources };
   if (option.text) sources[field] = { text: option.text, source: option.source };
   else delete sources[field];
@@ -514,10 +540,15 @@ export function pickBookDateChoice(state: BookDateState, field: ProposedField, o
     edited: state.edited.includes(field) ? state.edited : [...state.edited, field],
     sources,
     choices,
+    typedOver,
   };
 }
 
-/** What Save says while a field still has two readings to pick from; null when none has. */
+/**
+ * What Save waits for while a field still has two readings to pick from; null
+ * when none has. SCRUM-955: the dialog shows it beside a disabled Save, so a
+ * party is never booked with a value the person did not choose.
+ */
 export function pendingChoice(state: BookDateState): string | null {
   const field = PROPOSED_FIELDS.find((f) => state.choices[f]);
   return field ? `The chat reads two ways for the ${PROPOSED_FIELD_LABELS[field]}: choose one.` : null;
