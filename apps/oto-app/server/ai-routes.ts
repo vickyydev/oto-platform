@@ -683,7 +683,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       // read alone, and an empty catalogue no longer stops its read.
       const ruling = message ? { id: message.id, body: message.body, at: message.sentAt ?? message.createdAt } : null;
       const catalogue = await deps.catalogue(event).catch((error: unknown) => {
-        // The fill still runs, as before the catalogue: the review is the free-text preview.
+        // The fill still runs. SCRUM-903: as with an empty catalogue, every item the chat names is a line to keep or leave out.
         log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
         return emptyCatalogue();
       });
