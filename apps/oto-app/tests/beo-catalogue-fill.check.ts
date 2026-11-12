@@ -318,9 +318,9 @@ const NO_RULING_ANSWER = {
     // On purpose the model calls the family's show the team's: the line's author wins.
     entertainment: [{ templateId: cat.bubble, said: "a bubble show", quantity: 1, line: 2, source: "team" }],
     event: { childName: { value: "Mia", line: 1 }, startTime: { value: "15:00", line: 1 } },
+    // The family's word that it was paid: the model reads it received (the prompt's rule, unchanged in Phase A).
+    deposit: { amount: "5,000", paid: true, line: 3, source: "family" },
   },
-  // The family's word that it was paid: the model reads it received (the prompt's rule, unchanged in Phase A).
-  deposit: { amount: "5,000", paid: true, line: 3, source: "family" },
 };
 
 /** SCRUM-903: what the next conversation reads answer instead: text that is not the answer, or no answer at all. */
