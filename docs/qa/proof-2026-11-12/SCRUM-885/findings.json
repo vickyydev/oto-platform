@@ -1,0 +1,76 @@
+{
+  "tickets": {
+    "SCRUM-885": "A member created on this sale is welcomed on the customer side as a first visit",
+    "SCRUM-888": "Cancel booking fits inside the Add drop-off child card"
+  },
+  "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+  "provedAt": "2026-11-12, 14:12-14:16 Bangkok (one run, out-01; pictures and receipt.json moved beside proof.mjs)",
+  "deploys": {
+    "oto-pos-staging": { "id": "dep-dbqm7ku7bikc73ah3llg", "sha": "3f0c082b", "liveAtBangkok": "14:00:35" },
+    "oto-pos-web-staging": { "id": "dep-dbqm7l8n74is73ckme10", "sha": "3f0c082b", "liveAtBangkok": "14:02:37" },
+    "servedNote": "Both still live and serving 3f0c082b after the run (deploys-after.json). The api is unchanged by these tickets. The till's bundle (index-DWlkRWQ2.js) carried the SCRUM-888 card grid (minmax(min-content,1fr)) and the first-visit line."
+  },
+  "points": {
+    "1": { "pass": true,
+      "pictures": ["01a-1440x900-new-member-customer-half-welcome-to-oto.png", "01b-1440x900-tourist-ticket-step-still-first-visit.png", "01c-1440x900-one-ticket-order-names-the-member.png",
+        "03a-1680x1050-new-member-customer-half-welcome-to-oto.png", "03b-1680x1050-tourist-ticket-step-still-first-visit.png", "03c-1680x1050-one-ticket-order-names-the-member.png"],
+      "shows": "Split view at 1440 x 900 (0898850010) and 1680 x 1050 (0898850011): the number typed on the customer half, 'New member?' on the staff half, 'ZZ TEST 885 split <w> r01' created ('Member created' toast, 'No verified rate'). The customer half says 'Welcome to Oto' and 'Thailand's happiest indoor play park. Let's get you ready to play!' with the name in its Customer bar; no 'Welcome back', no 'Great to see you again', no 'Member rate applied'. Tourist (ticket step) keeps the same greeting; with one child and one adult the customer half moves to the order and still names the member (Customer bar), as does the staff order panel." },
+    "2": { "pass": true,
+      "pictures": ["02a-paired-display-new-member-welcome-to-oto.png", "02b-till-staff-side-member-created-display-paired.png", "02c-paired-display-one-ticket-order-names-the-member.png", "02d-paired-display-same-number-welcome-back.png"],
+      "shows": "A separate display (1280 x 800) paired to the own till; the till's own customer half gave way to it ('Display connected'). 0898850012 typed on the display's keypad, 'ZZ TEST 885 display r01' created in the till's New member box: the display says 'Welcome to Oto' and the first-visit line, never 'Welcome back'. Picture 02a was taken about 40 s after the create. Every welcome the till published to the display after the create carried no member (2 of 2 session.publish_display intents, stage welcome, member null); the order intent carried the member, and the display's order names them (02c). The next sale with the same number on the display: 'Welcome back, ZZ TEST 885 display r01!' (02d)." },
+    "3": { "pass": true,
+      "pictures": ["01d-1440x900-same-number-new-sale-welcome-back.png", "03d-1680x1050-same-number-new-sale-welcome-back.png"],
+      "shows": "Each sale abandoned with the order panel's Cancel; a new sale with the same number finds the member and the customer half says 'Welcome back, ZZ TEST 885 split 1440 r01!' / '... 1680 r01!' and 'Great to see you again. Let's get you ready to play!'." },
+    "4": { "pass": true,
+      "pictures": ["04a-thai-new-member-first-visit-greeting.png", "04b-thai-customer-half-close.png", "04c-thai-same-number-welcome-back.png"],
+      "shows": "Thai chosen on the customer half (0898850013), 'ZZ TEST 885 Thai r01' created: 'ยินดีต้อนรับสู่ Oto' and 'สนามเล่นในร่มที่มีความสุขที่สุดของไทย มาเตรียมตัวเล่นกันเลย!', Customer bar 'ลูกค้า', staff line in Thai; no raw key, no English greeting, no 'ยินดีต้อนรับกลับมา'. Contrast: the next sale says 'ยินดีต้อนรับกลับมา, ZZ TEST 885 Thai r01!' and 'ยินดีที่ได้พบคุณอีกครั้ง ...'." },
+    "5": { "pass": true,
+      "pictures": ["05aa-counter-1680x1050-add-dropoff-child-window.png", "05ab-counter-1680x1050-long-name-card.png", "05ac-counter-1680x1050-short-name-card.png", "05ad-counter-1680x1050-xlong-name-card.png",
+        "05ba-counter-1440x900-add-dropoff-child-window.png", "05bb-counter-1440x900-long-name-card.png", "05bc-counter-1440x900-short-name-card.png", "05bd-counter-1440x900-xlong-name-card.png",
+        "05ca-phone-390x844-add-dropoff-child-window.png", "05cb-phone-390x844-long-name-card.png", "05cc-phone-390x844-short-name-card.png", "05cd-phone-390x844-xlong-name-card.png"],
+      "setup": "Three waiting ZZ TEST families (signed form, unpaid) registered through the route the till's form calls, as the till's own reception session: long 'ZZ TEST SCRUM-888 guardian nanny01' (34 characters, the length of the SCRUM-871 proof's name), short 'ZZ TEST Ploy 888 01', extra-long 'ZZ TEST SCRUM-888 guardian with a much longer family name 01' (60). Nothing else was waiting today, so no other family is in the window.",
+      "measuredPx": {
+        "note": "getBoundingClientRect, rounded to 0.1. 'list' is the Radix scroll viewport. Every card at every size: card right = list right (0 px over), Cancel booking 17 px inside the card's right edge, list 25 px inside the window, no sideways scroll, both buttons read whole.",
+        "counter 1680x1050": { "window.right": 1176, "list.right": 1151, "card": [529, 1151],
+          "long":  { "name.right": 938.8, "nameWhole": true,  "addToSale": [1043.8, 1134], "cancelBooking": [996.7, 1134], "layout": "Add to sale beside the name, Cancel booking under it" },
+          "short": { "name.right": 788.1, "nameWhole": true,  "addToSale": [898.4, 988.7], "cancelBooking": [996.7, 1134], "layout": "one row: name, Add to sale, Cancel booking (as before)" },
+          "xlong": { "name.right": 984.7, "nameWhole": false, "addToSale": [1043.8, 1134], "cancelBooking": [996.7, 1134], "layout": "name cut with an ellipsis, Cancel booking under Add to sale" } },
+        "counter 1440x900": { "window.right": 1056, "list.right": 1031, "card": [409, 1031],
+          "long":  { "name.right": 818.8, "nameWhole": true,  "addToSale": [923.8, 1014], "cancelBooking": [876.7, 1014] },
+          "short": { "name.right": 668.1, "nameWhole": true,  "addToSale": [778.4, 868.7], "cancelBooking": [876.7, 1014], "layout": "one row" },
+          "xlong": { "name.right": 864.7, "nameWhole": false, "addToSale": [923.8, 1014], "cancelBooking": [876.7, 1014] } },
+        "phone 390x844": { "window.right": 390, "list.right": 365, "card": [25, 365],
+          "all three": { "addToSale": [112.4, 202.7], "cancelBooking": [210.7, 348], "layout": "both buttons under the name, side by side at the right" },
+          "nameWhole": { "short": true, "long": false, "xlong": false } },
+        "beforeTheFixForReference": "The builder's local before-run on the old window: card right 1192.7 vs list 1151.5 at 1680, 1068.0 vs 1031.5 at 1440, 681.3 vs 365.5 at 390 (not staging)."
+      } },
+    "6": { "pass": true,
+      "pictures": ["06a-phone-cancel-confirm-reason-empty.png", "06b-phone-cancel-confirm-reason-typed.png", "06c-phone-window-after-cancel-own-families-gone.png"],
+      "shows": "On the phone till each of the three own bookings: Cancel booking opens 'Cancel this waiting booking'; the press reads 'Give a reason to cancel' and is disabled until a reason is typed, then 'Cancel the booking'; with 'ZZ TEST SCRUM-888 proof cleanup' each cancel answers 200, the card leaves the window ('No bookings are waiting to be checked in.') and the stay reads back cancelled." }
+  },
+  "defectsAndOdd": [
+    { "id": "O1", "kind": "display, pre-existing (extends N5 of the SCRUM-858 proof to 1680)", "picture": "03c-1680x1050-one-ticket-order-names-the-member.png, 01c-1440x900-one-ticket-order-names-the-member.png",
+      "what": "Configure step in the split view: the Extras & Add-ons cards cut the add-on names to one letter ('F..', 'R..', 'L..') at 1680 as well as at 1440, and 'Out of stock' breaks one word per line beside the stepper; at 1440 'Add Another Ticket' still runs past its button's left edge.",
+      "steps": "Split view at 1680 x 1050, any customer, Tourist, 1 Hour Play.",
+      "where": "apps/pos/src/components/till/AddOnsGrid.tsx:110 (always grid-cols-2), :133 (name truncate beside a fixed-width stepper), :140; apps/pos/src/components/till/StepAddTicket.tsx:183-186 (h-16 text-lg label in a two-column footer)" },
+    { "id": "O2", "kind": "display, already reported (N3 of the SCRUM-858 proof)", "picture": "01a, 01d, 04a",
+      "what": "At 1440 in the split view the staff banner shows the member as 'Z…' and '+6…'.", "where": "apps/pos/src/components/till/StepCustomerType.tsx:86-118" },
+    { "id": "O3", "kind": "owner decision still open (builder's question 3)", "picture": "05ab, 05bb",
+      "what": "On the counter till a 34-character family name keeps its row and Cancel booking drops under Add to sale, so the card is two rows where a short name's is one. Works; whether the owner prefers the name shortened first is the open question." },
+    { "id": "H1", "kind": "harness, not the product",
+      "what": "The receipt's staffOrderNamesMember=false is a misread: it reads the half under the 'Add to Sale' heading, which the Configure step no longer shows (30 s wait, then false). The order panel names the member in 01c and 03c. The display pass waited up to 2 x 20 s for the display's own reads; 02a was taken about 40 s after the create." }
+  ],
+  "pageErrors": "Only GET /api/me 401 on the lock screen before sign-in (expected). No page error, no other refused api answer.",
+  "notCovered": [
+    "The welcome after the event-pass creations and the gate / deferred-rate creations (builder's defect note: gate and deferred-rate creations are not marked as created on this sale).",
+    "A paired display served by the counter Pi (not touched by rule); the display here is a browser on the shared virtual box.",
+    "SCRUM-888 with a registration made through the till's own drop-off form: the families were posted through the same route as the till's own session, so no photo was captured and no WhatsApp contact test was sent."
+  ],
+  "leftovers": {
+    "till": "Z88501 'ZZ TEST SCRUM-885 proof till ...' archived, 0 devices; its paired display revoked",
+    "sales": "none written (no payment taken; nothing reached the payment step)",
+    "members": "4 ZZ TEST members created (0898850010-13) archived; lookups 0898850010-18 all none",
+    "bookings": "3 ZZ TEST families cancelled with 'ZZ TEST SCRUM-888 proof cleanup'; nothing waiting today",
+    "sessions": "till and admin signed out (401 read back)"
+  }
+}

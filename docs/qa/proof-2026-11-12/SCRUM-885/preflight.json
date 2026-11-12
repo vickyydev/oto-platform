@@ -1,0 +1,54 @@
+{
+  "readAt": "2026-11-12T07:06:39.118Z",
+  "branch": {
+    "id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "Oto Play Park, Central Floresta",
+    "code": "hkt-central",
+    "keys": [
+      "id",
+      "name",
+      "code",
+      "timezone",
+      "address",
+      "country",
+      "openingHours",
+      "businessDayStart",
+      "archived",
+      "partySlipsStationId",
+      "birthdayManagerContact",
+      "gmContact"
+    ]
+  },
+  "numbersInUse": [],
+  "numbersChecked": 30,
+  "waiting": {
+    "families": 0,
+    "zz": 0,
+    "ownBefore": 0,
+    "zzNames": []
+  },
+  "ownTillsBefore": [],
+  "virtualBox": [
+    {
+      "slot": "virtual-1",
+      "status": "online",
+      "archived": false
+    },
+    {
+      "slot": "virtual-2",
+      "status": "unclaimed",
+      "archived": false
+    },
+    {
+      "slot": "zz-test-s710",
+      "status": "unclaimed",
+      "archived": false
+    },
+    {
+      "slot": "zz-test-s718",
+      "status": "unclaimed",
+      "archived": false
+    }
+  ],
+  "adminSignedOut": true
+}

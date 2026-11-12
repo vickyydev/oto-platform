@@ -1,0 +1,1599 @@
+{
+  "tickets": [
+    "SCRUM-885",
+    "SCRUM-888"
+  ],
+  "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+  "startedAt": "2026-11-12T07:12:41.010Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqm7ku7bikc73ah3llg",
+        "status": "live",
+        "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+        "createdAt": "2026-11-12T06:59:31.954268Z",
+        "finishedAt": "2026-11-12T07:00:35.985275Z"
+      },
+      "serving": {
+        "id": "dep-dbqm7ku7bikc73ah3llg",
+        "status": "live",
+        "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+        "createdAt": "2026-11-12T06:59:31.954268Z",
+        "finishedAt": "2026-11-12T07:00:35.985275Z"
+      },
+      "readAt": "2026-11-12T07:06:17.023Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqm7l8n74is73ckme10",
+        "status": "live",
+        "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+        "createdAt": "2026-11-12T06:59:33.9954Z",
+        "finishedAt": "2026-11-12T07:02:37.446746Z"
+      },
+      "serving": {
+        "id": "dep-dbqm7l8n74is73ckme10",
+        "status": "live",
+        "sha": "3f0c082b1630d029f642b1cac0da0c9e644d7001",
+        "createdAt": "2026-11-12T06:59:33.9954Z",
+        "finishedAt": "2026-11-12T07:02:37.446746Z"
+      },
+      "readAt": "2026-11-12T07:06:17.647Z"
+    }
+  },
+  "passes": [
+    "a",
+    "b",
+    "t",
+    "p",
+    "d"
+  ],
+  "points": {
+    "2": {
+      "pass": true,
+      "pictures": [
+        "02a-paired-display-new-member-welcome-to-oto.png",
+        "02b-till-staff-side-member-created-display-paired.png",
+        "02c-paired-display-one-ticket-order-names-the-member.png",
+        "02d-paired-display-same-number-welcome-back.png"
+      ],
+      "shows": "A separate display paired to the own till (1280 x 800): 0898850012 typed on the display's keypad, \"ZZ TEST 885 display r01\" created in the till's New member box; the display says \"Welcome to Oto\" and the first-visit line, never \"Welcome back\"; every welcome the till published after the create carried no member; one ticket on, the display's order names the member; the next sale with the same number is welcomed back by name",
+      "seen": {
+        "welcome": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 display r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "welcomeIntentsAfterCreate": [
+          {
+            "at": "d: the number on the display, the New member box on the till",
+            "stage": "welcome",
+            "member": null,
+            "lines": null
+          },
+          {
+            "at": "d: the number on the display, the New member box on the till",
+            "stage": "welcome",
+            "member": null,
+            "lines": null
+          }
+        ],
+        "atTickets": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 display r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "atOrder": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 display r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": false
+        },
+        "again": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": true,
+          "greatToSeeYou": true,
+          "welcomeBackLine": "Welcome back, ZZ TEST 885 display r01!",
+          "customerBar": "Customer ZZ TEST 885 display r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "saleLeftBy": [
+          "Cancel button",
+          "Cancel button"
+        ]
+      }
+    },
+    "4": {
+      "pass": true,
+      "pictures": [
+        "04a-thai-new-member-first-visit-greeting.png",
+        "04b-thai-customer-half-close.png",
+        "04c-thai-same-number-welcome-back.png"
+      ],
+      "shows": "Thai chosen on the customer half, 0898850013, \"ZZ TEST 885 Thai r01\" created: the customer half says \"ยินดีต้อนรับสู่ Oto\" and \"สนามเล่นในร่มที่มีความสุขที่สุดของไทย มาเตรียมตัวเล่นกันเลย!\", no raw key, no English, no \"ยินดีต้อนรับกลับมา\"; the next sale says \"ยินดีต้อนรับกลับมา, ZZ TEST 885 Thai r01!\"",
+      "seen": {
+        "welcome": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "ลูกค้า ZZ TEST 885 Thai r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": false
+        },
+        "again": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": true,
+          "greatToSeeYou": true,
+          "welcomeBackLine": "ยินดีต้อนรับกลับมา, ZZ TEST 885 Thai r01!",
+          "customerBar": "ลูกค้า ZZ TEST 885 Thai r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": false
+        },
+        "saleLeftBy": [
+          "Cancel button",
+          "Cancel button"
+        ]
+      }
+    },
+    "5": {
+      "pass": true,
+      "pictures": [
+        "05aa-counter-1680x1050-add-dropoff-child-window.png",
+        "05ab-counter-1680x1050-long-name-card.png",
+        "05ac-counter-1680x1050-short-name-card.png",
+        "05ad-counter-1680x1050-xlong-name-card.png",
+        "05ba-counter-1440x900-add-dropoff-child-window.png",
+        "05bb-counter-1440x900-long-name-card.png",
+        "05bc-counter-1440x900-short-name-card.png",
+        "05bd-counter-1440x900-xlong-name-card.png",
+        "05ca-phone-390x844-add-dropoff-child-window.png",
+        "05cb-phone-390x844-long-name-card.png",
+        "05cc-phone-390x844-short-name-card.png",
+        "05cd-phone-390x844-xlong-name-card.png"
+      ],
+      "shows": "Add drop-off child at 1680 x 1050, 1440 x 900 (counter till) and 390 x 844 (phone till): each own card inside the list and the window, Add to sale and Cancel booking whole inside the card; the short-name card keeps its one row on the counter; on the phone the buttons sit under the name",
+      "seen": {
+        "counter-1680": {
+          "cardsInWindow": 3,
+          "long": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": false,
+              "cancelUnderAdd": true,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 504,
+                "right": 1176,
+                "top": 146,
+                "bottom": 904,
+                "width": 672
+              },
+              "list": {
+                "left": 529,
+                "right": 1151,
+                "top": 273,
+                "bottom": 879,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 529,
+                "right": 1151,
+                "top": 675,
+                "bottom": 879,
+                "width": 622
+              },
+              "name": {
+                "left": 546,
+                "right": 938.8,
+                "top": 692,
+                "bottom": 716,
+                "width": 392.8,
+                "whole": true,
+                "text": "ZZ TEST SCRUM-888 guardian nanny01's booking"
+              },
+              "add": {
+                "left": 1043.8,
+                "right": 1134,
+                "top": 692,
+                "bottom": 724,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 996.7,
+                "right": 1134,
+                "top": 732,
+                "bottom": 764,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1680,
+              "pageScrollsSideways": false
+            }
+          },
+          "short": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": true,
+              "cancelUnderAdd": false,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 504,
+                "right": 1176,
+                "top": 146,
+                "bottom": 904,
+                "width": 672
+              },
+              "list": {
+                "left": 529,
+                "right": 1151,
+                "top": 273,
+                "bottom": 879,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 529,
+                "right": 1151,
+                "top": 489,
+                "bottom": 663,
+                "width": 622
+              },
+              "name": {
+                "left": 546,
+                "right": 788.1,
+                "top": 506,
+                "bottom": 530,
+                "width": 242.1,
+                "whole": true,
+                "text": "ZZ TEST Ploy 888 01's booking"
+              },
+              "add": {
+                "left": 898.4,
+                "right": 988.7,
+                "top": 506,
+                "bottom": 538,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 996.7,
+                "right": 1134,
+                "top": 506,
+                "bottom": 538,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1680,
+              "pageScrollsSideways": false
+            }
+          },
+          "xlong": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": false,
+              "cancelUnderAdd": true,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 504,
+                "right": 1176,
+                "top": 146,
+                "bottom": 904,
+                "width": 672
+              },
+              "list": {
+                "left": 529,
+                "right": 1151,
+                "top": 273,
+                "bottom": 879,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 529,
+                "right": 1151,
+                "top": 273,
+                "bottom": 477,
+                "width": 622
+              },
+              "name": {
+                "left": 546,
+                "right": 984.7,
+                "top": 290,
+                "bottom": 314,
+                "width": 438.7,
+                "whole": false,
+                "text": "ZZ TEST SCRUM-888 guardian with a much longer family name 01's booking"
+              },
+              "add": {
+                "left": 1043.8,
+                "right": 1134,
+                "top": 290,
+                "bottom": 322,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 996.7,
+                "right": 1134,
+                "top": 330,
+                "bottom": 362,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1680,
+              "pageScrollsSideways": false
+            }
+          }
+        },
+        "counter-1440": {
+          "cardsInWindow": 3,
+          "long": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": false,
+              "cancelUnderAdd": true,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 384,
+                "right": 1056,
+                "top": 104,
+                "bottom": 796,
+                "width": 672
+              },
+              "list": {
+                "left": 409,
+                "right": 1031,
+                "top": 231,
+                "bottom": 771,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 409,
+                "right": 1031,
+                "top": 633,
+                "bottom": 837,
+                "width": 622
+              },
+              "name": {
+                "left": 426,
+                "right": 818.8,
+                "top": 650,
+                "bottom": 674,
+                "width": 392.8,
+                "whole": true,
+                "text": "ZZ TEST SCRUM-888 guardian nanny01's booking"
+              },
+              "add": {
+                "left": 923.8,
+                "right": 1014,
+                "top": 650,
+                "bottom": 682,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 876.7,
+                "right": 1014,
+                "top": 690,
+                "bottom": 722,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1440,
+              "pageScrollsSideways": false
+            }
+          },
+          "short": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": true,
+              "cancelUnderAdd": false,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 384,
+                "right": 1056,
+                "top": 104,
+                "bottom": 796,
+                "width": 672
+              },
+              "list": {
+                "left": 409,
+                "right": 1031,
+                "top": 231,
+                "bottom": 771,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 409,
+                "right": 1031,
+                "top": 447,
+                "bottom": 621,
+                "width": 622
+              },
+              "name": {
+                "left": 426,
+                "right": 668.1,
+                "top": 464,
+                "bottom": 488,
+                "width": 242.1,
+                "whole": true,
+                "text": "ZZ TEST Ploy 888 01's booking"
+              },
+              "add": {
+                "left": 778.4,
+                "right": 868.7,
+                "top": 464,
+                "bottom": 496,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 876.7,
+                "right": 1014,
+                "top": 464,
+                "bottom": 496,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1440,
+              "pageScrollsSideways": false
+            }
+          },
+          "xlong": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "oneRow": false,
+              "cancelUnderAdd": true,
+              "addBesideName": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 384,
+                "right": 1056,
+                "top": 104,
+                "bottom": 796,
+                "width": 672
+              },
+              "list": {
+                "left": 409,
+                "right": 1031,
+                "top": 231,
+                "bottom": 771,
+                "width": 622,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 409,
+                "right": 1031,
+                "top": 231,
+                "bottom": 435,
+                "width": 622
+              },
+              "name": {
+                "left": 426,
+                "right": 864.7,
+                "top": 248,
+                "bottom": 272,
+                "width": 438.7,
+                "whole": false,
+                "text": "ZZ TEST SCRUM-888 guardian with a much longer family name 01's booking"
+              },
+              "add": {
+                "left": 923.8,
+                "right": 1014,
+                "top": 248,
+                "bottom": 280,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 876.7,
+                "right": 1014,
+                "top": 288,
+                "bottom": 320,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 1440,
+              "pageScrollsSideways": false
+            }
+          }
+        },
+        "phone-390": {
+          "cardsInWindow": 3,
+          "long": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "buttonsUnderName": true,
+              "buttonsOneRow": true,
+              "cancelAtRight": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 0,
+                "right": 390,
+                "top": 72.8,
+                "bottom": 771.2,
+                "width": 390
+              },
+              "list": {
+                "left": 25,
+                "right": 365,
+                "top": 239.8,
+                "bottom": 746.2,
+                "width": 340,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 25,
+                "right": 365,
+                "top": 699.8,
+                "bottom": 917.8,
+                "width": 340
+              },
+              "name": {
+                "left": 42,
+                "right": 348,
+                "top": 716.8,
+                "bottom": 740.8,
+                "width": 306,
+                "whole": false,
+                "text": "ZZ TEST SCRUM-888 guardian nanny01's booking"
+              },
+              "add": {
+                "left": 112.4,
+                "right": 202.7,
+                "top": 770.8,
+                "bottom": 802.8,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 210.7,
+                "right": 348,
+                "top": 770.8,
+                "bottom": 802.8,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 390,
+              "pageScrollsSideways": false
+            }
+          },
+          "short": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "buttonsUnderName": true,
+              "buttonsOneRow": true,
+              "cancelAtRight": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 0,
+                "right": 390,
+                "top": 72.8,
+                "bottom": 771.2,
+                "width": 390
+              },
+              "list": {
+                "left": 25,
+                "right": 365,
+                "top": 239.8,
+                "bottom": 746.2,
+                "width": 340,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 25,
+                "right": 365,
+                "top": 469.8,
+                "bottom": 687.8,
+                "width": 340
+              },
+              "name": {
+                "left": 42,
+                "right": 348,
+                "top": 486.8,
+                "bottom": 510.8,
+                "width": 306,
+                "whole": true,
+                "text": "ZZ TEST Ploy 888 01's booking"
+              },
+              "add": {
+                "left": 112.4,
+                "right": 202.7,
+                "top": 540.8,
+                "bottom": 572.8,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 210.7,
+                "right": 348,
+                "top": 540.8,
+                "bottom": 572.8,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 390,
+              "pageScrollsSideways": false
+            }
+          },
+          "xlong": {
+            "inside": {
+              "cardInsideList": true,
+              "listInsideWindow": true,
+              "windowInsideViewport": true,
+              "addThere": true,
+              "cancelWhole": true,
+              "cancelInsideCard": true,
+              "addInsideCard": true,
+              "noSidewaysScroll": true
+            },
+            "layout": {
+              "buttonsUnderName": true,
+              "buttonsOneRow": true,
+              "cancelAtRight": true
+            },
+            "fits": true,
+            "margins": {
+              "cardRightToListRight": 0,
+              "cancelRightToCardRight": 17,
+              "listRightToWindowRight": 25
+            },
+            "fit": {
+              "window": {
+                "left": 0,
+                "right": 390,
+                "top": 72.8,
+                "bottom": 771.2,
+                "width": 390
+              },
+              "list": {
+                "left": 25,
+                "right": 365,
+                "top": 239.8,
+                "bottom": 746.2,
+                "width": 340,
+                "scrollsSideways": false
+              },
+              "card": {
+                "left": 25,
+                "right": 365,
+                "top": 239.8,
+                "bottom": 457.8,
+                "width": 340
+              },
+              "name": {
+                "left": 42,
+                "right": 348,
+                "top": 256.8,
+                "bottom": 280.8,
+                "width": 306,
+                "whole": false,
+                "text": "ZZ TEST SCRUM-888 guardian with a much longer family name 01's booking"
+              },
+              "add": {
+                "left": 112.4,
+                "right": 202.7,
+                "top": 310.8,
+                "bottom": 342.8,
+                "width": 90.2,
+                "whole": true,
+                "text": "Add to sale"
+              },
+              "cancel": {
+                "left": 210.7,
+                "right": 348,
+                "top": 310.8,
+                "bottom": 342.8,
+                "width": 137.3,
+                "whole": true,
+                "text": "Cancel booking"
+              },
+              "viewportWidth": 390,
+              "pageScrollsSideways": false
+            }
+          }
+        }
+      }
+    },
+    "6": {
+      "pass": true,
+      "pictures": [
+        "06a-phone-cancel-confirm-reason-empty.png",
+        "06b-phone-cancel-confirm-reason-typed.png",
+        "06c-phone-window-after-cancel-own-families-gone.png"
+      ],
+      "shows": "On the phone till each own booking's Cancel booking opens the confirm; the press stays disabled until a reason is typed; with \"ZZ TEST SCRUM-888 proof cleanup\" each is cancelled (200), leaves the window, and reads back cancelled; none of the run's families is still waiting",
+      "seen": {
+        "long": {
+          "pressBeforeReason": {
+            "label": "Give a reason to cancel",
+            "enabled": false
+          },
+          "pressAfterReason": {
+            "label": "Cancel the booking",
+            "enabled": true
+          },
+          "cancelAnswer": 200,
+          "readBack": {
+            "children": [
+              "cancelled"
+            ],
+            "cancelReason": null
+          }
+        },
+        "short": {
+          "pressBeforeReason": {
+            "label": "Give a reason to cancel",
+            "enabled": false
+          },
+          "pressAfterReason": {
+            "label": "Cancel the booking",
+            "enabled": true
+          },
+          "cancelAnswer": 200,
+          "readBack": {
+            "children": [
+              "cancelled"
+            ],
+            "cancelReason": null
+          }
+        },
+        "xlong": {
+          "pressBeforeReason": {
+            "label": "Give a reason to cancel",
+            "enabled": false
+          },
+          "pressAfterReason": {
+            "label": "Cancel the booking",
+            "enabled": true
+          },
+          "cancelAnswer": 200,
+          "readBack": {
+            "children": [
+              "cancelled"
+            ],
+            "cancelReason": null
+          }
+        },
+        "ownStillWaiting": 0
+      }
+    },
+    "1-1440": {
+      "pass": true,
+      "pictures": [
+        "01a-1440x900-new-member-customer-half-welcome-to-oto.png",
+        "01b-1440x900-tourist-ticket-step-still-first-visit.png",
+        "01c-1440x900-one-ticket-order-names-the-member.png"
+      ],
+      "shows": "Split view 1440 x 900: 0898850010 typed on the customer half, \"ZZ TEST 885 split 1440 r01\" created in the New member box; the customer half says \"Welcome to Oto\" and the first-visit line, no \"Welcome back\" / \"Great to see you again\"; Tourist keeps that greeting; with one child and one adult the order names the member",
+      "seen": {
+        "toastMemberCreated": 1,
+        "staffBadge": "No verified rate",
+        "welcome": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1440 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "atTickets": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1440 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "atOrder": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1440 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": false
+        },
+        "staffOrderNamesMember": false,
+        "saleLeftBy": "Cancel button"
+      }
+    },
+    "3-1440": {
+      "pass": true,
+      "pictures": [
+        "01d-1440x900-same-number-new-sale-welcome-back.png"
+      ],
+      "shows": "Split view 1440 x 900: the sale abandoned, a new sale with 0898850010: the member is found and the customer half says \"Welcome back, ZZ TEST 885 split 1440 r01!\" and \"Great to see you again\"",
+      "seen": {
+        "again": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": true,
+          "greatToSeeYou": true,
+          "welcomeBackLine": "Welcome back, ZZ TEST 885 split 1440 r01!",
+          "customerBar": "Customer ZZ TEST 885 split 1440 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "saleLeftBy": "Cancel button"
+      }
+    },
+    "1-1680": {
+      "pass": true,
+      "pictures": [
+        "03a-1680x1050-new-member-customer-half-welcome-to-oto.png",
+        "03b-1680x1050-tourist-ticket-step-still-first-visit.png",
+        "03c-1680x1050-one-ticket-order-names-the-member.png"
+      ],
+      "shows": "Split view 1680 x 1050: 0898850011 typed on the customer half, \"ZZ TEST 885 split 1680 r01\" created in the New member box; the customer half says \"Welcome to Oto\" and the first-visit line, no \"Welcome back\" / \"Great to see you again\"; Tourist keeps that greeting; with one child and one adult the order names the member",
+      "seen": {
+        "toastMemberCreated": 1,
+        "staffBadge": "No verified rate",
+        "welcome": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1680 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "atTickets": {
+          "firstVisitTitle": true,
+          "firstVisitLine": true,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1680 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "atOrder": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": false,
+          "greatToSeeYou": false,
+          "welcomeBackLine": null,
+          "customerBar": "Customer ZZ TEST 885 split 1680 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": false
+        },
+        "staffOrderNamesMember": false,
+        "saleLeftBy": "Cancel button"
+      }
+    },
+    "3-1680": {
+      "pass": true,
+      "pictures": [
+        "03d-1680x1050-same-number-new-sale-welcome-back.png"
+      ],
+      "shows": "Split view 1680 x 1050: the sale abandoned, a new sale with 0898850011: the member is found and the customer half says \"Welcome back, ZZ TEST 885 split 1680 r01!\" and \"Great to see you again\"",
+      "seen": {
+        "again": {
+          "firstVisitTitle": false,
+          "firstVisitLine": false,
+          "welcomeBack": true,
+          "greatToSeeYou": true,
+          "welcomeBackLine": "Welcome back, ZZ TEST 885 split 1680 r01!",
+          "customerBar": "Customer ZZ TEST 885 split 1680 r01",
+          "namesMember": true,
+          "memberRateApplied": 0,
+          "rawKeys": [],
+          "english": true
+        },
+        "saleLeftBy": "Cancel button"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce9a-0725-7e5e-932a-a572e3b482cc",
+      "name": "ZZ TEST SCRUM-885 proof till 1794467561020",
+      "prefix": "Z88501"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 885 split 1440 r01",
+      "number": "0898850010"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 885 split 1680 r01",
+      "number": "0898850011"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 885 Thai r01",
+      "number": "0898850013"
+    },
+    {
+      "kind": "registration",
+      "key": "long",
+      "id": "5ea52ed3-2810-4d3d-b575-0961b169905f",
+      "guardian": "ZZ TEST SCRUM-888 guardian nanny01"
+    },
+    {
+      "kind": "registration",
+      "key": "short",
+      "id": "7c46c69f-b6f2-4590-91cf-ddd4e55f28b8",
+      "guardian": "ZZ TEST Ploy 888 01"
+    },
+    {
+      "kind": "registration",
+      "key": "xlong",
+      "id": "ab05d4ee-32cd-4c8e-9058-935827e45464",
+      "guardian": "ZZ TEST SCRUM-888 guardian with a much longer family name 01"
+    },
+    {
+      "kind": "display",
+      "id": "01a1ce9b-dd06-7717-a5ec-e1b876a30a08"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 885 display r01",
+      "number": "0898850012"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "waitingBefore": {
+      "families": 0,
+      "zz": 0
+    },
+    "staffNameMasks": 2,
+    "bundle": {
+      "files": 1,
+      "names": [
+        "index-DWlkRWQ2.js"
+      ],
+      "s888CardGrid": 1,
+      "firstVisitLine": 1
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "displayIntents": [
+    {
+      "at": "d: pair own customer display; the till at 1440 x 900",
+      "stage": "identify",
+      "member": null,
+      "lines": null
+    },
+    {
+      "at": "d: the number on the display, the New member box on the till",
+      "stage": "welcome",
+      "member": null,
+      "lines": null
+    },
+    {
+      "at": "d: the number on the display, the New member box on the till",
+      "stage": "welcome",
+      "member": null,
+      "lines": null
+    },
+    {
+      "at": "d: one step on — Tourist, one child and one adult",
+      "stage": "welcome",
+      "member": null,
+      "lines": null
+    },
+    {
+      "at": "d: one step on — Tourist, one child and one adult",
+      "stage": "order",
+      "member": "ZZ TEST member",
+      "lines": null
+    },
+    {
+      "at": "d: one step on — Tourist, one child and one adult",
+      "stage": "identify",
+      "member": null,
+      "lines": null
+    },
+    {
+      "at": "d: the same number on the display, a new sale — welcomed back",
+      "stage": "welcome",
+      "member": "ZZ TEST member",
+      "lines": null
+    },
+    {
+      "at": "d: the same number on the display, a new sale — welcomed back",
+      "stage": "identify",
+      "member": null,
+      "lines": null
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1ce9b-dd06-7717-a5ec-e1b876a30a08",
+      "revoked": true
+    },
+    {
+      "kind": "registration",
+      "key": "long",
+      "id": "5ea52ed3-2810-4d3d-b575-0961b169905f",
+      "children": [
+        "cancelled"
+      ]
+    },
+    {
+      "kind": "registration",
+      "key": "short",
+      "id": "7c46c69f-b6f2-4590-91cf-ddd4e55f28b8",
+      "children": [
+        "cancelled"
+      ]
+    },
+    {
+      "kind": "registration",
+      "key": "xlong",
+      "id": "ab05d4ee-32cd-4c8e-9058-935827e45464",
+      "children": [
+        "cancelled"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce9a-0725-7e5e-932a-a572e3b482cc",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "split1440",
+      "id": "01a1ce9a-2457-726a-864f-5bdc136b81a7",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "split1680",
+      "id": "01a1ce9a-c6c1-7857-b6fd-1bb7f991d836",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "display",
+      "id": "01a1ce9b-e97d-70e7-ad72-24b929b77c2f",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "thai",
+      "id": "01a1ce9b-6b2e-7a52-8064-bca8a1952f99",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "pick1680",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "pick1440",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "famLong",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "famShort",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "famXLong",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "split1440": "0898850010",
+    "split1680": "0898850011",
+    "display": "0898850012",
+    "thai": "0898850013",
+    "pick1680": "0898850014",
+    "pick1440": "0898850015",
+    "famLong": "0898850016",
+    "famShort": "0898850017",
+    "famXLong": "0898850018"
+  },
+  "families": {
+    "long": {
+      "guardian": "ZZ TEST SCRUM-888 guardian nanny01",
+      "characters": 34
+    },
+    "short": {
+      "guardian": "ZZ TEST Ploy 888 01",
+      "characters": 19
+    },
+    "xlong": {
+      "guardian": "ZZ TEST SCRUM-888 guardian with a much longer family name 01",
+      "characters": 60
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T07:15:41.670Z"
+}

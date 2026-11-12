@@ -1,0 +1,98 @@
+{
+  "readAt": "2026-11-12T07:17:40.770Z",
+  "runs": [
+    {
+      "receipt": "receipt.json",
+      "registrations": [
+        {
+          "key": "long",
+          "guardian": "ZZ TEST SCRUM-888 guardian nanny01",
+          "children": [
+            "cancelled"
+          ],
+          "reasonFields": {}
+        },
+        {
+          "key": "short",
+          "guardian": "ZZ TEST Ploy 888 01",
+          "children": [
+            "cancelled"
+          ],
+          "reasonFields": {}
+        },
+        {
+          "key": "xlong",
+          "guardian": "ZZ TEST SCRUM-888 guardian with a much longer family name 01",
+          "children": [
+            "cancelled"
+          ],
+          "reasonFields": {}
+        }
+      ],
+      "numbers": [
+        {
+          "key": "split1440",
+          "number": "0898850010",
+          "liveMember": false
+        },
+        {
+          "key": "split1680",
+          "number": "0898850011",
+          "liveMember": false
+        },
+        {
+          "key": "display",
+          "number": "0898850012",
+          "liveMember": false
+        },
+        {
+          "key": "thai",
+          "number": "0898850013",
+          "liveMember": false
+        },
+        {
+          "key": "pick1680",
+          "number": "0898850014",
+          "liveMember": false
+        },
+        {
+          "key": "pick1440",
+          "number": "0898850015",
+          "liveMember": false
+        },
+        {
+          "key": "famLong",
+          "number": "0898850016",
+          "liveMember": false
+        },
+        {
+          "key": "famShort",
+          "number": "0898850017",
+          "liveMember": false
+        },
+        {
+          "key": "famXLong",
+          "number": "0898850018",
+          "liveMember": false
+        }
+      ],
+      "sales": [],
+      "display": {
+        "id": "01a1ce9b-dd06-7717-a5ec-e1b876a30a08",
+        "revokedInRun": true
+      }
+    }
+  ],
+  "waitingNow": {
+    "families": 0,
+    "ofThisProof": 0
+  },
+  "tills": [
+    {
+      "prefix": "Z88501",
+      "archived": true,
+      "devices": 0
+    }
+  ],
+  "adminSignedOut": true
+}
