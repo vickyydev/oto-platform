@@ -3,6 +3,7 @@ import { MerchItem } from '@/types';
 import { isLowStock, isOutOfStock } from '@/lib/merch';
 import { useSellableStockVersion, withPlatformStock } from '@/api/stock';
 import { resolveRateToday } from '@/lib/pricingMode';
+import { bahtText } from '@/lib/bahtText';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -201,7 +202,7 @@ export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
                   />
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-primary font-bold text-lg tabular-nums">
-                      ฿{resolveRateToday(item.price)}
+                      ฿{bahtText(resolveRateToday(item.price))}
                     </span>
                     <span
                       className={cn(

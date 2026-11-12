@@ -12,6 +12,7 @@ import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
+import { bahtText } from '@/lib/bahtText';
 import {
   Sparkles,
   Wallet,
@@ -117,7 +118,7 @@ function BalanceChip({ wristband }: { wristband: Wristband }) {
       <div className="text-left">
         <div className="text-sm text-foreground/60 leading-tight">{t('display.credit.of', { name: wristband.customerNickname })}</div>
         <div className="text-2xl font-black text-primary tabular-nums leading-tight">
-          ฿{wristband.creditBalanceTHB}
+          ฿{bahtText(wristband.creditBalanceTHB)}
         </div>
       </div>
     </div>
@@ -160,7 +161,7 @@ function OrderLines({
                 </span>
                 <div className="min-w-0">
                   <div className="text-xl font-bold leading-tight">{line.displayName}</div>
-                  <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.base', { price: line.basePrice })}</div>
+                  <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.base', { price: bahtText(line.basePrice) })}</div>
                   {capturedLines && line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
                   {line.qty > 1 && (
                     <div className="text-foreground/40 text-sm tabular-nums">
@@ -171,7 +172,7 @@ function OrderLines({
                         second arithmetic on this screen could contradict it in
                         front of the guest it is being read by.
                       */}
-                      {t('display.price.eachTimes', { price: perUnitBaht(line.lineTotal, line.qty), qty: line.qty })}
+                      {t('display.price.eachTimes', { price: bahtText(perUnitBaht(line.lineTotal, line.qty)), qty: line.qty })}
                     </div>
                   )}
                   {breakdown.length > 0 && (
@@ -187,7 +188,7 @@ function OrderLines({
                             <span className="text-foreground/75">{mod.optionName}</span>
                           </span>
                           <span className="ml-auto shrink-0 tabular-nums">
-                            {mod.price > 0 ? `฿${mod.price}` : t('display.price.free')}
+                            {mod.price > 0 ? `฿${bahtText(mod.price)}` : t('display.price.free')}
                           </span>
                         </li>
                       ))}
@@ -201,7 +202,7 @@ function OrderLines({
                   )}
                 </div>
               </div>
-              <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
+              <div className="text-2xl font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</div>
             </div>
             {lineDiscounts.map((md) => {
               const amt = manualAmounts[md.id] ?? 0;
@@ -215,7 +216,7 @@ function OrderLines({
                     <BadgePercent className="w-5 h-5 shrink-0" />
                     {customerDiscountDetail(md, t)}
                   </span>
-                  <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+                  <span className="text-lg font-bold tabular-nums">−฿{bahtText(amt)}</span>
                 </div>
               );
             })}
@@ -294,19 +295,19 @@ function FnbOrderFooter({
               <BadgePercent className="w-5 h-5 shrink-0" />
               {t('common.discount')} · {customerDiscountDetail(md, t)}
             </span>
-            <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+            <span className="text-lg font-bold tabular-nums">−฿{bahtText(amt)}</span>
           </div>
         );
       })}
       {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
         <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
           <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
-          <span className="text-lg tabular-nums">฿{row.amount}</span>
+          <span className="text-lg tabular-nums">฿{bahtText(row.amount)}</span>
         </div>
       ))}
       <div className="flex items-center justify-between">
         <span className="text-2xl text-foreground/70">{t('common.total')}</span>
-        <span className="text-5xl font-black text-primary tabular-nums">฿{total}</span>
+        <span className="text-5xl font-black text-primary tabular-nums">฿{bahtText(total)}</span>
       </div>
     </>
   );
@@ -366,7 +367,7 @@ export function FnbCustomerDisplay({
                 <div className="rounded-3xl bg-foreground/5 border border-foreground/10 px-10 py-7">
                   <div className="text-lg text-foreground/60 mb-1">{t('fnb.order.creditBalance')}</div>
                   <div className="text-6xl font-black text-primary tabular-nums">
-                    ฿{wristband.creditBalanceTHB}
+                    ฿{bahtText(wristband.creditBalanceTHB)}
                   </div>
                 </div>
                 <p className="text-xl text-foreground/60 mt-8">{t('fnb.order.whatCanWeGet')}</p>
@@ -476,10 +477,10 @@ export function FnbCustomerDisplay({
           <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
         </div>,
         <>
-          <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
+          <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{bahtText(amountToPay)}</div>
           {creditUsed > 0 && (
             <p className="text-lg text-foreground/60 mt-3">
-              {t('fnb.payment.paidFromCredit', { amount: String(creditUsed) })}
+              {t('fnb.payment.paidFromCredit', { amount: bahtText(creditUsed) })}
             </p>
           )}
           <PaymentExpiry expiresAt={payment.expiresAt} />
@@ -508,7 +509,7 @@ export function FnbCustomerDisplay({
                 <Wallet className="w-6 h-6 text-primary" />
                 {t('fnb.payment.fromCredit')}
               </span>
-              <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
+              <span className="text-2xl font-black text-primary tabular-nums">฿{bahtText(creditUsed)}</span>
             </div>
           )}
           <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
@@ -516,7 +517,7 @@ export function FnbCustomerDisplay({
               <Banknote className="w-6 h-6 text-foreground/60" />
               {creditUsed > 0 ? t('fnb.payment.leftToPay') : t('fnb.payment.toPay')}
             </span>
-            <span className="text-4xl font-black tabular-nums">฿{amountToPay}</span>
+            <span className="text-4xl font-black tabular-nums">฿{bahtText(amountToPay)}</span>
           </div>
         </div>
 
@@ -547,6 +548,7 @@ export function FnbCustomerDisplay({
     modifierNames: describeModifiers(line.menuItem, line.selectedModifiers),
   }));
   const receiptNote = presentation?.cart.orderNote ?? order?.orderNote;
+  const paidTotal = completion?.total ?? order!.total;
 
   return (
     <Shell>
@@ -589,7 +591,7 @@ export function FnbCustomerDisplay({
                         </span>
                       )}
                     </span>
-                    <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span>
+                    <span className="font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span>
                   </div>
                 );
               })}
@@ -602,7 +604,7 @@ export function FnbCustomerDisplay({
             <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1.5">
               <div className="flex items-center justify-between text-xl font-bold">
                 <span>{t('common.total')}</span>
-                <span className="tabular-nums">฿{completion?.total ?? order?.total}</span>
+                <span className="tabular-nums">฿{bahtText(paidTotal)}</span>
               </div>
               {(order ? order.payment.creditUsed : completion?.payment.credit ?? 0) > 0 && (
                 <PaidRow icon={Wallet} label={t('fnb.thankyou.fnbCredit')} amount={order ? order.payment.creditUsed : completion!.payment.credit!} />
@@ -624,7 +626,7 @@ export function FnbCustomerDisplay({
                   <div className="text-sm text-foreground/50">{order.wristband.customerNickname}</div>
                 </div>
               </div>
-              <span className="text-4xl font-black text-primary tabular-nums">฿{newBalance}</span>
+              <span className="text-4xl font-black text-primary tabular-nums">฿{bahtText(newBalance)}</span>
             </div>
           )}
         </div>
@@ -648,7 +650,7 @@ function PaidRow({
         <Icon className="w-5 h-5" />
         {label}
       </span>
-      <span className="tabular-nums">฿{amount}</span>
+      <span className="tabular-nums">฿{bahtText(amount)}</span>
     </div>
   );
 }

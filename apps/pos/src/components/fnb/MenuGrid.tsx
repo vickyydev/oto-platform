@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { MenuItem, MenuCategoryDef } from '@/types';
 import { resolveRateToday } from '@/lib/pricingMode';
+import { bahtText } from '@/lib/bahtText';
 import { getMenuCategories } from '@/mockApi';
 import { inventoryFor, useSellableStockVersion } from '@/api/stock';
 import { topLevelCategories, subCategoriesOf } from '@/lib/menu';
@@ -101,7 +102,7 @@ function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
         )}
       </div>
       <div className="flex items-center justify-between mt-3">
-        <span className="text-primary font-bold text-lg tabular-nums">฿{resolveRateToday(item.price)}</span>
+        <span className="text-primary font-bold text-lg tabular-nums">฿{bahtText(resolveRateToday(item.price))}</span>
         <span
           className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',

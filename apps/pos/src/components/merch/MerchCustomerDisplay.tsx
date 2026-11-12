@@ -8,6 +8,7 @@ import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
+import { bahtText } from '@/lib/bahtText';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
@@ -83,7 +84,7 @@ function BalanceChip({ wristband }: { wristband: Wristband }) {
           {t('display.credit.of', { name: wristband.customerNickname })}
         </div>
         <div className="text-2xl font-black text-primary tabular-nums leading-tight">
-          ฿{wristband.creditBalanceTHB ?? 0}
+          ฿{bahtText(wristband.creditBalanceTHB ?? 0)}
         </div>
       </div>
     </div>
@@ -107,11 +108,11 @@ function OrderLines({ lines }: { lines: MerchOrderLine[] }) {
               <div className="min-w-0">
                 <div className="text-xl font-bold leading-tight">{resolveName(line.merchItem, lang)}</div>
                 <div className="text-foreground/40 text-sm tabular-nums">
-                  {t('display.price.each', { price: resolveRateToday(line.merchItem.price) })}
+                  {t('display.price.each', { price: bahtText(resolveRateToday(line.merchItem.price)) })}
                 </div>
               </div>
             </div>
-            <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
+            <div className="text-2xl font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</div>
           </div>
         </div>
       ))}
@@ -134,7 +135,7 @@ function PaidRow({
         <Icon className="w-5 h-5" />
         {label}
       </span>
-      <span className="tabular-nums">฿{amount}</span>
+      <span className="tabular-nums">฿{bahtText(amount)}</span>
     </div>
   );
 }
@@ -191,7 +192,7 @@ function MerchOrderFooter({
               <BadgePercent className="w-5 h-5 shrink-0" />
               {t('common.discount')} · {customerDiscountDetail(md, t)}
             </span>
-            <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+            <span className="text-lg font-bold tabular-nums">−฿{bahtText(amt)}</span>
           </div>
         );
       })}
@@ -201,12 +202,12 @@ function MerchOrderFooter({
           className="flex items-center justify-between mb-2 text-foreground/60"
         >
           <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
-          <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+          <span className="text-lg tabular-nums">฿{bahtText(roundTHB(row.amount))}</span>
         </div>
       ))}
       <div className="flex items-center justify-between">
         <span className="text-2xl text-foreground/70">{t('common.total')}</span>
-        <span className="text-5xl font-black text-primary tabular-nums">฿{total}</span>
+        <span className="text-5xl font-black text-primary tabular-nums">฿{bahtText(total)}</span>
       </div>
     </>
   );
@@ -257,7 +258,7 @@ export function MerchCustomerDisplay({
                 <div className="rounded-3xl bg-foreground/5 border border-foreground/10 px-10 py-7">
                   <div className="text-lg text-foreground/60 mb-1">{t('merch.order.yourCredit')}</div>
                   <div className="text-6xl font-black text-primary tabular-nums">
-                    ฿{wristband.creditBalanceTHB ?? 0}
+                    ฿{bahtText(wristband.creditBalanceTHB ?? 0)}
                   </div>
                 </div>
                 <p className="text-xl text-foreground/60 mt-8">{t('merch.order.whatCanWeGet')}</p>
@@ -354,11 +355,11 @@ export function MerchCustomerDisplay({
         </div>,
         <>
           <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">
-            ฿{payment ? remainderDue : promptpayAmount}
+            ฿{bahtText(payment ? remainderDue : promptpayAmount ?? 0)}
           </div>
           {creditUsed > 0 && (
             <p className="text-lg text-foreground/60 mt-3">
-              {t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}
+              {t('merch.payment.paidFromCredit', { amount: bahtText(creditUsed) })}
             </p>
           )}
           {payment && <PaymentExpiry expiresAt={payment.expiresAt} />}
@@ -389,7 +390,7 @@ export function MerchCustomerDisplay({
                 <Wallet className="w-6 h-6 text-primary" />
                 {t('merch.payment.fromCredit')}
               </span>
-              <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
+              <span className="text-2xl font-black text-primary tabular-nums">฿{bahtText(creditUsed)}</span>
             </div>
           )}
           <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
@@ -397,7 +398,7 @@ export function MerchCustomerDisplay({
               <Banknote className="w-6 h-6 text-foreground/60" />
               {creditUsed > 0 ? t('merch.payment.leftToPay') : t('merch.payment.toPay')}
             </span>
-            <span className="text-4xl font-black tabular-nums">฿{remainderDue}</span>
+            <span className="text-4xl font-black tabular-nums">฿{bahtText(remainderDue)}</span>
           </div>
         </div>
 
@@ -461,14 +462,14 @@ export function MerchCustomerDisplay({
                     <span className="font-bold tabular-nums">{line.qty}×</span>{' '}
                     {resolveName(line.merchItem, lang)}
                   </span>
-                  <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span>
+                  <span className="font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span>
                 </div>
               ))}
             </div>
             <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1.5">
               <div className="flex items-center justify-between text-xl font-bold">
                 <span>{t('common.total')}</span>
-                <span className="tabular-nums">฿{order.total}</span>
+                <span className="tabular-nums">฿{bahtText(order.total)}</span>
               </div>
               {order.payment.creditUsed > 0 && (
                 <PaidRow icon={Wallet} label={t('common.credit')} amount={order.payment.creditUsed} />
@@ -492,7 +493,7 @@ export function MerchCustomerDisplay({
                   </div>
                 </div>
               </div>
-              <span className="text-4xl font-black text-primary tabular-nums">฿{newBalance}</span>
+              <span className="text-4xl font-black text-primary tabular-nums">฿{bahtText(newBalance)}</span>
             </div>
           )}
         </div>

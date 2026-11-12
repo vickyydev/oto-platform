@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScanLine, UserRound, Wallet, AlertCircle, ArrowRight, Gift } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * THE FIELD OPENS THE TAB ITSELF (SCRUM-790).
@@ -241,7 +242,7 @@ export function ScanWristband({
                         <Gift className="w-3 h-3" />
                         prepaid
                       </div>
-                      <div className="font-bold tabular-nums text-violet-300">฿{wb.creditBalanceTHB}</div>
+                      <div className="font-bold tabular-nums text-violet-300">฿{bahtText(wb.creditBalanceTHB)}</div>
                     </>
                   ) : (
                     <>
@@ -249,7 +250,7 @@ export function ScanWristband({
                         <Wallet className="w-3 h-3" />
                         credit
                       </div>
-                      <div className="font-bold tabular-nums text-primary">฿{wb.creditBalanceTHB}</div>
+                      <div className="font-bold tabular-nums text-primary">฿{bahtText(wb.creditBalanceTHB)}</div>
                     </>
                   )}
                 </div>

@@ -7,6 +7,7 @@ import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
+import { bahtText } from '@/lib/bahtText';
 import { Sparkles, Wallet, ShoppingBag, PartyPopper, Banknote, CreditCard,
   BadgePercent, QrCode as QrCodeIcon, Loader2 } from 'lucide-react';
 
@@ -40,7 +41,7 @@ function Brand() {
 function PaidRow({ icon: Icon, label, amount }: { icon: typeof Wallet; label: string; amount: number }) {
   return <div className="flex items-center justify-between text-base text-foreground/60">
     <span className="flex items-center gap-2"><Icon className="w-5 h-5" />{label}</span>
-    <span className="tabular-nums">฿{amount}</span>
+    <span className="tabular-nums">฿{bahtText(amount)}</span>
   </div>;
 }
 
@@ -66,16 +67,16 @@ function MerchLines({ cart, totals }: { cart: DisplayMerchCart; totals: DisplayT
         <div className="min-w-0">
           <div className="text-xl font-bold leading-tight">{line.translations?.[lang] ?? line.name}</div>
           {line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
-          <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>
+          <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: bahtText(line.unitPrice) })}</div>
         </div>
       </div>
-      <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
+      <div className="text-2xl font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</div>
     </div>
     {cart.manualDiscounts.filter(discount => discount.scope === 'line' && discount.targetLineId === line.id)
       .map(discount => totals.manualAmounts[discount.id] > 0 && <div key={discount.id}
         className="mt-3 flex items-center justify-between rounded-xl bg-emerald-500/10 px-4 py-2.5 text-(--cd-success)">
         <span className="flex items-center gap-2.5 text-base font-semibold"><BadgePercent className="w-5 h-5 shrink-0" />{customerDiscountDetail(discount, t)}</span>
-        <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
+        <span className="text-lg font-bold tabular-nums">−฿{bahtText(totals.manualAmounts[discount.id])}</span>
       </div>)}
   </div>)}</div>;
 }
@@ -87,13 +88,13 @@ function MerchFooter({ cart, totals }: { cart: DisplayMerchCart; totals: Display
       && <div key={discount.id} className="flex items-center justify-between mb-2 text-(--cd-success)">
         <span className="flex items-center gap-2 text-lg"><BadgePercent className="w-5 h-5 shrink-0" />
           {t('common.discount')} · {customerDiscountDetail(discount, t)}</span>
-        <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
+        <span className="text-lg font-bold tabular-nums">−฿{bahtText(totals.manualAmounts[discount.id])}</span>
       </div>)}
     {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-      <span className="text-lg">{customerTaxRowLabel(row, t)}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
+      <span className="text-lg">{customerTaxRowLabel(row, t)}</span><span className="text-lg tabular-nums">฿{bahtText(row.amount)}</span>
     </div>)}
     <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
-      <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>
+      <span className="text-5xl font-black text-primary tabular-nums">฿{bahtText(totals.total)}</span></div>
   </>;
 }
 
@@ -167,8 +168,8 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
       </>, <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
         <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} /></div>, <>
-        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{leftToPay}</div>
-        {creditUsed > 0 && <p className="text-lg text-foreground/60 mt-3">{t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}</p>}
+        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{bahtText(leftToPay)}</div>
+        {creditUsed > 0 && <p className="text-lg text-foreground/60 mt-3">{t('merch.payment.paidFromCredit', { amount: bahtText(creditUsed) })}</p>}
         <PaymentExpiry expiresAt={payment.expiresAt} />
         <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('merch.payment.openBankingApp')}</p>
         <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg"><Loader2 className="w-5 h-5 animate-spin" />{t('merch.payment.waiting')}</div>
@@ -181,11 +182,11 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
       <div className="w-full max-w-md space-y-3">
         {creditUsed > 0 && <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
           <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="w-6 h-6 text-primary" />{t('merch.payment.fromCredit')}</span>
-          <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span></div>}
+          <span className="text-2xl font-black text-primary tabular-nums">฿{bahtText(creditUsed)}</span></div>}
         <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
           <span className="flex items-center gap-3 text-xl text-foreground/80"><Banknote className="w-6 h-6 text-foreground/60" />
             {creditUsed > 0 ? t('merch.payment.leftToPay') : t('merch.payment.toPay')}</span>
-          <span className="text-4xl font-black tabular-nums">฿{leftToPay}</span></div></div>
+          <span className="text-4xl font-black tabular-nums">฿{bahtText(leftToPay)}</span></div></div>
       <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded')
         : payment.status === 'pending' ? t('merch.payment.waiting') : payment.status === 'paid' ? t('till.payment.received')
           : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('merch.payment.coveredByCredit') : t('merch.payment.confirmWithStaff')}</p>
@@ -201,9 +202,9 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         <div className="space-y-2">{cart.lines.map(line => <div key={line.id} className="flex items-start justify-between text-lg gap-3">
           <span className="text-foreground/80 min-w-0"><span className="font-bold tabular-nums">{line.qty}×</span>{' '}{line.translations?.[lang] ?? line.name}
             {line.variantLabel && <span className="block text-sm text-foreground/50">{line.variantLabel}</span>}</span>
-          <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span></div>)}</div>
+          <span className="font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span></div>)}</div>
         <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1.5">
-          <div className="flex items-center justify-between text-xl font-bold"><span>{t('common.total')}</span><span className="tabular-nums">฿{completion.total}</span></div>
+          <div className="flex items-center justify-between text-xl font-bold"><span>{t('common.total')}</span><span className="tabular-nums">฿{bahtText(completion.total)}</span></div>
           {(completion.payment.credit ?? 0) > 0 && <PaidRow icon={Wallet} label={t('common.credit')} amount={completion.payment.credit!} />}
           {completion.payment.cash > 0 && <PaidRow icon={Banknote} label={t('common.cash')} amount={completion.payment.cash} />}
           {completion.payment.card > 0 && <PaidRow icon={CreditCard} label={t('common.card')} amount={completion.payment.card} />}

@@ -57,6 +57,7 @@ import {
   Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { bahtText } from '@/lib/bahtText';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 /** Which customer-facing content to show via HandToCustomer. */
@@ -563,7 +564,7 @@ export function MobileOrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-900 dark:text-violet-100 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
+                        ฿{bahtText(wristband.creditBalanceTHB)} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>

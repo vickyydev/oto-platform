@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -10,7 +10,12 @@ import { StaffBenefitBreakdown } from '@/components/fnb/StaffBenefitBreakdown';
 import { RevenueBars } from '@/components/floor/RevenueBars';
 import { TenderTotal } from '@/components/shared/TenderLines';
 import { CashMovementList } from '@/components/eod/CashMovementList';
+import { FnbCustomerDisplay } from '@/components/fnb/FnbCustomerDisplay';
+import { MerchCustomerDisplay } from '@/components/merch/MerchCustomerDisplay';
+import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
 import { LanguageProvider } from '@/i18n/LanguageContext';
+import type { DisplayFnbCart, DisplayMerchCart, DisplayPayment, DisplayTotals } from '@oto/shared';
+import type { FnbOrderLine, MerchOrderLine } from '@/types';
 
 /**
  * SCRUM-948 — THE F&B AND SHOP TILLS AND THE REMAINING STAFF SCREENS WRITE
@@ -107,6 +112,20 @@ describe('F&B and Shop', () => {
     'components/shared/TenderCustomerDisplay.tsx',
     'components/shared/TenderLines.tsx',
     'components/shared/PromptPayCustomerScreen.tsx',
+    // The second review: the F&B and Shop customer displays (both halves of
+    // the split view are on screen together), the pickup-code dialog beside
+    // the cart's Charge, the band's credit on the scan list, the menu and shop
+    // grids and the modifier sheet, and the order stations' credit lines.
+    'components/fnb/PickupCodeModal.tsx',
+    'components/fnb/ScanWristband.tsx',
+    'components/fnb/FnbCustomerDisplay.tsx',
+    'components/fnb/MenuGrid.tsx',
+    'components/fnb/ModifierSheet.tsx',
+    'components/merch/MerchCustomerDisplay.tsx',
+    'components/merch/PublicMerchCustomerDisplay.tsx',
+    'components/merch/MerchGrid.tsx',
+    'components/mobile/order-station/MobileOrderStation.tsx',
+    'pages/OrderStation.tsx',
   ]) {
     it(`${rel}: no amount written by hand`, () => {
       const text = src(rel);
@@ -114,6 +133,65 @@ describe('F&B and Shop', () => {
       expect(text).not.toMatch(/\.toFixed\(0\)/);
     });
   }
+});
+
+describe('the F&B and Shop customer displays write the figure the staff cart writes', () => {
+  // A 10% code on ฿1,605: the cart's Charge reads "฿1444.50" (FnbCart), and
+  // the customer half beside it in the split view now reads the same.
+  const under = (el: ReactElement) => markup(createElement(LanguageProvider, null, el));
+  const tax = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0, taxTotal: 0, serviceChargeTotal: 0, categories: [] };
+  const fnbLines = (baht: number): FnbOrderLine[] => [{ id: 'l-1', qty: 1, selectedModifiers: [], lineTotal: baht,
+    menuItem: { id: 'm-1', name: 'ZZ TEST Platter', category: 'c', price: { weekday: baht, weekend: baht }, modifierGroups: [] } }];
+  const merchLines = (baht: number): MerchOrderLine[] => [{ id: 'l-1', qty: 1, lineTotal: baht,
+    merchItem: { id: 'i-1', name: 'ZZ TEST Cap', active: true, price: { weekday: baht, weekend: baht } } }];
+  const fnbCart = (baht: number): DisplayFnbCart => ({ kind: 'fnb', supported: true, orderNote: '', manualDiscounts: [], completion: null,
+    lines: [{ id: 'f-1', name: 'ZZ TEST Platter', qty: 1, basePrice: baht, lineTotal: baht, modifiers: [] }] });
+  const merchCart = (baht: number): DisplayMerchCart => ({ kind: 'merch', supported: true, manualDiscounts: [], completion: null,
+    lines: [{ id: 's-1', name: 'ZZ TEST Cap', qty: 1, unitPrice: baht, lineTotal: baht }] });
+  const totals = (baht: number): DisplayTotals => ({ manualAmounts: {}, discountAmount: 0, total: baht, taxBreakdown: { serviceChargeTotal: 0, categories: [] } });
+  const pay = (overrides: Partial<DisplayPayment>): DisplayPayment => ({ saleId: 'sale-948', amountSatang: 0, qrPayload: null,
+    qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: true, ...overrides });
+
+  const screens: [string, (baht: number) => string][] = [
+    ['the F&B display (till harness)', (baht) => under(createElement(FnbCustomerDisplay, { stage: 'order', lines: fnbLines(baht), total: baht, taxBreakdown: { ...tax, grandTotal: baht } }))],
+    ['the F&B display (paired)', (baht) => under(createElement(FnbCustomerDisplay, { stage: 'order', presentation: { cart: fnbCart(baht), totals: totals(baht) } }))],
+    ['the Shop display (till harness)', (baht) => under(createElement(MerchCustomerDisplay, { stage: 'order', wristband: null, lines: merchLines(baht), manualDiscounts: [], total: baht,
+      taxBreakdown: { ...tax, grandTotal: baht } as never, promptpayAmount: null, completedOrder: null, newBalance: null }))],
+    ['the Shop display (paired)', (baht) => under(createElement(PublicMerchCustomerDisplay, { stage: 'order', cart: merchCart(baht), totals: totals(baht) }))],
+  ];
+  for (const [name, draw] of screens) {
+    it(`${name}: an amount with satang to two places`, () => {
+      const html = draw(1444.5);
+      expect(html).toContain('฿1444.50<');
+      expect(html).not.toContain('฿1444.5<');
+    });
+    it(`${name}: whole baht exactly as before`, () => {
+      const html = draw(1605);
+      expect(html).toContain('>฿1605<');
+      expect(html).not.toContain('1605.00');
+    });
+  }
+
+  it('the F&B display at payment: credit and the rest to the satang', () => {
+    const html = under(createElement(FnbCustomerDisplay, { stage: 'payment', presentation: { cart: fnbCart(1444.5), totals: totals(1444.5) },
+      payment: pay({ amountSatang: 144_450, creditSatang: 35_550 }) }));
+    expect(html).toContain('฿355.50<');
+    expect(html).toContain('>฿1089<');
+  });
+
+  it('the Shop display (paired) at payment: the same', () => {
+    const html = under(createElement(PublicMerchCustomerDisplay, { stage: 'payment', cart: merchCart(1444.5), totals: totals(1444.5),
+      payment: pay({ amountSatang: 144_450, creditSatang: 35_550 }) }));
+    expect(html).toContain('฿355.50<');
+    expect(html).toContain('>฿1089<');
+  });
+
+  it("the pickup-code dialog's Continue and a voucher's wallet credit line", () => {
+    expect(src('components/fnb/PickupCodeModal.tsx')).toContain('Continue to Payment • ฿{bahtText(total)}');
+    expect(src('pages/OrderStation.tsx')).toContain('`฿${satangText(effect.valueSatang)} wallet credit`');
+    expect(satangText(50_050)).toBe('500.50');
+    expect(satangText(50_000)).toBe('500');
+  });
 });
 
 describe('End of Day and Performance, desk and phone', () => {

@@ -91,6 +91,7 @@ import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Monitor, Ban, Gift } from 'lucide-react';
+import { bahtText, satangText } from '@/lib/bahtText';
 
 const STAFF_BENEFIT_DISCOUNT_ID = 'staff-benefit';
 
@@ -1049,7 +1050,7 @@ export default function OrderStation() {
           id: `voucher-prize-${held.view.id}`,
           name:
             effect.type === 'wallet_credit'
-              ? `฿${Math.round(effect.valueSatang) / 100} wallet credit`
+              ? `฿${satangText(effect.valueSatang)} wallet credit`
               : held.view.prize.nameEn,
           category: '',
           price: { weekday: 0, weekend: 0 },
@@ -1478,7 +1479,7 @@ export default function OrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-900 dark:text-violet-100 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
+                        ฿{bahtText(wristband.creditBalanceTHB)} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>

@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { NumberKeypad } from '@/components/till/NumberKeypad';
 import { Hash } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 interface PickupCodeModalProps {
   open: boolean;
@@ -77,7 +78,7 @@ export function PickupCodeModal({
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            Continue to Payment • ฿{total}
+            Continue to Payment • ฿{bahtText(total)}
           </Button>
         </div>
       </DialogContent>

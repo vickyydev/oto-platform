@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MenuItem, ModifierGroup, SelectedModifier } from '@/types';
 import { resolveRateToday } from '@/lib/pricingMode';
+import { bahtText } from '@/lib/bahtText';
 import {
   Dialog,
   DialogContent,
@@ -117,7 +118,7 @@ export function ModifierSheet({
         <DialogHeader className="px-6 pt-6 pb-4 border-b text-left">
           <DialogTitle className="text-2xl">{item.name}</DialogTitle>
           <DialogDescription>
-            Base ฿{resolveRateToday(item.price)} ·{' '}
+            Base ฿{bahtText(resolveRateToday(item.price))} ·{' '}
             {mode === 'edit'
               ? 'Update this item'
               : groups.length > 0
@@ -186,7 +187,7 @@ export function ModifierSheet({
                           </div>
                           {resolveRateToday(opt.price) > 0 && (
                             <span className="text-sm font-bold text-primary tabular-nums shrink-0">
-                              +฿{resolveRateToday(opt.price)}
+                              +฿{bahtText(resolveRateToday(opt.price))}
                             </span>
                           )}
                         </button>
@@ -231,7 +232,7 @@ export function ModifierSheet({
             disabled={!canSave}
             onClick={handleSave}
           >
-            {mode === 'edit' ? 'Save changes' : 'Add to order'} • ฿{unitPrice * qty}
+            {mode === 'edit' ? 'Save changes' : 'Add to order'} • ฿{bahtText(unitPrice * qty)}
           </Button>
         </div>
       </DialogContent>
