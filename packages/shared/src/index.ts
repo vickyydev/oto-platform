@@ -96,5 +96,7 @@ export * from './party-menu';
 export * from './party-menu-catalogue';
 // SCRUM-861: the void and updated-items slips a refund or a party's plan change sends.
 export * from './prep-slips';
+// SCRUM-907: a manager changes a party's kitchen plan on the till; the BEO is changed.
+export * from './party-kitchen-edit';
 
 export { trustedBoxBridgeOrigin } from './box-bridge-origin';

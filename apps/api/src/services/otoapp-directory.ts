@@ -227,9 +227,43 @@ export interface DirectoryNotificationAnswer {
   replayed: boolean;
 }
 
+/**
+ * SCRUM-907 — a party's kitchen and bar plan as a manager changed it on the
+ * till, as the app's directory takes it (`kitchenPlanEditBodySchema`, the
+ * app's directory/kitchenPlanRoutes.ts): the edit's own id (the same id again
+ * writes nothing), when it was made, who made it on the platform, and the
+ * changes, in `PartyKitchenChange`'s words.
+ */
+export interface DirectoryKitchenPlanEditBody {
+  id: string;
+  editedAt: string;
+  by: { name: string; role: string };
+  changes: unknown[];
+}
+
+/** What the app answers with (`TillKitchenEditResult`, the app's lib/tillKitchenEdit.ts). */
+export interface DirectoryKitchenPlanEditAnswer {
+  edit: { id: string; eventId: string; changes: number };
+  replayed: boolean;
+}
+
+/** SCRUM-907 — the set menu's choice groups, as the app's directory answers them. */
+export interface DirectoryKitchenPlanChoicesAnswer {
+  setMenu: { templateName: string; groups: { label: string; options: string[]; allowMultiple: boolean }[] } | null;
+}
+
 export interface OtoAppDirectory {
   /** Whether this deployment has a directory to call at all. */
   readonly configured: boolean;
+  /**
+   * SCRUM-907 — write a party's kitchen-plan changes to its BEO:
+   * `POST /api/directory/events/:id/kitchen-plan`, under the `events:write`
+   * key. Optional so a directory built before it (a test's stub) still types;
+   * one without it is answered "not configured".
+   */
+  editKitchenPlan?(eventId: string, body: DirectoryKitchenPlanEditBody): Promise<DirectoryOutcome<DirectoryKitchenPlanEditAnswer>>;
+  /** SCRUM-907 — the set menu's choice groups: `GET /api/directory/events/:id/kitchen-plan/choices`. */
+  kitchenPlanChoices?(eventId: string): Promise<DirectoryOutcome<DirectoryKitchenPlanChoicesAnswer>>;
   /**
    * SCRUM-823 — put an inbox hand-over notice in a person's bell:
    * `POST /api/directory/notifications`, under a key carrying
@@ -516,8 +550,66 @@ export function buildOtoAppDirectory(
     };
   }
 
+  /** SCRUM-907 — one GET of the directory, read as a POST's answer is. */
+  async function get<T>(
+    path: string,
+    readable: (answer: unknown) => answer is T,
+    missing: string,
+    notConfigured: string,
+  ): Promise<DirectoryOutcome<T>> {
+    if (!configured) {
+      return { ok: false, status: null, code: DIRECTORY_NOT_CONFIGURED, message: notConfigured, retryable: true };
+    }
+    let res: Response;
+    try {
+      res = await fetchImpl(`${origin}${path}`, {
+        method: 'GET',
+        headers: { authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(env.OTOAPP_DIRECTORY_TIMEOUT_MS),
+      });
+    } catch (err) {
+      log?.warn({ err: (err as Error)?.name, host: new URL(origin).host }, 'otoapp directory unreachable');
+      return { ok: false, status: null, code: DIRECTORY_UNREACHABLE, message: 'The OTO App did not answer', retryable: true };
+    }
+    let payload: unknown = null;
+    try {
+      payload = await res.json();
+    } catch {
+      payload = null;
+    }
+    if (res.ok) {
+      if (!readable(payload)) {
+        return { ok: false, status: res.status, code: 'OTOAPP_UNREADABLE_ANSWER', message: missing, retryable: true };
+      }
+      return { ok: true, status: res.status, body: payload };
+    }
+    const refusal = refusalOf(res.status, payload);
+    return { ok: false, status: res.status, ...refusal, retryable: res.status >= 500 || res.status === 429 || res.status === 408 };
+  }
+
   return {
     configured,
+    editKitchenPlan(eventId, body) {
+      return post(
+        `/api/directory/events/${encodeURIComponent(eventId)}/kitchen-plan`,
+        body,
+        (answer): answer is DirectoryKitchenPlanEditAnswer => {
+          const edit = (answer as Partial<DirectoryKitchenPlanEditAnswer> | null)?.edit;
+          return !!edit?.id && edit.id.toLowerCase() === body.id.toLowerCase();
+        },
+        'The OTO App answered without the kitchen plan edit',
+        'This deployment has no OTO App directory configured, so the kitchen plan cannot be changed from the till',
+      );
+    },
+    kitchenPlanChoices(eventId) {
+      return get(
+        `/api/directory/events/${encodeURIComponent(eventId)}/kitchen-plan/choices`,
+        (answer): answer is DirectoryKitchenPlanChoicesAnswer =>
+          !!answer && typeof answer === 'object' && 'setMenu' in (answer as Record<string, unknown>),
+        "The OTO App answered without the set menu's choices",
+        'This deployment has no OTO App directory configured, so the set menu cannot be read from the till',
+      );
+    },
     notify(body) {
       return post(
         '/api/directory/notifications',

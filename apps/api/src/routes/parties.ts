@@ -3,6 +3,10 @@ import type { FastifyRequest } from 'fastify';
 import {
   PartyChargeBodySchema,
   PartyDetailWithSlipsAnswerSchema,
+  PartyKitchenChoicesAnswerSchema,
+  PartyKitchenChoicesQuerySchema,
+  PartyKitchenEditAnswerSchema,
+  PartyKitchenEditBodySchema,
   PartyPatchBodySchema,
   PartyPaymentBodySchema,
   PartyQuerySchema,
@@ -19,9 +23,9 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
-import { markTillMenu, readPartyPlan } from '../services/party-plan';
+import { editPartyKitchenPlan, partyDetailWithPlan, partyKitchenChoices } from '../services/party-kitchen-edit';
 import { previewPartySettlement, settleParty } from '../services/party-settlement';
-import { partySlipsView, printPartySlipsNow } from '../services/party-slips';
+import { printPartySlipsNow } from '../services/party-slips';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { AttemptSchema } from './payments';
@@ -39,6 +43,8 @@ import { opCtx } from '../services/tx';
  *   POST  /parties/:id/charges    extra tickets or F&B on the tab — a ledger entry, not a sale
  *   POST  /parties/:id/payments   money against the balance — a real tender, not a sale of goods
  *   POST  /parties/:id/slips/print  its kitchen and bar slips, now (SCRUM-805)
+ *   GET   /parties/:id/kitchen-plan/choices  the set menu's choice groups (SCRUM-907)
+ *   PUT   /parties/:id/kitchen-plan  a manager's change of the kitchen plan, written to the BEO (SCRUM-907)
  *
  * Branch-scoped like every events route: the permission is checked at the
  * branch the till names, and the service loads that branch inside the
@@ -99,29 +105,65 @@ export async function partyRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const answer = await getParty(app.db, {
+      // SCRUM-907: the one read the kitchen plan's edit answers with too.
+      return partyDetailWithPlan(app.db, {
         operatorId: auth.operatorId,
         branchId: req.query.branchId,
         partyId: req.params.id,
         date: req.query.date,
         now: new Date(),
       });
-      const read = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
-      // SCRUM-906: the whole kitchen plan, each line marked with whether the till sells it.
-      const kitchenPlan = read.kitchen ? await markTillMenu(app.db, auth.operatorId, read.kitchen) : null;
-      const plan =
-        read.plan && kitchenPlan
-          ? { ...read.plan, setMenu: kitchenPlan.setMenu, barItems: kitchenPlan.barItems }
-          : read.plan;
-      const slips = kitchenPlan
-        ? await partySlipsView(app.db, {
-            operatorId: auth.operatorId,
-            branchId: req.query.branchId,
-            eventId: answer.event.id,
-            plan: kitchenPlan,
-          })
-        : null;
-      return { ...answer, plan, planStatus: read.status, kitchenPlan, slips };
+    },
+  );
+
+  app.get(
+    '/:id/kitchen-plan/choices',
+    {
+      config: { permission: 'pos:party:kitchen_update', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          "SCRUM-907 — the set menu's choice groups of a party's BEO and the options of each, as the OTO App's " +
+          "template names them, for a manager changing a choice on the till's party Edit form. Asked of the OTO App " +
+          "through its directory each time; `status` \"unavailable\" with why (the app not answering, this deployment " +
+          'not configured) and no groups otherwise, so the form offers no choice it cannot check. Writes nothing. ' +
+          "404 for anything that is not one of the branch's parties. Needs pos:party:kitchen_update at the branch.",
+        params: PartyParams,
+        querystring: PartyKitchenChoicesQuerySchema,
+        response: { 200: PartyKitchenChoicesAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:party:kitchen_update');
+      return partyKitchenChoices(deps(req), actor, req.params.id, req.query.branchId);
+    },
+  );
+
+  app.put(
+    '/:id/kitchen-plan',
+    {
+      config: { permission: 'pos:party:kitchen_update', target: { branchId: 'body.branchId' } },
+      schema: {
+        description:
+          "SCRUM-907 — a branch manager or an administrator changes a party's kitchen and bar plan on the till, and " +
+          "the BEO is changed: a line's count and note, an extra added (picked from the till's menu with its code, " +
+          "or typed) or removed, a set-menu choice within its group, the cake's time and note. Never a price. The " +
+          "OTO App owns the plan: the changes are written there through its directory under the edit's own id (the " +
+          "same id again writes nothing), by the BEO's own Save, and recorded in the BEO's activity as changed on " +
+          'the till by this account; then the party is read again from the app and answered as the BEO now holds it ' +
+          '(the slips follow by their change detection). Nothing of the plan is kept on the platform; an audit row ' +
+          'keeps the lines before and after. A refusal from the app is answered 409 in its words (404 for a party ' +
+          'it no longer knows); no answer is a 502, and Save may be pressed again. Needs pos:party:kitchen_update ' +
+          "at the branch: a branch manager's or an administrator's, not reception's.",
+        params: PartyParams,
+        body: PartyKitchenEditBodySchema,
+        response: { 200: PartyKitchenEditAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:party:kitchen_update');
+      const answer = await editPartyKitchenPlan(deps(req), opCtx(req), actor, req.params.id, req.body);
+      if (answer.kitchenEdit.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
     },
   );
 

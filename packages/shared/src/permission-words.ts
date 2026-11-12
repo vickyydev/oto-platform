@@ -114,6 +114,7 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'pos:party:charge': 'Add tickets or food and drink charges to a party tab.',
   'pos:party:payment': "Take a payment against a party's outstanding balance.",
   'pos:party:update': "Change a party's details in the OTO App.",
+  'pos:party:kitchen_update': "Change a party's kitchen and bar plan from the till, written to its BEO in the OTO App.",
   'pos:event:checkin': 'Check children in or out of events and print or reprint their bands.',
   'admin:event_pricing:manage': 'Change camp day, event day and party guest walk-up prices.',
 

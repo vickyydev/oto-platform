@@ -268,6 +268,14 @@ export const PERMISSIONS = [
   'pos:party:payment',
   'pos:party:update',
   /**
+   * SCRUM-907 — change a party's kitchen and bar plan from the till's Edit
+   * form, written to the BEO in the OTO App (the owner's decision 7 of 12
+   * November: "with right permission of admin or manager"). A branch manager
+   * and the administrators hold it; reception, who hold `pos:party:update`,
+   * do not, and see the plan read-only.
+   */
+  'pos:party:kitchen_update',
+  /**
    * S2-20 E3 — check a child in at an event (a kid band, and a parent band when
    * the parent is attending), check them out, and reprint their bands. The
    * check-in is written back to the OTO App through its directory API.
@@ -570,6 +578,8 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:party:charge',
     'pos:party:payment',
     'pos:party:update',
+    // SCRUM-907 — the party's kitchen plan, written to the BEO: a manager's, not reception's.
+    'pos:party:kitchen_update',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:wallet:adjust',
