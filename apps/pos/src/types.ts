@@ -1792,6 +1792,8 @@ export interface CheckIn {
   paidAtTill?: { saleId: string; receiptNumber: string | null };
   /** SCRUM-886 — a waiting stay for another trading day: that day (YYYY-MM-DD), for the board's "Booked for" line. */
   bookedForDate?: string;
+  /** SCRUM-886 — the booking's children checked in or collected on ANY day (the board's card holds today's only). */
+  bookingCheckedIn?: string[];
   registeredAt: string;
   checkedInAt?: string; // set on Enter Park (drives the timer)
   checkedOutAt?: string; // set on Check Out

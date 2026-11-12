@@ -57,8 +57,9 @@ export function cancelBookingBlockedBy(
 
 /**
  * SCRUM-886 — the Check-in board's family as a cancellable booking: its
- * waiting children, and the names of any already in the park or collected.
- * Null when the family has no child waiting (nothing to cancel) or every
+ * waiting children, and the names of any already in the park or collected —
+ * on the card, or on an earlier day (`bookingCheckedIn`: the card holds only
+ * today's collected, and the platform refuses the cancel for either). Null when the family has no child waiting (nothing to cancel) or every
  * waiting child is paid for (that is the sale's refund or void path, so the
  * press is not offered at all, as on the picker).
  */
@@ -70,7 +71,12 @@ export function boardBookingOf(family: readonly CheckIn[]): CancellableBooking |
     registrationId: waiting[0]!.registrationId,
     parentName: waiting[0]!.parentName,
     children: waiting,
-    checkedIn: family.filter((c) => c.status === 'out').map((c) => c.childName),
+    checkedIn: [
+      ...new Set([
+        ...family.filter((c) => c.status === 'out').map((c) => c.childName),
+        ...family.flatMap((c) => c.bookingCheckedIn ?? []),
+      ]),
+    ],
   };
 }
 

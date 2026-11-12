@@ -569,6 +569,8 @@ export interface ApiBoardFamily {
   contact: ApiContact | null;
   tab: ApiBoardTab;
   children: ApiBoardChild[];
+  /** SCRUM-886 — every child on the booking checked in or collected, whatever the day; absent on an older box copy. */
+  checkedInChildNames?: string[];
 }
 
 export interface ApiBoard {
@@ -735,6 +737,7 @@ export function boardChildToCheckIn(c: ApiBoardChild, fam: ApiBoardFamily, photo
     ...(c.checkedOutAt ? { checkedOutAt: c.checkedOutAt } : {}),
     ...(c.bookedMinutes != null ? { bookedDurationMinutes: c.bookedMinutes } : {}),
     ...(c.bookedForDate ? { bookedForDate: c.bookedForDate } : {}),
+    ...(fam.checkedInChildNames?.length ? { bookingCheckedIn: fam.checkedInChildNames } : {}),
     ...(fam.contact
       ? {
           waConnection: {

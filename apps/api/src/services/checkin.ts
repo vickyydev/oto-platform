@@ -1424,6 +1424,14 @@ export interface BoardFamily {
   /** The family's canonical tab: in_park > registered > out (prototype `familyTab`). */
   tab: BoardTab;
   children: BoardChild[];
+  /**
+   * SCRUM-886 — every child on this registration checked in or collected,
+   * WHATEVER THE DAY (`children` holds only today's collected): the cancel
+   * refuses a booking with any (CHECKIN_CANCEL_CHECKED_IN), so the board
+   * shows its Cancel booking disabled with the picker's line instead.
+   * Always set by `boardOf`; optional for a family built elsewhere.
+   */
+  checkedInChildNames?: string[];
 }
 
 export interface BoardView {
@@ -1625,6 +1633,17 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
     operatorId,
     regs.filter((r) => r.source === 'booking').map((r) => r.id),
   );
+  // SCRUM-886 — a child who came on an earlier day and left is not on the
+  // board's card (today's Out only), yet still refuses the booking's cancel.
+  const settled = regIds.length
+    ? await db
+        .select({ registrationId: checkin.registrationId, childName: checkin.childName })
+        .from(checkin)
+        .where(and(inArray(checkin.registrationId, regIds), inArray(checkin.status, ['in_park', 'out'])))
+        .orderBy(asc(checkin.createdAt), asc(checkin.id))
+    : [];
+  const settledOf = new Map<string, string[]>();
+  for (const s of settled) settledOf.set(s.registrationId, [...(settledOf.get(s.registrationId) ?? []), s.childName]);
   const otherDayOf = (s: CheckinRow): string | null => {
     if (s.status !== 'registered') return null;
     const date = stayDateOf(s, bookingDates, day);
@@ -1655,6 +1674,7 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
       contact: contacts.get(r.id) ?? null,
       tab: familyTabOf(children),
       children,
+      checkedInChildNames: settledOf.get(r.id) ?? [],
     };
   });
   return {
