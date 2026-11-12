@@ -106,6 +106,35 @@ describe('the form opened again for the same family', () => {
     after.view.unmount();
   });
 
+  it('the family’s tick is not brought back for a number staff changed while the display was away', () => {
+    const before = open(promptOf({ familyStep: 'agreements' }));
+    const tick = () => elements(before.view.result.current).find((node) => node.props['data-testid'] === 'public-consent-contact-confirm')!;
+    (tick().props.onCheckedChange as (v: boolean) => void)(true);
+    // The line drops before the tick goes: the display pauses and the form goes away.
+    before.view.unmount();
+    expect(before.fills()).toHaveLength(0);
+    // Staff changed the number on the till meanwhile.
+    const after = open(promptOf({ requestId: 'zz-drop-2', familyStep: 'agreements', guardianPhone: '+66898020002', contactConfirmed: false }));
+    const box = elements(after.view.result.current).find((node) => node.props['data-testid'] === 'public-consent-contact-confirm')!;
+    expect(box.props.checked).toBe(false);
+    after.type('public-consent-guardian', 'ZZ TEST Ploy');
+    vi.advanceTimersByTime(LIVE_FILL_MS);
+    expect(after.fills().at(-1)).toMatchObject({ guardianPhone: '+66898020002', contactConfirmed: false });
+    expect(after.fills().some((fill) => fill.contactConfirmed === true)).toBe(false);
+    after.view.unmount();
+  });
+
+  it('the family’s tick comes back when the number and channel are still the ones they confirmed', () => {
+    const before = open(promptOf({ familyStep: 'agreements' }));
+    const tick = () => elements(before.view.result.current).find((node) => node.props['data-testid'] === 'public-consent-contact-confirm')!;
+    (tick().props.onCheckedChange as (v: boolean) => void)(true);
+    before.view.unmount();
+    const after = open(promptOf({ familyStep: 'agreements' }));
+    vi.advanceTimersByTime(LIVE_FILL_MS);
+    expect(after.fills().at(-1)).toMatchObject({ guardianPhone: '+66898020001', contactConfirmed: true });
+    after.view.unmount();
+  });
+
   it('a step the family moved to comes back with them', () => {
     const before = open(promptOf());
     before.press('common.continue');

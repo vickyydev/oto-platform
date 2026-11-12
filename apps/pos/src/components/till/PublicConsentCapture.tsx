@@ -182,6 +182,9 @@ const trimmed = (draft: FormDraft): FormDraft => ({
  * - The till changed it to something else (staff on the till): the till's. The
  *   station took that change first; the family's typing in that field, not yet
  *   at the till, was done before they could see it, and gives way.
+ * - The family's number tick is never settled apart from the number and the
+ *   channel it confirms: where the till's number or channel wins, so does the
+ *   till's tick (which staff's change cleared).
  */
 export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormDraft,
   sent: FormDraft | readonly FormDraft[] = []): FormDraft {
@@ -214,13 +217,24 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
   const number = (a: string, b: string) => consentFormPhone(a) === consentFormPhone(b);
   const sorted = (ids: string[]) => [...ids].sort();
   const all = <K extends keyof FormDraft>(key: K) => history.map((form) => form[key]);
+  const guardianPhone = pick(local.guardianPhone, base.guardianPhone, next.guardianPhone, all('guardianPhone'), number);
+  const contactChannel = next.contactChannel
+    ? pick(local.contactChannel, base.contactChannel, next.contactChannel, all('contactChannel')) : undefined;
+  // SCRUM-857 — the family's tick confirms the number and channel on their
+  // own screen, so it is settled with them, never apart: where the till's
+  // number or channel wins (staff changed it on the till), the tick is the
+  // till's too, which that change cleared. The family's tick is never kept
+  // for a number or channel they did not confirm.
+  const contactMoved = !number(guardianPhone, local.guardianPhone)
+    || (contactChannel !== undefined && contactChannel !== local.contactChannel);
   return {
     slots,
     guardianName: pick(local.guardianName, base.guardianName, next.guardianName, all('guardianName'), text),
-    guardianPhone: pick(local.guardianPhone, base.guardianPhone, next.guardianPhone, all('guardianPhone'), number),
-    ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel, all('contactChannel')) } : {}),
+    guardianPhone,
+    ...(contactChannel ? { contactChannel } : {}),
     ...(next.contactConfirmed !== undefined
-      ? { contactConfirmed: pick(local.contactConfirmed, base.contactConfirmed, next.contactConfirmed, all('contactConfirmed')) } : {}),
+      ? { contactConfirmed: contactMoved ? next.contactConfirmed
+        : pick(local.contactConfirmed, base.contactConfirmed, next.contactConfirmed, all('contactConfirmed')) } : {}),
     consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged, all('consentAcknowledged')),
     confirmations: pick(local.confirmations, base.confirmations, next.confirmations, all('confirmations'),
       (a, b) => same(sorted(a), sorted(b))),

@@ -243,6 +243,61 @@ describe('who wins a field (`mergeConsentDraft`)', () => {
     expect(mergeConsentDraft(base, base, staff).slots.a!.foodRestrictions).toBe('ZZ TEST no nuts');
   });
 
+  // The family's tick confirms the number and channel on their screen: it is
+  // settled with them, never kept for a number or channel staff changed.
+  const OTHER = '+66898020002'; // ZZ TEST number, used only by this fixture.
+  const ticked = { ...base, contactConfirmed: true };
+  const unticked = { ...base, contactConfirmed: false };
+
+  it('the family’s tick is not kept for a number staff changed on the till while it was on its way', () => {
+    const merged = mergeConsentDraft(ticked, unticked, { ...unticked, guardianPhone: OTHER }, [ticked]);
+    expect(merged).toMatchObject({ guardianPhone: OTHER, contactConfirmed: false });
+    // Unsent as well as in flight.
+    expect(mergeConsentDraft(ticked, unticked, { ...unticked, guardianPhone: OTHER })).toMatchObject({ guardianPhone: OTHER, contactConfirmed: false });
+  });
+
+  it('nor for a channel staff changed', () => {
+    const merged = mergeConsentDraft(ticked, unticked, { ...unticked, contactChannel: 'line' }, [ticked]);
+    expect(merged).toMatchObject({ contactChannel: 'line', contactConfirmed: false });
+  });
+
+  it('the tick stays the family’s while the number and channel are still theirs', () => {
+    // Staff changed another field: the family's tick, in flight, is kept.
+    expect(mergeConsentDraft(ticked, unticked, { ...unticked, guardianName: 'ZZ TEST Staff' }, [ticked]).contactConfirmed).toBe(true);
+    // The same number in another form is the same number.
+    expect(mergeConsentDraft(ticked, unticked, { ...unticked, guardianPhone: '0898020001' }, [ticked]).contactConfirmed).toBe(true);
+    // The family's own new number and tick, while the till still has the old ones.
+    const theirs = { ...ticked, guardianPhone: OTHER };
+    expect(mergeConsentDraft(theirs, unticked, unticked, [theirs])).toMatchObject({ guardianPhone: OTHER, contactConfirmed: true });
+  });
+
+  it('on the screen: a staff change of the number clears the family’s tick, and the next fill sends it unconfirmed', () => {
+    const form = open({ prompt: promptOf({ familyStep: 'agreements' }) });
+    (form.testId('public-consent-contact-confirm')!.props.onCheckedChange as (v: boolean) => void)(true);
+    vi.advanceTimersByTime(0);
+    expect(form.fills().at(-1)).toMatchObject({ guardianPhone: START, contactConfirmed: true });
+    form.type('public-consent-guardian', 'ZZ TEST Ploy');
+    // Staff changed the number on the till first: the station refused the family's tick on the older copy.
+    form.till({ requestId: 'zz-live-2', guardianPhone: OTHER, contactConfirmed: false });
+    expect(form.testId('public-consent-contact-confirm')!.props.checked).toBe(false);
+    vi.advanceTimersByTime(LIVE_FILL_MS);
+    expect(form.fills().at(-1)).toMatchObject({ guardianName: 'ZZ TEST Ploy', guardianPhone: OTHER, contactConfirmed: false, requestId: 'zz-live-2' });
+    expect(form.fills().some((fill) => fill.guardianPhone === OTHER && fill.contactConfirmed === true)).toBe(false);
+    form.view.unmount();
+  });
+
+  it('on the screen: so does a staff change of the channel', () => {
+    const form = open({ prompt: promptOf({ familyStep: 'agreements' }) });
+    (form.testId('public-consent-contact-confirm')!.props.onCheckedChange as (v: boolean) => void)(true);
+    vi.advanceTimersByTime(0);
+    form.type('public-consent-guardian', 'ZZ TEST Ploy');
+    form.till({ requestId: 'zz-live-2', contactChannel: 'line', contactConfirmed: false });
+    expect(form.testId('public-consent-contact-confirm')!.props.checked).toBe(false);
+    vi.advanceTimersByTime(LIVE_FILL_MS);
+    expect(form.fills().at(-1)).toMatchObject({ contactChannel: 'line', contactConfirmed: false, requestId: 'zz-live-2' });
+    form.view.unmount();
+  });
+
   it('on the screen: a staff edit before the family’s fill arrived is shown, and their stale typing is never sent over it', () => {
     const form = open({ prompt: promptOf({ familyStep: 'agreements' }) });
     form.type('public-consent-guardian', 'ZZ TEST Pl');
