@@ -25,6 +25,8 @@
 //   - the "No longer on the till" mark and the picker read the lines it
 //     writes as lines picked by hand;
 //   - a till that cannot be read leaves the fill as it was, and says so;
+//   - (the lane's reviews) the till's price a coded adults' line opens with
+//     is no price of its own: a coded mirror of the kids' dish stays a mirror;
 //   - the guards hold: nothing written before Approve and create, typed text
 //     never replaced, a claimed deposit sent as asked, a line the menu lacks
 //     decided, an option nobody named waiting for staff, the chat's words
@@ -91,7 +93,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 8;
+const CHECKS = 9;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -99,7 +101,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID() };
-const KEYS = ["till", "unread", "guards"] as const;
+const KEYS = ["till", "unread", "guards", "tillMirror", "tillOwn"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -459,6 +461,34 @@ try {
     assert.equal(rows.billing.deposit_paid, false, "no money received");
     assert.equal(rows.event.special_requests, "ZZ typed by staff: a seat for grandma", "the typed text stands; the chat's line was offered beside it, not over it");
     for (const r of rows.activity) for (const w of CHAT_WORDS) assert.ok(!r.metadata_json.includes(w) && !r.summary_text.includes(w), `no "${w}" in the activity row`);
+  });
+
+  // The lane's reviews: once Phase C codes a dish, its adults' copy opens at the till's price; that
+  // is no price of the adults' own, so a mirror of the kids' dish still folds (SCRUM-829).
+  await check("aCodedMirrorOfTheKidsDishStaysAMirror", async () => {
+    tillState = "ok";
+    const lines = (adultsPrice: number) => [
+      { menu: "kids" as const, itemName: "Calamari", quantity: 14, productCode: "CF-14", notes: null, price: 260 },
+      { menu: "adults" as const, itemName: "calamari", quantity: 10, productCode: "CF-14", notes: "adults eat the same as the kids", price: adultsPrice },
+    ];
+    const body = (adultsPrice: number) => ({
+      conversationId: null, messageId: null, package: null, setMenu: null, menuLines: lines(adultsPrice), entertainment: [], otherLines: [],
+      event: { numAdults: 10 }, cake: null, deposit: null, sources: [],
+    });
+    const mirror = await approve(ev.tillMirror, body(260));
+    assert.equal(mirror.status, 200, JSON.stringify(mirror.body));
+    let rows = await beoRows(ev.tillMirror);
+    assert.equal(rows.kitchen.menus.adultsDiffer, false, "the till's price is no price of the adults' own");
+    assert.deepEqual(rows.kitchen.menus.adults, []);
+    assert.equal(mirror.body.written.adultsLinesFolded, 1);
+    const view = await viewOf(ev.tillMirror);
+    assert.deepEqual((view?.lines ?? []).filter((l) => l.source === "extra").map((l) => [l.name, l.qty]), [["Calamari", 14]], "the kids' 14 charged once, nothing for a mirror");
+    // A price of the adults' own (the chat's, or one staff entered): their own order.
+    const own = await approve(ev.tillOwn, body(300));
+    assert.equal(own.status, 200, JSON.stringify(own.body));
+    rows = await beoRows(ev.tillOwn);
+    assert.equal(rows.kitchen.menus.adultsDiffer, true);
+    assert.deepEqual((rows.kitchen.menus.adults as any[]).map((l) => [l.itemName, l.quantity, l.price, l.productCode]), [["Calamari", 10, 300, "CF-14"]]);
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
