@@ -116,8 +116,8 @@ describe('(a) the display tells the till it cannot take the photo', () => {
       setAcknowledgedConfirmationIds: () => undefined, setCompletedSignature: () => undefined, askedForHelp: () => undefined,
       answered: () => undefined, setDisplayCamera: (camera: 'none' | 'refused' | null) => { said.push(camera); },
     };
-    const fill = { action: 'fill', requestId: 'r', visitorId: 'v', slots: [], guardianName: '', consentAcknowledged: false,
-      acknowledgedConfirmationIds: [] } as const;
+    const fill: Extract<ConsentAction, { action: 'fill' }> = { action: 'fill', requestId: 'r', visitorId: 'v', slots: [],
+      guardianName: '', consentAcknowledged: false, acknowledgedConfirmationIds: [] };
     takeConsentAction({ ...fill, camera: 'refused' }, till);
     takeConsentAction(fill, till);
     expect(said).toEqual(['refused', null]);
