@@ -9,7 +9,7 @@ import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
+import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_HEAD_TOUCH, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
@@ -594,7 +594,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div></div>
       : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" buttonClassName={DISPLAY_TOUCH} /></div>}
     {/* SCRUM-943 — at phone width the language button sits above the heading, not over it. */}
-    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD}`)}>
+    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD} ${NARROW_HEAD_TOUCH}`)}>
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
         <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>

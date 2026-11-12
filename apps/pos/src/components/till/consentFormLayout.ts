@@ -50,3 +50,5 @@ export const FORM_RECONNECTING_LINE =
  * copy of the form, its own customer half and the phone keep their sizes.
  */
 export const DISPLAY_TOUCH = 'min-h-11';
+/** …and at phone width its heading starts below that taller language button (`NARROW_HEAD`'s 56px left it 4px short). */
+export const NARROW_HEAD_TOUCH = 'max-[520px]:pt-16';
