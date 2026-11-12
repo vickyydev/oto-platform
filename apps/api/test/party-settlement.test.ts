@@ -1232,3 +1232,27 @@ describe('SCRUM-889 — the sale list names a party settlement', () => {
     }
   });
 });
+
+describe('SCRUM-890 — on the sale list, a settlement with only its deposit is not part-paid', () => {
+  type Listed = { id: string; partPaid?: { paidSatang: number; balanceSatang: number } };
+  const listed = async (saleId: string): Promise<Listed> => {
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const list = await call<{ sales: Listed[] }>('GET', reception, `/sales?branchId=${central}&businessDate=${row!.businessDate}&limit=200`);
+    expect(list.status, JSON.stringify(list.body)).toBe(200);
+    return list.body.sales.find((s) => s.id === saleId)!;
+  };
+
+  it('the deposit alone leaves it unpaid; cash on it makes it part-paid, the balance after the deposit and the cash', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party listed part-paid', WEEKDAY, 16_900, 2_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 200_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    const saleId = opened.body.sale.id;
+    expect(await listed(saleId)).not.toHaveProperty('partPaid');
+
+    const part = await finalise(saleId, { method: 'cash', amountSatang: 100_000, tenderedSatang: 100_000 });
+    expect(part.status, JSON.stringify(part.body)).toBe(200);
+    expect((await listed(saleId)).partPaid).toEqual({ paidSatang: 100_000, balanceSatang: 1_390_000 });
+  });
+});

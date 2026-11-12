@@ -298,3 +298,41 @@ describe('SCRUM-891 — after the whole refund of a part-paid sale, the answer a
     expect(await saleRow(saleId)).toMatchObject({ status: 'voided', grossSatang: owed, refundedSatang: 5_000 });
   });
 });
+
+// =============================================================================
+
+describe('SCRUM-890 — the sale list names a part-paid sale, so History reads it as partly paid', () => {
+  type Listed = { id: string; status: string; partPaid?: { paidSatang: number; balanceSatang: number } };
+  const listed = async (saleId: string): Promise<Listed> => {
+    const row = await saleRow(saleId);
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?branchId=${branchId}&businessDate=${row.businessDate}&limit=200`,
+      headers: { cookie: manager },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const found = (res.json().sales as Listed[]).find((s) => s.id === saleId);
+    expect(found, saleId).toBeDefined();
+    return found!;
+  };
+
+  it('an open sale with money taken carries what was paid and the balance; an unpaid one carries nothing', async () => {
+    const part = await shopOrder();
+    const paid = await finalise(part.saleId, { method: 'cash', kind: 'cash', amountSatang: 2_000, tenderedSatang: 2_000, actionId: newId() });
+    expect(paid.statusCode, paid.body).toBe(200);
+    expect(await listed(part.saleId)).toMatchObject({
+      status: 'tendering',
+      partPaid: { paidSatang: 2_000, balanceSatang: part.owed - 2_000 },
+    });
+
+    const unpaid = await shopOrder();
+    expect(await listed(unpaid.saleId)).not.toHaveProperty('partPaid');
+
+    // Refunded whole, it is closed as void: no longer part-paid.
+    const refunded = await refundFromHistory(manager, part.saleId, { actionId: newId() });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    const after = await listed(part.saleId);
+    expect(after.status).toBe('voided');
+    expect(after).not.toHaveProperty('partPaid');
+  });
+});

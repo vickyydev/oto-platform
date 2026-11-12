@@ -165,6 +165,12 @@ export interface ApiSaleListItem extends ApiSale {
   member: { id: string; name: string | null; nickname: string; phone: string } | null;
   lineKinds: string[];
   revenueCategories: string[];
+  /**
+   * SCRUM-890 — on a sale still open with money a tender took on it (never
+   * the party's deposit alone): what was paid and what is still to pay, as
+   * the platform's list reads it. Absent on every other row.
+   */
+  partPaid?: { paidSatang: number; balanceSatang: number } | null;
 }
 
 export interface ApiSaleLine {
@@ -438,7 +444,8 @@ export function isDropOff(sale: ApiSaleListItem): boolean {
 /** What the badge says, refunds included. */
 export function badgeOf(sale: ApiSaleListItem): BadgeStatus {
   if (sale.status === 'voided') return 'voided';
-  if (sale.status === 'tendering') return 'unpaid';
+  // SCRUM-890 — open with money taken on it: partly paid, not unpaid.
+  if (sale.status === 'tendering') return sale.partPaid ? 'part_paid' : 'unpaid';
   const refunded = sale.totals.refundedSatang;
   if (refunded > 0 && refunded >= sale.totals.grossSatang) return 'refunded';
   if (refunded > 0) return 'partially_refunded';

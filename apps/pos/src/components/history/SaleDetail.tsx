@@ -863,8 +863,9 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     status === 'voided'
       ? 'voided'
       : status === 'tendering'
-        // SCRUM-890 — money taken on it and still open: partly paid, not unpaid.
-        ? openSaleBadgeOf(attempts)
+        // SCRUM-890 — money taken on it and still open: partly paid, not unpaid
+        // (the list row's word until the detail's tenders are read).
+        ? detail ? openSaleBadgeOf(attempts) : sale.partPaid ? 'part_paid' : 'unpaid'
         : totals.refundedSatang > 0
           ? totals.refundedSatang >= totals.grossSatang
             ? 'refunded'
@@ -918,7 +919,12 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
   /** SCRUM-890 — the figure under the badge: a part-paid sale's balance, else its gross. */
-  const amountShownSatang = badge === 'part_paid' ? balanceDueSatang(totals.grossSatang, attempts) : totals.grossSatang;
+  const amountShownSatang =
+    badge !== 'part_paid'
+      ? totals.grossSatang
+      : detail
+        ? balanceDueSatang(totals.grossSatang, attempts)
+        : (sale.partPaid?.balanceSatang ?? totals.grossSatang);
   const taxName =
     detail?.taxBreakdown?.categories?.find((c) => c.taxName)?.taxName ?? 'VAT';
 

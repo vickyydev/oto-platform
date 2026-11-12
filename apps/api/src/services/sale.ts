@@ -5653,6 +5653,14 @@ export interface SaleListItem extends SaleReadView {
    * tab as a ticket order.
    */
   partySettlement?: { eventId: string; settlementId: string };
+  /**
+   * SCRUM-890 — the sale is still open with money a tender took on it (the
+   * party's deposit on a settlement is the party's, never this): what its own
+   * tenders took, and the balance after everything on it, deposit included —
+   * the figures End of Day names for a part-paid sale. Present only then;
+   * History's card reads it as "Partly paid" rather than "Unpaid".
+   */
+  partPaid?: { paidSatang: number; balanceSatang: number };
 }
 
 /** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
@@ -5763,6 +5771,34 @@ export async function listSales(
         .where(inArray(partySettlement.saleId, ids))
     : [];
   const settlementOf = new Map(settlements.map((s) => [s.saleId, { eventId: s.eventId, settlementId: s.id }]));
+  // SCRUM-890 — what each open sale on the page has taken, in one query.
+  const openIds = rows.filter((row) => row.sale.status === 'tendering').map((row) => row.sale.id);
+  const openTenders = openIds.length
+    ? await db
+        .select({
+          saleId: paymentAttempt.saleId,
+          status: paymentAttempt.status,
+          amountSatang: paymentAttempt.amountSatang,
+          methodCode: paymentAttempt.methodCode,
+          payload: paymentAttempt.payload,
+        })
+        .from(paymentAttempt)
+        .where(inArray(paymentAttempt.saleId, openIds))
+    : [];
+  const takenOf = new Map<string, { own: number; all: number }>();
+  for (const tender of openTenders) {
+    if (!tender.saleId || !PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(tender.status)) continue;
+    const sum = takenOf.get(tender.saleId) ?? { own: 0, all: 0 };
+    sum.all += tender.amountSatang;
+    if (!isPartyDepositAttempt(tender)) sum.own += tender.amountSatang;
+    takenOf.set(tender.saleId, sum);
+  }
+  const partPaidOf = new Map<string, { paidSatang: number; balanceSatang: number }>();
+  for (const row of rows) {
+    const taken = row.sale.status === 'tendering' ? takenOf.get(row.sale.id) : undefined;
+    if (!taken || taken.own <= 0) continue;
+    partPaidOf.set(row.sale.id, { paidSatang: taken.own, balanceSatang: Math.max(0, row.sale.grossSatang - taken.all) });
+  }
   // SCRUM-430 — who voided each voided sale on the page, by name, in one query.
   const voiderNameOf = await accountNamesOf(
     db,
@@ -5797,6 +5833,7 @@ export async function listSales(
       hold: holdOf.get(row.sale.id) ?? null,
       resumedFromHold: holdOf.has(row.sale.id) ? null : (resumedOf.get(row.sale.id) ?? null),
       ...(settlementOf.has(row.sale.id) ? { partySettlement: settlementOf.get(row.sale.id)! } : {}),
+      ...(partPaidOf.has(row.sale.id) ? { partPaid: partPaidOf.get(row.sale.id)! } : {}),
     })),
   };
 }

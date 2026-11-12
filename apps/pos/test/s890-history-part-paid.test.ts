@@ -7,8 +7,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PaymentAttemptView } from '@oto/shared';
 import {
   amountLabelOf,
+  badgeOf,
   balanceDueSatang,
   openSaleBadgeOf,
+  spentOf,
   toTxn,
   type ApiSaleDetail,
   type ApiSaleListItem,
@@ -45,7 +47,12 @@ beforeEach(() => {
 
 const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
 
-const row = (id: string, status: ApiSaleListItem['status'], gross: number): HistoryTxn =>
+const row = (
+  id: string,
+  status: ApiSaleListItem['status'],
+  gross: number,
+  partPaid?: ApiSaleListItem['partPaid'],
+): HistoryTxn =>
   toTxn(
     {
       id,
@@ -74,6 +81,7 @@ const row = (id: string, status: ApiSaleListItem['status'], gross: number): Hist
       member: null,
       lineKinds: ['fnb_item'],
       revenueCategories: ['fnb'],
+      ...(partPaid !== undefined ? { partPaid } : {}),
     },
     {},
   );
@@ -142,6 +150,30 @@ describe('History reads a part-paid sale as partly paid, with the balance due', 
     ]);
     expect([paid.badge, paid.amountShownSatang, amountLabelOf(paid.badge)]).toEqual(['paid', 9_000, 'Total paid']);
     expect(amountLabelOf('voided')).toBe('Total (voided)');
+  });
+});
+
+describe('the History list reads the platform’s part-paid row', () => {
+  it('the card says Partly paid where the row names money taken, Unpaid where it does not', () => {
+    const part = row('sale-part', 'tendering', 17_500, { paidSatang: 5_000, balanceSatang: 12_500 });
+    expect(part.badge).toBe('part_paid');
+    expect(badgeOf(part.ledger)).toBe('part_paid');
+    expect(row('sale-unpaid', 'tendering', 17_500).badge).toBe('unpaid');
+    expect(row('sale-null', 'tendering', 17_500, null).badge).toBe('unpaid');
+    // A closed or voided sale reads by its own status, whatever else the row carries.
+    expect(row('sale-closed', 'finalised', 17_500).badge).toBe('paid');
+    expect(row('sale-void', 'voided', 17_500).badge).toBe('voided');
+    // Nothing is counted as spend while the sale is open, as before.
+    expect(spentOf([part])).toBe(0);
+  });
+
+  it('the detail opens on the row’s word and balance, then reads its own tenders', async () => {
+    const txn = row('sale-part', 'tendering', 17_500, { paidSatang: 5_000, balanceSatang: 12_500 });
+    const state = await open(txn, [attempt({ id: 'cash', method: 'cash', status: 'approved', amountSatang: 5_000 })]);
+    expect([state.badge, state.amountShownSatang]).toEqual(['part_paid', 12_500]);
+    const desktop = src('components/history/SaleDetail.tsx');
+    expect(desktop).toContain("? detail ? openSaleBadgeOf(attempts) : sale.partPaid ? 'part_paid' : 'unpaid'");
+    expect(desktop).toContain(': (sale.partPaid?.balanceSatang ?? totals.grossSatang);');
   });
 });
 
