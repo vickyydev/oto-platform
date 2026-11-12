@@ -388,10 +388,16 @@ export const checkinApi = {
    * stays on record. Platform only: the box's copy cannot tell whether another
    * sale has paid for the child meanwhile, so offline it is refused in plain
    * words rather than guessed.
+   *
+   * SCRUM-912 — no response type is named: the route declares no response
+   * schema, so `ApiResponse` would be `unknown` (which the seam walker
+   * refuses), and the till reads nothing from the answer. A hand-written
+   * `ApiRegistration` here was the one hand-typed call over this file's
+   * allowance.
    */
-  cancelRegistration: (registrationId: string, reason: string) =>
+  cancelRegistration: (registrationId: string, reason: string): Promise<unknown> =>
     viaLane(
-      () => api.post<ApiRegistration>(`/checkin/registrations/${registrationId}/cancel`, { reason }, { idempotencyKey: idemKey() }),
+      () => api.post(`/checkin/registrations/${registrationId}/cancel`, { reason }, { idempotencyKey: idemKey() }),
       async () => {
         throw needsInternet('Cancelling a waiting booking');
       },

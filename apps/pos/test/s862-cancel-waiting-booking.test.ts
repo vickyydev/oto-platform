@@ -173,7 +173,9 @@ describe("s862 — the till's cancel call", () => {
         return reply(registration([stay('c1', { status: 'cancelled' })]));
       }),
     );
-    const answer = await checkinApi.cancelRegistration(REG, 'Family did not come');
+    // SCRUM-912 — the call names no response type (the route declares no
+    // response schema); the answer is still the registration, read as one here.
+    const answer = (await checkinApi.cancelRegistration(REG, 'Family did not come')) as ApiRegistration;
     expect(answer.children.map((c) => c.status)).toEqual(['cancelled']);
     expect(calls).toHaveLength(1);
     expect(calls[0]!.url).toBe(`/api/checkin/registrations/${REG}/cancel`);
