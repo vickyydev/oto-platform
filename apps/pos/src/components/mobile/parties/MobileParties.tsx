@@ -38,7 +38,6 @@ import { MobilePartyDetail } from './MobilePartyDetail';
 import { MobileEventAttendeeList } from './MobileEventAttendeeList';
 import { MobilePartyPayment } from './MobilePartyPayment';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
-import { usePartyPlannedQuote } from '@/lib/partySettlementBill';
 import { MobilePartyFnb } from './MobilePartyFnb';
 
 type Step = 'list' | 'detail' | 'payment' | 'fnb';
@@ -89,12 +88,6 @@ export function MobileParties() {
   const selectedEvent =
     fresh && fresh.id === selectedId ? (fresh as unknown as OtoEvent) : findEvent(selectedId, dayEvents);
   const isPartyEvent = selectedEvent?.type === 'party';
-  // SCRUM-936 — a party not settled yet owes its package: the platform's quote
-  // for Settle party, shown on its page as the counter's page shows it.
-  const planned = usePartyPlannedQuote(
-    step === 'detail' && isPartyEvent ? (selectedEvent as unknown as PartyBooking) : null,
-    station?.stationId ?? null,
-  );
   // Check-in is scoped to today's session only (matches the iPad Events tab).
   // Browsing another date shows the roster read-only.
   const canCheckIn = selectedDate === today;
@@ -306,7 +299,8 @@ export function MobileParties() {
         <div className="h-full overflow-hidden">
           <MobilePartyDetail
             party={selectedEvent as unknown as PartyBooking}
-            planned={planned}
+            // SCRUM-936 — the page prices the party from its own plan read, asked from this till.
+            stationId={station?.stationId ?? null}
             onBack={handleBackToList}
             // S2-20 E4: what the till can know is asked before the payment or
             // F&B flow opens, so the guest is never shown a "thank you" for

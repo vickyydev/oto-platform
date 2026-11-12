@@ -10,15 +10,14 @@ import {
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
 import {
-  NO_PLANNED_QUOTE,
   partyBillShown,
   partyBillUnpriced,
   plannedQuoteOf,
-  type PlannedQuote,
+  usePlannedSettleQuote,
 } from '@/lib/partySettlementBill';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import { withPartyKitchen } from '@/api/events';
-import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
+import { usePartyPlanReadState } from '@/hooks/usePartyPlanRead';
 import { partyCakeLabel } from '@/lib/partyKitchen';
 import {
   ArrowLeft,
@@ -106,8 +105,8 @@ function InfoRow({
 
 interface MobilePartyDetailProps {
   party: PartyBooking;
-  /** SCRUM-936 — the platform's price of Settle party, while the party is not settled. */
-  planned?: PlannedQuote;
+  /** SCRUM-936 — the till the Settle party preview is asked from, as on the counter's page. */
+  stationId?: string | null;
   onBack: () => void;
   onTakePayment: () => void;
   onAddFnb: () => void;
@@ -115,16 +114,20 @@ interface MobilePartyDetailProps {
 
 export function MobilePartyDetail({
   party: given,
-  planned: plannedQuote = NO_PLANNED_QUOTE,
+  stationId = null,
   onBack,
   onTakePayment,
   onAddFnb,
 }: MobilePartyDetailProps) {
   // SCRUM-906 — the party's kitchen plan, read on opening, on focus and every minute while open,
   // laid over the party in the page's own words (every line, the cake, the bar).
-  const planRead = usePartyPlanRead(given);
+  // SCRUM-936 — the same read prices the bill: undefined until it answers.
+  const planRead = usePartyPlanReadState(given);
   const kitchenPlan = planRead?.kitchenPlan ?? planRead?.plan ?? null;
   const party = withPartyKitchen(given, kitchenPlan);
+  // SCRUM-936 — a party not settled yet owes its package: the platform's price
+  // of Settle party on the plan's counts, as the counter's page reads it.
+  const plannedQuote = usePlannedSettleQuote(given, planRead, stationId);
   // A party the platform settles on its tab (walk-ups, money taken there)
   // reads the tab's bill, and is taken on the tab here.
   const planned = plannedQuoteOf(party, plannedQuote);

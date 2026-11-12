@@ -167,8 +167,9 @@ export function partyListFigure(party: PartyBooking, planned: PlannedQuote = NO_
  * SCRUM-936 — THE PLATFORM'S PRICE OF SETTLING A PARTY NOT YET SETTLED, on the
  * plan's counts (`partySettleFormDefaults`, the counts Settle party opens on),
  * through the same preview the Settle form reads (`POST /parties/:id/settle/
- * preview`, which writes nothing). `planRead` is the page's read of the plan:
- * undefined while it is being read, null when it could not be read.
+ * preview`, which writes nothing). `planRead` is the page's read of the plan
+ * (`usePartyPlanReadState`): undefined while it is being read, null when it
+ * could not be read.
  */
 export function usePlannedSettleQuote(
   party: PartyBooking | null,
@@ -206,9 +207,10 @@ export function usePlannedSettleQuote(
 
 /**
  * SCRUM-936 — the same price for a screen that has not read the party's plan:
- * the phone's party page and the parties lists. Reads the plan (`GET
- * /parties/:id`) for a party not yet settled, then asks for the price as the
- * counter's page does.
+ * a parties list row. Reads the plan (`GET /parties/:id`) once for a party not
+ * yet settled, then asks for the price as the party pages do. The party pages
+ * (counter and phone) price it from their own plan read
+ * (`usePartyPlanReadState`), the one that also feeds their kitchen sections.
  */
 export function usePartyPlannedQuote(party: PartyBooking | null, stationId: string | null): PlannedQuote {
   const [read, setRead] = useState<{ id: string; read: PartyPlanRead | null } | null>(null);

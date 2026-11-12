@@ -302,6 +302,21 @@ const partyPage = (party: PartyBooking) =>
     onChanged: () => undefined,
   } as Record<string, unknown>);
 
+// The phone's page reads its plan with a hook (SCRUM-906) and prices the party
+// from that read, so it renders as the desk's does.
+const phonePage = (party: PartyBooking) =>
+  renderHook((p: Record<string, unknown>) => MobilePartyDetail(p as never), {
+    party,
+    stationId: TILL,
+    onBack: () => undefined,
+    onTakePayment: vi.fn(),
+    onAddFnb: () => undefined,
+  } as Record<string, unknown>);
+
+/** The plan reads and Settle party previews a page asked for this party. */
+const planReads = () => getMock.mock.calls.filter((c) => String(c[0]).startsWith(`/parties/${PARTY}`)).length;
+const previews = () => postMock.mock.calls.filter((c) => c[0] === `/parties/${PARTY}/settle/preview`).length;
+
 // =============================================================================
 
 describe('SCRUM-936 — the bill before a settlement is the package the plan owes', () => {
@@ -484,6 +499,14 @@ describe('SCRUM-936 — the counter’s party page before Settle party', () => {
     expect(text).toContain('What this party owes could not be read from the platform. Open the party again to read it.');
   });
 
+  it('reads the plan once: its kitchen sections and its bill share the read', async () => {
+    const page = partyPage(partyOf(null));
+    await settle();
+    expect(flat(page.result.current)).toContain('Outstanding ฿15900');
+    expect(planReads()).toBe(1);
+    expect(previews()).toBe(1);
+  });
+
   it('a party the platform holds no plan for reads as before', async () => {
     noPlan();
     const page = partyPage(partyOf(null));
@@ -494,8 +517,10 @@ describe('SCRUM-936 — the counter’s party page before Settle party', () => {
 });
 
 describe('SCRUM-936 — the phone’s party page before Settle party', () => {
-  it('reads the package as owed and sends staff to a counter till to settle it', () => {
-    const tree = MobilePartyDetail({ party: partyOf(null), planned: priced(), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+  it('reads the package as owed and sends staff to a counter till to settle it', async () => {
+    const page = phonePage(partyOf(null));
+    await settle();
+    const tree = page.result.current;
     const text = flat(tree);
     expect(text).toContain('Due ฿15900');
     expect(text).toContain('Total ฿16900');
@@ -507,8 +532,11 @@ describe('SCRUM-936 — the phone’s party page before Settle party', () => {
     expect(text).toContain("Take it with Settle party on a counter till's party page.");
   });
 
-  it('while the price is being read: a dash, never Fully paid, and nothing taken', () => {
-    const tree = MobilePartyDetail({ party: partyOf(null), planned: { state: 'reading' }, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+  it('while the price is being read: a dash, never Fully paid, and nothing taken', async () => {
+    postMock.mockImplementation((() => new Promise(() => undefined)) as unknown as typeof api.post);
+    const page = phonePage(partyOf(null));
+    await settle();
+    const tree = page.result.current;
     const text = flat(tree);
     expect(text).toContain('Due —');
     expect(text).toContain('Total —');
@@ -519,19 +547,39 @@ describe('SCRUM-936 — the phone’s party page before Settle party', () => {
     expect(button!.props.disabled).toBe(true);
   });
 
-  it('when the platform will not price it, the dash stays and its sentence says why', () => {
+  it('when the platform will not price it, the dash stays and its sentence says why', async () => {
     const message = 'What this party owes could not be read from the platform — offline';
-    const tree = MobilePartyDetail({ party: partyOf(null), planned: { state: 'refused', message }, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    postMock.mockImplementation((async () => {
+      throw new Error('offline');
+    }) as unknown as typeof api.post);
+    const page = phonePage(partyOf(null));
+    await settle();
+    const tree = page.result.current;
     const text = flat(tree);
     expect(text).toContain(message);
     expect(text).toContain('Outstanding —');
     expect(text.includes('Fully paid')).toBe(false);
   });
 
-  it('an open settlement still reads as SCRUM-916 left it', () => {
-    const tree = MobilePartyDetail({ party: partyOf(OPEN), planned: NO_PLANNED_QUOTE, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+  it('an open settlement still reads as SCRUM-916 left it', async () => {
+    const page = phonePage(partyOf(OPEN));
+    await settle();
+    const tree = page.result.current;
     expect(buttonIn(tree, 'Settlement open · ฿15800') === null).toBe(false);
     expect(flat(tree)).toContain("Take it with Resume settlement on a counter till's party page.");
+  });
+
+  it('reads the plan once: its kitchen rows and its bill share the read, and the host reads none', async () => {
+    const page = phonePage(partyOf(null));
+    await settle();
+    expect(flat(page.result.current)).toContain('Outstanding ฿15900');
+    expect(planReads()).toBe(1);
+    expect(previews()).toBe(1);
+    // The phone's party list host hands the page its till and reads no plan of its own.
+    const host = src('components/mobile/parties/MobileParties.tsx');
+    expect(host).toContain('stationId={station?.stationId ?? null}');
+    expect(host.includes('usePartyPlannedQuote')).toBe(false);
+    expect(host.includes('readPartyPlanOnPlatform')).toBe(false);
   });
 });
 
@@ -603,19 +651,23 @@ describe('SCRUM-936 — a party the platform settles on its tab reads the tab, a
     expect(elementOf(page.result.current, PartySettleModal)?.props.open).toBe(false);
   });
 
-  it('the phone never sends staff to Settle party for them', () => {
+  it('the phone never sends staff to Settle party for them', async () => {
     for (const [party, quote] of [
       [withWalkUp(1_690_000), WALK_UP_QUOTE],
       [withWalkUp(0), WALK_UP_QUOTE],
       [paidOnTab(1_690_000), QUOTE],
     ] as const) {
-      const tree = MobilePartyDetail({ party, planned: priced(quote), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
-      const text = flat(tree);
+      takenOnTab(quote);
+      const page = phonePage(party);
+      await settle();
+      const text = flat(page.result.current);
       expect(text.includes('Settle party')).toBe(false);
       expect(text.includes('Not settled')).toBe(false);
     }
-    const tree = MobilePartyDetail({ party: withWalkUp(1_690_000), planned: priced(WALK_UP_QUOTE), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
-    expect(buttonIn(tree, 'Take payment · ฿16350') === null).toBe(false);
+    takenOnTab(WALK_UP_QUOTE);
+    const page = phonePage(withWalkUp(1_690_000));
+    await settle();
+    expect(buttonIn(page.result.current, 'Take payment · ฿16350') === null).toBe(false);
   });
 });
 
