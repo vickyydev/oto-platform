@@ -1,6 +1,9 @@
+import * as React from 'react';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { StepPayment } from '@/components/till/StepPayment';
 import { launchBrowser, startSplitViewHarness, type SplitViewHarness } from './support/splitview-harness/server';
 import type { Box, Reading } from './support/splitview-harness/measure';
 
@@ -221,4 +224,30 @@ describe("the harness draws the till's own frame", () => {
       expect(harnessPage).toContain(cls);
     });
   }
+
+  it("the payment step's footer: the till's split-view classes by default, the prototype's row with stickyFoot={false}", () => {
+    vi.stubGlobal('React', React);
+    try {
+      const foot = (stickyFoot?: boolean) => {
+        const html = renderToStaticMarkup(React.createElement(StepPayment, {
+          total: 1500, selectedMethod: null, onSelectMethod: () => {}, onComplete: () => {}, onBack: () => {},
+          ...(stickyFoot === undefined ? {} : { stickyFoot }),
+        }));
+        return /<div class="(mt-auto pt-6 [^"]*)"><button/.exec(html)?.[1] ?? '';
+      };
+      const prototypeRow = 'mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4';
+      expect(foot(false)).toBe(prototypeRow);
+      expect(foot()).toBe(`${prototypeRow} md:@max-xl:sticky md:@max-xl:bottom-0 md:@max-xl:z-10 md:@max-xl:pb-1 md:@max-xl:bg-background md:@max-xl:bg-linear-to-b md:@max-xl:from-card/30 md:@max-xl:to-card/30`);
+      expect(foot(true)).toBe(foot());
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('the party modals: stickyFoot={false}; the counter till leaves it on (the default)', () => {
+    const party = (name: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'components', 'parties', name), 'utf8');
+    expect(party('PartySettleModal.tsx')).toContain('stickyFoot={false}');
+    expect(party('AddAttendeeModal.tsx')).toContain('stickyFoot={false}');
+    expect(till).not.toContain('stickyFoot');
+  });
 });

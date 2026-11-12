@@ -73,6 +73,14 @@ interface StepPaymentProps {
    * sales leave it unset and nothing changes for them.
    */
   holdControls?: ReactNode;
+  /**
+   * SCRUM-884 — Back and Confirm stay at the panel's foot in the split view
+   * (the counter till's column under @xl, below). Only the counter till's
+   * column turns this on: the party modals draw this step in their own
+   * `max-w-md` frame, under @xl at every window, and pass false so their
+   * footer is the prototype's row, static and unpainted. Defaults to on.
+   */
+  stickyFoot?: boolean;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -110,7 +118,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, pricePending, priceUnavailable, nothingToPay, paymentStage, fixedAmount, holdControls }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, pricePending, priceUnavailable, nothingToPay, paymentStage, fixedAmount, holdControls, stickyFoot = true }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   if (paymentStage) {
     selectedMethod = paymentStage.state.method;
@@ -214,8 +222,11 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
           and Confirm below the window. On a till screen (`md:`) whose panel is
           under @xl the row stays at the panel's foot while what is above it
           scrolls, on the column's own ground (the background with the
-          column's card tint over it). From @xl, and on the phone, as before. */}
-      <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 md:@max-xl:sticky md:@max-xl:bottom-0 md:@max-xl:z-10 md:@max-xl:pb-1 md:@max-xl:bg-background md:@max-xl:bg-linear-to-b md:@max-xl:from-card/30 md:@max-xl:to-card/30">
+          column's card tint over it). From @xl, on the phone, and in the
+          party modals (`stickyFoot={false}`), as before. */}
+      <div className={`mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4${stickyFoot
+        ? ' md:@max-xl:sticky md:@max-xl:bottom-0 md:@max-xl:z-10 md:@max-xl:pb-1 md:@max-xl:bg-background md:@max-xl:bg-linear-to-b md:@max-xl:from-card/30 md:@max-xl:to-card/30'
+        : ''}`}>
         {/* While a gateway QR is pending, Back is the way out of it: the QR is
             cancelled and this step stays, back at "Select Payment Method". */}
         <Button variant="outline" size="lg" className="w-full sm:w-24 @xl:w-32 shrink-0 h-16"

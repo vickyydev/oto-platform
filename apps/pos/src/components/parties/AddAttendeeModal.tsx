@@ -610,6 +610,7 @@ export function AddAttendeeModal({
             }}
             busy={selling}
             fixedAmount
+            stickyFoot={false}
             {...(usesStage ? { paymentStage: stage } : {})}
           />
         </div>

@@ -440,6 +440,7 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
             onComplete={() => undefined}
             onBack={close}
             paymentStage={stage}
+            stickyFoot={false}
           />
         </div>
       </div>
