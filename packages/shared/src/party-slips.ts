@@ -92,8 +92,13 @@ export const PARTY_NOT_ON_TILL_MENU = 'not on the till menu';
  * plan composes now as what the station holds, and prints nothing for it
  * (`party-slips.ts` in the api: a release is not a change). Raise it when
  * the composer changes what an unchanged plan prints.
+ *
+ * 3 (SCRUM-951): the bar slip's time is the bar plan's own service time when
+ * the BEO gives one, so a bar slip printed before this release under the
+ * kitchen's READY BY is taken as the plan now composes it, and no VOID or
+ * UPDATED slip goes to the bar for the release alone.
  */
-export const PARTY_SLIP_COMPOSER = 2;
+export const PARTY_SLIP_COMPOSER = 3;
 
 /** "Fried rice: Veggie": a chosen dish under its group's name. */
 export const partyChoiceName = (group: string, choice: string): string => `${group.trim()}: ${choice.trim()}`;
@@ -151,6 +156,16 @@ export function partySlipsTime(plan: Pick<PartyPlan, 'kitchen'> | null | undefin
 export function partyReadyBy(plan: Pick<PartyPlan, 'kitchen'>): string | null {
   const food = clockMinutes(plan.kitchen?.kidsFoodTime ?? null);
   return food === null ? null : clockOf(food - (plan.kitchen?.readyOffsetMinutes ?? 0));
+}
+
+/**
+ * SCRUM-951 — the bar slip's time: the bar plan's own service time when the
+ * BEO gives one ("Bar service 19:15", as the BEO and the party page say it),
+ * else the kitchen's READY BY as before (`partyReadyBy`); null when neither.
+ */
+export function partyBarReadyBy(plan: Pick<PartyPlan, 'kitchen'>): string | null {
+  const bar = clockMinutes(plan.kitchen?.barServiceTime ?? null);
+  return bar === null ? partyReadyBy(plan) : clockOf(bar);
 }
 
 /** One line of a party slip. No quantity when the plan prints none. */
@@ -287,7 +302,11 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
   // SCRUM-906: the cake, as the BEO's cake choice says it (decision 4).
   if (input.plan.cake) lines.kitchen.push(partyCakeSlipLine(input.plan.cake));
 
-  const ready = partyReadyBy(input.plan);
+  // SCRUM-951: the bar slip says the bar's own service time when the BEO gives one; the kitchen's is unchanged.
+  const ready: Record<PartySlipStation, string | null> = {
+    kitchen: partyReadyBy(input.plan),
+    bar: partyBarReadyBy(input.plan),
+  };
   const details = [
     ...(input.location?.trim() ? [`Room: ${input.location.trim()}`] : []),
     ...(input.plan.counts.kidsExpected === null ? [] : [`Children: ${input.plan.counts.kidsExpected}`]),
@@ -301,7 +320,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
           orderRef: input.partyName,
           time: input.printedAt,
           details,
-          ...(ready ? { readyBy: ready } : { readyByNote: PARTY_NO_KIDS_FOOD_TIME }),
+          ...(ready[station] ? { readyBy: ready[station] } : { readyByNote: PARTY_NO_KIDS_FOOD_TIME }),
           lines: lines[station],
         };
   return { kitchen: slip('kitchen'), bar: slip('bar') };

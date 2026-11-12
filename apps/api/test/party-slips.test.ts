@@ -1426,8 +1426,8 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
     // Every slip this release prints is marked with its composer and the run that printed it.
     expect((await baselinesOf(id)).map((b) => [b.station, b.composer, b.source, b.rebased])).toEqual([
-      ['bar', '2:kitchen_plan_1', 'print:1', false],
-      ['kitchen', '2:kitchen_plan_1', 'print:1', false],
+      ['bar', '3:kitchen_plan_1', 'print:1', false],
+      ['kitchen', '3:kitchen_plan_1', 'print:1', false],
     ]);
     await asPrintedBeforeTheRelease(id);
 
@@ -1438,8 +1438,8 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     expect(await changesOf(id)).toEqual([]);
     const rebased = await baselinesOf(id);
     expect(rebased.map((b) => [b.station, b.composer, b.source, b.rebased])).toEqual([
-      ['bar', '2:kitchen_plan_1', 'print:1', true],
-      ['kitchen', '2:kitchen_plan_1', 'print:1', true],
+      ['bar', '3:kitchen_plan_1', 'print:1', true],
+      ['kitchen', '3:kitchen_plan_1', 'print:1', true],
     ]);
     expect((rebased[1]!.held as { lines: unknown[] }).lines).toEqual([
       { qty: 3, name: 'Pizza: Margherita' },
@@ -1450,7 +1450,7 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.action, 'party.slips_rebase'), eq(auditLog.entityId, id)));
-    expect(audited?.after).toMatchObject({ partyDate: T, composer: '2:kitchen_plan_1' });
+    expect(audited?.after).toMatchObject({ partyDate: T, composer: '3:kitchen_plan_1' });
     // Nor on the looks after it.
     await runPartySlipsJob(ctx.db, atBangkok(T, '16:04'));
     expect(await changesOf(id)).toEqual([]);
