@@ -281,6 +281,39 @@ const catalogueCounts = (p: BeoAiProposal, c?: BeoCatalogue | null) => ({
   ...countOf("tillLines", p.menuLines.filter((l) => !!l.productCode && !l.setMenuItemId && !!c && !!tillItemOf(c, l.productCode)).length),
 });
 
+/**
+ * SCRUM-970 (the staging proof read the same chat back in two shapes, and could not tell which):
+ * the SHAPE of the conversation's read, for the activity row — counts only, never the chat's
+ * words: how many set-menu choices, kids', adults' and bar lines and prices the model's answer
+ * held (`read`), and what the fill then proposed of them: the choices, the kids', adults' (their
+ * SET lines among them) and bar lines, the folds said and the chat's totals named (`proposed`).
+ */
+export function answerShapeOf(raw: unknown, p: BeoAiProposal): Record<string, Record<string, number>> {
+  const record = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+  const list = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.map(record) : []);
+  const answer = record(raw);
+  const lines = list(answer.menuLines);
+  const menuOf = (l: Record<string, unknown>) => (typeof l.menu === "string" ? l.menu.trim().toLowerCase() : "kids");
+  return {
+    read: {
+      choices: list(record(answer.setMenu).choices).length,
+      kidsLines: lines.filter((l) => menuOf(l) !== "adults" && menuOf(l) !== "bar").length,
+      adultsLines: lines.filter((l) => menuOf(l) === "adults").length,
+      barLines: lines.filter((l) => menuOf(l) === "bar").length,
+      pricedLines: lines.filter((l) => l.chatPrice !== undefined && l.chatPrice !== null && l.chatPrice !== "").length,
+    },
+    proposed: {
+      choices: p.setMenu?.choices.length ?? 0,
+      kidsLines: p.menuLines.filter((l) => l.menu === "kids").length,
+      adultsLines: p.menuLines.filter((l) => l.menu === "adults").length,
+      adultsSetLines: p.menuLines.filter((l) => l.menu === "adults" && !!l.setMenuItemId).length,
+      barLines: p.menuLines.filter((l) => l.menu === "bar").length,
+      folds: p.adultsFolded?.length ?? 0,
+      chatTotals: p.menuLines.filter((l) => !!l.chatTotal).length,
+    },
+  };
+}
+
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
 const filledSections = (fill: BeoFill): string[] =>
   (["event", "setupPlan", "kitchenPlan", "partyDetails", "timeline", "team"] as const).filter((k) => {
@@ -374,13 +407,15 @@ export async function runBeoFill(
   const run: AiRun<BeoFill & { catalogue?: unknown }> =
     formRun ?? (catalogueRun!.ok ? { ok: true, value: {}, facts: catalogueRun!.facts } : catalogueRun!);
   let proposal: BeoAiProposal | null = null;
+  /** SCRUM-970: the catalogue section as the model answered it, for the activity row's shape (counts only). */
+  let readAnswer: unknown = undefined;
   // SCRUM-904: the people the conversation names for the team, before the form's read joins them.
   let chatNamed: { partyHost?: BeoAiSourced<string>; entertainmentHost?: BeoAiSourced<string>; setupResponsible?: BeoAiSourced<string> } = {};
   if (run.ok && catalogue) {
     const { catalogue: fromForm, ...fill } = run.value;
     run.value = fill;
-    if (!conversation) proposal = resolveCatalogueAnswer(fromForm, catalogue, [], input.fallbackFrom, input.fallbackText);
-    else if (catalogueRun?.ok) proposal = resolveCatalogueAnswer(catalogueRun.value.catalogue, catalogue, conversation.refs);
+    if (!conversation) proposal = resolveCatalogueAnswer((readAnswer = fromForm), catalogue, [], input.fallbackFrom, input.fallbackText);
+    else if (catalogueRun?.ok) proposal = resolveCatalogueAnswer((readAnswer = catalogueRun.value.catalogue), catalogue, conversation.refs);
     // SCRUM-827: the rest of the BEO rides on the same proposal — the ruling's fields from the
     // form's read, the title from the app's own rule — so the review opens with everything at once.
     if (proposal) {
@@ -478,6 +513,8 @@ export async function runBeoFill(
         // SCRUM-903: no message of the team's confirmed the party: the conversation alone was read.
         ...(formRun ? {} : { ruling: false }),
         ...(proposal ? { catalogue: catalogueCounts(proposal, catalogue) } : {}),
+        // SCRUM-970: the shape the conversation's read came back in, as counts.
+        ...(proposal ? { answerShape: answerShapeOf(readAnswer, proposal) } : {}),
       }),
     });
   } catch (error) {
