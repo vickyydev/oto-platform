@@ -16,6 +16,7 @@ import {
   isBoxLaneTrigger,
   laneStation,
   noteLaneFailure,
+  onPlatformWhileHeld,
   paymentRefusalMessage,
 } from './lane';
 import { ORDER_CHANGED_AFTER_PAY } from './voidReasons';
@@ -666,7 +667,8 @@ export function useSaleWriter(): SaleWriter {
           const letGo = voidSuperseded(superseded);
           if (voidFirst) await letGo;
         }
-        const result = await commitSale({
+        // SCRUM-887: a family the drop-off gate wrote online is retried there first.
+        const result = await onPlatformWhileHeld(() => commitSale({
           saleId: ids.saleId,
           actionId: ids.actionId,
           cart: input.cart,
@@ -674,7 +676,7 @@ export function useSaleWriter(): SaleWriter {
           visitId: input.visitId ?? null,
           note: input.note ?? null,
           finalise: input.finalise,
-        });
+        }));
         // Kept for the box lane: a cash press that meets a dropped link closes
         // this same sale on the box, under the same ids.
         if (station) holdLaneSale({ ...rungUp, stationId: station, lane: 'platform' });
@@ -961,7 +963,8 @@ export function useSaleWriter(): SaleWriter {
       // A split uses one explicit identity per deliberate tender; retries keep it.
       let result;
       try {
-        result = await finaliseSale(held.id, actionId ?? ids.actionId, tender);
+        const press = () => finaliseSale(held.id, actionId ?? ids.actionId, tender);
+        result = await (cashOrNothing ? onPlatformWhileHeld(press) : press());
       } catch (err) {
         // The link went at the cash press: the same sale, the same press, on the box.
         if (onTheBox && station && cashOrNothing && isBoxLaneTrigger(err)) {

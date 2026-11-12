@@ -18,7 +18,7 @@ import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
-import { GATE_RETRYING, gateFailureDescription, gateOnlineHold } from '@/lib/gateOnline';
+import { gateFailureDescription, gateOnlineHold, gateSaleFailure } from '@/lib/gateOnline';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
@@ -607,7 +607,12 @@ export default function Till() {
   // SCRUM-872 — the slots matched to a saved child by name, for the life of the gate.
   const gateMatchedChildrenRef = useRef(new Map<string, string>());
   // SCRUM-887 — a gate that has written on the platform finishes there (lib/gateOnline).
-  const [gateOnline] = useState(() => gateOnlineHold(() => toast(GATE_RETRYING)));
+  const [gateOnline] = useState(() => gateOnlineHold((words) => toast(words)));
+  // Carried to the family's sale; released once it is written, and with the till.
+  useEffect(() => {
+    if (saleWriter.state.kind === 'written' || saleWriter.state.kind === 'unwritten') gateOnline.endSale();
+  }, [saleWriter.state.kind, gateOnline]);
+  useEffect(() => () => gateOnline.reset(), [gateOnline]);
   const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
     const known = ids.get(slotId);
     if (known) return known;
@@ -841,6 +846,7 @@ export default function Till() {
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    gateOnline.reset();
     setResumed(null);
     if (station?.stationId) forgetSaleOnScreen(station.stationId);
     saleKeyRef.current = crypto.randomUUID();
@@ -2584,6 +2590,7 @@ export default function Till() {
     }
     setLines(normalizeDropOffFees([...residual, ...dropLines], dropOffPricing));
     setSupervisionResolved(true);
+    gateOnline.carryToSale();
 
     // Nanny kids still need a nanny — reuse the existing step-3 config. Otherwise
     // go straight to payment (consent already replaces the customer input step).
@@ -3746,7 +3753,7 @@ export default function Till() {
               busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
               notice={
                 saleWriter.state.kind === 'failed' ? <SaleWriteFailure
-                  state={saleWriter.state}
+                  state={gateSaleFailure(saleWriter.state, gateOnline.startedOnline)}
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handlePaymentBack}
                 /> : resumed?.held ? (

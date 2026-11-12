@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/client';
 import { answeredByBox } from '@/api/bridge';
 import { currentLane, holdPlatformLane, isConnectionDrop, platformLaneHeld } from './lane';
+import type { SaleWriteState } from './saleWriter';
 
 /**
  * SCRUM-887 — WHAT THE DROP-OFF GATE SAYS WHEN THE CONNECTION DROPS.
@@ -21,6 +22,13 @@ import { currentLane, holdPlatformLane, isConnectionDrop, platformLaneHeld } fro
  * A write the box answered (a till offline from the start, or one moved to
  * its box before this gate wrote anything) takes no hold: that family is the
  * box's, as before.
+ *
+ * A gate that started online and reached payment keeps the hold for that
+ * family's sale (`carryToSale`): the box has not pulled the guardian the gate
+ * wrote seconds before and would refuse the cart, so a dropped link at Pay or
+ * at the cash press is tried again online under the sale's own ids. The hold
+ * ends when the sale is written or the cart cleared (`endSale`), or when a
+ * held sale call runs out of retries: what follows is the lane's own rule.
  */
 export interface GateOnlineHold {
   /** Whether this gate has written the guardian or a child on the platform. */
@@ -29,25 +37,49 @@ export interface GateOnlineHold {
   beginPress(): void;
   /** A write of this gate was answered. */
   noteWrite(): void;
-  /** The press ended, however it ended: the hold is released. */
+  /** The press reached payment: a gate that started online keeps the hold for the sale. */
+  carryToSale(): void;
+  /** The press ended, however it ended: the hold is released unless carried to the sale. */
   endPress(): void;
-  /** A new gate (the form opened again): nothing written yet. */
+  /** The family's sale was written, or the cart cleared: the hold is released. */
+  endSale(): void;
+  /** A new gate (the form opened again, or a new sale): nothing written yet, nothing held. */
   reset(): void;
 }
 
-/** `onRetrying` is called once per press, the first time a held call is retried. */
-export function gateOnlineHold(onRetrying: () => void): GateOnlineHold {
+/** What staff are told, the first time a held call is retried. */
+export interface GateRetryWords {
+  readonly title: string;
+  readonly description: string;
+}
+
+/** `onRetrying` is called once per press (once per sale), the first time a held call is retried. */
+export function gateOnlineHold(onRetrying: (words: GateRetryWords) => void): GateOnlineHold {
   let startedOnline = false;
   let release: (() => void) | null = null;
   let said = false;
+  let carried = false;
+  let sale = false;
+  const drop = () => {
+    release?.();
+    release = null;
+    carried = false;
+    sale = false;
+  };
   const take = () => {
     if (release) return;
     said = false;
-    release = holdPlatformLane(() => {
-      if (said) return;
-      said = true;
-      onRetrying();
-    });
+    release = holdPlatformLane(
+      () => {
+        if (said) return;
+        said = true;
+        onRetrying(sale ? GATE_SALE_RETRYING : GATE_RETRYING);
+      },
+      () => {
+        // The sale's held retries ran out: the lane's own rule from here.
+        if (sale) drop();
+      },
+    );
   };
   return {
     get startedOnline() {
@@ -61,11 +93,23 @@ export function gateOnlineHold(onRetrying: () => void): GateOnlineHold {
       startedOnline = true;
       take();
     },
+    carryToSale() {
+      if (startedOnline && release) carried = true;
+    },
     endPress() {
-      release?.();
-      release = null;
+      if (carried) {
+        carried = false;
+        sale = true;
+        said = false;
+        return;
+      }
+      drop();
+    },
+    endSale() {
+      drop();
     },
     reset() {
+      drop();
       startedOnline = false;
     },
   };
@@ -75,11 +119,18 @@ export function gateOnlineHold(onRetrying: () => void): GateOnlineHold {
 export const GATE_NOTHING_TAKEN = 'Nobody has been checked in or charged — the details are still on screen.';
 
 /** Shown once per press, the first time a held call is retried. */
-export const GATE_RETRYING = {
+export const GATE_RETRYING: GateRetryWords = {
   title: 'Connection dropped — retrying',
   description:
     'These children are already saved online. The till is finishing their registration online — please wait, there is nothing to type again.',
-} as const;
+};
+
+/** Shown once per sale, the first time a held sale call (Pay, the cash press) is retried. */
+export const GATE_SALE_RETRYING: GateRetryWords = {
+  title: 'Connection dropped — retrying',
+  description:
+    "This family is already saved online. The till is finishing this sale online under the same sale number — please wait, there is nothing to press again and the visitor can't be charged twice.",
+};
 
 /** The held retries ran out: the link is still down. */
 export const GATE_CONNECTION_DROPPED =
@@ -99,4 +150,31 @@ export function gateFailureDescription(err: unknown, startedOnline: boolean): st
     return `${GATE_BOX_NOT_SYNCED} ${GATE_NOTHING_TAKEN}`;
   }
   return `${err instanceof Error ? err.message : 'Unknown error'} ${GATE_NOTHING_TAKEN}`;
+}
+
+/**
+ * The sale's box refused a family this gate wrote online: after the held
+ * retries ran out the sale fell to the counter's box, which has not pulled the
+ * guardian yet. Its own "Member not found" would read as a wrong record.
+ */
+export const GATE_SALE_BOX_NOT_SYNCED =
+  "This family was registered online, and this counter's box has not received their record yet — the connection dropped before it could. The box saved nothing and took no payment. Wait a minute, then press Try again: the till sends the same sale number, so the visitor can't be charged twice.";
+
+/**
+ * The sale panel's failure, for a family this gate wrote online: the box's
+ * "Member not found" becomes the words above, and a press to try again (the
+ * box pulls the family within a minute, or the till moves back online). Every
+ * other state stands as it came.
+ */
+export function gateSaleFailure<S extends SaleWriteState>(state: S, startedOnline: boolean): S {
+  if (
+    !startedOnline
+    || state.kind !== 'failed'
+    || state.answeredBy !== 'box'
+    || state.code !== 'NOT_FOUND'
+    || state.message !== 'Member not found'
+  ) {
+    return state;
+  }
+  return { ...state, message: GATE_SALE_BOX_NOT_SYNCED, cause: 'connection', retryable: true };
 }

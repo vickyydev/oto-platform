@@ -120,16 +120,23 @@ const heldRetryListeners = new Set<(attempt: number) => void>();
 const HELD_RETRY_MS: readonly number[] = [1_000, 2_000, 4_000];
 let heldRetryDelays: readonly number[] = HELD_RETRY_MS;
 
-/** Take the hold; the answer releases it (once). `onRetry` hears each retry. */
-export function holdPlatformLane(onRetry?: (attempt: number) => void): () => void {
+const heldGiveUpListeners = new Set<() => void>();
+
+/**
+ * Take the hold; the answer releases it (once). `onRetry` hears each retry;
+ * `onGiveUp` hears a held call run out of retries, before its error is thrown.
+ */
+export function holdPlatformLane(onRetry?: (attempt: number) => void, onGiveUp?: () => void): () => void {
   platformHolds += 1;
   if (onRetry) heldRetryListeners.add(onRetry);
+  if (onGiveUp) heldGiveUpListeners.add(onGiveUp);
   let held = true;
   return () => {
     if (!held) return;
     held = false;
     platformHolds -= 1;
     if (onRetry) heldRetryListeners.delete(onRetry);
+    if (onGiveUp) heldGiveUpListeners.delete(onGiveUp);
   };
 }
 
@@ -147,20 +154,43 @@ async function onHeldPlatform<T>(
   onBox: (stationId: string) => Promise<T>,
   id: string | null,
 ): Promise<T> {
+  try {
+    return await retryHeld(onPlatform);
+  } catch (err) {
+    if (id && err instanceof ApiError && err.status === 503 && err.code === 'STATION_FORCED_OFFLINE') {
+      setLane('box');
+      return onBox(id);
+    }
+    throw err;
+  }
+}
+
+/** A dropped link tried again on the platform with the held backoff. */
+async function retryHeld<T>(call: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
     try {
-      return await onPlatform();
+      return await call();
     } catch (err) {
-      if (id && err instanceof ApiError && err.status === 503 && err.code === 'STATION_FORCED_OFFLINE') {
-        setLane('box');
-        return onBox(id);
-      }
+      if (!isConnectionDrop(err)) throw err;
       const wait = heldRetryDelays[attempt];
-      if (!isConnectionDrop(err) || wait === undefined) throw err;
+      if (wait === undefined) {
+        for (const listener of [...heldGiveUpListeners]) listener();
+        throw err;
+      }
       for (const listener of heldRetryListeners) listener(attempt + 1);
       await new Promise<void>((resolve) => setTimeout(resolve, wait));
     }
   }
+}
+
+/**
+ * SCRUM-887 — a platform call made outside `viaLane` (the sale writer's
+ * commit and cash press): while a hold is taken, a dropped link is tried again
+ * on the platform first. What is left after the backoff is the caller's to
+ * handle by its own lane rules. Without a hold it is the call, unchanged.
+ */
+export function onPlatformWhileHeld<T>(call: () => Promise<T>): Promise<T> {
+  return platformHolds > 0 ? retryHeld(call) : call();
 }
 
 /** Note a failure the platform lane met; moves to the box when it is a trigger. */
