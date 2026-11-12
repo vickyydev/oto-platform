@@ -1029,6 +1029,22 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/party-menu-item-ui.check.ts
+      # SCRUM-905: the till's menu inside the BEO — the platform asked with
+      # the provision key for the park's branch, never a session, one park's
+      # answer held a minute and a refusal never held; the route's park group
+      # fences and per-park status; a picked kitchen and bar line keeping its
+      # code through Save, and the till's plan view naming it; then the
+      # screens under jsdom: the kitchen and bar plan search, the till's name,
+      # code and an EXTRA's price written on, "No longer on the till" only
+      # once the menu was read, and the set menu templates' Code boxes.
+      - name: The app's till menu checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/till-menu.check.ts
+      - name: The app's till menu screens check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/till-menu-ui.check.ts
       # SCRUM-829: the kids' menu is the main selection; the adults mirror it —
       # the stored shape (no adults' list with the switch off, their own list
       # and adultsDiffer with it on, a BEO saved before opening on only when
