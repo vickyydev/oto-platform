@@ -54,7 +54,9 @@ export type InboxChannel = (typeof INBOX_CHANNELS)[number];
  * Who carries a channel account's traffic. `console` is the SMS console sender
  * the check-in confirmation already goes through (`can_reply = false`);
  * `simulator` is the twin of a Meta account that local, CI and staging play
- * conversations through.
+ * conversations through; `twilio` (SCRUM-908, `0121_inbox_twilio_test_line`)
+ * is the WhatsApp TEST LINE on Twilio's sandbox — one allowed customer number,
+ * its own inbox, and a Start over on its conversations.
  */
 export const INBOX_PROVIDERS = [
   'meta_cloud',
@@ -64,6 +66,7 @@ export const INBOX_PROVIDERS = [
   'webform',
   'simulator',
   'console',
+  'twilio',
 ] as const;
 export type InboxProvider = (typeof INBOX_PROVIDERS)[number];
 
@@ -741,6 +744,17 @@ export const conversation = inbox.table(
      */
     aiPausedAt: timestamp('ai_paused_at', { withTimezone: true, mode: 'date' }),
     aiPausedByAccountId: uuid('ai_paused_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    /**
+     * START OVER (SCRUM-908, `0121_inbox_twilio_test_line`): a test line's
+     * conversation a person cleared so the tester can write again as a new
+     * customer. Set, the thread has left the inbox (every read goes through
+     * `visibleConversationsSql`, which skips it) and the thread key
+     * (`conversation_thread_unique` holds only the live ones), so the number's
+     * next message opens a new conversation. Its words were erased in the
+     * same transaction; the row stays, as every business record does.
+     */
+    archivedAt: timestamp('archived_at', { withTimezone: true, mode: 'date' }),
+    archivedByAccountId: uuid('archived_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
   (t) => [
@@ -760,7 +774,10 @@ export const conversation = inbox.table(
       foreignColumns: [team.operatorId, team.id],
       name: 'conversation_team_fk',
     }).onDelete('restrict'),
-    uniqueIndex('conversation_thread_unique').on(t.operatorId, t.contactId, t.channelAccountId),
+    /** One LIVE thread per contact per channel account; a cleared one (SCRUM-908) stands aside. */
+    uniqueIndex('conversation_thread_unique')
+      .on(t.operatorId, t.contactId, t.channelAccountId)
+      .where(sql`archived_at is null`),
     index('conversation_queue_idx').on(t.operatorId, t.status, t.teamId),
     index('conversation_recent_idx').on(t.operatorId, t.lastMessageAt.desc()),
     index('conversation_contact_idx').on(t.contactId),
@@ -772,6 +789,7 @@ export const conversation = inbox.table(
     index('conversation_member_idx').on(t.memberId),
     index('conversation_retain_until_idx').on(t.retainUntil),
     index('conversation_ai_paused_by_idx').on(t.aiPausedByAccountId),
+    index('conversation_archived_by_idx').on(t.archivedByAccountId),
     check('conversation_category_check', sql`${t.category} in (${inList(INBOX_CATEGORIES)})`),
     check('conversation_status_check', sql`${t.status} in (${inList(CONVERSATION_STATUSES)})`),
     check(
@@ -790,6 +808,8 @@ export const conversation = inbox.table(
     ),
     /** Who paused the assistant is only ever said of a paused thread. */
     check('conversation_ai_paused_check', sql`${t.aiPausedByAccountId} is null or ${t.aiPausedAt} is not null`),
+    /** A cleared thread names who cleared it, and a live one names nobody (SCRUM-908). */
+    check('conversation_archived_check', sql`(${t.archivedAt} is null) = (${t.archivedByAccountId} is null)`),
   ],
 );
 

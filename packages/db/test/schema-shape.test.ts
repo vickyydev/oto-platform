@@ -397,6 +397,10 @@ const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
     'The tenant fence: (operator_id, id) is the target of the composite foreign keys from conversation, message and webhook_receipt. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.',
   'inbox.template.template_tenant_key':
     "The tenant fence: (operator_id, id) is the target of message's composite template foreign key. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.",
+  // SCRUM-908: a conversation became archivable (a test line's Start over).
+  // Its business key, the thread, is partial (`conversation_thread_unique`).
+  'inbox.conversation.conversation_tenant_key':
+    "The tenant fence: (operator_id, id) is the target of the composite foreign keys from message, assignment, event and the rest of a thread's rows. id is the primary key, so archiving frees nothing; a foreign key needs a non-partial unique.",
 };
 
 /**
