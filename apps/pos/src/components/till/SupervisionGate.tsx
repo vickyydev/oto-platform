@@ -266,10 +266,10 @@ export function SupervisionGate({
 
       {uniqueBlockers.length > 0 && (
         <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-amber-300">
+          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-300">
             <ShieldAlert className="h-4 w-4" /> Before payment
           </div>
-          <ul className="space-y-1 text-sm text-amber-200/90">
+          <ul className="space-y-1 text-sm text-amber-900/90 dark:text-amber-200/90">
             {uniqueBlockers.map((b, i) => (
               <li key={i}>• {b}</li>
             ))}

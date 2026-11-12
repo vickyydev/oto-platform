@@ -3977,7 +3977,7 @@ export default function Till() {
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background">
       {/* Test-harness banner */}
-      <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-sm">
+      <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-800 dark:text-amber-300 text-sm">
         <div className="flex items-center gap-2 min-w-0">
           <Monitor className="w-4 h-4 shrink-0" />
           <span className="truncate">
@@ -3990,7 +3990,7 @@ export default function Till() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-amber-300 hover:text-amber-200 hover:bg-amber-500/20"
+            className="h-7 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 hover:bg-amber-500/20"
             onClick={() => setShowCustomerDisplay(v => !v)}
           >
             {showCustomerDisplay ? 'Hide' : 'Show'} customer display

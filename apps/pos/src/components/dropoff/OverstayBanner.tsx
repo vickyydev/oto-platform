@@ -84,7 +84,7 @@ export function OverstayBanner({ onReview, className = '', refreshKey = 0 }: Ove
     <button
       type="button"
       onClick={onReview}
-      className={`shrink-0 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 h-12 text-sm font-semibold text-amber-300 hover:bg-amber-500/15 transition-colors ${className}`}
+      className={`shrink-0 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 h-12 text-sm font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-500/15 transition-colors ${className}`}
     >
       <AlertTriangle className="w-4 h-4 shrink-0" />
       <span>
@@ -92,7 +92,7 @@ export function OverstayBanner({ onReview, className = '', refreshKey = 0 }: Ove
         {overdue > 0 && dueSoon > 0 && ' · '}
         {dueSoon > 0 && `${dueSoon} due soon`}
       </span>
-      <span className="ml-auto text-xs font-medium opacity-80">Review →</span>
+      <span className="ml-auto text-xs font-medium dark:opacity-80">Review →</span>
     </button>
   );
 }
