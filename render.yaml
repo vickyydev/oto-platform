@@ -694,6 +694,23 @@ services:
         sync: false
       - key: INBOX_META_VERIFY_TOKEN
         sync: false
+      # SCRUM-908: the WhatsApp TEST LINE on Twilio's sandbox (staging only:
+      # a DEPLOY_ENV=production service refuses to start with it on). True also
+      # needs INBOX_TWILIO_PUBLIC_URL (this service's public https origin, no
+      # path) and, per line by its credential_ref (SANDBOX):
+      # INBOX_TWILIO_ACCOUNT_SID_SANDBOX, INBOX_TWILIO_AUTH_TOKEN_SANDBOX and
+      # INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX (the one tester's number, E.164).
+      # Entered by hand in the dashboard; never a value in this file.
+      - key: INBOX_TWILIO_ENABLED
+        value: 'false'
+      - key: INBOX_TWILIO_PUBLIC_URL
+        sync: false
+      - key: INBOX_TWILIO_ACCOUNT_SID_SANDBOX
+        sync: false
+      - key: INBOX_TWILIO_AUTH_TOKEN_SANDBOX
+        sync: false
+      - key: INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX
+        sync: false
       # INBOX_CONVERSATION_RETENTION_DAYS, INBOX_MEDIA_RETENTION_DAYS and
       # INBOX_WEBHOOK_PAYLOAD_RETENTION_DAYS are deliberately NOT set (owner
       # Q19: no purge yet). Unset, job:inbox.retention records each purge as
