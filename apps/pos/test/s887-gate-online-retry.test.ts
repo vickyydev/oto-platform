@@ -491,8 +491,13 @@ describe('SCRUM-887: the till holds its gate', () => {
     expect(gate.indexOf('gateOnline.beginPress()')).toBeLessThan(gate.indexOf('saveGateChildren('));
     // member create, each child, the visit, the registration
     expect(gate.match(/gateOnline\.noteWrite\(\)/g)).toHaveLength(4);
-    expect(gate).toMatch(/onSaved: \(slotId, child, guardianId\) => \{\s*gateOnline\.noteWrite\(\);/);
-    expect(gate).toMatch(/registrationId = reg\.id;\s*gateOnline\.noteWrite\(\);/);
+    // SCRUM-857 — each note asks first whether the run's sale is still on the
+    // till: a run whose sale was cancelled while it saved (the family's Done,
+    // then staff Back and Cancel) never marks the next sale's gate online.
+    expect(gate.match(/(?:if \(!ownSale\(\)\) return;\s*|if \(ownSale\(\)\) |if \(epoch === saleEpochRef\.current\) )gateOnline\.noteWrite\(\)/g)).toHaveLength(4);
+    expect(gate).toMatch(/onSaved: \(slotId, child, guardianId\) => \{\s*if \(!ownSale\(\)\) return;\s*gateOnline\.noteWrite\(\);/);
+    expect(gate).toMatch(/registrationId = reg\.id;\s*if \(ownSale\(\)\) gateOnline\.noteWrite\(\);/);
+    expect(gate).toMatch(/const findOrCreateGateMember = [^\n]*\n(?:\s*\/\/[^\n]*\n)*\s*const epoch = saleEpochRef\.current;/);
     expect(gate).toMatch(/resolveSupervisionGate\(\)\.finally\(\(\) => \{\s*gateOnline\.endPress\(\);/);
     expect(gate.match(/gateFailureDescription\(err, gateOnline\.startedOnline\)/g)).toHaveLength(2);
     const open = src.slice(src.indexOf('const openSupervisionGate'), src.indexOf('const handleUpdateSlot'));

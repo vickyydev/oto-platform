@@ -2353,6 +2353,7 @@ export default function Till() {
    * Done they pressed could not be saved.
    */
   type GateOutcome = { ok: true } | { ok: false; message: string };
+  const SALE_MOVED_ON = 'The sale changed while the children were being registered.';
   const resolveSupervisionGate = async (): Promise<GateOutcome> => {
     if (!tier || !operator) return { ok: false, message: 'The till is not ready to register children yet.' };
     // SCRUM-887 — once a write of this gate is answered on the platform, the
@@ -2362,7 +2363,11 @@ export default function Till() {
     gateOnline.beginPress();
     // SCRUM-857 — the sale this run belongs to: a run that outlives it (the
     // sale was abandoned or another started) changes nothing on the till.
+    // Every setter after an await asks `ownSale()` first: staff may go Back
+    // and Cancel while the family's Done is being saved, and the next sale
+    // must never carry this family's member, visit or children.
     const gateEpoch = saleEpochRef.current;
+    const ownSale = () => gateEpoch === saleEpochRef.current;
     const policy = getSupervisionPolicy();
     const resolved = resolveGroupRequirements(
       superSlots.map((s) => ({ id: s.id, age: slotAge(s) ?? -1 })),
@@ -2447,7 +2452,7 @@ export default function Till() {
       const parentPhone = superParentPhone.trim();
       if (!guardian && parentPhone && supervised.length > 0) {
         guardian = await findOrCreateGateMember(parentPhone, superParentName.trim());
-        setMember(guardian);
+        if (ownSale()) setMember(guardian);
       }
       if (guardian) {
         // SCRUM-871 / SCRUM-872 — each child once, however many times Continue
@@ -2467,6 +2472,7 @@ export default function Till() {
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
           updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
           onSaved: (slotId, child, guardianId) => {
+            if (!ownSale()) return;
             gateOnline.noteWrite();
             applySavedChild(child, guardianId);
             // Linked to the record it just became, one child at a time: if the
@@ -2493,11 +2499,12 @@ export default function Till() {
             memberId: guardian.id,
             childIds: confirmedChildIds,
           });
-          gateOnline.noteWrite();
-          setConfirmedVisitId(gateVisitId);
+          if (ownSale()) gateOnline.noteWrite();
+          if (ownSale()) setConfirmedVisitId(gateVisitId);
         }
       }
     } catch (err) {
+      if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
       toast({
         title: "Couldn't save these children",
         description: gateFailureDescription(err, gateOnline.startedOnline),
@@ -2517,7 +2524,12 @@ export default function Till() {
      * the gate exactly as it was, with nothing charged. The platform resolves
      * every child's service again from the age, so what it accepts is what the
      * policy says, not what this screen happened to compute.
+     *
+     * SCRUM-857 — never for a sale that is gone: the children saved above
+     * stay on the member, audited, but a sale cancelled while they were
+     * being saved registers nobody, and the next gate's ids stay its own.
      */
+    if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
     let created: CheckIn[] = [];
     let registrationId: string | null = null;
     try {
@@ -2554,7 +2566,7 @@ export default function Till() {
           })),
         });
         registrationId = reg.id;
-        gateOnline.noteWrite();
+        if (ownSale()) gateOnline.noteWrite();
         created = supervised.map(({ slot }, i) => {
           const stay = reg.children.find((c) => c.id === stayIds[i]);
           if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
@@ -2611,6 +2623,7 @@ export default function Till() {
         });
       }
     } catch (err) {
+      if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
       toast({
         title: "Couldn't register these children",
         description: gateFailureDescription(err, gateOnline.startedOnline),
@@ -2622,7 +2635,7 @@ export default function Till() {
     // SCRUM-857 — the sale moved on while the children were written (it was
     // abandoned, or another began): what was written stays, audited, and this
     // till's new sale is not touched.
-    if (gateEpoch !== saleEpochRef.current) return { ok: false, message: 'The sale changed while the children were being registered.' };
+    if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };
 
     // A source line fully converts when no plain kid remains on it. Its socks /
     // add-ons must not be silently dropped, so carry them onto the FIRST drop-off
@@ -2746,6 +2759,9 @@ export default function Till() {
    * right profile rather than failing the gate.
    */
   const findOrCreateGateMember = async (phone: string, name: string): Promise<Member> => {
+    // SCRUM-857 — the gate's own sale: a member created after it was cancelled
+    // does not mark the next sale's gate as started online (SCRUM-887).
+    const epoch = saleEpochRef.current;
     const found = (await membersApi.lookup(phone)).member;
     if (found) return apiMemberToMember(found);
     if (!name) {
@@ -2757,7 +2773,7 @@ export default function Till() {
         nickname: name,
         preferredChannel: superParentContactMethod,
       });
-      gateOnline.noteWrite();
+      if (epoch === saleEpochRef.current) gateOnline.noteWrite();
       return apiMemberToMember(created.member);
     } catch (err) {
       const existingId =

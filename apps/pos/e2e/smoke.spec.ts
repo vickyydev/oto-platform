@@ -1220,6 +1220,64 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await expect.poll(() => registrationFiles.length, { timeout: 20_000 }).toBe(1);
     expect(registrationFiles[0]).toEqual({ ownerEntityId: registrations[0]!.id, contentType: 'image/jpeg' });
     await captureLocalCheck(fixture.display, 's857-joined-after-done-local.png');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
+
+    // 3. Staff go back and cancel while the family's Done is being saved (the
+    //    visit write held open): the cancelled sale registers nobody, and the
+    //    next sale, which skips the children, carries no visit of theirs.
+    await chooseLanguageFirst(fixture.display, 'en');
+    await openForm();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await takePhoto();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await consent.locator('#public-consent-guardian').fill('ZZ TEST Cancelled guardian');
+    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    const cancelledDone = consent.getByRole('button', { name: 'Done', exact: true });
+    await expect(cancelledDone).toBeEnabled({ timeout: 20_000 });
+    let releaseVisit = () => undefined as void;
+    const visitReleased = new Promise<void>(resolve => { releaseVisit = resolve; });
+    let visitHeld = () => undefined as void;
+    const visitReached = new Promise<void>(resolve => { visitHeld = resolve; });
+    const visitWrite = (url: URL) => /^\/api\/visits(\/[^/]+\/children)?$/.test(url.pathname);
+    await page.route(visitWrite, async route => {
+      if (route.request().method() !== 'POST') { await route.continue(); return; }
+      visitHeld();
+      await visitReleased;
+      await route.continue();
+    });
+    await cancelledDone.click();
+    await visitReached;
+    await page.getByRole('button', { name: 'Back', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
+    // The next family: the same member, the children skipped, so no visit is theirs.
+    await chooseLanguageFirst(fixture.display, 'en');
+    const nextLookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
+    await nextLookup;
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
+    // Only now does the cancelled run's visit write come back.
+    const visitAnswered = page.waitForResponse(response => visitWrite(new URL(response.url())) && response.request().method() === 'POST');
+    releaseVisit();
+    await visitAnswered;
+    await page.unroute(visitWrite);
+    await page.waitForTimeout(2_000);
+    // Soft, so the next sale's visit is checked as well when this fails.
+    expect.soft(registrations, 'a sale cancelled mid-save registers nobody').toHaveLength(1);
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toHaveCount(0);
+    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+    const nextSale = page.waitForRequest(request => new URL(request.url()).pathname === '/api/sales' && request.method() === 'POST',
+      { timeout: 30_000 });
+    await page.getByRole('button', { name: /^Pay ฿/ }).click();
+    const nextBody = (await nextSale).postDataJSON();
+    expect(nextBody?.visitId, 'the next sale carries no visit of the cancelled family').toBeUndefined();
+    await expect(page.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 30_000 });
+    expect(registrations).toHaveLength(1);
     // Leave the counter as the next case finds it.
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });

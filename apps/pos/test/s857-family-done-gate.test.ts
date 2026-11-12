@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { tFor } from '@/i18n/LanguageContext';
 import { DICTIONARY } from '@/i18n/dictionary';
@@ -129,5 +131,39 @@ describe('a Done that reaches the till', () => {
 
   it('never starts a second write while one is running (a double tap, or staff pressing Continue too)', () => {
     expect(familyDoneDecision({ ...base, saving: true })).toBe('wait');
+  });
+});
+
+/**
+ * SCRUM-857 — a run of the gate that outlives its sale. The family's Done
+ * starts the run with nobody pressing anything at the till, and staff may go
+ * Back and Cancel while it is saving: the next sale must never carry this
+ * family's member, visit or children, and a cancelled sale registers nobody.
+ * The e2e (smoke.spec.ts, the family's photo and Done) holds the visit write
+ * open across a Back and Cancel and checks the next sale.
+ */
+describe('a gate run whose sale was cancelled while it saved', () => {
+  const till = readFileSync(resolve(import.meta.dirname, '../src/pages/Till.tsx'), 'utf8');
+  const gate = till.slice(till.indexOf('const resolveSupervisionGate'), till.indexOf('const runSupervisionGate'));
+
+  it('every setter after an await asks whether the sale is still the run’s own', () => {
+    expect(gate).toMatch(/const gateEpoch = saleEpochRef\.current;\s*const ownSale = \(\) => gateEpoch === saleEpochRef\.current;/);
+    expect(gate).toMatch(/guardian = await findOrCreateGateMember\([^)]*\)\);\s*if \(ownSale\(\)\) setMember\(guardian\);/);
+    expect(gate).toMatch(/onSaved: \(slotId, child, guardianId\) => \{\s*if \(!ownSale\(\)\) return;\s*applySavedChild\(child, guardianId\);/);
+    expect(gate).toMatch(/gateVisitId = await confirmVisitChildren\([\s\S]*?\);\s*if \(ownSale\(\)\) setConfirmedVisitId\(gateVisitId\);/);
+    expect(gate).not.toMatch(/^\s*setMember\(guardian\);/m);
+    expect(gate).not.toMatch(/^\s*setConfirmedVisitId\(gateVisitId\);/m);
+  });
+
+  it('writes no registration for a sale that is gone, so the next gate keeps its own ids', () => {
+    const stop = gate.indexOf('if (!ownSale()) return { ok: false, message: SALE_MOVED_ON };\n    let created');
+    expect(stop).toBeGreaterThan(-1);
+    expect(stop).toBeLessThan(gate.indexOf('gateRegistrationIdRef.current = regId;'));
+    expect(stop).toBeLessThan(gate.indexOf('checkinApi.createRegistration('));
+  });
+
+  it('changes the cart only for its own sale, and says nothing of a failure on the next one', () => {
+    expect(gate).toMatch(/if \(!ownSale\(\)\) return \{ ok: false, message: SALE_MOVED_ON \};\s*\/\/ A source line fully converts/);
+    expect(gate.match(/\} catch \(err\) \{\s*if \(!ownSale\(\)\) return \{ ok: false, message: SALE_MOVED_ON \};\s*toast\(/g)).toHaveLength(2);
   });
 });
