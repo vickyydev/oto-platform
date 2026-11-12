@@ -229,3 +229,14 @@ How it was before: a session ends twelve hours after sign-in (SESSION_TTL_HOURS,
 7. 'Sign out and hand over the till' still keeps no sale for anybody, as before; only a session that ends on the platform keeps one. Should a deliberate sign-out mid-cart also keep the sale for the next person?
 8. The sign-in line says 'The sale in progress is kept on this till.' before anyone signs in, with no detail of the sale. Is it all right to say that much on a till nobody is signed in to?
 9. A sale kept for the same person is restored even if nothing was on screen. If the same person has lost the right to sell (pos:sale:create), the kept sale is dropped. Confirm.
+
+## The session-end lane landed (13 November 00:56, main f0a47eb79)
+Ticket: SCRUM-878. Services: the platform (GET /me gains sessionEnd; no migration), then both staging tills. The counter box needs nothing; Till 1 (Pi) takes the new till from the web at its next idle lock screen. Left and ticketed: SCRUM-964.
+How it is proved without waiting twelve hours: two login users made only for the proof ("ZZ TEST Session A" and "ZZ TEST Session B"), their sessions ended from the Console with "Sign out everywhere" on those two accounts only, never on a shared account.
+
+### Further questions for the owner from this lane (they follow the nine above)
+10. (Fix round) A temporary password issued mid-shift gives a fresh till, so the cart is lost at the change-password screen even though the line said it was kept. Should it be kept through the change instead?
+11. (Fix round) Are these two lines on the offer right: "It is rung up; a payment may be waiting on the customer display." and "Continue it to read its payment back, then finish it or cancel it."?
+12. When the offer has locked itself, the ordinary lock screen offers "Sign out and hand over the till". Pressing it drops the kept sale for everyone, under the existing rule that a deliberate sign-out keeps nothing. Keep that, or keep the sale for the next person?
+13. On a sign-in form shown after a session ended, the family's Done line still says "unlock to carry on", although the form there asks for a sign-in. Keep or reword?
+14. The offer screen now shows the standard "Locking soon…" bar in its last 15 seconds. All right?
