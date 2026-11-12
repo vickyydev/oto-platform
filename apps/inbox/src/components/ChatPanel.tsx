@@ -270,7 +270,8 @@ export function ChatPanel({
   };
 
   // SCRUM-908: the test line's Start over — the conversation leaves the inbox,
-  // so the panel closes once the list is read again.
+  // so the panel closes first (it would read a thread that is no longer
+  // there) and the list is read again.
   const testLine = (me.testLines ?? []).find((l) => l.id === conv.channelAccountId) ?? null;
   const startOverAllowed = live && mayStartOver(me, conv.channelAccountId);
   const confirmStartOver = async () => {
@@ -279,8 +280,8 @@ export function ChatPanel({
     try {
       await inboxApi.startOver(conv.id);
       setStartingOver(false);
-      await onChanged();
       onBack();
+      await onChanged();
     } catch (err) {
       setStartOverError(refusalOf(err, 'The conversation could not be cleared.'));
     } finally {
