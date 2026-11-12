@@ -52409,7 +52409,7 @@
     },
     "/checkin/registrations": {
       "get": {
-        "description": "Registrations at the branch still waiting for a child to be checked in",
+        "description": "Registrations at the branch still waiting for a child to be checked in, on the branch's trading day. Naming one registration (the Drop-Off board's Check in hand-over) answers it whatever day its stay is for.",
         "parameters": [
           {
             "schema": {
@@ -52419,6 +52419,15 @@
             "in": "query",
             "name": "branchId",
             "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "registrationId",
+            "required": false
           }
         ],
         "responses": {

@@ -468,6 +468,37 @@ describe("the picker lists only bookings for the branch's trading day", () => {
     expect((await boardFamilies()).some((f) => f.registrationId === lastEvening.id)).toBe(true);
   });
 
+  it("the board's Check in hand-over names yesterday's family and still gets it; the plain list does not", async () => {
+    const start = todayTradingDayStart();
+    const reg = await register([childBody('ZZ TEST Handover')]);
+    await ctx.db
+      .update(checkin)
+      .set({ createdAt: new Date(start.getTime() - 10 * 3_600_000) })
+      .where(eq(checkin.registrationId, reg.id));
+    expect((await listed()).map((r) => r.id)).not.toContain(reg.id);
+    // Still on the board, so its Check in must still load the child.
+    expect((await boardFamilies()).some((f) => f.registrationId === reg.id)).toBe(true);
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/checkin/registrations?branchId=${branchId}&registrationId=${reg.id}`,
+      headers: { cookie: reception },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const named = res.json().registrations as Array<{ id: string; children: Array<{ id: string; status: string }> }>;
+    expect(named.map((r) => r.id)).toEqual([reg.id]);
+    expect(named[0]!.children.map((c) => [c.id, c.status])).toEqual([[reg.children[0]!.id, 'registered']]);
+
+    // A cancelled booking is not waiting, named or not.
+    expect((await cancel(reg.id, 'ZZ TEST tidy')).statusCode).toBe(200);
+    const after = await ctx.app.inject({
+      method: 'GET',
+      url: `/checkin/registrations?branchId=${branchId}&registrationId=${reg.id}`,
+      headers: { cookie: reception },
+    });
+    expect(after.json().registrations).toEqual([]);
+  });
+
   it('a booking left as booked for tomorrow appears on its day, not today', async () => {
     const reg = await register([childBody('ZZ TEST Tomorrow')]);
     const tomorrowTen = new Date(todayTradingDayStart().getTime() + 24 * 3_600_000 + 5 * 3_600_000);

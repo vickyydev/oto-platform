@@ -318,14 +318,26 @@ export const checkinApi = {
       (stationId) => onBox<ApiSupervisionConfig>(stationId, BRIDGE_CHECKIN_INTENTS.config, {}),
     ),
 
-  /** Registrations waiting to be checked in. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
-  awaiting: async (branchId: string) =>
+  /**
+   * Registrations waiting to be checked in, on the branch's trading day.
+   * `branchId` is the PLATFORM's id (`requirePlatformBranchId`). SCRUM-862 —
+   * `registrationId` asks for that one registration whatever day its stay is
+   * for: the board's Check in hand-over of a family still waiting from an
+   * earlier day.
+   */
+  awaiting: async (branchId: string, registrationId?: string) =>
     viaLane(
       () =>
         api.get<{ registrations: ApiRegistration[] }>(
-          `/checkin/registrations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+          `/checkin/registrations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}` +
+            (registrationId ? `&registrationId=${encodeURIComponent(registrationId)}` : ''),
         ),
-      (stationId) => onBox<{ registrations: ApiRegistration[] }>(stationId, BRIDGE_CHECKIN_INTENTS.awaiting, {}),
+      (stationId) =>
+        onBox<{ registrations: ApiRegistration[] }>(
+          stationId,
+          BRIDGE_CHECKIN_INTENTS.awaiting,
+          registrationId ? { registrationId } : {},
+        ),
     ),
 
   /** The same id again answers with the registration that exists — consent and payment never make two. */
@@ -459,7 +471,8 @@ export async function waitingStaysOf(
   registrationId: string,
   nannies: readonly ApiNanny[] = [],
 ): Promise<CheckIn[]> {
-  const { registrations } = await checkinApi.awaiting(branchId);
+  // Named, so a family the board still shows from an earlier day loads too (SCRUM-862).
+  const { registrations } = await checkinApi.awaiting(branchId, registrationId);
   const reg = registrations.find((r) => r.id === registrationId);
   if (!reg) return [];
   return reg.children

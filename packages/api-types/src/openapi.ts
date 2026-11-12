@@ -21859,11 +21859,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Registrations at the branch still waiting for a child to be checked in */
+        /** @description Registrations at the branch still waiting for a child to be checked in, on the branch's trading day. Naming one registration (the Drop-Off board's Check in hand-over) answers it whatever day its stay is for. */
         get: {
             parameters: {
                 query: {
                     branchId: string;
+                    registrationId?: string;
                 };
                 header?: never;
                 path?: never;

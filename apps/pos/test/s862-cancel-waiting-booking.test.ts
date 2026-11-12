@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiCheckinToCheckIn, checkinApi, type ApiCheckin, type ApiRegistration } from '@/api/checkin';
+import { apiCheckinToCheckIn, checkinApi, waitingStaysOf, type ApiCheckin, type ApiRegistration } from '@/api/checkin';
+import { bridgeApi } from '@/api/bridge';
 import { WaitingFamily, cancelBookingBlockedBy, type RegistrationGroup } from '@/components/till/AddDropOffModal';
 import { setLaneStation } from '@/lib/lane';
 
@@ -96,6 +97,7 @@ const reply = (data: unknown, status = 200) =>
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   setLaneStation(null);
 });
 
@@ -216,5 +218,52 @@ describe('s862 — the confirm step, in the Void dialog’s style', () => {
 
   it('tells the family the signed form stays on record', () => {
     expect(dialog).toContain('The signed form stays on record.');
+  });
+});
+
+describe("s862 — the board's Check in hand-over names its registration", () => {
+  it('asks the platform for that registration, past the day rule, and loads its waiting child', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        return reply({ registrations: [registration([stay('c1')])] });
+      }),
+    );
+    const lines = await waitingStaysOf(BRANCH, REG);
+    expect(lines.map((c) => c.id)).toEqual(['c1']);
+    expect(urls).toEqual([`/api/checkin/registrations?branchId=${BRANCH}&registrationId=${REG}`]);
+  });
+
+  it('the picker itself still asks for the day list, unnamed', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        return reply({ registrations: [] });
+      }),
+    );
+    await checkinApi.awaiting(BRANCH);
+    expect(urls).toEqual([`/api/checkin/registrations?branchId=${BRANCH}`]);
+  });
+
+  it('on the box lane, names the registration to the box as well', async () => {
+    setLaneStation(STATION);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        reply({ error: { code: 'STATION_FORCED_OFFLINE', message: 'This station is forced offline for testing.' } }, 503),
+      ),
+    );
+    const intent = vi
+      .spyOn(bridgeApi, 'intent')
+      .mockResolvedValue({ result: { registrations: [registration([stay('c1')])] } } as never);
+    const lines = await waitingStaysOf(BRANCH, REG);
+    expect(lines.map((c) => c.id)).toEqual(['c1']);
+    expect(intent).toHaveBeenCalledTimes(1);
+    expect(intent.mock.calls[0]![1]).toBe('checkin.awaiting');
+    expect(intent.mock.calls[0]![2]).toEqual({ registrationId: REG });
   });
 });

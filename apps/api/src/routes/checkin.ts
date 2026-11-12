@@ -99,13 +99,20 @@ export async function checkinRoutes(app: App): Promise<void> {
     {
       config: { permission: 'pos:checkin:read', target: { branchId: 'query.branchId' } },
       schema: {
-        description: 'Registrations at the branch still waiting for a child to be checked in',
-        querystring: z.object({ branchId: z.string().uuid() }),
+        description:
+          "Registrations at the branch still waiting for a child to be checked in, on the branch's trading day. " +
+          'Naming one registration (the Drop-Off board\'s Check in hand-over) answers it whatever day its stay is for.',
+        querystring: z.object({ branchId: z.string().uuid(), registrationId: z.string().uuid().optional() }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      return { registrations: await registrationsAwaitingCheckIn(app.db, auth.operatorId, req.query.branchId) };
+      const { branchId, registrationId } = req.query;
+      return {
+        registrations: await registrationsAwaitingCheckIn(app.db, auth.operatorId, branchId, new Date(), {
+          ...(registrationId ? { registrationId } : {}),
+        }),
+      };
     },
   );
 

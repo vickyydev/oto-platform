@@ -364,13 +364,20 @@ async function bookingDatesOf(db: Exec, operatorId: string, registrationIds: rea
  * itself. Nothing is deleted or scheduled: the rule is in the read. The board
  * is not filtered — a family still waiting there is the board's business, and
  * `cancelWaitingRegistration` is the way to clear one for good.
+ *
+ * `registrationId` names the one registration the board's "Check in" hands to
+ * the till: a family the board still shows as waiting from an earlier day is
+ * loaded onto the sale as before, so only that registration is answered and
+ * the day rule is not applied to it. The unnamed list keeps the rule.
  */
 export async function registrationsAwaitingCheckIn(
   db: Exec,
   operatorId: string,
   branchId: string,
   now: Date = new Date(),
+  options: { registrationId?: string } = {},
 ): Promise<RegistrationView[]> {
+  const named = options.registrationId ?? null;
   const waiting = await db
     .select({
       id: checkin.id,
@@ -379,7 +386,14 @@ export async function registrationsAwaitingCheckIn(
       createdAt: checkin.createdAt,
     })
     .from(checkin)
-    .where(and(eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId), eq(checkin.status, 'registered')));
+    .where(
+      and(
+        eq(checkin.operatorId, operatorId),
+        eq(checkin.branchId, branchId),
+        eq(checkin.status, 'registered'),
+        ...(named ? [eq(checkin.registrationId, named)] : []),
+      ),
+    );
   if (waiting.length === 0) return [];
   const day = await tradingDayOf(db, branchId, now);
   const rows = await db
@@ -396,6 +410,7 @@ export async function registrationsAwaitingCheckIn(
     waiting
       .filter(
         (s) =>
+          named !== null ||
           (bookingDates.get(s.registrationId) ??
             businessDate(s.scheduledFor ?? s.createdAt, day.timezone, day.dayStartMinutes)) === day.date,
       )
