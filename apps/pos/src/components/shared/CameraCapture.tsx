@@ -174,7 +174,7 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
         )}
 
         {state === 'captured' && save === 'saving' && (
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/60 py-2 text-sm text-foreground/80">
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/60 py-2 text-sm text-white/80">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>{t('camera.saving')}</span>
           </div>

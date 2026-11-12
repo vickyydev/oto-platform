@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StationSessionDocument } from '@oto/shared';
 
@@ -134,5 +136,13 @@ describe('the separate display’s look (SCRUM-929)', () => {
     expect(view.look()).toBe('dark');
     expect(stored.get(THEME_KEY)).toBe('blue');
     view.hook.unmount();
+  });
+});
+
+describe('the separate display in light (SCRUM-929)', () => {
+  it('draws the camera’s saving strip in light words on its dark strip, whatever the look', () => {
+    const camera = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'components', 'shared', 'CameraCapture.tsx'), 'utf8');
+    expect(camera).toContain('bg-black/60 py-2 text-sm text-white/80');
+    expect(camera).not.toContain('bg-black/60 py-2 text-sm text-foreground/80');
   });
 });
