@@ -13,6 +13,9 @@
 //   2. the chat's price for an extra dish ("2 more at 450 each") is written on
 //      its line as an EXTRA at that price for each item, shown so in the
 //      review; a cake's price stays where the form keeps it.
+//   2b. (the lane's reviews) the chat's price is the price of ONE item: the
+//      prompt says so, and a total the chat gives for several ("2 pizzas
+//      for 900") is not written as 900 for each.
 //   3. Fetch from chat compares by what is said, not by the wording: a line
 //      the form already says (a lead-in such as "Important", the case and the
 //      punctuation aside) is not offered again; each new line is offered on
@@ -78,7 +81,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf, moreAsked, BEO_TILL_MENU_RULES } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf, moreAsked, BEO_TILL_MENU_RULES, chatPriceIsTotal, beoCatalogueSystemBlock } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf, withWhatsappRow, useChatText, requestFromsOf } = await import("../client/src/lib/beo-ai-review");
@@ -106,7 +109,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 17;
+const CHECKS = 18;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -115,7 +118,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut", "included", "moreFries", "phoneKept"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut", "included", "moreFries", "phoneKept", "total"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -495,6 +498,47 @@ try {
     const changed = { ...state, menuLines: state.menuLines.map((l) => ({ ...l, price: 420, priceFrom: "staff" as const })) };
     assert.equal(approveBodyOf(review, changed, { conversationId: null, messageId: null }).menuLines[0]?.price, 420);
     assert.ok(menuLinePriceWords(changed.menuLines[0]!).endsWith("— changed here."));
+  });
+
+  // --- 2b. A total for several is no price for each (the lane's reviews) ----------------------
+  await check("aTotalForSeveralIsNoPriceEach", async () => {
+    const catalogue = await loadBeoCatalogue(db, { tenantId: tenant, branchId: park });
+    // The prompt says what the price is.
+    const system = beoCatalogueSystemBlock(catalogue, { conversation: true });
+    assert.equal(system.includes('A menu line\'s "chatPrice" is the price of ONE of the item'), true);
+    assert.equal(system.includes('when the conversation gives only a total for several ("2 pizzas for 900"), leave "chatPrice" out'), true);
+    // A model that gives the total anyway: the read does not keep it as the price for each.
+    const read = (text: string, chatPrice: number, quantity = 2) =>
+      resolveCatalogueAnswer(
+        { menuLines: [{ productCode: "CF-24", itemName: "Margherita pizzas", menu: "kids", quantity, chatPrice, line: 1 }] },
+        catalogue,
+        [{ line: 1, id: "p1", source: "family", at: at(0), ruling: false, text }],
+      ).menuLines[0]?.chatPrice;
+    assert.equal(read("And 2 extra Margherita pizzas for 900 baht please.", 900), null, "for 900: the total");
+    assert.equal(read("2 more Margherita pizzas, 1,800 in total.", 1800), null);
+    assert.equal(read("Ещё 2 пиццы Маргарита за 900.", 900), null, "in Russian");
+    assert.equal(read("2 more Margherita pizzas at 450 each.", 450), 450, "each: the price of one");
+    assert.equal(read("2 more Margherita pizzas at 450.", 450), 450, "the owner's ruling: the price is for each item");
+    assert.equal(read("Ещё 2 пиццы по 450.", 450), 450);
+    assert.equal(read("3 more Margherita pizzas for the adults at 450.", 450, 3), 450, "for the adults is no total");
+    assert.equal(read("One more Margherita for 450.", 450, 1), 450, "one item: its price");
+    assert.equal(read("Bill it as the package with an extra pizza for 450.", 450), 450, "for 450 after one pizza: the price of one");
+    assert.equal(read("And two Margherita pizzas for 900 please.", 900), null, "the count written out");
+    assert.equal(chatPriceIsTotal("2 pizzas at 450 each, and 2 cokes for 120", 120, 2), true, "another clause's each is not this price's");
+    // Approved from the review: no line of 900 each.
+    const review = reviewOf({
+      menuLines: [{
+        menu: "kids", itemName: "2 extra Margherita pizzas", quantity: 2, productCode: "CF-24", matchedName: "Margherita", notInMenu: false,
+        chatPrice: read("And 2 extra Margherita pizzas for 900 baht please.", 900) ?? null, from: familyFrom(1),
+      }],
+    });
+    review.catalogue = catalogue;
+    const state = initialReviewState(review, {});
+    assert.equal(state.menuLines[0]?.price, null);
+    const ok = await approve(ev.total, approveBodyOf(review, state, { conversationId: null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const kids = (await kitchenOf(ev.total)).menus.kids as any[];
+    assert.deepEqual(kids.map((l) => [l.itemName, l.quantity, l.price]), [["Margherita", 2, 0]], "no 900 for each");
   });
 
   // --- 3. Fetch from chat: nothing offered twice, each new line on its own --------------------

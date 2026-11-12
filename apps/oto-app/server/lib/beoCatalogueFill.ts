@@ -605,6 +605,7 @@ Matching to the catalogue:
 - A dish or drink beyond the set menu is a menu line: "productCode" is the code from "food" it is, else null with "notInMenu": true. "menu" is "kids", "adults" or "bar" (drinks)
 - The adults eat what the kids eat unless the conversation says otherwise: a dish is "kids" even when the whole party eats it, and no "adults" line is given. When the conversation says the adults' food differs, the "adults" lines are everything the adults eat — a dish they share with the kids given again as an "adults" line, in the adults' own count when the conversation gives one — and nothing the adults do not get: "nuggets for the kids, pasta for the adults" gives one "adults" line, the pasta; "nuggets for everyone, and a cheese platter for the adults" gives two, the nuggets and the cheese platter
 - Never invent an item, a quantity or a price, and never price or total anything: "chatPrice" is only a price the conversation itself names for that item, in baht as written; otherwise leave it out
+- A menu line's "chatPrice" is the price of ONE of the item ("2 more pizzas at 450 each" is 450): when the conversation gives only a total for several ("2 pizzas for 900"), leave "chatPrice" out
 - Keep the conversation's own wording and language in "said" and "itemName". Do not translate
 - Every entry carries "line": the number of the conversation line it comes from (for what the team confirmed, the team's line), and "source": "team" when that line is the team's, "family" when it is the family's
 - A deposit is "paid": true only when the conversation says it was received
@@ -1030,7 +1031,9 @@ export function resolveCatalogueAnswer(
       productCode: code,
       matchedName,
       notInMenu: !code,
-      chatPrice: m.chatPrice ?? null,
+      // SCRUM-946 (the lane's reviews): the chat's price is written as the price for each item, so a
+      // total the chat gives for several ("2 pizzas for 900") is not one.
+      chatPrice: m.chatPrice !== undefined && !chatPriceIsTotal(lineTextOf(m), m.chatPrice, m.quantity ?? 1) ? m.chatPrice : null,
       // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
       ...(m.notes ? { notes: m.notes } : {}),
       from: fromOf(m, m.itemName),
@@ -1369,6 +1372,41 @@ export function moreAsked(itemName: string, text: string | null): boolean {
   }
   return false;
 }
+/** SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450"). */
+const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
+/** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
+const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all|the two|the three|them|everything))([^\p{L}]|$)|รวม|ทั้งหมด|всего|итого|вместе|за все|за обе|за оба/iu;
+/**
+ * SCRUM-946 (the lane's reviews): whether a line names a price as the total
+ * for several of an item ("2 extra pizzas for 900 baht", "900 for both"),
+ * not the price of one: written as the price for each item, the till would
+ * charge it times the quantity. A price said for each ("at 450 each", "по
+ * 450"), for one ("an extra pizza for 450"), or with nothing either way ("2
+ * more at 450", the owner's ruling of 12 November), is the price of one.
+ */
+export function chatPriceIsTotal(text: string | null, price: number, quantity: number): boolean {
+  if (!text || !(quantity > 1) || !(price > 0)) return false;
+  // The figure as the chat writes it, its thousands apart ("1,800", "1 800").
+  const line = text.normalize("NFC").toLowerCase().replace(/(\d)[,\s.](?=\d{3}(?!\d))/g, "$1");
+  const figure = String(price).replace(/\.0+$/, "");
+  const clauseBefore = (t: string) => t.split(/[,.;!?\n]/).pop() ?? "";
+  const clauseAfter = (t: string) => t.split(/[,.;!?\n]/)[0] ?? "";
+  // "for 900" is a total only after the count itself ("2 pizzas for 900"), never after one item.
+  const count = new RegExp(`(^|[^0-9])${quantity}(?![0-9])|(^|[^\\p{L}])(${COUNT_WORDS[quantity] ?? "(?!)"})([^\\p{L}]|$)`, "iu");
+  for (const m of line.matchAll(new RegExp(`(^|[^0-9])(${figure.replace(".", "[.]")})(?![0-9])`, "g"))) {
+    const at = (m.index ?? 0) + m[1]!.length;
+    const before = clauseBefore(line.slice(Math.max(0, at - 60), at));
+    const after = clauseAfter(line.slice(at + figure.length, at + figure.length + 25));
+    if (PER_ITEM_WORDS.test(before) || PER_ITEM_WORDS.test(after)) continue;
+    if ((/(^|[^\p{L}])(for|за)\s*(฿|thb|baht|бат\p{L}*)?\s*$/iu.test(before) && count.test(before)) || TOTAL_WORDS.test(before) || TOTAL_WORDS.test(after)) return true;
+  }
+  return false;
+}
+/** SCRUM-946: a count written out, 2 to 10, in the languages the park's chats are written in. */
+const COUNT_WORDS: Record<number, string> = {
+  2: "two|both|два|две|สอง", 3: "three|три|สาม", 4: "four|четыре|สี่", 5: "five|пять|ห้า", 6: "six|шесть|หก",
+  7: "seven|семь|เจ็ด", 8: "eight|восемь|แปด", 9: "nine|девять|เก้า", 10: "ten|десять|สิบ",
+};
 /** SCRUM-941: words for the cake, in the languages the park's chats are written in. */
 const CAKE_WORDS = /(^|[^\p{L}])cakes?([^\p{L}]|$)|เค้ก|торт/iu;
 /** SCRUM-946: words for getting the room ready. */
