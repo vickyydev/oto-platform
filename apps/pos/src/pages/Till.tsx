@@ -32,7 +32,7 @@ import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, sta
 import { consentSlotPhoto, contactChangeWithdraws, staffCameraLine } from '@/lib/consentForm';
 import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
-import { setSaleOpen } from '@/pwa/openSale';
+import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { refreshSellableStock } from '@/api/stock';
 import { cartStockShortfalls } from '@/lib/stockPrecheck';
@@ -359,6 +359,14 @@ export default function Till() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [rungUpUnpaid]);
+  // SCRUM-878 — what a staff session's end keeps for the next sign-in here:
+  // a sale with something to lose, never a finished sale or a typed number.
+  const saleAtStake = saleResult === null && (rungUpUnpaid || lines.length > 0
+    || voucher.held !== null || member !== null || tier !== null);
+  useEffect(() => {
+    setSaleAtStake('till', saleAtStake);
+    return () => setSaleAtStake('till', false);
+  }, [saleAtStake]);
   /**
    * SCRUM-774 — which way this till is working: Held sales need the platform.
    * SCRUM-897 — the way the sale on screen works: the platform while the

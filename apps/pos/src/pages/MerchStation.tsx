@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { setSaleOpen } from '@/pwa/openSale';
+import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
@@ -119,6 +119,12 @@ export default function MerchStation() {
     setSaleOpen('merch-station', saleOnScreen);
     return () => setSaleOpen('merch-station', false);
   }, [saleOnScreen]);
+  // SCRUM-878 — what a staff session's end keeps: a cart, never a finished sale.
+  const saleAtStake = completedOrder === null && cart.length > 0;
+  useEffect(() => {
+    setSaleAtStake('merch-station', saleAtStake);
+    return () => setSaleAtStake('merch-station', false);
+  }, [saleAtStake]);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
 

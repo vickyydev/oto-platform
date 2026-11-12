@@ -79,7 +79,7 @@ import {
   type PhoneHandoffMode,
   type PhoneTillStep,
 } from '@/lib/phoneTillDisplay';
-import { setPaymentContextLocked, setSaleOpen } from '@/pwa/openSale';
+import { setPaymentContextLocked, setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
@@ -420,6 +420,14 @@ export default function MobileTill() {
     setSaleOpen('mobile-till', saleOnScreen);
     return () => setSaleOpen('mobile-till', false);
   }, [saleOnScreen]);
+  // SCRUM-878 — what a staff session's end keeps for the next sign-in here:
+  // a sale with something to lose (a sale rung up has its tier), never a
+  // finished sale or a typed number.
+  const saleAtStake = saleResult === null && (lines.length > 0 || member !== null || tier !== null);
+  useEffect(() => {
+    setSaleAtStake('mobile-till', saleAtStake);
+    return () => setSaleAtStake('mobile-till', false);
+  }, [saleAtStake]);
 
   // ── Booking redemption flow ───────────────────────────────────────────────
   const [showRedeemModal, setShowRedeemModal] = useState(false);

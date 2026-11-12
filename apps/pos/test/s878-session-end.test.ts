@@ -6,7 +6,7 @@ import { renderHook } from './support/hooks';
 import { OperatorProvider, type useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
 import { INACTIVITY_TIMEOUT_MS } from '@/auth/timings';
-import { setSaleOpen } from '@/pwa/openSale';
+import { getSaleOpen, saleOpenSince, setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import {
   afterSignIn,
@@ -132,6 +132,7 @@ beforeEach(() => {
   seam.onlineUnlock.mockResolvedValue({});
 });
 afterEach(() => {
+  setSaleAtStake('till', false);
   setSaleOpen('till', false);
   setSaleOpen('ticket-display', false);
   vi.useRealTimers();
@@ -225,7 +226,7 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
     try {
       const seat = value().tillSeat;
       vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000); // 20:05: the cart is started
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       pastTheMark();
       refused(); // the minute's heartbeat comes back 401
 
@@ -260,7 +261,7 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
     const { hook, value } = await signedIn();
     try {
       const seat = value().tillSeat;
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       value().lockNow();
       expect(value().locked).toBe(true);
       expect(value().sessionEnded).toBeNull();
@@ -301,7 +302,7 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
   it('a heartbeat sent with no session just before the sign-in, refused after it, does not end the new session', async () => {
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       pastTheMark();
       const sentBeforeTheSignIn = Date.now();
       refused();
@@ -323,7 +324,7 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
   it('the box session ends with it, once: the ended person’s box bearer is not kept under the sign-in form', async () => {
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       expect(seam.boxLock).not.toHaveBeenCalled();
       pastTheMark();
       refused();
@@ -359,7 +360,7 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
     const { hook, value } = await signedIn();
     try {
       vi.setSystemTime(T0 + 3 * 3_600_000);
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       refused();
       expect(value().sessionEnded).toEqual({ name: ANN.name, expired: false, afterHours: 12, saleKept: true });
       expect(sessionEndedLine(value().sessionEnded!)).toBe('The session of ZZ TEST Ann has ended. Sign in again to carry on. The sale in progress is kept on this till.');
@@ -372,7 +373,7 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
     const till = await signedIn();
     const seat = till.value().tillSeat;
     vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000);
-    setSaleOpen('till', true);
+    setSaleAtStake('till', true);
     pastTheMark();
     refused();
     expect(till.value().sessionEnded?.saleKept).toBe(true);
@@ -410,7 +411,7 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
     try {
       const seat = value().tillSeat;
       vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000);
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       // Pay pressed: the till remembers the rung-up sale for its payment screen, as `Till.tsx` does.
       rememberSaleOnScreen('zz-test-station', 'zz-test-sale-878');
       pastTheMark();
@@ -681,7 +682,7 @@ describe('SCRUM-878 — the security rules', () => {
   it('signing out on purpose keeps nothing: no line, no kept sale, nothing offered to the next person', async () => {
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       value().logout();
       expect(value().operator).toBeNull();
       expect(value().sessionEnded).toBeNull();
@@ -702,7 +703,7 @@ describe('SCRUM-878 — the security rules', () => {
   it('a sign-out after an ended session ends it for good: the next person is offered nothing', async () => {
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       pastTheMark();
       refused();
       expect(value().sessionEnded).not.toBeNull();
@@ -725,7 +726,7 @@ describe('SCRUM-878 — the security rules', () => {
 
     async function endedThenOffered() {
       const till = await signedIn();
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       pastTheMark();
       refused();
       const ended = JSON.stringify(till.value().sessionEnded);
@@ -739,7 +740,7 @@ describe('SCRUM-878 — the security rules', () => {
   it('nothing of the kept sale is readable before a sign-in: the till stays locked over it and every selling screen draws nothing while locked', async () => {
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       pastTheMark();
       refused();
       // Locked, with nobody able to do anything: the screen under it renders nothing.
@@ -760,12 +761,67 @@ describe('SCRUM-878 — the security rules', () => {
       targetApp: 'pos', mode: 'read_only', expiresAt: new Date(T0 + 3_600_000).toISOString() } };
     const { hook, value } = await signedIn();
     try {
-      setSaleOpen('till', true);
+      setSaleAtStake('till', true);
       refused();
       expect(value().operator).toBeNull();
       expect(value().sessionEnded).toBeNull();
       expect(value().tillSeat).toBeNull();
     } finally { hook.unmount(); }
+  });
+});
+
+describe('SCRUM-878 — a sale is kept only when there is something to lose', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8').replace(/\r\n/g, '\n');
+
+  it('a finished sale still on screen, or a number only typed, is open for the shell update but not kept: nothing said, nothing offered', async () => {
+    const { hook, value } = await signedIn();
+    try {
+      // What every selling screen says for a paid sale's result or a typed number.
+      setSaleOpen('till', true);
+      setSaleOpen('ticket-display', true);
+      expect(getSaleOpen()).toBe(true);
+      expect(saleOpenSince()).toBeNull();
+      pastTheMark();
+      refused();
+      expect(value().sessionEnded?.saleKept).toBe(false);
+      expect(sessionEndedLine(value().sessionEnded!)).toBe('The session of ZZ TEST Ann ended after twelve hours. Sign in again to carry on.');
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(false);
+    } finally { hook.unmount(); }
+  });
+
+  it('counts from when the sale first had something at stake, and forgets it when it has none', () => {
+    vi.setSystemTime(T0 + 60_000);
+    setSaleAtStake('till', true);
+    vi.setSystemTime(T0 + 120_000);
+    setSaleAtStake('till', true);
+    expect(saleOpenSince()).toBe(T0 + 60_000);
+    setSaleAtStake('merch-station', true);
+    expect(saleOpenSince()).toBe(T0 + 60_000);
+    setSaleAtStake('till', false);
+    expect(saleOpenSince()).toBe(T0 + 120_000);
+    setSaleAtStake('merch-station', false);
+    expect(saleOpenSince()).toBeNull();
+  });
+
+  it('each selling screen says so for a cart line, a member, a tier, a held voucher or a sale rung up, never for a finished sale', () => {
+    const till = src('pages/Till.tsx');
+    expect(till).toContain('const saleAtStake = saleResult === null && (rungUpUnpaid || lines.length > 0\n'
+      + '    || voucher.held !== null || member !== null || tier !== null);');
+    expect(till).toContain("setSaleAtStake('till', saleAtStake);");
+    const phone = src('components/mobile/MobileTill.tsx');
+    expect(phone).toContain('const saleAtStake = saleResult === null && (lines.length > 0 || member !== null || tier !== null);');
+    expect(phone).toContain("setSaleAtStake('mobile-till', saleAtStake);");
+    const fnb = src('pages/OrderStation.tsx');
+    expect(fnb).toContain('const orderAtStake = completedOrder === null && (cart.length > 0 || voucher.held !== null);');
+    expect(fnb).toContain("setSaleAtStake('order-station', orderAtStake);");
+    const shop = src('pages/MerchStation.tsx');
+    expect(shop).toContain('const saleAtStake = completedOrder === null && cart.length > 0;');
+    expect(shop).toContain("setSaleAtStake('merch-station', saleAtStake);");
+    // A customer display is never a sale started at the till.
+    for (const screen of [till, phone]) expect(screen).not.toMatch(/setSaleAtStake\('[a-z-]*display'/);
   });
 });
 

@@ -4,7 +4,7 @@ import { StationHeader } from '@/components/shared/StationHeader';
 import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
-import { setSaleOpen } from '@/pwa/openSale';
+import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
@@ -197,6 +197,13 @@ export default function OrderStation() {
     setSaleOpen('order-station', orderOnScreen);
     return () => setSaleOpen('order-station', false);
   }, [orderOnScreen]);
+  // SCRUM-878 — what a staff session's end keeps: an order with something to
+  // lose, never a finished order still on screen.
+  const orderAtStake = completedOrder === null && (cart.length > 0 || voucher.held !== null);
+  useEffect(() => {
+    setSaleAtStake('order-station', orderAtStake);
+    return () => setSaleAtStake('order-station', false);
+  }, [orderAtStake]);
   const [pickupCode, setPickupCode] = useState('');
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();

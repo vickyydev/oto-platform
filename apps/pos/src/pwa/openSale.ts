@@ -19,14 +19,21 @@ const openSurfaces = new Set<string>();
 const listeners = new Set<() => void>();
 let snapshot = false;
 /**
- * SCRUM-878 — when each surface's sale was started: the moment it first said
- * it was holding one. Read when a staff session ends with a sale on screen,
- * so the next person to sign in at that till is told who started it and when.
+ * SCRUM-878 — WHAT A STAFF SESSION'S END WOULD LOSE, AND SINCE WHEN.
+ *
+ * Narrower than "open" above. A shell update must not swap away a finished
+ * sale's result still on screen or a phone number only typed, so those count
+ * as open; but neither is a sale in progress. A session that ends keeps the
+ * screen for the next sign-in on this till, and offers it to a different
+ * person, only when there is something to lose: a cart line, a member or a
+ * tier chosen, a sale rung up and not yet paid. Each selling surface says so
+ * beside its "open" (`setSaleAtStake`); a customer display never does.
+ *
+ * The moment is when the surface first had something at stake: the next
+ * person to sign in at that till is told who started the sale and when.
  * Memory only, like the rest of this file.
  */
-const openedAt = new Map<string, number>();
-/** A customer display in use is not a sale started at the till. */
-const DISPLAY_SURFACE = /-display$/;
+const atStakeSince = new Map<string, number>();
 
 function publish(): void {
   const next = openSurfaces.size > 0;
@@ -40,13 +47,8 @@ function publish(): void {
  * driven straight from a render effect.
  */
 export function setSaleOpen(surface: string, isOpen: boolean): void {
-  if (isOpen) {
-    openSurfaces.add(surface);
-    if (!openedAt.has(surface)) openedAt.set(surface, Date.now());
-  } else {
-    openSurfaces.delete(surface);
-    openedAt.delete(surface);
-  }
+  if (isOpen) openSurfaces.add(surface);
+  else openSurfaces.delete(surface);
   publish();
 }
 
@@ -55,13 +57,21 @@ export function getSaleOpen(): boolean {
 }
 
 /**
- * SCRUM-878 — when the oldest sale a selling surface holds was started, or
- * null when none holds one. A customer display alone does not count.
+ * SCRUM-878 — say whether `surface` holds a sale with something to lose (see
+ * `atStakeSince`). Idempotent, so it can be driven straight from an effect.
+ */
+export function setSaleAtStake(surface: string, atStake: boolean): void {
+  if (!atStake) atStakeSince.delete(surface);
+  else if (!atStakeSince.has(surface)) atStakeSince.set(surface, Date.now());
+}
+
+/**
+ * SCRUM-878 — when the oldest sale a selling surface has at stake was
+ * started, or null when none has one.
  */
 export function saleOpenSince(): number | null {
   let since: number | null = null;
-  for (const [surface, at] of openedAt) {
-    if (DISPLAY_SURFACE.test(surface)) continue;
+  for (const at of atStakeSince.values()) {
     if (since === null || at < since) since = at;
   }
   return since;
