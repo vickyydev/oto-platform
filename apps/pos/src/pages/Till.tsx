@@ -23,6 +23,7 @@ import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { welcomedMember } from '@/lib/welcomeMember';
 import { savedRateSummary } from '@/lib/tierApproval';
 import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
@@ -301,6 +302,15 @@ export default function Till() {
    * lookup and by `resetSale`. Nothing is written to the member.
    */
   const [showAllTiersFor, setShowAllTiersFor] = useState<string | null>(null);
+
+  /**
+   * SCRUM-885 — the member this till created on this sale (the create-member
+   * offer of SCRUM-31, or the event pass's name prompt). The customer side's
+   * welcome greets them as a first visit, not as a member the check found
+   * (`welcomedMember`). Keyed by the member, so one found by any path is
+   * welcomed back as before; cleared by `resetSale`.
+   */
+  const [createdMemberId, setCreatedMemberId] = useState<string | null>(null);
 
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
@@ -880,6 +890,7 @@ export default function Till() {
     setPendingPaymentMethod(null);
     setPendingCheckInChoices(null);
     setMember(null);
+    setCreatedMemberId(null);
     setConfirmedVisitId(null);
     setShowVerifyModal(false);
     setVerifyTier(null);
@@ -1097,6 +1108,7 @@ export default function Till() {
       .then((res) => {
         const mapped = apiMemberToMember(res.member);
         setMember(mapped);
+        setCreatedMemberId(mapped.id);
         setCustomerPhone(mapped.phone);
         setTier(resolveAutoTier(mapped));
         setOfferCreateMember(false);
@@ -1184,6 +1196,7 @@ export default function Till() {
       try {
         const created = apiMemberToMember((await membersApi.create({ phone, nickname: name })).member);
         setMember(created);
+        setCreatedMemberId(created.id);
         setCustomerPhone(created.phone);
         setEventPassPrefilledMember(created);
         setEventPassFor(event);
@@ -1217,6 +1230,7 @@ export default function Till() {
       .then((res) => {
         const created = apiMemberToMember(res.member);
         setMember(created);
+        setCreatedMemberId(created.id);
         setCustomerPhone(created.phone);
         setCustomerNickname(name);
         setEventPassPrefilledMember(created);
@@ -3486,6 +3500,9 @@ export default function Till() {
   else if (step === 1) customerStage = 'identify';
   else if (lines.length > 0) customerStage = 'order';
   else customerStage = 'welcome';
+  // SCRUM-885 — what both customer screens are handed: the welcome greets the
+  // member the check found, and one created on this sale as a first visit.
+  const customerMember = welcomedMember(customerStage, member, createdMemberId);
   // SCRUM-763 — the customer half asks the guest's language before the phone
   // number, once per sale: `resetSale` moves the epoch, and the next guest chooses again.
   const customerLanguage = useLanguageChoice(customerStage === 'identify', `${saleEpochRef.current}`);
@@ -3585,7 +3602,7 @@ export default function Till() {
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
     saleKey: saleKeyRef.current,
-    phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
+    phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member: customerMember,
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
     rateMode: cart.quote.pricingMode,
     online: displayOnline,
@@ -4160,7 +4177,7 @@ export default function Till() {
               payment={paymentDisplay}
               phone={customerPhone}
               nickname={customerNickname}
-              member={member}
+              member={customerMember}
               onPhoneChange={setCustomerPhone}
               onNicknameChange={setCustomerNickname}
               onIdentify={handleIdentify}
