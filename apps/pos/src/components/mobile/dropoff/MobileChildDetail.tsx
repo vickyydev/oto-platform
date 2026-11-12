@@ -1,6 +1,6 @@
 import { CheckIn, ContactChannel } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
-import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { arrivalOverdue, childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { bahtText } from '@/lib/bahtText';
 import { WaChip } from '@/components/dropoff/WaChip';
@@ -61,6 +61,12 @@ export const PHONE_BODY = 'flex-1 min-h-0 [&_[data-radix-scroll-area-viewport]>d
 
 const fmtTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+
+/** SCRUM-960 — a waiting child's arrival box: red once its time has passed (`arrivalOverdue`). */
+const scheduledTone = (scheduledFor: string): string =>
+  arrivalOverdue(scheduledFor)
+    ? 'border-red-500/30 bg-red-500/10 text-red-400'
+    : 'border-violet-500/30 bg-violet-500/10 text-violet-400';
 
 function ChildSection({
   child,
@@ -180,10 +186,11 @@ function ChildSection({
               {remaining != null ? formatRemaining(remaining) : 'In park'}
             </div>
           )}
+          {/* SCRUM-960 — the desk's overdue rule (`arrivalOverdue`). */}
           {child.status === 'registered' && child.scheduledFor && (
-            <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 flex items-center gap-2 text-violet-400 font-semibold text-sm">
-              <CalendarClock className="w-4 h-4" />
-              Scheduled · {fmtTime(child.scheduledFor)}
+            <div className={`rounded-xl border px-3 py-2 flex items-center gap-2 font-semibold text-sm ${scheduledTone(child.scheduledFor)}`}>
+              {arrivalOverdue(child.scheduledFor) ? <AlertTriangle className="w-4 h-4" /> : <CalendarClock className="w-4 h-4" />}
+              {arrivalOverdue(child.scheduledFor) ? 'Overdue' : 'Scheduled'} · {fmtTime(child.scheduledFor)}
             </div>
           )}
         </>
@@ -388,9 +395,9 @@ export function MobileChildDetail({
 
           {/* Shared scheduled badge (all children same status = scheduled) */}
           {allSameStatus && rep.status === 'registered' && rep.scheduledFor && (
-            <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 flex items-center gap-2 text-violet-400 font-semibold">
-              <CalendarClock className="w-5 h-5" />
-              Scheduled · {fmtTime(rep.scheduledFor)}
+            <div className={`rounded-xl border px-4 py-3 flex items-center gap-2 font-semibold ${scheduledTone(rep.scheduledFor)}`}>
+              {arrivalOverdue(rep.scheduledFor) ? <AlertTriangle className="w-5 h-5" /> : <CalendarClock className="w-5 h-5" />}
+              {arrivalOverdue(rep.scheduledFor) ? 'Overdue' : 'Scheduled'} · {fmtTime(rep.scheduledFor)}
             </div>
           )}
 

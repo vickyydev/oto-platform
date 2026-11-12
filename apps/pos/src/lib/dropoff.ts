@@ -438,6 +438,18 @@ export function remainingMinutes(c: CheckIn, now: number = Date.now()): number |
   return c.bookedDurationMinutes - elapsedMin;
 }
 
+/**
+ * SCRUM-960 — ONE OVERDUE RULE FOR A WAITING CHILD, the prototype's desk card
+ * (`FamilyCheckInCard`'s status badge): a child booked to arrive at a time now
+ * past reads "Overdue · 23:10" in red, otherwise "Scheduled · 23:10". The
+ * prototype's phone screens said "Scheduled" whatever the time, so the same
+ * child read Overdue on the desk and Scheduled on the phone three minutes
+ * later (staging's 12a and 13a1). The desk and the phone both ask this now.
+ */
+export function arrivalOverdue(scheduledFor: string, now: number = Date.now()): boolean {
+  return new Date(scheduledFor).getTime() < now;
+}
+
 /** Bucket a remaining-minutes value into ok / due-soon / overdue. */
 export function dueState(rem: number | null): DueState {
   if (rem == null) return 'ok';

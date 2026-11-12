@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckIn } from '@/types';
-import { remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { arrivalOverdue, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus } from '@/lib/waConnection';
 import { WaChip } from '@/components/dropoff/WaChip';
 import { bookedForLabel } from '@/components/dropoff/CancelBookingDialog';
@@ -53,10 +53,12 @@ function ChildStatusLine({ child }: { child: CheckIn }) {
     );
   }
   if (child.scheduledFor) {
+    // SCRUM-960 — the desk's rule (`arrivalOverdue`): past its time, Overdue in red.
+    const overdue = arrivalOverdue(child.scheduledFor);
     return (
-      <span className="flex items-center gap-1 text-[10px] text-violet-400">
-        <CalendarClock className="w-2.5 h-2.5" />
-        Scheduled · {fmtTime(child.scheduledFor)}
+      <span className={`flex items-center gap-1 text-[10px] ${overdue ? 'text-red-400 font-semibold' : 'text-violet-400'}`}>
+        {overdue ? <AlertTriangle className="w-2.5 h-2.5" /> : <CalendarClock className="w-2.5 h-2.5" />}
+        {overdue ? 'Overdue' : 'Scheduled'} · {fmtTime(child.scheduledFor)}
       </span>
     );
   }
@@ -102,10 +104,12 @@ function SharedStatusFooter({ family }: { family: CheckIn[] }) {
     );
   }
   if (rep.scheduledFor) {
+    // SCRUM-960 — the desk's rule (`arrivalOverdue`): past its time, Overdue in red.
+    const overdue = arrivalOverdue(rep.scheduledFor);
     return (
-      <span className="flex items-center gap-1 text-violet-400">
-        <CalendarClock className="w-3 h-3" />
-        Scheduled · {fmtTime(rep.scheduledFor)}
+      <span className={`flex items-center gap-1 ${overdue ? 'text-red-400' : 'text-violet-400'}`}>
+        {overdue ? <AlertTriangle className="w-3 h-3" /> : <CalendarClock className="w-3 h-3" />}
+        {overdue ? 'Overdue' : 'Scheduled'} · {fmtTime(rep.scheduledFor)}
       </span>
     );
   }

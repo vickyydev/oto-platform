@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckIn, ContactChannel } from '@/types';
-import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { arrivalOverdue, childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from './WaChip';
 import {
@@ -113,7 +113,7 @@ function StatusBadge({ child }: { child: CheckIn }) {
     );
   }
   if (child.scheduledFor) {
-    const overdue = new Date(child.scheduledFor).getTime() < Date.now();
+    const overdue = arrivalOverdue(child.scheduledFor);
     return (
       <span
         className={`flex items-center gap-1 font-semibold text-xs ${
