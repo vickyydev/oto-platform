@@ -283,6 +283,28 @@ describe('a count the chat reads two ways is chosen before Book date saves', () 
     expect(pendingChoice(pickBookDateChoice(emptied, 'kids', emptied.choices.kids![0]!))).toBeNull();
     expect(pendingChoice(editBookDate(emptied, 'kids', '9'))).toBeNull();
   });
+
+  it('a blank first key (a space) on a box read two ways settles nothing: the readings stay and Save waits', () => {
+    const merged = mergeBookDateProposal(freshBookDate(draftOf(P6)), P6_MODEL, BRANCH_IDS);
+    const spaced = editBookDate(merged, 'kids', ' ');
+    expect(pendingChoice(spaced)).toBe(KIDS_WAIT);
+    expect(spaced.choices.kids).toEqual(merged.choices.kids);
+    expect(spaced.edited).not.toContain('kids');
+    expect(readDraft(spaced.draft)).toMatchObject({ values: { kids: null } });
+    // A figure typed after the space settles it as any typed figure does.
+    const typed = editBookDate(spaced, 'kids', ' 9');
+    expect(pendingChoice(typed)).toBeNull();
+    expect(readDraft(typed.draft)).toMatchObject({ values: { kids: 9 } });
+    // The same for the child's name: spaces are no name.
+    const names = mergeBookDateProposal(
+      freshBookDate({ ...draftOf(P6), childName: 'ZZ Test Mia' }),
+      answer({ childName: family('ZZ Test Nina', 'ZZ Test Nina') }),
+      BRANCH_IDS,
+    );
+    const blankName = editBookDate(names, 'childName', '  ');
+    expect(pendingChoice(blankName)).toBe("The chat reads two ways for the child's name: choose one.");
+    expect(blankName.choices.childName).toEqual(names.choices.childName);
+  });
 });
 
 describe('every other field the window reads two ways is held the same way', () => {
@@ -403,6 +425,16 @@ describe('the dialog in a page: a pick or a typed figure frees Book date at once
     await press(bookButton);
     expect(saved.mock.calls.length).toBe(1);
     expect(saved.mock.calls[0]![0].kids).toBe(9);
+  });
+
+  it('a space typed first in the kids box leaves Book date held and the readings offered', async () => {
+    await render(draftOf(P6), P6_MODEL);
+    await type(' ');
+    expect(readingsOfKids().length).toBe(2);
+    expect(bookDisabled()).toBe(true);
+    expect(waiting()).toBe(KIDS_WAIT);
+    await press(bookButton);
+    expect(saved.mock.calls.length).toBe(0);
   });
 
   it('a party with no count at all: ready at once, and Save sends no kids and no adults', async () => {

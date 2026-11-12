@@ -498,8 +498,9 @@ export function bookDateFetchLine(fetched: BookDateFetch): string {
  * typed value settled are kept aside (`typedOver`); when the person empties
  * that box again, the field is as it was before the first key: the two
  * readings are offered again, the field is not theirs, and Save waits for a
- * choice once more. A box with no choice on it, emptied, stays empty and
- * theirs, as before.
+ * choice once more. A blank value (spaces only) typed while the two readings
+ * are open settles nothing: the readings stay and Save still waits. A box
+ * with no choice on it, emptied, stays empty and theirs, as before.
  */
 export function editBookDate<K extends keyof BookDateDraft>(state: BookDateState, key: K, value: BookDateDraft[K]): BookDateState {
   const field = (PROPOSED_FIELDS as readonly string[]).includes(key) ? (key as ProposedField) : null;
@@ -514,6 +515,7 @@ export function editBookDate<K extends keyof BookDateDraft>(state: BookDateState
     return { ...state, draft, edited: state.edited.filter((f) => f !== field), choices, typedOver };
   }
   const open = choices[field];
+  if (open && value.trim() === '') return { ...state, draft };
   if (open) typedOver[field] = open;
   delete choices[field];
   return {
