@@ -158,4 +158,22 @@ await check("the BEO PDF prints a drink's EXTRA price for each item, as the kitc
   assert.equal((bar.match(/ each<\/span>/g) ?? []).length, 1, "a line with no price prints none");
 });
 
+await check("the BEO PDF prints a set-menu choice with single brackets: Margherita (Pizza), never ((Pizza)) (SCRUM-940 point 3)", async () => {
+  const kids = [
+    { quantity: 1, itemName: "Margherita", notes: "(Pizza)", source: "set_menu", groupId: "g-pizza" },
+    { quantity: 1, itemName: "Chicken", notes: "(Fried rice) · no onion", source: "set_menu", groupId: "g-rice" },
+    { quantity: 2, itemName: "Margherita", notes: "cut small", source: "additional", price: 450 },
+  ];
+  const html = await beoPdfHtml({
+    eventTitle: "ZZ TEST 940", eventDate: WEEKDAY, startTime: "14:00", status: "upcoming",
+    kitchenPlan: { required: true, setMenuEnabled: true, setMenuTemplateName: "ZZ TEST set", menus: { kids } },
+    barPlan: { items: [{ quantity: 1, itemName: "Juice", notes: "(Drinks pitcher)", source: "set_menu" }] },
+  } as Parameters<typeof beoPdfHtml>[0]);
+  assert.ok(html.includes("Margherita (Pizza)"), "the choice and its group");
+  assert.ok(html.includes("Chicken (Fried rice) · no onion"), "a note after the group keeps one pair");
+  assert.ok(html.includes("Juice <span class=\"item-note\">(Drinks pitcher)</span>"), "the bar too");
+  assert.ok(html.includes("<span class=\"item-note\">(cut small)</span>"), "a plain note in brackets, as before");
+  assert.equal(html.includes("(("), false, "never double brackets");
+});
+
 console.log(`beo-extra-price.check: ${checks} checks passed`);

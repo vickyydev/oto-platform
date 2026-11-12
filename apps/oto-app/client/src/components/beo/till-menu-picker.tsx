@@ -10,6 +10,7 @@ import {
   bahtOfSatang,
   tillCodeState,
   tillMenuIndexOf,
+  sameNameCategories,
   tillMenuSearch,
   tillMenuWordsMatch,
   type TillMenuIndex,
@@ -148,6 +149,9 @@ export function TillMenuPick({
     () => (typed ? tillMenuSearch(groups.flatMap((group) => group.items), search) : []),
     [groups, search, typed],
   );
+  // SCRUM-958 (SCRUM-940 point b): two listed items of one name ("Latte", one in the Free Drinks
+  // Menu at 0 baht) each show their category beside the name.
+  const sameName = useMemo(() => sameNameCategories(typed ? found : groups.flatMap((group) => group.items)), [typed, found, groups]);
   if (!menu.editable) return null;
   const current = code?.trim() || null;
   const option = (item: TillMenuItem) => (
@@ -163,7 +167,14 @@ export function TillMenuPick({
       data-testid={`${testId}-option-${item.code}`}
     >
       <Check className={`mr-2 h-3 w-3 shrink-0 ${current === item.code ? "opacity-100" : "opacity-0"}`} />
-      <span className="flex-1 text-xs">{item.name}</span>
+      <span className="flex-1 text-xs">
+        {item.name}
+        {sameName.has(item.code) && (
+          <span className="text-[10px] text-muted-foreground ml-1" data-testid={`${testId}-category-${item.code}`}>
+            {`· ${sameName.get(item.code)}`}
+          </span>
+        )}
+      </span>
       {item.beoOnly && (
         <Badge variant="outline" className="text-[10px] px-1.5 ml-1 shrink-0">Party only</Badge>
       )}

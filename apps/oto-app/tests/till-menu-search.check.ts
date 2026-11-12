@@ -19,7 +19,7 @@
 // Usage, from apps/oto-app:
 //   npx tsx tests/till-menu-search.check.ts
 import assert from "node:assert/strict";
-import { tillMenuSearch, tillMenuSearchScore, tillMenuWordsMatch, type TillMenuItem } from "../shared/tillMenu";
+import { sameNameCategories, tillMenuSearch, tillMenuSearchScore, tillMenuWordsMatch, type TillMenuItem } from "../shared/tillMenu";
 
 let checks = 0;
 const check = (title: string, fn: () => void) => {
@@ -104,6 +104,45 @@ check("the best answer first whatever its category: a name that starts with the 
     "the two that start with it first, in the menu's order; then the rest in the menu's order",
   );
   assert.deepEqual(tillMenuSearch(chicken, "").map((m) => m.code), chicken.map((m) => m.code), "nothing typed: the menu as given");
+});
+
+check("a whole word of the category, or its start, ranks above a match found only inside another word of a name (SCRUM-940)", () => {
+  // The staging proof: "tea" listed Steamed jasmine rice ("steamed") above four teas of the Tea pot,
+  // and "egg" listed Veggie delight ("veggie") second.
+  const teas: TillMenuItem[] = [
+    item("CF-10-17", "Steamed jasmine rice", "Sides", "Food", "kitchen"),
+    item("CF-64-4", "Green tea", "Tea pot", "Drinks", "bar"),
+    item("CF-64-1", "English breakfast", "Tea pot", "Drinks", "bar"),
+    item("CF-64-2", "Earl grey", "Tea pot", "Drinks", "bar"),
+    item("CF-64-3", "Peppermint", "Tea pot", "Drinks", "bar"),
+    item("CF-64-5", "Camomile", "Tea pot", "Drinks", "bar"),
+  ];
+  assert.deepEqual(
+    tillMenuSearch(teas, "tea").map((m) => m.name),
+    ["Green tea", "English breakfast", "Earl grey", "Peppermint", "Camomile", "Steamed jasmine rice"],
+    "the name's own word first, then the Tea pot's teas, then the letters inside steamed",
+  );
+  assert.equal(tillMenuSearchScore(teas[3]!, "tea"), 0.83, "a whole word of the category");
+  const eggs: TillMenuItem[] = [
+    item("CF-32", "Veggie delight", "Pizza", "Food", "kitchen"),
+    item("CF-10-18", "Eggs your way", "Sides", "Food", "kitchen"),
+    item("CF-9", "Benedict", "Eggs", "Food", "kitchen"),
+  ];
+  assert.deepEqual(tillMenuSearch(eggs, "egg").map((m) => m.name), ["Eggs your way", "Benedict", "Veggie delight"], "Veggie delight no longer second");
+  assert.equal(tillMenuSearchScore(eggs[2]!, "egg"), 0.82, "the start of a word of the category");
+  assert.equal(tillMenuSearchScore(eggs[0]!, "egg"), 0.8, "inside a word of a name, as before");
+});
+
+check("two listed items of one name each show their category (SCRUM-940)", () => {
+  // The staging proof: Latte at 145 and the Free Drinks Menu's Latte at 0.
+  const lattes: TillMenuItem[] = [
+    item("CF-58-4", "Latte", "Coffee", "Drinks", "bar"),
+    item("CF-58-6", "Vanilla latte", "Coffee", "Drinks", "bar"),
+    item("CF-FREE-58-4", "Latte", "Free Drinks Menu", "Drinks", "bar"),
+  ];
+  assert.deepEqual([...sameNameCategories(tillMenuSearch(lattes, "latte")).entries()], [["CF-58-4", "Coffee"], ["CF-FREE-58-4", "Free Drinks Menu"]]);
+  assert.equal(sameNameCategories(tillMenuSearch(lattes, "vanilla")).size, 0, "a name listed once shows none");
+  assert.equal(sameNameCategories(MENU).size, 0);
 });
 
 check("\"Not from the till\" is found by its own words only", () => {

@@ -18,7 +18,9 @@
 //   5. the adults' own list: the copy of a kids' line is charged once, with
 //      the kids' line; a line of their own shows its own;
 //   6. a till whose menu cannot be read: nothing is said of a coded line's
-//      price, and no total (nothing rather than a wrong figure).
+//      price, and no total (nothing rather than a wrong figure);
+//   7. SCRUM-940 point 2: the first line made from "Nothing on the kids' menu
+//      yet" is saved as the EXTRA it shows.
 //
 // Run from apps/oto-app:
 //   TSX_TSCONFIG_PATH=tests/tsconfig.jsx.json npx tsx tests/beo-extra-price-ui.check.ts
@@ -285,6 +287,21 @@ await check("a till whose menu cannot be read: nothing is said of a coded line's
   absent("text-kitchen-extras-total", "no total rather than a wrong one");
 });
 
+// SCRUM-958 (SCRUM-940 point 2): the first line made from "Nothing on the kids' menu yet" showed the EXTRA
+// badge but was saved as included; it is saved as the EXTRA it shows, its price box beside it.
+await check("the first line made from Nothing on the kids' menu yet is the EXTRA it shows, and is saved as one", async () => {
+  const E4 = "44444444-4444-4444-8444-444444444949";
+  BEOS.set(E4, { date: WEEKDAY, kids: [], bar: [] });
+  await openBeo(E4);
+  await click("button-add-first-menu-kids");
+  assert.equal(text("badge-menu-incl-kids-0"), "EXTRA");
+  assert.ok(byTestId("input-menu-price-kids-0"), "an EXTRA: its price box");
+  await typeInto("input-menu-name-kids-0", "Durian pizza");
+  await typeInto("input-menu-price-kids-0", "250");
+  const body = await saved();
+  assert.deepEqual(body.kitchenPlan.menus.kids.map((l) => [l.itemName, l.included, l.source ?? null, l.price]), [["Durian pizza", false, null, 250]]);
+});
+
 await act(async () => { root.unmount(); });
 console.log(`beo-extra-price-ui.check: ${checks} checks passed`);
-process.exit(checks === 5 ? 0 : 1);
+process.exit(checks === 6 ? 0 : 1);

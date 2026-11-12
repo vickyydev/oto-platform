@@ -441,6 +441,28 @@ await check("Settings: the search beside a Code box writes the till's code, fill
   }, "the template's own words kept; an empty name took the till's");
 });
 
+// SCRUM-958 (SCRUM-940 point b, the staging proof): two till items named "Latte", one in the Free
+// Drinks Menu at 0 baht: each listed one shows its category beside the name.
+await check("two listed items of one name each show their category beside it; a name of its own shows none", async () => {
+  queryClient.clear();
+  tillAnswer = (parkId) => ({
+    parks: [{
+      parkId: parkId ?? PARK, parkName: "ZZ TEST Floresta", status: "ok", message: null, readAt: "2026-11-12T07:00:00.000Z",
+      items: [...TILL, item("CF-58-4", "Latte", "Coffee", "bar", 14_500), item("CF-FREE-58-4", "Latte", "Free Drinks Menu", "bar", 0)],
+    }],
+  });
+  await openBeo(E1);
+  await click("accordion-bar-plan");
+  await click("button-till-menu-bar-0");
+  await setValue(required("button-till-menu-bar-0-search") as HTMLInputElement, "latte");
+  assert.deepEqual(options("button-till-menu-bar-0"), ["CF-58-4", "CF-FREE-58-4"]);
+  assert.equal(text("button-till-menu-bar-0-category-CF-58-4"), "· Coffee");
+  assert.equal(text("button-till-menu-bar-0-category-CF-FREE-58-4"), "· Free Drinks Menu");
+  await setValue(required("button-till-menu-bar-0-search") as HTMLInputElement, "cranberry");
+  assert.deepEqual(options("button-till-menu-bar-0"), ["CF-66-4"]);
+  absent("button-till-menu-bar-0-category-CF-66-4", "a name listed once");
+});
+
 await act(async () => { root.unmount(); });
 console.log(`till-menu-ui.check: ${checks} checks passed`);
-process.exit(checks === 9 ? 0 : 1);
+process.exit(checks === 10 ? 0 : 1);

@@ -647,6 +647,14 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     </div>
   ` : '';
 
+  // SCRUM-958 (SCRUM-940 point 3): a line's note in brackets, once: a set-menu choice's note is
+  // already its group in brackets ("(Pizza)", the parent link's and the approval's mark), so it
+  // printed "Margherita ((Pizza))".
+  const noteInBrackets = (note: string) => {
+    const t = note.trim();
+    return t.startsWith('(') && t.includes(')') ? t : `(${t})`;
+  };
+
   // SCRUM-829: the adults' change beside a line of the one food list, in the kitchen's words.
   const adultsMarkHtml = (mark: string | null | undefined) =>
     mark ? ` <span class="item-note" style="color:#92400e;font-weight:600;">— ${s(mark)}</span>` : '';
@@ -660,7 +668,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
     return `<tr>
       <td class="qty">${item.quantity}x</td>
-      <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(mark)}</td>
+      <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(mark)}</td>
       <td class="price-col">${badge}</td>
     </tr>`;
   };
@@ -720,7 +728,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
           ${setMenuItems.length > 0
             ? `<table class="menu-table" style="margin:0;">
                 ${setMenuItems.map((item: any) => `<tr>
-                  <td>${s(item.itemName)}${item.notes ? ` (${s(item.notes)})` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
+                  <td>${s(item.itemName)}${item.notes ? ` ${s(noteInBrackets(item.notes))}` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
                   <td class="price-col"><span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span></td>
                 </tr>`).join('')}
                </table>`
@@ -738,7 +746,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
                  : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
                return `<tr>
                  <td class="qty">${item.quantity}x</td>
-                 <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
+                 <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
                  <td class="price-col">${badge}</td>
                </tr>`;
              }).join('')}
@@ -797,7 +805,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       <table class="menu-table">
         ${data.barPlan.items.map(item => `<tr>
           <td class="qty">${item.quantity}x</td>
-          <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
+          <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}</td>
           <td class="price-col"><span class="${item.source === 'set_menu' ? 'incl-badge' : 'extra-badge'}" style="${item.source === 'set_menu' ? 'background:#dbeafe;color:#1e40af;border-color:#93c5fd;' : ''}">${item.source === 'set_menu' ? 'SET' : 'EXTRA'}</span>${item.source !== 'set_menu' && item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}</td>
         </tr>`).join('')}
       </table>

@@ -184,9 +184,15 @@ export function tillMenuSearchScore(
   if (typed && words.includes(` ${typed} `)) return 0.93;
   if (name.startsWith(q) || (typed && words.startsWith(` ${typed}`))) return 0.9;
   if (typed && words.includes(` ${typed}`)) return 0.85;
+  // SCRUM-958 (SCRUM-940 point a, the staging proof): a whole word of the category, or the start
+  // of one, before a match found only inside another word of a name: "tea" lists the Tea pot's
+  // teas above Steamed jasmine rice, "egg" the Eggs' dishes above Veggie delight.
+  const category = foldForSearch(`${item.parentCategory ?? ""} ${item.category ?? ""}`);
+  const categoryWords = ` ${category.replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
+  if (typed && categoryWords.includes(` ${typed} `)) return 0.83;
+  if (typed && categoryWords.includes(` ${typed}`)) return 0.82;
   if (name.includes(q)) return 0.8;
   if (code.startsWith(q)) return 0.75;
-  const category = foldForSearch(`${item.parentCategory ?? ""} ${item.category ?? ""}`);
   if (category.includes(q)) return 0.6;
   const parts = typed.split(" ").filter(Boolean);
   if (parts.length > 1 && parts.every((p) => name.includes(p) || code.includes(p) || category.includes(p))) {
@@ -212,6 +218,22 @@ export function tillMenuSearch<T extends Pick<TillMenuItem, "code" | "name" | "c
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || a.at - b.at)
     .map((row) => row.item);
+}
+
+/**
+ * SCRUM-958 (SCRUM-940 point b, the staging proof: two items named "Latte",
+ * one in the Free Drinks Menu at 0 baht): the category to show beside each
+ * listed item whose name another listed item shares, by its code, so the one
+ * meant is picked. Items with a name of their own are not in it.
+ */
+export function sameNameCategories(items: readonly Pick<TillMenuItem, "code" | "name" | "category" | "parentCategory">[]): Map<string, string> {
+  const seen = new Map<string, number>();
+  for (const item of items) seen.set(foldForSearch(item.name), (seen.get(foldForSearch(item.name)) ?? 0) + 1);
+  const out = new Map<string, string>();
+  for (const item of items) {
+    if ((seen.get(foldForSearch(item.name)) ?? 0) > 1) out.set(item.code, item.category ?? item.parentCategory ?? "Other");
+  }
+  return out;
 }
 
 /** The same reading for a row that is no till item ("Not from the till"): found by its own words only. */

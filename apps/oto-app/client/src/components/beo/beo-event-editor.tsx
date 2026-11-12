@@ -3388,12 +3388,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         <div
                                           className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
                                           onClick={() => {
+                                            // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
                                             setCurrentMenu([{
                                               id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
                                               itemName: "",
                                               quantity: 1,
                                               notes: "",
-                                              included: true,
+                                              included: false,
                                               price: 0,
                                             }]);
                                             setTimeout(() => {
@@ -3526,12 +3527,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                   <div
                                     className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md cursor-pointer hover:bg-accent/30 hover:border-border transition-colors"
                                     onClick={() => {
+                                      // SCRUM-958 (SCRUM-940 point 2): the first line shows the EXTRA badge, so it is saved as one.
                                       setCurrentMenu([{
                                         id: `menu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
                                         itemName: "",
                                         quantity: 1,
                                         notes: "",
-                                        included: true,
+                                        included: false,
                                         price: 0,
                                         source: setMenuEnabled ? "additional" : undefined,
                                       }]);
