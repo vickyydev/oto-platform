@@ -17,8 +17,9 @@
 //      the form already says (a lead-in such as "Important", the case and the
 //      punctuation aside) is not offered again; each new line is offered on
 //      its own and can be accepted alone.
-//   4. a phone number the form holds (or the review offers) as the WhatsApp
-//      number is not offered as a Special requests line too.
+//   4. a phone number the form holds (or the WhatsApp row writes) as the
+//      WhatsApp number is not offered as a Special requests line too; the
+//      chat's other number, not taken for the WhatsApp row, stays one.
 //   5. a till code's names are the party's own set menu's: CF-43 offers Fried
 //      rice Veggie, Chicken or Shrimp, never another set menu's "Fried Rice";
 //      CF-24 is "Margherita", never also "Margherita Pizza".
@@ -77,7 +78,7 @@ const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf, moreAsked, BEO_TILL_MENU_RULES } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf, withWhatsappRow, useChatText, requestFromsOf } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { DepositRequestPanel, depositAskedOf, depositAskedWords } = await import("../client/src/components/beo/beo-till-billing");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
@@ -102,7 +103,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 15;
+const CHECKS = 16;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -111,7 +112,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut", "included", "moreFries"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut", "included", "moreFries", "phoneKept"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -554,6 +555,55 @@ try {
     assert.equal(namesPhone("call the nanny on 081 234 5678", ["089 870 0417"]), false);
     assert.equal(namesPhone("call me on +66-89-870-0417 please", ["0898700417"]), true);
     assert.equal(namesPhone("table for 12 at 14:30", ["0898700417"]), false, "a count or a time is no phone number");
+  });
+
+  // --- 4b. The chat's other number, not taken, stays a request (the lane's reviews) ------------
+  await check("aChatNumberNotTakenStaysARequest", async () => {
+    const husband = "If you can't reach me, please call my husband on 089 870 0417";
+    const review = reviewOf(
+      { event: { whatsapp: { value: "089 870 0417", from: familyFrom(4) } } },
+      { requests: [
+        { kind: "special_request", text: husband, from: familyFrom(4, husband) },
+        { kind: "special_request", text: "a quiet corner for grandma", from: familyFrom(4) },
+      ] },
+    );
+    // The proof's words: the form holds another number; the review keeps it by default.
+    const held = { ...NOTHING_HELD, whatsapp: "081 111 1111" };
+    const state = initialReviewState(review, { held, saved: held });
+    assert.deepEqual([state.details.whatsapp.value, state.details.whatsapp.chat], ["081 111 1111", "089 870 0417"]);
+    assert.equal(state.details.specialRequests.value, `${husband}\na quiet corner for grandma`, "the husband's number stays a request");
+    assert.equal(requestFromsOf(review, "special_request", [state.details.whatsapp.held, state.details.whatsapp.value]).length, 2, "with its reason");
+    const kept = approveBodyOf(review, state, { conversationId: null, messageId: null });
+    assert.equal(kept.event.whatsappPhoneRaw, undefined);
+    assert.equal(kept.details?.specialRequests, `${husband}\na quiet corner for grandma`);
+    await q("update core_events set whatsapp_phone_raw = '081 111 1111', whatsapp_phone_e164 = '+66811111111' where id = $1", [ev.phoneKept]);
+    const ok = await approve(ev.phoneKept, kept);
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const [row] = await q("select whatsapp_phone_raw, special_requests from core_events where id = $1", [ev.phoneKept]);
+    assert.equal(row!.whatsapp_phone_raw, "081 111 1111");
+    assert.equal(String(row!.special_requests).includes("089 870 0417"), true, "the number reaches Special requests, never lost");
+    // Taken for the WhatsApp row: the line is that number, not a request as well; given back, a request again.
+    const taken = { ...state, details: { ...state.details, ...withWhatsappRow(review, state.details, useChatText(state.details.whatsapp)) } };
+    assert.equal(taken.details.whatsapp.value, "089 870 0417");
+    assert.equal(taken.details.specialRequests.value, "a quiet corner for grandma");
+    assert.equal(requestFromsOf(review, "special_request", [taken.details.whatsapp.held, taken.details.whatsapp.value]).length, 1);
+    const takenBody = approveBodyOf(review, taken, { conversationId: null, messageId: null });
+    assert.deepEqual([takenBody.event.whatsappPhoneRaw, takenBody.details?.specialRequests], ["089 870 0417", "a quiet corner for grandma"]);
+    const back = { ...taken.details, ...withWhatsappRow(review, taken.details, { ...taken.details.whatsapp, value: "081 111 1111", changed: true }) };
+    assert.equal(back.specialRequests.value, `${husband}\na quiet corner for grandma`);
+    // Typed text is never replaced by the row's change.
+    const typedHeld = { ...held, specialRequests: "ZZ typed by staff" };
+    const typed = initialReviewState(review, { held: typedHeld, saved: typedHeld });
+    const typedPatch = withWhatsappRow(review, typed.details, useChatText(typed.details.whatsapp));
+    assert.equal(typedPatch.specialRequests, undefined);
+    // Fetch from chat: the line is offered beside the WhatsApp row's change; declined, the number stays a request.
+    const changes = fetchChangesOf({ fill: {}, review }, formOf({ whatsappPhoneRaw: "081 111 1111" }));
+    const phoneChange = changes.find((c) => c.field === "whatsappPhoneRaw");
+    const lines = changes.filter((c) => c.field === "specialRequests");
+    assert.equal(phoneChange?.value, "089 870 0417");
+    assert.deepEqual(lines.map((c) => c.line), [husband, "a quiet corner for grandma"]);
+    assert.deepEqual(applyFetchChanges(lines), { specialRequests: `${husband}\na quiet corner for grandma` }, "the number declined: kept as a request");
+    assert.deepEqual(applyFetchChanges([phoneChange!, ...lines]), { whatsappPhoneRaw: "089 870 0417", specialRequests: "a quiet corner for grandma" }, "taken: not a request as well");
   });
 
   // --- 5. The options of a shared code are the party's own set menu's --------------------------

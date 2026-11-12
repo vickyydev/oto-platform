@@ -38,6 +38,7 @@ import {
   thb,
   undecidedLines,
   undecidedOptions,
+  withWhatsappRow,
   useChatText,
   writtenSourcesOf,
   type ApproveAnswer,
@@ -384,9 +385,10 @@ function ReviewSections({
     <TextRow
       label={label}
       field={d[field]}
-      onChange={(next) => setDetails({ [field]: next } as Partial<ReviewDetails>)}
+      // SCRUM-946: the WhatsApp row taken or given back moves a chat line naming its number in or out of Special requests.
+      onChange={(next) => setDetails(field === "whatsapp" ? withWhatsappRow(review, d, next) : ({ [field]: next } as Partial<ReviewDetails>))}
       testId={field}
-      says={field in REQUEST_KIND ? requestFromsOf(review, REQUEST_KIND[field as keyof typeof REQUEST_KIND], d.whatsapp.held) : undefined}
+      says={field in REQUEST_KIND ? requestFromsOf(review, REQUEST_KIND[field as keyof typeof REQUEST_KIND], [d.whatsapp.held, d.whatsapp.value]) : undefined}
       {...opts}
     />
   );

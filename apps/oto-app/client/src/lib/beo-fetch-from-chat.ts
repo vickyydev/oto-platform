@@ -294,9 +294,11 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     }
   };
   // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line (SCRUM-904: allergies first).
-  // SCRUM-946: a line writing out the WhatsApp number the form holds (or the chat's, offered as
-  // the WhatsApp row) is that number, never a Special requests line as well.
-  const phones = [form.whatsappPhoneRaw, proposal?.event.whatsapp?.value];
+  // SCRUM-946: a line writing out the WhatsApp number the form holds is that number, never a
+  // Special requests line as well. A line naming the chat's other number is offered beside the
+  // WhatsApp row's change: declined or not taken, the number stays in Special requests; taken
+  // with it, the line is not added (`applyFetchChanges`).
+  const phones = [form.whatsappPhoneRaw];
   const requests = (kind: Exclude<BeoAiRequestKind, "allergy">) =>
     requestsOfField((proposal?.details.requests ?? []).filter((r) => !namesPhone(r.text, phones)), kind).map((r) => ({ text: requestLineText(r), from: r.from }));
   // SCRUM-904: the rest of the form the conversation's read gives (the ruling's read only where it gives nothing).
@@ -569,9 +571,12 @@ export function rememberDeclined(declined: DeclinedChanges, chatMark: string | n
 /** The accepted changes as a patch of the form. */
 export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormValues> {
   const patch: Record<string, string | number> = {};
-  // SCRUM-946: the lines accepted for one field, added together under what it holds.
+  // SCRUM-946: the lines accepted for one field, added together under what it holds. A line naming
+  // the WhatsApp number accepted with it is that number, not a request as well.
   const lines = new Map<FetchField, { base: string; lines: string[] }>();
+  const takenPhone = accepted.find((c) => c.field === "whatsappPhoneRaw")?.value;
   for (const c of accepted) {
+    if (c.line !== undefined && c.field === "specialRequests" && typeof takenPhone === "string" && namesPhone(c.line, [takenPhone])) continue;
     if (c.line === undefined) {
       patch[c.field] = c.value;
       continue;
