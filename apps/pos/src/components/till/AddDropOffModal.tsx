@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckIn, DropOffServiceType } from '@/types';
