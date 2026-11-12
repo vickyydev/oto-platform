@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { walkInByPhone } from './walk-in';
 
@@ -12,6 +13,12 @@ import { walkInByPhone } from './walk-in';
  * list. The platform then refuses a sale under the cancelled child, and the
  * registration with its signed consent is still on file.
  *
+ * SCRUM-886 — the leftovers the picker no longer lists (an earlier day's
+ * waiting booking) are cancelled from the Check-in board's Upcoming card with
+ * the same confirm; the card says which day it was booked for, leaves the
+ * board after the cancel, and the Upcoming count follows. The earlier day is
+ * written straight into the isolated database (`POS_E2E_DATABASE_URL`).
+ *
  * Runs on the isolated harness: `pnpm --filter @oto/pos e2e e2e/dropoff-cancel-waiting.spec.ts`.
  * `POS_E2E_SHOTS` names a folder to keep the screens in.
  */
@@ -19,6 +26,7 @@ import { walkInByPhone } from './walk-in';
 const PHONE = process.env.POS_E2E_PHONE ?? '';
 const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
 const SHOTS = process.env.POS_E2E_SHOTS ?? '';
+const DATABASE_URL = process.env.POS_E2E_DATABASE_URL ?? '';
 const BRANCH_CODE = 'hkt-central';
 
 test.use({ trace: 'off', video: 'off', screenshot: 'off' });
@@ -176,6 +184,65 @@ test('a waiting booking is cancelled from the picker with one confirm, and canno
 
   const after = await afterwards(page, waiting);
   expect(after.stillListed).toBe(false);
+  expect(after.status).toBe('cancelled');
+  expect(after.consentRecordedAt).not.toBeNull();
+  expect(after.sale).toEqual({ status: 409, code: 'CHECKIN_CANCELLED' });
+});
+
+/** The Upcoming tab's count on the board ("Upcoming" and its number). */
+async function upcomingCount(page: Page): Promise<number> {
+  const tab = page.getByRole('button', { name: /^Upcoming\s*\d+$/ });
+  return Number(/(\d+)\s*$/.exec((await tab.textContent()) ?? '')?.[1] ?? NaN);
+}
+
+const old = { parent: `ZZ TEST Khun Dao ${suffix}`, child: 'ZZ TEST Bua' };
+
+test("an earlier day's waiting booking is cancelled from the Check-in board, and leaves it", async ({ page }) => {
+  requireFixture();
+  test.skip(!DATABASE_URL, "The earlier day is written straight into the isolated database");
+  await signIn(page);
+  const waiting = await registerWaiting(page, old.parent, old.child);
+  const { Pool } = createRequire(resolve(import.meta.dirname, '../../../packages/db/package.json'))('pg');
+  const pool = new Pool({ connectionString: DATABASE_URL });
+  try {
+    const moved = await pool.query(
+      "update pos.checkin set created_at = now() - interval '38 days' where registration_id = $1",
+      [waiting.registrationId],
+    );
+    expect(moved.rowCount).toBe(1);
+  } finally {
+    await pool.end();
+  }
+
+  await page.getByRole('button', { name: 'Check-in', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Upcoming\s*\d+$/ })).toBeVisible({ timeout: 20_000 });
+  const card = page
+    .locator('[class*="bg-card"]')
+    .filter({ hasText: old.parent })
+    .filter({ has: page.getByRole('button', { name: 'Cancel booking' }) })
+    .last();
+  await expect(card).toBeVisible({ timeout: 20_000 });
+  await expect(card.getByText(/^Booked for \d{1,2} [A-Z][a-z]{2}/)).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Cancel booking' })).toBeEnabled();
+  const before = await upcomingCount(page);
+  expect(before).toBeGreaterThanOrEqual(1);
+  await shot(page, '04-board-earlier-day-booking');
+
+  await card.getByRole('button', { name: 'Cancel booking' }).click();
+  const confirm = page.getByRole('dialog').filter({ hasText: 'Cancel this waiting booking' });
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByText('The signed form stays on record.')).toBeVisible();
+  await expect(confirm.getByRole('button', { name: 'Give a reason to cancel' })).toBeDisabled();
+  await confirm.getByLabel('Reason').fill('ZZ TEST leftover from an earlier day');
+  await shot(page, '05-board-confirm-with-reason');
+  await confirm.getByRole('button', { name: 'Cancel the booking' }).click();
+
+  await expect(confirm).toBeHidden({ timeout: 20_000 });
+  await expect(page.locator('[class*="bg-card"]').filter({ hasText: old.parent })).toHaveCount(0, { timeout: 20_000 });
+  await expect.poll(() => upcomingCount(page), { timeout: 20_000 }).toBe(before - 1);
+  await shot(page, '06-board-after-cancel');
+
+  const after = await afterwards(page, waiting);
   expect(after.status).toBe('cancelled');
   expect(after.consentRecordedAt).not.toBeNull();
   expect(after.sale).toEqual({ status: 409, code: 'CHECKIN_CANCELLED' });
