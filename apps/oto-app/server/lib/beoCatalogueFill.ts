@@ -1196,9 +1196,19 @@ export function resolveCatalogueAnswer(
     // SCRUM-958 (SCRUM-946's open point): an adults' line folded into the kids' set menu is kept
     // (the dish and the line that said it), so the review and the toast say so.
     const folded: NonNullable<BeoAiProposal["adultsFolded"]> = [];
+    /**
+     * SCRUM-958 (the lane's reviews): a line kept as an order of the family's own, when it is a
+     * dish of the set menu's choice groups, says so (`ownOrder`), so Fetch from chat never takes it
+     * for the set menu's line the BEO holds.
+     */
+    const kept = (l: (typeof proposal.menuLines)[number], own: boolean) => {
+      if (own && !l.setMenuItemId && setMenuDishOf(l)) l.ownOrder = true;
+      return true;
+    };
     proposal.menuLines = proposal.menuLines.filter((l) => {
+      if (l.menu === "bar") return true;
       // SCRUM-958: a line the chat gives a total for names a price too: its own order.
-      if (l.menu === "bar" || l.chatPrice !== null || l.chatTotal) return true;
+      if (l.chatPrice !== null || l.chatTotal) return kept(l, true);
       const count = l.menu === "kids" ? kids : adultsN;
       const sameOrder = l.quantity === 1 || (count !== null && l.quantity === count);
       if (l.menu === "kids" && sameOrder) {
@@ -1210,7 +1220,8 @@ export function resolveCatalogueAnswer(
       }
       // Only on the chat's own words: a line whose words cannot be read stays a line, as before.
       const text = lineText(l.from);
-      if (text === null || moreAsked(l.itemName, text)) return true;
+      if (text === null) return kept(l, !sameOrder || asksForMore(l.itemName));
+      if (moreAsked(l.itemName, text)) return kept(l, true);
       const item = included.find((i) => (!!i.productCode && !!l.productCode && i.productCode.toUpperCase() === l.productCode.toUpperCase()) || named(l, i.label));
       if (item && (sameOrder || l.quantity === (item.qty ?? 1))) {
         noteToRequests(l, item.label);
@@ -1237,7 +1248,7 @@ export function resolveCatalogueAnswer(
           }
         }
       }
-      return true;
+      return kept(l, !sameOrder);
     });
     if (folded.length > 0) proposal.adultsFolded = folded;
     // SCRUM-958 (the lane's reviews: "For the adults chicken fried rice and shrimp fried rice"
@@ -1249,10 +1260,11 @@ export function resolveCatalogueAnswer(
       if (g.type !== "choice_group" || g.allowMultiple) continue;
       const set = proposal.menuLines.filter((l) => l.menu === "adults" && l.setMenuItemId === g.id);
       if (set.length < 2) continue;
-      const kept = set.reduce((was, l) => (laterLineWins(l.from, was.from) ? l : was));
+      const stays = set.reduce((was, l) => (laterLineWins(l.from, was.from) ? l : was));
       for (const l of set) {
-        if (l === kept) continue;
+        if (l === stays) continue;
         delete l.setMenuItemId;
+        l.ownOrder = true;
         // An extra line of the dish carries its till code (the option's own, else the group's).
         if (!l.productCode) {
           const option = setMenuOptionOf(g, l.matchedName);

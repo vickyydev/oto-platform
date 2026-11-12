@@ -454,10 +454,17 @@ const MENU_LABEL: Record<BeoAiMenu, string> = { kids: "Kids menu", adults: "Adul
  * the catalogue lacks that Special Requests does not carry (the approval
  * keeps those there). Listed to read; nothing here is applied by a fetch.
  */
-export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchHeldCatalogue, form: Pick<FetchFormValues, "specialRequests">): FetchCatalogueChange[] {
+export function fetchCatalogueChangesOf(
+  review: BeoAiReview | null,
+  held: FetchHeldCatalogue,
+  form: Pick<FetchFormValues, "specialRequests"> & Partial<Pick<FetchFormValues, "numChildren" | "numAdults">>,
+): FetchCatalogueChange[] {
   if (!review) return [];
   const p = review.proposal;
   const cat = review.catalogue;
+  // SCRUM-958: the party's headcount for a list, the chat's (as the read counts it) else the form's.
+  const headcountOf = (menu: BeoAiMenu): number | null =>
+    menu === "kids" ? (p.event?.numChildren?.value ?? form.numChildren ?? null) : menu === "adults" ? (p.event?.numAdults?.value ?? form.numAdults ?? null) : null;
   const changes: FetchCatalogueChange[] = [];
   const list = (section: FetchCatalogueChange["section"], label: string, was: string, now: string, from: BeoAiFrom | null) =>
     changes.push({ section, label, was, now, from });
@@ -492,14 +499,18 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
     const name = l.matchedName ?? l.itemName;
     // SCRUM-958 (SCRUM-946's open point): a dish of the set menu the BEO holds under its option's
     // name ("Fried rice: Chicken" held as "Chicken", on the kids' list or the adults') is held.
-    if (holdsSetMenuDish(cat, held, p.setMenu?.templateId ?? null, l)) continue;
+    if (holdsSetMenuDish(cat, held, p.setMenu?.templateId ?? null, l, headcountOf(l.menu))) continue;
+    // SCRUM-958 (the lane's reviews): an order of the family's own on top of the set menu is held
+    // only by an extra line of the BEO, never by the set menu's line of the same dish.
+    const ownOrder = !l.setMenuItemId && !tableOrderOf(l, headcountOf(l.menu));
     // SCRUM-926: a code several options share ("Fried rice" Veggie, Chicken, Pork) is the same dish only by its name too.
     // SCRUM-946: the names the party's own set menu gives the code.
     const shared = !!l.productCode && foodNamesFor(cat, l.productCode, p.setMenu?.templateId ?? null).length > 1;
     const same = (h: FetchHeldCatalogue["menuLines"][number]) =>
-      (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||
-      sameName(h.itemName, name) ||
-      sameName(h.itemName, l.itemName);
+      !(ownOrder && h.groupId) &&
+      ((l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||
+        sameName(h.itemName, name) ||
+        sameName(h.itemName, l.itemName));
     // SCRUM-958: of the lines of that dish, the one in the same count first (the set menu's
     // Margherita and the adults' 3 more beside it are both "Margherita").
     const line = held.menuLines.find((h) => same(h) && h.quantity === l.quantity) ?? held.menuLines.find(same);
@@ -536,17 +547,21 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
  * code, or the group's that its options share) or an option's name; its option
  * is the one the line names, or any when it names none. Held when a line of the
  * BEO's lists (the kids', the adults' or the bar's) is that group's with that
- * option. An extra order of the dish (a price, a total, a word asking for more)
- * is never the set menu's: it is compared by name and code, as before.
+ * option. Compared so only for an adults' SET line, or a line in the table's
+ * own order (`tableOrderOf`); an extra order of the dish (the read's
+ * `ownOrder`, a price, a total, a word asking for more, a count of its own) is
+ * never the set menu's: it is compared by name, code and count, as before.
  */
 export function holdsSetMenuDish(
   catalogue: BeoAiReview["catalogue"],
   held: Pick<FetchHeldCatalogue, "setMenuTemplateId" | "menuLines">,
   proposedSetMenuId: string | null,
-  line: Pick<BeoAiReview["proposal"]["menuLines"][number], "itemName" | "matchedName" | "productCode" | "chatPrice" | "chatTotal" | "setMenuItemId" | "menu">,
+  line: TableOrderLine & Pick<BeoAiReview["proposal"]["menuLines"][number], "matchedName" | "productCode" | "setMenuItemId" | "menu">,
+  /** The party's headcount for the line's list (the kids' or the adults'); null when not known. */
+  headcount: number | null = null,
 ): boolean {
   if (line.menu === "bar") return false;
-  if (!line.setMenuItemId && (line.chatPrice !== null || line.chatTotal || asksForMore(line.itemName))) return false;
+  if (!line.setMenuItemId && !tableOrderOf(line, headcount)) return false;
   const menuId = held.setMenuTemplateId ?? proposedSetMenuId;
   const menu = menuId ? catalogue.setMenus.find((m) => m.id === menuId) : undefined;
   if (!menu) return false;
@@ -569,6 +584,27 @@ export function holdsSetMenuDish(
   })();
   if (!dish) return false;
   return held.menuLines.some((h) => h.groupId === dish.group.id && (dish.option === null || sameName(h.itemName, dish.option)));
+}
+
+/** SCRUM-958: what `tableOrderOf` reads of a chat's line. */
+type TableOrderLine = Pick<BeoAiReview["proposal"]["menuLines"][number], "itemName" | "quantity" | "chatPrice" | "chatTotal"> &
+  Partial<Pick<BeoAiReview["proposal"]["menuLines"][number], "ownOrder" | "from">>;
+
+/**
+ * SCRUM-958 (the lane's reviews: "2 Margherita pizzas on the side" and "On top
+ * of that one Margherita pizza for the adults" were taken for the set menu's
+ * Margherita the BEO held, and never offered): whether a chat's line is the
+ * table's own order of a dish, as the read's same-order rule has it (the
+ * fill's `sameOrder`, beoCatalogueFill.ts): one of it, or one for each of its
+ * list's headcount; no price and no total of its own; no word asking for more
+ * in its words or the chat's words for it; and not an order the read kept as
+ * the family's own (`ownOrder`).
+ */
+export function tableOrderOf(line: TableOrderLine, headcount: number | null): boolean {
+  if (line.ownOrder) return false;
+  if (line.chatPrice !== null || line.chatTotal) return false;
+  if (asksForMore(line.itemName) || asksForMore(line.from?.quote)) return false;
+  return line.quantity === 1 || (headcount !== null && line.quantity === headcount);
 }
 
 /** "2 changes to the package, menu or entertainment", "1 change to the package, menu or entertainment". */

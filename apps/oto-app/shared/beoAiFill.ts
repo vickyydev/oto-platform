@@ -287,6 +287,16 @@ export interface BeoAiMenuLine {
    * it in the line's reason so staff can type a price if they want.
    */
   chatTotal?: { amount: number; quantity: number };
+  /**
+   * SCRUM-958 (the lane's reviews): a dish of the set menu's choice groups the
+   * family orders on top of the set menu, as the read decides it — a price or
+   * a total of its own, a word asking for more in the chat's words beside it
+   * ("On top of that one Margherita pizza"), a count that is not the table's
+   * own, or a second option of a group the set menu gives the adults once: an
+   * EXTRA, so Fetch from chat never takes it for the set menu's line the BEO
+   * holds. Absent on every other line.
+   */
+  ownOrder?: true;
   from: BeoAiFrom;
 }
 

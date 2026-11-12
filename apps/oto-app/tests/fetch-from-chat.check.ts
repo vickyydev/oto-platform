@@ -64,6 +64,7 @@ process.env.LOG_LEVEL ??= "warn";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { pool: appDbPool } = await import("../server/db");
+const { resolveCatalogueAnswer } = await import("../server/lib/beoCatalogueFill");
 const {
   applyFetchChanges,
   catalogueChangesCount,
@@ -741,6 +742,36 @@ try {
     assert.deepEqual(food(review([extra]), { ...kidsHeld, menuLines: [{ itemName: "Margherita", quantity: 1, productCode: null, groupId: PIZZA }, { itemName: "Margherita", quantity: 3, productCode: "CF-24", groupId: null }] }), [], "held as the adults' extra: not offered");
     // A BEO with no such dish: offered.
     assert.equal(food(review([line({})]), { ...kidsHeld, menuLines: [] }).length, 1);
+    // The lane's reviews: a new order of the family's own of a set-menu dish is offered, beside the
+    // set menu's Margherita the BEO holds: a count that is not the table's own, or a word asking for
+    // more outside the model's words for the dish. The chat's lines, read as the fill reads them.
+    const margheritaHeld: FetchHeldCatalogue = { ...kidsHeld, menuLines: [{ itemName: "Margherita", quantity: 1, productCode: null, groupId: PIZZA }] };
+    const chat = ["A party for 12 kids and 8 adults, the Margherita pizza for the kids.", "On top of that one Margherita pizza for the adults please, and can we add 2 Margherita pizzas on the side for the kids?"];
+    const read = resolveCatalogueAnswer(
+      {
+        setMenu: { templateId: setMenu, line: 1, choices: [{ itemId: PIZZA, option: "Margherita", said: "the Margherita pizza for the kids", line: 1 }] },
+        menuLines: [
+          { productCode: "CF-24", itemName: "one Margherita pizza", menu: "adults", quantity: 1, line: 2 },
+          { productCode: "CF-24", itemName: "2 Margherita pizzas on the side", menu: "kids", quantity: 2, line: 2 },
+        ],
+        event: { numChildren: { value: 12, line: 1 }, numAdults: { value: 8, line: 1 } },
+      },
+      review([]).catalogue,
+      chat.map((text, i) => ({ line: i + 1, id: `958-${i}`, source: "family" as const, at: new Date(Date.UTC(2026, 10, 12, 15, i)).toISOString(), ruling: false, text })),
+    );
+    assert.deepEqual(read.menuLines.map((l) => [l.menu, l.quantity, l.setMenuItemId ?? null, l.ownOrder ?? null]), [["adults", 1, null, true], ["kids", 2, null, true]], "the read keeps both as orders of their own");
+    const offered = fetchCatalogueChangesOf({ ...review(read.menuLines), proposal: { ...review(read.menuLines).proposal, event: read.event } }, margheritaHeld, FORM)
+      .filter((c) => c.section === "food")
+      .map((c) => c.label);
+    assert.deepEqual(offered, ["Adults menu", "Kids menu"], "both offered");
+    // And as staff would see a line in a count of its own, without the read's mark: the adults' 2, the kids' 10 (12 kids).
+    const counted = [
+      line({ itemName: "2 Margherita pizzas for the adults", quantity: 2, productCode: "CF-24", matchedName: "Margherita" }),
+      line({ menu: "kids", itemName: "10 Margherita pizzas", quantity: 10, productCode: "CF-24", matchedName: "Margherita" }),
+    ];
+    assert.equal(food(review(counted), margheritaHeld).length, 2, "both offered: neither is the table's own count");
+    // One for each child is the table's own order: the set menu's Margherita, held.
+    assert.deepEqual(food(review([line({ menu: "kids", itemName: "Margherita pizzas", quantity: 12, productCode: "CF-24", matchedName: "Margherita" })]), margheritaHeld), []);
   });
 
   await check("nothing is written by a fetch: no BEO row for the event", async () => {
