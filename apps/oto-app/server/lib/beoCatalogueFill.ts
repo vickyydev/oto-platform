@@ -1052,7 +1052,9 @@ export function resolveCatalogueAnswer(
         ? saidTotal
         : chatPriceIsTotal(text, m.chatPrice, m.quantity ?? 1)
           ? { amount: m.chatPrice, quantity: m.quantity ?? 1 }
-          : saidTotal && (saidTotal.amount === m.chatPrice || !figureInLine(text, m.chatPrice))
+          : // The lane's reviews: never over a price the chat says is for each ("450/each",
+            // "450 for each one"): that figure is the price, as before.
+            saidTotal && !figureSaidEach(text, m.chatPrice) && (saidTotal.amount === m.chatPrice || !figureInLine(text, m.chatPrice))
             ? saidTotal
             : null;
     const line: BeoAiProposal["menuLines"][number] = {
@@ -1754,8 +1756,11 @@ export function adultsSameAsKidsFolds(
   return out;
 }
 
-/** SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450"). */
-const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
+/**
+ * SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450").
+ * SCRUM-970 (the lane's reviews): "ละ" never as the end of "และ" ("and").
+ */
+const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|(?<!แ)ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
 /** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
 const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all|the two|the three|them|everything))([^\p{L}]|$)|รวม|ทั้งหมด|всего|итого|вместе|за все|за обе|за оба/iu;
 /**
@@ -1768,21 +1773,37 @@ const TOTAL_WORDS = /(^|[^\p{L}])(total|in all|altogether|together|for (both|all
  */
 export function chatPriceIsTotal(text: string | null, price: number, quantity: number): boolean {
   if (!text || !(quantity > 1) || !(price > 0)) return false;
-  // The figure as the chat writes it, its thousands apart ("1,800", "1 800").
-  const line = text.normalize("NFC").toLowerCase().replace(/(\d)[,\s.](?=\d{3}(?!\d))/g, "$1");
-  const figure = String(price).replace(/\.0+$/, "");
-  const clauseBefore = (t: string) => t.split(/[,.;!?\n]/).pop() ?? "";
-  const clauseAfter = (t: string) => t.split(/[,.;!?\n]/)[0] ?? "";
   // "for 900" is a total only after the count itself ("2 pizzas for 900"), never after one item.
   const count = new RegExp(`(^|[^0-9])${quantity}(?![0-9])|(^|[^\\p{L}])(${COUNT_WORDS[quantity] ?? "(?!)"})([^\\p{L}]|$)`, "iu");
-  for (const m of line.matchAll(new RegExp(`(^|[^0-9])(${figure.replace(".", "[.]")})(?![0-9])`, "g"))) {
-    const at = (m.index ?? 0) + m[1]!.length;
-    const before = clauseBefore(line.slice(Math.max(0, at - 60), at));
-    const after = clauseAfter(line.slice(at + figure.length, at + figure.length + 25));
+  for (const { before, after } of figureSidesOf(text, price)) {
     if (PER_ITEM_WORDS.test(before) || PER_ITEM_WORDS.test(after)) continue;
     if ((/(^|[^\p{L}])(for|за)\s*(฿|thb|baht|бат\p{L}*)?\s*$/iu.test(before) && count.test(before)) || TOTAL_WORDS.test(before) || TOTAL_WORDS.test(after)) return true;
   }
   return false;
+}
+/**
+ * SCRUM-946: each place a line writes a figure (its thousands apart or not, "1,800", "1 800"),
+ * with the words of its clause before it and after it, lower case.
+ */
+function figureSidesOf(text: string, price: number): Array<{ before: string; after: string }> {
+  const line = text.normalize("NFC").toLowerCase().replace(/(\d)[,\s.](?=\d{3}(?!\d))/g, "$1");
+  const figure = String(price).replace(/\.0+$/, "");
+  return [...line.matchAll(new RegExp(`(^|[^0-9])(${figure.replace(".", "[.]")})(?![0-9])`, "g"))].map((m) => {
+    const at = (m.index ?? 0) + m[1]!.length;
+    return {
+      before: line.slice(Math.max(0, at - 60), at).split(/[,.;!?\n]/).pop() ?? "",
+      after: line.slice(at + figure.length, at + figure.length + 25).split(/[,.;!?\n]/)[0] ?? "",
+    };
+  });
+}
+/**
+ * SCRUM-970 (the lane's reviews): whether the line says a figure is the price of one item —
+ * words for each beside it in its clause ("450 each", "450/each", "450 baht/ea", "450 for each
+ * one", "по 450"), as `chatPriceIsTotal` reads them. Such a figure is never a total.
+ */
+export function figureSaidEach(text: string | null, price: number): boolean {
+  if (!text || !(price > 0)) return false;
+  return figureSidesOf(text, price).some(({ before, after }) => PER_ITEM_WORDS.test(before) || PER_ITEM_WORDS.test(after));
 }
 /** SCRUM-970: an amount's money word, before or after it: baht as the park's chats write it. */
 const MONEY = String.raw`(?:฿|thb\.?|baht|บาท|бат\p{L}*|руб\p{L}*)`;
@@ -1881,7 +1902,8 @@ function totalInClause(line: string, breaks: Array<{ start: number; end: number 
     if (/[x×]\s*$/i.test(lead) || !AFTER_MONEY.test(rest) || !(value > 0) || (value < 20 && !money)) return [];
     const perItem =
       PER_ITEM_WORDS.test(lead) ||
-      new RegExp(String.raw`^\s*${MONEY}?\s*(?:each|per|apiece|ea|a piece|/\s*(?:pc|pcs|piece)|за\s*шт|кажд|ละ)(?!\p{L})`, "iu").test(rest) ||
+      // The lane's reviews: "450/each", "450 baht/ea", "450 for each one", "450 for one".
+      new RegExp(String.raw`^\s*${MONEY}?\s*(?:each|per|apiece|ea|a piece|/\s*(?:each|ea|pc|pcs|piece)|for\s+(?:each|one)|за\s*шт|кажд|ละ)(?!\p{L})`, "iu").test(rest) ||
       /(?<!\p{L})по\s*$/u.test(lead);
     return perItem ? [] : [{ value, at, end: at + m[1]!.length, lead, rest }];
   });

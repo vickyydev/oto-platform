@@ -63,7 +63,7 @@ const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes, lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow } = await import("../server/beo-routes");
 const { applyTillKitchenEdit } = await import("../server/lib/tillKitchenEdit");
 const tillWriters = { lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow };
-const { loadBeoCatalogue, chatTotalOf, adultsSameAsKidsFolds } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, chatTotalOf, adultsSameAsKidsFolds, figureSaidEach } = await import("../server/lib/beoCatalogueFill");
 const { beoPdfHtml, parkDateOf } = await import("../server/pdf");
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, approvalResultWords, adultsFoldNoticeOf, withKidsChoice } = await import("../client/src/lib/beo-ai-review");
@@ -91,7 +91,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 16;
+const CHECKS = 17;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -240,6 +240,20 @@ const SHAPES: Record<string, { opener: string; text: string; answers: Record<str
     },
   },
 };
+// The lane's reviews: a price said for each item ("450/each", "450 for each one") is the price,
+// never a total for the line, whether the read gave it or not.
+const SAID_EACH = ["450/each", "450 baht/each", "450/ea", "450 for each one"];
+SAID_EACH.forEach((words, i) => {
+  const margherita = { productCode: "CF-24", itemName: "Margherita pizzas", menu: "adults", quantity: 2, line: 2 };
+  SHAPES[`Ie${i}`] = {
+    opener: I_OPENER,
+    text: `The Floresta birthday package, Hawaiian pizza for the kids. For the adults 2 Margherita pizzas for ${words} please. (ZZ TEST)`,
+    answers: {
+      priced: { package: pkg, setMenu: { templateId: cat.setMenu, line: 2, choices: [kidsHawaiian] }, event: counts(10, 5), menuLines: [{ ...margherita, chatPrice: 450 }] },
+      unpriced: { package: pkg, setMenu: { templateId: cat.setMenu, line: 2, choices: [kidsHawaiian] }, event: counts(10, 5), menuLines: [margherita] },
+    },
+  };
+});
 
 type Fill = { key: string; shape: string };
 const EVENTS: Fill[] = [];
@@ -483,11 +497,40 @@ try {
     assert.deepEqual(total("2 Margherita pizzas, 900 for both", ["Margherita pizzas"], 2), { amount: 900, quantity: 2 });
     assert.deepEqual(total("900 THB for 2 Margherita", ["Margherita"], 2), { amount: 900, quantity: 2 });
     assert.deepEqual(total("2 Margherita pizzas, all for ฿900", ["Margherita pizzas"], 2), { amount: 900, quantity: 2 });
-    assert.deepEqual(total("All for ฿900: 2 Margherita pizzas", ["Margherita pizzas"], 2), { amount: 900, quantity: 2 });    assert.equal(total("2 more Margherita pizzas at 450 each", ["Margherita pizzas"], 2), null, "a price each");
+    assert.deepEqual(total("All for ฿900: 2 Margherita pizzas", ["Margherita pizzas"], 2), { amount: 900, quantity: 2 });
+    assert.equal(total("2 more Margherita pizzas at 450 each", ["Margherita pizzas"], 2), null, "a price each");
     assert.equal(total("2 Margherita pizzas по 450", ["Margherita pizzas"], 2), null, "по: each");
     assert.equal(total("an extra Margherita pizza for 450", ["Margherita pizza"], 1), null, "one item: a price");
     assert.equal(total("3 Margherita pizzas for 20 kids", ["Margherita pizzas"], 3), null, "a headcount");
     assert.equal(total("2 Margherita pizzas for 14:00", ["Margherita pizzas"], 2), null, "a time");
+  });
+
+  await check("threadI_aPriceSaidForEach_staysThePrice_inEveryShape", async () => {
+    // The lane's reviews: "2 Margherita pizzas for 450/each" (and "450 baht/each", "450/ea", "450
+    // for each one") is a price for each: kept as the line's price when the read gives it, never
+    // a total; with no price read, no total and no "฿450 for 2" either, as before the lane.
+    for (let i = 0; i < SAID_EACH.length; i++) {
+      for (const shape of ["priced", "unpriced"] as const) {
+        const label = `${SAID_EACH[i]} ${shape}`;
+        const { review, fill: f } = await fill(`Ie${i}`, shape);
+        const margherita = review.proposal.menuLines.find((l) => l.productCode === "CF-24")!;
+        assert.deepEqual([margherita.chatPrice, margherita.chatTotal ?? null, margherita.quantity], [shape === "priced" ? 450 : null, null, 2], label);
+        const state = initialReviewState(review, { fill: f });
+        const line = state.menuLines.find((l) => l.productCode === "CF-24")!;
+        assert.deepEqual([line.price, line.priceFrom], shape === "priced" ? [450, "chat"] : [400, "till"], label);
+        assert.equal(html(review, state).includes(esc("The chat says ฿450 for 2")), false, `${label}: no total said`);
+        if (shape !== "priced") continue;
+        const ok = await approve(`Ie${i}`, shape, approveBodyOf(review, state, ids(review)));
+        assert.equal(ok.status, 200, JSON.stringify(ok.body));
+        const adults = ((await kitchenOf(ev[`Ie${i}.${shape}`]!)).menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => [l.itemName, l.quantity, l.price]);
+        assert.deepEqual(adults, [["Margherita", 2, 450]], `${label}: 2 at 450 each`);
+      }
+      assert.equal(chatTotalOf(SHAPES[`Ie${i}`]!.text, ["Margherita pizzas"], 2), null, SAID_EACH[i]);
+      assert.equal(figureSaidEach(SHAPES[`Ie${i}`]!.text, 450), true, SAID_EACH[i]);
+    }
+    assert.equal(figureSaidEach("พิซซ่ามาการิต้า ถาดละ 450 บาท", 450), true, "ถาดละ: each");
+    assert.equal(figureSaidEach("พิซซ่ามาการิต้า 2 ถาด และเฟรนช์ฟรายส์ รวม 900 บาท", 900), false, "และ is 'and', never 'each'");
+    assert.equal(figureSaidEach(I, 900), false, "thread I's 900 is a total");
   });
 
   // --- 3. Threads A and B: the adults' own SET line keeps its till code ---------------------------
