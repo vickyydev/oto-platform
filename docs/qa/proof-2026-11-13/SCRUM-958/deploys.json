@@ -1,0 +1,127 @@
+{
+  "unit": "SCRUM-958 + SCRUM-946 (open points) + SCRUM-949 + SCRUM-940 staging proof",
+  "landed": {
+    "sha": "45698ab112faa9e52706d5519a81fe192a380ea8",
+    "commits": 19,
+    "area": "the OTO App only; no database change"
+  },
+  "triggered": {
+    "service": "oto-app-staging",
+    "deployId": "dep-dbr128u1egvs73e5fjbg",
+    "at": "2026-11-13 02:18 Bangkok (by the planner)"
+  },
+  "reads": {
+    "before": {
+      "at": "2026-11-12T19:26:33.218Z",
+      "services": [
+        {
+          "service": "oto-app-staging",
+          "role": "the OTO App (BEO editor, AI Fill)",
+          "live": {
+            "deployId": "dep-dbr128u1egvs73e5fjbg",
+            "sha": "45698ab112faa9e52706d5519a81fe192a380ea8",
+            "finishedAt": "2026-11-12T19:22:26.89271Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-api-staging",
+          "role": "the platform api (tills, inbox api, party settlement)",
+          "live": {
+            "deployId": "dep-dbr07guk1f9s73atllu0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:27:21.018394Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-inbox-staging",
+          "role": "the inbox web",
+          "live": {
+            "deployId": "dep-dbr03856e07s738ne6d0",
+            "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+            "finishedAt": "2026-11-12T18:14:00.224953Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-launcher-staging",
+          "role": "the launcher",
+          "live": {
+            "deployId": "dep-dbqurdtg1s2s73a03msg",
+            "sha": "32e4adb579609e9b3b655f463a1a92969ebb29e2",
+            "finishedAt": "2026-11-12T16:49:14.337569Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-pos-web-staging",
+          "role": "the tills (POS web)",
+          "live": {
+            "deployId": "dep-dbr0a756e07s738o2kh0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:31:37.137805Z"
+          },
+          "newest": null
+        }
+      ],
+      "appLiveAtLandedSha": true
+    },
+    "after": {
+      "at": "2026-11-12T21:39:10.633Z",
+      "services": [
+        {
+          "service": "oto-app-staging",
+          "role": "the OTO App (BEO editor, AI Fill)",
+          "live": {
+            "deployId": "dep-dbr128u1egvs73e5fjbg",
+            "sha": "45698ab112faa9e52706d5519a81fe192a380ea8",
+            "finishedAt": "2026-11-12T19:22:26.89271Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-api-staging",
+          "role": "the platform api (tills, inbox api, party settlement)",
+          "live": {
+            "deployId": "dep-dbr07guk1f9s73atllu0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:27:21.018394Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-inbox-staging",
+          "role": "the inbox web",
+          "live": {
+            "deployId": "dep-dbr03856e07s738ne6d0",
+            "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+            "finishedAt": "2026-11-12T18:14:00.224953Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-launcher-staging",
+          "role": "the launcher",
+          "live": {
+            "deployId": "dep-dbqurdtg1s2s73a03msg",
+            "sha": "32e4adb579609e9b3b655f463a1a92969ebb29e2",
+            "finishedAt": "2026-11-12T16:49:14.337569Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-pos-web-staging",
+          "role": "the tills (POS web)",
+          "live": {
+            "deployId": "dep-dbr2mh0m7kps73eqhtmg",
+            "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+            "finishedAt": "2026-11-12T21:14:51.060182Z"
+          },
+          "newest": null
+        }
+      ],
+      "appLiveAtLandedSha": true
+    }
+  }
+}

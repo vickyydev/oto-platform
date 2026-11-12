@@ -1,0 +1,3322 @@
+{
+  "unit": "SCRUM-958, the open points of SCRUM-946, SCRUM-949 and SCRUM-940: the BEO fill follow-up lane on staging",
+  "landed": "45698ab112faa9e52706d5519a81fe192a380ea8 (main), the OTO App only, no database change",
+  "ranAt": {
+    "from": "2026-11-12T19:26:42.991Z",
+    "to": "2026-11-12T21:38:52.998Z",
+    "timeZoneNote": "times are UTC; Bangkok is UTC+7 (the run was 02:20 to 04:40 Bangkok on 13 November)"
+  },
+  "deploys": {
+    "before": {
+      "at": "2026-11-12T19:26:33.218Z",
+      "services": [
+        {
+          "service": "oto-app-staging",
+          "role": "the OTO App (BEO editor, AI Fill)",
+          "live": {
+            "deployId": "dep-dbr128u1egvs73e5fjbg",
+            "sha": "45698ab112faa9e52706d5519a81fe192a380ea8",
+            "finishedAt": "2026-11-12T19:22:26.89271Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-api-staging",
+          "role": "the platform api (tills, inbox api, party settlement)",
+          "live": {
+            "deployId": "dep-dbr07guk1f9s73atllu0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:27:21.018394Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-inbox-staging",
+          "role": "the inbox web",
+          "live": {
+            "deployId": "dep-dbr03856e07s738ne6d0",
+            "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+            "finishedAt": "2026-11-12T18:14:00.224953Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-launcher-staging",
+          "role": "the launcher",
+          "live": {
+            "deployId": "dep-dbqurdtg1s2s73a03msg",
+            "sha": "32e4adb579609e9b3b655f463a1a92969ebb29e2",
+            "finishedAt": "2026-11-12T16:49:14.337569Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-pos-web-staging",
+          "role": "the tills (POS web)",
+          "live": {
+            "deployId": "dep-dbr0a756e07s738o2kh0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:31:37.137805Z"
+          },
+          "newest": null
+        }
+      ],
+      "appLiveAtLandedSha": true
+    },
+    "after": {
+      "at": "2026-11-12T21:39:10.633Z",
+      "services": [
+        {
+          "service": "oto-app-staging",
+          "role": "the OTO App (BEO editor, AI Fill)",
+          "live": {
+            "deployId": "dep-dbr128u1egvs73e5fjbg",
+            "sha": "45698ab112faa9e52706d5519a81fe192a380ea8",
+            "finishedAt": "2026-11-12T19:22:26.89271Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-api-staging",
+          "role": "the platform api (tills, inbox api, party settlement)",
+          "live": {
+            "deployId": "dep-dbr07guk1f9s73atllu0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:27:21.018394Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-inbox-staging",
+          "role": "the inbox web",
+          "live": {
+            "deployId": "dep-dbr03856e07s738ne6d0",
+            "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+            "finishedAt": "2026-11-12T18:14:00.224953Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-launcher-staging",
+          "role": "the launcher",
+          "live": {
+            "deployId": "dep-dbqurdtg1s2s73a03msg",
+            "sha": "32e4adb579609e9b3b655f463a1a92969ebb29e2",
+            "finishedAt": "2026-11-12T16:49:14.337569Z"
+          },
+          "newest": null
+        },
+        {
+          "service": "oto-pos-web-staging",
+          "role": "the tills (POS web)",
+          "live": {
+            "deployId": "dep-dbr2mh0m7kps73eqhtmg",
+            "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+            "finishedAt": "2026-11-12T21:14:51.060182Z"
+          },
+          "newest": null
+        }
+      ],
+      "appLiveAtLandedSha": true
+    }
+  },
+  "harness": "proof.mjs in this folder holds every script of the run as text (node proof.mjs <folder> writes them out); built on the SCRUM-944 harness: one headless Chromium, the inbox Simulator, Book Date, Create BEO, the review, Approve, the app's and the till's own routes",
+  "rules": "ZZ TEST simulator threads from invented numbers never used before (6689909581x; the husband number 089 870 0417 is invented), ZZ TEST events and one ZZ TEST till of this run only; no sale, no payment, no print; the till's Settle party preview only (writes nothing); no direct database write; names held in memory only and masked; every picture opened before it was kept",
+  "memory": "the laptop fell below 3 GB free three times (to 0.07 GB once; the largest user was not this proof); every long step waited for 3 GB, so thread G's second read and thread H waited about an hour in all",
+  "modelReadsPressed": "Create BEO 9 times (A, B, D, G twice, H, I twice, O) and Fetch from chat once (A); Book Date read each of the 7 threads; the inbox assistant answered each opener as staging does",
+  "threads": {
+    "A": {
+      "name": "ZZ TEST 958 family only",
+      "conversationId": "01a1d13a-74ae-72c0-8ea5-b868dee925aa",
+      "lines": [
+        {
+          "text": "Hi! We'd like to book a birthday party for our daughter ZZ Test Lina, she turns 6. Saturday 5 December, from 14:00 to 16:30, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "We'd like the Floresta birthday package. Hawaiian pizza for the kids, no pineapple on half. And chicken fried rice for the adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "Could we have the bubble show at 15:00? And 2 of the park's cakes at 800 baht each, at 16:00 please. For decoration a jungle theme with green and gold balloons. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "Important: she is allergic to peanuts. For the setup, balloons at the entrance by 13:30 please. If you can't reach me, please call my husband on 089 870 0417. We will transfer the 3,000 baht deposit tomorrow. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Lina's 6th Birthday",
+        "date": "2026-12-05",
+        "startTime": "14:00"
+      }
+    },
+    "B": {
+      "name": "ZZ TEST 958 no option",
+      "conversationId": "01a1d13a-7fc7-73a5-976e-90b3be1bc312",
+      "lines": [
+        {
+          "text": "Hello, a birthday party for ZZ Test Mika turning 7 on Sunday 13 December, 10:00 to 12:00, 10 kids and 6 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "The Floresta birthday package please, and fried rice for the adults please. I already transferred the 3,000 deposit. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Mika's 7th Birthday",
+        "date": "2026-12-13",
+        "startTime": "10:00"
+      }
+    },
+    "D": {
+      "name": "ZZ TEST 958 extra order",
+      "conversationId": "01a1d13a-8a5d-74f6-ba8d-3eae0a71eede",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Sami turning 8, Sunday 20 December 15:00-17:30, 14 kids and 10 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "The Floresta birthday package. For the kids' set menu the Margherita pizza please. On top of that, 2 more Margherita pizzas for the kids on the side at 450 each, and 3 more Margherita pizzas for the adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "Торт мы принесём свой, в 17:00. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Sami's 8th Birthday",
+        "date": "2026-12-20",
+        "startTime": "15:00"
+      }
+    },
+    "G": {
+      "name": "ZZ TEST 958 mirror",
+      "conversationId": "01a1d13a-9466-7a38-b5ed-ce9f2bcfe441",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Remy turning 6, Saturday 12 December 11:00-13:00, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "The Floresta birthday package with the Margherita pizza for the kids. The adults will eat the same as the kids, the Margherita pizza for them too. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Remy's 6th Birthday",
+        "date": "2026-12-12",
+        "startTime": "11:00"
+      }
+    },
+    "H": {
+      "name": "ZZ TEST 958 till",
+      "conversationId": "01a1d13a-9e1b-7431-a45b-ab706a548ab6",
+      "lines": [
+        {
+          "text": "Hello, a birthday party for ZZ Test Kai turning 7 on Saturday 26 December, 10:00 to 12:00, 10 kids and 6 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "The Floresta birthday package, the Margherita pizza for the kids with French fries please. On top of that one Pepperoni pizza and a Caesar salad for the adults, two fresh orange juices and a latte. And a durian pizza if you have one. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Kai's 7th Birthday",
+        "date": "2026-12-26",
+        "startTime": "10:00"
+      }
+    },
+    "I": {
+      "name": "ZZ TEST 958 till price",
+      "conversationId": "01a1d13a-a792-71a1-8874-6148df9dc855",
+      "lines": [
+        {
+          "text": "Hi, a party for ZZ Test Noa turning 5, Sunday 27 December 14:00-16:00, 10 kids and 5 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "The Floresta birthday package, Hawaiian pizza for the kids. For the adults a Pepperoni pizza at 300 please, and 2 Margherita pizzas for 900. And 3 extra portions of French fries for the kids. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Noa's 5th Birthday",
+        "date": "2026-12-27",
+        "startTime": "14:00"
+      }
+    },
+    "O": {
+      "name": "ZZ TEST 958 owner case",
+      "conversationId": "01a1d13a-b235-7063-800e-d4d8f841b628",
+      "lines": [
+        {
+          "text": "Hi! We'd like to book a birthday party for our daughter ZZ Test Oona, she is turning 6. Saturday 5 December, from 14:00 to 16:30, 12 kids and 8 adults. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "We'd like the Birthday package, Central Floresta with a Hawaiian pizza and a durian pizza for the kids, and the Bubble show. For decoration a dinosaur theme with green balloons please. One of the kids is allergic to peanuts. (ZZ TEST)",
+          "status": 200
+        },
+        {
+          "text": "For the cake we'd like the park's chocolate cake at 16:00. We already transferred the 3,000 baht deposit this morning. (ZZ TEST)",
+          "status": 200
+        }
+      ],
+      "event": {
+        "title": "ZZ Test Oona's 6th Birthday",
+        "date": "2026-12-05",
+        "startTime": "14:00"
+      }
+    }
+  },
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "pictures": [
+        "01-p1-thread-a-review-kitchen-plan.png",
+        "02-p1-thread-a-toast-after-approve.png",
+        "03-p1-thread-a-beo-kitchen-plan-adults-menu.png",
+        "04-p1-thread-a-beo-kitchen-plan-kids-menu.png",
+        "05-p1-thread-a-fetch-from-chat-after-approval.png"
+      ],
+      "review": [
+        {
+          "menu": "Adults",
+          "count": "1",
+          "countIsText": true,
+          "item": "chicken fried rice → Fried rice (Chicken) (CF-43)",
+          "tillPrice": null,
+          "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+          "optionWords": "Option:",
+          "option": "Fried rice (Chicken)",
+          "priceBox": null,
+          "priceWords": null,
+          "chatTotal": null,
+          "says": [
+            "The chat says “chicken fried rice”from the family· Fri 13 Nov 02:28"
+          ]
+        }
+      ],
+      "friedRiceKids": "Not chosen yet",
+      "approval": {
+        "ok": null,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "adultsSetLines": 1,
+          "cake": true,
+          "entertainment": 1,
+          "entertainmentActs": 1,
+          "setup": true,
+          "setupTasks": 1,
+          "deposit": true
+        },
+        "notWritten": null,
+        "message": null
+      },
+      "beoAfterApprove": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": true,
+        "kids": [
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "SET Chicken x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+        ],
+        "cake": {
+          "mode": "INTERNAL",
+          "qty": 2,
+          "price": 800,
+          "included": false
+        }
+      },
+      "till": {
+        "partyLines": [
+          "set_menu | Pizza: Hawaiian x1 | code CF-27 | note (Pizza) · no pineapple on half | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice: Veggie x1 | code CF-43 | kids | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "set_menu | Chicken x1 | code - | note (Fried rice) | adults"
+        ],
+        "bar": [],
+        "previewTotal": 31400,
+        "previewSent": {
+          "kids": 12,
+          "adults": 8,
+          "socksGiven": 12,
+          "addOnIds": 0,
+          "entertainmentIds": 1
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=4 unitSatang=50000 totalSatang=200000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=12 unitSatang=0 totalSatang=0",
+          "role=extra_children label=Extra child quantity=2 unitSatang=150000 totalSatang=300000",
+          "role=entertainment label=Bubble show quantity=1 unitSatang=550000 totalSatang=550000"
+        ]
+      },
+      "fetchFromChat": {
+        "route": {
+          "route": "POST /api/events/:id/beo/ai-fill/inbox",
+          "purpose": "fetch",
+          "status": 200,
+          "seconds": 36.2,
+          "error": null
+        },
+        "lines": {
+          "description": "What the chat says now, beside what this form holds. Accept what should change; a declined change is not offered again until the chat changes.",
+          "count": [
+            "1 change from the chat"
+          ],
+          "same": [],
+          "noField": [],
+          "held": [],
+          "error": [],
+          "catalogueCount": [],
+          "catalogueLine": []
+        },
+        "rows": [
+          {
+            "field": "whatsappPhoneRaw",
+            "source": "family",
+            "says": [
+              "The chat says “please call my husband on [number]”from the family· Fri 13 Nov 02:28"
+            ]
+          }
+        ],
+        "catalogueRows": []
+      }
+    },
+    "2": {
+      "verdict": "PASS",
+      "pictures": [
+        "06-p2-till-party-page-kitchen-plan-before.png",
+        "07-p2-till-edit-form-fried-rice-veggie-before-save.png",
+        "08-p2-till-party-page-kitchen-plan-after-save.png",
+        "09-p2-thread-a-beo-adults-menu-after-till-edit.png"
+      ],
+      "who": "the staging branch manager, signed in at this run's ZZ TEST till (tills at b229f96e2 then)",
+      "edit": {
+        "friedRiceOptions": [
+          "Fried rice: Veggie",
+          "Fried rice: Chicken",
+          "Fried rice: Shrimp"
+        ],
+        "put": {
+          "status": 200,
+          "changes": [
+            {
+              "op": "choose",
+              "choiceGroup": "Fried rice",
+              "lineId": null,
+              "option": "Veggie"
+            }
+          ],
+          "kitchenEdit": {
+            "id": "01a1d143-6e49-7856-a33e-037fd3e20157",
+            "replayed": false
+          },
+          "error": null
+        },
+        "toast": [
+          "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+          "Kitchen plan saved The BEO in the OTO App now has the change."
+        ],
+        "pageBefore": {
+          "kitchen": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza · Hawaiian ×1 Hot dish French fries ×1 Waffles or pancakes Fried rice Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher Chicken · adults · not on the till menu ×1 Our cake ×2 · 16:00 2 of the park's cakes at 800 baht each Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children"
+        },
+        "pageAfter": {
+          "kitchen": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza · Hawaiian ×1 Hot dish French fries ×1 Waffles or pancakes Fried rice · Veggie · kids only ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher Chicken · adults · not on the till menu ×1 Our cake ×2 · 16:00 2 of the park's cakes at 800 baht each Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children"
+        }
+      },
+      "beoAfter": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": true,
+        "kids": [
+          "SET Veggie x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu",
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza) · no pineapple on half\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "SET Chicken x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+        ],
+        "cake": {
+          "mode": "INTERNAL",
+          "qty": 2,
+          "price": 800,
+          "included": false
+        }
+      }
+    },
+    "3": {
+      "verdict": "PASS",
+      "pictures": [
+        "10-p3-thread-b-review-kitchen-plan-option-held.png",
+        "11-p3-thread-b-review-shrimp-picked.png",
+        "12-p3-thread-b-toast-after-approve.png",
+        "13-p3-thread-b-family-link-choices-before-submit.png",
+        "14-p3-thread-b-family-link-selections-received.png",
+        "15-p3-thread-b-beo-adults-menu-after-family-link.png"
+      ],
+      "reviewHeld": {
+        "lines": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "countIsText": true,
+            "item": "fried rice → CF-43",
+            "tillPrice": null,
+            "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+            "optionWords": "Which option? The chat does not say: choose it before approving.",
+            "option": "Not chosen yet",
+            "priceBox": null,
+            "priceWords": null,
+            "chatTotal": null,
+            "says": [
+              "The chat says “fried rice”from the family· Fri 13 Nov 02:28"
+            ]
+          }
+        ],
+        "approveEnabled": false,
+        "optionsOpen": "Choose the option of the dish the chat does not say before approving."
+      },
+      "afterPick": {
+        "lines": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "countIsText": true,
+            "item": "fried rice → Fried rice (Shrimp) (CF-43)",
+            "tillPrice": null,
+            "setWords": "The set menu's Fried rice, on the adults' own menu: a SET line, not charged.",
+            "optionWords": "Option:",
+            "option": "Fried rice (Shrimp)",
+            "priceBox": null,
+            "priceWords": null,
+            "chatTotal": null,
+            "says": [
+              "The chat says “fried rice”from the family· Fri 13 Nov 02:28"
+            ]
+          }
+        ],
+        "approveEnabled": true
+      },
+      "approval": {
+        "ok": null,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 0,
+          "kitchenLines": 1,
+          "freeKitchenLines": 0,
+          "adultsSetLines": 1,
+          "deposit": true
+        },
+        "notWritten": null,
+        "message": null
+      },
+      "beoAfterApprove": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": true,
+        "kids": [
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "SET Shrimp x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+        ],
+        "cake": {
+          "mode": "NONE",
+          "qty": 1,
+          "price": null,
+          "included": null
+        }
+      },
+      "tillAfterApprove": {
+        "partyLines": [
+          "set_menu | Pizza | code - | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "set_menu | Shrimp x1 | code - | note (Fried rice) | adults"
+        ],
+        "bar": [],
+        "previewTotal": 21900,
+        "previewSent": {
+          "kids": 10,
+          "adults": 6,
+          "socksGiven": 10,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=2 unitSatang=50000 totalSatang=100000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=10 unitSatang=0 totalSatang=0"
+        ]
+      },
+      "familyLink": {
+        "linkShape": "https://oto-app-staging.onrender.com/menu-select/<token>",
+        "chosen": [
+          "Pizza: Margherita",
+          "Hot dish: Chicken schnitzel",
+          "Waffles or pancakes: Waffles",
+          "Fried rice: Veggie",
+          "Drinks pitcher: Juice"
+        ],
+        "submit": {
+          "route": "POST /api/beo/set-menu-selections/public/:token/submit",
+          "status": 200
+        },
+        "afterSubmit": "ZZ Test Mika's Birthday 13 Dec 2026 Birthday set menu, Central Floresta Selections Received! Thank you! Your menu selections have been sent to the team. We'll take care of the rest.",
+        "beoAfter": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "setMenuEnabled": true,
+          "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+          "adultsDiffer": true,
+          "kids": [
+            "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET Chicken schnitzel x1 included:true note \"(Hot dish)\" group item_cf_bday_hot_dish src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Waffles x1 included:true note \"(Waffles or pancakes)\" group item_cf_bday_waffles_pancakes src set_menu",
+            "SET Veggie x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "SET Juice x1 included:true note \"(Drinks pitcher)\" group item_cf_bday_drinks src set_menu"
+          ],
+          "adults": [
+            "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET Chicken schnitzel x1 included:true note \"(Hot dish)\" group item_cf_bday_hot_dish src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Waffles x1 included:true note \"(Waffles or pancakes)\" group item_cf_bday_waffles_pancakes src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "SET Juice x1 included:true note \"(Drinks pitcher)\" group item_cf_bday_drinks src set_menu",
+            "SET Shrimp x1 included:true note \"(Fried rice)\" group item_cf_bday_fried_rice src set_menu"
+          ],
+          "cake": {
+            "mode": "NONE",
+            "qty": 1,
+            "price": null,
+            "included": null
+          }
+        },
+        "selection": {
+          "status": 200,
+          "isSubmitted": true,
+          "selections": [
+            {
+              "groupId": "item_cf_bday_pizza",
+              "chosenOptions": [
+                "Margherita"
+              ]
+            },
+            {
+              "groupId": "item_cf_bday_hot_dish",
+              "chosenOptions": [
+                "Chicken schnitzel"
+              ]
+            },
+            {
+              "groupId": "item_cf_bday_waffles_pancakes",
+              "chosenOptions": [
+                "Waffles"
+              ]
+            },
+            {
+              "groupId": "item_cf_bday_fried_rice",
+              "chosenOptions": [
+                "Veggie"
+              ]
+            },
+            {
+              "groupId": "item_cf_bday_drinks",
+              "chosenOptions": [
+                "Juice"
+              ]
+            }
+          ]
+        },
+        "tillAfter": {
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish",
+            "set_menu | French fries x1 | code CF-11",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | kids | group Fried rice",
+            "set_menu | Veggie sticks x1 | code CF-53",
+            "set_menu | Fruit skewers x1 | code -",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher",
+            "set_menu | Shrimp x1 | code - | note (Fried rice) | adults"
+          ],
+          "previewTotal": 21900
+        }
+      }
+    },
+    "4": {
+      "verdict": "PASS",
+      "pictures": [
+        "16-p4-thread-d-review-kitchen-plan.png",
+        "17-p4-thread-d-toast-after-approve.png",
+        "18-p4-p8-thread-d-beo-prices-kids.png",
+        "18-p4-p8-thread-d-beo-prices-adults.png"
+      ],
+      "review": [
+        {
+          "menu": "Kids",
+          "count": "2",
+          "countIsText": false,
+          "item": "2 more Margherita pizzas for the kids on the side → Margherita (CF-24)",
+          "tillPrice": "Till ฿400",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "450",
+          "priceWords": "THB each, written on the line as an EXTRA (2 × ฿450 = ฿900) — the chat's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “2 more Margherita pizzas for the kids on the side”from the family· Fri 13 Nov 02:28"
+          ]
+        },
+        {
+          "menu": "Adults",
+          "count": "3",
+          "countIsText": false,
+          "item": "3 more Margherita pizzas for the adults → Margherita (CF-24)",
+          "tillPrice": "Till ฿400",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "400",
+          "priceWords": "THB each, written on the line as an EXTRA (3 × ฿400 = ฿1,200) — the till's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “3 more Margherita pizzas for the adults”from the family· Fri 13 Nov 02:28"
+          ]
+        }
+      ],
+      "beoAfterApprove": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": true,
+        "kids": [
+          "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA Margherita x2 @450 [CF-24] included:false src additional"
+        ],
+        "adults": [
+          "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA Margherita x3 @400 [CF-24] included:false src additional"
+        ],
+        "cake": {
+          "mode": "EXTERNAL",
+          "qty": 1,
+          "price": null,
+          "included": false
+        }
+      },
+      "till": {
+        "partyLines": [
+          "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "extra | Margherita x2 | code CF-24 | entered 450",
+          "extra | Margherita x3 | code CF-24 | entered 400 | adults"
+        ],
+        "bar": [],
+        "previewTotal": 32000,
+        "previewSent": {
+          "kids": 14,
+          "adults": 10,
+          "socksGiven": 14,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=6 unitSatang=50000 totalSatang=300000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=14 unitSatang=0 totalSatang=0",
+          "role=extra_children label=Extra child quantity=4 unitSatang=150000 totalSatang=600000",
+          "role=add_on label=Margherita quantity=2 unitSatang=45000 totalSatang=90000",
+          "role=add_on label=Margherita quantity=3 unitSatang=40000 totalSatang=120000"
+        ]
+      },
+      "extrasTotals": "Extras charged at the till: ฿2,100"
+    },
+    "5": {
+      "verdict": "FAIL (the note and the toast sentence never showed; the approval part is right)",
+      "pictures": [
+        "19-p5-thread-g-review-first-read-no-adults-line-no-note.png",
+        "20-p5-thread-g-review-second-read-no-adults-line-no-note.png",
+        "21-p5-thread-g-review-kids-pizza-hawaiian.png",
+        "22-p5-thread-g-toast-after-approve.png"
+      ],
+      "reads": {
+        "first": {
+          "menuLines": [],
+          "adultsFolded": null,
+          "choices": [
+            {
+              "itemId": "item_cf_bday_pizza",
+              "option": "Margherita",
+              "said": "the Margherita pizza for the kids",
+              "from": {
+                "source": "family",
+                "at": "2026-11-12T19:28:45.000Z",
+                "line": 2,
+                "quote": "the Margherita pizza for the kids"
+              }
+            }
+          ]
+        },
+        "second": {
+          "menuLines": [],
+          "adultsFolded": null
+        }
+      },
+      "reviewKitchenPlan": {
+        "lines": [],
+        "fold": null
+      },
+      "afterHawaiian": {
+        "lines": [],
+        "fold": null
+      },
+      "afterMargheritaAgain": {
+        "fold": null
+      },
+      "toast": "BEO created from the conversation Saved: the event's details (name, counts, times), the package and the kitchen plan.",
+      "beoAfterApprove": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": false,
+        "kids": [
+          "SET Margherita x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu"
+        ],
+        "adults": [],
+        "cake": {
+          "mode": "NONE",
+          "qty": 1,
+          "price": null,
+          "included": null
+        }
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "pictures": [
+        "23-p6-thread-h-review-kitchen-plan.png",
+        "24-p6-thread-h-toast-after-approve.png",
+        "26-p6-thread-h-bar-plan-search-latte-two-categories.png",
+        "27-p6-thread-h-bar-plan-search-tea-teas-first.png"
+      ],
+      "review": [
+        {
+          "menu": "Adults",
+          "count": "1",
+          "countIsText": false,
+          "item": "one Pepperoni pizza → Pepperoni (CF-31)",
+          "tillPrice": "Till ฿420",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "420",
+          "priceWords": "THB each, written on the line as an EXTRA — the till's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “one Pepperoni pizza”from the family· Fri 13 Nov 02:28"
+          ]
+        },
+        {
+          "menu": "Adults",
+          "count": "1",
+          "countIsText": false,
+          "item": "a Caesar salad for the adults → Caesar salad (CF-15)",
+          "tillPrice": "Till ฿370",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "370",
+          "priceWords": "THB each, written on the line as an EXTRA — the till's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “a Caesar salad for the adults”from the family· Fri 13 Nov 02:28"
+          ]
+        },
+        {
+          "menu": "Adults",
+          "count": "1",
+          "countIsText": false,
+          "item": "a durian pizza",
+          "tillPrice": null,
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": null,
+          "priceWords": null,
+          "chatTotal": null,
+          "says": [
+            "The chat says “a durian pizza”from the family· Fri 13 Nov 02:28"
+          ]
+        },
+        {
+          "menu": "Bar",
+          "count": "2",
+          "countIsText": false,
+          "item": "two fresh orange juices → Fresh cold pressed orange juice (CF-63-1)",
+          "tillPrice": "Till ฿210",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "210",
+          "priceWords": "THB each, written on the line as an EXTRA (2 × ฿210 = ฿420) — the till's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “two fresh orange juices”from the family· Fri 13 Nov 02:28"
+          ]
+        },
+        {
+          "menu": "Bar",
+          "count": "1",
+          "countIsText": false,
+          "item": "a latte → Latte (CF-58-4)",
+          "tillPrice": "Till ฿145",
+          "setWords": null,
+          "optionWords": null,
+          "option": null,
+          "priceBox": "145",
+          "priceWords": "THB each, written on the line as an EXTRA — the till's price.",
+          "chatTotal": null,
+          "says": [
+            "The chat says “a latte”from the family· Fri 13 Nov 02:28"
+          ]
+        }
+      ],
+      "approval": {
+        "ok": null,
+        "written": {
+          "event": true,
+          "package": true,
+          "addOns": 0,
+          "setMenu": true,
+          "choices": 1,
+          "kitchenLines": 3,
+          "freeKitchenLines": 1,
+          "tillLines": 4,
+          "barLines": 2
+        },
+        "notWritten": null,
+        "message": null
+      },
+      "activityRows": [
+        {
+          "at": "2026-11-12T21:10:09.303Z",
+          "purpose": null,
+          "catalogueTillLines": null,
+          "writtenTillLines": 4
+        },
+        {
+          "at": "2026-11-12T21:09:43.589Z",
+          "purpose": "fill",
+          "catalogueTillLines": 4,
+          "writtenTillLines": null
+        }
+      ],
+      "search": {
+        "beside": "the Bar Plan line Latte (CF-58-4), its till search; Escape after each (nothing picked)",
+        "latte": [
+          "Latte· Coffee CF-58-4 ฿145 (ticked: the line's own)",
+          "Latte· Free Drinks Menu CF-FREE-58-4 ฿0",
+          "Vanilla latte CF-58-6 ฿155",
+          "Iced latte· Iced Coffee CF-59-2 ฿155",
+          "Iced vanilla latte CF-59-5 ฿170",
+          "Sea Salt & Maple Latte CF-SPECIAL-01 ฿170",
+          "Iced Latte· Free Drinks Menu CF-FREE-59-2 ฿0"
+        ],
+        "tea": [
+          "Green tea CF-64-4 ฿115",
+          "Chinese Tea CF-CHINESE-TEA ฿140",
+          "ZZ TEST 822 bubble tea Party only PARTY-B73D36CC ฿125",
+          "ZZ TEST 829 bubble tea Party only PARTY-CBB7D66D ฿125",
+          "English breakfast CF-64-1 ฿115",
+          "Earl grey CF-64-2 ฿115",
+          "Peppermint CF-64-3 ฿115",
+          "Camomile CF-64-5 ฿115",
+          "Steamed jasmine rice CF-10-17 ฿50"
+        ]
+      }
+    },
+    "7": {
+      "verdict": "FAIL (the chat's 900 is never named; the line itself is written right)",
+      "pictures": [
+        "33-p7-thread-i-review-first-read-no-chat-total.png",
+        "34-p7-thread-i-review-second-read.png",
+        "35-p7-thread-i-toast-after-approve.png"
+      ],
+      "first": {
+        "review": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "countIsText": false,
+            "item": "Pepperoni pizza → Pepperoni (CF-31)",
+            "tillPrice": "Till ฿420",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "300",
+            "priceWords": "THB each, written on the line as an EXTRA — the chat's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “Pepperoni pizza”from the family· Fri 13 Nov 02:28"
+            ]
+          },
+          {
+            "menu": "Adults",
+            "count": "2",
+            "countIsText": false,
+            "item": "Margherita pizzas → Margherita (CF-24)",
+            "tillPrice": "Till ฿400",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "400",
+            "priceWords": "THB each, written on the line as an EXTRA (2 × ฿400 = ฿800) — the till's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “Margherita pizzas”from the family· Fri 13 Nov 02:28"
+            ]
+          },
+          {
+            "menu": "Kids",
+            "count": "3",
+            "countIsText": false,
+            "item": "3 extra portions of French fries for the kids → French fries (CF-11)",
+            "tillPrice": "Till ฿175",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "175",
+            "priceWords": "THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “3 extra portions of French fries for the kids”from the family· Fri 13 Nov 02:28"
+            ]
+          }
+        ],
+        "margheritaAsRead": {
+          "menu": "adults",
+          "itemName": "Margherita pizzas",
+          "quantity": 2,
+          "productCode": "CF-24",
+          "matchedName": "Margherita",
+          "notInMenu": false,
+          "chatPrice": null,
+          "from": {
+            "source": "family",
+            "at": "2026-11-12T19:28:50.000Z",
+            "line": 2,
+            "quote": "Margherita pizzas"
+          },
+          "ownOrder": true
+        }
+      },
+      "second": {
+        "review": [
+          {
+            "menu": "Adults",
+            "count": "1",
+            "countIsText": false,
+            "item": "Pepperoni pizza → Pepperoni (CF-31)",
+            "tillPrice": "Till ฿420",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "300",
+            "priceWords": "THB each, written on the line as an EXTRA — the chat's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “Pepperoni pizza”from the family· Fri 13 Nov 02:28"
+            ]
+          },
+          {
+            "menu": "Adults",
+            "count": "2",
+            "countIsText": false,
+            "item": "Margherita pizzas → Margherita (CF-24)",
+            "tillPrice": "Till ฿400",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "400",
+            "priceWords": "THB each, written on the line as an EXTRA (2 × ฿400 = ฿800) — the till's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “Margherita pizzas”from the family· Fri 13 Nov 02:28"
+            ]
+          },
+          {
+            "menu": "Kids",
+            "count": "3",
+            "countIsText": false,
+            "item": "extra portions of French fries → French fries (CF-11)",
+            "tillPrice": "Till ฿175",
+            "setWords": null,
+            "optionWords": null,
+            "option": null,
+            "priceBox": "175",
+            "priceWords": "THB each, written on the line as an EXTRA (3 × ฿175 = ฿525) — the till's price.",
+            "chatTotal": null,
+            "says": [
+              "The chat says “extra portions of French fries”from the family· Fri 13 Nov 02:28"
+            ]
+          }
+        ]
+      },
+      "beoAfterApprove": {
+        "route": "GET /api/events/:id/beo/kitchen-plan",
+        "status": 200,
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "adultsDiffer": true,
+        "kids": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA French fries x3 @175 [CF-11] included:false src additional"
+        ],
+        "adults": [
+          "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+          "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+          "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+          "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+          "EXTRA Pepperoni x1 @300 [CF-31] included:false src additional",
+          "EXTRA Margherita x2 @400 [CF-24] included:false src additional"
+        ],
+        "cake": {
+          "mode": "NONE",
+          "qty": 1,
+          "price": null,
+          "included": null
+        }
+      },
+      "till": {
+        "partyLines": [
+          "set_menu | Pizza: Hawaiian x1 | code CF-27 | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "extra | French fries x3 | code CF-11 | entered 175",
+          "extra | Pepperoni x1 | code CF-31 | entered 300 | adults",
+          "extra | Margherita x2 | code CF-24 | entered 400 | adults"
+        ],
+        "bar": [],
+        "previewTotal": 23025,
+        "previewSent": {
+          "kids": 10,
+          "adults": 5,
+          "socksGiven": 10,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=1 unitSatang=50000 totalSatang=50000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=10 unitSatang=0 totalSatang=0",
+          "role=add_on label=French fries quantity=3 unitSatang=17500 totalSatang=52500",
+          "role=add_on label=Pepperoni quantity=1 unitSatang=30000 totalSatang=30000",
+          "role=add_on label=Margherita quantity=2 unitSatang=40000 totalSatang=80000"
+        ]
+      },
+      "extrasTotal": "Extras charged at the till: ฿1,625"
+    },
+    "8": {
+      "verdict": "PASS (one hint not covered: \"till price N (made for this party)\")",
+      "pictures": [
+        "18-p4-p8-thread-d-beo-prices-adults.png",
+        "25-p8-thread-h-beo-prices-after-approve-kids.png",
+        "25-p8-thread-h-beo-prices-after-approve-adults.png",
+        "25-p8-thread-h-beo-prices-after-approve-bar.png",
+        "28-p8-thread-h-pepperoni-price-cleared-till-price-weekend.png",
+        "29-p8-thread-h-pepperoni-120-each-before-save.png",
+        "30-p8-thread-h-pepperoni-cleared-again-till-price-back.png",
+        "42-p8-fresh-beo-wednesday-pepperoni-till-price-weekday.png",
+        "43-p8-fresh-beo-adults-copy-charged-once-with-kids.png"
+      ],
+      "tillPrices": {
+        "CF-24": "Margherita: weekday 400, weekend 400, station kitchen",
+        "CF-27": "Hawaiian: weekday 515, weekend 515, station kitchen",
+        "CF-31": "Pepperoni: weekday 420, weekend 420, station kitchen",
+        "CF-15": "Caesar salad: weekday 370, weekend 370, station kitchen",
+        "CF-11": "French fries: weekday 175, weekend 175, station kitchen",
+        "CF-43": "Fried rice: weekday 240, weekend 240, station kitchen",
+        "CF-63-1": "Fresh cold pressed orange juice: weekday 210, weekend 210, station bar",
+        "CF-58-4": "Latte: weekday 145, weekend 145, station bar"
+      },
+      "priceReads": {
+        "D": [
+          {
+            "at": "2026-11-12T19:50:15.312Z",
+            "key": "D",
+            "tag": "after-approve",
+            "prices": {
+              "Kids Menu": {
+                "tabLabel": "Kids Menu (5)",
+                "rows": [
+                  {
+                    "row": "menu-item-kids-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-kids-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-kids-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-kids-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-kids-4",
+                    "badge": "EXTRA",
+                    "name": "Margherita",
+                    "qty": "2",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "450",
+                    "priceTestId": "input-menu-price-kids-4",
+                    "hint": "each",
+                    "text": "EXTRA2450eachMargheritaCF-24"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿2,100"
+              },
+              "Adults Menu": {
+                "tabLabel": "Adults Menu (5)",
+                "rows": [
+                  {
+                    "row": "menu-item-adults-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-adults-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-adults-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-adults-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-adults-4",
+                    "badge": "EXTRA",
+                    "name": "Margherita",
+                    "qty": "3",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "400",
+                    "priceTestId": "input-menu-price-adults-4",
+                    "hint": "each",
+                    "text": "EXTRA3400eachMargheritaCF-24"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿2,100"
+              },
+              "bar": {
+                "rows": [],
+                "total": null
+              }
+            },
+            "pictures": [
+              "18-p4-p8-thread-d-beo-prices-kids.png",
+              "18-p4-p8-thread-d-beo-prices-adults.png",
+              "18-p4-p8-thread-d-beo-prices-bar.png"
+            ]
+          }
+        ],
+        "H": [
+          {
+            "at": "2026-11-12T21:10:24.362Z",
+            "key": "H",
+            "tag": "after-approve",
+            "prices": {
+              "Kids Menu": {
+                "tabLabel": "Kids Menu (4)",
+                "rows": [
+                  {
+                    "row": "menu-item-kids-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-kids-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-kids-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-kids-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿790"
+              },
+              "Adults Menu": {
+                "tabLabel": "Adults Menu (7)",
+                "rows": [
+                  {
+                    "row": "menu-item-adults-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-adults-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-adults-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-adults-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-adults-4",
+                    "badge": "EXTRA",
+                    "name": "Pepperoni",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "420",
+                    "priceTestId": "input-menu-price-adults-4",
+                    "hint": "each",
+                    "text": "EXTRA1420eachPepperoniCF-31"
+                  },
+                  {
+                    "row": "menu-item-adults-5",
+                    "badge": "EXTRA",
+                    "name": "Caesar salad",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "370",
+                    "priceTestId": "input-menu-price-adults-5",
+                    "hint": "each",
+                    "text": "EXTRA1370eachCaesar saladCF-15"
+                  },
+                  {
+                    "row": "menu-item-adults-6",
+                    "badge": "EXTRA",
+                    "name": "a durian pizza",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "Price ฿",
+                    "priceTestId": "input-menu-price-adults-6",
+                    "hint": "not charged",
+                    "text": "EXTRA1Price ฿not chargeda durian pizzaNot in the menu · if you have one"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿790"
+              },
+              "bar": {
+                "rows": [
+                  {
+                    "row": "bar-item-0",
+                    "badge": "EXTRA",
+                    "name": "Fresh cold pressed orange juice",
+                    "qty": "2",
+                    "code": "CF-63-1",
+                    "priceBox": true,
+                    "priceShown": "210",
+                    "priceTestId": "input-menu-price-bar-0",
+                    "hint": "each",
+                    "text": "EXTRAFresh cold pressed orange juiceCF-63-12210eachNotes (optional)…"
+                  },
+                  {
+                    "row": "bar-item-1",
+                    "badge": "EXTRA",
+                    "name": "Latte",
+                    "qty": "1",
+                    "code": "CF-58-4",
+                    "priceBox": true,
+                    "priceShown": "145",
+                    "priceTestId": "input-menu-price-bar-1",
+                    "hint": "each",
+                    "text": "EXTRALatteCF-58-41145eachNotes (optional)…"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿565"
+              }
+            },
+            "pictures": [
+              "25-p8-thread-h-beo-prices-after-approve-kids.png",
+              "25-p8-thread-h-beo-prices-after-approve-adults.png",
+              "25-p8-thread-h-beo-prices-after-approve-bar.png"
+            ]
+          },
+          {
+            "at": "2026-11-12T21:11:34.021Z",
+            "key": "H",
+            "tag": "after-save-120",
+            "prices": {
+              "Kids Menu": {
+                "tabLabel": "Kids Menu (4)",
+                "rows": [
+                  {
+                    "row": "menu-item-kids-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-kids-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-kids-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-kids-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿490"
+              },
+              "Adults Menu": {
+                "tabLabel": "Adults Menu (7)",
+                "rows": [
+                  {
+                    "row": "menu-item-adults-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-adults-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-adults-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-adults-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-adults-4",
+                    "badge": "EXTRA",
+                    "name": "Pepperoni",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "120",
+                    "priceTestId": "input-menu-price-adults-4",
+                    "hint": "each",
+                    "text": "EXTRA1120eachPepperoniCF-31"
+                  },
+                  {
+                    "row": "menu-item-adults-5",
+                    "badge": "EXTRA",
+                    "name": "Caesar salad",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "370",
+                    "priceTestId": "input-menu-price-adults-5",
+                    "hint": "each",
+                    "text": "EXTRA1370eachCaesar saladCF-15"
+                  },
+                  {
+                    "row": "menu-item-adults-6",
+                    "badge": "EXTRA",
+                    "name": "a durian pizza",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "Price ฿",
+                    "priceTestId": "input-menu-price-adults-6",
+                    "hint": "not charged",
+                    "text": "EXTRA1Price ฿not chargeda durian pizzaNot in the menu · if you have one"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿490"
+              },
+              "bar": {
+                "rows": [
+                  {
+                    "row": "bar-item-0",
+                    "badge": "EXTRA",
+                    "name": "Fresh cold pressed orange juice",
+                    "qty": "2",
+                    "code": "CF-63-1",
+                    "priceBox": true,
+                    "priceShown": "210",
+                    "priceTestId": "input-menu-price-bar-0",
+                    "hint": "each",
+                    "text": "EXTRAFresh cold pressed orange juiceCF-63-12210eachNotes (optional)…"
+                  },
+                  {
+                    "row": "bar-item-1",
+                    "badge": "EXTRA",
+                    "name": "Latte",
+                    "qty": "1",
+                    "code": "CF-58-4",
+                    "priceBox": true,
+                    "priceShown": "145",
+                    "priceTestId": "input-menu-price-bar-1",
+                    "hint": "each",
+                    "text": "EXTRALatteCF-58-41145eachNotes (optional)…"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿565"
+              }
+            }
+          },
+          {
+            "at": "2026-11-12T21:15:10.708Z",
+            "key": "H",
+            "tag": "after-save-cleared",
+            "prices": {
+              "Kids Menu": {
+                "tabLabel": "Kids Menu (4)",
+                "rows": [
+                  {
+                    "row": "menu-item-kids-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-kids-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-kids-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-kids-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿790"
+              },
+              "Adults Menu": {
+                "tabLabel": "Adults Menu (7)",
+                "rows": [
+                  {
+                    "row": "menu-item-adults-0",
+                    "badge": "SET",
+                    "name": "Margherita",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Margherita(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-adults-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-adults-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-adults-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-adults-4",
+                    "badge": "EXTRA",
+                    "name": "Pepperoni",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "Price ฿",
+                    "priceTestId": "input-menu-price-adults-4",
+                    "hint": "till price 420 (weekend)",
+                    "text": "EXTRA1Price ฿till price 420 (weekend)PepperoniCF-31"
+                  },
+                  {
+                    "row": "menu-item-adults-5",
+                    "badge": "EXTRA",
+                    "name": "Caesar salad",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "370",
+                    "priceTestId": "input-menu-price-adults-5",
+                    "hint": "each",
+                    "text": "EXTRA1370eachCaesar saladCF-15"
+                  },
+                  {
+                    "row": "menu-item-adults-6",
+                    "badge": "EXTRA",
+                    "name": "a durian pizza",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "Price ฿",
+                    "priceTestId": "input-menu-price-adults-6",
+                    "hint": "not charged",
+                    "text": "EXTRA1Price ฿not chargeda durian pizzaNot in the menu · if you have one"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿790"
+              },
+              "bar": {
+                "rows": [
+                  {
+                    "row": "bar-item-0",
+                    "badge": "EXTRA",
+                    "name": "Fresh cold pressed orange juice",
+                    "qty": "2",
+                    "code": "CF-63-1",
+                    "priceBox": true,
+                    "priceShown": "210",
+                    "priceTestId": "input-menu-price-bar-0",
+                    "hint": "each",
+                    "text": "EXTRAFresh cold pressed orange juiceCF-63-12210eachNotes (optional)…"
+                  },
+                  {
+                    "row": "bar-item-1",
+                    "badge": "EXTRA",
+                    "name": "Latte",
+                    "qty": "1",
+                    "code": "CF-58-4",
+                    "priceBox": true,
+                    "priceShown": "145",
+                    "priceTestId": "input-menu-price-bar-1",
+                    "hint": "each",
+                    "text": "EXTRALatteCF-58-41145eachNotes (optional)…"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿565"
+              }
+            }
+          }
+        ],
+        "I": [
+          {
+            "at": "2026-11-12T21:28:38.962Z",
+            "key": "I",
+            "tag": "after-approve",
+            "prices": {
+              "Kids Menu": {
+                "tabLabel": "Kids Menu (5)",
+                "rows": [
+                  {
+                    "row": "menu-item-kids-0",
+                    "badge": "SET",
+                    "name": "Hawaiian",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Hawaiian(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-kids-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-kids-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-kids-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-kids-4",
+                    "badge": "EXTRA",
+                    "name": "French fries",
+                    "qty": "3",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "175",
+                    "priceTestId": "input-menu-price-kids-4",
+                    "hint": "each",
+                    "text": "EXTRA3175eachFrench friesCF-11"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿1,625"
+              },
+              "Adults Menu": {
+                "tabLabel": "Adults Menu (6)",
+                "rows": [
+                  {
+                    "row": "menu-item-adults-0",
+                    "badge": "SET",
+                    "name": "Hawaiian",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Hawaiian(Pizza)"
+                  },
+                  {
+                    "row": "menu-item-adults-1",
+                    "badge": "SET",
+                    "name": "French fries",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1French fries"
+                  },
+                  {
+                    "row": "menu-item-adults-2",
+                    "badge": "SET",
+                    "name": "Veggie sticks",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Veggie sticks"
+                  },
+                  {
+                    "row": "menu-item-adults-3",
+                    "badge": "SET",
+                    "name": "Fruit skewers",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": false,
+                    "priceShown": null,
+                    "priceTestId": null,
+                    "hint": null,
+                    "text": "SET1Fruit skewers"
+                  },
+                  {
+                    "row": "menu-item-adults-4",
+                    "badge": "EXTRA",
+                    "name": "Pepperoni",
+                    "qty": "1",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "300",
+                    "priceTestId": "input-menu-price-adults-4",
+                    "hint": "each",
+                    "text": "EXTRA1300eachPepperoniCF-31"
+                  },
+                  {
+                    "row": "menu-item-adults-5",
+                    "badge": "EXTRA",
+                    "name": "Margherita",
+                    "qty": "2",
+                    "code": null,
+                    "priceBox": true,
+                    "priceShown": "400",
+                    "priceTestId": "input-menu-price-adults-5",
+                    "hint": "each",
+                    "text": "EXTRA2400eachMargheritaCF-24"
+                  }
+                ],
+                "total": "Extras charged at the till: ฿1,625"
+              },
+              "bar": {
+                "rows": [],
+                "total": null
+              }
+            }
+          }
+        ]
+      },
+      "priceEdits": [
+        {
+          "key": "H",
+          "tab": "Adults Menu",
+          "name": "Pepperoni",
+          "typed": "(cleared)",
+          "before": {
+            "shown": "420",
+            "hint": "each"
+          },
+          "after": {
+            "shown": "Price ฿",
+            "hint": "till price 420 (weekend)"
+          },
+          "kitchenTotal": "Extras charged at the till: ฿790",
+          "barTotal": "Extras charged at the till: ฿565"
+        },
+        {
+          "key": "H",
+          "tab": "Adults Menu",
+          "name": "Pepperoni",
+          "typed": "120",
+          "before": {
+            "shown": "Price ฿",
+            "hint": "till price 420 (weekend)"
+          },
+          "after": {
+            "shown": "120",
+            "hint": "each"
+          },
+          "kitchenTotal": "Extras charged at the till: ฿490",
+          "barTotal": "Extras charged at the till: ฿565"
+        },
+        {
+          "key": "H",
+          "tab": "Adults Menu",
+          "name": "Pepperoni",
+          "typed": "(cleared)",
+          "before": {
+            "shown": "120",
+            "hint": "each"
+          },
+          "after": {
+            "shown": "Price ฿",
+            "hint": "till price 420 (weekend)"
+          },
+          "kitchenTotal": "Extras charged at the till: ฿790",
+          "barTotal": "Extras charged at the till: ฿565"
+        },
+        {
+          "key": "F",
+          "tab": "Kids Menu",
+          "name": "Pepperoni",
+          "typed": "(cleared)",
+          "before": {
+            "shown": "420",
+            "hint": "each"
+          },
+          "after": {
+            "shown": "Price ฿",
+            "hint": "till price 420"
+          },
+          "kitchenTotal": "Extras charged at the till: ฿420",
+          "barTotal": null
+        }
+      ],
+      "saves": [
+        {
+          "at": "2026-11-12T21:11:28.388Z",
+          "key": "H",
+          "writes": [
+            {
+              "method": "PUT",
+              "path": "/api/events/:id/beo",
+              "status": 200
+            }
+          ],
+          "toast": null,
+          "reloaded": true
+        },
+        {
+          "at": "2026-11-12T21:15:04.987Z",
+          "key": "H",
+          "writes": [
+            {
+              "method": "PUT",
+              "path": "/api/events/:id/beo",
+              "status": 200
+            }
+          ],
+          "toast": null,
+          "reloaded": true
+        }
+      ],
+      "tillAt120": {
+        "partyLines": [
+          "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "extra | Pepperoni x1 | code CF-31 | entered 120 | adults",
+          "extra | Caesar salad x1 | code CF-15 | entered 370 | adults",
+          "extra | a durian pizza x1 | code - | note Not in the menu · if you have one | adults"
+        ],
+        "bar": [
+          "extra | Fresh cold pressed orange juice x2 | code CF-63-1 | entered 210",
+          "extra | Latte x1 | code CF-58-4 | entered 145"
+        ],
+        "previewTotal": 22955,
+        "previewSent": {
+          "kids": 10,
+          "adults": 6,
+          "socksGiven": 10,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=2 unitSatang=50000 totalSatang=100000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=10 unitSatang=0 totalSatang=0",
+          "role=add_on label=Pepperoni quantity=1 unitSatang=12000 totalSatang=12000",
+          "role=add_on label=Caesar salad quantity=1 unitSatang=37000 totalSatang=37000",
+          "role=add_on label=Fresh cold pressed orange juice quantity=2 unitSatang=21000 totalSatang=42000",
+          "role=add_on label=Latte quantity=1 unitSatang=14500 totalSatang=14500"
+        ]
+      },
+      "tillAfterClear": {
+        "partyLines": [
+          "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "extra | Pepperoni x1 | code CF-31 | adults",
+          "extra | Caesar salad x1 | code CF-15 | entered 370 | adults",
+          "extra | a durian pizza x1 | code - | note Not in the menu · if you have one | adults"
+        ],
+        "bar": [
+          "extra | Fresh cold pressed orange juice x2 | code CF-63-1 | entered 210",
+          "extra | Latte x1 | code CF-58-4 | entered 145"
+        ],
+        "previewTotal": 23255,
+        "previewSent": {
+          "kids": 10,
+          "adults": 6,
+          "socksGiven": 10,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=2 unitSatang=50000 totalSatang=100000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=10 unitSatang=0 totalSatang=0",
+          "role=add_on label=Pepperoni quantity=1 unitSatang=42000 totalSatang=42000",
+          "role=add_on label=Caesar salad quantity=1 unitSatang=37000 totalSatang=37000",
+          "role=add_on label=Fresh cold pressed orange juice quantity=2 unitSatang=21000 totalSatang=42000",
+          "role=add_on label=Latte quantity=1 unitSatang=14500 totalSatang=14500"
+        ]
+      },
+      "tillAfterApprove": {
+        "partyLines": [
+          "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza",
+          "set_menu | Hot dish | code - | group Hot dish",
+          "set_menu | French fries x1 | code CF-11",
+          "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+          "set_menu | Fried rice | code CF-43 | group Fried rice",
+          "set_menu | Veggie sticks x1 | code CF-53",
+          "set_menu | Fruit skewers x1 | code -",
+          "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+          "extra | Pepperoni x1 | code CF-31 | entered 420 | adults",
+          "extra | Caesar salad x1 | code CF-15 | entered 370 | adults",
+          "extra | a durian pizza x1 | code - | note Not in the menu · if you have one | adults"
+        ],
+        "bar": [
+          "extra | Fresh cold pressed orange juice x2 | code CF-63-1 | entered 210",
+          "extra | Latte x1 | code CF-58-4 | entered 145"
+        ],
+        "previewTotal": 23255,
+        "previewSent": {
+          "kids": 10,
+          "adults": 6,
+          "socksGiven": 10,
+          "addOnIds": 0,
+          "entertainmentIds": 0
+        },
+        "previewCharges": [
+          "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+          "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+          "role=extra_adults label=Extra adult quantity=2 unitSatang=50000 totalSatang=100000",
+          "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+          "role=socks label=Regular Socks (free) quantity=10 unitSatang=0 totalSatang=0",
+          "role=add_on label=Pepperoni quantity=1 unitSatang=42000 totalSatang=42000",
+          "role=add_on label=Caesar salad quantity=1 unitSatang=37000 totalSatang=37000",
+          "role=add_on label=Fresh cold pressed orange juice quantity=2 unitSatang=21000 totalSatang=42000",
+          "role=add_on label=Latte quantity=1 unitSatang=14500 totalSatang=14500"
+        ]
+      },
+      "withKidsHint": {
+        "Kids Menu": {
+          "tabLabel": "Kids Menu (1)",
+          "rows": [
+            {
+              "row": "menu-item-kids-0",
+              "badge": "EXTRA",
+              "name": "Pepperoni",
+              "qty": "1",
+              "code": null,
+              "priceBox": true,
+              "priceShown": "Price ฿",
+              "priceTestId": "input-menu-price-kids-0",
+              "hint": "till price 420",
+              "text": "EXTRA1Price ฿till price 420PepperoniCF-31"
+            }
+          ],
+          "total": "Extras charged at the till: ฿420"
+        },
+        "Adults Menu": {
+          "tabLabel": "Adults Menu (1)",
+          "rows": [
+            {
+              "row": "menu-item-adults-0",
+              "badge": "EXTRA",
+              "name": "Pepperoni",
+              "qty": "1",
+              "code": null,
+              "priceBox": true,
+              "priceShown": "Price ฿",
+              "priceTestId": "input-menu-price-adults-0",
+              "hint": "charged once, with the kids' line",
+              "text": "EXTRA1Price ฿charged once, with the kids' linePepperoniCF-31"
+            }
+          ],
+          "total": "Extras charged at the till: ฿420"
+        },
+        "bar": {
+          "rows": [],
+          "total": null
+        }
+      },
+      "weekdayPick": [
+        {
+          "at": "2026-11-12T21:36:17.838Z",
+          "key": "F",
+          "row": "menu-item-kids-0",
+          "typed": "pepperoni",
+          "found": [
+            "Pepperoni CF-31 ฿420"
+          ],
+          "after": {
+            "name": "Pepperoni",
+            "code": "CF-31",
+            "priceShown": "420",
+            "hint": "each"
+          }
+        }
+      ]
+    },
+    "9": {
+      "verdict": "PASS",
+      "pictures": [
+        "40-p9-fresh-beo-first-line-extra-price-box.png",
+        "41-p9-fresh-beo-after-save-and-reload.png",
+        "31-p9-thread-a-beo-pdf-page1-hawaiian-pizza-one-bracket.png",
+        "32-p9-thread-h-beo-pdf-page1-extra-drink-prices.png"
+      ],
+      "freshBeo": {
+        "emptyLine": "Nothing on the kids' menu yet. Click to add the first item.",
+        "rowBeforeSave": {
+          "badge": "EXTRA",
+          "priceBox": 1,
+          "priceShown": "Price ฿",
+          "hint": "not charged",
+          "total": "Extras charged at the till: ฿0"
+        },
+        "saveWrites": [
+          {
+            "method": "PUT",
+            "path": "/api/events/:id/beo",
+            "status": 200
+          }
+        ],
+        "readBack": {
+          "status": 200,
+          "kids": [
+            {
+              "itemName": "ZZ TEST mango sticky rice",
+              "quantity": 1,
+              "included": false,
+              "price": 0,
+              "source": null,
+              "productCode": null
+            }
+          ]
+        },
+        "afterReload": {
+          "tabLabel": "Kids Menu (1)",
+          "rows": [
+            {
+              "row": "menu-item-kids-0",
+              "badge": "EXTRA",
+              "name": "ZZ TEST mango sticky rice",
+              "qty": "1",
+              "code": null,
+              "priceBox": true,
+              "priceShown": "Price ฿",
+              "priceTestId": "input-menu-price-kids-0",
+              "hint": "not charged",
+              "text": "EXTRA1Price ฿not chargedZZ TEST mango sticky rice"
+            }
+          ],
+          "total": "Extras charged at the till: ฿0"
+        }
+      },
+      "pdfs": {
+        "A": {
+          "route": "GET /api/events/:id/beo/pdf",
+          "status": 200,
+          "reads": [
+            "Veggie (Fried rice) — kids only",
+            "Hawaiian (Pizza) · no pineapple on half",
+            "1x Chicken (Fried rice) — adults only  SET",
+            "Our cake (provided) x2 EXTRA 800฿ — Time: 16:00",
+            "Expected total (from the till): ฿31,400"
+          ]
+        },
+        "H": {
+          "status": 200,
+          "reads": [
+            "Margherita (Pizza)",
+            "2x Fresh cold pressed orange juice  EXTRA 210฿ each",
+            "1x Latte  EXTRA 145฿ each",
+            "1x Caesar salad — adults only  EXTRA 370฿ each",
+            "1x Pepperoni — adults only  EXTRA (no price: none entered; the till charges 420)",
+            "Expected total (from the till): ฿23,255"
+          ]
+        }
+      },
+      "console": {
+        "A": [
+          {
+            "dialogTitleRequiredErrors": 0,
+            "otherDialogWarnings": [
+              "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+            ],
+            "errors": 0,
+            "fillRequests": []
+          }
+        ],
+        "B": [
+          {
+            "dialogTitleRequiredErrors": 0,
+            "otherDialogWarnings": [
+              "Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}."
+            ],
+            "errors": 0,
+            "fillRequests": []
+          }
+        ]
+      }
+    },
+    "10": {
+      "verdict": "PASS",
+      "pictures": [
+        "36-p10-thread-o-review-kitchen-plan.png",
+        "37-p10-thread-o-toast-after-approve.png"
+      ],
+      "plainFill": {
+        "review": {
+          "kitchenPlan": [
+            {
+              "menu": "Kids",
+              "count": "1",
+              "countIsText": false,
+              "item": "a durian pizza",
+              "tillPrice": null,
+              "setWords": null,
+              "optionWords": null,
+              "option": null,
+              "priceBox": null,
+              "priceWords": null,
+              "chatTotal": null,
+              "says": [
+                "The chat says “a durian pizza”from the family· Fri 13 Nov 02:28"
+              ]
+            }
+          ],
+          "groups": [
+            {
+              "label": "Pizza",
+              "value": "Hawaiian",
+              "match": [
+                "a Hawaiian pizza → Hawaiian (CF-27)"
+              ],
+              "says": [
+                "The chat says “a Hawaiian pizza”from the family· Fri 13 Nov 02:28"
+              ],
+              "parent": null
+            }
+          ],
+          "fold": null,
+          "header": [
+            "3 messages read.",
+            "Nothing is confirmed by the team yet: no message of the team's names the date, the time and the party details. Every value is what the chat says so far — check each one before approving.",
+            "Every field is the family's, the team's, or the park's own:from the teamfrom the familythe park's defaultchanged here— the family's are defaults for you to check.",
+            "Under each value, the chat's own words for it, whose line they are and when it was written."
+          ],
+          "package": "Birthday package, Central Floresta",
+          "cake": {
+            "value": "The park's cake",
+            "time": "16:00",
+            "notes": "the park's chocolate cake",
+            "marks": [
+              "family"
+            ],
+            "notSaid": null
+          },
+          "entertainment": [
+            {
+              "value": "Bubble show",
+              "qty": "1",
+              "marks": [
+                "family",
+                "family"
+              ]
+            }
+          ],
+          "deposit": {
+            "label": "Deposit asked:",
+            "amount": "3000",
+            "received": false,
+            "date": "2026-11-13",
+            "marks": [
+              "family"
+            ]
+          },
+          "decoration": "a dinosaur theme with green balloons",
+          "specialRequests": "Allergy: One of the kids is allergic to peanuts",
+          "reasonLines": 16,
+          "marksWithoutReason": 0
+        },
+        "approval": {
+          "ok": null,
+          "written": {
+            "event": true,
+            "package": true,
+            "addOns": 0,
+            "setMenu": true,
+            "choices": 1,
+            "kitchenLines": 1,
+            "freeKitchenLines": 1,
+            "cake": true,
+            "entertainment": 1,
+            "entertainmentActs": 1,
+            "deposit": true
+          },
+          "notWritten": null,
+          "message": null
+        },
+        "beoAfterApprove": {
+          "route": "GET /api/events/:id/beo/kitchen-plan",
+          "status": 200,
+          "setMenuEnabled": true,
+          "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+          "adultsDiffer": false,
+          "kids": [
+            "SET Hawaiian x1 included:true note \"(Pizza)\" group item_cf_bday_pizza src set_menu",
+            "SET French fries x1 included:true group item_cf_bday_fries src set_menu",
+            "SET Veggie sticks x1 included:true group item_cf_bday_veggie_sticks src set_menu",
+            "SET Fruit skewers x1 included:true group item_cf_bday_fruit_skewers src set_menu",
+            "EXTRA a durian pizza x1 included:false note \"Not in the menu\" src additional"
+          ],
+          "adults": [],
+          "cake": {
+            "mode": "INTERNAL",
+            "qty": 1,
+            "price": null,
+            "included": true
+          }
+        },
+        "till": {
+          "partyLines": [
+            "set_menu | Pizza: Hawaiian x1 | code CF-27 | group Pizza",
+            "set_menu | Hot dish | code - | group Hot dish",
+            "set_menu | French fries x1 | code CF-11",
+            "set_menu | Waffles or pancakes | code - | group Waffles or pancakes",
+            "set_menu | Fried rice | code CF-43 | group Fried rice",
+            "set_menu | Veggie sticks x1 | code CF-53",
+            "set_menu | Fruit skewers x1 | code -",
+            "set_menu | Drinks pitcher | code - | group Drinks pitcher",
+            "extra | a durian pizza x1 | code - | note Not in the menu"
+          ],
+          "bar": [],
+          "previewTotal": 31400,
+          "previewSent": {
+            "kids": 12,
+            "adults": 8,
+            "socksGiven": 12,
+            "addOnIds": 0,
+            "entertainmentIds": 1
+          },
+          "previewCharges": [
+            "role=package label=Birthday package, Central Floresta quantity=1 unitSatang=2090000 totalSatang=2090000",
+            "role=guests label=Children (in the package) quantity=10 unitSatang=0 totalSatang=0",
+            "role=extra_adults label=Extra adult quantity=4 unitSatang=50000 totalSatang=200000",
+            "role=guests label=Adults (in the package) quantity=4 unitSatang=0 totalSatang=0",
+            "role=socks label=Regular Socks (free) quantity=12 unitSatang=0 totalSatang=0",
+            "role=extra_children label=Extra child quantity=2 unitSatang=150000 totalSatang=300000",
+            "role=entertainment label=Bubble show quantity=1 unitSatang=550000 totalSatang=550000"
+          ]
+        },
+        "comparedWith": "docs/qa/proof-2026-11-12/SCRUM-903 point 1 (the owner's case): Pizza Hawaiian (CF-27), the durian pizza a \"Not in the menu\" line holding Approve, the Bubble show x1, the park's chocolate cake at 16:00, the deposit asked 3000 not received, the decoration and the allergy, a reason under every value; the same here, without the one adults' clause"
+      },
+      "saveUnchanged": {
+        "at": "2026-11-12T21:33:03.513Z",
+        "key": "O",
+        "writes": [
+          {
+            "method": "PUT",
+            "path": "/api/events/:id/beo",
+            "status": 200
+          }
+        ],
+        "toast": null,
+        "rowsOfThisEventBefore": 2,
+        "rowsOfThisEventAfter": 2,
+        "newRowsAfterSave": [],
+        "beforeRows": [
+          {
+            "at": "2026-11-12T21:32:47.226Z",
+            "type": "beo_ai_fill",
+            "summary": "AI Fill approved for the BEO of \"ZZ Test Oona's 6th Birthday\""
+          },
+          {
+            "at": "2026-11-12T21:32:23.531Z",
+            "type": "beo_ai_fill",
+            "summary": "AI Fill read the inbox conversation for the BEO of \"ZZ Test Oona's 6th Birthday\""
+          }
+        ]
+      },
+      "logbookNote": "the editor's Save with a real change (thread H's price, saved twice) wrote no Activity Logbook row either: the logbook holds the fills, the approvals and the till's kitchen edits only, so \"nothing new\" holds for every editor Save"
+    }
+  },
+  "hunt": [
+    "see the report: G's fold note, I's chat total, the cake price, the adults' SET line on the till, the PDF's unpriced EXTRA, the PDF's received date, the old ZZ TEST party items in the search, the weekday price written on weekend parties, the remaining dialog warning"
+  ],
+  "cleanup": {
+    "events": {
+      "A": {
+        "id": "01a1d13c-39b3-7f57-a517-2d89a7b8eb05",
+        "title": "ZZ Test Lina's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:31.881Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:31.881Z",
+          "isArchived": true
+        }
+      },
+      "B": {
+        "id": "01a1d146-4cf9-7f76-ae3f-ed9a5ccccecb",
+        "title": "ZZ Test Mika's 7th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.050Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.050Z",
+          "isArchived": true
+        }
+      },
+      "D": {
+        "id": "01a1d14b-b334-7383-9491-f774c8accf7e",
+        "title": "ZZ Test Sami's 8th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.204Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.204Z",
+          "isArchived": true
+        }
+      },
+      "G": {
+        "id": "01a1d150-9527-7663-9544-cd5b00ae6c47",
+        "title": "ZZ Test Remy's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.364Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.364Z",
+          "isArchived": true
+        }
+      },
+      "H": {
+        "id": "01a1d192-b426-7977-9548-c370f2d3c452",
+        "title": "ZZ Test Kai's 7th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.565Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.565Z",
+          "isArchived": true
+        }
+      },
+      "I": {
+        "id": "01a1d19e-3428-7a35-b2ed-6cfc948d6b2b",
+        "title": "ZZ Test Noa's 5th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.715Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.715Z",
+          "isArchived": true
+        }
+      },
+      "O": {
+        "id": "01a1d1aa-a83e-7ecc-9022-56acc396f3d2",
+        "title": "ZZ Test Oona's 6th Birthday",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.913Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:32.913Z",
+          "isArchived": true
+        }
+      }
+    },
+    "conversations": {
+      "A": {
+        "id": "01a1d13a-74ae-72c0-8ea5-b868dee925aa",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:33.341Z",
+          "event": {
+            "id": "01a1d13c-39b3-7f57-a517-2d89a7b8eb05",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "B": {
+        "id": "01a1d13a-7fc7-73a5-976e-90b3be1bc312",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:34.560Z",
+          "event": {
+            "id": "01a1d146-4cf9-7f76-ae3f-ed9a5ccccecb",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "D": {
+        "id": "01a1d13a-8a5d-74f6-ba8d-3eae0a71eede",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:35.544Z",
+          "event": {
+            "id": "01a1d14b-b334-7383-9491-f774c8accf7e",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "G": {
+        "id": "01a1d13a-9466-7a38-b5ed-ce9f2bcfe441",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:36.898Z",
+          "event": {
+            "id": "01a1d150-9527-7663-9544-cd5b00ae6c47",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "H": {
+        "id": "01a1d13a-9e1b-7431-a45b-ab706a548ab6",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:37.902Z",
+          "event": {
+            "id": "01a1d192-b426-7977-9548-c370f2d3c452",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "I": {
+        "id": "01a1d13a-a792-71a1-8874-6148df9dc855",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:39.622Z",
+          "event": {
+            "id": "01a1d19e-3428-7a35-b2ed-6cfc948d6b2b",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "O": {
+        "id": "01a1d13a-b235-7063-800e-d4d8f841b628",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T21:38:40.598Z",
+          "event": {
+            "id": "01a1d1aa-a83e-7ecc-9022-56acc396f3d2",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      }
+    },
+    "extra": {
+      "event F": {
+        "title": "ZZ TEST 958 fresh BEO",
+        "archive": 200,
+        "readBack": {
+          "status": 200,
+          "archivedAt": "2026-11-12T21:38:41.526Z",
+          "isArchived": true
+        }
+      },
+      "thisRunsEventsInTheList": [
+        {
+          "title": "ZZ Test Oona's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Lina's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Remy's 6th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Mika's 7th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ TEST 958 fresh BEO",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Sami's 8th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Kai's 7th Birthday",
+          "archived": true
+        },
+        {
+          "title": "ZZ Test Noa's 5th Birthday",
+          "archived": true
+        }
+      ],
+      "salesAtTheTill": {
+        "status": 200,
+        "count": 0
+      },
+      "till": {
+        "patchDevices": 200,
+        "delete": 200,
+        "readBack": {
+          "archived": true,
+          "devices": 0
+        }
+      }
+    },
+    "readBack": {
+      "status": 200,
+      "thisRunsLiveUpcoming": 0,
+      "zz958Live": 0
+    }
+  },
+  "signOuts": {
+    "till": {
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "end": {
+      "at": "2026-11-12T21:38:52.998Z",
+      "inboxContext": {
+        "inboxSignOut": {
+          "route": "POST /api/auth/sign-out (inbox)",
+          "status": 200
+        },
+        "beoTabAppLogout": {
+          "route": "POST /api/logout (OTO App, the BEO tab)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "inboxMe": 401,
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "appContext": {
+        "appLogout": {
+          "route": "POST /api/logout (OTO App)",
+          "status": 200
+        },
+        "launcherSignOut": {
+          "route": "POST /api/auth/sign-out (launcher)",
+          "status": 200
+        },
+        "readBack": {
+          "appUser": 401,
+          "launcherMe": 401
+        }
+      },
+      "tillOrigin": {
+        "signOut": {
+          "route": "POST /api/auth/sign-out (till origin)",
+          "status": 200
+        },
+        "readBack": {
+          "me": 401
+        }
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "01-p1-thread-a-review-kitchen-plan.png",
+      "at": "2026-11-12T19:32:42.978Z",
+      "shows": "The review's Kitchen Plan (A, before-approve)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "02-p1-thread-a-toast-after-approve.png",
+      "at": "2026-11-12T19:32:54.417Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "03-p1-thread-a-beo-kitchen-plan-adults-menu.png",
+      "at": "2026-11-12T19:34:10.948Z",
+      "shows": "Thread A after Approve and create: the Kitchen Plan, Adults Menu: Different for adults on, the kids set-menu copies and Chicken (Fried rice) as a SET line",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "04-p1-thread-a-beo-kitchen-plan-kids-menu.png",
+      "at": "2026-11-12T19:34:13.178Z",
+      "shows": "Thread A after Approve and create: the Kitchen Plan, Kids Menu: Hawaiian and the set menu lines, no fried rice",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "05-p1-thread-a-fetch-from-chat-after-approval.png",
+      "at": "2026-11-12T19:35:05.417Z",
+      "shows": "Fetch from chat on the filled BEO (A-fetch1): what the chat brings, row by row",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06-p2-till-party-page-kitchen-plan-before.png",
+      "at": "2026-11-12T19:36:53.478Z",
+      "shows": "Thread A's party on the till (the staging manager, 5 December): the Kitchen plan card before the edit",
+      "namesMasked": 2,
+      "masks": 2
+    },
+    {
+      "file": "07-p2-till-edit-form-fried-rice-veggie-before-save.png",
+      "at": "2026-11-12T19:36:59.266Z",
+      "shows": "The manager's Edit party, Kitchen plan: the kids' Fried rice chosen Veggie, before Save",
+      "namesMasked": 0,
+      "masks": 2
+    },
+    {
+      "file": "08-p2-till-party-page-kitchen-plan-after-save.png",
+      "at": "2026-11-12T19:37:08.160Z",
+      "shows": "Thread A's party on the till after the manager's Save: the kids' Fried rice Veggie and the adults' Chicken",
+      "namesMasked": 0,
+      "masks": 2
+    },
+    {
+      "file": "09-p2-thread-a-beo-adults-menu-after-till-edit.png",
+      "at": "2026-11-12T19:37:53.811Z",
+      "shows": "Thread A after the manager chose the kids Fried rice Veggie on the till: the BEO Adults Menu keeps one fried rice, Chicken",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "10-p3-thread-b-review-kitchen-plan-option-held.png",
+      "at": "2026-11-12T19:42:41.816Z",
+      "shows": "The review's Kitchen Plan (B, before-pick)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "11-p3-thread-b-review-shrimp-picked.png",
+      "at": "2026-11-12T19:42:52.799Z",
+      "shows": "The review's Kitchen Plan (B, after-pick)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "12-p3-thread-b-toast-after-approve.png",
+      "at": "2026-11-12T19:42:55.442Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "13-p3-thread-b-family-link-choices-before-submit.png",
+      "at": "2026-11-12T19:45:14.377Z",
+      "shows": "Thread B's family link (a private browser, no session): every group chosen, Fried rice Veggie, before Submit",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "14-p3-thread-b-family-link-selections-received.png",
+      "at": "2026-11-12T19:45:18.571Z",
+      "shows": "Thread B's family link after Submit: Selections Received! with the choices as the team has them",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "15-p3-thread-b-beo-adults-menu-after-family-link.png",
+      "at": "2026-11-12T19:45:46.655Z",
+      "shows": "Thread B after the family link (Fried rice Veggie for the kids): the BEO Adults Menu keeps Shrimp as its own SET line, with the copies of the kids other choices",
+      "namesMasked": 59,
+      "masks": 0
+    },
+    {
+      "file": "16-p4-thread-d-review-kitchen-plan.png",
+      "at": "2026-11-12T19:48:46.619Z",
+      "shows": "The review's Kitchen Plan (D, before-approve)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "17-p4-thread-d-toast-after-approve.png",
+      "at": "2026-11-12T19:49:04.077Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "18-p4-p8-thread-d-beo-prices-kids.png",
+      "at": "2026-11-12T19:50:49.358Z",
+      "shows": "D (after-approve): the Kitchen Plan, Kids Menu, the price boxes and hints",
+      "namesMasked": 1,
+      "masks": 0
+    },
+    {
+      "file": "18-p4-p8-thread-d-beo-prices-adults.png",
+      "at": "2026-11-12T19:50:50.861Z",
+      "shows": "D (after-approve): the Kitchen Plan, Adults Menu, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "18-p4-p8-thread-d-beo-prices-bar.png",
+      "at": "2026-11-12T19:50:51.474Z",
+      "shows": "D (after-approve): the Bar Plan, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "19-p5-thread-g-review-fold-note.png",
+      "at": "2026-11-12T19:56:21.873Z",
+      "shows": "The review's Kitchen Plan (G, before)",
+      "namesMasked": 57,
+      "masks": 0
+    },
+    {
+      "file": "20-p5-thread-g-review-second-read-no-adults-line-no-note.png",
+      "at": "2026-11-12T21:02:28.014Z",
+      "shows": "The review's Kitchen Plan (G, second-read)",
+      "namesMasked": 58,
+      "masks": 0
+    },
+    {
+      "file": "21-p5-thread-g-review-kids-pizza-hawaiian.png",
+      "at": "2026-11-12T21:02:29.443Z",
+      "shows": "The review's Kitchen Plan after staff chose Pizza Hawaiian (G, hawaiian)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "22-p5-thread-g-toast-after-approve.png",
+      "at": "2026-11-12T21:02:33.019Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "23-p6-thread-h-review-kitchen-plan.png",
+      "at": "2026-11-12T21:09:44.967Z",
+      "shows": "The review's Kitchen Plan (H, before-approve)",
+      "namesMasked": 58,
+      "masks": 0
+    },
+    {
+      "file": "24-p6-thread-h-toast-after-approve.png",
+      "at": "2026-11-12T21:10:10.598Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "25-p8-thread-h-beo-prices-after-approve-kids.png",
+      "at": "2026-11-12T21:10:28.200Z",
+      "shows": "H (after-approve): the Kitchen Plan, Kids Menu, the price boxes and hints",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "25-p8-thread-h-beo-prices-after-approve-adults.png",
+      "at": "2026-11-12T21:10:29.576Z",
+      "shows": "H (after-approve): the Kitchen Plan, Adults Menu, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "25-p8-thread-h-beo-prices-after-approve-bar.png",
+      "at": "2026-11-12T21:10:30.082Z",
+      "shows": "H (after-approve): the Bar Plan, the price boxes and hints",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "26-p6-thread-h-bar-plan-search-latte-two-categories.png",
+      "at": "2026-11-12T21:10:46.147Z",
+      "shows": "The till search beside Latte (CF-58-4) opened after approval: the current pick ticked",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "27-p6-thread-h-bar-plan-search-tea-teas-first.png",
+      "at": "2026-11-12T21:10:48.997Z",
+      "shows": "The till search beside Latte (CF-58-4) opened after approval: the current pick ticked",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "28-p8-thread-h-pepperoni-price-cleared-till-price-weekend.png",
+      "at": "2026-11-12T21:11:17.657Z",
+      "shows": "H: Adults Menu after staff cleared in Pepperoni's Price box",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "29-p8-thread-h-pepperoni-120-each-before-save.png",
+      "at": "2026-11-12T21:11:22.223Z",
+      "shows": "H: Adults Menu after staff typed 120 in Pepperoni's Price box",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "30-p8-thread-h-pepperoni-cleared-again-till-price-back.png",
+      "at": "2026-11-12T21:14:58.813Z",
+      "shows": "H: Adults Menu after staff cleared in Pepperoni's Price box",
+      "namesMasked": 60,
+      "masks": 0
+    },
+    {
+      "file": "33-p7-thread-i-review-kitchen-plan-chat-total.png",
+      "at": "2026-11-12T21:26:52.758Z",
+      "shows": "The review's Kitchen Plan (I, before-approve)",
+      "namesMasked": 58,
+      "masks": 0
+    },
+    {
+      "file": "34-p7-thread-i-review-second-read.png",
+      "at": "2026-11-12T21:27:49.990Z",
+      "shows": "The review's Kitchen Plan (I, second-read)",
+      "namesMasked": 58,
+      "masks": 0
+    },
+    {
+      "file": "35-p7-thread-i-toast-after-approve.png",
+      "at": "2026-11-12T21:28:35.586Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "36-p10-thread-o-review-kitchen-plan.png",
+      "at": "2026-11-12T21:32:24.886Z",
+      "shows": "The review's Kitchen Plan (O, before-approve)",
+      "namesMasked": 58,
+      "masks": 0
+    },
+    {
+      "file": "37-p10-thread-o-toast-after-approve.png",
+      "at": "2026-11-12T21:32:48.562Z",
+      "shows": "The toast after Approve and create",
+      "namesMasked": 2,
+      "masks": 0
+    },
+    {
+      "file": "40-p9-fresh-beo-first-line-extra-price-box.png",
+      "at": "2026-11-12T21:33:44.613Z",
+      "shows": "A fresh ZZ TEST BEO (Wednesday): the first line made from \"Nothing on the kids' menu yet\", typed: the EXTRA badge, the Price box and its hint, before Save",
+      "namesMasked": 60,
+      "masks": 0
+    },
+    {
+      "file": "41-p9-fresh-beo-after-save-and-reload.png",
+      "at": "2026-11-12T21:34:31.011Z",
+      "shows": "The fresh ZZ TEST BEO after Save and reload: the line is still EXTRA with its Price box (\"not charged\": no till code, no price)",
+      "namesMasked": 60,
+      "masks": 0
+    },
+    {
+      "file": "42-p8-fresh-beo-wednesday-pepperoni-till-price-weekday.png",
+      "at": "2026-11-12T21:36:52.439Z",
+      "shows": "F: Kids Menu after staff cleared in Pepperoni's Price box",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "43-p8-fresh-beo-adults-copy-charged-once-with-kids.png",
+      "at": "2026-11-12T21:37:49.953Z",
+      "shows": "The fresh ZZ TEST BEO, Different for adults switched on (not saved): the adults' copy of the kids' Pepperoni reads \"charged once, with the kids' line\"",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ]
+}
