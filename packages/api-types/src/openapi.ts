@@ -5236,7 +5236,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. A part-paid sale (money taken, the rest never came) is refunded whole: everything taken goes back and the sale is closed as void, releasing its vouchers. Replaying the same `actionId` answers the refund it recorded. */
+        /** @description Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. A part-paid sale (money taken, the rest never came) is refunded whole: everything taken goes back and the sale is closed as void, releasing its vouchers. Replaying the same `actionId` answers the refund it recorded. `printing.notes` names each void or updated slip the kitchen or the bar was not sent — "Void slip for the bar not printed — no bar printer at …" — in the shape of a sale’s printing notes, empty when all were queued or none was due; a replay says the same (SCRUM-900). */
         post: {
             parameters: {
                 query?: never;
@@ -5265,7 +5265,20 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /**
+                             * @default {
+                             *       "notes": []
+                             *     }
+                             */
+                            printing: {
+                                notes: string[];
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -10697,7 +10710,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** @description Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`. A prefix another live booth of the operator carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`; the station being edited does not count against itself. */
+        /** @description Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`. A prefix another live booth of the operator carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`; the station being edited does not count against itself. `expectedConfigVersion`, optional, is the config version the form was opened at: when the station has moved on since, the edit is refused with 409 `STATION_CHANGED` and nothing is written (SCRUM-898). Left out, the edit is made as before. */
         patch: {
             parameters: {
                 query?: never;
@@ -10743,6 +10756,7 @@ export interface paths {
                             [key: string]: unknown;
                         }) | null;
                         offlineWalletCapSatang?: number | null;
+                        expectedConfigVersion?: number;
                     };
                 };
             };
@@ -11505,7 +11519,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile. */
+        /** @description Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A printer (any `*_printer` kind) needs the `address` the box prints to, `host:port` or `host` (port 9100): its address on the park network, `127.0.0.1:9100` for a USB printer through the box’s bridge, or the address a simulated printer is found by. Without one it is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID` (SCRUM-899). A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile. */
         post: {
             parameters: {
                 query?: never;
@@ -11687,7 +11701,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** @description Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll. */
+        /** @description Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. A printer’s `address` follows the rule of its creation when it CHANGES: clearing it is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID`; a printer saved without one still renames and archives (SCRUM-899). `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll. */
         patch: {
             parameters: {
                 query?: never;
