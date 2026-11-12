@@ -71,3 +71,26 @@ A server-to-server door on the OTO App for the platform to write a party's kitch
 8. In Set menu templates a pick writes only the code, and fills the name only when an always-included item has none; a choice group's name and an existing name are never changed. Right?
 9. Settings checks a code against every park the manager may open (a template belongs to the whole group), so a code on sale at any park counts as live. Right?
 10. The search shows for the roles that may save a BEO (global admin, operator admin, admin, manager). Should staff see it too?
+
+## State, 12 November 18:20
+- LANE B (SCRUM-906) finished its build, two independent reviews and the fix round. It is being rebased onto main for landing (its two platform migrations take the next free numbers after 0121; its OTO App migration is 0050). Deploy order: the OTO App, then the platform, then both tills.
+- The fix round added: after the release, a party with no package is not printed late in one burst (a one-time start mark); the BEO PDF prints an EXTRA line's price as "each", per the owner's ruling that the price is per item.
+- Being fixed in the land preparation: a bar-plan line whose till item prints nowhere still prints on the bar slip; one very large quantity cannot blank a party's plan.
+
+## Questions from the SCRUM-906 build, to put to the owner together (question 1 is ANSWERED: the price is per item)
+1. EXTRA lines are charged at the entered price × quantity (price per portion). The BEO's own extras total adds a line's price once, whatever its quantity (beo-event-editor.tsx:1270-1275). Should the entered price be per portion, or for the whole line?
+2. The cake's own EXTRA price (the BEO cake section's EXTRA badge with a cake price) is not charged at the till. Decision 2 names till items added as EXTRA, and the cake is not a till item. Should an EXTRA cake be charged at its BEO price?
+3. A hand-typed EXTRA line with no price is not charged. It only prints for the kitchen, marked 'not on the till menu'. No price is invented. Correct?
+4. A BEO line with no SET/EXTRA badge (saved before the badge existed) counts as EXTRA, because that is how the BEO shows it, so it is charged if it has a price or a till code. Correct?
+5. A hand-typed EXTRA line with a price is charged under its own name at that price, taxed as food for a kitchen line and as bar for a bar line. Correct?
+6. A till item added as EXTRA with no entered price is charged at the till's price for the party's date, using the weekend price on weekends and holidays. Correct?
+7. Drinks go to the bar slip only by their till code. The set menu's uncoded drinks (the pitcher's Juice and Mors) stay on the KITCHEN slip, marked 'not on the till menu', until someone codes them. A bar-plan line with a kitchen code prints on the kitchen slip. Is that acceptable?
+8. 'Not on the till menu' also marks a line whose code the till no longer sells (an archived product), not only hand-typed lines. Correct?
+9. 'Own Cake' (the family's cake) is also printed on the kitchen slip, with its time and notes, because the BEO's cake choice says so. Should it print?
+10. A party with a kitchen plan and no package prints its slips at 11:00, the default, because the slip time is set by the package. Is 11:00 right?
+11. When several dishes are chosen for one choice group, the page and slip show each dish with no count, because the menu does not say how portions split (as 0042 already reads it). Correct?
+12. The one-time switch-over means a BEO change made in the minute around the api deploy is not sent as VOID/UPDATED: it is taken as already printed. Accept that small window, with the OTO App deployed first so it happens once?
+13. Some BEOs were saved before the 'Different for adults' switch existed, and their adults' list repeats the kids' list. Both lists now reach the till in full (0048 already did this for coded lines). The brief said keep 0048's handling exactly, so it was kept. Should a repeated adults' list be skipped instead?
+14. The parent's submitted link page now lists the choices as the team currently has them (a small list under 'Submitted on'). Is that addition acceptable?
+15. The till's party page re-reads the plan every minute and on focus, and pauses while the Settle or Edit form is open. Correct?
+16. The 'included' flag the AI fill puts on a line is ignored; only the SET/EXTRA badge decides whether a line is charged. Correct?
