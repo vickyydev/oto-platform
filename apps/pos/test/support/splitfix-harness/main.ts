@@ -317,5 +317,10 @@ function Page() {
 }
 
 window.__readSplitFix = readSplitFix;
+// SCRUM-963 — whether the last wheel turned over the page was taken by
+// something on it (the one-row categories), or left to the page.
+window.addEventListener('wheel', (event) => {
+  (window as unknown as { __lastWheelTaken: boolean }).__lastWheelTaken = event.defaultPrevented;
+}, { passive: true });
 document.documentElement.classList.add('light');
 createRoot(document.getElementById('root')!).render(h(Page));

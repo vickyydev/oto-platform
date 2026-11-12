@@ -288,3 +288,138 @@ describe("the harness draws each page's own frame", () => {
     });
   }
 });
+
+/**
+ * SCRUM-963 (points 7 and 8 of SCRUM-969) — THE ONE-ROW CATEGORIES WITH A
+ * MOUSE. At 1440 in the split view a plain wheel did not move the row, only
+ * Breakfast and Sides showed whole and nothing said the row went on (the
+ * proof's 05a, 05b). In that state the wheel moves it sideways (and is the
+ * page's again at the row's end), an arrow shows at each end while there is
+ * more that way, and the chosen category comes into view. Full width wraps as
+ * before: no arrow, no wheel taken.
+ */
+interface RowState { left: number; end: number; width: number; wraps: boolean; lastWhole: boolean; chosenWhole: boolean }
+const rowState = (last: string) => harness.page.getByTestId('category-row').evaluate((row, lastName) => {
+  const box = row.getBoundingClientRect();
+  const whole = (el: Element | null | undefined) => {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.left >= box.left - 1 && r.right <= box.right + 1;
+  };
+  const buttons = Array.from(row.querySelectorAll('button'));
+  return {
+    left: Math.round(row.scrollLeft), end: row.scrollWidth - row.clientWidth, width: row.clientWidth,
+    wraps: getComputedStyle(row).flexWrap !== 'nowrap',
+    lastWhole: whole(buttons.find((b) => b.textContent?.trim() === lastName)),
+    chosenWhole: whole(row.querySelector('[data-chosen="true"]')),
+  };
+}, last) as Promise<RowState>;
+const arrows = async () => ({
+  before: await harness.page.getByRole('button', { name: 'Earlier categories', exact: true }).count(),
+  after: await harness.page.getByRole('button', { name: 'More categories', exact: true }).count(),
+});
+const wheelTaken = () => harness.page.evaluate(() => (window as unknown as { __lastWheelTaken?: boolean }).__lastWheelTaken ?? null);
+/** Turns the wheel over the middle of the row, and waits for the row to settle. */
+async function wheel(dx: number, dy: number) {
+  const box = (await harness.page.getByTestId('category-row').boundingBox())!;
+  await harness.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await harness.page.mouse.wheel(dx, dy);
+  await harness.page.waitForTimeout(120);
+}
+/** Waits until the row stops moving (the arrows' and the chosen category's moves are smooth). */
+async function settledRow(last: string): Promise<RowState> {
+  let was = '';
+  for (let i = 0; i < 40; i++) {
+    const now = JSON.stringify(await rowState(last));
+    if (now === was) break;
+    was = now;
+    await harness.page.waitForTimeout(100);
+  }
+  return JSON.parse(was) as RowState;
+}
+
+describe.skipIf(!browser || RECORD)('SCRUM-963 (9): the one-row categories move with a mouse in the split view', () => {
+  for (const [screen, last] of [['fnb-menu', 'Beer'], ['merch-grid', 'Workshop']] as const) {
+    it(`${screen} at 1440x900: the wheel moves the row and gives the page back at its ends`, async () => {
+      await harness.read(`screen=${screen}&split=1`, { width: 1440, height: 900 });
+      const start = await settledRow(last);
+      expect(start.wraps).toBe(false);
+      expect(start.left).toBe(0);
+      expect(start.end, 'the row goes on past its width').toBeGreaterThan(0);
+      expect(start.lastWhole).toBe(false);
+      expect(await arrows()).toEqual({ before: 0, after: 1 });
+      // At its start, a wheel up is the page's.
+      await wheel(0, -120);
+      expect(await wheelTaken()).toBe(false);
+      expect((await rowState(last)).left).toBe(0);
+      // A wheel down moves the row sideways, and the row takes it.
+      await wheel(0, 120);
+      expect(await wheelTaken()).toBe(true);
+      const moved = await rowState(last);
+      expect(moved.left).toBeGreaterThan(0);
+      expect(await arrows()).toEqual({ before: 1, after: 1 });
+      // The mouse alone reaches the last category.
+      for (let i = 0; i < 40 && (await rowState(last)).left < (await rowState(last)).end - 1; i++) await wheel(0, 200);
+      const end = await settledRow(last);
+      expect(end.left).toBeGreaterThanOrEqual(end.end - 1);
+      expect(end.lastWhole, `${last} whole in the row`).toBe(true);
+      expect(await arrows()).toEqual({ before: 1, after: 0 });
+      // At its end, a wheel down is the page's again.
+      await wheel(0, 120);
+      expect(await wheelTaken()).toBe(false);
+      // A trackpad's sideways swipe is the browser's own, and still moves it.
+      await wheel(-150, 0);
+      expect(await wheelTaken()).toBe(false);
+      expect((await settledRow(last)).left).toBeLessThan(end.left);
+    }, 120_000);
+
+    it(`${screen} at 1440x900: the arrows move it about a row's width, show and hide, and reach the last category`, async () => {
+      await harness.read(`screen=${screen}&split=1`, { width: 1440, height: 900 });
+      const start = await settledRow(last);
+      let presses = 0;
+      while ((await arrows()).after === 1 && presses < 30) {
+        const was = (await settledRow(last)).left;
+        await harness.page.getByRole('button', { name: 'More categories', exact: true }).click();
+        presses += 1;
+        const now = await settledRow(last);
+        // About one row's width each time (less the arrows), or to the end.
+        expect(now.left - was).toBeGreaterThanOrEqual(Math.min(start.width / 2, now.end - was) - 1);
+      }
+      const end = await settledRow(last);
+      expect(end.left).toBeGreaterThanOrEqual(end.end - 1);
+      expect(end.lastWhole).toBe(true);
+      expect(await arrows()).toEqual({ before: 1, after: 0 });
+      await harness.page.getByRole('button', { name: 'Earlier categories', exact: true }).click();
+      expect((await settledRow(last)).left).toBeLessThan(end.left);
+      expect(await arrows()).toEqual({ before: 1, after: 1 });
+    }, 120_000);
+  }
+
+  it('fnb-menu at 1440x900: the chosen category comes back into view when the row returns after a search', async () => {
+    await harness.read('screen=fnb-menu&split=1', { width: 1440, height: 900 });
+    for (let i = 0; i < 40 && (await rowState('Beer')).left < (await rowState('Beer')).end - 1; i++) await wheel(0, 200);
+    await harness.page.getByTestId('category-row').getByRole('button', { name: 'Beer', exact: true }).click();
+    expect((await settledRow('Beer')).chosenWhole).toBe(true);
+    // Back to the start with the wheel: the chosen Beer is out of view.
+    for (let i = 0; i < 40 && (await rowState('Beer')).left > 0; i++) await wheel(0, -200);
+    expect((await settledRow('Beer')).chosenWhole).toBe(false);
+    // A search hides the row; clearing it brings it back, Beer in view.
+    await harness.page.getByPlaceholder('Search dish…').fill('French');
+    await expect.poll(() => harness.page.getByTestId('category-row').count()).toBe(0);
+    await harness.page.getByPlaceholder('Search dish…').fill('');
+    await harness.page.getByTestId('category-row').waitFor();
+    expect((await settledRow('Beer')).chosenWhole).toBe(true);
+  }, 120_000);
+
+  it('full width at 1440x900: the categories wrap as before, with no arrows, and the wheel is the page’s', async () => {
+    for (const screen of ['fnb-menu', 'merch-grid'] as const) {
+      await harness.read(`screen=${screen}&split=0`, { width: 1440, height: 900 });
+      const state = await settledRow('Beer');
+      expect(state.wraps, screen).toBe(true);
+      expect(state.end, screen).toBeLessThanOrEqual(0);
+      expect(await arrows(), screen).toEqual({ before: 0, after: 0 });
+      await wheel(0, 120);
+      expect(await wheelTaken(), screen).toBe(false);
+    }
+  }, 120_000);
+});
