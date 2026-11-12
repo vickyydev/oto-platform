@@ -455,7 +455,8 @@ try {
     assert.deepEqual(body.cake, { mode: "INTERNAL", notes: "chocolate cakes", time: null, quantity: 2, included: false, price: 800 });
     assert.deepEqual(body.setMenu, { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Hawaiian"], notes: "no cheese on it" }] });
     // SCRUM-926: the option the review shows rides the approval, so the kitchen gets that one.
-    assert.deepEqual(body.menuLines, [{ menu: "adults", itemName: "chicken fried rice", quantity: 1, productCode: "CF-43", notes: null, option: "Fried rice (Chicken)" }]);
+    // SCRUM-958: the set menu's own Fried rice for the adults, sent as its SET line.
+    assert.deepEqual(body.menuLines, [{ menu: "adults", itemName: "chicken fried rice", quantity: 1, productCode: "CF-43", notes: null, setMenuItemId: RICE, option: "Fried rice (Chicken)" }]);
     assert.equal(undecidedOptions(state), 0, "the chat names the option: nothing to choose");
     assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.time ?? null]), [[cat.bubble, "15:00"], [cat.face, null]]);
     assert.deepEqual(body.details?.posItems, [{ description: "extra pizza", type: "extra", price: 450 }]);
@@ -513,9 +514,11 @@ try {
     assert.equal(rows.kitchen.cake_quantity, 2);
     const hawaiian = (rows.kitchen.menus.kids as any[]).find((l) => l.itemName === "Hawaiian");
     assert.ok(hawaiian?.notes.includes("no cheese on it"), `the note on the dish's line: ${JSON.stringify(hawaiian)}`);
-    const rice = (rows.kitchen.menus.adults as any[]).filter((l) => l.source !== "set_menu");
-    // SCRUM-944 (the owner's Phase C): the till code is the line's own product code, no longer its note.
-    assert.deepEqual(rice.map((l) => [l.itemName, l.notes, l.productCode]), [["Fried rice (Chicken)", "", "CF-43"]], "SCRUM-926: written as the option the chat names");
+    // SCRUM-958 (the owner's rule of 12 November): "chicken fried rice for the adults" is the set menu's
+    // Fried rice: Chicken on the adults' own menu, a SET line (not charged), no longer an EXTRA at CF-43.
+    const rice = (rows.kitchen.menus.adults as any[]).filter((l) => l.groupId === RICE);
+    assert.deepEqual(rice.map((l) => [l.itemName, l.notes, l.source, l.price]), [["Chicken", "(Fried rice)", "set_menu", 0]], "SCRUM-926: written as the option the chat names");
+    assert.equal((rows.kitchen.menus.adults as any[]).some((l) => l.source !== "set_menu"), false, "no EXTRA for it");
     assert.equal(rows.bar.service_time, "14:15");
     assert.equal(rows.setup.setup_notes, "keep it away from the stage");
     assert.equal(rows.setup.setup_tasks.readyBy, "13:30");

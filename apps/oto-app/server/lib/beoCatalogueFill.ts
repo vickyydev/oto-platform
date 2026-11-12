@@ -1172,6 +1172,24 @@ export function resolveCatalogueAnswer(
       const text = `${dish}${l.menu === "adults" ? " (adults)" : ""}: ${l.notes}`;
       if (!proposal.details.requests.some((r) => fold(r.text) === fold(text))) proposal.details.requests.push({ kind: "special_request", text, from: l.from });
     };
+    /**
+     * SCRUM-958: the set menu's choice group a line is a dish of — by its till code (an option's
+     * own, or the group's that its options share) or by the name of an option — with the option
+     * the line names (null while it names none).
+     */
+    const setMenuDishOf = (l: (typeof proposal.menuLines)[number]) => {
+      const code = l.productCode?.trim().toUpperCase() ?? "";
+      for (const g of menu.items) {
+        if (g.type !== "choice_group") continue;
+        const ownCode = !!code && g.options.some((o) => g.optionProductCodes[o]?.trim().toUpperCase() === code);
+        if (ownCode || (!!code && g.productCode?.trim().toUpperCase() === code)) {
+          return { group: g, option: setMenuOptionOf(g, l.matchedName, l.productCode) };
+        }
+        const byName = g.options.find((o) => [o, `${g.label} (${o})`, `${o} ${g.label}`].some((n) => named(l, n)));
+        if (byName) return { group: g, option: byName };
+      }
+      return undefined;
+    };
     proposal.menuLines = proposal.menuLines.filter((l) => {
       if (l.menu === "bar" || l.chatPrice !== null) return true;
       const count = l.menu === "kids" ? kids : adultsN;
@@ -1195,6 +1213,20 @@ export function resolveCatalogueAnswer(
       if (chosen) {
         noteToRequests(l, chosen.option);
         return false;
+      }
+      // SCRUM-958 (thread B: "fried rice for the adults please"): an adults' line of a dish the
+      // set menu's choice groups give, in the table's own order, with no price and no word asking
+      // for more, is the adults' SET line of that dish, never a charged EXTRA: the same reading as
+      // a choice said for the adults. Its option, when the chat names none, waits for staff.
+      if (l.menu === "adults" && sameOrder && !l.setMenuItemId) {
+        const dish = setMenuDishOf(l);
+        if (dish) {
+          l.setMenuItemId = dish.group.id;
+          if (l.notInMenu) {
+            l.notInMenu = false;
+            l.matchedName = dish.option;
+          }
+        }
       }
       return true;
     });

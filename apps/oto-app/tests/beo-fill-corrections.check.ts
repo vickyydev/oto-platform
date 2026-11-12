@@ -688,7 +688,10 @@ try {
     assert.equal(ok.status, 200, JSON.stringify(ok.body));
     const plan = await kitchenOf(ev.options);
     const lines = [...(plan.menus.kids as any[]), ...(plan.menus.adults as any[])].filter((l) => l.source === "additional").map((l) => [l.itemName, l.quantity]);
-    assert.deepEqual(lines, [["Margherita", 2], ["Fried rice (Chicken)", 1]], "written by the party's own names");
+    // SCRUM-958 (the owner's rule of 12 November): "Fried rice for the adults" is the set menu's Fried rice
+    // on the adults' own menu, a SET line by the option chosen, no longer an EXTRA.
+    assert.deepEqual(lines, [["Margherita", 2]], "written by the party's own names");
+    assert.deepEqual((plan.menus.adults as any[]).filter((l) => l.groupId === RICE).map((l) => [l.itemName, l.source]), [["Chicken", "set_menu"]]);
     // A party on the other set menu reads the code by that menu's names; with no set menu, every name.
     assert.deepEqual(foodNamesFor(review.catalogue, "CF-43", cat.otherMenu), ["Fried Rice"]);
     assert.deepEqual(foodNamesFor(review.catalogue, "cf-24", null), ["Margherita", "Margherita Pizza"]);

@@ -13,6 +13,11 @@
 //      Chicken as a SET line, not charged. Chosen for the kids and otherwise
 //      for the adults, both stand; words that name nobody stay the set
 //      menu's choice.
+//   2. thread B, "fried rice for the adults please": the same reading, its
+//      option for staff to choose before Approve (SCRUM-926's hold); a
+//      charged EXTRA only when the family asks for more, names a price or a
+//      count of its own — thread D's "3 more Margherita pizzas for the
+//      adults" is written exactly as SCRUM-946 proved it.
 //
 // Every model answer here is scripted (the proof's own words): no model key is used.
 //
@@ -67,7 +72,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 2;
+const CHECKS = 4;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -376,6 +381,70 @@ try {
     assert.equal(refused.status, 400);
     assert.equal(refused.body.message, 'Choose the adults\' option of "Fried rice" in the review.');
     assert.equal(await kitchenOf(ev.both), null, "nothing written");
+  });
+
+  // --- 2. "fried rice for the adults please" (thread B) is the same reading ---------------------
+  await check("threadB_aSetMenuDishForTheAdultsIsNoChargedExtra", async () => {
+    const res = await fill(ev.B);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(
+      review.proposal.menuLines.map((l) => [l.menu, l.setMenuItemId ?? null, l.productCode, l.matchedName]),
+      [["adults", RICE, "CF-43", null]],
+      "the set menu's Fried rice for the adults, its option not named",
+    );
+    const state = initialReviewState(review, { fill: res.body.fill });
+    assert.deepEqual([state.menuLines[0]?.price, state.menuLines[0]?.priceFrom], [null, null], "not the till's 240");
+    assert.equal(undecidedOptions(state), 1, "the option holds Approve until staff pick one");
+    const page = html(review, state);
+    assert.ok(page.includes("Which option? The chat does not say: choose it before approving."));
+    assert.ok(page.includes(esc(adultsSetMenuLineWords("Fried rice"))));
+    const picked = { ...state, menuLines: state.menuLines.map((l) => ({ ...l, matchedName: "Fried rice (Shrimp)", changed: true })) };
+    assert.equal(undecidedOptions(picked), 0);
+    const ok = await approve(ev.B, approveBodyOf(review, picked, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const plan = await kitchenOf(ev.B);
+    assert.equal(plan.menus.adultsDiffer, true);
+    const adults = (plan.menus.adults as any[]).map((l) => [l.itemName, l.source, l.groupId ?? null, l.price]);
+    assert.deepEqual(adults.at(-1), ["Shrimp", "set_menu", RICE, 0], "the adults' Fried rice: Shrimp, a SET line");
+    assert.equal((plan.menus.adults as any[]).some((l) => l.source === "additional"), false, "no EXTRA");
+    const lines = await viewLinesOf(ev.B);
+    assert.deepEqual(lines.filter((l) => l.source === "extra"), [], `nothing charged: ${JSON.stringify(lines)}`);
+  });
+
+  await check("anExtraOnlyWhenMoreIsAskedOrPricedOrCounted", async () => {
+    const read = (text: string, line: Record<string, unknown>) =>
+      resolveCatalogueAnswer(
+        { setMenu: { templateId: cat.setMenu, line: 1, choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita", line: 1 }] }, menuLines: [{ menu: "adults", line: 1, ...line }], event: counts(14, 10) },
+        catalogue,
+        refsOf([text]),
+      ).menuLines.map((l) => [l.setMenuItemId ?? null, l.quantity, l.chatPrice]);
+    assert.deepEqual(read("Margherita for the kids, fried rice for the adults at 300.", { productCode: "CF-43", itemName: "fried rice", chatPrice: 300 }), [[null, 1, 300]], "a price named: an EXTRA");
+    assert.deepEqual(read("Margherita for the kids, and 2 more fried rice for the adults.", { productCode: "CF-43", itemName: "2 more fried rice", quantity: 2 }), [[null, 2, null]], "more asked: an EXTRA");
+    assert.deepEqual(read("Margherita for the kids, 6 fried rice for the adults.", { productCode: "CF-43", itemName: "6 fried rice", quantity: 6 }), [[null, 6, null]], "a count that is not the table's: an EXTRA");
+    assert.deepEqual(read("Margherita for the kids, fried rice for the 10 adults.", { productCode: "CF-43", itemName: "fried rice", quantity: 10 }), [[RICE, 10, null]], "the adults' headcount: their SET line");
+    assert.deepEqual(read("Margherita for the kids, a Pepperoni pizza for the adults.", { productCode: "CF-31", itemName: "a Pepperoni pizza" }), [[PIZZA, 1, null]], "another option of a choice group: the adults' SET line");
+    assert.deepEqual(read("Margherita for the kids, a Caesar salad for the adults.", { productCode: "CF-15", itemName: "a Caesar salad" }), [[null, 1, null]], "a dish no set menu gives: an EXTRA");
+    // Thread D, exactly as SCRUM-946 proved it: the adults' own 3 more Margherita, CF-24, charged.
+    const res = await fill(ev.D);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(
+      review.proposal.menuLines.map((l) => [l.menu, l.setMenuItemId ?? null, l.productCode, l.quantity, l.chatPrice]),
+      [["kids", null, "CF-24", 2, 450], ["adults", null, "CF-24", 3, null]],
+    );
+    const state = initialReviewState(review, { fill: res.body.fill });
+    const ok = await approve(ev.D, approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const plan = await kitchenOf(ev.D);
+    assert.equal(plan.menus.adultsDiffer, true);
+    assert.deepEqual(
+      (plan.menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => [l.itemName, l.quantity, l.productCode, l.price, l.source]),
+      [["Margherita", 3, "CF-24", 400, "additional"]],
+      "the adults' own EXTRA x3 with code CF-24, at the till's price",
+    );
+    const extras = (await viewLinesOf(ev.D)).filter((l) => l.source === "extra").map((l) => [l.name, l.qty, l.unit_price_satang, l.audience ?? null]);
+    assert.deepEqual(extras, [["Margherita", 2, 45000, null], ["Margherita", 3, 40000, "adults"]], "both charged, as before");
   });
 
 } finally {
