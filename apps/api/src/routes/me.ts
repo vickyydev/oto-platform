@@ -12,6 +12,7 @@ import {
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
+import { sessionEndOf } from '../services/account-sessions';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
 import { switchSessionOperator } from '../services/operator-switch';
@@ -65,6 +66,16 @@ const MeShape = z.object({
    */
   impersonation: ImpersonationBannerShape.nullable(),
   impersonating: z.array(ImpersonationBannerShape),
+  /**
+   * SCRUM-878 — when this session ends (`services/account-sessions.ts`
+   * `sessionEndOf`): the till keeps the moment, so a refusal at or after it
+   * is said as the session ending after its hours, not as a bare sign-in form.
+   */
+  sessionEnd: z.object({
+    at: z.string().datetime(),
+    inSeconds: z.number().int().min(0),
+    afterHours: z.number().int().min(0),
+  }).nullable(),
 });
 
 function preferencesOf(row: { uiTheme: UiPreferences['theme']; uiLanguage: UiPreferences['language'] }): UiPreferences {
@@ -91,6 +102,7 @@ export async function meRoutes(app: App): Promise<void> {
       .orderBy(desc(fileObject.createdAt))
       .limit(1);
     const marks = await impersonationMarksOf(app.db, auth);
+    const sessionEnd = await sessionEndOf(app.db, auth.sessionId);
     return {
       account: {
         id: acc.id,
@@ -122,6 +134,7 @@ export async function meRoutes(app: App): Promise<void> {
       },
       impersonation: marks.impersonation ? bannerOf(marks.impersonation) : null,
       impersonating: marks.impersonating.map(bannerOf),
+      sessionEnd,
     };
   });
 

@@ -769,6 +769,12 @@ export interface paths {
                                 /** Format: date-time */
                                 expiresAt: string;
                             }[];
+                            sessionEnd: {
+                                /** Format: date-time */
+                                at: string;
+                                inSeconds: number;
+                                afterHours: number;
+                            } | null;
                         };
                     };
                 };

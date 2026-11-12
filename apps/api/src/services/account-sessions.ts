@@ -46,6 +46,44 @@ export function sessionStatus(row: SessionTimes, now: Date): SessionStatus {
   return row.lockedAt ? 'locked' : 'active';
 }
 
+/**
+ * SCRUM-878 — when THIS session ends, as the till needs to know it.
+ *
+ * A staff session ends a fixed time after sign-in (`SESSION_TTL_HOURS`), and
+ * its cookie is given the same life, so at that moment the browser simply
+ * stops sending it: the next request arrives with no cookie at all and is
+ * refused like one that never signed in. Nothing at that door can say "this
+ * session ran out". So `GET /me` says it in advance: how many seconds are
+ * left (counted on the platform's clock, so a till whose own clock is wrong
+ * still lands on the right moment) and how long the session was given. The
+ * till keeps the moment, and when it is refused at or after it, it says the
+ * session ended after that many hours rather than leaving staff to guess.
+ *
+ * Nothing here changes how long a session lasts.
+ */
+export interface SessionEnd {
+  /** When the session ends. */
+  at: string;
+  /** Seconds left from now, never below zero. */
+  inSeconds: number;
+  /** The session's whole life, from sign-in to end, in whole hours. */
+  afterHours: number;
+}
+
+export async function sessionEndOf(db: Exec, sessionId: string, now: Date = new Date()): Promise<SessionEnd | null> {
+  const [row] = await db
+    .select({ expiresAt: session.expiresAt, createdAt: session.createdAt })
+    .from(session)
+    .where(eq(session.id, sessionId))
+    .limit(1);
+  if (!row) return null;
+  return {
+    at: row.expiresAt.toISOString(),
+    inSeconds: Math.max(0, Math.floor((row.expiresAt.getTime() - now.getTime()) / 1000)),
+    afterHours: Math.max(0, Math.round((row.expiresAt.getTime() - row.createdAt.getTime()) / 3_600_000)),
+  };
+}
+
 export interface AccountSessionRow {
   id: string;
   branchId: string | null;
