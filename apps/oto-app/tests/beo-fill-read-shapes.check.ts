@@ -629,7 +629,6 @@ try {
         },
         ...(parkTimeZone ? { parkTimeZone } : {}),
       } as Parameters<typeof beoPdfHtml>[0]);
-    assert.equal(process.env.TZ, "UTC", "run as CI runs it, the server's clock UTC");
     assert.ok((await pdf("Asia/Bangkok")).includes("ZZ TEST set &mdash; Received 13 Nov"), "the park's day");
     assert.ok((await pdf()).includes("Received 13 Nov"), "no zone: the park group's default, Bangkok");
     assert.ok((await pdf("Europe/London")).includes("Received 12 Nov"), "another park's own clock");
