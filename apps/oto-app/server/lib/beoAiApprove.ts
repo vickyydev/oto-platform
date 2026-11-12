@@ -437,11 +437,11 @@ export async function approveBeoAiFill(
           ...(setMenuEnabled ? { source: "additional" } : {}),
         };
       };
-      const kidsExtra = kitchenLines.filter((l) => l.menu === "kids").map(lineOf);
-      const adultsExtra = kitchenLines.filter((l) => l.menu === "adults").map(lineOf);
+      const kidsSaid = kitchenLines.filter((l) => l.menu === "kids");
+      const adultsSaidLines = kitchenLines.filter((l) => l.menu === "adults");
+      const kidsExtra = kidsSaid.map(lineOf);
+      const adultsExtra = adultsSaidLines.map(lineOf);
       if (kidsExtra.length > 0) kids = [...kids.filter((l) => l.source === "set_menu"), ...kidsExtra];
-      written.kitchenLines = kidsExtra.length + adultsExtra.length;
-      written.freeKitchenLines = kitchenLines.filter((l) => !l.productCode).length;
 
       // SCRUM-829: the adults eat the kids' menu unless the chat said otherwise. The review's
       // "adults" lines are everything the adults eat beyond the set menu (the prompts ask for
@@ -453,9 +453,18 @@ export async function approveBeoAiFill(
       // stale or missing. "Adults" lines that only name the kids' dishes again (a model told
       // "the adults eat the same" still marking them, as the free-text fill did) are the kids'
       // list in other words: they are not the adults' own, and the switch stays as the BEO holds it.
-      const adultsSaid =
-        adultsExtra.length > 0 && !sameKitchenDishNames(kids, [...adultsCopiesOf(kids.filter((l) => l.source === "set_menu")), ...adultsExtra]);
+      // SCRUM-946: that is the review's adults' lines THEMSELVES naming the kids' whole menu and
+      // nothing else. They were compared with the set menu's copies added to them, so an extra
+      // order of a dish the set menu already has ("3 more Margherita pizzas for the adults")
+      // read as the kids' menu repeated and was dropped, while the review showed it and the
+      // answer counted it.
+      const adultsSaid = adultsExtra.length > 0 && !sameKitchenDishNames(kids, adultsExtra);
       const adultsOwn = adultsSaid || adultsDifferOf(menus);
+      // What was written, counted as written: an adults' line folded into the kids' menu is not.
+      const adultsWritten = adultsOwn ? adultsSaidLines : [];
+      written.kitchenLines = kidsExtra.length + adultsWritten.length;
+      written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
+      if (adultsExtra.length > adultsWritten.length) written.adultsLinesFolded = adultsExtra.length - adultsWritten.length;
       if (!adultsOwn) {
         adults = [];
       } else {

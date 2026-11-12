@@ -971,6 +971,16 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-fill-phase-b.check.ts
+      # SCRUM-946: what the review shows is what Approve and create writes —
+      # the corrections from the Phase B staging proof (the adults' extra
+      # order, the chat's price on a dish, nothing offered twice, the party's
+      # own set menu's options, the Timeline once, the cake's package tick,
+      # the WhatsApp number's stored form, the toast, the reason's words).
+      - name: The app's AI fill corrections checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-corrections.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept
