@@ -132,3 +132,13 @@ Files the party edit lane (SCRUM-907) is changing and this lane must leave alone
 11. On a food line with a PARTY- code the hint reads 'till price 120 (made for this party)', because the till charges its own price whatever is typed. Is that acceptable?
 12. Each plan shows its own total, 'Extras charged at the till: ฿X', under the Kitchen Plan and under the Bar Plan. Are the wording and the placement right?
 13. On staging's menu only Eggs your way and Veggie delight match 'egg', so Veggie delight stays second there. It now ranks below any category-word match. Should matches found only inside a word be dropped when a whole-word match exists? That would change the existing 'gri' search case.
+
+## State, 13 November 02:18: THE FOLLOW-UP LANE LANDED (SCRUM-958, 949, 940, the open points of 946), main 45698ab11
+- Nineteen commits, the OTO App only, no migration. Left and ticketed: SCRUM-968 (the holiday price in the hint; a coded line the till menu does not list; small points and four owner questions).
+- Fixed in the land preparation: the family's later set-menu submit keeps the adults' own choice (beo-routes.ts writeResolvedSetMenu); a kids' choice made on the till no longer doubles the adults' own set line (tillKitchenEdit.ts); an adults' set line shows the set menu's own count as text; the fold note follows the kids' choice in the review.
+
+### Four more questions for the owner from this lane (they follow the thirteen above)
+14. When the family asks for two options of one single-choice group for the adults ("chicken fried rice and shrimp fried rice for the adults"), the set menu gives the adults one and the other becomes an EXTRA. Right?
+15. Should the adults' own menu made by a fill also copy the kids' extras, as the editor's "Different for adults" switch does? Today it copies the kids' set-menu lines only.
+16. The adults' own choice now stands after the family submits the set-menu link, also when staff changed that choice by hand; before, the link overwrote it. Right?
+17. If the kids' choice of a group later becomes the same as the adults' own option, the two read as one dish from then on, and later changes of the kids' choice carry the adults' line along. Right?
