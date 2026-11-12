@@ -56,6 +56,9 @@ interface MobileChildDetailProps {
 
 const NO_SALE: ReadonlySet<string> = new Set();
 
+/** SCRUM-956 — the body's scroll area, its content no wider than the phone. */
+export const PHONE_BODY = 'flex-1 min-h-0 [&_[data-radix-scroll-area-viewport]>div]:block!';
+
 const fmtTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -95,7 +98,8 @@ function ChildSection({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base font-black truncate">{child.childName}</h3>
+            {/* SCRUM-956 — a long name wraps between its words, inside the phone. */}
+            <h3 className="min-w-0 text-base font-black break-words">{child.childName}</h3>
             <span className="text-xs font-bold rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
               {child.childAge} yrs
             </span>
@@ -307,13 +311,17 @@ export function MobileChildDetail({
         <span className="font-bold flex-1 truncate">{headerTitle}</span>
       </div>
 
-      {/* Scrollable body */}
-      <ScrollArea className="flex-1 min-h-0">
+      {/* Scrollable body. SCRUM-956 — exactly as wide as the phone: the scroll
+          area's own wrapper is a table that grew to the longest name on one
+          line (a cut name kept its whole width), and "WhatsApp confirmed" and
+          "May order food: No" were drawn past the right edge. It is a block
+          here, and the names wrap between words. */}
+      <ScrollArea className={PHONE_BODY}>
         <div className="px-4 py-4 space-y-4">
           {/* Family header: parent + phone + child count */}
           <div className="rounded-2xl bg-card/50 border border-border p-4 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-lg font-black truncate">{rep.parentName}</span>
+              <span className="min-w-0 text-lg font-black break-words">{rep.parentName}</span>
               {isMulti && (
                 <span className="flex items-center gap-1 text-xs font-bold text-violet-300 bg-violet-500/10 rounded-full px-2 py-0.5">
                   <Users className="w-3.5 h-3.5" />
