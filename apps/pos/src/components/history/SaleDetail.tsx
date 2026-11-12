@@ -50,7 +50,7 @@ import { getDiscountReasons, getTicketTypes, getAddOns, getMenuItems } from '@/s
 import { tierLabel } from '@/lib/membership';
 import { RECENT_SALE_MS } from '@/lib/tillVoucher';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
-import { PRINT_KIND_LABEL } from '@/lib/salePrinting';
+import { NO_ADDRESS_CODE, PRINT_KIND_LABEL } from '@/lib/salePrinting';
 import {
   clearRefundRequests,
   queueRefundRequest,
@@ -617,7 +617,10 @@ export function ReprintHistory({
       : job.status === 'queued'
         ? { text: 'Queued', tone: 'text-amber-400' }
         : job.status === 'skipped'
-          ? { text: 'Not printed — no printer for it here', tone: 'text-muted-foreground' }
+          ? job.errorCode === NO_ADDRESS_CODE
+            ? // SCRUM-899 — the box skipped it: the printer is here, its address is not.
+              { text: 'Not printed — this printer has no address', tone: 'text-rose-400' }
+            : { text: 'Not printed — no printer for it here', tone: 'text-muted-foreground' }
           : { text: `Failed${job.errorMessage ? ` — ${job.errorMessage}` : ''}`, tone: 'text-rose-400' };
   return (
     <Card className="p-4 shrink-0 bg-card/50" data-testid="reprint-history">

@@ -53,6 +53,19 @@ function skippedSentence(job: ApiSalePrintJob): string {
 }
 
 /**
+ * SCRUM-899 — a job the BOX skipped because the station's printer for it has
+ * no address (`DEVICE_NO_ADDRESS`, packages/box-agent/src/printing/queue.ts).
+ * The station has that printer, so "no printer at this station" would send
+ * somebody looking for a machine that is there; the printer is named and the
+ * reason said instead.
+ */
+export const NO_ADDRESS_CODE = 'DEVICE_NO_ADDRESS';
+
+function noAddressSentence(job: ApiSalePrintJob): string {
+  return `${PRINT_KIND_LABEL[job.kind]} not printed — ${printerOf(job)} has no address, so nothing prints on it`;
+}
+
+/**
  * The toast's two lists from a set of print jobs.
  *
  * `notes` are the platform's sentences where the answer carried them (a
@@ -75,7 +88,10 @@ export function platformPrintOutcome(
       if (row) row.count += 1;
       else sent.set(key, { kind: job.kind, copy, device, count: 1 });
     } else if (job.status === 'skipped') {
-      if (notes.length === 0) notPrinted.push(skippedSentence(job));
+      // The platform's notes say what IT skipped; a printer with no address
+      // is the box's skip, which no note made at the sale's close can say.
+      if (job.errorCode === NO_ADDRESS_CODE) notPrinted.push(noAddressSentence(job));
+      else if (notes.length === 0) notPrinted.push(skippedSentence(job));
     } else if (job.status === 'failed') {
       notPrinted.push(
         `${PRINT_KIND_LABEL[job.kind]} not printed${job.errorMessage ? ` — ${job.errorMessage}` : ''}`,

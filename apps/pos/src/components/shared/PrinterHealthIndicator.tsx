@@ -54,6 +54,9 @@ const BLOCKING_ERRORS: Record<string, string> = {
   // confirmed, and a printer that answered once and has stopped answering.
   PRINTER_SILENT_AFTER_JOB: 'did not confirm the last print',
   PRINTER_SILENT_BEFORE_JOB: 'stopped answering',
+  // SCRUM-899 — saved without the address the box prints to, so every job
+  // for it is skipped; fixed in the Console, not at the machine.
+  DEVICE_NO_ADDRESS: 'no address set',
 };
 
 /**
