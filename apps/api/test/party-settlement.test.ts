@@ -11,6 +11,7 @@ import {
   paymentAttempt,
   paymentMethod,
   product,
+  productCategory,
   refund,
   sale,
   saleLine,
@@ -20,6 +21,7 @@ import {
 } from '@oto/db';
 import {
   PARTY_DEPOSIT_TENDER,
+  PARTY_SETTLE_REFUSALS,
   PartyDetailAnswerSchema,
   PartySettleAnswerSchema,
   composePartySettlement,
@@ -30,6 +32,7 @@ import {
   type PartyPlan,
   type PartySettleAnswer,
   type PartySettlePreviewAnswer,
+  type PartySettleQuote,
 } from '@oto/shared';
 import type {
   DirectoryEventEditAnswer,
@@ -1254,5 +1257,168 @@ describe('SCRUM-890 — on the sale list, a settlement with only its deposit is 
     const part = await finalise(saleId, { method: 'cash', amountSatang: 100_000, tenderedSatang: 100_000 });
     expect(part.status, JSON.stringify(part.body)).toBe(200);
     expect((await listed(saleId)).partPaid).toEqual({ paidSatang: 100_000, balanceSatang: 1_390_000 });
+  });
+});
+
+// =============================================================================
+// SCRUM-906 — the kitchen plan's EXTRA lines on the settlement
+// =============================================================================
+
+/**
+ * The owner's decision 2 of 12 November: "Not 0 baht, charge it according to
+ * the right entered price". A line the BEO badges EXTRA is charged at the
+ * price entered on it; with no price entered, a till item at the till's price
+ * for the party's date; a SET line stays the package's; a typed line with no
+ * price is not charged (no price is invented). Published with the whole
+ * kitchen plan (app migration 0050's `kitchen_plan`); the contract view here
+ * takes the column for these parties and leaves it null for every other.
+ */
+describe('SCRUM-906: an EXTRA line is charged at its entered price, else a till item at the till price', () => {
+  const weekday = newId();
+  const weekend = newId();
+  const plain = newId();
+  const bare = newId();
+  const FRIES = 'ZZ-906-FRIES';
+  const MORS = 'ZZ-906-MORS';
+  const PIZZA = 'ZZ-906-PIZZA';
+  let plainTotal: number;
+
+  const food = (o: { id: string; source: 'set_menu' | 'extra'; code?: string | null; name: string; qty: number; price?: number }) => ({
+    line_id: o.id,
+    source: o.source,
+    product_code: o.code ?? null,
+    name: o.name,
+    qty: o.qty,
+    choice_group: null,
+    chosen_option: null,
+    note: null,
+    unit_price_satang: o.price ?? null,
+  });
+  const KITCHEN_PLAN = {
+    version: 1,
+    lines: [
+      // The set menu's pizza: the package's, never charged.
+      food({ id: 'set_pizza', source: 'set_menu', code: PIZZA, name: 'ZZ TEST pizza', qty: 3 }),
+      // A till item added as an EXTRA with no price entered: the till's price.
+      food({ id: 'm1', source: 'extra', code: FRIES, name: 'French fries', qty: 2 }),
+      // The same till item with a price entered on the line: that price.
+      food({ id: 'm2', source: 'extra', code: FRIES, name: 'French fries (large)', qty: 1, price: 15_000 }),
+      // Typed by hand with a price: charged by its own name at that price.
+      food({ id: 'm3', source: 'extra', name: 'ZZ TEST mango sticky rice', qty: 2, price: 12_000 }),
+      // Typed by hand with no price, and a code the till no longer sells: nothing to charge.
+      food({ id: 'm4', source: 'extra', name: 'ZZ TEST balloon tower', qty: 1 }),
+      food({ id: 'm5', source: 'extra', code: 'ZZ-906-GONE', name: 'ZZ TEST old dish', qty: 1 }),
+    ],
+    bar_lines: [
+      { line_id: 'b1', source: 'extra', product_code: MORS, name: 'Cranberry mors', qty: 3, note: null, unit_price_satang: null },
+      { line_id: 'b2', source: 'set_menu', product_code: null, name: 'Juice pitcher', qty: 2, note: null, unit_price_satang: null },
+    ],
+    cake: { mode: 'INTERNAL', qty: 1, time: '15:30', notes: 'chocolate' },
+    bar_service_time: '14:00',
+  };
+  const withKitchenPlan = (eventId: string) =>
+    ctx.db.execute(sql`
+      update zz_party_contract.event_packages set kitchen_plan = ${JSON.stringify(KITCHEN_PLAN)}::jsonb where event_id = ${eventId}`);
+  const extrasOf = (q: PartySettleQuote) =>
+    q.lines.filter((l) => /French fries|mango|mors|pizza|balloon|old dish|Juice pitcher/i.test(l.label));
+
+  beforeAll(async () => {
+    // The view as app migration 0050 publishes it: one more column, at the end.
+    await ctx.db.execute(
+      sql.raw(`
+      alter table zz_party_contract.event_packages add column kitchen_plan jsonb;
+      create or replace view otoapp_v.event_packages as select * from zz_party_contract.event_packages;`),
+    );
+    const barCat = newId();
+    await ctx.db.insert(productCategory).values({
+      id: barCat,
+      operatorId,
+      code: 'ZZ-906-BAR',
+      name: 'ZZ TEST party drinks',
+      taxableCategory: 'bar',
+      defaultPrepStation: 'bar',
+    });
+    await ctx.db.insert(product).values([
+      { id: newId(), operatorId, branchId: central, kind: 'menu', code: FRIES, name: 'ZZ TEST French fries', priceSatang: 9_000, priceWeekendSatang: 11_000 },
+      { id: newId(), operatorId, branchId: central, kind: 'menu', code: MORS, name: 'ZZ TEST Cranberry mors', priceSatang: 6_000, categoryId: barCat },
+      { id: newId(), operatorId, branchId: central, kind: 'menu', code: PIZZA, name: 'ZZ TEST pizza', priceSatang: 30_000 },
+    ]);
+    for (const [id, date] of [
+      [weekday, WEEKDAY],
+      [weekend, SATURDAY],
+      [plain, WEEKDAY],
+    ] as const) {
+      await appParty(id, `ZZ TEST 906 ${id.slice(-4)}`, date, 16_900, 3_000);
+      await appPlan(id, date, FLORESTA, { depositSatang: 300_000, setMenu: [] });
+    }
+    await withKitchenPlan(weekday);
+    await withKitchenPlan(weekend);
+    const base = await preview(plain, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(base.status, JSON.stringify(base.body)).toBe(200);
+    plainTotal = base.body.quote.totalSatang;
+  });
+
+  it('the preview charges the extras: the till item at the till price, the entered price as entered, the typed line by its name', async () => {
+    const res = await preview(weekday, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const q = res.body.quote;
+    expect(extrasOf(q)).toEqual([
+      { role: 'add_on', label: 'ZZ TEST French fries', quantity: 2, unitSatang: 9_000, totalSatang: 18_000 },
+      { role: 'add_on', label: 'ZZ TEST French fries', quantity: 1, unitSatang: 15_000, totalSatang: 15_000 },
+      { role: 'add_on', label: 'ZZ TEST mango sticky rice', quantity: 2, unitSatang: 12_000, totalSatang: 24_000 },
+      { role: 'add_on', label: 'ZZ TEST Cranberry mors', quantity: 3, unitSatang: 6_000, totalSatang: 18_000 },
+    ]);
+    expect(q.addOnsSatang).toBe(75_000);
+    expect(q.totalSatang).toBe(plainTotal + 75_000);
+  });
+
+  it('on a weekend the till item is at its weekend price; a price entered on the line stays as entered', async () => {
+    const res = await preview(weekend, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(extrasOf(res.body.quote).slice(0, 2)).toEqual([
+      { role: 'add_on', label: 'ZZ TEST French fries', quantity: 2, unitSatang: 11_000, totalSatang: 22_000 },
+      { role: 'add_on', label: 'ZZ TEST French fries', quantity: 1, unitSatang: 15_000, totalSatang: 15_000 },
+    ]);
+  });
+
+  it('settles with them on the sale, each taxed as its product resolves, a typed food line as food', async () => {
+    const res = await settle(weekday, { kids: 10, adults: 4, socksGiven: 0, expectedTotalSatang: plainTotal + 75_000 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.sale.grossSatang).toBe(plainTotal + 75_000);
+    const lines = await linesOf(res.body.sale.id);
+    const shown = lines
+      .filter((l) => (l.componentKey ?? '').startsWith('party_extra'))
+      .map((l) => [l.componentKey, l.label, l.quantity, l.unitSatang, l.taxableCategory]);
+    expect(shown).toEqual([
+      [`party_extra:${FRIES}:9000`, 'ZZ TEST French fries', 2, 9_000, 'fnb'],
+      [`party_extra:${FRIES}:15000`, 'ZZ TEST French fries', 1, 15_000, 'fnb'],
+      ['party_extra_line:fnb:m3', 'ZZ TEST mango sticky rice', 2, 12_000, 'fnb'],
+      [`party_extra:${MORS}:6000`, 'ZZ TEST Cranberry mors', 3, 6_000, 'bar'],
+    ]);
+    expect(lines.some((l) => l.label === 'ZZ TEST pizza' || /balloon|old dish|Juice pitcher/.test(l.label))).toBe(false);
+  });
+
+  it('a party whose plan has no package is shown with its kitchen plan and still cannot be settled (decision 8)', async () => {
+    await appParty(bare, 'ZZ TEST 906 no package', WEEKDAY, 0, 0);
+    const noPackage = Object.fromEntries(Object.keys(FLORESTA).map((k) => [k, k === 'included_lines' ? [] : null]));
+    await appPlan(bare, WEEKDAY, noPackage, { setMenu: [] });
+    await withKitchenPlan(bare);
+    const page = await detail(bare);
+    expect(page.status, JSON.stringify(page.body)).toBe(200);
+    expect(page.body.plan).toBeNull();
+    expect(page.body.planStatus).toBe('no_package');
+    expect(page.body.kitchenPlan?.setMenu.map((m) => [m.name, m.origin, m.onTillMenu])).toEqual([
+      ['ZZ TEST pizza', 'set_menu', true],
+      ['French fries', 'extra', true],
+      ['French fries (large)', 'extra', true],
+      ['ZZ TEST mango sticky rice', 'extra', false],
+      ['ZZ TEST balloon tower', 'extra', false],
+      ['ZZ TEST old dish', 'extra', false],
+    ]);
+    expect(page.body.kitchenPlan?.cake).toEqual({ type: 'our', qty: 1, time: '15:30', note: 'chocolate' });
+    expect(page.body.kitchenPlan?.kitchen?.barServiceTime).toBe('14:00');
+    const res = await preview(bare, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(res.status).toBe(409);
+    expect((res.body as unknown as { error: { code: string } }).error.code).toBe(PARTY_SETTLE_REFUSALS.NO_PLAN.code);
   });
 });
