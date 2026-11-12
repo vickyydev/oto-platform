@@ -26,6 +26,11 @@ import { walkInByPhone } from './walk-in';
  * registration online, and the family's sale, its cash press and the door
  * choice go online too: the box is never asked to price, sell or check in.
  *
+ * SCRUM-897 — the same window, on the payment step: the sale written online
+ * is not said to be working through the counter box (Hold sale can be
+ * pressed), and the Held sales list, which could not be read while the link
+ * was down, is read again as soon as the platform answers the till.
+ *
  * `pnpm --filter @oto/pos e2e e2e/dropoff-connection-drop.spec.ts`;
  * `POS_E2E_SHOTS` names a folder to keep the screens in.
  */
@@ -35,6 +40,7 @@ const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
 const SHOTS = process.env.POS_E2E_SHOTS ?? '';
 const FAMILY_DIGITS = '898870001';
 const LONG_OUTAGE_DIGITS = '898870002';
+const PAYMENT_STEP_DIGITS = '898970003';
 
 test.use({ trace: 'off', video: 'off', screenshot: 'off', viewport: { width: 1680, height: 1100 } });
 test.setTimeout(180_000);
@@ -249,6 +255,114 @@ test('the link stays down past the retries: after Continue again the sale, the c
   const lookup = await page.request.get(`/api/members/lookup?phone=${encodeURIComponent(`0${LONG_OUTAGE_DIGITS}`)}`);
   const member = (await lookup.json()).member as { children: { name: string }[] };
   expect(member.children.map((c) => c.name).sort()).toEqual(['ZZ TEST Mali 887', 'ZZ TEST Ton 887']);
+});
+
+// SCRUM-897 — finishes its sale and checks the family in, so the short-drop
+// case below finds nothing rung up at this station.
+test('after the long outage the payment step follows the online sale: no counter-box note under Hold sale, and Held sales read again at once', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD || !process.env.POS_E2E_DATABASE_URL, 'Runs on the isolated harness (e2e/run.mjs)');
+  await withCamera(page);
+
+  let restored = false;
+  const boxWrites: string[] = [];
+  page.on('request', (request: Request) => {
+    const path = new URL(request.url()).pathname;
+    if (!restored || request.method() !== 'POST') return;
+    if (/^\/api\/box\/v1\/station\/[^/]+\/intents$/.test(path)) {
+      const type = (request.postDataJSON() as { type?: string } | null)?.type ?? '';
+      if (/^(member|child|visit|checkin|waiver|sale|cart)\./.test(type)) boxWrites.push(type);
+    }
+  });
+
+  await signIn(page);
+  await walkInByPhone(page, PAYMENT_STEP_DIGITS);
+  await setKids(page, 2);
+  await fillGate(page, [{ name: 'ZZ TEST Fah 897', age: 6 }, { name: 'ZZ TEST Kai 897', age: 9 }], 'ZZ TEST guardian 897');
+
+  // From the registration request on, every /api request reaches nothing, until the till gives up.
+  let down = false;
+  const outage = async (route: Route) => {
+    const request = route.request();
+    if (!down && request.method() === 'POST' && new URL(request.url()).pathname === '/api/checkin/registrations') down = true;
+    if (down) {
+      await route.abort('failed');
+      return;
+    }
+    await route.continue();
+  };
+  await page.route('**/api/**', outage);
+  // Once armed, the next timed read of the Held sales list fails as well, and
+  // after it the platform answers the list again.
+  let heldDown = false;
+  let heldFailed = false;
+  const heldReads = async (route: Route) => {
+    if (heldDown) {
+      await route.abort('failed');
+      heldDown = false;
+      heldFailed = true;
+      return;
+    }
+    await route.fallback();
+  };
+  await page.route((url) => url.pathname === '/api/sales/held', heldReads);
+  await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+  await expect(page.getByText("Couldn't register these children", { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+
+  // The link is back for the till; the box's status read still finds nothing, so the lane stays on the box.
+  let probes = 0;
+  await page.route('**/api/box/v1/station/*/status', async (route) => {
+    probes += 1;
+    await route.abort('failed');
+  });
+  await page.unroute('**/api/**', outage);
+  down = false;
+  restored = true;
+  await expect.poll(() => probes, { timeout: 40_000, message: 'the lane never moved to the box' }).toBeGreaterThan(0);
+
+  // A timed read of the list fails while the lane is on the box, so the list
+  // holds "could not be read" (its panel is drawn with the order, at payment).
+  // Its next timed read is 20 seconds away; Continue again is pressed at once.
+  heldDown = true;
+  await expect.poll(() => heldFailed, { timeout: 30_000, message: 'no timed read of Held sales' }).toBe(true);
+  const heldAnswered = page
+    .waitForResponse((r) => new URL(r.url()).pathname === '/api/sales/held' && r.status() === 200, { timeout: 10_000 })
+    .then(() => true, () => false);
+
+  // Continue again: the family is finished online and the sale is rung up online while the lane says box.
+  const sold = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST' && r.status() === 200,
+    { timeout: 60_000 },
+  );
+  await page.getByRole('button', { name: 'Continue to payment', exact: true }).click();
+  await expect(page.getByTestId('payment-step')).toBeVisible({ timeout: 30_000 });
+  await sold;
+
+  // Checked softly, well inside the 20 seconds before the list's next timed
+  // read, so each is reported on its own. The list was read again from the
+  // platform the moment it answered the gate: its panel says nothing stale.
+  await expect.soft(page.getByText(/Held sales could not be read/)).toHaveCount(0, { timeout: 3_000 });
+  expect.soft(await heldAnswered, 'Held sales read again once the platform answered').toBe(true);
+  // The sale is online: Hold sale can be pressed, and nothing says the till is working through its box.
+  await expect.soft(page.getByRole('button', { name: 'Hold sale', exact: true })).toBeEnabled({ timeout: 10_000 });
+  await expect.soft(page.getByText(/working through its counter box/)).toHaveCount(0);
+  expect(test.info().errors).toEqual([]);
+  await shot(page, '897-01-payment-online-lane-on-box');
+
+  await page.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+  const confirm = page.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+  await expect(confirm).toBeEnabled({ timeout: 30_000 });
+  await confirm.click();
+  await expect(page.getByText('Payment Successful', { exact: true })).toBeVisible({ timeout: 60_000 });
+  const checkedIn = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === '/api/checkin/check-in-now' && r.status() === 200,
+    { timeout: 30_000 },
+  );
+  await page.getByRole('button', { name: 'Check in now', exact: true }).click();
+  await checkedIn;
+  await shot(page, '897-02-paid-and-checked-in-online');
+
+  expect(probes).toBeGreaterThan(0);
+  expect(boxWrites).toEqual([]);
 });
 
 test('the registration request drops after the guardian and children were written: the till retries online and reaches payment', async ({ page }) => {
