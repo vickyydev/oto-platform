@@ -827,6 +827,13 @@
       "when": 1794452891902,
       "tag": "0117_inbox_contact_name",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1794456195619,
+      "tag": "0118_dropoff_band_role",
+      "breakpoints": true
     }
   ]
 }
