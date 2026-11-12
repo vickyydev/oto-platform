@@ -176,7 +176,17 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
         {leftExtra}
       </div>
 
-      {/* Permanent POS navigation — always available between surfaces. */}
+      {/* Permanent POS navigation — always available between surfaces.
+
+          SCRUM-959 (2), HELD FOR THE OWNER. The tabs need 782px; the
+          prototype's own row leaves them 586 at 1440 and 719 at 1680
+          (this header with its content: a live gate's "73 people in park
+          now", HKT Central, no Cash), so its band scrolls there too, with
+          Today and Messages, then Messages, out of view. Staging's content
+          (the Cash button, the chip's "no gate" words) leaves 410 and 542,
+          so History is out of view as well. Ported as it is, per the
+          lane's brief; whether Cash and the chip's words drop to their
+          icons below 2xl is a question for the owner. */}
       <div className="grow basis-full min-w-[184px] order-last pb-3 flex justify-center lg:basis-0 lg:order-none lg:pb-0">
       <nav ref={navRef} className="max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1">
           {active === 'tickets' ? (
