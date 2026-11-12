@@ -1612,7 +1612,7 @@ export function saidForTheAdults(said: string | null | undefined, lineText: stri
  */
 const SAME_AS_KIDS = [
   /(?<!\p{L})same\s+(?:\p{L}+\s+){0,2}as\s+(?:the\s+|our\s+|their\s+)?(?:kids?|children|child|kiddies|little ones)(?!\p{L})/iu,
-  /(?<!\p{L})same\s+for\s+(?:the\s+|all\s+)?(?:adults?|grown[- ]?ups?|parents)(?!\p{L})/iu,
+  /(?<!\p{L})same\s+(?:(?:food|menu|meals?|dish(?:es)?)\s+)?for\s+(?:the\s+|all\s+)?(?:adults?|grown[- ]?ups?|parents)(?!\p{L})/iu,
   /(?<!\p{L})(?:adults?|grown[- ]?ups?)\s+(?:\p{L}+\s+){0,2}(?:the\s+)?same(?!\p{L})/iu,
   /เหมือน(?:กับ)?(?:ของ)?\s*(?:ที่)?\s*เด็ก/u,
   /ผู้ใหญ่[^.!?\n]{0,20}?เหมือนกัน/u,
@@ -1628,6 +1628,32 @@ const FOR_ADULTS_TOO = [
   /ผู้ใหญ่[^.!?\n]{0,40}?ด้วย/u,
   /(?<!\p{L})(?:(?:для\s+)?взросл\p{L}*|для\s+них|им)\s+(?:тоже|также)(?!\p{L})/iu,
 ];
+/**
+ * SCRUM-970 (the lane's reviews): words of eating or food — "eat", "food", "menu", "the adults
+ * will have the same", "ทาน", "อาหาร", "едят", "меню" — that a sentence naming no dish must hold
+ * to say the adults eat the same as the kids (unless it says nothing else, `onlySameWords`).
+ */
+const EATING =
+  /(?<!\p{L})(?:eat|eats|eating|ate|food|foods|menu|menus|meal|meals|dish|dishes|order|orders|ordered|lunch|dinner|snacks?)(?!\p{L})|(?<!\p{L})(?:have|has|having|get|gets|take|takes|want|wants)\s+(?:(?:exactly|just|also|all)\s+)?(?:the\s+)?same(?:\s+(?:as|for|please|too)(?!\p{L})|(?!\s*\p{L}))|ทาน|กิน|อาหาร|เมนู|(?<!\p{L})(?:еда|еду|еды|едой|едят|едим|едите|ест|кушать|кушают|меню|блюд\p{L}*|заказ\p{L}*|питани\p{L}*)(?!\p{L})/iu;
+/**
+ * SCRUM-970 (the lane's reviews): words of what is not food — the time, a table, a price, paying,
+ * a ticket, an age — beside "the same": "eat at the same time as the kids", "pay the same as the
+ * kids", "the same table", "the same age group" never say the adults eat the kids' menu.
+ */
+const NOT_FOOD =
+  /(?<!\p{L})(?:time|times|table|tables|seat|seats|sit|sits|sitting|price|prices|priced|rate|rates|cost|costs|fee|fees|pay|pays|paying|paid|charge|charged|ticket|tickets|entrance|entry|admission|discount|day|days|date|age|ages|room|rooms|place|places|way|group|groups|size|area|zone|level|session|slot|wristbands?|bands?|socks?)(?!\p{L})|ราคา|จ่าย|เวลา|โต๊ะ|อายุ|ห้อง|ค่า|(?<!\p{L})(?:цен|плат|стоим|врем|стол|возраст|сид|сад|билет)\p{L}*/iu;
+/** SCRUM-970: the words that only say "the same" ("the same please", "то же самое, что и"). */
+const SAME_FILLER = new Set(["same", "the", "as", "for", "please", "too", "also", "exactly", "just", "all", "то", "же", "самое", "что", "и", "так", "как", "у", "тоже", "также", "всё", "все"]);
+/** SCRUM-970: whether a clause says only that the adults have the same ("The adults the same.", "Взрослым то же самое, что и детям"). */
+function onlySameWords(clause: string): boolean {
+  return fold(clause)
+    .replace(AUDIENCE_WORDS, " ")
+    .replace(THAI_FILLER, " ")
+    .replace(/เหมือน|กัน|กับ|ของ|ที่/gu, " ")
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .filter(Boolean)
+    .every((w) => AUDIENCE_FILLER.has(w) || SAME_FILLER.has(w));
+}
 /** SCRUM-970: words that give the adults something else, or deny the same: no fold is said. */
 const NOT_THE_SAME =
   /(?<!\p{L})(?:but|except|instead|rather|apart|besides|plus|other than|different|differently|own|not|never|no longer)(?!\p{L})|n['’]t(?!\p{L})|(?<!\p{L})(?:кроме|вместо|но|не|плюс|отдельно)(?!\p{L})|แต่|ยกเว้น|แทน|ไม่|นอกจาก/iu;
@@ -1681,6 +1707,13 @@ function setMenuDishesIn(sentence: string, menu: { items: BeoAiSetMenuItem[] }, 
   return found.filter((f) => !found.some((g) => g !== f && g.start <= f.start && g.end >= f.end && g.end - g.start > f.end - f.start));
 }
 
+/** SCRUM-970: the words of a sentence at [start, end) and up to 30 characters either side, within its clause. */
+function wordsAround(sentence: string, start: number, end: number): string {
+  const before = sentence.slice(Math.max(0, start - 30), start).split(/[,;]/).pop() ?? "";
+  const after = sentence.slice(end, end + 30).split(/[,;]/)[0] ?? "";
+  return before + sentence.slice(start, end) + after;
+}
+
 /** SCRUM-970: the clause of a sentence (between its commas and semicolons) holding [start, end); the sentence when it is short. */
 function clauseAround(sentence: string, start: number, end: number): string {
   let from = 0;
@@ -1703,7 +1736,9 @@ function clauseAround(sentence: string, start: number, end: number): string {
  *     repeats (`itemId`, `option`), so the review brings the adults' own SET line back when staff
  *     change that choice (SCRUM-958);
  *   - one naming no dish ("The adults will eat the same as the kids.") is said once, when no
- *     other fold is (`dish` is then the set menu's name);
+ *     other fold is (`dish` is then the set menu's name) — only words about food: eating or
+ *     food words, or nothing but "the same" ("The adults the same."), never the time, a table,
+ *     a price or paying beside them, and never a headcount ("8 adults too");
  *   - no fold when the sentence gives the adults something else: another option of the group, a
  *     line of their own the read gave from it, "but", "instead", "except", a denial; nor for a
  *     group the proposal holds an adults' line of their own in; nor a second fold of a dish
@@ -1734,11 +1769,14 @@ export function adultsSameAsKidsFolds(
       const dishes = setMenuDishesIn(sentence, menu, choices);
       if (dishes.length === 0) {
         // "The adults will eat the same as the kids." — or "The adults too.", words naming only them.
-        const onlyThem = onlyAudience(fold(sentence).replace(/[^\p{L}\p{M}\p{N}\s]/gu, " "));
-        if ((same || onlyThem) && !plain) {
-          const words = SAME_AS_KIDS.map((re) => re.exec(sentence)).find((m) => !!m);
-          plain = { dish: menu.name, from: withQuote(from, words ? clauseAround(sentence, words.index, words.index + words[0].length) : sentence, text) };
-        }
+        // The lane's reviews: only words about food — never "eat at the same time as the kids",
+        // "pay the same as the kids", "the same table", nor "8 adults too" (a headcount names nobody).
+        const words = SAME_AS_KIDS.map((re) => re.exec(sentence)).find((m) => !!m);
+        const clause = words ? clauseAround(sentence, words.index, words.index + words[0].length) : sentence;
+        const sameFood =
+          same && !!words && !NOT_FOOD.test(wordsAround(sentence, words.index, words.index + words[0].length)) && (EATING.test(sentence) || onlySameWords(clause));
+        const onlyThem = adultsNamed && onlyAudience(fold(sentence).replace(/[^\p{L}\p{M}\p{N}\s]/gu, " "));
+        if ((sameFood || onlyThem) && !plain) plain = { dish: menu.name, from: withQuote(from, clause, text) };
         continue;
       }
       // Another option than the kids' choice, or a group the adults have a dish of their own in: not the same.

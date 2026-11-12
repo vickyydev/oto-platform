@@ -449,6 +449,21 @@ try {
     assert.deepEqual(said("The adults also want a Caesar salad."), [], "a dish of their own");
     assert.deepEqual(said("Pepperoni pizza for the adults too."), [], "another option than the kids'");
     assert.deepEqual(said("12 kids and 8 adults, the same day as last year."), [], "a headcount");
+    // The lane's reviews: a sentence naming no dish says the fold only about food.
+    for (const notFood of [
+      "Can the adults eat at the same time as the kids?",
+      "Do adults pay the same as the kids?",
+      "Is the adults' entrance the same price as the kids?",
+      "Can the adults sit at the same table as the kids?",
+      "Our adults are the same age group as last time",
+      "12 kids, 8 adults too.",
+    ]) {
+      assert.deepEqual(said(notFood), [], notFood);
+    }
+    assert.deepEqual(said("The adults will have the same as the kids."), [["Birthday set menu 970", null]], "have the same");
+    assert.deepEqual(said("Same food for the adults please."), [["Birthday set menu 970", null]], "same food");
+    assert.deepEqual(said("Margherita for the kids. The adults the same."), [["Birthday set menu 970", null]], "the same, nothing else");
+    assert.deepEqual(said("Margherita for the kids. For the adults too."), [["Birthday set menu 970", null]], "only them");
     const twice = adultsSameAsKidsFolds(
       [
         { text: "Margherita for the kids and the Margherita for the adults too.", from: { source: "family", at: at(1), line: 2 } },
