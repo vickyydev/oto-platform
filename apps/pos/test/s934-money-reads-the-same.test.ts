@@ -19,6 +19,7 @@ import {
 } from '@/api/history';
 import { tenderLabel } from '@/components/history/SaleDetail';
 import { TransactionCard } from '@/components/history/TransactionCard';
+import { MobileCartSheet } from '@/components/mobile/MobileCartSheet';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { PARTY_DEPOSIT_LABEL, PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
 import { StepPayment } from '@/components/till/StepPayment';
@@ -166,6 +167,42 @@ describe('SCRUM-933 — the order panel shows one figure for the same money', ()
       { payLabel: resumedPayLabel(150_500) });
     expect(html).toContain('Pay ฿1505');
     expect(html.includes('Pay ฿1605')).toBe(false);
+  });
+});
+
+describe('SCRUM-933 — the phone till’s cart bar prints the panel’s figure', () => {
+  function bar(total: number) {
+    return plain(renderToStaticMarkup(
+      createElement(MobileCartSheet, {
+        open: false,
+        onOpenChange: noop,
+        tier: 'tourist',
+        lines: [line],
+        discounts: [],
+        manualDiscounts: [],
+        onUpdateLine: noop,
+        onRemoveLine: noop,
+        onRemoveDiscount: noop,
+        onAddManualDiscount: noop,
+        onRemoveManualDiscount: noop,
+        onPay: noop,
+        onCancel: noop,
+        canPay: true,
+        totals: { subtotal: 1605, scannedDiscounts: [], manualAmounts: {}, total, taxBreakdown: emptyBreakdown },
+      } as never),
+    ));
+  }
+
+  it('a 10 percent code on ฿1,605: the bar reads ฿1444.50, as the panel and Pay do', () => {
+    const html = bar(1444.5);
+    expect(html).toContain('>฿1444.50<');
+    expect(html.includes('฿1444.5<')).toBe(false);
+  });
+
+  it('a whole-baht cart reads exactly as before, with no decimals', () => {
+    const html = bar(1605);
+    expect(html).toContain('>฿1605<');
+    expect(html.includes('1605.00')).toBe(false);
   });
 });
 

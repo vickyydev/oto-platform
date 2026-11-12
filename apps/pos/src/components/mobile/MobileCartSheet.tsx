@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { ticketTotals } from '@/lib/cartWire';
 import { unpricedCartLines } from '@/lib/pricing';
+import { bahtText } from '@/lib/bahtText';
 import type { OrderTotals } from '@/api/sales';
 import { ShoppingCart, ChevronUp } from 'lucide-react';
 
@@ -139,7 +140,8 @@ export function MobileCartSheet({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tabular-nums">{unpriced ? '—' : `฿${total}`}</span>
+          {/* SCRUM-933 — through the one formatter, as the panel below prints it. */}
+          <span className="text-lg font-bold tabular-nums">{unpriced ? '—' : `฿${bahtText(total)}`}</span>
           <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </div>
       </button>
