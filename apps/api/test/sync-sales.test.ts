@@ -1173,15 +1173,17 @@ describe('the cash drawer opens where the cash is (SCRUM-206)', () => {
     const kicks = sim.events().filter((e) => e.kind === 'drawer.kick');
     expect(kicks).toHaveLength(1);
     /**
-     * And nothing else went down the socket. The simulator turns every closed
-     * session into a picture, so it draws an empty one here — no raster bands
-     * and no cut, which on a real printer is no paper moving at all. A receipt
-     * is S2-13's job, and a drawer that printed one would hand every cash guest
-     * a blank slip.
+     * And nothing else went down the socket. No raster bands and no cut, which
+     * on a real printer is no paper moving at all. A receipt is S2-13's job,
+     * and a drawer that printed one would hand every cash guest a blank slip.
+     *
+     * SCRUM-952 — the simulator used to turn this session into an empty
+     * printout, so every cash receipt read as two; it now records the pulse
+     * as the drawer kick it was, with the session's five bytes and no paper.
      */
-    const printed = sim.events().find((e) => e.kind === 'job.printed');
-    expect(printed!.detail).toMatchObject({ bands: 0, cuts: 0, drawerKicks: 1 });
-    expect(sim.printouts()[0]!.heightDots).toBe(0);
+    expect(kicks[0]!.detail).toMatchObject({ jobBytes: 5, paper: false });
+    expect(sim.events().some((e) => e.kind === 'job.printed')).toBe(false);
+    expect(sim.printouts()).toHaveLength(0);
     expect(sim.events().some((e) => e.kind === 'cut')).toBe(false);
   });
 

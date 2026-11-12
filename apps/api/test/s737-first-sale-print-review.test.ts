@@ -153,12 +153,10 @@ async function firstCashSale(options: {
     const paper = outputs.filter(p => p.height > 0);
     expect(paper.map(p => p.deviceId).sort()).toEqual(jobs.map(j => j.deviceId).sort());
     expect(paper.every(p => !p.truncated)).toBe(true);
-    // The simulator also records the five-byte ESC p drawer pulse when its
-    // session closes: zero paper height and no cut terminator are intentional.
+    // SCRUM-952 — the five-byte ESC p drawer pulse moves no paper, and the
+    // simulator records it as the drawer kick counted below, not as a printout.
     const receiptDevice = jobs.find(j => j.kind === 'receipt')!.deviceId;
-    expect(outputs.filter(p => p.height === 0)).toEqual([
-      { deviceId: receiptDevice, bytes: 5, height: 0, truncated: true },
-    ]);
+    expect(outputs.filter(p => p.height === 0)).toEqual([]);
     expect(drawerKicks().map((n, i) => n - beforeKicks[i]!)).toEqual(printerIds.map(id => id === receiptDevice ? 1 : 0));
   }
   const kicks = drawerKicks();

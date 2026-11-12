@@ -323,6 +323,25 @@ export function createPrinterSimulator(options: SimulatorOptions): PrinterSimula
       seq += 1;
       if (options.language === 'escpos') {
         const parsed = parseEscpos(bytes, options.widthDots);
+        if (drawerPulseOnly(parsed)) {
+          /**
+           * SCRUM-952 — A DRAWER PULSE IS NOT A PRINTOUT.
+           *
+           * A cash sale opens the drawer with `ESC p` on a session of its own
+           * (`pulseDrawer` in `adapter.ts`), after the receipt's. A real
+           * printer pulses the drawer pin and moves no paper: no rows, no
+           * feed, no cut. This recorded it as a second printout, 0 dots high
+           * and "cut off mid-job", so every cash receipt read as two printouts
+           * in the staging proofs (SCRUM-898, SCRUM-930). It is recorded as
+           * what it was — the `drawer.kick` event, with the session's bytes and
+           * no paper — and the printouts stay what came out of the machine.
+           */
+          seq -= 1;
+          for (const kick of parsed.drawerKicks) {
+            note('drawer.kick', { ...kick, jobBytes: bytes.length, paper: false });
+          }
+          return;
+        }
         for (const kick of parsed.drawerKicks) note('drawer.kick', { ...kick });
         for (let c = 0; c < parsed.cuts; c += 1) note('cut', { seq });
         push({
@@ -480,6 +499,19 @@ export function createPrinterSimulator(options: SimulatorOptions): PrinterSimula
       };
     },
   };
+}
+
+/**
+ * A session whose only effect on the machine was the drawer: no raster rows,
+ * no feed and no cut, so not a dot or a millimetre of paper moved.
+ */
+function drawerPulseOnly(parsed: ReturnType<typeof parseEscpos>): boolean {
+  return (
+    parsed.drawerKicks.length > 0 &&
+    parsed.bitmap.height === 0 &&
+    parsed.cuts === 0 &&
+    parsed.feeds.length === 0
+  );
 }
 
 function concat(a: Uint8Array, b: Uint8Array): Uint8Array {
