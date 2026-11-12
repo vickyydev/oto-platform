@@ -1372,6 +1372,27 @@ describe('SCRUM-906: an EXTRA line is charged at its entered price, else a till 
     expect(q.totalSatang).toBe(plainTotal + 75_000);
   });
 
+  it('SCRUM-950: the preview names each extra it charges, then each it does not; the figures are unchanged', async () => {
+    const res = await preview(weekday, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const q = res.body.quote;
+    expect(q.extras).toEqual([
+      { name: 'ZZ TEST French fries', productCode: FRIES, qty: 2, unitSatang: 9_000, totalSatang: 18_000, charged: true },
+      { name: 'ZZ TEST French fries', productCode: FRIES, qty: 1, unitSatang: 15_000, totalSatang: 15_000, charged: true },
+      { name: 'ZZ TEST mango sticky rice', productCode: null, qty: 2, unitSatang: 12_000, totalSatang: 24_000, charged: true },
+      { name: 'ZZ TEST Cranberry mors', productCode: MORS, qty: 3, unitSatang: 6_000, totalSatang: 18_000, charged: true },
+      // No price and no till code that sells: listed so staff can tell the parent, and not charged.
+      { name: 'ZZ TEST balloon tower', productCode: null, qty: 1, unitSatang: null, totalSatang: 0, charged: false },
+      { name: 'ZZ TEST old dish', productCode: 'ZZ-906-GONE', qty: 1, unitSatang: null, totalSatang: 0, charged: false },
+    ]);
+    // The charged extras are what the add-ons come to here (the plan has no add-on of its own), and the total stands.
+    expect(q.extras!.filter((e) => e.charged).reduce((sum, e) => sum + e.totalSatang, 0)).toBe(q.addOnsSatang);
+    expect(q.totalSatang).toBe(plainTotal + 75_000);
+    // A party whose plan adds no extra carries no list at all.
+    const none = await preview(plain, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(none.body.quote).not.toHaveProperty('extras');
+  });
+
   it('on a weekend the till item is at its weekend price; a price entered on the line stays as entered', async () => {
     const res = await preview(weekend, { kids: 10, adults: 4, socksGiven: 0 });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
