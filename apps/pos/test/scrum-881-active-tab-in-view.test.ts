@@ -117,7 +117,7 @@ describe.skipIf(!browser)('SCRUM-881 — the active tab is whole in the band', (
   afterAll(async () => {
     await browser?.close();
     await server?.close();
-  });
+  }, 60_000);
 
   describe('the proof’s own case: the Check-in board, one job waiting, staging’s long names', () => {
     for (const theme of ['light', 'dark'] as const) {
