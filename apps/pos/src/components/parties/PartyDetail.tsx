@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { newId, partySettlementLive } from '@oto/shared';
+import { newId, partySettlementLive, type PartyKitchenChange, type PartyKitchenChoicesAnswer } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -28,6 +28,7 @@ import {
   PARTY_PAYMENT_NOT_CONFIRMED,
   cancelSettlementOnPlatform,
   chargePartyOnPlatform,
+  editPartyKitchenOnPlatform,
   partyChargeConfirmationOf,
   partyChargePress,
   partyEditOf,
@@ -35,6 +36,7 @@ import {
   partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
+  readPartyKitchenChoicesOnPlatform,
   updatePartyOnPlatform,
   type PartyChargeConfirmation,
   type PartyChargeLine,
@@ -140,8 +142,8 @@ function InfoRow({ icon: Icon, label, value }: { icon?: typeof Wallet; label: st
   );
 }
 
-/** S2-20 E4 — the party writes a till keeps ids for. */
-type WriteKey = 'payment' | 'fnb' | 'ticket' | 'edit';
+/** S2-20 E4 — the party writes a till keeps ids for; SCRUM-907 the kitchen plan's. */
+type WriteKey = 'payment' | 'fnb' | 'ticket' | 'edit' | 'kitchen';
 
 /** "a", "a and b", "a, b and c" — for naming what the OTO App keeps. */
 const listOf = (items: string[]) =>
@@ -324,8 +326,32 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       return partyChargeConfirmationOf(outcome);
     };
 
+  // SCRUM-907 — a manager or an admin changes the kitchen plan on the Edit form, written to the BEO.
+  // Asked only while the form is open: the page itself shows the plan to everyone.
+  const mayEditKitchen = editing && can('pos:party:kitchen_update');
+  const [kitchenChoices, setKitchenChoices] = useState<PartyKitchenChoicesAnswer | null>(null);
+  const hasChoiceGroups = !!kitchenPlan?.setMenu.some((m) => !!m.choiceGroup);
+  useEffect(() => {
+    if (!editing || !mayEditKitchen || !hasChoiceGroups) return;
+    let live = true;
+    setKitchenChoices(null);
+    void readPartyKitchenChoicesOnPlatform(party).then((answer) => {
+      if (live) setKitchenChoices(answer);
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- asked once each time the form opens
+  }, [editing]);
+
+  /** The form closed after a save: the party page reads the plan again, so it shows what the BEO now holds. */
+  const closeEdit = () => {
+    setEditing(false);
+    setPlanNonce((n) => n + 1);
+  };
+
   const saving = useRef(false);
-  const handleSaveEdit = async (patch: PartyEditPatch) => {
+  const handleSaveEdit = async (patch: PartyEditPatch, kitchenChanges: PartyKitchenChange[] = []) => {
     if (!operator || saving.current) return;
     // Only what changed is sent, and only what the OTO App holds; the rest of
     // the form is the OTO App's to change, and the till says so.
@@ -333,7 +359,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     const kept = keptInOtoApp.length > 0
       ? `${listOf(keptInOtoApp)} ${keptInOtoApp.length === 1 ? 'is' : 'are'} kept in the OTO App — change ${keptInOtoApp.length === 1 ? 'it' : 'them'} there.`
       : null;
-    if (Object.keys(fields).length === 0) {
+    if (Object.keys(fields).length === 0 && kitchenChanges.length === 0) {
       if (kept) toast({ title: 'Not saved here', description: kept });
       else setEditing(false);
       return;
@@ -345,9 +371,40 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     }
     saving.current = true;
     try {
+      // SCRUM-907 — the kitchen plan first, written to the BEO: a refusal keeps the form open
+      // with nothing else sent. Its ids are kept until the whole Save is done, so pressing Save
+      // again after the party's own fields failed is the same kitchen edit, written once.
+      if (kitchenChanges.length > 0) {
+        const press = JSON.stringify(kitchenChanges);
+        const kitchen = await editPartyKitchenOnPlatform({
+          party,
+          changes: kitchenChanges,
+          stationId: station?.stationId,
+          ids: idsFor('kitchen', press),
+        });
+        if (!kitchen.ok) {
+          if (!kitchen.retryable) ids.current.kitchen = undefined;
+          toast({
+            title: kitchen.retryable ? 'Kitchen plan not confirmed' : 'Kitchen plan not saved',
+            description: kitchen.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+        setFresh(kitchen.party);
+        onChanged();
+        if (Object.keys(fields).length === 0) {
+          ids.current.kitchen = undefined;
+          closeEdit();
+          toast({ title: 'Kitchen plan saved', description: 'The BEO in the OTO App now has the change.' });
+          return;
+        }
+      }
       const outcome = await updatePartyOnPlatform({ party, fields, stationId: station?.stationId, ids: idsFor('edit') });
       if (!settled('edit', outcome, 'Party not saved') || !outcome.ok) return;
-      setEditing(false);
+      ids.current.kitchen = undefined;
+      if (kitchenChanges.length > 0) closeEdit();
+      else setEditing(false);
       const sync = outcome.answer.edit;
       if (sync?.syncState === 'failed') {
         toast({
@@ -714,7 +771,16 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       : [kitchenSection, timelineSection, barSection, slipsSection, activitySection];
 
   if (editing) {
-    return <PartyEditForm party={party} onSave={handleSaveEdit} onCancel={() => setEditing(false)} />;
+    return (
+      <PartyEditForm
+        party={party}
+        onSave={handleSaveEdit}
+        onCancel={() => setEditing(false)}
+        kitchenPlan={kitchenPlan}
+        mayEditKitchen={mayEditKitchen}
+        kitchenChoices={kitchenChoices}
+      />
+    );
   }
 
   return (

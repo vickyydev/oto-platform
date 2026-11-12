@@ -10,6 +10,7 @@
 //   POST  /parties/:id/charges   extra tickets or F&B on the tab: a ledger entry
 //   POST  /parties/:id/payments  money against the balance, through the tender machine
 //   POST  /parties/:id/payments/tender  a QR or a card, routed by the station (SCRUM-732)
+//   PUT   /parties/:id/kitchen-plan  a manager's change of the kitchen plan, to the BEO (SCRUM-907)
 //
 // and each answers with the party as it now stands, mapped here into the
 // prototype's `PartyBooking` so every screen keeps its exact rendering path:
@@ -24,6 +25,10 @@ import {
   type EventDetailAnswer,
   type PartyDetailAnswer,
   type PartyEditFields,
+  type PartyKitchenChange,
+  type PartyKitchenChoicesAnswer,
+  type PartyKitchenEditAnswer,
+  type PartyKitchenEditBody,
   type PartyKitchenPlan,
   type PartyPlan,
   type PartyPlanStatus,
@@ -77,6 +82,16 @@ export const partiesApi = {
       idempotencyKey: `party-settle:${body.settlementId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),
+  /** SCRUM-907 — a manager's change of the kitchen plan, written to the BEO in the OTO App. */
+  kitchenPlan: (partyId: string, body: PartyKitchenEditBody) =>
+    api.put<ApiResponse<'/parties/{id}/kitchen-plan', 'put'>>(`/parties/${encodeURIComponent(partyId)}/kitchen-plan`, body, {
+      idempotencyKey: `party-kitchen:${body.editId}`,
+    }),
+  /** SCRUM-907 — the set menu's choice groups, from the OTO App. */
+  kitchenChoices: (branchId: string, partyId: string) =>
+    api.get<ApiResponse<'/parties/{id}/kitchen-plan/choices', 'get'>>(
+      `/parties/${encodeURIComponent(partyId)}/kitchen-plan/choices?branchId=${branchId}`,
+    ),
   /** SCRUM-732 — a QR or a card against the balance, routed by the station. */
   startTender: (partyId: string, body: PartyTenderBody) =>
     api.post<ApiResponse<'/parties/{id}/payments/tender', 'post'>>(`/parties/${encodeURIComponent(partyId)}/payments/tender`, body, {
@@ -394,6 +409,10 @@ const same = (a: unknown, b: unknown) => JSON.stringify(none(a)) === JSON.string
 /**
  * The edit form's fields the OTO App does not hold yet, by what the form calls
  * them: changing one is not saved from the till, and the till says so.
+ * SCRUM-907: where the party's kitchen plan was read, the form's kitchen and
+ * bar sections are that plan's and a manager's change is written to the BEO
+ * (`editPartyKitchenOnPlatform`); `kitchen` and `bar` here are the
+ * prototype's own lists, shown only when no plan could be read.
  */
 const KEPT_IN_OTO_APP: Array<[keyof PartyEditPatch, string]> = [
   ['kidDob', 'date of birth'],
@@ -463,6 +482,58 @@ export async function updatePartyOnPlatform(args: {
     return { ok: true, party: partyOf(answer, args.party.branchId), answer };
   } catch (err) {
     return failureOf(err);
+  }
+}
+
+// --- SCRUM-907: a manager's change of the kitchen plan, written to the BEO --------
+
+export type PartyKitchenEditOutcome =
+  | { ok: true; party: PartyBooking; answer: PartyKitchenEditAnswer }
+  | {
+      ok: false;
+      message: string;
+      /** Nothing answered (or the OTO App did not): the same press may go again under the same ids. */
+      retryable: boolean;
+    };
+
+/**
+ * The kitchen section's changes, under the edit's id: the platform writes them
+ * to the BEO and answers the party as the BEO now holds it. A refusal is the
+ * OTO App's words; no answer keeps the ids, so pressing Save again is the same
+ * edit, written once.
+ */
+export async function editPartyKitchenOnPlatform(args: {
+  party: Pick<PartyBooking, 'id' | 'branchId'>;
+  changes: PartyKitchenChange[];
+  stationId?: string | null;
+  ids: PartyWriteIds;
+}): Promise<PartyKitchenEditOutcome> {
+  const branchId = apiBranchIdForSlug(args.party.branchId);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
+  try {
+    const answer = (await partiesApi.kitchenPlan(args.party.id, {
+      branchId,
+      editId: args.ids.id,
+      actionId: args.ids.actionId,
+      ...(args.stationId && UUID.test(args.stationId) ? { stationId: args.stationId } : {}),
+      changes: args.changes,
+    })) as PartyKitchenEditAnswer;
+    return { ok: true, party: toOtoEvent(answer.event, args.party.branchId) as unknown as PartyBooking, answer };
+  } catch (err) {
+    return failureOf(err);
+  }
+}
+
+/** The set menu's choice groups for the kitchen section; null when they could not be read at all. */
+export async function readPartyKitchenChoicesOnPlatform(
+  party: Pick<PartyBooking, 'id' | 'branchId'>,
+): Promise<PartyKitchenChoicesAnswer | null> {
+  const branchId = apiBranchIdForSlug(party.branchId);
+  if (!branchId) return null;
+  try {
+    return (await partiesApi.kitchenChoices(branchId, party.id)) as PartyKitchenChoicesAnswer;
+  } catch {
+    return null;
   }
 }
 

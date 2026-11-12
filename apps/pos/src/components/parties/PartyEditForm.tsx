@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
+import type { PartyKitchenChange, PartyKitchenChoicesAnswer, PartyKitchenPlan } from '@oto/shared';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,10 @@ import {
 } from '@/components/ui/select';
 import { PartyBooking, PartyLineItem, PartyStatus } from '@/types';
 import { PARTY_STATUS_LABELS } from '@/lib/party';
+import { getMenuItems } from '@/mockApi';
+import { kitchenChangesOf, kitchenDraftOf, type KitchenDraft } from '@/lib/partyKitchenEdit';
+import { Field, Grid2, Section } from './partyEditParts';
+import { PartyBarPlanSection, PartyKitchenPlanSection } from './PartyKitchenPlanEditor';
 import {
   Sparkles,
   Phone,
@@ -43,36 +47,25 @@ export type PartyEditPatch = Omit<
 
 interface PartyEditFormProps {
   party: PartyBooking;
-  onSave: (patch: PartyEditPatch) => void;
+  /**
+   * SCRUM-907 — Save hands over the party's own fields, and the kitchen plan's
+   * changes (none when the plan was not read, or nothing in it changed).
+   */
+  onSave: (patch: PartyEditPatch, kitchenChanges: PartyKitchenChange[]) => void;
   onCancel: () => void;
+  /**
+   * SCRUM-907 — the kitchen plan the till read from the BEO (SCRUM-906). With
+   * it, the kitchen and bar sections are the plan's, written to the BEO on
+   * Save; without it (not read), they are the prototype's own, as before.
+   */
+  kitchenPlan?: Pick<PartyKitchenPlan, 'setMenu' | 'barItems' | 'cake' | 'kitchen'> | null;
+  /** A manager or an admin (`pos:party:kitchen_update`) changes the plan; anyone else sees it read-only. */
+  mayEditKitchen?: boolean;
+  /** The set menu's choice groups, from the OTO App; null while asked or not asked. */
+  kitchenChoices?: PartyKitchenChoicesAnswer | null;
 }
 
 const newId = (prefix: string) => `${prefix}-${Math.random().toString(36).substring(2, 9)}`;
-
-function Section({ icon: Icon, title, children }: { icon: typeof Sparkles; title: string; children: ReactNode }) {
-  return (
-    <Card className="p-5 bg-card/50">
-      <div className="flex items-center gap-2 mb-4 font-bold">
-        <Icon className="w-5 h-5 text-primary" />
-        {title}
-      </div>
-      <div className="space-y-3">{children}</div>
-    </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="mt-1">{children}</div>
-    </label>
-  );
-}
-
-function Grid2({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3">{children}</div>;
-}
 
 // An editable list of free-text strings (e.g. kids/adults menu items).
 function StringListEditor({
@@ -168,7 +161,7 @@ function QtyItemListEditor({
   );
 }
 
-export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
+export function PartyEditForm({ party, onSave, onCancel, kitchenPlan = null, mayEditKitchen = false, kitchenChoices = null }: PartyEditFormProps) {
   // A deep-ish working draft. Edits are immutable on nested objects so Cancel
   // (which simply discards this component's state) never leaks into the party.
   const [draft, setDraft] = useState<PartyBooking>(() => ({
@@ -189,6 +182,16 @@ export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
 
   const set = <K extends keyof PartyBooking>(key: K, value: PartyBooking[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  // SCRUM-907 — the kitchen plan read from the BEO, as the form's own draft; the till's menu for its picker.
+  const [kitchenDraft, setKitchenDraft] = useState<KitchenDraft | null>(() => (kitchenPlan ? kitchenDraftOf(kitchenPlan) : null));
+  const tillMenu = useMemo(
+    () =>
+      kitchenPlan && mayEditKitchen
+        ? getMenuItems().flatMap((m) => (m.code ? [{ name: m.name, code: m.code }] : []))
+        : [],
+    [kitchenPlan, mayEditKitchen],
+  );
 
   const setKitchen = (patch: Partial<PartyBooking['kitchen']>) =>
     setDraft((d) => ({ ...d, kitchen: { ...d.kitchen, ...patch } }));
@@ -228,7 +231,7 @@ export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
       lastEditedAt: _lea,
       ...patch
     } = draft;
-    onSave(patch);
+    onSave(patch, kitchenPlan && kitchenDraft && mayEditKitchen ? kitchenChangesOf(kitchenPlan, kitchenDraft) : []);
   };
 
   return (
@@ -445,7 +448,17 @@ export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
               </div>
             </Section>
 
-            {/* Kitchen */}
+            {/* Kitchen — SCRUM-907: the BEO's plan when the till read it, else the prototype's own lists. */}
+            {kitchenPlan && kitchenDraft ? (
+              <PartyKitchenPlanSection
+                plan={kitchenPlan}
+                draft={kitchenDraft}
+                onChange={setKitchenDraft}
+                readOnly={!mayEditKitchen}
+                choices={kitchenChoices}
+                menu={tillMenu}
+              />
+            ) : (
             <Section icon={UtensilsCrossed} title="Kitchen plan">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Kitchen service needed</span>
@@ -535,8 +548,19 @@ export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
                 </>
               )}
             </Section>
+            )}
 
             {/* Bar */}
+            {kitchenPlan && kitchenDraft ? (
+              <PartyBarPlanSection
+                plan={kitchenPlan}
+                draft={kitchenDraft}
+                onChange={setKitchenDraft}
+                readOnly={!mayEditKitchen}
+                choices={kitchenChoices}
+                menu={tillMenu}
+              />
+            ) : (
             <Section icon={GlassWater} title="Bar plan">
               <Field label="Bar service time">
                 <Input
@@ -551,6 +575,7 @@ export function PartyEditForm({ party, onSave, onCancel }: PartyEditFormProps) {
                 onChange={(next) => setBar({ items: next })}
               />
             </Section>
+            )}
 
             {/* Timeline */}
             <Section icon={Clock} title="Run of show">
