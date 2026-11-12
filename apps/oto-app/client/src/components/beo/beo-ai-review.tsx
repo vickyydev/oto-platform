@@ -21,6 +21,7 @@ import {
   adultsSetLineGroupOf,
   foldedBeforeReviewOf,
   setMenuPortionsOf,
+  withKidsChoice,
   chatOffered,
   chatOfferWords,
   chatSaysOf,
@@ -679,7 +680,8 @@ function ReviewSections({
         {groups.map((g) => {
           const c = state.choices[g.id] ?? null;
           const chosen = c?.value ?? [];
-          const choose = (options: string[]) => set({ choices: { ...state.choices, [g.id]: edited(c, options) } });
+          // SCRUM-958: an adults' line folded into the kids' choice comes back when the choice leaves it.
+          const choose = (options: string[]) => set(withKidsChoice(review, state, g.id, options));
           // The choice already recorded (the parent link, or an earlier approval), kept when this group is left unchosen on that set menu.
           const parent =
             review.parentSelection?.templateId === state.setMenuId.value

@@ -379,8 +379,12 @@ export interface BeoAiProposal {
    * same as the kids, the Margherita pizza for them too"): the set menu's
    * dish, and the line whose words said it, so the review and the toast say
    * so. Absent when none was folded (and from a server before this rule).
+   * A line that repeated the kids' CHOICE carries that choice's group and
+   * option (`itemId`, `option`; none for a dish the set menu always gives):
+   * when staff change the kids' choice in the review away from it, the fold
+   * no longer holds and the line comes back as the adults' own SET line.
    */
-  adultsFolded?: Array<{ dish: string; from: BeoAiFrom }>;
+  adultsFolded?: Array<{ dish: string; from: BeoAiFrom; itemId?: string; option?: string }>;
 }
 
 /**

@@ -23,8 +23,10 @@
 //      choice made on the till first); the adults' copies follow it.
 //   3. thread G, "The adults will eat the same as the kids, the Margherita
 //      pizza for them too.": the fold is said, in the review (with the chat's
-//      words) and in the toast after Approve. An adults' SET line's count
-//      is the set menu's own, shown and not typed.
+//      words) and in the toast after Approve; when staff change the kids'
+//      choice away from it in the review, the note goes and the adults'
+//      Margherita comes back as their own SET line. An adults' SET line's
+//      count is the set menu's own, shown and not typed.
 //   4. thread I, "2 Margherita pizzas for 900": written at the till's price
 //      each, and the review names the chat's 900 in the line's reason.
 //   6. the BEO's sheet has a title for screen readers (the proof's console
@@ -64,7 +66,7 @@ const tillWriters = { lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchen
 const { loadBeoCatalogue, resolveCatalogueAnswer, saidForTheAdults } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, undecidedOptions, approvalResultWords, adultsFoldNoticeOf, foldedBeforeReviewOf, withKidsChoice } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { adultsFoldedWords, adultsFoldedOnOwnMenuWords, adultsSetMenuLineWords, chatTotalWords, setMenuOptionOf } = await import("../shared/beoAiFill");
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
@@ -87,7 +89,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 10;
+const CHECKS = 11;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -95,7 +97,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID() };
-const KEYS = ["A", "B", "B2", "D", "G", "Gown", "I", "both"] as const;
+const KEYS = ["A", "B", "B2", "D", "G", "Gkids", "Gown", "I", "both"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -210,7 +212,7 @@ const ai = {
   },
 };
 const at = (i: number) => new Date(Date.UTC(2026, 10, 12, 15, 30 + i)).toISOString();
-const threadOf = (key: Key): keyof typeof THREADS => (key === "Gown" ? "G" : key === "both" ? "A" : key === "B2" ? "B" : key) as keyof typeof THREADS;
+const threadOf = (key: Key): keyof typeof THREADS => (key === "Gown" || key === "Gkids" ? "G" : key === "both" ? "A" : key === "B2" ? "B" : key) as keyof typeof THREADS;
 const inboxOf = (key: Key): InboxRead => {
   const texts = THREADS[threadOf(key)];
   return {
@@ -631,6 +633,49 @@ try {
     const another = { ...state, setMenuId: { ...state.setMenuId, value: null, changed: true } };
     assert.equal(adultsFoldNoticeOf(review, another), null);
     assert.equal(approveBodyOf(review, another, ids).adultsFolded, undefined);
+  });
+
+  await check("threadG_aFoldGoesWhenTheKidsChoiceLeavesIt", async () => {
+    // The lane's reviews: staff change the kids' pizza from Margherita to Hawaiian in the review. The
+    // adults' words named the Margherita, so it no longer repeats the kids' menu: the note goes, and
+    // the adults' Margherita comes back as their own SET line (point 1's shape), never lost.
+    const res = await fill(ev.Gkids);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(review.proposal.adultsFolded?.map((f) => [f.dish, f.itemId ?? null, f.option ?? null]), [["Margherita", PIZZA, "Margherita"]], "the fold names the kids' choice it repeats");
+    const opened = initialReviewState(review, { fill: res.body.fill });
+    assert.equal(adultsFoldNoticeOf(review, opened), adultsFoldedWords(1));
+    const state = { ...opened, ...withKidsChoice(review, opened, PIZZA, ["Hawaiian"]) };
+    assert.deepEqual(state.choices[PIZZA]?.value, ["Hawaiian"]);
+    assert.equal(adultsFoldNoticeOf(review, state), null, "the note goes");
+    assert.deepEqual(foldedBeforeReviewOf(review, state), []);
+    assert.deepEqual(
+      state.menuLines.map((l) => [l.menu, l.setMenuItemId ?? null, l.productCode, l.matchedName, l.price, l.from?.quote ?? null]),
+      [["adults", PIZZA, "CF-24", "Margherita", null, "the Margherita pizza for them too"]],
+      "the adults' Margherita, their own SET line, with the chat's words as its reason",
+    );
+    const page = html(review, state);
+    assert.ok(!page.includes('data-testid="text-ai-review-adults-folded"'), "no fold note");
+    assert.ok(page.includes(esc(adultsSetMenuLineWords("Pizza"))), "the SET line's words");
+    assert.ok(page.includes("The chat says “the Margherita pizza for them too”"));
+    // The kids' Margherita again: folded again, the line gone; "Not chosen yet": the adults' own again.
+    const back = { ...state, ...withKidsChoice(review, state, PIZZA, ["Margherita"]) };
+    assert.deepEqual([adultsFoldNoticeOf(review, back), back.menuLines], [adultsFoldedWords(1), []]);
+    const none = { ...back, ...withKidsChoice(review, back, PIZZA, []) };
+    assert.deepEqual(none.menuLines.map((l) => l.matchedName), ["Margherita"]);
+    // Approved with the kids' Hawaiian: the adults' own menu holds their Margherita as a SET line; no fold said.
+    const body = approveBodyOf(review, state, ids);
+    assert.equal(body.adultsFolded, undefined);
+    assert.deepEqual(body.menuLines.map((l) => [l.menu, l.setMenuItemId ?? null, l.option ?? null]), [["adults", PIZZA, "Margherita"]]);
+    const ok = await approve(ev.Gkids, body);
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal(ok.body.written.adultsLinesFolded, undefined);
+    assert.equal(approvalResultWords(ok.body).includes("only repeat"), false);
+    const plan = await kitchenOf(ev.Gkids);
+    assert.equal(plan.menus.adultsDiffer, true);
+    const pizzaOf = (lines: any[]) => lines.filter((l) => l.groupId === PIZZA).map((l) => [l.itemName, l.source]);
+    assert.deepEqual([pizzaOf(plan.menus.kids), pizzaOf(plan.menus.adults)], [[["Hawaiian", "set_menu"]], [["Margherita", "set_menu"]]]);
+    assert.deepEqual((await viewLinesOf(ev.Gkids)).filter((l) => l.source === "extra"), [], "nothing charged");
   });
 
   await check("aFoldBesideTheAdultsOwnLineIsSaidSo", async () => {

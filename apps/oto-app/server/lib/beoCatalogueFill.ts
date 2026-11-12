@@ -1231,7 +1231,8 @@ export function resolveCatalogueAnswer(
       const chosen = l.menu === "adults" && sameOrder ? choiceOf(l) : undefined;
       if (chosen) {
         noteToRequests(l, chosen.option);
-        folded.push({ dish: chosen.option, from: l.from });
+        // The kids' choice it repeats, so the review takes the fold back when staff change that choice.
+        folded.push({ dish: chosen.option, from: l.from, itemId: chosen.itemId, option: chosen.option });
         return false;
       }
       // SCRUM-958 (thread B: "fried rice for the adults please"): an adults' line of a dish the

@@ -4,6 +4,7 @@ import {
   adultsLinesRepeatKids,
   foodNamesFor,
   laterLineWins,
+  setMenuOptionOf,
   tillItemOf,
   type BeoAiApproveBody,
   type BeoAiCakeMode,
@@ -606,7 +607,7 @@ export function approvalResultWords(answer: ApproveAnswer): string {
  * names neither a set menu nor a kids' dish): the server decides, and its
  * toast says so.
  */
-export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Partial<Pick<BeoAiReview, "proposal">>, state: BeoAiReviewState): string | null {
+export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Partial<Pick<BeoAiReview, "proposal" | "parentSelection">>, state: BeoAiReviewState): string | null {
   // SCRUM-958 (SCRUM-946's open point): the adults' lines the read folded before the review, said
   // while the review keeps the set menu they were folded against.
   const before = foldedBeforeReviewOf(review, state).length;
@@ -647,15 +648,97 @@ function adultsLinesRepeatOf(review: Pick<BeoAiReview, "catalogue">, state: BeoA
   );
 }
 
+type FoldedLine = NonNullable<BeoAiReview["proposal"]["adultsFolded"]>[number];
+type FoldReview = Partial<Pick<BeoAiReview, "proposal" | "parentSelection">>;
+
 /**
  * SCRUM-958: the adults' lines the read folded into the kids' set menu before the review
  * (`BeoAiProposal.adultsFolded`), while the review keeps that set menu; none once staff choose
- * another or none (the fold was decided against the proposed one).
+ * another or none (the fold was decided against the proposed one). One that repeated the kids'
+ * choice of a group is folded only while the kids' choice still holds its option (the lane's
+ * reviews: staff changing the kids' pizza from Margherita to Hawaiian left the adults' Margherita
+ * said to repeat it, and lost): else it is the adults' own line again (`withKidsChoice`).
  */
-export function foldedBeforeReviewOf(review: Partial<Pick<BeoAiReview, "proposal">>, state: Pick<BeoAiReviewState, "setMenuId">): NonNullable<BeoAiReview["proposal"]["adultsFolded"]> {
+export function foldedBeforeReviewOf(review: FoldReview, state: Pick<BeoAiReviewState, "setMenuId" | "choices">): FoldedLine[] {
   const folded = review.proposal?.adultsFolded ?? [];
   const menu = review.proposal?.setMenu?.templateId ?? null;
-  return folded.length > 0 && menu !== null && state.setMenuId.value === menu ? folded : [];
+  if (folded.length === 0 || menu === null || state.setMenuId.value !== menu) return [];
+  return folded.filter((f) => foldHolds(review, state, f));
+}
+
+/** The kids' choice of a group as Approve and create writes it: the review's, else the one already recorded for this set menu. */
+function kidsChoiceOf(review: FoldReview, state: Pick<BeoAiReviewState, "setMenuId" | "choices">, groupId: string): string[] {
+  const chosen = state.choices[groupId]?.value ?? [];
+  if (chosen.length > 0) return chosen;
+  const parent = review.parentSelection;
+  return parent && parent.templateId === state.setMenuId.value ? parent.choices.find((c) => c.itemId === groupId)?.options ?? [] : [];
+}
+
+/** A folded line still repeats the kids' menu: a dish the set menu always gives, or the kids' choice it named. */
+const foldHolds = (review: FoldReview, state: Pick<BeoAiReviewState, "setMenuId" | "choices">, f: FoldedLine): boolean =>
+  !f.itemId || !f.option || kidsChoiceOf(review, state, f.itemId).includes(f.option);
+
+/** The review line a folded line is when its fold no longer holds (one key per folded line). */
+const unfoldedKeyOf = (index: number) => `adults-folded-${index}`;
+
+/**
+ * SCRUM-958: a folded line as the adults' own SET line of its dish (point 1's shape: the set
+ * menu's group, the option the chat named, no price), its reason the adults' words in the chat.
+ * Null when the set menu no longer has that option.
+ */
+function unfoldedLineOf(review: Pick<BeoAiReview, "catalogue" | "proposal">, f: FoldedLine, index: number): ReviewMenuLine | null {
+  const menuId = review.proposal.setMenu?.templateId ?? null;
+  const group = choiceGroupsOf(review as BeoAiReview, menuId).find((g) => g.id === f.itemId);
+  if (!group || !f.option || !group.options.includes(f.option)) return null;
+  const code = group.optionProductCodes[f.option] ?? group.productCode ?? null;
+  const names = code ? foodNamesFor(review.catalogue, code, menuId) : [];
+  return {
+    key: unfoldedKeyOf(index),
+    menu: "adults",
+    itemName: f.from.quote?.trim() || f.dish,
+    quantity: 1,
+    productCode: code,
+    matchedName: names.find((n) => setMenuOptionOf(group, n) === f.option) ?? f.option,
+    notInMenu: false,
+    chatPrice: null,
+    from: f.from,
+    changed: false,
+    decision: null,
+    price: null,
+    priceFrom: null,
+    setMenuItemId: group.id,
+  };
+}
+
+/**
+ * SCRUM-958 (the lane's reviews): staff choose the kids' option of a set-menu group in the review.
+ * An adults' line the read folded because it repeated the kids' choice of that group is the
+ * adults' own again when the new choice leaves its option out — "the Margherita pizza for them
+ * too" with the kids' pizza now Hawaiian is the adults' Margherita, their own SET line, its note
+ * gone — and folded again (its line gone) when the choice holds the option once more.
+ */
+export function withKidsChoice(
+  review: Pick<BeoAiReview, "catalogue" | "proposal"> & Partial<Pick<BeoAiReview, "parentSelection">>,
+  state: BeoAiReviewState,
+  groupId: string,
+  options: string[],
+): Pick<BeoAiReviewState, "choices" | "menuLines"> {
+  const choices = { ...state.choices, [groupId]: edited(state.choices[groupId] ?? null, options) };
+  const next = { setMenuId: state.setMenuId, choices };
+  const menuId = review.proposal.setMenu?.templateId ?? null;
+  let menuLines = state.menuLines;
+  (review.proposal.adultsFolded ?? []).forEach((f, i) => {
+    if (f.itemId !== groupId || !f.option) return;
+    const key = unfoldedKeyOf(i);
+    const present = menuLines.some((l) => l.key === key);
+    if (foldHolds(review, next, f)) {
+      if (present) menuLines = menuLines.filter((l) => l.key !== key);
+    } else if (!present && menuId !== null && state.setMenuId.value === menuId) {
+      const line = unfoldedLineOf(review, f, i);
+      if (line) menuLines = [...menuLines, line];
+    }
+  });
+  return { choices, menuLines };
 }
 
 /**
