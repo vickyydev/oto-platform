@@ -699,7 +699,8 @@ services:
       # needs INBOX_TWILIO_PUBLIC_URL (this service's public https origin, no
       # path) and, per line by its credential_ref (SANDBOX):
       # INBOX_TWILIO_ACCOUNT_SID_SANDBOX, INBOX_TWILIO_AUTH_TOKEN_SANDBOX and
-      # INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX (the one tester's number, E.164).
+      # INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX (the one tester's phone number,
+      # +66... or a Thai 0... number; read as the platform reads a phone).
       # Entered by hand in the dashboard; never a value in this file.
       - key: INBOX_TWILIO_ENABLED
         value: 'false'

@@ -151,7 +151,7 @@ export interface TwilioConfig {
   publicUrl: string;
   /** The route's path for this account (`/webhooks/inbox/twilio/<id>`): every send's status callback. */
   webhookPath: string;
-  /** `INBOX_TWILIO_ALLOWED_NUMBERS_<credential_ref>`: the only customer numbers (E.164). Never empty. */
+  /** `INBOX_TWILIO_ALLOWED_NUMBERS_<credential_ref>`, read by `normalizePhone`: the only customer numbers (E.164). Never empty. */
   allowedNumbers: readonly string[];
   displayName?: string;
   /** Overridden only to point at a mock. */

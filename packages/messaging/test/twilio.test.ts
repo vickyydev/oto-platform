@@ -516,9 +516,40 @@ describe('the INBOX_TWILIO_* variables', () => {
 
   it('reads an allow-list as typed, and refuses one it cannot read', () => {
     expect(parseAllowedNumbers('+66 89 870 0001, whatsapp:+66-89-870-0002;+66898700001')).toEqual([ALLOWED, STRANGER]);
-    expect(parseAllowedNumbers('0898700001')).toBeNull();
     expect(parseAllowedNumbers(' , ')).toBeNull();
     expect(parseAllowedNumbers('+66898700001, everyone')).toBeNull();
+  });
+
+  it("reads each number by the platform's phone rules: every way of writing one number is that number", () => {
+    for (const typed of ['+66 89 870 0001', '+66898700001', '0898700001', '+66 (0)89 870 0001', '0066 89 870 0001', 'whatsapp:+66 (0)89-870-0001']) {
+      expect(parseAllowedNumbers(typed)).toEqual([ALLOWED]);
+    }
+    // One number written four ways is one entry; a second number keeps its place.
+    expect(parseAllowedNumbers('+66 89 870 0001\n0898700001; +66 (0)89 870 0001, 0898700002')).toEqual([ALLOWED, STRANGER]);
+    // Not a phone number: the whole list allows nobody.
+    for (const typed of ['everyone', '12', '+66', '0898700001, +1 2']) expect(parseAllowedNumbers(typed)).toBeNull();
+  });
+
+  it('the line built from "+66 (0)89 870 0001" lets that tester in', () => {
+    const cfg = twilioConfigFrom({ ...full, INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX: '+66 (0)89 870 0001' }, account);
+    expect(cfg?.allowedNumbers).toEqual([ALLOWED]);
+    const [e] = new TwilioWhatsAppChannel(cfg!, { now: () => NOW }).parseWebhook(delivery(inbound()));
+    expect(e).toMatchObject({ kind: 'message', phone: ALLOWED });
+  });
+
+  it('refuses a value that is not a phone number, naming the variable and never the value', () => {
+    let err: unknown;
+    try {
+      twilioConfigFrom({ ...full, INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX: '+66898700001, the-whole-world' }, account);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ChannelConfigError);
+    expect((err as ChannelConfigError).missing).toEqual([]);
+    expect((err as ChannelConfigError).invalid).toEqual(['INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX']);
+    expect((err as Error).message).toContain('INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX');
+    expect((err as Error).message).not.toContain('the-whole-world');
+    expect((err as Error).message).not.toContain('898700001');
   });
 
   it('reads the public origin as an https origin only', () => {

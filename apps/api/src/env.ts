@@ -789,7 +789,9 @@ const EnvSchema = z.object({
    *    `credential_ref`: `INBOX_TWILIO_ACCOUNT_SID_<ref>`,
    *    `INBOX_TWILIO_AUTH_TOKEN_<ref>` (**secret**) and
    *    `INBOX_TWILIO_ALLOWED_NUMBERS_<ref>` — the only customer numbers the
-   *    line answers and writes to, required.
+   *    line answers and writes to, required, each read by `normalizePhone`
+   *    (a value that is not a phone number leaves the line not connected,
+   *    the variable named, never its value).
    *  - `INBOX_TWILIO_PUBLIC_URL` — this api's public origin exactly as Twilio
    *    calls it (`https://host`, no path). Twilio signs the URL it called;
    *    the signature is checked against this, never a request header.

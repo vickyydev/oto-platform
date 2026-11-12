@@ -1,3 +1,4 @@
+import { normalizePhone } from '@oto/shared';
 import type { TwilioConfig } from './twilio';
 import type { WhatsAppCloudConfig } from './whatsapp-cloud';
 
@@ -31,7 +32,7 @@ export const INBOX_ENV = {
   /** Suffixed with a channel account's `credential_ref`, as the WhatsApp token is. */
   twilioAccountSidPrefix: 'INBOX_TWILIO_ACCOUNT_SID_',
   twilioAuthTokenPrefix: 'INBOX_TWILIO_AUTH_TOKEN_',
-  /** The only customer numbers the line answers and writes to: E.164, comma-separated. */
+  /** The only customer numbers the line answers and writes to: phone numbers, comma-separated (`parseAllowedNumbers`). */
   twilioAllowedNumbersPrefix: 'INBOX_TWILIO_ALLOWED_NUMBERS_',
 } as const;
 
@@ -136,23 +137,28 @@ export function whatsAppCloudConfigFrom(
 const E164 = /^\+[1-9]\d{6,14}$/;
 
 /**
- * SCRUM-908: an allow-list as typed into the hosting dashboard — E.164
- * numbers separated by commas, semicolons or new lines; spaces, dots, dashes
- * and brackets inside a number ignored; a `whatsapp:` prefix taken off. Null
- * when the list is empty or any entry is not an international number: a list
- * that cannot be read allows nobody rather than everybody.
+ * SCRUM-908: an allow-list as typed into the hosting dashboard — phone
+ * numbers separated by commas, semicolons or new lines, a `whatsapp:` prefix
+ * taken off, each read by the PLATFORM'S OWN PHONE RULES (`normalizePhone`
+ * in `@oto/shared`: libphonenumber, default region TH, stored E.164). So
+ * "+66 89 870 0001", "+66898700001", "0898700001" and "+66 (0)89 870 0001"
+ * are one number, the one Twilio's `From` and the contact's phone carry. A
+ * format check alone read "+66 (0)89…" as a well-formed WRONG number, and
+ * every message from the tester was then silently not allowed.
+ *
+ * Null when the list is empty or any entry is not a phone number: a list that
+ * cannot be read allows nobody rather than everybody, and the line is refused
+ * naming the variable (`twilioConfigFrom`), never its value.
  */
 export function parseAllowedNumbers(raw: string | undefined | null): string[] | null {
   if (!raw?.trim()) return null;
   const out: string[] = [];
   for (const entry of raw.split(/[,;\n]/)) {
-    const cleaned = entry
-      .trim()
-      .replace(/^whatsapp:/i, '')
-      .replace(/[\s().-]/g, '');
-    if (cleaned === '') continue;
-    if (!E164.test(cleaned)) return null;
-    if (!out.includes(cleaned)) out.push(cleaned);
+    const typed = entry.trim().replace(/^whatsapp:/i, '').trim();
+    if (typed === '') continue;
+    const e164 = normalizePhone(typed);
+    if (!e164 || !E164.test(e164)) return null;
+    if (!out.includes(e164)) out.push(e164);
   }
   return out.length > 0 ? out : null;
 }
@@ -183,7 +189,7 @@ export function parsePublicOrigin(raw: string | undefined | null): string | null
  * null when `INBOX_TWILIO_ENABLED` is not `true` — the default. With the
  * switch on, every missing variable is named at once, and so is every one set
  * to something unusable (an account SID that is not one, a public URL that is
- * not an https origin, an allow-list that is not E.164 numbers).
+ * not an https origin, an allow-list entry that is not a phone number).
  *
  * THE ALLOW-LIST IS REQUIRED. The line is a test line: the assistant answers,
  * and the line writes, only to the numbers it names (the owner's safety rule,
