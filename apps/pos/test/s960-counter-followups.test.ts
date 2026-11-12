@@ -154,10 +154,24 @@ describe('SCRUM-960 (1): a part-paid F&B or shop order is left as it is, and the
     }
   });
 
+  it("the phone's F&B offers the same way out with its own reset: its bars and Back are free again after it", () => {
+    // The phone shell's bars go inert once a part is paid
+    // (`paymentContextLocked`, cleared when the stage leaves payment), and the
+    // phone's Shop is the desk's MerchStation, which has the button above.
+    const text = src('components', 'mobile', 'order-station', 'MobileOrderStation.tsx');
+    expect(text).toContain('onSavePartPaid={resetOrder}');
+    expect(text).toMatch(/const paymentContextLocked = stage === 'payment' && /);
+    const reset = text.slice(text.indexOf('const resetOrder = () => {'));
+    const body = reset.slice(0, reset.indexOf('\n  };'));
+    expect(body).toContain("setStage('scan')");
+    expect(body).not.toMatch(/letOrderGo|\.cancel\(|voidSale|refund/);
+  });
+
   it('each counter tells the button when its sale writer is mid-write, as the ticket till does', () => {
     const wired = "saleWriting={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}";
     expect(src('pages', 'OrderStation.tsx')).toContain(wired);
     expect(src('pages', 'MerchStation.tsx')).toContain(wired);
+    expect(src('components', 'mobile', 'order-station', 'MobileOrderStation.tsx')).toContain(wired);
   });
 });
 

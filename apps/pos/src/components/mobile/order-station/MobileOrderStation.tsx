@@ -626,6 +626,9 @@ export function MobileOrderStation() {
             onBack={backFromPayment}
             useCredit={useCredit}
             onUseCreditChange={setUseCredit}
+            // SCRUM-960 — the order stays part-paid on the platform; the phone starts afresh.
+            onSavePartPaid={resetOrder}
+            saleWriting={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
           />
           </div>
         </div>
