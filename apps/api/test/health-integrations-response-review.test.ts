@@ -40,8 +40,10 @@ beforeAll(async () => {
     role: 'booth', status: 'online', registeredAt: new Date(), lastHeartbeatAt: new Date(), agentVersion: '0.0.1',
     lastStatus: { uptimeS: 123.5, outboxDepth: 7, clockOffsetMs: -1234.5, configVersion: 'ZZ TEST config', booth: reported } });
   await ctx.db.insert(station).values({ id: stationId, operatorId, branchId: parkId, boxId, name: 'ZZ TEST 645 health booth', kind: 'booth' });
+  // SCRUM-952: a printer with no address now reads as not set up; this fixture
+  // pins raw passthrough of a printer that is set up, at a documentation address.
   await ctx.db.insert(device).values({ id: deviceId, operatorId, branchId: parkId, boxId, kind: 'receipt_printer',
-    label: 'ZZ TEST 645 printer', transport: 'simulated', reachability: 'unknown', paperStatus: 'unknown' });
+    label: 'ZZ TEST 645 printer', transport: 'simulated', address: '192.0.2.45:9100', reachability: 'unknown', paperStatus: 'unknown' });
   const readerId = newId(), roleId = newId(), phone = normalizePhone('+66900000645')!, password = randomBytes(24).toString('hex');
   await ctx.db.insert(account).values({ id: readerId, operatorId, phone, passwordHash: await hash(password),
     status: 'active', mustChangePassword: false, phoneVerifiedAt: new Date() });
