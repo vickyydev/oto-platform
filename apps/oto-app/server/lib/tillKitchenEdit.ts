@@ -25,7 +25,9 @@ import { adultsCopiesOf, adultsDifferOf, kitchenLinesOf, sameKitchenDish } from 
  *   - `choose`  a set-menu choice within its group, an option of the
  *               template's own, on the line that holds it or as the line the
  *               parent's submit would make for an open group; the adults' own
- *               copy follows it, as the parent's submit keeps it (SCRUM-829);
+ *               copy follows it, as the parent's submit keeps it (SCRUM-829),
+ *               and a dish of the adults' own in the group (another option,
+ *               SCRUM-958) stays as it is, never doubled by a copy;
  *               the dish keeps its count and takes the template's till code;
  *   - `cake`    the cake's time and note, when the BEO has a cake.
  *
@@ -304,7 +306,9 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
         groupId: group.id,
       };
       bucket.unshift(line);
-      if (bucket === kids && adultsDiffer) adults.unshift(...adultsCopiesOf([line]));
+      // SCRUM-958: no copy for the adults when their own list holds a dish of their own in this
+      // group (an AI fill's "chicken fried rice for the adults"): it stays, never doubled.
+      if (bucket === kids && adultsDiffer && !adults.some((a) => ofGroup(a, group))) adults.unshift(...adultsCopiesOf([line]));
       touch(bucket === kids ? "kids" : "adults");
       said.push(`${group.label}: ${option}`);
       continue;

@@ -17,7 +17,8 @@
 //   - the rules of the BEO's Save hold: a set-menu dish is not removed from
 //     the till, an option outside its group is refused, a choice of the kids'
 //     set menu carries the adults' own copy with it (SCRUM-829), the adults'
-//     switch is kept, nothing is priced;
+//     switch is kept, nothing is priced; a dish of the adults' own in a
+//     group (an AI fill's, SCRUM-958) stays, never doubled by a copy;
 //   - one till line is every BEO line it shows: with "Different for adults"
 //     saved on, a count, a note or a removal of a kids' line carries the
 //     adults' copies the view folds into it (a note of the adults' own
@@ -90,7 +91,7 @@ const setMenuItems = [
 ];
 const ev = {
   main: randomUUID(), adults: randomUUID(), open: randomUUID(), save: randomUUID(), foreign: randomUUID(), camp: randomUUID(),
-  foldSet: randomUUID(), foldRemove: randomUUID(), legacy: randomUUID(),
+  foldSet: randomUUID(), foldRemove: randomUUID(), legacy: randomUUID(), ownAdults: randomUUID(),
 };
 const keys = { a: generateDirectoryKey(), b: generateDirectoryKey(), noScope: generateDirectoryKey(), revoked: generateDirectoryKey() };
 
@@ -370,6 +371,43 @@ try {
     assert.equal(menus!.kids.find((l) => l.groupId === RICE)!.itemName, "Shrimp");
   });
 
+  await check("SCRUM-958: a dish of the adults' own in a set-menu group stays: a kids' choice moves only its copy, an open group adds none", async () => {
+    // As an AI fill's approval writes "chicken fried rice for the adults" beside the kids' Margherita,
+    // the kids' Fried rice not chosen yet: the kids' set menu copied for the adults, and their own Chicken.
+    const kidsPizza = line(`set_${PIZZA}_Margherita`, "Margherita", 2, { notes: "(Pizza)", source: "set_menu", groupId: PIZZA });
+    const kidsFries = line(`set_${FRIES}`, "French fries", 2, { source: "set_menu", groupId: FRIES });
+    const ownRice = line(`set_${RICE}_Chicken_adults`, "Chicken", 3, { notes: "(Fried rice)", source: "set_menu", groupId: RICE });
+    await kitchenPlan(ev.ownAdults, {
+      kids: [kidsPizza, kidsFries],
+      adults: [{ ...kidsPizza, id: `${kidsPizza.id}_adults` }, { ...kidsFries, id: `${kidsFries.id}_adults` }, ownRice],
+      adultsDiffer: true,
+    });
+    const riceOf = (lines: Line[]) => lines.filter((l) => l.groupId === RICE).map((l) => [l.id, l.itemName]);
+    // The kids' open Fried rice chosen on the till: the kids get it; the adults keep their own Chicken, no copy.
+    const open = await edit(ev.ownAdults, [{ op: "choose", choiceGroup: "Fried rice", lineId: null, option: "Veggie" }]);
+    assert.equal(open.status, 200, JSON.stringify(open.body));
+    let menus = await menusOf(ev.ownAdults);
+    assert.deepEqual(riceOf(menus!.kids), [[`set_${RICE}_Veggie`, "Veggie"]]);
+    assert.deepEqual(riceOf(menus!.adults), [[`set_${RICE}_Chicken_adults`, "Chicken"]], "one Fried rice for the adults: their own");
+    // The kids' choice changed again on the till: the adults' own Chicken stays.
+    const again = await edit(ev.ownAdults, [{ op: "choose", choiceGroup: "Fried rice", lineId: `set_${RICE}_Veggie`, option: "Shrimp" }]);
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    menus = await menusOf(ev.ownAdults);
+    assert.deepEqual(riceOf(menus!.kids), [[`set_${RICE}_Veggie`, "Shrimp"]]);
+    assert.deepEqual(riceOf(menus!.adults), [[`set_${RICE}_Chicken_adults`, "Chicken"]]);
+    // The kids' pizza changed: its adults' copy follows, as before (SCRUM-829).
+    const pizza = await edit(ev.ownAdults, [{ op: "choose", choiceGroup: "Pizza", lineId: kidsPizza.id, option: "Hawaiian" }]);
+    assert.equal(pizza.status, 200, JSON.stringify(pizza.body));
+    menus = await menusOf(ev.ownAdults);
+    assert.deepEqual(menus!.adults.map((l) => l.itemName), ["Hawaiian", "French fries", "Chicken"]);
+    assert.equal(menus!.adultsDiffer, true);
+    // The till: the kids' Shrimp is the kids' only, the adults' Chicken theirs; one Fried rice each.
+    const rice = ((await rowOf(ev.ownAdults))!.kitchen_plan.lines as Record<string, unknown>[])
+      .filter((l) => String(l.line_id).startsWith(`set_${RICE}`))
+      .map((l) => [l.line_id, l.chosen_option ?? l.name, l.audience ?? null]);
+    assert.deepEqual(rice, [[`set_${RICE}_Veggie`, "Shrimp", "kids"], [`set_${RICE}_Chicken_adults`, "Chicken", "adults"]]);
+  });
+
   // The till's food lines as the plan view hands them: id, dish, count, note and 0048's marks.
   const viewLinesOf = async (eventId: string) =>
     ((await rowOf(eventId))!.kitchen_plan.lines as Record<string, unknown>[]).map((l) => [
@@ -508,4 +546,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 12 ? 0 : 1);
+process.exit(checks === 13 ? 0 : 1);
