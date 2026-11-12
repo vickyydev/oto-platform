@@ -33,6 +33,10 @@
 //      mirror on a set menu stays a mirror, an adults' order of a dish the
 //      kids' list holds that the chat prices is theirs, and a folded line is
 //      said in the review and in the toast.
+//   1c. (the lane's reviews, SCRUM-944) a dish the set menu gives is no EXTRA:
+//      "with the fries" on a set menu that includes them is that dish (no
+//      charge, its note in Special requests), and so is an adults' line of
+//      the set menu's dishes; "extra fries, 2 plates" is still an EXTRA.
 //   9. SCRUM-927's points: another WhatsApp number is written with its stored
 //      international form (whatsapp_phone_e164) by the app's own phone rule;
 //      the Kitchen Plan does not say "Selections received" when no parent
@@ -70,7 +74,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf, moreAsked, BEO_TILL_MENU_RULES } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
@@ -98,7 +102,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 14;
+const CHECKS = 15;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -107,7 +111,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut", "included", "moreFries"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -362,6 +366,85 @@ try {
     assert.equal(adultsFoldNoticeOf(review, staffPriced), null, "a price staff entered: their own");
     const tillPriced = { ...keptAll, menuLines: keptAll.menuLines.map((l) => (l.menu === "adults" ? { ...l, price: 90, priceFrom: "till" as const } : l)) };
     assert.equal(adultsFoldNoticeOf(review, tillPriced), adultsFoldedWords(1), "the till's price a coded line opens with is no price of its own");
+  });
+
+  // --- 1c. A dish the set menu gives is no EXTRA (the lane's reviews, SCRUM-944) --------------
+  await check("aSetMenuDishIsNoExtraCharge", async () => {
+    const base = await loadBeoCatalogue(db, { tenantId: tenant, branchId: park });
+    // The till sells the set menu's fries and pizza too: Phase C codes them.
+    const catalogue = {
+      ...base,
+      till: [
+        { code: "CF-11", name: "French fries", category: "Sides", station: "kitchen" as const, priceSatang: 12000 },
+        { code: "CF-24", name: "Margherita", category: "Pizza", station: "kitchen" as const, priceSatang: 32000 },
+      ],
+    };
+    const refsOf = (...texts: string[]): TranscriptRef[] => texts.map((text, i) => ({ line: i + 1, id: `inc-${i}`, source: "family", at: at(i), ruling: false, text }));
+    const read = (texts: string[], menuLines: unknown[], numAdults?: number) =>
+      resolveCatalogueAnswer(
+        {
+          package: { templateId: cat.pkg, line: 1 },
+          setMenu: { templateId: cat.setMenu, line: 1, choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita pizza", line: 1 }] },
+          menuLines,
+          event: { numChildren: { value: 14, line: 1 }, ...(numAdults ? { numAdults: { value: numAdults, line: 1 } } : {}) },
+        },
+        catalogue,
+        refsOf(...texts),
+      );
+    // The reviewer's case A: "with the fries" on a set menu that always includes them.
+    const withFries = read(["The birthday package with Margherita pizza, and with the fries please, no salt on them."], [
+      { productCode: "CF-11", itemName: "the fries", menu: "kids", quantity: 1, notes: "no salt", line: 1 },
+    ]);
+    assert.deepEqual(withFries.menuLines, [], "the set menu's fries, not a second line");
+    assert.deepEqual(withFries.details.requests.map((r) => [r.kind, r.text]), [["special_request", "French fries: no salt"]], "its note kept, with the dish's name");
+    // More of it is an EXTRA of its own, at the till's price.
+    const more = read(["The birthday package with Margherita pizza, and extra fries, 2 plates."], [
+      { productCode: "CF-11", itemName: "extra fries", menu: "kids", quantity: 2, line: 1 },
+    ]);
+    assert.deepEqual(more.menuLines.map((l) => [l.menu, l.productCode, l.quantity]), [["kids", "CF-11", 2]]);
+    const onePlate = read(["Margherita pizza for the kids, and one more plate of fries please."], [
+      { productCode: "CF-11", itemName: "fries", menu: "kids", quantity: 1, line: 1 },
+    ]);
+    assert.equal(onePlate.menuLines.length, 1, "one more plate, said beside the dish: an EXTRA");
+    // The adults' lines of the set menu's dishes, in the adults' count: their copies of the set menu.
+    const adults = read(["Margherita pizza for the kids. 10 adults, they have the same pizza and fries.", "And 3 more Margherita pizzas for the adults."], [
+      { productCode: "CF-24", itemName: "pizza", menu: "adults", quantity: 10, line: 1 },
+      { productCode: "CF-11", itemName: "fries", menu: "adults", quantity: 10, line: 1 },
+      { productCode: "CF-24", itemName: "3 more Margherita pizzas for the adults", menu: "adults", quantity: 3, line: 2 },
+    ], 10);
+    assert.deepEqual(adults.menuLines.map((l) => [l.menu, l.itemName, l.quantity]), [["adults", "3 more Margherita pizzas for the adults", 3]], "only the adults' own order stays");
+    // A line whose words are not held stays a line, as before.
+    const unread = resolveCatalogueAnswer(
+      { setMenu: { templateId: cat.setMenu, line: 1, choices: [] }, menuLines: [{ productCode: "CF-11", itemName: "fries", menu: "kids", quantity: 1, line: 7 }] },
+      catalogue,
+      refsOf("A party please."),
+    );
+    assert.equal(unread.menuLines.length, 1);
+    assert.equal(moreAsked("картошка фри", "Пицца Маргарита, дополнительно картошка фри."), true, "in Russian");
+    assert.equal(moreAsked("เฟรนช์ฟรายส์", "พิซซ่ามาร์การิต้า เพิ่มเฟรนช์ฟรายส์ บับเบิ้ลโชว์"), true, "in Thai");
+    assert.equal(moreAsked("the fries", "2 more Margherita pizzas, and the fries"), false, "another dish's word, in another clause");
+    assert.equal(BEO_TILL_MENU_RULES.includes("beyond what the set menu gives"), true);
+    assert.equal(BEO_TILL_MENU_RULES.includes("only when the conversation asks for more of it"), true);
+
+    // Approved: the set menu's fries are written once, as the set menu's, with nothing charged.
+    const review = reviewOf(withFries);
+    review.catalogue = catalogue;
+    const state = initialReviewState(review, {});
+    assert.equal(state.menuLines.length, 0, "the review offers no fries line to charge");
+    const ok = await approve(ev.included, approveBodyOf(review, state, { conversationId: null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const lines = await viewLinesOf(ev.included);
+    assert.equal(lines.filter((l) => l.source === "extra").length, 0, `no EXTRA, no charge: ${JSON.stringify(lines)}`);
+    assert.equal(lines.filter((l) => l.name === "French fries").length, 1, "the fries once, the set menu's");
+    // "Extra fries, 2 plates": an EXTRA at the till's price, charged.
+    const moreReview = reviewOf(more);
+    moreReview.catalogue = catalogue;
+    const moreState = initialReviewState(moreReview, {});
+    assert.deepEqual([moreState.menuLines[0]?.price, moreState.menuLines[0]?.priceFrom], [120, "till"]);
+    const extra = await approve(ev.moreFries, approveBodyOf(moreReview, moreState, { conversationId: null, messageId: null }));
+    assert.equal(extra.status, 200, JSON.stringify(extra.body));
+    const extraLines = (await viewLinesOf(ev.moreFries)).filter((l) => l.source === "extra");
+    assert.deepEqual(extraLines.map((l) => [l.name, l.qty, l.unit_price_satang]), [["French fries", 2, 12000]], JSON.stringify(extraLines));
   });
 
   // --- 2. The chat's price on an extra dish ---------------------------------------------------

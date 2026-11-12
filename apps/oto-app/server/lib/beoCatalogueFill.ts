@@ -11,6 +11,7 @@ import {
   BEO_AI_MENUS,
   BEO_AI_QUOTE_MAX,
   BEO_AI_REQUEST_KINDS,
+  asksForMore,
   beoEventTitleOf,
   emptyBeoAiDetails,
   foodNameFor,
@@ -466,7 +467,7 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
  * till was not read reads the rules of before, word for word).
  */
 export const BEO_TILL_MENU_RULES = `
-- "tillMenu" is every dish and drink the park's till sells: each row is its code, name, category and station ("kitchen" or "bar"). A dish or drink the conversation names beyond the set menu's choices is a menu line whose "productCode" is the code of the item it is, from "food" or from "tillMenu", matched by what the conversation means whatever language it is in ("a Coke" is the till's Coke). Only a code listed there, never one you make up; with no item that fits, null and "notInMenu": true. A drink made at the bar ("station": "bar") is a "bar" line`;
+- "tillMenu" is every dish and drink the park's till sells: each row is its code, name, category and station ("kitchen" or "bar"). A dish or drink the conversation names beyond what the set menu gives is a menu line whose "productCode" is the code of the item it is, from "food" or from "tillMenu", matched by what the conversation means whatever language it is in ("a Coke" is the till's Coke). Only a code listed there, never one you make up; with no item that fits, null and "notInMenu": true. A dish the set menu already gives (one it always includes, or a choice made) is a menu line only when the conversation asks for more of it ("extra fries", "2 more pizzas"). A drink made at the bar ("station": "bar") is a "bar" line`;
 
 /**
  * The rules for reading a whole conversation: which line wins, what the
@@ -1098,25 +1099,63 @@ export function resolveCatalogueAnswer(
   // (its note joins the choice) — only when it is the same order: no price of its own, and one of
   // it or one for each child. More of the dish, or a priced one, is an extra dish line of its own,
   // kept with its quantity and price.
+  // SCRUM-946 (the lane's reviews): and a dish the set menu always includes is that dish, for the
+  // kids and for the adults (whose own list copies the set menu's lines), as is an adults' line of
+  // a choice made: with the till's codes (SCRUM-944) such a line would be an EXTRA at the till's
+  // price, charging the family for what the set menu gives. Only the same order again: no price of
+  // its own, at 1, the list's headcount or the set menu's own portions, and no word asking for
+  // more ("extra fries", "дополнительно картошка фри" stay lines of their own), read in the chat's
+  // own words (a line whose words are not held stays a line, as before). Its note, which no
+  // set-menu line of these keeps, goes to Special requests with the dish's name, never dropped.
   if (proposal.setMenu && menu) {
     const choices = proposal.setMenu.choices;
     const kids = proposal.event.numChildren?.value ?? null;
+    const adultsN = proposal.event.numAdults?.value ?? null;
     const group = (c: (typeof choices)[number]) =>
       menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as Extract<BeoAiSetMenuItem, { type: "choice_group" }> | undefined;
-    proposal.menuLines = proposal.menuLines.filter((l) => {
-      if (l.menu !== "kids") return true;
-      if (l.chatPrice !== null || !(l.quantity === 1 || (kids !== null && l.quantity === kids))) return true;
-      const same = choices.find((c) => {
+    const included = menu.items.filter((i): i is Extract<BeoAiSetMenuItem, { type: "always_included" }> => i.type === "always_included");
+    const lineText = (from: BeoAiFrom): string | null =>
+      (from.line ? refs.find((r) => r.line === from.line)?.text : undefined) ?? (refs.length === 0 ? fallbackText ?? null : null);
+    const named = (l: (typeof proposal.menuLines)[number], name: string | null | undefined) =>
+      !!name && (fold(name) === fold(l.itemName) || (!!l.matchedName && fold(name) === fold(l.matchedName)));
+    const choiceOf = (l: (typeof proposal.menuLines)[number]) =>
+      choices.find((c) => {
         const g = group(c);
         const code = g?.optionProductCodes[c.option] ?? null;
         if (code && l.productCode && code.toUpperCase() === l.productCode.toUpperCase()) return true;
         // SCRUM-926: options sharing the group's code are told apart by name ("Fried rice (Chicken)").
-        const named = g ? `${g.label} (${c.option})` : null;
-        return [c.option, c.said, named].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
+        return [c.option, c.said, g ? `${g.label} (${c.option})` : null].some((n) => named(l, n));
       });
-      if (!same) return true;
-      if (l.notes && !same.notes) same.notes = l.notes;
-      return false;
+    const noteToRequests = (l: (typeof proposal.menuLines)[number], dish: string) => {
+      if (!l.notes) return;
+      const text = `${dish}${l.menu === "adults" ? " (adults)" : ""}: ${l.notes}`;
+      if (!proposal.details.requests.some((r) => fold(r.text) === fold(text))) proposal.details.requests.push({ kind: "special_request", text, from: l.from });
+    };
+    proposal.menuLines = proposal.menuLines.filter((l) => {
+      if (l.menu === "bar" || l.chatPrice !== null) return true;
+      const count = l.menu === "kids" ? kids : adultsN;
+      const sameOrder = l.quantity === 1 || (count !== null && l.quantity === count);
+      if (l.menu === "kids" && sameOrder) {
+        const same = choiceOf(l);
+        if (same) {
+          if (l.notes && !same.notes) same.notes = l.notes;
+          return false;
+        }
+      }
+      // Only on the chat's own words: a line whose words cannot be read stays a line, as before.
+      const text = lineText(l.from);
+      if (text === null || moreAsked(l.itemName, text)) return true;
+      const item = included.find((i) => (!!i.productCode && !!l.productCode && i.productCode.toUpperCase() === l.productCode.toUpperCase()) || named(l, i.label));
+      if (item && (sameOrder || l.quantity === (item.qty ?? 1))) {
+        noteToRequests(l, item.label);
+        return false;
+      }
+      const chosen = l.menu === "adults" && sameOrder ? choiceOf(l) : undefined;
+      if (chosen) {
+        noteToRequests(l, chosen.option);
+        return false;
+      }
+      return true;
     });
   }
 
@@ -1304,6 +1343,24 @@ export function cakeSaidIncluded(line: string): boolean {
     if (cakes.length === 0) continue;
     const words = [...sentence.matchAll(INCLUDED_WORDS)].map((m) => m.index ?? 0);
     if (words.some((w) => cakes.some((c) => Math.abs(w - c) <= 40))) return true;
+  }
+  return false;
+}
+/**
+ * SCRUM-946 (the lane's reviews): whether the chat asks for more of a dish —
+ * in its words for it, or beside them in the same clause of its line ("Margherita
+ * pizza, extra fries", "дополнительно картошка фри", "เพิ่มเฟรนช์ฟรายส์"). "With
+ * the fries please" on a set menu that includes them asks for none.
+ */
+export function moreAsked(itemName: string, text: string | null): boolean {
+  if (asksForMore(itemName)) return true;
+  const name = fold(itemName);
+  if (!text || !name) return false;
+  const line = fold(text);
+  for (let at = line.indexOf(name); at >= 0; at = line.indexOf(name, at + 1)) {
+    const before = line.slice(Math.max(0, at - 30), at).split(/[,.;:!?\n]/).pop() ?? "";
+    const after = line.slice(at + name.length, at + name.length + 15).split(/[,.;:!?\n]/)[0] ?? "";
+    if (asksForMore(before) || asksForMore(after)) return true;
   }
   return false;
 }
