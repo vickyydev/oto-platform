@@ -11,7 +11,7 @@ import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { NARROW_BAR, NARROW_HEAD, NARROW_LINE } from './consentFormLayout';
+import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CameraCapture } from '@/components/shared/CameraCapture';
@@ -265,7 +265,7 @@ export function ConsentCapture({
         <h2 className="text-4xl font-black">
           {slots.length === 1 ? t('superviseConsent.titleOne') : t('superviseConsent.titleMany')}
         </h2>
-        <p className="mt-1 text-lg text-foreground/60">
+        <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>
           {t('superviseConsent.subtitle')}
         </p>
       </div>

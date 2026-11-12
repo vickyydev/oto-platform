@@ -173,4 +173,14 @@ describe('where it is used', () => {
     expect(half.match(/screenKeyboard=\{screenKeyboard\}/g)).toHaveLength(4);
     expect(half).toContain('showKeypad={screenKeyboard}');
   });
+
+  it('on a short screen the subtitle is left out and the keys are a little shorter, so the box and keys fit (SCRUM-894)', () => {
+    expect(src('components/till/consentFormLayout.ts')).toContain("export const SHORT_HIDE = '[@media(max-height:700px)]:hidden';");
+    for (const form of ['components/till/PublicConsentCapture.tsx', 'components/till/ConsentCapture.tsx']) {
+      expect(src(form)).toMatch(/cn\('mt-1 text-lg text-foreground\/60', SHORT_HIDE\)/);
+    }
+    const keys = src('components/till/ScreenKeyboard.tsx');
+    expect(keys).toContain("const SHORT = '[@media(max-height:700px)]:h-10';");
+    expect(keys.match(/`h-12 \$\{SHORT\} /g)).toHaveLength(2);
+  });
 });

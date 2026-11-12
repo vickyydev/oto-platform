@@ -9,7 +9,7 @@ import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { NARROW_BAR, NARROW_HEAD, NARROW_LINE } from './consentFormLayout';
+import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
@@ -588,7 +588,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
         <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
-      <p className="mt-1 text-lg text-foreground/60">{t('superviseConsent.subtitle')}</p>
+      <p className={cn('mt-1 text-lg text-foreground/60', SHORT_HIDE)}>{t('superviseConsent.subtitle')}</p>
       <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
         {STEPS.map((name, at) => (
           <button key={name} type="button" disabled={locked || at > index && !childrenComplete}

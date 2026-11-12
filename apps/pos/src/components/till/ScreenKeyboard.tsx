@@ -3,9 +3,14 @@ import { cn } from '@/lib/utils';
 
 const LETTER_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'] as const;
 
-/** NumberKeypad's key, at the size a row of ten can hold. */
+/**
+ * NumberKeypad's key, at the size a row of ten can hold. SCRUM-894 — a little
+ * shorter on a short screen (below 700 pixels of height), so the box being
+ * typed in and its keys fit above the form's bottom bar.
+ */
+const SHORT = '[@media(max-height:700px)]:h-10';
 const KEY =
-  'h-12 min-w-0 flex-1 rounded-xl bg-foreground/5 border border-foreground/10 text-xl font-bold text-foreground transition-transform active:scale-95 hover:bg-foreground/10';
+  `h-12 ${SHORT} min-w-0 flex-1 rounded-xl bg-foreground/5 border border-foreground/10 text-xl font-bold text-foreground transition-transform active:scale-95 hover:bg-foreground/10`;
 
 interface ScreenKeyboardProps {
   value: string;
@@ -71,7 +76,7 @@ export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel 
         <button
           type="button"
           onClick={onDone}
-          className="h-12 min-w-0 flex-1 rounded-xl bg-primary text-primary-foreground text-lg font-bold transition-transform active:scale-95 hover:bg-primary/90"
+          className={`h-12 ${SHORT} min-w-0 flex-1 rounded-xl bg-primary text-primary-foreground text-lg font-bold transition-transform active:scale-95 hover:bg-primary/90`}
         >
           {doneLabel}
         </button>
