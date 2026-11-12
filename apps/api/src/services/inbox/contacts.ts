@@ -30,7 +30,7 @@ import { loadVisibleConversation, visibleConversationsSql, type InboxViewer } fr
  * reader changing. What changes is who may write it:
  *   - the ingest and the mirror fill `display_name` only while it is null
  *     (as they always did) and keep the channel's own name, latest seen, in
- *     `profile_name` (`0116_inbox_contact_name`), so a later message's
+ *     `profile_name` (`0117_inbox_contact_name`), so a later message's
  *     profile name NEVER overwrites a name staff set and nothing is lost;
  *   - `renameContact` sets `display_name` and marks it staff-set
  *     (`name_set_by_account_id`, `name_set_at`); clearing puts the profile

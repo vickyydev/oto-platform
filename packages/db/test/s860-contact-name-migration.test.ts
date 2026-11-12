@@ -17,7 +17,7 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
  *
  * The entry is found by its tag suffix, never by number, so a lane that lands
  * another migration first and renumbers this one does not break the test
- * (built as 0116). The writes are exercised in
+ * (built as 0116, landed as 0117). The writes are exercised in
  * `apps/api/test/inbox-contacts.test.ts`.
  */
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');

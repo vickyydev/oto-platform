@@ -480,7 +480,7 @@ export const channelAccount = inbox.table(
  * "Erased contact", the handle a hash, phone and member link null, and
  * `erased_at` is set — the row stays so the counts still add up.
  *
- * THE NAME (SCRUM-860, `0116_inbox_contact_name`). `display_name` is the name
+ * THE NAME (SCRUM-860, `0117_inbox_contact_name`). `display_name` is the name
  * the inbox SHOWS, everywhere, and the only name any reader looks at: the
  * channel's profile name as it first arrived, or the name staff set over it.
  * `profile_name` is the channel's own profile name as last seen, kept in its
