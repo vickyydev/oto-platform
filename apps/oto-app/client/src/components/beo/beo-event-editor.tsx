@@ -98,6 +98,8 @@ import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@share
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
+import { lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
+import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex } from "./till-menu-picker";
 import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
@@ -413,6 +415,7 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
 function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
 }) {
+  const tillMenu = useTillMenuIndex();
   return (
     <div className="space-y-0.5" data-testid={`menu-item-${menuTab}-${idx}`}>
       <div className="flex items-center gap-1">
@@ -500,18 +503,26 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
           placeholder="Item name"
           data-testid={`input-menu-name-${menuTab}-${idx}`}
         />
+        {/* SCRUM-905: the till's own item for this line: its name and code written on, free typing kept. */}
+        <TillMenuPick
+          code={item.productCode}
+          onPick={(picked) => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
+          onClear={() => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
+          testId={`button-till-menu-${menuTab}-${idx}`}
+        />
         {item.source === "set_menu" && item.notes?.trim() && (
           <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>
         )}
         {item.productCode && (
           <span
             className="text-[10px] font-mono text-muted-foreground shrink-0"
-            title="On the till as a party-only item"
+            title={tillCodeTitle(tillMenu, item.productCode)}
             data-testid={`text-menu-code-${menuTab}-${idx}`}
           >
             {item.productCode}
           </span>
         )}
+        <TillCodeMark code={item.productCode} testId={`text-menu-code-dead-${menuTab}-${idx}`} />
         </div>
         {!item.notes && (
           <button
@@ -881,6 +892,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     enabled: !!beoData?.branchId,
   });
 
+  // SCRUM-905: the till's menu at the party's park, for the kitchen and bar plan pickers and
+  // their "No longer on the till" marks; asked once either section is open.
+  const tillMenu = useTillMenu(beoData?.branchId, {
+    enabled: expandedSections.includes("kitchen-plan") || expandedSections.includes("bar-plan"),
+    editable: !readOnly,
+  });
+
   const { data: partyHostsData } = useQuery<{ source: "employee" | "user"; items: Array<{ id: string; fullName: string; nickname?: string | null }> }>({
     queryKey: ["/api/beo/party-hosts"],
   });
@@ -1068,6 +1086,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           included: false,
           price: m.price || 0,
           source: m.source,
+          // SCRUM-905: a drink picked from the till's menu keeps its till code through every Save.
+          ...(typeof m.productCode === "string" && m.productCode.trim() ? { productCode: m.productCode.trim() } : {}),
         });
         if (Array.isArray(bp.items)) setBarItems(bp.items.map(mapBarItem));
       }
@@ -2080,8 +2100,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
           ))}
         </div>
 
-        <Accordion 
-          type="multiple" 
+        <TillMenuContext.Provider value={tillMenu}>
+        <Accordion
+          type="multiple"
           value={expandedSections}
           onValueChange={setExpandedSections}
           className="space-y-2"
@@ -3439,8 +3460,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                       <span className="text-xs">{item.itemName}</span>
                                       {item.notes?.trim() && <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>}
                                       {item.productCode && (
-                                        <span className="text-[10px] font-mono text-muted-foreground shrink-0" title="On the till as a party-only item">{item.productCode}</span>
+                                        <span className="text-[10px] font-mono text-muted-foreground shrink-0" title={tillCodeTitle(tillMenu.index, item.productCode)}>{item.productCode}</span>
                                       )}
+                                      <TillCodeMark code={item.productCode} testId={`adults-mirror-code-dead-${index}`} />
                                     </div>
                                   ))
                                 )}
@@ -3771,6 +3793,24 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           disabled={readOnly}
                           data-testid={`bar-item-name-${idx}`}
                         />
+                        {/* SCRUM-905: the till's own drink for this line, its name and code written on. */}
+                        <TillMenuPick
+                          code={item.productCode}
+                          prefer="bar"
+                          onPick={(picked) => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
+                          onClear={() => setBarItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
+                          testId={`button-till-menu-bar-${idx}`}
+                        />
+                        {item.productCode && (
+                          <span
+                            className="text-[10px] font-mono text-muted-foreground shrink-0"
+                            title={tillCodeTitle(tillMenu.index, item.productCode)}
+                            data-testid={`text-bar-code-${idx}`}
+                          >
+                            {item.productCode}
+                          </span>
+                        )}
+                        <TillCodeMark code={item.productCode} testId={`text-bar-code-dead-${idx}`} />
                         <EditableText
                           type="number"
                           className="w-16 text-xs font-mono shrink-0"
@@ -3879,6 +3919,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+        </TillMenuContext.Provider>
       </div>
 
       {!readOnly && (

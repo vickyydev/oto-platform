@@ -26,6 +26,7 @@ import {
   X,
   ListChecks,
 } from "lucide-react";
+import { TillCodeMark, TillMenuContext, TillMenuPick, useTillMenu } from "./till-menu-picker";
 
 /**
  * One item of a set menu (`beo_set_menu_templates.items`, documented beside the
@@ -144,6 +145,16 @@ function ItemEditor({
           title="Till product code, e.g. CF-24"
           data-testid={`input-set-menu-item-code-${item.id}`}
         />
+        {/* SCRUM-905: the till's menu for this code; the item's own words stay as they are. */}
+        <TillMenuPick
+          code={item.productCode}
+          onPick={(picked) =>
+            onChange({ ...item, productCode: picked.code, label: item.label.trim() ? item.label : picked.name } as SetMenuTemplateItem)
+          }
+          onClear={() => onChange({ ...item, productCode: null } as SetMenuTemplateItem)}
+          testId={`button-set-menu-item-till-${item.id}`}
+        />
+        <TillCodeMark code={item.productCode} testId={`text-set-menu-item-code-dead-${item.id}`} />
         <Input
           className="w-16 h-6 text-xs"
           type="number"
@@ -207,6 +218,23 @@ function ItemEditor({
                   title="Till product code for this option"
                   data-testid={`input-set-menu-option-code-${item.id}-${i}`}
                 />
+                <TillMenuPick
+                  code={item.optionProductCodes?.[opt]}
+                  onPick={(picked) =>
+                    onChange({
+                      ...item,
+                      optionProductCodes: { ...(item.optionProductCodes ?? {}), [opt]: picked.code },
+                    } as SetMenuTemplateItem)
+                  }
+                  onClear={() =>
+                    onChange({
+                      ...item,
+                      optionProductCodes: { ...(item.optionProductCodes ?? {}), [opt]: null },
+                    } as SetMenuTemplateItem)
+                  }
+                  testId={`button-set-menu-option-till-${item.id}-${i}`}
+                />
+                <TillCodeMark code={item.optionProductCodes?.[opt]} testId={`text-set-menu-option-code-dead-${item.id}-${i}`} />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -266,6 +294,9 @@ export function SetMenuTemplatesSettings() {
   const { data: templates = [], isLoading } = useQuery<SetMenuTemplate[]>({
     queryKey: ["/api/beo/set-menu-templates"],
   });
+  // SCRUM-905: the till's menu at every park the person may open, for the code pickers and their
+  // "No longer on the till" marks. A template is the park group's, so a code live at any park is live.
+  const tillMenu = useTillMenu(null, { enabled: true, editable: true, allParks: true });
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; items: SetMenuTemplateItem[] }) =>
@@ -351,7 +382,7 @@ export function SetMenuTemplatesSettings() {
   };
 
   return (
-    <>
+    <TillMenuContext.Provider value={tillMenu}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
@@ -445,6 +476,7 @@ export function SetMenuTemplatesSettings() {
                               {item.productCode && (
                                 <span className="text-xs text-muted-foreground ml-1 font-mono">{item.productCode}</span>
                               )}
+                              <TillCodeMark code={item.productCode} className="ml-1" testId={`text-set-menu-view-code-dead-${item.id}`} />
                               {item.type === "choice_group" && item.options.length > 0 && (
                                 <span className="text-xs text-muted-foreground ml-1">
                                   ({item.options
@@ -456,6 +488,16 @@ export function SetMenuTemplatesSettings() {
                                   {item.allowMultiple && " — multi-select"}
                                 </span>
                               )}
+                              {item.type === "choice_group" &&
+                                item.options.map((option, oi) => (
+                                  <TillCodeMark
+                                    key={option}
+                                    code={item.optionProductCodes?.[option]}
+                                    name={option}
+                                    className="ml-1"
+                                    testId={`text-set-menu-view-option-code-dead-${item.id}-${oi}`}
+                                  />
+                                ))}
                               {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
                             </div>
                           </div>
@@ -543,6 +585,6 @@ export function SetMenuTemplatesSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </TillMenuContext.Provider>
   );
 }

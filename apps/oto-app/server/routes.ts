@@ -155,6 +155,7 @@ import {
 
 import { registerBeoRoutes } from "./beo-routes";
 import { registerPartyMenuRoutes } from "./party-menu-routes";
+import { registerTillMenuRoutes } from "./till-menu-routes";
 import { registerPartyBillingRoutes } from "./party-billing-routes";
 import { registerPartyDepositRoutes, registerPartyMenuSubmissionHook } from "./party-deposit-routes";
 import dataAdminRouter from "./data-admin/router";
@@ -946,6 +947,8 @@ export async function registerRoutes(
   registerBeoRoutes(app);
   // SCRUM-828: a new menu item added from the BEO's food lines, made a BEO-only till product.
   registerPartyMenuRoutes(app);
+  // SCRUM-905: the till's menu for the BEO's kitchen and bar plan pickers and the set menu codes.
+  registerTillMenuRoutes(app);
   // SCRUM-822: a party's money in the BEO, read from the till; and its Quote PDF.
   registerPartyBillingRoutes(app);
   // SCRUM-825: a party's deposit asked from the BEO through the platform, and the parent's menu link.
