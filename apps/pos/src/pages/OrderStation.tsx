@@ -1619,6 +1619,8 @@ export default function OrderStation() {
               onBack={backFromPayment}
               useCredit={useCredit}
               onUseCreditChange={setUseCredit}
+              // SCRUM-960 — the order stays part-paid on the platform; the station starts afresh.
+              onSavePartPaid={resetOrder}
             />
             {/*
               What the platform has done with this order, in the same panels the

@@ -1,8 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Wristband } from '@/types';
 import { isCreditSettlement, type PaymentSettlement, type usePaymentStage } from '@/lib/usePaymentStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from '@/hooks/use-toast';
+import { formatTHB } from '@oto/shared';
+import { itemPartPaidExit } from '@/lib/itemPartPaid';
 import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
 import { cn } from '@/lib/utils';
 import { bahtText, groupedSatangText } from '@/lib/bahtText';
@@ -52,9 +56,57 @@ interface FnbPaymentProps {
    */
   useCredit?: boolean;
   onUseCreditChange?: (useCredit: boolean) => void;
+  /**
+   * SCRUM-960 — leave a part-paid order as it is and start afresh
+   * (`itemPartPaidExit`): the station's own reset, nothing voided or written.
+   * Without it the button is not offered.
+   */
+  onSavePartPaid?: () => void;
 }
 
-export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange }: FnbPaymentProps) {
+/**
+ * SCRUM-960 — "Save as partly paid" on the F&B and shop payment screen: the
+ * ticket till's button and dialog (`HoldSaleButtons`, `HoldSaleDialog`), in
+ * their words and style, for an order that has had a part paid. The dialog
+ * says what becomes of the order, as the till's does.
+ */
+function SavePartPaid({ stage, onSave }: { stage: FnbPaymentProps['stage']; onSave: () => void }) {
+  const [open, setOpen] = useState(false);
+  const exit = itemPartPaidExit(stage);
+  if (!exit.shown) return null;
+  const paid = formatTHB(exit.paidSatang);
+  const balance = formatTHB(exit.balanceSatang);
+  const save = () => {
+    setOpen(false);
+    toast({ title: 'Saved as partly paid', description: `${paid} paid, balance ${balance}. In History as Partly paid.` });
+    onSave();
+  };
+  return (
+    <div className="mt-6 flex flex-col gap-1" data-testid="item-part-paid">
+      <Button variant="outline" size="lg" className="h-14 gap-2" disabled={exit.reason !== null} onClick={() => setOpen(true)}>
+        <Wallet className="h-5 w-5" />
+        Save as partly paid
+      </Button>
+      {exit.reason && <p className="text-xs text-muted-foreground" data-testid="item-part-paid-reason">{exit.reason}</p>}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md" data-testid="item-part-paid-dialog">
+          <DialogHeader>
+            <DialogTitle>Save as partly paid</DialogTitle>
+            <DialogDescription>
+              {`${paid} paid, balance ${balance}. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Back</Button>
+            <Button disabled={exit.reason !== null} onClick={save}>Save as partly paid</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange, onSavePartPaid }: FnbPaymentProps) {
   const methods = getEnabledPaymentMethods().filter((method) => ['cash', 'card', 'qr'].includes(method.kind));
   const balance = creditBalanceOverride ?? wristband?.creditBalanceTHB ?? 0;
   const outstandingSatang = stage.state.outstandingSatang;
@@ -289,6 +341,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
         </div>
 
         <div className="mt-6"><PaymentTenderPanel stage={stage} showSubmit={!free && !creditCoversAll} /></div>
+        {onSavePartPaid && <SavePartPaid stage={stage} onSave={onSavePartPaid} />}
         <div className="mt-4">
           <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack && !stage.canCancel}
             onClick={stage.canCancel ? () => { void stage.cancel(); } : onBack}><ArrowLeft className="w-5 h-5" />Back</Button>
