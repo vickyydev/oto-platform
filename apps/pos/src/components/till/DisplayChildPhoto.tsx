@@ -35,7 +35,7 @@ export function useCameraPresence(enabled: boolean): CameraPresence {
     if (!enabled) return;
     let alive = true;
     const media = typeof navigator === 'undefined' ? undefined : navigator.mediaDevices;
-    if (window.isSecureContext === false || !media?.getUserMedia) {
+    if ((globalThis as { isSecureContext?: boolean }).isSecureContext === false || !media?.getUserMedia) {
       setPresence('none');
       return;
     }
