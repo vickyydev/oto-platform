@@ -4,6 +4,7 @@ import {
   Archive,
   Briefcase,
   Filter,
+  FlaskConical,
   Globe2,
   Inbox,
   Layers,
@@ -136,7 +137,7 @@ export function FilterFields({
   );
 }
 
-const VIEW_ICON: Record<NamedView['kind'], LucideIcon> = { all: MessagesSquare, general: MessageCircle, category: Tag, branch: MapPin };
+const VIEW_ICON: Record<NamedView['kind'], LucideIcon> = { all: MessagesSquare, general: MessageCircle, category: Tag, branch: MapPin, line: FlaskConical };
 const CATEGORY_VIEW_ICON: Record<string, LucideIcon> = { birthdays: PartyPopper, gm: Briefcase };
 
 /**
@@ -153,7 +154,7 @@ export function InboxViews({
   filters,
   onChange,
 }: {
-  me: Pick<InboxMe, 'teams'>;
+  me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines'>>;
   filters: Filters;
   onChange: (next: Partial<Filters>) => void;
 }) {

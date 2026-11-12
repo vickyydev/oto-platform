@@ -87,10 +87,10 @@ export function sourcesOfRows(rows: readonly Pick<ConversationRow, 'channel' | '
 // --- The named views ----------------------------------------------------------------------------
 
 export interface NamedView {
-  /** `all`, `general`, `birthdays`, `gm`, or `branch:<id>`. */
+  /** `all`, `general`, `birthdays`, `gm`, `branch:<id>`, or `line:<id>` (SCRUM-908). */
   key: string;
   label: string;
-  kind: 'all' | 'general' | 'category' | 'branch';
+  kind: 'all' | 'general' | 'category' | 'branch' | 'line';
   /** The chips the view sets; every other chip row is cleared. */
   chips: Partial<Pick<Filters, ChipDim>>;
 }
@@ -111,7 +111,7 @@ export const GENERAL_INBOX_LABEL = 'General';
  * the park's reception desk names it (`branchOptions`) — a park's view holds
  * only what its local team must handle.
  */
-export function namedViews(me: Pick<InboxMe, 'teams'>): NamedView[] {
+export function namedViews(me: Pick<InboxMe, 'teams'> & Partial<Pick<InboxMe, 'testLines'>>): NamedView[] {
   const out: NamedView[] = [
     { key: 'all', label: ALL_VIEW_LABEL, kind: 'all', chips: {} },
     { key: 'general', label: GENERAL_INBOX_LABEL, kind: 'general', chips: { inbox: 'general' } },
@@ -124,7 +124,17 @@ export function namedViews(me: Pick<InboxMe, 'teams'>): NamedView[] {
   for (const b of branchOptions(me.teams)) {
     out.push({ key: `branch:${b.id}`, label: b.label, kind: 'branch', chips: { branchId: b.id } });
   }
+  // SCRUM-908: each WhatsApp test line is an inbox of its own, last — the
+  // number's conversations and nothing else (its Source chip, saved).
+  for (const line of me.testLines ?? []) {
+    out.push({ key: `line:${line.id}`, label: line.displayName, kind: 'line', chips: { channelAccountId: line.id } });
+  }
   return out;
+}
+
+/** SCRUM-908: whether the viewer may press Start over on a conversation of this number. */
+export function mayStartOver(me: Partial<Pick<InboxMe, 'testLines'>>, channelAccountId: string): boolean {
+  return (me.testLines ?? []).some((l) => l.id === channelAccountId && l.startOver);
 }
 
 /** Opening a view: its chips on, every other chip row off. The search, the unanswered toggle and the archive's filters stay. */

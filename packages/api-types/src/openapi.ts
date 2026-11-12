@@ -21412,6 +21412,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/inbox/twilio/{channelAccountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Twilio's form-encoded posts for one inbox channel account on the WhatsApp test line (SCRUM-908): an incoming message ("When a message comes in") and a status callback ("Status callback URL") both come here. Verified on X-Twilio-Signature over this deployment's configured public origin plus this path and every posted field, recorded as a webhook receipt keyed on the delivery, its messages deduplicated on Twilio's message SID, filed, routed and answered by the assistant as any delivery is. A message from a number not on the line's allow-list is recorded as having arrived and nothing else. It ALWAYS answers 200 with an empty TwiML document, refusals included. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    channelAccountId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/simulator/inbound": {
         parameters: {
             query?: never;
@@ -35526,6 +35566,16 @@ export interface paths {
                                 /** Format: uuid */
                                 branchId: string | null;
                             }[];
+                            testLines?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
+                                displayName: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                startOver: boolean;
+                            }[];
                         };
                     };
                 };
@@ -37644,6 +37694,140 @@ export interface paths {
                             conversationId: string;
                             visible: boolean;
                             teamName: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                details?: {
+                                    [key: string]: unknown;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/test-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Set up the WhatsApp test line (SCRUM-908): the operator's channel account on Twilio's WhatsApp sandbox number (provider twilio), found or created — operator-wide, default category general, the assistant off until a person switches the line to live in the Assistant settings. Answers the names of its three settings (never a value), the address to paste into Twilio’s Sandbox configuration for both "When a message comes in" and "Status callback URL", and whether the line is connected on this deployment and why not. A second call finds the same line and writes nothing. Audit row inbox.channel_account.create when it creates. Needs inbox:channel:manage at operator scope. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        displayName?: string;
+                        credentialRef?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            channelAccountId: string;
+                            displayName: string;
+                            externalId: string;
+                            credentialRef: string;
+                            created: boolean;
+                            settings: {
+                                accountSid: string;
+                                authToken: string;
+                                allowedNumbers: string;
+                            };
+                            webhookUrl: string | null;
+                            webhookPath: string;
+                            connected: boolean;
+                            reason: string | null;
+                            /** @enum {string} */
+                            aiMode: "off" | "shadow" | "live";
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/conversations/{id}/start-over": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start over on a conversation of the WhatsApp test line (SCRUM-908), so the tester can write again as a new customer. In one transaction: the assistant’s turns cancelled and every queued line of the thread withdrawn; the words removed by the PDPA erasure’s own steps, for this thread only (message text, translations, transcripts and media, the answers read into the assistant’s open questions, the unapproved examples copied from it, the word-bearing timeline keys, the raw deliveries on this line that name the number); waiting hand-over notices skipped; the thread archived — it leaves every inbox read and the thread key, so the number’s next message opens a new conversation; and the contact’s names and language reset, refilled from the next message. A conversation of any other number answers 409 NOT_A_TEST_LINE. A cleared one answers alreadyCleared: true and changes nothing. One inbox.conversation.start_over audit row (ids and counts). Needs inbox:channel:manage at the line; 404 when the conversation is not the caller’s to see. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: uuid */
+                            contactId: string;
+                            /** Format: uuid */
+                            channelAccountId: string;
+                            alreadyCleared: boolean;
+                            clearedAt: string;
+                            messages: number;
+                            filesDeleted: number;
+                            turnsCancelled: number;
+                            linesWithdrawn: number;
+                            openQuestionAnswers: number;
+                            examplesDeleted: number;
+                            eventsRedacted: number;
+                            webhookPayloadsPurged: number;
+                            contactReset: boolean;
                         };
                     };
                 };

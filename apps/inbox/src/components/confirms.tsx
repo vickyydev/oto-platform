@@ -1,4 +1,4 @@
-import { ArrowRightLeft, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react';
+import { ArrowRightLeft, CheckCircle2, Loader2, RotateCcw, ShieldAlert } from 'lucide-react';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import { Dialog } from '@/components/Dialog';
 import { CATEGORY_LABEL } from '@/lib/view';
@@ -209,5 +209,64 @@ export function Refusal({ text, tone = 'rose' }: { text: string; tone?: 'rose' |
     >
       {text}
     </p>
+  );
+}
+
+/** SCRUM-908: the header button's name and the dialog's title. */
+export const START_OVER_LABEL = 'Start over';
+
+/**
+ * "Start over with this number?" (SCRUM-908) — a conversation of the WhatsApp
+ * TEST LINE only: the owner's "an option to delete the chat so he can try
+ * again with a new message acting as a new customer". Said plainly before the
+ * press, because it cannot be undone.
+ */
+export function StartOverConfirm({
+  open,
+  busy,
+  error,
+  lineName,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  busy: boolean;
+  error: string | null;
+  /** The test line's name, as the rail shows it. */
+  lineName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      icon={RotateCcw}
+      iconTint="bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      title="Start over with this number?"
+      subtitle={lineName}
+      footer={
+        <>
+          <button type="button" onClick={onCancel} disabled={busy} className={CANCEL}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+          >
+            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Yes, start over
+          </button>
+        </>
+      }
+    >
+      <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+        This test conversation leaves the inbox and its messages are erased. The assistant forgets this number: the
+        next message from it starts a new conversation, as from a new customer. This cannot be undone.
+      </p>
+      {error && <Refusal text={error} />}
+    </Dialog>
   );
 }

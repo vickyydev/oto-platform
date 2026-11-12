@@ -169,6 +169,16 @@ export const inboxApi = {
       idempotencyKey: idemKey(),
     }),
 
+  /**
+   * SCRUM-908: Start over on a conversation of the WhatsApp test line — it
+   * leaves the inbox, its words go, and the number's next message is a new
+   * conversation. The api refuses any other number's (409 NOT_A_TEST_LINE).
+   */
+  startOver: (id: string) =>
+    api.post<ApiResponse<'/inbox/conversations/{id}/start-over', 'post'>>(`${at(id)}/start-over`, undefined, {
+      idempotencyKey: idemKey(),
+    }),
+
   // --- The reply (I2f) ---------------------------------------------------------------
 
   /**

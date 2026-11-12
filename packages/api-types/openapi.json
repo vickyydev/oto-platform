@@ -51447,6 +51447,34 @@
         }
       }
     },
+    "/webhooks/inbox/twilio/{channelAccountId}": {
+      "post": {
+        "description": "Twilio's form-encoded posts for one inbox channel account on the WhatsApp test line (SCRUM-908): an incoming message (\"When a message comes in\") and a status callback (\"Status callback URL\") both come here. Verified on X-Twilio-Signature over this deployment's configured public origin plus this path and every posted field, recorded as a webhook receipt keyed on the delivery, its messages deduplicated on Twilio's message SID, filed, routed and answered by the assistant as any delivery is. A message from a number not on the line's allow-list is recorded as having arrived and nothing else. It ALWAYS answers 200 with an empty TwiML document, refusals included.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "channelAccountId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/inbox/simulator/inbound": {
       "post": {
         "description": "Play one pretend customer message into a simulator channel account: signed with this deployment's simulator secret and sent through the real inbox webhook handler (verify, receipt, dedupe, contact, thread, routing, out-of-hours). With `voice` (SCRUM-824) the message is a WhatsApp voice note carrying the uploaded audio (base64, at most 1 MB), stored and transcribed as a real one is; `text` may then be left out. Simulator only (INBOX_SIMULATOR=on).",
@@ -90994,6 +91022,48 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "testLines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "whatsapp",
+                              "instagram",
+                              "facebook",
+                              "line",
+                              "telegram",
+                              "webform"
+                            ]
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "startOver": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "channel",
+                          "displayName",
+                          "branchId",
+                          "startOver"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -96436,6 +96506,247 @@
                     "conversationId",
                     "visible",
                     "teamName"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/test-lines": {
+      "post": {
+        "description": "Set up the WhatsApp test line (SCRUM-908): the operator's channel account on Twilio's WhatsApp sandbox number (provider twilio), found or created — operator-wide, default category general, the assistant off until a person switches the line to live in the Assistant settings. Answers the names of its three settings (never a value), the address to paste into Twilio’s Sandbox configuration for both \"When a message comes in\" and \"Status callback URL\", and whether the line is connected on this deployment and why not. A second call finds the same line and writes nothing. Audit row inbox.channel_account.create when it creates. Needs inbox:channel:manage at operator scope.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "credentialRef": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_]{1,64}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "channelAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "externalId": {
+                      "type": "string"
+                    },
+                    "credentialRef": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "settings": {
+                      "type": "object",
+                      "properties": {
+                        "accountSid": {
+                          "type": "string"
+                        },
+                        "authToken": {
+                          "type": "string"
+                        },
+                        "allowedNumbers": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "accountSid",
+                        "authToken",
+                        "allowedNumbers"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "webhookUrl": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "webhookPath": {
+                      "type": "string"
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "aiMode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "shadow",
+                        "live"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "channelAccountId",
+                    "displayName",
+                    "externalId",
+                    "credentialRef",
+                    "created",
+                    "settings",
+                    "webhookUrl",
+                    "webhookPath",
+                    "connected",
+                    "reason",
+                    "aiMode"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/conversations/{id}/start-over": {
+      "post": {
+        "description": "Start over on a conversation of the WhatsApp test line (SCRUM-908), so the tester can write again as a new customer. In one transaction: the assistant’s turns cancelled and every queued line of the thread withdrawn; the words removed by the PDPA erasure’s own steps, for this thread only (message text, translations, transcripts and media, the answers read into the assistant’s open questions, the unapproved examples copied from it, the word-bearing timeline keys, the raw deliveries on this line that name the number); waiting hand-over notices skipped; the thread archived — it leaves every inbox read and the thread key, so the number’s next message opens a new conversation; and the contact’s names and language reset, refilled from the next message. A conversation of any other number answers 409 NOT_A_TEST_LINE. A cleared one answers alreadyCleared: true and changes nothing. One inbox.conversation.start_over audit row (ids and counts). Needs inbox:channel:manage at the line; 404 when the conversation is not the caller’s to see.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "contactId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "channelAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "alreadyCleared": {
+                      "type": "boolean"
+                    },
+                    "clearedAt": {
+                      "type": "string"
+                    },
+                    "messages": {
+                      "type": "integer"
+                    },
+                    "filesDeleted": {
+                      "type": "integer"
+                    },
+                    "turnsCancelled": {
+                      "type": "integer"
+                    },
+                    "linesWithdrawn": {
+                      "type": "integer"
+                    },
+                    "openQuestionAnswers": {
+                      "type": "integer"
+                    },
+                    "examplesDeleted": {
+                      "type": "integer"
+                    },
+                    "eventsRedacted": {
+                      "type": "integer"
+                    },
+                    "webhookPayloadsPurged": {
+                      "type": "integer"
+                    },
+                    "contactReset": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "conversationId",
+                    "contactId",
+                    "channelAccountId",
+                    "alreadyCleared",
+                    "clearedAt",
+                    "messages",
+                    "filesDeleted",
+                    "turnsCancelled",
+                    "linesWithdrawn",
+                    "openQuestionAnswers",
+                    "examplesDeleted",
+                    "eventsRedacted",
+                    "webhookPayloadsPurged",
+                    "contactReset"
                   ],
                   "additionalProperties": false
                 }

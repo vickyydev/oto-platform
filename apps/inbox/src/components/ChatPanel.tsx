@@ -15,6 +15,7 @@ import {
   PlayCircle,
   Plus,
   Repeat,
+  RotateCcw,
   X,
 } from 'lucide-react';
 import { INBOX_CATEGORY_KEYS, type InboxCategoryKey } from '@oto/shared/inbox';
@@ -36,14 +37,21 @@ import { BookDateDialog, type BookDateValues } from '@/components/BookDateDialog
 import { Composer, MANAGER_REOPENS, type InsertedTemplate } from '@/components/Composer';
 import { ContactNameDialog } from '@/components/ContactDialogs';
 import { CorrectAssistant, type CorrectionTarget } from '@/components/CorrectAssistant';
-import { PrimaryMoveConfirm, TeamMoveConfirm, type PendingPrimaryMove, type PendingTeamMove } from '@/components/confirms';
+import {
+  PrimaryMoveConfirm,
+  START_OVER_LABEL,
+  StartOverConfirm,
+  TeamMoveConfirm,
+  type PendingPrimaryMove,
+  type PendingTeamMove,
+} from '@/components/confirms';
 import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
 import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { OpenQuestionLine } from '@/components/OpenQuestionLine';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
 import { EDIT_NAME_LABEL } from '@/lib/contacts';
-import { sourceLabel } from '@/lib/inboxes';
+import { mayStartOver, sourceLabel } from '@/lib/inboxes';
 import { openQuestionsByMessage } from '@/lib/open-question';
 import { PARTY_REMOVED_LABEL, bookDateDraft, eventChipLabel, eventLinkOf, parseBeoFromConversation } from '@/lib/beo';
 import {
@@ -192,6 +200,10 @@ export function ChatPanel({
   const [bookError, setBookError] = useState<string | null>(null);
   /** SCRUM-860: the header's pencil — the name the inbox shows for this contact. */
   const [editingName, setEditingName] = useState(false);
+  /** SCRUM-908: Start over on a conversation of the WhatsApp test line. */
+  const [startingOver, setStartingOver] = useState(false);
+  const [startOverBusy, setStartOverBusy] = useState(false);
+  const [startOverError, setStartOverError] = useState<string | null>(null);
 
   // A refusal belongs to the conversation it was said about.
   useEffect(() => {
@@ -254,6 +266,25 @@ export function ChatPanel({
       setError(refusalOf(err, fallback));
     } finally {
       setBusy(null);
+    }
+  };
+
+  // SCRUM-908: the test line's Start over — the conversation leaves the inbox,
+  // so the panel closes once the list is read again.
+  const testLine = (me.testLines ?? []).find((l) => l.id === conv.channelAccountId) ?? null;
+  const startOverAllowed = live && mayStartOver(me, conv.channelAccountId);
+  const confirmStartOver = async () => {
+    setStartOverBusy(true);
+    setStartOverError(null);
+    try {
+      await inboxApi.startOver(conv.id);
+      setStartingOver(false);
+      await onChanged();
+      onBack();
+    } catch (err) {
+      setStartOverError(refusalOf(err, 'The conversation could not be cleared.'));
+    } finally {
+      setStartOverBusy(false);
     }
   };
 
@@ -574,6 +605,20 @@ export function ChatPanel({
             }
           />
         </div>
+        {startOverAllowed && (
+          <button
+            type="button"
+            onClick={() => {
+              setStartOverError(null);
+              setStartingOver(true);
+            }}
+            aria-label={START_OVER_LABEL}
+            title={`${START_OVER_LABEL} — test line`}
+            className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenDetails}
@@ -1074,6 +1119,16 @@ export function ChatPanel({
         />
       )}
       <ContactNameDialog open={editingName} onClose={() => setEditingName(false)} row={conv} now={now} onChanged={onChanged} />
+      <StartOverConfirm
+        open={startingOver}
+        busy={startOverBusy}
+        error={startOverError}
+        lineName={testLine?.displayName ?? sourceLabel(conv.channel, conv.channelAccountName)}
+        onCancel={() => {
+          if (!startOverBusy) setStartingOver(false);
+        }}
+        onConfirm={() => void confirmStartOver()}
+      />
       <DetailsDialog
         open={detailsOpen}
         onClose={onCloseDetails}
