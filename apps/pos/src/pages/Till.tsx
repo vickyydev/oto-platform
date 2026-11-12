@@ -132,6 +132,7 @@ import { partyPageHref, useLeftBehindSales } from '@/lib/leftBehindSale';
 import { isPartySettlementDetail, rebuildResumedSale, resumedPayLabel } from '@/lib/resumeSale';
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
+import { collectDisplayConsentPhoto } from '@/api/consentPhoto';
 import { closedOnBox, laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
@@ -3581,6 +3582,9 @@ export default function Till() {
     slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name.slice(0, 100),
       ageYears: slotAgeOf(slot), requirement: outcome.effective,
       dateOfBirth: slot.dateOfBirth ?? null,
+      // SCRUM-857 — the family takes the photo on the paired display: each
+      // child the photo is asked for, and whether this till holds one yet.
+      ...(outcome.needsConsent && station?.stationId ? { photo: slot.childPhotoUrl ? 'taken' as const : 'needed' as const } : {}),
       ...(slot.savedChildId ? { saved: true } : {
         allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
       }) })),
@@ -3672,6 +3676,20 @@ export default function Till() {
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
         answered: () => setDisplayAnswerRevision(previous => previous + 1),
+        // SCRUM-857 — the family's photo, collected from the platform and kept
+        // on the child's slot exactly as a photo staff take is kept: uploaded to
+        // the registration when it is written. A picture that arrives after the
+        // sale or the visitor moved on is dropped.
+        takePhoto: (slotId, fileId) => {
+          const stationId = station?.stationId;
+          const visitorId = action.data.visitorId;
+          if (!stationId) return;
+          void collectDisplayConsentPhoto(stationId, { fileId, visitorId, slotId }).then((dataUrl) => {
+            if (reviewEpoch !== saleEpochRef.current || reviewContext.current.visitorId !== visitorId
+              || !reviewContext.current.slots.some(slot => slot.id === slotId)) return;
+            handleUpdateSlot(slotId, { childPhotoUrl: dataUrl });
+          }, () => undefined);
+        },
       });
       // Acknowledgement never authorises registration, policy changes or payment.
       // Continue remains the existing staff action after all private checks.

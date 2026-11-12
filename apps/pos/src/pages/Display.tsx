@@ -4,6 +4,7 @@ import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisp
 import { TenderCustomerDisplay } from '@/components/shared/TenderCustomerDisplay';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
 import { displayBridgeApi, watchBridgeSnapshots } from '@/api/bridge';
+import { sendDisplayConsentPhoto } from '@/api/consentPhoto';
 import { ApiError } from '@/api/client';
 
 /**
@@ -452,7 +453,10 @@ export default function Display() {
       <div className="flex-1 min-h-0" inert={consentLocked}>
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
           busy={consentLocked} answerPending={consentAnswerPending}
-          onAction={action => { void send('display.consent', action, action.action === 'fill'); }} />
+          onAction={action => { void send('display.consent', action, action.action === 'fill'); }}
+          // SCRUM-857 — the family's photo goes to the platform with this
+          // screen's own credential, for this form and child only.
+          sendPhoto={(form, dataUrl) => sendDisplayConsentPhoto(bearerRef.current, form, dataUrl)} />
       </div>
       {consentLocked && <p role="status" className="shrink-0 text-center py-3">
         {busy ? t('display.sending') : t('display.waitForConfirm')}

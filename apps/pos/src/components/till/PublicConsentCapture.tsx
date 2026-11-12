@@ -15,6 +15,8 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
+import type { DisplayPhotoForm } from '@/api/consentPhoto';
+import { DisplayChildPhoto, useCameraPresence } from './DisplayChildPhoto';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 
@@ -73,6 +75,14 @@ import { cn } from '@/lib/utils';
  * changed the field to something else meanwhile. The last change the station
  * accepted wins, so typing that had not reached the till before staff changed
  * the same field gives way to staff's, which the family then sees.
+ *
+ * SCRUM-857 — the family takes each child's photo here, with the camera
+ * button the till's own customer half has (the owner's ruling of 8
+ * November). Shown for a child the till marks `photo` (needed or taken) on a
+ * screen that can send it (`sendPhoto`); the picture goes to the platform
+ * for this form and child, then a `photo` answer names it to the till. With
+ * no camera, a refused camera or no mark (an older till or station), the
+ * screen says reception will take the photo, and staff take it on the till.
  */
 
 interface ChildDraft {
@@ -254,7 +264,7 @@ const LIVE_TRIES = 3;
 const LIVE_IGNORED = 2;
 
 /** The public part of ConsentCapture: the family fills it; the photo and staff decisions remain at the till. */
-export function PublicConsentCapture({ prompt, busy, onAction, answerPending = busy, mirror }: {
+export function PublicConsentCapture({ prompt, busy, onAction, answerPending = busy, mirror, sendPhoto }: {
   prompt: ConsentPrompt;
   /** The form is locked: the family pressed Done or asked something the till must answer first. */
   busy: boolean;
@@ -273,6 +283,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
    * step is shown, one under the other.
    */
   mirror?: { step: ConsentFormStep | null };
+  /** SCRUM-857 — store the family's picture of a child; answered with the stored file's id. Absent, the photo stays at reception. */
+  sendPhoto?: (form: DisplayPhotoForm, dataUrl: string) => Promise<string>;
 }) {
   const { t, lang } = useLanguage();
   /**
@@ -335,6 +347,31 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
 
   const fence = { requestId: prompt.requestId, visitorId: prompt.visitorId };
   const locked = busy || prompt.completed;
+  // SCRUM-857 — the family's photos: one file id per picture (a resend is the
+  // same file), and each stored picture named to the till once the screen is
+  // free to answer, the latest picture of a child replacing an earlier one.
+  const takesPhotos = !!sendPhoto && prompt.slots.some((slot) => slot.photo !== undefined);
+  const presence = useCameraPresence(takesPhotos);
+  const photoIds = useRef(new Map<string, string>());
+  const [photosToName, setPhotosToName] = useState<{ slotId: string; fileId: string }[]>([]);
+  useEffect(() => {
+    if (busy || prompt.completed || photosToName.length === 0) return;
+    const [first, ...rest] = photosToName;
+    setPhotosToName(rest);
+    if (prompt.slots.some((slot) => slot.id === first!.slotId && slot.photo !== undefined)) {
+      onAction({ ...fence, action: 'photo', slotId: first!.slotId, fileId: first!.fileId });
+    }
+  }, [busy, prompt, photosToName]); // eslint-disable-line react-hooks/exhaustive-deps -- `fence` and `onAction` follow `prompt` and the parent's render
+  const uploadFor = (slotId: string) => async (dataUrl: string): Promise<string> => {
+    const key = `${slotId}\n${dataUrl}`;
+    const id = photoIds.current.get(key) ?? crypto.randomUUID();
+    photoIds.current.set(key, id);
+    return sendPhoto!({ id, visitorId: prompt.visitorId, slotId }, dataUrl);
+  };
+  const photoOf = (slot: ConsentPrompt['slots'][number]) => takesPhotos && slot.photo !== undefined
+    ? <DisplayChildPhoto mark={slot.photo} presence={presence} upload={uploadFor(slot.id)}
+      onStored={(fileId) => setPhotosToName((queued) => [...queued.filter((item) => item.slotId !== slot.id), { slotId: slot.id, fileId }])} />
+    : null;
   const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
   // SCRUM-857 — a till that follows the family's step (`familyStep`) hears
   // every step change; one that does not is sent the form as before.
@@ -529,6 +566,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
           const child = draft.slots[slot.id]!;
           return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-4" data-testid="consent-care">
             <div className="flex items-center gap-2 text-xl font-semibold"><Baby className="h-5 w-5" />{child.name || t('superviseConsent.thisChild')}</div>
+            {photoOf(slot)}
             {slot.saved ? <p className="text-lg text-foreground/70">{t('superviseConsent.savedOnProfile')}</p> : <>
               <div>
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
@@ -544,7 +582,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             </>}
           </div>;
         })}
-        {prompt.consentRequired && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
+        {prompt.consentRequired && !takesPhotos && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
       </>}
 
       {shows('agreements') && <>

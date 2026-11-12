@@ -128,6 +128,13 @@ export interface ConsentFormTill {
    * re-pairs comes back to it). Optional, like the confirmation above.
    */
   setFamilyStep?: (step: ConsentFormStep | null) => void;
+  /**
+   * SCRUM-857 — the family took a child's photo on the display: collect the
+   * stored file and keep it where a photo staff take is kept. Optional, so a
+   * till (or a test's model of one) from before it is unchanged; such a till
+   * never publishes a form that asks the display for a photo.
+   */
+  takePhoto?: (slotId: string, fileId: string) => void;
 }
 
 /**
@@ -147,6 +154,8 @@ export interface ConsentFormTill {
  */
 export function takeConsentAction(action: ConsentAction, till: ConsentFormTill): void {
   if (action.action === 'staff_help') till.askedForHelp();
+  // SCRUM-857 — a photo is not a step of the form and never finishes it.
+  else if (action.action === 'photo') till.takePhoto?.(action.slotId, action.fileId);
   else if (action.action === 'acknowledge') {
     till.setGuardianName(action.guardianName);
     till.setConsentAcknowledged(action.consentAcknowledged);

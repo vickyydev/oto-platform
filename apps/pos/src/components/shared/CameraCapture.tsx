@@ -24,6 +24,18 @@ interface CameraCaptureProps {
   onUploaded?: (fileId: string | null) => void;
   /** The customer's language, on a customer-facing screen. Left out, English. */
   lang?: SupportedLang;
+  /**
+   * SCRUM-857 — the longest edge of the taken picture, in pixels. Given, the
+   * frame is scaled down before it is handed up, so a photo sent from the
+   * customer display is small. Left out, the camera's own size as before.
+   */
+  maxEdge?: number;
+  /**
+   * SCRUM-857 — what to tell the person when the camera is blocked or absent.
+   * Left out, the till's own line (continue without a photo); the customer
+   * display says reception will take the photo instead.
+   */
+  unavailableNote?: string;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
@@ -35,7 +47,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
  * with no photo (the caller decides whether a photo is mandatory). Always stops
  * the stream on capture and on unmount so the camera light goes off.
  */
-export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded, lang }: CameraCaptureProps) {
+export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded, lang, maxEdge, unavailableNote }: CameraCaptureProps) {
   const t = tFor(lang ?? 'en');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -44,6 +56,10 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
   const [saveError, setSaveError] = useState<string | null>(null);
   // The frame being saved; a retake supersedes it, so a late answer is dropped.
   const pendingRef = useRef<string | null>(null);
+  // SCRUM-857 — a camera that answers after the component has gone (the form
+  // moved on, the display went back to idle) is switched off at once, so no
+  // camera light is left on between customers.
+  const mountedRef = useRef(true);
 
   const store = async (dataUrl: string) => {
     if (!upload) return;
@@ -79,6 +95,10 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
         video: { facingMode: 'user' },
         audio: false,
       });
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -86,19 +106,34 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
       }
       setState('live');
     } catch (err) {
+      if (!mountedRef.current) return;
       const name = (err as DOMException)?.name;
       setState(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable');
     }
   };
 
   // Stop the stream when the component goes away (camera light off).
-  useEffect(() => () => stop(), []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; stop(); };
+  }, []);
+
+  // SCRUM-857 — a photo that arrives from elsewhere (the family took it on
+  // their own screen while staff have this one open) is shown here at once,
+  // unless the camera here is live or starting, which is someone taking one.
+  useEffect(() => {
+    if (value) setState((current) => (current === 'live' || current === 'requesting' ? current : 'captured'));
+    else setState((current) => (current === 'captured' ? 'idle' : current));
+  }, [value]);
 
   const capture = () => {
     const video = videoRef.current;
     if (!video) return;
-    const w = video.videoWidth || 320;
-    const h = video.videoHeight || 240;
+    const sourceW = video.videoWidth || 320;
+    const sourceH = video.videoHeight || 240;
+    const scale = maxEdge ? Math.min(1, maxEdge / Math.max(sourceW, sourceH)) : 1;
+    const w = Math.round(sourceW * scale);
+    const h = Math.round(sourceH * scale);
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
@@ -173,7 +208,7 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
               {state === 'denied' ? t('camera.blocked') : t('camera.none')}
             </span>
             <span className="text-sm text-foreground/50">
-              {t('camera.continueWithout')}
+              {unavailableNote ?? t('camera.continueWithout')}
             </span>
           </div>
         )}
