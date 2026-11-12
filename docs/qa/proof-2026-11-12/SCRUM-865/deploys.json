@@ -1,0 +1,65 @@
+{
+  "oto-api-staging": {
+    "named": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:11.018066Z",
+      "finishedAt": "2026-11-12T03:08:01.711582Z"
+    },
+    "live": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:11.018066Z",
+      "finishedAt": "2026-11-12T03:08:01.711582Z"
+    },
+    "latest": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0"
+    },
+    "readAt": "2026-11-12T03:09:24.325Z"
+  },
+  "oto-pos-staging": {
+    "named": {
+      "id": "dep-dbqiosdbedkc73dodch0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:13.380451Z",
+      "finishedAt": "2026-11-12T03:04:16.099199Z"
+    },
+    "live": {
+      "id": "dep-dbqiosdbedkc73dodch0",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:13.380451Z",
+      "finishedAt": "2026-11-12T03:04:16.099199Z"
+    },
+    "latest": {
+      "id": "dep-dbqiosdbedkc73dodch0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0"
+    },
+    "readAt": "2026-11-12T03:09:24.908Z"
+  },
+  "oto-pos-web-staging": {
+    "named": {
+      "id": "dep-dbqiosui0phs73cq99mg",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:15.734363Z",
+      "finishedAt": "2026-11-12T03:06:48.353466Z"
+    },
+    "live": {
+      "id": "dep-dbqiosui0phs73cq99mg",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:15.734363Z",
+      "finishedAt": "2026-11-12T03:06:48.353466Z"
+    },
+    "latest": {
+      "id": "dep-dbqiosui0phs73cq99mg",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0"
+    },
+    "readAt": "2026-11-12T03:09:25.474Z"
+  }
+}

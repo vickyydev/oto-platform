@@ -1,0 +1,65 @@
+{
+  "oto-api-staging": {
+    "named": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:11.018066Z",
+      "finishedAt": "2026-11-12T03:08:01.711582Z"
+    },
+    "live": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:11.018066Z",
+      "finishedAt": "2026-11-12T03:08:01.711582Z"
+    },
+    "latest": {
+      "id": "dep-dbqiorgae00c738h8rl0",
+      "status": "live",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0"
+    },
+    "readAt": "2026-11-12T03:49:07.001Z"
+  },
+  "oto-pos-staging": {
+    "named": {
+      "id": "dep-dbqiosdbedkc73dodch0",
+      "status": "deactivated",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:13.380451Z",
+      "finishedAt": "2026-11-12T03:04:16.099199Z"
+    },
+    "live": {
+      "id": "dep-dbqitu5g1s2s73efqflg",
+      "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+      "createdAt": "2026-11-12T03:14:00.551919Z",
+      "finishedAt": "2026-11-12T03:15:05.508939Z"
+    },
+    "latest": {
+      "id": "dep-dbqitu5g1s2s73efqflg",
+      "status": "live",
+      "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3"
+    },
+    "readAt": "2026-11-12T03:49:07.583Z"
+  },
+  "oto-pos-web-staging": {
+    "named": {
+      "id": "dep-dbqiosui0phs73cq99mg",
+      "status": "deactivated",
+      "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+      "createdAt": "2026-11-12T03:03:15.734363Z",
+      "finishedAt": "2026-11-12T03:06:48.353466Z"
+    },
+    "live": {
+      "id": "dep-dbqituqfngtc73fo4agg",
+      "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+      "createdAt": "2026-11-12T03:14:03.082489Z",
+      "finishedAt": "2026-11-12T03:17:07.089916Z"
+    },
+    "latest": {
+      "id": "dep-dbqituqfngtc73fo4agg",
+      "status": "live",
+      "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3"
+    },
+    "readAt": "2026-11-12T03:49:08.163Z"
+  }
+}

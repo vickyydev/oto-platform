@@ -1,0 +1,624 @@
+{
+  "tickets": [
+    "SCRUM-883",
+    "SCRUM-865",
+    "SCRUM-866",
+    "SCRUM-867",
+    "SCRUM-868",
+    "SCRUM-859"
+  ],
+  "startedAt": "2026-11-12T03:16:41.531Z",
+  "phase": "finished",
+  "passes": [
+    "c",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8"
+  ],
+  "numbers": {
+    "claim": "0898830020",
+    "thai": "0898830021",
+    "tourist": "0898830022",
+    "corrected": "0898830023",
+    "expat": "0898830024"
+  },
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "picture": "01-scrum883-thai-free-adult-thank-you-both-halves.png",
+      "shows": "Thai member (two-button box), 1 kid + 1 adult paid in cash: neither half shows a Credit Grants block or ฿350; the sale reads back grants []",
+      "seen": {
+        "buttons": [
+          "Cancel",
+          "Confirm Thai rate"
+        ],
+        "quantities": {
+          "kids": 1,
+          "adults": 1
+        },
+        "pay": "Pay ฿420",
+        "thankYou": {
+          "halves": 2,
+          "staffCreditBlock": false,
+          "customerCreditBlock": false,
+          "staff350": false,
+          "customer350": false,
+          "receiptLine": "Receipt Z86502-000001 • ฿420 • Cash",
+          "customerSays": "English Customer ZZ TEST 865 Thai credit Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet"
+        },
+        "sale": {
+          "id": "01a1cdc2-7a0c-7ca0-9dce-87d8d6537719",
+          "status": "finalised",
+          "receipt": "Z86502-000001",
+          "customerTier": "thai",
+          "grossSatang": 42000,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": null,
+            "tierClaim.approval.reason": "confirmed_at_till",
+            "tierClaim.approval.reasonLabel": "Confirmed at the till"
+          },
+          "lines": [
+            {
+              "kind": "kids",
+              "label": "Kids",
+              "quantity": 1,
+              "unitSatang": 42000
+            },
+            {
+              "kind": "adults_free",
+              "label": "Adults (free)",
+              "quantity": 1,
+              "unitSatang": 0
+            }
+          ],
+          "grants": []
+        }
+      }
+    },
+    "2": {
+      "verdict": "PASS",
+      "picture": "02-scrum883-tourist-paying-adult-credit-both-halves.png",
+      "shows": "Walk-in Tourist, 1 kid + 1 adult paid in cash: \"Credit Grants to Print\" on the staff half and \"Credit Grants\" on the customer half, both ฿350 (credit QR masked); the sale reads back one grant of ฿350",
+      "seen": {
+        "quantities": {
+          "kids": 1,
+          "adults": 1
+        },
+        "pay": "Pay ฿1040",
+        "thankYou": {
+          "halves": 2,
+          "staffCreditBlock": true,
+          "customerCreditBlock": true,
+          "staff350": true,
+          "customer350": true,
+          "receiptLine": "Receipt Z86502-000002 • ฿1040 • Cash",
+          "customerSays": "English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350"
+        },
+        "sale": {
+          "id": "01a1cdc2-a7ab-7b5e-8b38-89aeddeaa362",
+          "status": "finalised",
+          "receipt": "Z86502-000002",
+          "customerTier": "tourist",
+          "grossSatang": 104000,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": null
+          },
+          "lines": [
+            {
+              "kind": "kids",
+              "label": "Kids",
+              "quantity": 1,
+              "unitSatang": 69000
+            },
+            {
+              "kind": "adults_paid",
+              "label": "Adults",
+              "quantity": 1,
+              "unitSatang": 35000
+            }
+          ],
+          "grants": [
+            {
+              "creditSatang": 35000
+            }
+          ]
+        }
+      }
+    },
+    "3": {
+      "verdict": "FAIL",
+      "picture": "failed-3-till.png",
+      "shows": "the pass stopped: TypeError: Cannot read properties of null (reading 'id')",
+      "seen": {}
+    },
+    "4": {
+      "verdict": "PASS",
+      "picture": "04c-scrum865-fnb-paid-cash.png",
+      "shows": "F&B guest: Charge (04a), Back, one more dish, Charge (04b), cash: the first sale reads back voided, the second finalised",
+      "seen": {
+        "total1": 420,
+        "total2": 840,
+        "refusalOnScreen": false,
+        "firstRead": {
+          "id": "01a1cdc4-40f1-72d9-aee2-d776949508fa",
+          "status": "voided",
+          "receipt": null,
+          "customerTier": "tourist",
+          "grossSatang": 42000,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": "Order changed at the till after Pay"
+          },
+          "lines": [
+            {
+              "kind": "fnb_item",
+              "label": "Smashed avocado + bruschetta",
+              "quantity": 1,
+              "unitSatang": 42000
+            }
+          ],
+          "grants": []
+        },
+        "secondRead": {
+          "id": "01a1cdc4-50ef-7e7b-94f6-b632fc73052a",
+          "status": "finalised",
+          "receipt": "Z86502-000004",
+          "customerTier": "tourist",
+          "grossSatang": 84000,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": null
+          },
+          "lines": [
+            {
+              "kind": "fnb_item",
+              "label": "Smashed avocado + bruschetta",
+              "quantity": 2,
+              "unitSatang": 42000
+            }
+          ],
+          "grants": []
+        }
+      }
+    },
+    "5": {
+      "verdict": "PASS",
+      "picture": "05b-scrum866-shop-after-clear.png",
+      "shows": "Shop guest: Charge rang the sale up (05a), Back, Clear: the sale reads back voided \"Cancelled at the till\"; the Tickets tab shows no left-behind notice (05c)",
+      "seen": {
+        "chargeWrote": true,
+        "voidStatus": 200,
+        "sale": {
+          "id": "01a1cdc4-7253-71f9-ba45-73626aecab02",
+          "status": "voided",
+          "receipt": null,
+          "customerTier": "tourist",
+          "grossSatang": 6500,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": "Cancelled at the till"
+          },
+          "lines": [
+            {
+              "kind": "merch_item",
+              "label": "Helium Balloon (65)",
+              "quantity": 1,
+              "unitSatang": 6500
+            }
+          ],
+          "grants": []
+        },
+        "leftBehindNotices": 0,
+        "leftBehindRefusals": 0
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "picture": "06-scrum867-cash-and-typed-figure-kept-after-5s.png",
+      "shows": "New walk-in verified Expat on a passport (2030-01-01) in this sale, Customer Details, Pay; Cash chosen and ฿933 typed; 5 s later (the walk-in now a member) Cash and the typed figure are still there; paid (06b)",
+      "seen": {
+        "pay": {
+          "shown": "Pay ฿833",
+          "detailsStep": true,
+          "status": 200,
+          "sale": {
+            "id": "01a1cdc4-bb51-7f52-afc5-be9e037a9920",
+            "status": "tendering",
+            "customerTier": "expat",
+            "grossSatang": 83300
+          }
+        },
+        "amountDue": 833,
+        "typed": "933",
+        "at0": {
+          "value": "933",
+          "confirmEnabled": true
+        },
+        "after": {
+          "fieldThere": 1,
+          "value": "933",
+          "confirmEnabled": true,
+          "change": "Change ฿100.00"
+        },
+        "memberBefore": false,
+        "memberAfter": true,
+        "sale": {
+          "id": "01a1cdc4-bb51-7f52-afc5-be9e037a9920",
+          "status": "finalised",
+          "receipt": "Z86502-000005",
+          "customerTier": "expat",
+          "grossSatang": 83300,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": null
+          },
+          "lines": [
+            {
+              "kind": "kids",
+              "label": "Kids",
+              "quantity": 1,
+              "unitSatang": 48300
+            },
+            {
+              "kind": "adults_paid",
+              "label": "Adults",
+              "quantity": 1,
+              "unitSatang": 35000
+            }
+          ],
+          "grants": [
+            {
+              "creditSatang": 35000
+            }
+          ]
+        }
+      }
+    },
+    "7": {
+      "verdict": "FAIL",
+      "picture": "07-scrum859-display-add-time-line-beside-amount-1920x1080.png",
+      "shows": "History -> the Tourist sale of point 2 -> Add time \"+1 hour\" -> Card: the paired display draws the line (option, children, price per child) beside the amount; the card was not taken: Cash chosen instead and the charge recorded in cash (07b)",
+      "seen": {
+        "receipt": "Z86502-000002",
+        "option": "+1 hour 1 child x 1 hour x ฿300 ฿300",
+        "amount": "300",
+        "displayDrewTender": true,
+        "displaySays": "Extra hour 1 +1 hour ฿300 each ฿300 Total ฿300 Pay by card ฿300 Waiting for payment confirmation…",
+        "afterCashChosen": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-865 proof till 1794453401650 · ZZ TEST SCRUM-865 display",
+        "charge": {
+          "id": "01a1cdc5-09fa-7922-a7b4-fca2f2b05ee5",
+          "status": "finalised",
+          "receipt": "Z86502-000006",
+          "customerTier": "tourist",
+          "grossSatang": 30000,
+          "reasons": {
+            "pricingModeReason": "Weekday pricing",
+            "voidReason": null
+          },
+          "lines": [
+            {
+              "kind": "addon",
+              "label": "Extra hour x 1",
+              "quantity": 1,
+              "unitSatang": 30000
+            }
+          ],
+          "grants": []
+        }
+      }
+    },
+    "8": {
+      "verdict": "FAIL",
+      "picture": "08-scrum868-aged-claim-answer.png",
+      "shows": "The till session's quote naming a hand-confirmed Thai claim: priced with no refusal while fresh, answered TIER_CLAIM_EXPIRED \"confirmed more than 30 minutes ago\" once older than the window",
+      "seen": {
+        "fresh": {
+          "status": 200,
+          "refusal": null,
+          "tier": "thai",
+          "ageMinutes": 3.1
+        },
+        "aged": {
+          "status": 423,
+          "refusal": null,
+          "tier": null,
+          "ageMinutes": 30.5
+        }
+      }
+    }
+  },
+  "checks": {
+    "numbersUnusedBefore": true,
+    "staffNameMasks": 2,
+    "bundle": {
+      "files": 1,
+      "orderChangedMarkers": 1
+    },
+    "claim": {
+      "approvalStatus": 200,
+      "confirmedAt": "2026-11-12T03:17:04.189Z",
+      "payShownFresh": "Pay ฿420"
+    },
+    "aged": {
+      "fresh": {
+        "status": 200,
+        "refusal": null,
+        "tier": "thai",
+        "ageMinutes": 3.1
+      },
+      "aged": {
+        "status": 423,
+        "refusal": null,
+        "tier": null,
+        "ageMinutes": 30.5
+      }
+    }
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cdc1-f6eb-7ce9-9f8d-cdb7e23dde00",
+      "name": "ZZ TEST SCRUM-865 proof till 1794453401650",
+      "prefix": "Z86502"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 865 Thai credit",
+      "number": "0898830021"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 865 Corrected",
+      "number": "0898830023"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cdc2-da2a-7803-b6d8-2c9cd7beb371",
+      "note": "first sale of point 3"
+    },
+    {
+      "kind": "sale",
+      "note": "corrected sale of point 3"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cdc4-40f1-72d9-aee2-d776949508fa",
+      "note": "first F&B sale of point 4"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cdc4-50ef-7e7b-94f6-b632fc73052a",
+      "note": "second F&B sale of point 4"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cdc4-7253-71f9-ba45-73626aecab02",
+      "note": "shop sale of point 5"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 865 Expat",
+      "number": "0898830024",
+      "note": "walk-in saved to a profile by the till"
+    },
+    {
+      "kind": "display",
+      "id": "01a1cdc4-f31c-745b-a712-c2473352b09d"
+    },
+    {
+      "kind": "time-charge",
+      "id": "01a1cdc5-09fa-7922-a7b4-fca2f2b05ee5"
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "8: waiting 1644 s for the claim to pass 30 minutes",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "till",
+      "at": "8: waiting 1644 s for the claim to pass 30 minutes",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "8: waiting 1644 s for the claim to pass 30 minutes",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "till",
+      "at": "8: waiting 1644 s for the claim to pass 30 minutes",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1cdc4-f31c-745b-a712-c2473352b09d",
+      "revoked": true
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc5-09fa-7922-a7b4-fca2f2b05ee5",
+      "retained": true,
+      "printJobs": [
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc4-bb51-7f52-afc5-be9e037a9920",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc4-50ef-7e7b-94f6-b632fc73052a",
+      "retained": true,
+      "printJobs": [
+        "skipped",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc4-18a5-7a3a-90cb-2ff1679626ae",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc2-a7ab-7b5e-8b38-89aeddeaa362",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdc2-7a0c-7ca0-9dce-87d8d6537719",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "receipt": "Z86502-000006",
+          "status": "finalised",
+          "baht": 300
+        },
+        {
+          "receipt": "Z86502-000005",
+          "status": "finalised",
+          "baht": 833
+        },
+        {
+          "receipt": null,
+          "status": "voided",
+          "baht": 65
+        },
+        {
+          "receipt": "Z86502-000004",
+          "status": "finalised",
+          "baht": 840
+        },
+        {
+          "receipt": null,
+          "status": "voided",
+          "baht": 420
+        },
+        {
+          "receipt": "Z86502-000003",
+          "status": "finalised",
+          "baht": 840
+        },
+        {
+          "receipt": null,
+          "status": "voided",
+          "baht": 420
+        },
+        {
+          "receipt": "Z86502-000002",
+          "status": "finalised",
+          "baht": 1040
+        },
+        {
+          "receipt": "Z86502-000001",
+          "status": "finalised",
+          "baht": 420
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cdc1-f6eb-7ce9-9f8d-cdb7e23dde00",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "claim",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "thai",
+      "id": "01a1cdc2-70fb-785b-876f-0e5bf6c1e636",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "tourist",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "corrected",
+      "id": "01a1cdc2-d0db-7ae5-abfc-e54b451788ec",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "expat",
+      "id": "01a1cdc4-bb90-7bff-8d02-e83c8cd7b1c1",
+      "archived": true
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "failures": [
+    {
+      "pass": "3",
+      "failedAt": "3: Pay again",
+      "failure": "TypeError: Cannot read properties of null (reading 'id')"
+    }
+  ],
+  "finishedAt": "2026-11-12T03:47:40.153Z"
+}
