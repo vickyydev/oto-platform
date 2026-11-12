@@ -245,6 +245,8 @@ const CatalogueOnlySchema = z.object({ catalogue: z.unknown().optional() }).pass
   unknown
 >;
 
+/** SCRUM-904: a count the activity row names only when there is one. */
+const countOf = (key: string, n: number): Record<string, number> => (n > 0 ? { [key]: n } : {});
 /** What the activity row says of a catalogue proposal: counts and sources, never the chat's words. */
 const catalogueCounts = (p: BeoAiProposal) => ({
   package: p.package !== null,
@@ -260,10 +262,11 @@ const catalogueCounts = (p: BeoAiProposal) => ({
   timeline: p.details.timeline.length,
   details: [p.details.title, p.details.bookingName, p.details.locationText, p.details.setup.readyBy, p.details.setup.responsible, p.details.setup.notes, p.details.pos.name, p.details.pos.notes].filter(Boolean).length
     + p.details.setup.tasks.length + p.details.pos.items.length,
-  // SCRUM-904: the rest of the event the conversation gave, as a count of fields (never their values).
-  event: (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length,
-  allergies: p.details.requests.filter((r) => r.kind === "allergy").length,
-  acts: p.entertainment.filter((e) => e.time).length,
+  // SCRUM-904: the rest of the event the conversation gave, the allergies and the timed shows, as counts
+  // (never their values), each only when there is one.
+  ...countOf("event", (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length),
+  ...countOf("allergies", p.details.requests.filter((r) => r.kind === "allergy").length),
+  ...countOf("acts", p.entertainment.filter((e) => e.time).length),
 });
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -397,9 +400,11 @@ export async function runBeoFill(
   const anyNamed = !!(named.team?.partyHost || named.team?.entertainmentHost || named.setupPlan?.responsible);
   const proposals: TeamProposals =
     run.ok && input.event && anyNamed ? proposeTeam(named, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
+  // A name the conversation gave carries its line (the review's reason line); one the ruling's read
+  // gave is the ruling message's, which the review already holds.
   for (const field of ["partyHost", "entertainmentHost", "setupResponsible"] as const) {
     const p = proposals[field];
-    const from = chatNamed[field]?.from ?? input.fallbackFrom;
+    const from = chatNamed[field]?.value === p?.asked ? chatNamed[field]?.from : undefined;
     if (p && from) proposals[field] = { ...p, from };
   }
   const purpose: BeoFillPurpose = input.purpose ?? "fill";
