@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { ApiChild } from '@/api/platform';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import {
+  gateChildMergePatch,
   gateChildPatch,
   matchSlotsToSavedChildren,
   saveGateChildren,
@@ -122,6 +123,7 @@ class FakeTill {
   member: Member | null;
   slots: SupervisedSlot[];
   ids = new Map<string, string>();
+  matched = new Map<string, string>();
   minted = 0;
 
   constructor(member: Member | null, slots: SupervisedSlot[]) {
@@ -151,6 +153,7 @@ class FakeTill {
       slots: this.slots.map((s) => ({ slot: s, age: ages[s.id] ?? 6 })),
       asOf: ASOF,
       childIdFor: this.childIdFor,
+      matchedSlots: this.matched,
       addChild: store.addChild,
       updateChild: store.updateChild,
       onSaved: this.onSaved,
@@ -321,6 +324,96 @@ describe('SCRUM-872: a guardian found at the form who already has saved children
     // The child ids are minted once per gate, with the stay and waiver ids.
     const open = src.slice(src.indexOf('const openSupervisionGate'), src.indexOf('const handleUpdateSlot'));
     expect(open).toMatch(/gateChildIdsRef\.current = new Map\(\)/);
+    // The by-name matches are kept per gate too, so a retry never clears.
+    expect(gate).toMatch(/matchedSlots: gateMatchedChildrenRef\.current/);
+    expect(open).toMatch(/gateMatchedChildrenRef\.current = new Map\(\)/);
+  });
+});
+
+describe('SCRUM-872: a matched child typed afresh never loses what the profile holds', () => {
+  /** Nok on the profile: an allergy (so the medical alert), a date of birth, a food restriction. */
+  const nokOnFile = (store: FakeProfiles) => {
+    const nok = saved(idOf(0x02), {
+      childName: 'Nok', childAge: 9, dateOfBirth: '2017-03-01', allergiesMedical: 'Peanuts', foodRestrictions: 'No pork',
+    });
+    store.rows.set(nok.id, {
+      id: nok.id, name: 'Nok', dateOfBirth: '2017-03-01', ageYears: 9, allergies: 'Peanuts', medicalNotes: null,
+      medicalAlert: true, dietary: null, foodRestrictions: 'No pork', notes: null, lastConfirmedAt: null,
+    });
+    return memberWith([nok]);
+  };
+  const patches: Record<string, unknown>[] = [];
+  const recording = (store: FakeProfiles) => {
+    const update = store.updateChild;
+    store.updateChild = async (childId, patch) => {
+      patches.push(patch);
+      return update(childId, patch);
+    };
+  };
+
+  it('blank allergies, no date of birth, blank food: nothing is cleared, on the first press or the retry', async () => {
+    patches.length = 0;
+    const store = new FakeProfiles();
+    recording(store);
+    const found = nokOnFile(store);
+    const till = new FakeTill(found, [slot('slot-b', { name: 'Nok', age: '9' })]);
+    const first = await till.press(store, found);
+    expect(store.creates).toBe(0);
+    expect(store.updates).toBe(0);
+    expect(first.confirmedChildIds).toEqual([idOf(0x02)]);
+    // Linked now (as onSaved does): the registration failed and Continue is pressed again.
+    expect(till.slots[0]!.savedChildId).toBe(idOf(0x02));
+    await till.press(store, till.member!);
+    expect(store.updates).toBe(0);
+    expect(patches).toEqual([]);
+    const row = store.rows.get(idOf(0x02))!;
+    expect(row.allergies).toBe('Peanuts');
+    expect(row.medicalAlert).toBe(true);
+    expect(row.dateOfBirth).toBe('2017-03-01');
+    expect(row.foodRestrictions).toBe('No pork');
+  });
+
+  it('a name that differs only in case sends no name', async () => {
+    patches.length = 0;
+    const store = new FakeProfiles();
+    recording(store);
+    const found = nokOnFile(store);
+    const till = new FakeTill(found, [slot('slot-b', { name: ' NOK ', age: '9', allergiesMedical: 'Shellfish' })]);
+    await till.press(store, found);
+    await till.press(store, till.member!);
+    expect(patches).toEqual([{ allergies: 'Shellfish' }]);
+    expect(store.rows.get(idOf(0x02))!.name).toBe('Nok');
+  });
+
+  it('the merge patch sends only what the slot adds', () => {
+    const nok = saved(idOf(0x02), { childName: 'Nok', childAge: 9, dateOfBirth: '2017-03-01', allergiesMedical: 'Peanuts', foodRestrictions: 'No pork' });
+    expect(gateChildMergePatch(slot('s', { name: 'nok', age: '9' }), 9, nok)).toBeNull();
+    expect(gateChildMergePatch(slot('s', { name: 'Nok', age: '9', dateOfBirth: '2017-03-01' }), 9, nok)).toBeNull();
+    const noDob = saved(idOf(0x03), { childName: 'Bua', childAge: 6 });
+    expect(gateChildMergePatch(slot('s', { name: 'Bua', age: '6', dateOfBirth: '2020-05-01' }), 6, noDob)).toEqual({
+      dateOfBirth: '2020-05-01', ageYears: 6,
+    });
+    expect(gateChildMergePatch(slot('s', { name: 'Bua', age: '6', foodRestrictions: 'Halal' }), 6, noDob)).toEqual({ foodRestrictions: 'Halal' });
+    // Never a null, so the API's medical alert is never lowered by a blank box.
+    for (const value of Object.values(gateChildMergePatch(slot('s', { name: 'Bua', age: '6', allergiesMedical: 'Milk' }), 6, noDob) ?? {})) {
+      expect(value).not.toBeNull();
+    }
+  });
+
+  it('a matched slot swapped by the review to another saved child takes the ordinary patch again', async () => {
+    const store = new FakeProfiles();
+    const found = nokOnFile(store);
+    const till = new FakeTill(found, [slot('slot-b', { name: 'Nok', age: '9' })]);
+    await till.press(store, found);
+    expect(till.matched.get('slot-b')).toBe(idOf(0x02));
+    // The review links the slot to a different record, pre-filled from it.
+    const other = saved(idOf(0x04), { childName: 'Nok', childAge: 9, allergiesMedical: 'Milk' });
+    store.rows.set(other.id, { ...store.rows.get(idOf(0x02))!, id: other.id, allergies: 'Milk', dateOfBirth: null });
+    till.member = withSavedChild(till.member!, other);
+    till.slots = [slot('slot-b', { name: 'Nok', age: '9', savedChildId: other.id, allergiesMedical: '' })];
+    await till.press(store, till.member!);
+    // Staff cleared the allergy the review showed: that clear is deliberate and is sent.
+    expect(store.rows.get(other.id)!.allergies).toBeNull();
   });
 });
 

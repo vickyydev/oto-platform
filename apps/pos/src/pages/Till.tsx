@@ -601,6 +601,8 @@ export default function Till() {
   const gateStayIdsRef = useRef(new Map<string, string>());
   const gateWaiverIdsRef = useRef(new Map<string, string>());
   const gateChildIdsRef = useRef(new Map<string, string>());
+  // SCRUM-872 — the slots matched to a saved child by name, for the life of the gate.
+  const gateMatchedChildrenRef = useRef(new Map<string, string>());
   const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
     const known = ids.get(slotId);
     if (known) return known;
@@ -2032,6 +2034,7 @@ export default function Till() {
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
     gateChildIdsRef.current = new Map();
+    gateMatchedChildrenRef.current = new Map();
     refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
@@ -2362,6 +2365,7 @@ export default function Till() {
             return age === null ? [] : [{ slot, age }];
           }),
           childIdFor: (slotId) => gateIdFor(gateChildIdsRef.current, slotId),
+          matchedSlots: gateMatchedChildrenRef.current,
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
           updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
           onSaved: (slotId, child, guardianId) => {

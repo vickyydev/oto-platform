@@ -96,6 +96,49 @@ export const gateChildPatch = (
   return Object.keys(patch).length > 0 ? patch : null;
 };
 
+const nameKey = (name: string): string => name.trim().toLowerCase();
+
+/**
+ * SCRUM-872 — the patch for a typed slot MATCHED to a saved child by name,
+ * which never clears anything.
+ *
+ * `gateChildPatch` reads a blank field as a deliberate clear, which is right
+ * for a slot the saved-children review pre-filled from the record: staff saw
+ * the allergy and removed it. A slot matched by name and age was never
+ * pre-filled — the parent typed the child afresh, and a box left blank says
+ * nothing about the record. Clearing it would take a child's allergy (and
+ * with it the API's medical alert) off the profile of a child being left in
+ * the park's care. So only what the slot ADDS goes in: a date of birth the
+ * slot has and the record lacks or differs on, an allergy or a food
+ * restriction the slot has that differs from the record's. The name matched
+ * already (trimmed, case-insensitive) and is never rewritten for its casing.
+ *
+ * Whether a typed allergy should replace the saved one (as here, through the
+ * existing update path) or be added to it is an owner question.
+ */
+export const gateChildMergePatch = (
+  slot: SupervisedSlot,
+  age: number,
+  saved: SavedChild,
+): Record<string, unknown> | null => {
+  const patch: Record<string, unknown> = {};
+  const name = slot.name.trim();
+  if (name && nameKey(name) !== nameKey(saved.childName)) patch.name = name;
+  if (slot.dateOfBirth) {
+    if (slot.dateOfBirth !== saved.dateOfBirth) {
+      patch.dateOfBirth = slot.dateOfBirth;
+      patch.ageYears = age;
+    }
+  } else if (!saved.dateOfBirth && age !== saved.childAge) {
+    patch.ageYears = age;
+  }
+  const allergies = slot.allergiesMedical.trim();
+  if (allergies && allergies !== (saved.allergiesMedical ?? '').trim()) patch.allergies = allergies;
+  const food = slot.foodRestrictions.trim();
+  if (food && food !== (saved.foodRestrictions ?? saved.dietary ?? '').trim()) patch.foodRestrictions = food;
+  return Object.keys(patch).length > 0 ? patch : null;
+};
+
 /** The member with this child on it: replaced when it is already there, appended when not. */
 export function withSavedChild<M extends Pick<Member, 'savedChildren'>>(guardian: M, child: SavedChild): M {
   const children = guardian.savedChildren ?? [];
@@ -116,8 +159,6 @@ export interface GateMatch {
   /** Slots that could have matched but where a guess would have been needed. */
   unmatched: { slotId: string; name: string; reason: GateMatchReason }[];
 }
-
-const nameKey = (name: string): string => name.trim().toLowerCase();
 
 /**
  * SCRUM-872 — which saved child a typed child IS.
@@ -181,6 +222,14 @@ export interface SaveGateChildrenInput {
   asOf?: Date;
   /** One stable child id per slot, minted once per gate and re-sent on every press. */
   childIdFor: (slotId: string) => string;
+  /**
+   * The slots this gate matched to a saved child by name (slot id → saved
+   * child id), held by the till for the life of the gate and filled by the
+   * loop. `onSaved` links a matched slot like any other, so on a retry it
+   * looks pre-filled; this keeps it on the never-clearing merge patch, which
+   * a blank box typed afresh needs on every press, not only the first.
+   */
+  matchedSlots: Map<string, string>;
   addChild: (memberId: string, body: Record<string, unknown>, id: string) => Promise<{ child: ApiChild }>;
   updateChild: (childId: string, patch: Record<string, unknown>) => Promise<{ child: ApiChild }>;
   /**
@@ -213,11 +262,16 @@ export async function saveGateChildren(input: SaveGateChildrenInput): Promise<Sa
   const childIdBySlot = new Map<string, string>();
   const confirmedChildIds: string[] = [];
   for (const { slot, age } of input.slots) {
-    const linkedId = slot.savedChildId ?? matched.get(slot.id)?.id;
+    const byName = matched.get(slot.id);
+    if (byName) input.matchedSlots.set(slot.id, byName.id);
+    const linkedId = slot.savedChildId ?? byName?.id;
     const saved = linkedId ? guardian.savedChildren?.find((c) => c.id === linkedId) : undefined;
     let child: SavedChild;
     if (linkedId && saved) {
-      const patch = gateChildPatch(slot, age, saved);
+      const patch =
+        input.matchedSlots.get(slot.id) === linkedId
+          ? gateChildMergePatch(slot, age, saved)
+          : gateChildPatch(slot, age, saved);
       child = patch ? apiChildToSavedChild((await input.updateChild(linkedId, patch)).child) : saved;
     } else {
       // The photo is deliberately NOT saved (re-taken each visit). The same
