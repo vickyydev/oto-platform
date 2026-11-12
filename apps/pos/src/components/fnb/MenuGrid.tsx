@@ -116,6 +116,24 @@ function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
   );
 }
 
+/**
+ * SCRUM-959 — THE MENU IN THE SPLIT VIEW. The grid keyed its columns to the
+ * window (`lg:grid-cols-3`), not to its own column: beside the customer half
+ * at 1440 the column is 290px wide, so three tiles of 89px each put the count
+ * badge on the dish's name ("Fren[1] fries") and the plus on its price, and
+ * staging's twenty-two categories wrapped down the whole column before any
+ * dish (pictures 14a, 20c). Keyed to the menu's own width
+ * (`@container/menu`), as SCRUM-884 keyed the till's steps: under 36rem the
+ * tiles go two a row (one under 24rem, the 1440 split view) and the
+ * categories stay on one row that scrolls sideways, as the prototype's own
+ * sub-category chips below do. A desk at full width gives the menu 595px or
+ * more (a window of 1024), so it is exactly as it was there; so is the phone,
+ * under `md`.
+ */
+const MENU_TILES = 'grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2 md:@max-xl/menu:grid-cols-2! md:@max-sm/menu:grid-cols-1!';
+const CATEGORY_ROW =
+  'flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/menu:flex-nowrap md:@max-xl/menu:overflow-x-auto md:@max-xl/menu:-mx-2 md:@max-xl/menu:px-2';
+
 // Pseudo-id for the "Other" sub-chip that gathers items assigned directly to a
 // top-level category (i.e. not placed in any of its sub-categories).
 const OTHER = '__other__';
@@ -211,7 +229,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
   }, [activeTopId, activeSubId, subChips, grouped]);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="@container/menu flex flex-col h-full min-h-0">
       <div className="relative mb-3 shrink-0">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -240,7 +258,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
               No dishes match
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2">
+            <div className={MENU_TILES}>
               {searchResults.map((item) => (
                 <MenuItemCard key={item.id} item={item} qty={quantities[item.id] ?? 0} onAdd={onAdd} />
               ))}
@@ -249,7 +267,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
         </ScrollArea>
       ) : (
         <>
-          <div className="flex gap-2 mb-3 shrink-0 flex-wrap">
+          <div className={CATEGORY_ROW}>
             {visibleTopLevels.map((cat) => {
               const Icon = iconFor(cat.id);
               const isActive = cat.id === activeTopId;
@@ -262,7 +280,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                     setActiveSub('');
                   }}
                   className={cn(
-                    'flex items-center gap-2 px-5 h-12 rounded-xl font-bold transition-all active:scale-95',
+                    'flex items-center gap-2 px-5 h-12 rounded-xl font-bold transition-all active:scale-95 md:@max-xl/menu:shrink-0 md:@max-xl/menu:whitespace-nowrap',
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card border text-muted-foreground hover:text-foreground hover:border-primary/50'
@@ -302,7 +320,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
           )}
 
           <ScrollArea className="flex-1 -mx-2 px-2">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2">
+            <div className={MENU_TILES}>
               {shown.map((item) => (
                 <MenuItemCard key={item.id} item={item} qty={quantities[item.id] ?? 0} onAdd={onAdd} />
               ))}

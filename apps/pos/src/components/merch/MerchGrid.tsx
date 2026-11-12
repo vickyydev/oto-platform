@@ -17,6 +17,18 @@ interface MerchGridProps {
   onAdd: (item: MerchItem) => void;
 }
 
+/**
+ * SCRUM-959 — THE SHOP IN THE SPLIT VIEW, as the F&B menu (`fnb/MenuGrid`):
+ * keyed to the grid's own width (`@container/merch`), not the window's, so
+ * beside the customer half the tiles are wide enough for a whole name with
+ * the plus inside ("School Admissio", picture 16a) — two a row under 36rem,
+ * one under 24rem — and the categories keep to one row that scrolls
+ * sideways. A desk at full width, and the phone, are exactly as they were.
+ */
+const ITEM_TILES = 'grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2 md:@max-xl/merch:grid-cols-2! md:@max-sm/merch:grid-cols-1!';
+const CATEGORY_ROW =
+  'flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/merch:flex-nowrap md:@max-xl/merch:overflow-x-auto md:@max-xl/merch:-mx-2 md:@max-xl/merch:px-2';
+
 // Pseudo-id for the "All" chip that shows every item regardless of category.
 const ALL = '__all__';
 const labelFor = (item: MerchItem) => item.category?.trim() || 'Other';
@@ -35,7 +47,7 @@ function CatChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'px-5 h-12 rounded-xl font-bold transition-all active:scale-95',
+        'px-5 h-12 rounded-xl font-bold transition-all active:scale-95 md:@max-xl/merch:shrink-0 md:@max-xl/merch:whitespace-nowrap',
         active
           ? 'bg-primary text-primary-foreground'
           : 'bg-card border text-muted-foreground hover:text-foreground hover:border-primary/50'
@@ -120,9 +132,9 @@ export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
   }, [items, activeCat]);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="@container/merch flex flex-col h-full min-h-0">
       {categories.length > 1 && (
-        <div className="flex gap-2 mb-3 shrink-0 flex-wrap">
+        <div className={CATEGORY_ROW}>
           <CatChip label="All" active={activeCat === ALL} onClick={() => setActive(ALL)} />
           {categories.map((c) => (
             <CatChip
@@ -136,7 +148,7 @@ export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
       )}
 
       <ScrollArea className="flex-1 -mx-2 px-2">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2">
+        <div className={ITEM_TILES}>
           {shown.map((item) => {
             const inCart = quantities[item.id] ?? 0;
             const tracked = item.stock !== undefined;
