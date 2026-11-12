@@ -87,7 +87,15 @@ import { windowRefusal } from './window';
  *    https://www.twilio.com/docs/whatsapp/guidance-whatsapp-media-messages:
  *    images JPG/PNG (WEBP for stickers), audio OGG (opus)/AMR/3GP/AAC/MPEG,
  *    PDF and office documents, MP4 video; "the maximum size limit is 20MB",
- *    images 5 MB; no caption or filename on a document sent as media.
+ *    images 5 MB; "Twilio does not support setting a filename or caption for
+ *    documents that are sent as media messages over WhatsApp".
+ *  - WORDS WITH MEDIA — the Messages resource, "Send a WhatsApp message":
+ *    "WhatsApp does not support including a text body in the same message as
+ *    a video, audio file, document, contact (vCard), or location. If you pass
+ *    the `Body` parameter on a message with one of these media types, the
+ *    body is ignored and not delivered to the recipient." So `Body` rides with
+ *    an image only; the words of any other file go as a message of their own
+ *    just before it (`buildTwilioSendRequests`).
  *  - ERRORS — https://www.twilio.com/docs/api/errors/63015 (sandbox: the
  *    recipient has not joined, or joined more than three days ago),
  *    /63016 ("Outside messaging window. For WhatsApp, use a Message Template
@@ -534,39 +542,45 @@ function formBody(form: ReadonlyArray<readonly [string, string]>): string {
 }
 
 /**
- * The `Messages.json` request for one outbound message — text, or one media
- * item by its https link (Twilio fetches the link; a provider media id has
- * no meaning here). A template is not built: the sandbox takes no custom
- * templates, and `send` refuses one before this.
+ * The `Messages.json` requests for one outbound message, in the order they
+ * are sent — text, or one media item by its https link (Twilio fetches the
+ * link; a provider media id has no meaning here). A template is not built:
+ * the sandbox takes no custom templates, and `send` refuses one before this.
+ *
+ * THE WORDS OF A FILE. An image carries its caption as `Body`. Twilio's
+ * Messages resource says a `Body` sent with a video, an audio file or a
+ * document "is ignored and not delivered to the recipient" (header), so a
+ * PDF sent with "Here is our birthday brochure" would reach the customer
+ * without the words the inbox shows. Its words therefore go FIRST, as a text
+ * message of their own, then the file. Only the file's request names the
+ * status callback: its SID is the message's, and its statuses are the row's.
  */
-export function buildTwilioSendRequest(msg: OutboundMessage, cfg: TwilioConfig): TwilioRequest {
+export function buildTwilioSendRequests(msg: OutboundMessage, cfg: TwilioConfig): TwilioRequest[] {
   const to = twilioRecipientOf(msg);
   if (!to) throw new ChannelError('MALFORMED_PAYLOAD', 'the message has no WhatsApp recipient');
-  const form: Array<[string, string]> = [
-    ['To', `whatsapp:${to}`],
-    ['From', `whatsapp:${cfg.sender}`],
-  ];
-  const c = msg.content;
-  if (c.kind === 'text') {
-    form.push(['Body', c.text]);
-  } else if (c.kind === 'media') {
-    if (!c.link || !/^https:\/\//i.test(c.link)) {
-      throw new ChannelError('MALFORMED_PAYLOAD', 'a Twilio media message is sent by an https link');
-    }
-    // "Twilio does not support setting a filename or caption for documents";
-    // a caption goes with an image or a video only.
-    if (c.caption && (c.mediaType === 'image' || c.mediaType === 'video')) form.push(['Body', c.caption]);
-    form.push(['MediaUrl', c.link]);
-  } else {
-    throw new ChannelError('MALFORMED_PAYLOAD', 'this line sends no templates');
-  }
-  form.push(['StatusCallback', `${cfg.publicUrl}${cfg.webhookPath}`]);
-  return {
+  const request = (fields: Array<[string, string]>, tracked: boolean): TwilioRequest => ({
     url: `${apiRoot(cfg)}/Messages.json`,
     method: 'POST',
     headers: { authorization: authHeader(cfg), 'content-type': 'application/x-www-form-urlencoded' },
-    form,
-  };
+    form: [
+      ['To', `whatsapp:${to}`],
+      ['From', `whatsapp:${cfg.sender}`],
+      ...fields,
+      ...(tracked ? ([['StatusCallback', `${cfg.publicUrl}${cfg.webhookPath}`]] as Array<[string, string]>) : []),
+    ],
+  });
+  const c = msg.content;
+  if (c.kind === 'text') return [request([['Body', c.text]], true)];
+  if (c.kind === 'media') {
+    if (!c.link || !/^https:\/\//i.test(c.link)) {
+      throw new ChannelError('MALFORMED_PAYLOAD', 'a Twilio media message is sent by an https link');
+    }
+    const words = c.caption?.trim() ? c.caption : null;
+    if (words === null) return [request([['MediaUrl', c.link]], true)];
+    if (c.mediaType === 'image') return [request([['Body', words], ['MediaUrl', c.link]], true)];
+    return [request([['Body', words]], false), request([['MediaUrl', c.link]], true)];
+  }
+  throw new ChannelError('MALFORMED_PAYLOAD', 'this line sends no templates');
 }
 
 /** A media URL this account's credentials may be sent to: https, Twilio's API host, this account's path. */
@@ -649,16 +663,61 @@ export class TwilioWhatsAppChannel implements MessagingChannel {
     });
   }
 
-  /** The next free slot, waited for when it is close; false when it is too far off. */
-  private async takeSlot(): Promise<boolean> {
-    if (this.paceMs <= 0) return true;
+  /**
+   * The next `count` free slots, back to back, reserved at once — so a file's
+   * words and the file are never split by the pace — or null when the last
+   * of them is too far off. Reserved before any wait, so two sends in flight
+   * take their own slots.
+   */
+  private takeSlots(count: number): number[] | null {
     const now = this.now().getTime();
-    const at = Math.max(now, this.nextSlotAt);
-    if (at - now > this.maxPaceWaitMs) return false;
-    // Reserved before the wait, so two sends in flight take two slots.
-    this.nextSlotAt = at + this.paceMs;
-    if (at > now) await this.sleep(at - now);
-    return true;
+    if (this.paceMs <= 0) return Array.from({ length: count }, () => now);
+    const first = Math.max(now, this.nextSlotAt);
+    const last = first + (count - 1) * this.paceMs;
+    if (last - now > this.maxPaceWaitMs) return null;
+    this.nextSlotAt = last + this.paceMs;
+    return Array.from({ length: count }, (_, i) => first + i * this.paceMs);
+  }
+
+  private async waitUntil(at: number): Promise<void> {
+    const wait = at - this.now().getTime();
+    if (wait > 0) await this.sleep(wait);
+  }
+
+  /** One `Messages.json` request: the message's SID, or the refusal it is read as. */
+  private async post(request: TwilioRequest): Promise<{ ok: true; sid: string } | { ok: false; result: SendResult }> {
+    let status: number;
+    let answer: unknown;
+    try {
+      const res = await this.fetch(request.url, {
+        method: 'POST',
+        headers: request.headers,
+        body: formBody(request.form ?? []),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      status = res.status;
+      answer = await res.json().catch(() => null);
+    } catch {
+      return {
+        ok: false,
+        result: { ok: false, refusal: 'UNREACHABLE', retryable: true, providerCode: null, detail: 'no answer from Twilio' },
+      };
+    }
+    const sid = isObject(answer) && typeof answer['sid'] === 'string' ? answer['sid'] : null;
+    if (status >= 200 && status < 300 && sid) return { ok: true, sid };
+    const code = isObject(answer) ? Number(answer['code']) : NaN;
+    const { refusal, retryable } = refusalForTwilioError(code, status);
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        refusal,
+        retryable,
+        providerCode: Number.isFinite(code) ? String(code) : `http_${status}`,
+        // Twilio's message can quote the number it refused: never kept.
+        detail: null,
+      },
+    };
   }
 
   async send(msg: OutboundMessage): Promise<SendResult> {
@@ -686,14 +745,15 @@ export class TwilioWhatsAppChannel implements MessagingChannel {
         detail: "the WhatsApp sandbox takes no custom templates (only Twilio's three samples)",
       };
     }
-    let request: TwilioRequest;
+    let requests: TwilioRequest[];
     try {
-      request = buildTwilioSendRequest(msg, this.cfg);
+      requests = buildTwilioSendRequests(msg, this.cfg);
     } catch (err) {
       const detail = err instanceof ChannelError ? err.message : 'the message could not be built';
       return { ok: false, refusal: 'REJECTED', retryable: false, providerCode: null, detail };
     }
-    if (!(await this.takeSlot())) {
+    const slots = this.takeSlots(requests.length);
+    if (!slots) {
       return {
         ok: false,
         refusal: 'RATE_LIMITED',
@@ -702,32 +762,18 @@ export class TwilioWhatsAppChannel implements MessagingChannel {
         detail: 'the sandbox sends one message every three seconds',
       };
     }
-    let status: number;
-    let answer: unknown;
-    try {
-      const res = await this.fetch(request.url, {
-        method: 'POST',
-        headers: request.headers,
-        body: formBody(request.form ?? []),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-      status = res.status;
-      answer = await res.json().catch(() => null);
-    } catch {
-      return { ok: false, refusal: 'UNREACHABLE', retryable: true, providerCode: null, detail: 'no answer from Twilio' };
+    // A file's words go first, then the file, whose SID is the message's. If
+    // the words are refused, nothing went out. If the words went and the file
+    // is refused, the file's refusal is answered: a retry may repeat the
+    // words, but never loses them.
+    let sid: string | null = null;
+    for (const [i, request] of requests.entries()) {
+      await this.waitUntil(slots[i]!);
+      const sent = await this.post(request);
+      if (!sent.ok) return sent.result;
+      sid = sent.sid;
     }
-    const sid = isObject(answer) && typeof answer['sid'] === 'string' ? answer['sid'] : null;
-    if (status >= 200 && status < 300 && sid) return { ok: true, externalMessageId: sid, acceptedAt: now };
-    const code = isObject(answer) ? Number(answer['code']) : NaN;
-    const { refusal, retryable } = refusalForTwilioError(code, status);
-    return {
-      ok: false,
-      refusal,
-      retryable,
-      providerCode: Number.isFinite(code) ? String(code) : `http_${status}`,
-      // Twilio's message can quote the number it refused: never kept.
-      detail: null,
-    };
+    return { ok: true, externalMessageId: sid!, acceptedAt: now };
   }
 
   /**

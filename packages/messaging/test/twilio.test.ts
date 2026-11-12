@@ -366,20 +366,111 @@ describe('sending', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('sends media by its https link, a caption only with an image or a video', async () => {
+  it('sends media by its https link; an image carries its caption as the body', async () => {
     const { fetch, calls } = fakeFetch([
       { status: 201, json: { sid: SM(4) } },
       { status: 201, json: { sid: SM(5) } },
     ]);
     const c = channel({}, { fetch });
-    await c.send({ ...textTo(ALLOWED), content: { kind: 'media', mediaType: 'image', link: 'https://files.example/a.jpg', caption: 'the room' } });
-    await c.send({ ...textTo(ALLOWED), content: { kind: 'media', mediaType: 'document', link: 'https://files.example/b.pdf', caption: 'menu' } });
-    expect(new URLSearchParams(calls[0]!.body).get('Body')).toBe('the room');
-    expect(new URLSearchParams(calls[0]!.body).get('MediaUrl')).toBe('https://files.example/a.jpg');
+    expect(
+      await c.send({ ...textTo(ALLOWED), content: { kind: 'media', mediaType: 'image', link: 'https://files.example/a.jpg', caption: 'the room' } }),
+    ).toEqual({ ok: true, externalMessageId: SM(4), acceptedAt: NOW });
+    await c.send({ ...textTo(ALLOWED), content: { kind: 'media', mediaType: 'document', link: 'https://files.example/b.pdf' } });
+    expect(calls).toHaveLength(2);
+    const image = new URLSearchParams(calls[0]!.body);
+    expect(image.get('Body')).toBe('the room');
+    expect(image.get('MediaUrl')).toBe('https://files.example/a.jpg');
+    expect(image.get('StatusCallback')).toBe(`${ORIGIN}${PATH}`);
+    // A document with no words is one request, the file alone.
     expect(new URLSearchParams(calls[1]!.body).get('Body')).toBeNull();
+    expect(new URLSearchParams(calls[1]!.body).get('MediaUrl')).toBe('https://files.example/b.pdf');
     expect(
       await c.send({ ...textTo(ALLOWED), content: { kind: 'media', mediaType: 'image', providerMediaId: 'abc' } }),
     ).toMatchObject({ ok: false, refusal: 'REJECTED' });
+  });
+
+  it("sends a document's words as their own message just before it: Twilio drops a body sent with a file", async () => {
+    for (const mediaType of ['document', 'video', 'audio'] as const) {
+      const { fetch, calls } = fakeFetch([
+        { status: 201, json: { sid: SM(6) } },
+        { status: 201, json: { sid: SM(7) } },
+      ]);
+      const sent = await channel({}, { fetch }).send({
+        ...textTo(ALLOWED),
+        content: { kind: 'media', mediaType, link: 'https://files.example/brochure.pdf', caption: 'Here is our birthday brochure' },
+      });
+      // The file's SID is the message's: its statuses move the inbox's row.
+      expect(sent).toEqual({ ok: true, externalMessageId: SM(7), acceptedAt: NOW });
+      expect(calls).toHaveLength(2);
+      const [words, file] = calls.map((call) => new URLSearchParams(call.body));
+      expect([...words!.keys()]).toEqual(['To', 'From', 'Body']);
+      expect(words!.get('Body')).toBe('Here is our birthday brochure');
+      expect(words!.get('To')).toBe(`whatsapp:${ALLOWED}`);
+      expect([...file!.keys()]).toEqual(['To', 'From', 'MediaUrl', 'StatusCallback']);
+      expect(file!.get('MediaUrl')).toBe('https://files.example/brochure.pdf');
+      expect(file!.get('StatusCallback')).toBe(`${ORIGIN}${PATH}`);
+    }
+  });
+
+  it("never splits a file's words from the file: both slots reserved at once, a refusal of either answered", async () => {
+    const brochure: OutboundMessage = {
+      ...textTo(ALLOWED),
+      content: { kind: 'media', mediaType: 'document', link: 'https://files.example/brochure.pdf', caption: 'Here is our birthday brochure' },
+    };
+    // On the sandbox's pace: the words now, the file three seconds after.
+    const waits: number[] = [];
+    let clock = NOW.getTime();
+    const paced = fakeFetch([
+      { status: 201, json: { sid: SM(8) } },
+      { status: 201, json: { sid: SM(9) } },
+    ]);
+    const c = new TwilioWhatsAppChannel(config(), {
+      fetch: paced.fetch,
+      now: () => new Date(clock),
+      sleep: (ms) => {
+        waits.push(ms);
+        clock += ms;
+        return Promise.resolve();
+      },
+    });
+    expect(await c.send(brochure)).toMatchObject({ ok: true, externalMessageId: SM(9) });
+    expect(waits).toEqual([3000]);
+    expect(paced.calls).toHaveLength(2);
+
+    // Behind two texts, a brochure would need slots six and nine seconds
+    // away: it stays queued whole, and neither its words nor its file go.
+    const queued = fakeFetch([
+      { status: 201, json: { sid: SM(20) } },
+      { status: 201, json: { sid: SM(21) } },
+    ]);
+    const held: number[] = [];
+    const q = new TwilioWhatsAppChannel(config(), {
+      fetch: queued.fetch,
+      now: () => NOW,
+      sleep: (ms) => {
+        held.push(ms);
+        return Promise.resolve();
+      },
+    });
+    const [one, two, third] = await Promise.all([q.send(textTo(ALLOWED)), q.send(textTo(ALLOWED)), q.send(brochure)]);
+    expect([one.ok, two.ok]).toEqual([true, true]);
+    expect(third).toMatchObject({ ok: false, refusal: 'RATE_LIMITED', retryable: true, providerCode: 'SANDBOX_PACE' });
+    expect(queued.calls).toHaveLength(2);
+    expect(queued.calls.some((call) => (call.body ?? '').includes('brochure'))).toBe(false);
+    expect(held).toEqual([3000]);
+
+    // The words refused: the file is never sent.
+    const refusedWords = fakeFetch([{ status: 400, json: { code: 63016, message: 'Outside window', status: 400 } }]);
+    expect(await channel({}, { fetch: refusedWords.fetch }).send(brochure)).toMatchObject({ ok: false, refusal: 'OUT_OF_WINDOW' });
+    expect(refusedWords.calls).toHaveLength(1);
+    // The words went and the file is refused: the file's refusal is the answer.
+    const refusedFile = fakeFetch([{ status: 201, json: { sid: SM(11) } }, 'network-error']);
+    expect(await channel({}, { fetch: refusedFile.fetch }).send(brochure)).toMatchObject({
+      ok: false,
+      refusal: 'UNREACHABLE',
+      retryable: true,
+    });
+    expect(refusedFile.calls).toHaveLength(2);
   });
 
   it("reads Twilio's error envelope, and a lost answer is retryable", async () => {

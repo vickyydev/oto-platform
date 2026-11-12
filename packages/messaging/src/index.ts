@@ -69,7 +69,7 @@ export {
   TWILIO_SIGNATURE_HEADER,
   TWIML_EMPTY,
   addressToE164,
-  buildTwilioSendRequest,
+  buildTwilioSendRequests,
   formFieldsOf,
   isOwnMediaUrl,
   mediaKindOf,
