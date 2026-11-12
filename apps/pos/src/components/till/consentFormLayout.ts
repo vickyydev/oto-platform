@@ -17,9 +17,15 @@ export const NARROW_LINE = 'max-[520px]:text-sm';
  * as the family scrolls; the bar of "Still needed" and Done stays at the foot.
  * The heading took about 245 of the 844 pixels of a 390-wide phone, the bar
  * about 130 and "Return phone to staff" 88, which left the form under half.
+ *
+ * SCRUM-963 — and on a phone held sideways (844 by 390), where the heading
+ * stood and left the form 50 pixels: the same rule, under 520 pixels of width
+ * OR of height. Only the phone till's form carries these; the counter display
+ * (600 by 1024, 1024 by 600) and the till's own half are taller and wider.
  */
-export const PHONE_SCROLL = 'max-[520px]:overflow-y-auto';
-export const PHONE_SCROLL_FORM = 'max-[520px]:flex-none max-[520px]:overflow-visible';
+export const PHONE_SCROLL = '[@media(max-width:519.98px),(max-height:519.98px)]:overflow-y-auto';
+export const PHONE_SCROLL_FORM =
+  '[@media(max-width:519.98px),(max-height:519.98px)]:flex-none [@media(max-width:519.98px),(max-height:519.98px)]:overflow-visible';
 
 /**
  * SCRUM-894 — on a short screen (a landscape tablet, 1024 by 600) the box

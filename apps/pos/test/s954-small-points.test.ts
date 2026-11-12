@@ -161,7 +161,8 @@ describe('SCRUM-954 (6) — the phone till’s form scrolls its heading away', (
     const html = under(createElement(ConsentCapture, { ...consentProps, onDone: () => undefined, phoneScroll: true }));
     expect(body(html)).toBe(`flex min-h-0 flex-1 flex-col relative ${PHONE_SCROLL}`);
     expect(form(html)).toBe(`flex-1 space-y-5 overflow-y-auto px-8 pb-6 ${PHONE_SCROLL_FORM}`);
-    expect(PHONE_SCROLL).toBe('max-[520px]:overflow-y-auto');
+    // SCRUM-963 — under 520 pixels of width, or of height (a phone held sideways).
+    expect(PHONE_SCROLL).toBe('[@media(max-width:519.98px),(max-height:519.98px)]:overflow-y-auto');
     // The language button goes with the heading, inside the part that scrolls.
     expect(html.indexOf('data-testid="consent-form-body"')).toBeLessThan(html.indexOf('absolute top-4 right-4 z-40'));
   });

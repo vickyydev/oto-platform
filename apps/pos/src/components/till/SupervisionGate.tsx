@@ -214,8 +214,16 @@ export function SupervisionGate({
   const uniqueBlockers = Array.from(new Set(blockers));
   const canContinue = allIdentified && consentOk && confirmationsOk && contactOk;
 
+  /*
+   * SCRUM-963 — on a phone (under 520 pixels) the gate grows with what it
+   * holds and its page scrolls it as one, so the children's cards keep their
+   * height where the "Before payment" list and the buttons below took the
+   * screen (a sliver at 360 by 740); each child's name has its own line, the
+   * age under it, so a name can be read as it is typed. The counter till is
+   * wider and draws it exactly as before.
+   */
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col max-[520px]:h-auto max-[520px]:min-h-full">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400">
           <ShieldAlert className="h-6 w-6" />
@@ -228,7 +236,7 @@ export function SupervisionGate({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+      <div className="flex-1 space-y-3 overflow-y-auto pr-1 max-[520px]:overflow-visible">
         {rows.map(({ slot, aged, requirement, waiverEligible, effective, optedIn }) => {
           const meta = REQUIREMENT_META[effective];
           const Icon = meta.icon;
@@ -237,7 +245,7 @@ export function SupervisionGate({
               key={slot.id}
               className="rounded-2xl border border-border bg-card p-4"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 max-[520px]:flex-wrap">
                 <Baby className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <Input
                   value={slot.name}
@@ -245,7 +253,7 @@ export function SupervisionGate({
                   placeholder="Child's name"
                   className="h-12 flex-1 text-lg"
                 />
-                <div className="w-36 shrink-0">
+                <div className="w-36 shrink-0 max-[520px]:w-full">
                   <ChildDobPicker
                     dateOfBirth={slot.dateOfBirth}
                     age={parseAge(slot.age)}

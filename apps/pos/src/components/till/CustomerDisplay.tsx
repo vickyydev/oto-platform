@@ -667,9 +667,13 @@ export function CustomerDisplay({
    * typed; the station's box refuses an identify answer without one as well.
    */
   if (stage === 'identify') {
+    // SCRUM-963 — on a narrow display (the counter's, 600 wide) the part that
+    // scrolls starts under the language button (34 pixels at 16 from the top),
+    // so the phone number box never slides under it as the keys open and the
+    // screen scrolls (pictures 01a, 19a). Wider screens are exactly as before.
     return (
       <Shell>
-        <div className="flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300 max-[640px]:mt-13 max-[640px]:pt-1">
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 text-primary mb-2">
               <IdCard className="w-6 h-6" />
