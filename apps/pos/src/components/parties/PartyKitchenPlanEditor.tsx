@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Cake, GlassWater, Plus, Trash2, UtensilsCrossed } from 'lucide-react';
 import {
   addedKitchenLine,
+  kitchenChoiceOptions,
   kitchenLineChoosable,
   kitchenLineEditable,
   kitchenLineRemovable,
   kitchenMenuMatches,
+  kitchenServiceNeeded,
   type KitchenDraft,
   type KitchenDraftLine,
   type KitchenDraftList,
@@ -130,9 +132,10 @@ function LineRows({
                       <SelectValue placeholder={`${l.choiceGroup}: choose`} />
                     </SelectTrigger>
                     <SelectContent>
-                      {group.options.map((o) => (
-                        <SelectItem key={o} value={o}>
-                          {`${group.label}: ${o}`}
+                      {/* A dish the BEO saved that the template no longer lists still shows, and is not picked again. */}
+                      {kitchenChoiceOptions(group.options, l.chosenOption).map((o) => (
+                        <SelectItem key={o.value} value={o.value} disabled={o.saved}>
+                          {`${group.label}: ${o.value}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -208,7 +211,7 @@ export function PartyKitchenPlanSection({ plan, draft, onChange, readOnly, choic
       {readOnly && <p className="text-sm text-muted-foreground">{PARTY_KITCHEN_READ_ONLY}</p>}
       <div className="flex items-center justify-between">
         <span className="text-sm">Kitchen service needed</span>
-        <Switch checked disabled aria-label="Kitchen service needed" />
+        <Switch checked={kitchenServiceNeeded(plan)} disabled aria-label="Kitchen service needed" />
       </div>
       <Grid2>
         <Field label="Food service time">

@@ -4,6 +4,7 @@ import {
   PARTY_KITCHEN_READ_ONLY,
   PARTY_NOT_ON_TILL_MENU,
   type EventView,
+  type PartyKitchenChoicesAnswer,
   type PartyKitchenEditAnswer,
   type PartyKitchenPlan,
   type PartySettleQuote,
@@ -15,10 +16,12 @@ import { PartyDetail } from '@/components/parties/PartyDetail';
 import { PartyEditForm } from '@/components/parties/PartyEditForm';
 import { PartyBarPlanSection, PartyKitchenPlanSection } from '@/components/parties/PartyKitchenPlanEditor';
 import { PartySettleModal } from '@/components/parties/PartySettleModal';
+import { SelectItem } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import {
   addedKitchenLine,
   kitchenChangesOf,
+  kitchenChoiceOptions,
   kitchenDraftOf,
   kitchenLineRemovable,
   kitchenMenuMatches,
@@ -422,6 +425,32 @@ describe('the Edit form', () => {
     (buttonIn(host.result.current, 'Save changes')!.props.onClick as () => void)();
     // Only the note: never Calamari set back to ×2 under the BEO's ×4.
     expect(onSave.mock.calls[0]![1]).toEqual([{ op: 'set', lineId: 'm2', note: 'cut very small' }]);
+  });
+
+  it("the Kitchen card says what the plan says, and a choice's saved dish shows though the template no longer lists it", () => {
+    const sectionOf = (plan: PartyKitchenPlan, choices: PartyKitchenChoicesAnswer | null) =>
+      draw({ type: PartyKitchenPlanSection, props: { plan, draft: kitchenDraftOf(plan), onChange: vi.fn(), readOnly: false, choices, menu: [] } });
+    const switchOf = (tree: unknown) => [...walk(tree)].find((el) => el.props['aria-label'] === 'Kitchen service needed')!;
+    // On when the plan gives the kitchen a food line or a cake, as the party page reads it; off for a bar alone.
+    expect(switchOf(sectionOf(KITCHEN, null)).props.checked).toBe(true);
+    const barOnly: PartyKitchenPlan = { ...KITCHEN, setMenu: [], cake: null };
+    expect(switchOf(sectionOf(barOnly, null)).props.checked).toBe(false);
+    expect(switchOf(sectionOf({ ...barOnly, cake: KITCHEN.cake }, null)).props.checked).toBe(true);
+
+    // The template now offers Chicken and Shrimp; the BEO saved Veggie: it shows first, not to be picked again.
+    const tree = sectionOf(KITCHEN, { status: 'ok', message: null, groups: [{ label: 'Fried rice', options: ['Chicken', 'Shrimp'], allowMultiple: false }] });
+    const food = [...walk(tree)].find((el) => typeof el.type === 'function' && /LineRows/.test((el.type as { name?: string }).name ?? '') && el.props.list === 'food')!;
+    const items = [...walk(draw(food))].filter((el) => el.type === SelectItem).map((el) => [el.props.value, el.props.disabled, flat(el.props.children).trim()]);
+    expect(items).toEqual([
+      ['Veggie', true, 'Fried rice: Veggie'],
+      ['Chicken', false, 'Fried rice: Chicken'],
+      ['Shrimp', false, 'Fried rice: Shrimp'],
+    ]);
+    expect(kitchenChoiceOptions(['Veggie', 'Chicken'], 'Veggie')).toEqual([
+      { value: 'Veggie', saved: false },
+      { value: 'Chicken', saved: false },
+    ]);
+    expect(kitchenChoiceOptions(['Veggie'], null)).toEqual([{ value: 'Veggie', saved: false }]);
   });
 
   it('without a plan read, the sections are the prototype\'s own, as before', () => {

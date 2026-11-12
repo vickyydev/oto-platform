@@ -5,6 +5,7 @@ import {
   type PartyKitchenPlan,
   type PartyMenuOrigin,
 } from '@oto/shared';
+import { partyCakeOf } from './partyKitchen';
 
 /**
  * SCRUM-907 — THE PARTY EDIT FORM'S KITCHEN SECTION, FROM THE PLAN THE TILL
@@ -111,6 +112,23 @@ export const kitchenLineRemovable = (l: KitchenDraftLine): boolean =>
 
 /** A set-menu choice the till may change: a group's line, or an open group no line holds. */
 export const kitchenLineChoosable = (l: KitchenDraftLine): boolean => !!l.choiceGroup && !l.added;
+
+/**
+ * Whether the plan gives the kitchen anything to make: a food line or a cake. The party page's own
+ * reading of the plan (SCRUM-906, `withPartyKitchen`); the BEO's "kitchen required" switch itself is
+ * not in the plan the till reads.
+ */
+export const kitchenServiceNeeded = (plan: Pick<PartyKitchenPlan, 'setMenu' | 'cake'>): boolean =>
+  plan.setMenu.length > 0 || partyCakeOf(plan).type !== 'none';
+
+/**
+ * A choice group's options as the form's picker offers them: the template's, and first the dish the
+ * BEO saved when the template no longer lists it, shown but not picked again (`saved`).
+ */
+export function kitchenChoiceOptions(options: readonly string[], chosen: string | null): Array<{ value: string; saved: boolean }> {
+  const listed = options.map((value) => ({ value, saved: false }));
+  return chosen && !options.includes(chosen) ? [{ value: chosen, saved: true }, ...listed] : listed;
+}
 
 /** A new line for the draft: a till item (its name and code) or a typed name. */
 export function addedKitchenLine(list: KitchenDraftList, item: { name: string; code: string | null } = { name: '', code: null }): KitchenDraftLine {
