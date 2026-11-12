@@ -331,7 +331,7 @@ export function initialReviewState(
     startTime: sourced(p.event.startTime),
     endTime: sourced(p.event.endTime),
     cake: p.cake ? fresh({ mode: p.cake.mode, notes: p.cake.notes ?? "", time: p.cake.time ?? "" }, p.cake.from) : null,
-    deposit: p.deposit ? fresh({ amount: p.deposit.amount, paid: p.deposit.paid, date: p.deposit.date ?? "" }, p.deposit.from) : null,
+    deposit: p.deposit ? fresh({ amount: p.deposit.amount, paid: depositOpensPaid(review), date: p.deposit.date ?? "" }, p.deposit.from) : null,
     date: aiFillDateLine(opts.fill, opts.bookedDate),
     useDate: false,
     details: {
@@ -351,6 +351,21 @@ export function initialReviewState(
       team: { proposals: teamProposals, accepted: [] },
     },
   };
+}
+
+/**
+ * SCRUM-903: whether the deposit opens ticked Received. With no message of
+ * the team's confirming the party, a deposit only the family says was paid
+ * ("I already transferred the 5,000") opens as asked: its amount and their
+ * words stay pre-filled, and staff tick Received themselves, so one press of
+ * Approve and create never writes the family's claim as money received (the
+ * party's one deposit the till settles against). A ruling message's review
+ * opens as the proposal says. The wider asked-vs-received rule is SCRUM-844's.
+ */
+function depositOpensPaid(review: BeoAiReview): boolean {
+  const d = review.proposal.deposit;
+  if (!d?.paid) return false;
+  return !(review.ruling === null && d.from.source === "family");
 }
 
 /** Of two sources for one group, the one its mark shows: the later line's, whoever wrote it (`laterLineWins`, SCRUM-826). */

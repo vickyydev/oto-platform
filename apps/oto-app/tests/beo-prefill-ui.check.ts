@@ -186,7 +186,8 @@ const NO_RULING_REVIEW: BeoAiReview = {
     otherLines: [],
     event: { startTime: { value: "15:00", from: words(1, NO_RULING_LINE_1) } },
     cake: null,
-    deposit: null,
+    // The family says it was paid; no message of the team's says it was received.
+    deposit: { amount: 5000, paid: true, date: null, from: words(2, "I already transferred the 5,000 baht deposit") },
     details: {
       title: null,
       bookingName: null,
@@ -712,6 +713,12 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   }
   const start = required("input-ai-review-startTime").parentElement!.parentElement!;
   assert.match(text("text-ai-review-chat-says", start)!, /15:00, pizza for the kids/, "the start time's reason is under the start time");
+  // The family's paid deposit opens as asked, Received unticked, their words under it.
+  const received = required("checkbox-ai-review-deposit-paid") as HTMLInputElement;
+  assert.equal(received.checked, false, "Received is staff's tick, not the family's word");
+  const depositRow = required("input-ai-review-deposit").parentElement!.parentElement!;
+  assert.match(depositRow.textContent!, /Deposit asked/);
+  assert.match(text("text-ai-review-chat-says", depositRow)!, /I already transferred the 5,000 baht deposit/);
   // The lines the catalogue lacks keep Approve and create shut until each is decided; nothing is sent before it.
   assert.equal((required("button-ai-review-approve") as HTMLButtonElement).disabled, true);
   assert.match(text("text-ai-review-undecided")!, /Decide the 2 lines/);
@@ -730,6 +737,7 @@ await check("SCRUM-903: no team confirmation and an empty catalogue — the revi
   assert.equal(body.event.startTime, "15:00");
   assert.deepEqual(body.menuLines.map((l) => [l.itemName, l.productCode]), [["pizza", null]]);
   assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.name]), [[null, "a magic show"]]);
+  assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: sent as asked, never as received");
   assert.ok(body.sources.length > 0 && body.sources.every((src) => src.source === "family" || src.source === "staff"), JSON.stringify(body.sources));
   assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes("NORULING-903"), "the chat's words never ride the approval");
 });

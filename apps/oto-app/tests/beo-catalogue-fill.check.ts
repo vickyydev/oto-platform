@@ -103,7 +103,7 @@ const { laterLineWins } = await import("../shared/beoAiFill");
 const { REQUIRED_FIELDS_HEADING } = await import("../server/lib/aiFill");
 const { resolveSetMenuLines } = await import("../server/lib/setMenuResolve");
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, undecidedLines, NOTHING_HELD, useChatText } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, undecidedLines, NOTHING_HELD, useChatText, edited } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { CakeUnderNoCake } = await import("../client/src/components/beo/beo-cake-under-no-cake");
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
@@ -302,11 +302,13 @@ const PASTE_ANSWER = {
 
 /**
  * SCRUM-903: a conversation only the family has written yet — a date, a time,
- * a pizza, a show and a dish the menu lacks — with no message of the team's.
+ * a pizza, a show, a dish the menu lacks and a deposit they say they paid —
+ * with no message of the team's.
  */
 const NO_RULING_TEXTS = [
   "Hi! Mia's birthday on Saturday 28 November at 15:00 please. NORULING-903",
   "Margherita pizza for the kids, a bubble show, and some sushi too? NORULING-903",
+  "I already transferred the 5,000 baht deposit. NORULING-903",
 ];
 const noRulingLines = (key: Key): TLine[] => NO_RULING_TEXTS.map((text, i) => ({ id: msgIds[key][i]!, author: "customer", at: at(i), text }));
 const NO_RULING_ANSWER = {
@@ -317,6 +319,8 @@ const NO_RULING_ANSWER = {
     entertainment: [{ templateId: cat.bubble, said: "a bubble show", quantity: 1, line: 2, source: "team" }],
     event: { childName: { value: "Mia", line: 1 }, startTime: { value: "15:00", line: 1 } },
   },
+  // The family's word that it was paid: the model reads it received (the prompt's rule, unchanged in Phase A).
+  deposit: { amount: "5,000", paid: true, line: 3, source: "family" },
 };
 
 /** SCRUM-903: what the next conversation reads answer instead: text that is not the answer, or no answer at all. */
@@ -393,7 +397,7 @@ const inbox = new Map<string, InboxRead>([
 for (const key of ["noRuling", "bNoRuling"] as const) {
   inbox.set(conv[key], {
     ok: true,
-    confirmation: { conversationId: conv[key], eventId: ev[key], message: null, scanned: 2, transcript: noRulingLines(key), transcriptCut: false },
+    confirmation: { conversationId: conv[key], eventId: ev[key], message: null, scanned: NO_RULING_TEXTS.length, transcript: noRulingLines(key), transcriptCut: false },
   });
 }
 // A platform older than SCRUM-815: no transcript in its answer.
@@ -1403,9 +1407,9 @@ try {
     assert.equal(review.finalMessage, null, "Final Message to Parent stays empty");
     assert.equal(res.body.source, null, "no ruling message rides beside the review");
     assert.equal(review.conversationId, conv.noRuling);
-    assert.deepEqual(review.transcript, { lines: 2, cut: false });
+    assert.deepEqual(review.transcript, { lines: 3, cut: false });
     assert.deepEqual(res.body.fill, { proposals: { partyHost: null, entertainmentHost: null, setupResponsible: null } }, "nothing of the form's own is read, nobody proposed");
-    assert.equal(res.body.chat.newestMessageId, msgIds.noRuling[1], "the chat's newest line, for Fetch from chat's memory");
+    assert.equal(res.body.chat.newestMessageId, msgIds.noRuling[2], "the chat's newest line, for Fetch from chat's memory");
     // The family's pizza and show are pre-selected, marked the family's, each with their words.
     const family = (line: number, quote: string) => ({ source: "family", at: at(line - 1), line, quote });
     const p = review.proposal;
@@ -1419,6 +1423,7 @@ try {
     assert.deepEqual(p.event.childName, { value: "Mia", from: family(1, clip120(NO_RULING_TEXTS[0]!)) });
     assert.deepEqual(p.menuLines.map((l) => [l.itemName, l.notInMenu, l.from]), [["sushi", true, family(2, "sushi")]]);
     assert.deepEqual(p.details.title, { value: "Mia's Birthday", from: { source: "default", at: null, line: null } });
+    assert.deepEqual(p.deposit, { amount: 5000, paid: true, date: null, from: family(3, clip120(NO_RULING_TEXTS[2]!)) }, "the model reads the family's word as received");
     const state = initialReviewState(review, { fill: res.body.fill, bookedDate: BOOKED, held: { ...NOTHING_HELD, specialRequests: "ZZ typed by staff" } });
     assert.deepEqual(state.choices[PIZZA]?.value, ["Margherita"], "the pizza pre-selected");
     assert.deepEqual(state.entertainment.map((e) => [e.templateId, e.decision]), [[cat.bubble, null]], "the show pre-selected, needing no decision");
@@ -1428,6 +1433,13 @@ try {
     assert.equal(state.date, null, "no date read: nothing to tick, the booked date stands");
     assert.equal(Object.values(state.details.team.proposals).every((x) => x === null), true, "no host proposed");
     assert.equal(state.details.specialRequests.value, "ZZ typed by staff", "typed text is never overwritten");
+    // A deposit only the family says was paid opens as asked, their words kept; Received is staff's tick (SCRUM-844's rule).
+    assert.deepEqual(state.deposit, { value: { amount: 5000, paid: false, date: "" }, from: family(3, clip120(NO_RULING_TEXTS[2]!)), changed: false });
+    const ticked = { ...state, deposit: edited(state.deposit, { ...state.deposit!.value, paid: true }) };
+    assert.deepEqual(approveBodyOf(review, ticked, { conversationId: conv.noRuling, messageId: null }).deposit, { amount: 5000, paid: true, date: null }, "ticked, it is sent as received");
+    // With a ruling message the review opens as the proposal says, as before.
+    const ruled = { ...review, ruling: { source: "team" as const, at: at(5), line: 4 } };
+    assert.equal(initialReviewState(ruled).deposit?.value.paid, true, "a ruling's review: unchanged");
     await nothingWritten(ev.noRuling);
     const [row] = (await beoRows(ev.noRuling)).activity;
     assert.equal(row?.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 noRuling"`);
@@ -1436,7 +1448,7 @@ try {
     assert.equal(meta.inboxMessageId, null);
     assert.equal(meta.outcome, "filled");
     assert.equal(meta.catalogueRead.outcome, "filled");
-    for (const words of [...NO_RULING_TEXTS, "Margherita pizza", "a bubble show", "sushi", "Mia"]) {
+    for (const words of [...NO_RULING_TEXTS, "Margherita pizza", "a bubble show", "sushi", "Mia", "transferred"]) {
       assert.ok(!row!.metadata_json.includes(words) && !row!.summary_text.includes(words), `no "${words}" in the activity row`);
     }
     // Approve and create: the sushi left out; the family's pizza and show written; Final Message to Parent stays empty.
@@ -1446,8 +1458,9 @@ try {
     assert.equal(body.event.eventDate, undefined);
     assert.equal(body.details?.team, undefined);
     assert.equal(body.details?.specialRequests, undefined, "the typed text is the form's, not sent over the saved");
+    assert.deepEqual(body.deposit, { amount: 5000, paid: false, date: null }, "unticked: the deposit is sent as asked, never as received");
     assert.ok(body.sources.some((s) => s.field === "entertainment:0" && s.source === "family"));
-    assert.ok(!JSON.stringify(body).includes("quote") && !JSON.stringify(body).includes(NO_RULING_TEXTS[1]!), "the chat's words never ride the approval");
+    assert.ok(!JSON.stringify(body).includes("quote") && NO_RULING_TEXTS.every((t) => !JSON.stringify(body).includes(t)), "the chat's words never ride the approval");
     const approved = await approve(ev.noRuling, body);
     assert.equal(approved.status, 200, JSON.stringify(approved.body));
     const after = await beoRows(ev.noRuling);
@@ -1456,6 +1469,16 @@ try {
     assert.equal(after.event.start_time, "15:00");
     assert.equal(after.event.internal_staff_notes, null, "Final Message to Parent stays empty");
     assert.equal(after.event.event_date, BOOKED, "the booked date stands");
+    // The family's claim is billing's deposit required, never money received the till settles against.
+    assert.equal(after.billing.deposit_required, true);
+    assert.equal(after.billing.deposit_amount, 5000);
+    assert.equal(after.billing.deposit_paid, false, "no deposit received is written");
+    assert.equal(after.billing.deposit_paid_amount, null);
+    const [own] = await q("select prepayment_amount from core_events where id = $1", [ev.noRuling]);
+    assert.equal(own?.prepayment_amount, null, "the event's own Prepayment untouched");
+    const shown = await readBeo(ev.noRuling);
+    assert.equal(shown.status, 200, JSON.stringify(shown.body));
+    assert.ok(!(Number(shown.body.partyDetails?.prepaymentReceived) > 0), "Party Details shows no prepayment received");
     const approvedMeta = after.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.equal(approvedMeta?.source, "inbox", "the approval names the conversation, not a pasted message");
     assert.equal(approvedMeta?.inboxConversationId, conv.noRuling);

@@ -877,6 +877,7 @@ function ReviewSections({
                 type="checkbox"
                 checked={state.deposit.value.paid}
                 onChange={(e) => set({ deposit: edited(state.deposit, { ...state.deposit!.value, paid: e.target.checked }) })}
+                data-testid="checkbox-ai-review-deposit-paid"
               />
               Received
             </label>
