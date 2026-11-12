@@ -149,6 +149,20 @@ export function boxSaleIssue(saleId: string): BoxSaleIssue | null {
   };
 }
 
+/**
+ * SCRUM-897 — WHETHER THE COUNTER'S BOX CLOSED THIS SALE: it answered the
+ * close — the cash or ฿0 press (`finaliseOnBox`), credit that covered the
+ * order, or a tender on its own terminal. The same fact `boxSaleIssue` reads:
+ * the box's answer, not the lane the sale was rung up on (a cash press that
+ * fell to the box closes a platform-rung sale there) and not the lane the till
+ * is on now (a drop-off family's sale finished online while the lane still
+ * says box was closed by the platform). A promo code's use is counted on the
+ * till only for such a sale; the platform counts it when the box hands it over.
+ */
+export function closedOnBox(saleId: string): boolean {
+  return sales.get(saleId)?.answer?.finalised === true;
+}
+
 /** The sale as rung up on the box: priced there, not yet paid, no number yet. */
 export async function rungUpOnBox(sale: Omit<BoxLaneSale, 'answer' | 'lane'>): Promise<ApiSale> {
   const priced = await bridgeApi.intent<{ quote: ApiSaleQuote }>(

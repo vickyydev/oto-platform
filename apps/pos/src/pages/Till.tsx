@@ -132,7 +132,7 @@ import { partyPageHref, useLeftBehindSales } from '@/lib/leftBehindSale';
 import { isPartySettlementDetail, rebuildResumedSale, resumedPayLabel } from '@/lib/resumeSale';
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
-import { laneSale } from '@/api/boxSales';
+import { closedOnBox, laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
 import type { CartQuoteState } from '@/lib/cartQuote';
@@ -159,7 +159,7 @@ import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Baby } from 'lucide-react';
 import type { Booking } from '@/types';
-import { currentLane, useLane } from '@/lib/lane';
+import { useLane } from '@/lib/lane';
 import { useLanguageChoice } from '@/lib/languageChoice';
 
 // Break a ticket line into its discountable component rows (kids/adults/socks/
@@ -3111,9 +3111,12 @@ export default function Till() {
     // one past its limit at the quote and at the close, in its own words, which
     // this till shows. So a sale the platform closed is NOT counted again here:
     // a local count drifts (a voided sale stays counted) and refused codes the
-    // platform would take. Only a sale taken on the box lane, with the link
+    // platform would take. Only a sale the counter's box closed, with the link
     // down, is counted locally — the offline check is the one guard there.
-    if (currentLane() === 'box') {
+    // SCRUM-897 — where the sale was closed decides, not the lane: a drop-off
+    // family's sale finished online while the lane still says box is counted
+    // once, by the platform.
+    if (closedOnBox(saleId)) {
       discounts.forEach((d) =>
         incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
       );

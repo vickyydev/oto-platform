@@ -353,8 +353,9 @@ describe('SCRUM-374 — the platform counts a code’s uses; a till counts only 
       const at = page.indexOf('incrementPromoUsage(d.code');
       expect(at, file).toBeGreaterThan(-1);
       expect(page.match(/incrementPromoUsage\(d\.code/g), file).toHaveLength(1);
-      // The nearest enclosing condition before the call is the lane check.
-      const guard = page.lastIndexOf("if (currentLane() === 'box') {", at);
+      // The nearest enclosing condition before the call is the box-closed check
+      // (SCRUM-897: where the sale was closed, not the lane the till is on).
+      const guard = page.lastIndexOf('if (closedOnBox(saleId)) {', at);
       expect(guard, file).toBeGreaterThan(-1);
       // ...and no block closes between the check and the call.
       expect(page.slice(guard, at)).not.toMatch(/\r?\n {4}\}/);

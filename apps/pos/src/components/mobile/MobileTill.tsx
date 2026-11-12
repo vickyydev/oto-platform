@@ -45,7 +45,7 @@ import { ApiError, isMissingRoute } from '@/api/client';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { membersApi } from '@/api/platform';
 import { getSale } from '@/api/history';
-import { laneSale } from '@/api/boxSales';
+import { closedOnBox, laneSale } from '@/api/boxSales';
 import { apiMemberToMember } from '@/api/mappers';
 import { rebuildResumedSale } from '@/lib/resumeSale';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
@@ -110,7 +110,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { currentLane, useLane } from '@/lib/lane';
+import { useLane } from '@/lib/lane';
 
 /** One empty cart, so a resumed sale does not hand a new array to every render. */
 const NO_LINES: readonly CartLine[] = [];
@@ -1902,9 +1902,11 @@ export default function MobileTill() {
     // one past its limit at the quote and at the close, in its own words, which
     // this till shows. So a sale the platform closed is NOT counted again here:
     // a local count drifts (a voided sale stays counted) and refused codes the
-    // platform would take. Only a sale taken on the box lane, with the link
+    // platform would take. Only a sale the counter's box closed, with the link
     // down, is counted locally — the offline check is the one guard there.
-    if (currentLane() === 'box') {
+    // SCRUM-897 — where the sale was closed decides, not the lane, as on the
+    // counter's till.
+    if (closedOnBox(saleId)) {
       discounts.forEach((d) =>
         incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
       );
