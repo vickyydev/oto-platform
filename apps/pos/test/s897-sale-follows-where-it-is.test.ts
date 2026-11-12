@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BridgeSaleAnswer, HeldSale } from '@oto/shared';
@@ -532,5 +532,45 @@ describe('SCRUM-897 (4) — the Held sales list is read again from the platform 
     await viaLane(async () => 'online', async () => 'box');
     await settle();
     expect(list).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('SCRUM-897 (2) — credit: no sale is held online where credit is spent (evidence; nothing changed)', () => {
+  const files = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = path.join(dir, name);
+      return statSync(full).isDirectory() ? files(full) : /\.tsx?$/.test(name) ? [full] : [];
+    });
+  const root = path.resolve(import.meta.dirname, '..', 'src');
+  const using = (needle: string) =>
+    files(root)
+      .filter((file) => readFileSync(file, 'utf8').includes(needle))
+      .map((file) => path.relative(root, file).split(path.sep).join('/'))
+      .sort();
+
+  it('the platform hold is taken only by the drop-off gate, and only the counter\'s ticket till has the gate', () => {
+    expect(using('holdPlatformLane(')).toEqual(['lib/gateOnline.ts', 'lib/lane.ts']);
+    expect(using('gateOnlineHold(')).toEqual(['lib/gateOnline.ts', 'pages/Till.tsx']);
+    // The hold goes with the till: nothing it held outlives the screen.
+    expect(src('pages/Till.tsx')).toContain('useEffect(() => () => gateOnline.reset(), [gateOnline]);');
+  });
+
+  it('the ticket till spends no credit; the screens that do take no hold and are never on screen with it', () => {
+    const till = src('pages/Till.tsx');
+    const at = till.indexOf('const paymentStage = usePaymentStage({');
+    const stage = till.slice(at, till.indexOf('\n  });', at));
+    expect(at).toBeGreaterThan(-1);
+    expect(stage).not.toMatch(/\bwallet\b/);
+    for (const station of ['pages/OrderStation.tsx', 'pages/MerchStation.tsx', 'components/mobile/order-station/MobileOrderStation.tsx']) {
+      expect(src(station), station).toMatch(/\n {4}wallet: wristband && wristband\.creditBalanceTHB > 0/);
+      expect(src(station), station).not.toContain('gateOnline');
+    }
+    expect(using('wallet: wristband && wristband.creditBalanceTHB > 0')).toEqual([
+      'components/mobile/order-station/MobileOrderStation.tsx',
+      'pages/MerchStation.tsx',
+      'pages/OrderStation.tsx',
+    ]);
+    // The counter's till, the F&B station and the shop are one route at a time.
+    expect(src('App.tsx')).toMatch(/\{ticketTill \? <Till [^\n]*\n\s*: guestOrderStation \? <OrderStation [^\n]*\n\s*: <MerchStation /);
   });
 });
