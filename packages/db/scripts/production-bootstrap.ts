@@ -25,7 +25,15 @@
  *      operator_admin), its password read from the environment, never from the
  *      command line. A database built from the dump has no account that could
  *      be named as the actor of the staff accounts script, so the first one has
- *      to be made here.
+ *      to be made here;
+ *   4. with `--show-only <app>`, the launcher's tiles: every other app in the
+ *      suite registry that is open is set to hidden, so a manager or an
+ *      administrator, whose roles carry the till, the Console and the rest,
+ *      sees only the app that is live. The registry has no screen or route that
+ *      hides a tile yet (the Console sets maintenance only), and the Console is
+ *      not on production. An app in maintenance is left as it is and reported.
+ *      `--show-also <app>` puts one hidden app back to open, for the day it
+ *      goes live.
  *
  * Insert-if-absent throughout: a second run writes nothing. No demo row, no
  * department, no tier, no package, no price: those belong to the till's own
@@ -45,6 +53,8 @@
  *   --admin-phone <e164>    also make the administrator account on this number
  *   --admin-must-change     the administrator must choose a new password at the first sign-in
  *   --admin-phone-verified  count the number as verified (SMS password reset reaches it)
+ *   --show-only <app>       hide every other open tile in the suite registry
+ *   --show-also <app>       put one hidden tile back to open
  *
  * Prints counts, codes and ids only: never a name, an address, a phone number
  * or a password. Exits 1 when it refuses, 2 on a crash.
@@ -55,6 +65,7 @@ import { newId, normalizePhone } from '@oto/shared';
 import { closeDb, getDb } from '../src/index';
 import * as s from '../src/schema/index';
 import { foldBranchName } from '../src/schema/otoapp';
+import { SUITE_APP_KEYS, type SuiteAppKey } from '../src/schema/suite-controls';
 
 /** The `request_id` on every audit row this writes, so the run is findable. */
 const REQUEST_ID = 'script:production-bootstrap';
@@ -86,6 +97,21 @@ async function main(): Promise<number> {
   const adminPhone = adminPhoneRaw ? normalizePhone(adminPhoneRaw) : null;
   if (adminPhoneRaw && !adminPhone) {
     console.log('refused: --admin-phone is not a phone number.');
+    return 1;
+  }
+  const showOnly = argValue(args, '--show-only');
+  const showAlso = argValue(args, '--show-also');
+  for (const [flag, value] of [
+    ['--show-only', showOnly],
+    ['--show-also', showAlso],
+  ] as const) {
+    if (value !== undefined && !(SUITE_APP_KEYS as readonly string[]).includes(value)) {
+      console.log(`refused: ${flag} must be one of: ${SUITE_APP_KEYS.join(', ')}.`);
+      return 1;
+    }
+  }
+  if (showOnly && showAlso) {
+    console.log('refused: --show-only and --show-also are separate runs.');
     return 1;
   }
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? '';
@@ -160,12 +186,48 @@ async function main(): Promise<number> {
       adminPlan = held.length > 0 ? 'exists' : 'make';
     }
 
+    // --- 4. The launcher's tiles ----------------------------------------------
+    const registry = await db
+      .select({
+        id: s.appRegistry.id,
+        key: s.appRegistry.key,
+        tileState: s.appRegistry.tileState,
+        revision: s.appRegistry.revision,
+      })
+      .from(s.appRegistry)
+      .where(isNull(s.appRegistry.archivedAt));
+    const tileChanges: Array<{ id: string; key: SuiteAppKey; from: 'open' | 'hidden'; to: 'open' | 'hidden'; revision: number }> = [];
+    const tilesLeft: string[] = [];
+    if (showOnly) {
+      for (const row of registry) {
+        if (row.key === showOnly) {
+          if (row.tileState !== 'open') tilesLeft.push(`${row.key} is ${row.tileState}, not open`);
+        } else if (row.tileState === 'open') {
+          tileChanges.push({ id: row.id, key: row.key, from: 'open', to: 'hidden', revision: row.revision });
+        } else if (row.tileState !== 'hidden') {
+          tilesLeft.push(`${row.key} is ${row.tileState}, left as it is`);
+        }
+      }
+    }
+    if (showAlso) {
+      const row = registry.find((r) => r.key === showAlso);
+      if (row?.tileState === 'hidden') {
+        tileChanges.push({ id: row.id, key: row.key, from: 'hidden', to: 'open', revision: row.revision });
+      } else {
+        tilesLeft.push(`${showAlso} is ${row?.tileState ?? 'not in the registry'}, left as it is`);
+      }
+    }
+
     console.log(`operator: ${operatorMade ? 'to make' : 'already there'} (${operatorId})`);
     for (const p of parkPlans) console.log(`park ${p.code}: ${p.made ? 'to make from the app branch of that name' : 'already there'} (${p.id})`);
     console.log(`app branches: ${appBranches.rows.length} read, ${PARKS.length} are parks, ${appOnly} stay the app's own`);
     console.log(
       `administrator: ${adminPlan === 'none' ? 'not asked for' : adminPlan === 'exists' ? 'an account already holds that number; left alone' : `to make${mustChange ? ', must change the password at first sign-in' : ''}${phoneVerified ? ', phone counted as verified' : ', phone not verified'}`}`,
     );
+    if (showOnly || showAlso) {
+      const changes = tileChanges.map((t) => `${t.key} ${t.from} -> ${t.to}`).join(', ') || 'nothing to change';
+      console.log(`launcher tiles: ${changes}${tilesLeft.length ? `; ${tilesLeft.join('; ')}` : ''}`);
+    }
     if (!apply) return 0;
 
     const adminId = adminPlan === 'make' ? newId() : null;
@@ -234,9 +296,39 @@ async function main(): Promise<number> {
           phoneVerified,
         });
       }
+      for (const t of tileChanges) {
+        const changed = await tx
+          .update(s.appRegistry)
+          .set({ tileState: t.to, revision: t.revision + 1, updatedAt: new Date() })
+          .where(
+            and(
+              eq(s.appRegistry.id, t.id),
+              eq(s.appRegistry.revision, t.revision),
+              eq(s.appRegistry.tileState, t.from),
+            ),
+          )
+          .returning({ id: s.appRegistry.id });
+        if (changed.length !== 1) {
+          throw new Error(`the registry row for ${t.key} changed while this ran; nothing was written`);
+        }
+        await tx.insert(s.auditLog).values({
+          id: newId(),
+          operatorId: null,
+          actorAccountId: null,
+          requestId: REQUEST_ID,
+          action: 'app_registry.tile_state_set',
+          entityType: 'app_registry',
+          entityId: t.id,
+          before: { tileState: t.from, revision: t.revision },
+          after: { tileState: t.to, revision: t.revision + 1 },
+          targetApp: t.key,
+          reason: t.to === 'hidden' ? 'not live on this deployment yet' : 'live on this deployment',
+          origin: 'script',
+        });
+      }
     });
     console.log(
-      `written: operator ${operatorMade ? 1 : 0}, parks ${parkPlans.filter((p) => p.made).length}, administrator ${adminId ? `1 (${adminId})` : 0}`,
+      `written: operator ${operatorMade ? 1 : 0}, parks ${parkPlans.filter((p) => p.made).length}, administrator ${adminId ? `1 (${adminId})` : 0}, tiles ${tileChanges.length}`,
     );
     return 0;
   } finally {
