@@ -562,6 +562,28 @@ describe('the digits of a time are never a count (SCRUM-947)', () => {
   ] as const)('%s: %i from "%s" stands', (_language, line, value, said) => {
     expect(check(line, value, said)).toEqual(proposedAs(value, line));
   });
+
+  // A dash that only separates a time, a date or an age from the count makes no range: the count stands.
+  it.each([
+    ['ru', 'Праздник 12 декабря в 15:00 — 10 детей и 6 взрослых', 10, '10 детей'],
+    ['ru', 'Праздник 12 декабря в 15:00 — 10 детей и 6 взрослых', 6, '6 взрослых'],
+    ['ru', 'в 14:00 — 10 детей', 10, '10 детей'],
+    ['en', 'Party at 14:00 - 12 kids and 6 adults', 12, '12 kids'],
+    ['en', 'Booking details:\n- Saturday 12 December\n- 14:00\n- 12 kids\n- 6 adults', 12, '12 kids'],
+    ['en', 'Sat 12/12 – 10 kids, 5 adults', 10, '10 kids'],
+    ['en', 'Saturday 13 Dec 14:00 - 10 kids, 5 adults', 10, '10 kids'],
+    ['en', 'turning 6 - 10 kids', 10, '10 kids'],
+    ['en', '14:00 ~ 10 kids', 10, '10 kids'],
+    ['th', 'วันเสาร์ที่ 12 ธันวาคม 14:00 - 10 คน', 10, '10 คน'],
+    ['th', 'เด็ก 10 - 14:00', 10, 'เด็ก 10'],
+  ] as const)('%s: %i from "%s" after a dash stands', (_language, line, value, said) => {
+    expect(check(line, value, said)).toEqual(proposedAs(value, line));
+  });
+
+  it('the hour after a tight dash is still no count: "11:00-13 เด็ก 8 คน"', () => {
+    expect(check('11:00-13 เด็ก 8 คน', 13, '13')).toBeNull();
+    expect(check('11:00-13 เด็ก 8 คน', 8, 'เด็ก 8 คน')).toEqual(proposedAs(8, '11:00-13 เด็ก 8 คน'));
+  });
 });
 
 describe('the model unavailable: the pattern reading stands', () => {
