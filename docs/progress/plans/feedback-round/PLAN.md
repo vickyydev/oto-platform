@@ -114,3 +114,19 @@ on Pay and on its History card), 910 (a refunded party's deposit: the owner's
 rule), 914 (the number tick returns on the split screen), 915 (the phone till
 and a drop-off child on their own), 917 (smaller points from the 889 proof),
 918 (add-on cards in the split view), 919 (the Thai font check).
+
+## The money and refund screens lane landed (12 November 20:40, main 963605c97)
+Tickets: SCRUM-934, 933, 936, 935, 902, 938 and part of 917. Services: the platform and both tills; no migration; the counter box needs nothing.
+Low points left by the reviews: the F&B and Shop panels, History's extra-time block, the phone drop-off child detail, the phone F&B order station, booking redeem and the phone End of Day and Performance tabs still write baht by hand; the tender panel and the display's payment stage always print two places; History treats any sale whose note reads "Party: ..." as a party settlement; each parties-list row makes two platform reads; a nanny fee shared by several children is not named.
+
+### Questions for the owner from this lane (the build uses the first reading in each)
+1. Before Settle party, the party page shows the platform's own Settle party price (the package plus add-ons and extras, with a new row "Add-ons and extras"). It replaces the OTO App's bill total whenever the party has a plan. Should a non-zero OTO App total win instead?
+2. For a planned party not yet settled, Take balance now opens Settle party instead of the tab's balance window. Is that the flow you want?
+3. The parties lists now ask the platform for each unsettled party's price (two reads per row each time a list opens). Is that fine, or should the day's events read carry the figure?
+4. On refund rows and item cards the child's name comes first ("Mint · 1 Hour Play · 1 ppl"). Is that order right?
+5. A part-paid History card shows "Balance due", the balance, and "of ฿total" on three small lines; on narrow cards the badge sits above the figure. Acceptable?
+6. Some new words are not the prototype's: "Add-ons and extras", "Not settled · ฿X", "Take it with Settle party on a counter till's party page.", "What this party owes could not be read from the platform…". Are they all right?
+7. A party with an OTO App total of 0 that already has walk-ups or money on its tab: the platform refuses Settle party, so the page reads the tab's bill, which can say Fully paid while the package is unpaid. How should the package be taken for these parties?
+8. While the platform cannot price a party, Take balance stays off even if the tab has its own charges (before, those could be taken). Should they stay takeable?
+9. Should the tender panel, the display's payment stage, F&B, Shop, End of Day and the booking site move to the same money format (two places only when there is satang)?
+10. Should a resumed sale's Pay button show a dash while its balance loads, instead of a stand-in amount?
