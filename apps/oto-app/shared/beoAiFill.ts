@@ -178,7 +178,21 @@ export interface BeoAiMenuLine {
   notInMenu: boolean;
   /** Baht, as the chat names it; null when it names none. */
   chatPrice: number | null;
+  /**
+   * SCRUM-904: the chat's own note on this dish ("no cheese"), carried onto
+   * the dish's line; absent when the chat gives none.
+   */
+  notes?: string;
   from: BeoAiFrom;
+}
+
+/**
+ * SCRUM-904: a value the conversation gives with its own words for it — the
+ * party's date ("Saturday 28 November"), which the review shows beside the
+ * booked one.
+ */
+export interface BeoAiSaid<T> extends BeoAiSourced<T> {
+  said: string | null;
 }
 
 export interface BeoAiProposal {
@@ -187,7 +201,8 @@ export interface BeoAiProposal {
   setMenu: {
     templateId: string;
     from: BeoAiFrom;
-    choices: Array<{ itemId: string; option: string; said: string | null; from: BeoAiFrom }>;
+    /** SCRUM-904: `notes`, the chat's note on that dish, carried onto its line of the set menu. */
+    choices: Array<{ itemId: string; option: string; said: string | null; notes?: string; from: BeoAiFrom }>;
   } | null;
   menuLines: BeoAiMenuLine[];
   entertainment: Array<{
@@ -199,6 +214,11 @@ export interface BeoAiProposal {
     quantity: number;
     chatPrice: number | null;
     notInCatalogue: boolean;
+    /**
+     * SCRUM-904: the time the chat gives the show or act (HH:MM): approved,
+     * it is an Entertainment Act at that time as well as the selection.
+     */
+    time?: string;
     from: BeoAiFrom;
   }>;
   /** A package, set menu or add-on the catalogue does not have, in the message's words. */
@@ -209,16 +229,44 @@ export interface BeoAiProposal {
     numAdults?: BeoAiSourced<number>;
     startTime?: BeoAiSourced<string>;
     endTime?: BeoAiSourced<string>;
+    /**
+     * SCRUM-904 — the rest of the event the conversation gives, each with its
+     * line: the party's date (applied only when ticked, SCRUM-814), the age
+     * the child turns, the family's WhatsApp number, when the kids' and the
+     * adults' food is served and when the bar serves the drinks.
+     */
+    eventDate?: BeoAiSaid<string>;
+    childAge?: BeoAiSourced<number>;
+    whatsapp?: BeoAiSourced<string>;
+    kidsFoodTime?: BeoAiSourced<string>;
+    adultsFoodTime?: BeoAiSourced<string>;
+    barServiceTime?: BeoAiSourced<string>;
   };
-  /** SCRUM-787: `mode` null is a cake the chat times or describes without saying who brings it ("not said"). */
-  cake: { mode: BeoAiCakeMode | null; notes: string | null; time: string | null; from: BeoAiFrom } | null;
+  /**
+   * SCRUM-787: `mode` null is a cake the chat times or describes without saying who brings it ("not said").
+   * SCRUM-904: how many cakes, whether the park's cake comes with the package and its price, only as the chat says them.
+   */
+  cake: {
+    mode: BeoAiCakeMode | null;
+    notes: string | null;
+    time: string | null;
+    quantity?: number;
+    included?: boolean;
+    /** Whole baht, as the chat names it. */
+    price?: number;
+    from: BeoAiFrom;
+  } | null;
   deposit: { amount: number; paid: boolean; date: string | null; from: BeoAiFrom } | null;
   /** SCRUM-827: the rest of the BEO, proposed in the same pass. */
   details: BeoAiDetails;
 }
 
-/** SCRUM-827: a line of the chat that is a request of the family's or the team's, by the field it goes to. */
-export const BEO_AI_REQUEST_KINDS = ["special_request", "decoration", "activity"] as const;
+/**
+ * SCRUM-827: a line of the chat that is a request of the family's or the team's, by the field it goes to.
+ * SCRUM-904: an allergy is its own kind, kept in Special Requests and shown there FIRST (the
+ * owner's decision of 12 November: no allergy field of its own).
+ */
+export const BEO_AI_REQUEST_KINDS = ["special_request", "decoration", "activity", "allergy"] as const;
 export type BeoAiRequestKind = (typeof BEO_AI_REQUEST_KINDS)[number];
 
 /**
@@ -247,13 +295,22 @@ export interface BeoAiDetails {
     readyBy: BeoAiSourced<string> | null;
     responsible: BeoAiSourced<string> | null;
     tasks: Array<{ itemLabel: string; notes: string | null; from: BeoAiFrom }>;
+    /** SCRUM-904: the setup plan's general notes, as the conversation gives them. */
+    notes?: BeoAiSourced<string> | null;
   };
   pos: {
     name: BeoAiSourced<string> | null;
     notes: BeoAiSourced<string> | null;
-    items: Array<{ description: string; type: "included" | "extra"; from: BeoAiFrom }>;
+    /** SCRUM-904: `price`, whole baht, only a price the chat names for the item. */
+    items: Array<{ description: string; type: "included" | "extra"; price?: number; from: BeoAiFrom }>;
   };
   timeline: Array<{ time: string; label: string; from: BeoAiFrom }>;
+  /**
+   * SCRUM-904: the people the conversation names for the party host and the
+   * entertainment host, with their lines: the server matches them to the
+   * park's roster (the review's team), and they are assigned only when ticked.
+   */
+  hosts?: { partyHost?: BeoAiSourced<string>; entertainmentHost?: BeoAiSourced<string> };
 }
 
 /** No details at all: the shape every proposal starts from. */
@@ -318,6 +375,12 @@ export interface BeoAiReview {
    * a server before this rule: the device's own clock is used).
    */
   timeZone?: string;
+  /**
+   * SCRUM-904: the park's catalogue could not be read (a database error), so
+   * the review matched to none: the header says so instead of calling the
+   * catalogue empty. Absent when it was read.
+   */
+  catalogueUnread?: boolean;
   /** How many conversation lines were read, and whether older ones were left out. */
   transcript: { lines: number; cut: boolean };
   /** Sections the BEO already holds that approving replaces. */
@@ -378,7 +441,10 @@ export const BeoAiApproveBodySchema = z
     setMenu: z
       .object({
         templateId: uuid,
-        choices: z.array(z.object({ itemId: text(100), options: z.array(text(200)).min(1).max(20) }).strict()).max(50),
+        // SCRUM-904: `notes`, the chat's note on the dish chosen, carried onto its line of the set menu.
+        choices: z
+          .array(z.object({ itemId: text(100), options: z.array(text(200)).min(1).max(20), notes: z.string().trim().min(1).max(1000).optional() }).strict())
+          .max(50),
       })
       .strict()
       .nullable(),
@@ -403,6 +469,8 @@ export const BeoAiApproveBodySchema = z
             name: text(300),
             quantity: qty,
             notes: z.string().max(1000).nullable(),
+            /** SCRUM-904: the show's time the chat gives: an Entertainment Act at that time as well. */
+            time: z.string().regex(TIME).optional(),
           })
           .strict(),
       )
@@ -422,14 +490,34 @@ export const BeoAiApproveBodySchema = z
         eventDate: calendarDay.optional(),
         /** Final Message to Parent: the ruling message, only while the BEO's is empty. */
         internalStaffNotes: z.string().max(20_000).optional(),
+        /** SCRUM-904: the age the child turns, and the family's WhatsApp number as the reviewer left it. */
+        kidTurningAge: z.number().int().min(0).max(120).optional(),
+        whatsappPhoneRaw: z.string().trim().min(1).max(60).optional(),
       })
       .strict(),
+    /**
+     * SCRUM-904: when the kids' and the adults' food is served (the kitchen
+     * plan's) and when the bar serves the drinks (the bar plan's), each only
+     * where the chat gives it.
+     */
+    service: z
+      .object({
+        kidsFoodTime: z.string().regex(TIME).optional(),
+        adultsFoodTime: z.string().regex(TIME).optional(),
+        barServiceTime: z.string().regex(TIME).optional(),
+      })
+      .strict()
+      .optional(),
     cake: z
       .object({
         /** SCRUM-787: null leaves the BEO's cake type as it is ("not said"); the time and notes are still written. */
         mode: z.enum(BEO_AI_CAKE_MODES).nullable(),
         notes: z.string().max(1000).nullable(),
         time: z.string().regex(TIME).nullable(),
+        /** SCRUM-904: how many cakes, whether it comes with the package, its price in whole baht — only as the chat says them. */
+        quantity: z.number().int().min(1).max(20).optional(),
+        included: z.boolean().optional(),
+        price: z.number().int().min(0).max(1_000_000).optional(),
       })
       .strict()
       .nullable(),
@@ -469,9 +557,15 @@ export const BeoAiApproveBodySchema = z
         setupReadyBy: z.string().regex(TIME).optional(),
         setupResponsible: text(200).optional(),
         setupTasks: z.array(z.object({ itemLabel: text(300), notes: z.string().max(1000).nullable() }).strict()).max(50).optional(),
+        /** SCRUM-904: the setup plan's general notes. */
+        setupNotes: text(4000).optional(),
         posName: text(300).optional(),
         posNotes: text(4000).optional(),
-        posItems: z.array(z.object({ description: text(500), type: z.enum(["included", "extra"]) }).strict()).max(50).optional(),
+        /** SCRUM-904: `price`, whole baht, only a price the chat names for the item. */
+        posItems: z
+          .array(z.object({ description: text(500), type: z.enum(["included", "extra"]), price: z.number().int().min(0).max(100_000_000).optional() }).strict())
+          .max(50)
+          .optional(),
         timeline: z.array(z.object({ time: z.string().regex(TIME), label: text(300) }).strict()).max(60).optional(),
         /** The park's people the reviewer ticked to assign; each checked against the park group's roster again. */
         team: z

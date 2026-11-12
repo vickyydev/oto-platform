@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { departmentBranchAssignments, departments, employees } from "../../shared/schema";
 import type { db as appDb } from "../db";
 import type { BeoFill } from "./aiFill";
+import type { BeoAiFrom } from "@shared/beoAiFill";
 
 /**
  * THE TEAM AN AI FILL PROPOSES (SCRUM-660).
@@ -49,6 +50,8 @@ export interface TeamProposal {
   match: TeamMatch | null;
   /** Why there is no match: nobody of this park, several, or the field picks from another list. */
   why: "no_match" | "several" | "same_as_party_host" | "host_list_not_employees" | null;
+  /** SCRUM-904: the chat's line that names them, with its words (the review's reason line). */
+  from?: BeoAiFrom;
 }
 
 export interface TeamProposals {

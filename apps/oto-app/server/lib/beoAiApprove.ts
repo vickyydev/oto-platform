@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import {
   beoBarPlans,
+  beoEntertainmentItems,
   beoEntertainmentSelections,
   beoEventBilling,
   beoKitchenPlans,
@@ -303,9 +304,10 @@ export async function approveBeoAiFill(
     // and the BEO's Save hold it, so the deposit decided below is the deposit that is stored.
     const [ev] = await tx.select().from(coreEvents).where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId))).for("update");
 
-    // The event's own fields.
+    // The event's own fields. SCRUM-904: the age the child turns and the family's WhatsApp number
+    // too, the number as the BEO's own Save writes it (the raw text the form shows).
     const eventUpdates: Partial<typeof coreEvents.$inferInsert> = {};
-    for (const key of ["childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate"] as const) {
+    for (const key of ["childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "kidTurningAge", "whatsappPhoneRaw"] as const) {
       const v = body.event[key];
       if (v !== undefined) (eventUpdates as Record<string, unknown>)[key] = v;
     }
@@ -350,8 +352,10 @@ export async function approveBeoAiFill(
     }
 
     // The kitchen plan: the set menu and its choices, the extra dishes, the cake.
+    // SCRUM-904: and when the kids' and the adults' food is served.
     const kitchenLines = body.menuLines.filter((l) => l.menu !== "bar");
-    if (body.setMenu || kitchenLines.length > 0 || body.cake) {
+    const service = body.service ?? {};
+    if (body.setMenu || kitchenLines.length > 0 || body.cake || service.kidsFoodTime || service.adultsFoodTime) {
       const [plan] = await tx.select().from(beoKitchenPlans).where(eq(beoKitchenPlans.eventId, event.id));
       const menus = asCollection(plan?.menus);
       let kids = asLines(menus.kids);
@@ -371,7 +375,11 @@ export async function approveBeoAiFill(
         const kept = sameMenu && had?.isSubmitted ? storedChoices(had.selections).filter((s) => !approved.some((a) => a.groupId === s.groupId)) : [];
         const selections = [...kept, ...approved];
         // The set menu's lines: what it always includes, and every group's choice.
-        const resolved = resolveSetMenuLines(menu.items, selections);
+        // SCRUM-904: the chat's note on a dish chosen rides on that dish's line.
+        const resolved = resolveSetMenuLines(menu.items, selections).map((line) => {
+          const said = body.setMenu!.choices.find((c) => c.itemId === line.groupId && c.notes && c.options.includes(line.itemName));
+          return said ? { ...line, notes: [line.notes, said.notes!.trim()].filter(Boolean).join(" · ") } : line;
+        });
         kids = [...resolved, ...kids.filter((l) => l.source !== "set_menu")];
         adults = adults.filter((l) => l.source !== "set_menu");
         written.setMenu = true;
@@ -441,7 +449,17 @@ export async function approveBeoAiFill(
           adults = [...adultsCopiesOf(kids.filter((l) => l.source === "set_menu")), ...adults.filter((l) => l.source !== "set_menu")];
         }
       }
-      const nextMenus = { ...menus, kids, adults, adultsDiffer: adultsOwn };
+      // SCRUM-904: the food's times, and whether the cake comes with the package and its price, where the menus keep them.
+      const nextMenus = {
+        ...menus,
+        kids,
+        adults,
+        adultsDiffer: adultsOwn,
+        ...(service.kidsFoodTime ? { kidsFoodTime: service.kidsFoodTime } : {}),
+        ...(service.adultsFoodTime ? { adultsFoodTime: service.adultsFoodTime } : {}),
+        ...(body.cake?.included !== undefined ? { cakeIncluded: body.cake.included } : {}),
+        ...(body.cake?.price !== undefined ? { cakePrice: body.cake.price } : {}),
+      };
       const values = {
         setMenuEnabled,
         setMenuTemplateId,
@@ -449,15 +467,25 @@ export async function approveBeoAiFill(
         simplifiedMenus: { kids, adults },
         // SCRUM-787: a cake whose type the chat does not say keeps the BEO's own type.
         ...(body.cake ? { ...(body.cake.mode ? { cakeMode: body.cake.mode } : {}), cakeNotes: body.cake.notes, cakeTime: body.cake.time } : {}),
+        // SCRUM-904: how many cakes, only where the chat says so.
+        ...(body.cake?.quantity !== undefined ? { cakeQuantity: body.cake.quantity } : {}),
         updatedAt: input.now,
       };
       if (plan) await tx.update(beoKitchenPlans).set(values).where(eq(beoKitchenPlans.id, plan.id));
       else await tx.insert(beoKitchenPlans).values({ eventId: event.id, ...values });
       if (body.cake) written.cake = true;
+      if (service.kidsFoodTime || service.adultsFoodTime) written.foodTimes = true;
     }
 
     // The bar plan's lines.
     const barLines = body.menuLines.filter((l) => l.menu === "bar");
+    // SCRUM-904: when the bar serves the drinks, alone: the bar's lines stay as they are.
+    if (barLines.length === 0 && service.barServiceTime) {
+      const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
+      if (bar) await tx.update(beoBarPlans).set({ serviceTime: service.barServiceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
+      else await tx.insert(beoBarPlans).values({ eventId: event.id, items: [], serviceTime: service.barServiceTime });
+      written.barServiceTime = true;
+    }
     if (barLines.length > 0) {
       const items = barLines.map((l) => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
@@ -472,9 +500,11 @@ export async function approveBeoAiFill(
         };
       });
       const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));
-      if (bar) await tx.update(beoBarPlans).set({ items, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
-      else await tx.insert(beoBarPlans).values({ eventId: event.id, items });
+      const serviceTime = service.barServiceTime ? { serviceTime: service.barServiceTime } : {};
+      if (bar) await tx.update(beoBarPlans).set({ items, ...serviceTime, updatedAt: input.now }).where(eq(beoBarPlans.id, bar.id));
+      else await tx.insert(beoBarPlans).values({ eventId: event.id, items, ...serviceTime });
       written.barLines = items.length;
+      if (service.barServiceTime) written.barServiceTime = true;
     }
 
     // Entertainment, from the entertainment menu at its own prices.
@@ -512,13 +542,47 @@ export async function approveBeoAiFill(
         }
       }
       written.entertainment = body.entertainment.length;
+
+      // SCRUM-904: a show the chat gives a time for is an Entertainment Act at that time as well
+      // (the BEO's Entertainment Acts, which put it on the Timeline). An act the BEO holds by the
+      // same name keeps its own time; one with no time yet takes the chat's.
+      const timed = body.entertainment.filter((e) => e.time);
+      if (timed.length > 0) {
+        const acts = await tx
+          .select({ id: beoEntertainmentItems.id, customName: beoEntertainmentItems.customName, startTime: beoEntertainmentItems.startTime })
+          .from(beoEntertainmentItems)
+          .where(eq(beoEntertainmentItems.eventId, event.id));
+        let actOrder = acts.length;
+        let added = 0;
+        for (const e of timed) {
+          const name = e.templateId ? (catalogue.entertainment.find((t) => t.id === e.templateId)?.name ?? e.name) : e.name;
+          const held = acts.find((a) => fold(a.customName) === fold(name));
+          if (held) {
+            if (!held.startTime) {
+              await tx.update(beoEntertainmentItems).set({ startTime: e.time!, updatedAt: input.now }).where(eq(beoEntertainmentItems.id, held.id));
+              added += 1;
+            }
+            continue;
+          }
+          await tx.insert(beoEntertainmentItems).values({ eventId: event.id, tenantId: event.tenantId, customName: name, startTime: e.time!, sortOrder: actOrder++ });
+          acts.push({ id: "", customName: name, startTime: e.time! });
+          added += 1;
+        }
+        written.entertainmentActs = added;
+      }
     }
 
     // SCRUM-827: the setup plan — ready-by, who (a person or a department of the park when
     // ticked, else the words as typed), and the tasks added to the ones the BEO holds.
     const team = details?.team;
     const who = team?.setupResponsible;
-    if (details?.setupReadyBy !== undefined || details?.setupResponsible !== undefined || who || (details?.setupTasks?.length ?? 0) > 0) {
+    if (
+      details?.setupReadyBy !== undefined ||
+      details?.setupResponsible !== undefined ||
+      details?.setupNotes !== undefined ||
+      who ||
+      (details?.setupTasks?.length ?? 0) > 0
+    ) {
       const [plan] = await tx.select().from(beoSetupPlans).where(eq(beoSetupPlans.eventId, event.id));
       const stored = plan?.setupTasks;
       const was = stored && typeof stored === "object" && !Array.isArray(stored) ? asCollection(stored) : {};
@@ -534,7 +598,8 @@ export async function approveBeoAiFill(
         responsibleType: who ? who.kind : details?.setupResponsible !== undefined ? null : (was.responsibleType ?? null),
         simplifiedTasks: [...held, ...added],
       };
-      const values = { setupRequired: true, setupTasks, updatedAt: input.now };
+      // SCRUM-904: the setup plan's notes, as the reviewer left them (the BEO keeps its own when none is sent).
+      const values = { setupRequired: true, setupTasks, ...(details?.setupNotes !== undefined ? { setupNotes: details.setupNotes } : {}), updatedAt: input.now };
       if (plan) await tx.update(beoSetupPlans).set(values).where(eq(beoSetupPlans.id, plan.id));
       else await tx.insert(beoSetupPlans).values({ eventId: event.id, ...values });
       written.setup = true;
@@ -568,7 +633,8 @@ export async function approveBeoAiFill(
       const heldItems = asLines(pos.items);
       const addedItems = (details?.posItems ?? [])
         .filter((i) => !heldItems.some((h) => fold(h.description) === fold(i.description)))
-        .map((i) => ({ id: `pi_${randomUUID()}`, description: i.description, type: i.type, price: 0, notes: "" }));
+        // SCRUM-904: the price the chat names for the item, else none (0, as the form's own new line).
+        .map((i) => ({ id: `pi_${randomUUID()}`, description: i.description, type: i.type, price: i.price ?? 0, notes: "" }));
       const partyDetails = {
         ...pos,
         ...(details?.posName !== undefined ? { packageName: details.posName } : {}),

@@ -33,7 +33,7 @@ import {
 import { readInboxConfirmation, type InboxRead } from "./lib/inboxConfirmation";
 import {
   BEO_FILL_WITH_CATALOGUE_SHAPE,
-  CATALOGUE_ONLY_SHAPE,
+  CONVERSATION_SHAPE,
   beoCatalogueSystemBlock,
   detailsFromFill,
   emptyCatalogue,
@@ -48,7 +48,7 @@ import { approveBeoAiFill, depositHeld, parentSelectionOf, sectionsHeld } from "
 import { oneDepositOf, type GatewayFloor } from "./lib/depositSaveGuard";
 import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DbExecutor } from "./lib/packageSnapshot";
-import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview } from "@shared/beoAiFill";
+import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 
 interface ExtractEventRequest {
   notes_text: string;
@@ -258,8 +258,12 @@ const catalogueCounts = (p: BeoAiProposal) => ({
   // SCRUM-827: the rest of the BEO proposed in the same pass, as counts.
   requests: p.details.requests.length,
   timeline: p.details.timeline.length,
-  details: [p.details.title, p.details.bookingName, p.details.locationText, p.details.setup.readyBy, p.details.setup.responsible, p.details.pos.name, p.details.pos.notes].filter(Boolean).length
+  details: [p.details.title, p.details.bookingName, p.details.locationText, p.details.setup.readyBy, p.details.setup.responsible, p.details.setup.notes, p.details.pos.name, p.details.pos.notes].filter(Boolean).length
     + p.details.setup.tasks.length + p.details.pos.items.length,
+  // SCRUM-904: the rest of the event the conversation gave, as a count of fields (never their values).
+  event: (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length,
+  allergies: p.details.requests.filter((r) => r.kind === "allergy").length,
+  acts: p.entertainment.filter((e) => e.time).length,
 });
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -335,12 +339,14 @@ export async function runBeoFill(
       : null;
   // With a conversation, its read answers only the catalogue section, each entry naming its line.
   // SCRUM-903: asked once more when its answer cannot be read or the model does not answer.
+  // SCRUM-904 (Phase B): it reads the whole form into that section too, every value with its
+  // line and the chat's words for it; the ruling message's read only fills what it leaves out.
   const conversationRead =
     catalogue && conversation
       ? runAiHelper(ai, {
           helper: "beo_parsing",
           schema: CatalogueOnlySchema,
-          requiredShape: CATALOGUE_ONLY_SHAPE,
+          requiredShape: CONVERSATION_SHAPE,
           systemExtra: beoCatalogueSystemBlock(catalogue, { conversation: true }) + today,
           user: beoParseUserMessage(conversation.text, undefined),
           inputChars: conversation.text.length,
@@ -353,6 +359,8 @@ export async function runBeoFill(
   const run: AiRun<BeoFill & { catalogue?: unknown }> =
     formRun ?? (catalogueRun!.ok ? { ok: true, value: {}, facts: catalogueRun!.facts } : catalogueRun!);
   let proposal: BeoAiProposal | null = null;
+  // SCRUM-904: the people the conversation names for the team, before the form's read joins them.
+  let chatNamed: { partyHost?: BeoAiSourced<string>; entertainmentHost?: BeoAiSourced<string>; setupResponsible?: BeoAiSourced<string> } = {};
   if (run.ok && catalogue) {
     const { catalogue: fromForm, ...fill } = run.value;
     run.value = fill;
@@ -361,6 +369,10 @@ export async function runBeoFill(
     // SCRUM-827: the rest of the BEO rides on the same proposal — the ruling's fields from the
     // form's read, the title from the app's own rule — so the review opens with everything at once.
     if (proposal) {
+      chatNamed = {
+        ...proposal.details.hosts,
+        ...(proposal.details.setup.responsible ? { setupResponsible: proposal.details.setup.responsible } : {}),
+      };
       proposal.details = detailsFromFill(proposal, fill, {
         existingData: input.existingData,
         from: input.fallbackFrom ?? { source: "team", at: null, line: null },
@@ -372,9 +384,24 @@ export async function runBeoFill(
     // The form's read stands: the review is the free-text preview of before (with no ruling, nothing filled).
     log().warn({ ...runLogFields(catalogueRun.facts), eventId: input.event?.id ?? null }, "the conversation's catalogue read did not fill");
   }
-  // The team a fill may propose is what the ruling message names: with no ruling, nobody is proposed.
-  const proposals =
-    run.ok && input.event && formRun ? proposeTeam(run.value, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
+  // The team a fill may propose is who the chat names. SCRUM-904: the conversation's names first,
+  // each with its line and words; the ruling message's read only where the conversation names nobody.
+  const formFill: BeoFill = formRun && run.ok ? run.value : {};
+  const named: Pick<BeoFill, "team" | "setupPlan"> = {
+    team: {
+      partyHost: chatNamed.partyHost?.value ?? formFill.team?.partyHost,
+      entertainmentHost: chatNamed.entertainmentHost?.value ?? formFill.team?.entertainmentHost,
+    },
+    setupPlan: { responsible: chatNamed.setupResponsible?.value ?? formFill.setupPlan?.responsible },
+  };
+  const anyNamed = !!(named.team?.partyHost || named.team?.entertainmentHost || named.setupPlan?.responsible);
+  const proposals: TeamProposals =
+    run.ok && input.event && anyNamed ? proposeTeam(named, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
+  for (const field of ["partyHost", "entertainmentHost", "setupResponsible"] as const) {
+    const p = proposals[field];
+    const from = chatNamed[field]?.from ?? input.fallbackFrom;
+    if (p && from) proposals[field] = { ...p, from };
+  }
   const purpose: BeoFillPurpose = input.purpose ?? "fill";
   log().info(
     { ...runLogFields(run.facts), source: input.source.kind, purpose, eventId: input.event?.id ?? null, team: proposalCounts(proposals) },
@@ -568,10 +595,13 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       // alone and opens the free-text review of before. SCRUM-903: a park whose catalogue
       // is empty (or could not be read) opens the review too, every item it names a line
       // the catalogue lacks, for staff to keep or leave out.
+      // SCRUM-904: a catalogue that could not be read is said so in the review, not called empty.
+      let catalogueUnread = false;
       const catalogue =
         event?.branchId
           ? await deps.catalogue(event).catch((error: unknown) => {
               log().warn({ err: (error as Error)?.message ?? String(error), eventId: event!.id }, "the park's catalogue was not read for the pasted AI fill");
+              catalogueUnread = true;
               return emptyCatalogue();
             })
           : null;
@@ -603,6 +633,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               finalMessage: null,
               ruling: rulingFrom,
               timeZone: place.timeZone,
+              ...(catalogueUnread ? { catalogueUnread: true } : {}),
               transcript: { lines: 1, cut: false },
               replaces: await sectionsHeld(db, event.id),
               parentSelection: await parentSelectionOf(db, event.id),
@@ -682,9 +713,12 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       // alone, as before. SCRUM-903: with no ruling message the conversation is
       // read alone, and an empty catalogue no longer stops its read.
       const ruling = message ? { id: message.id, body: message.body, at: message.sentAt ?? message.createdAt } : null;
+      // SCRUM-904: a catalogue that could not be read is said so in the review, not called empty.
+      let catalogueUnread = false;
       const catalogue = await deps.catalogue(event).catch((error: unknown) => {
         // The fill still runs. SCRUM-903: as with an empty catalogue, every item the chat names is a line to keep or leave out.
         log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
+        catalogueUnread = true;
         return emptyCatalogue();
       });
       // SCRUM-814's park, read once: the prompt's today and the transcript's clock.
@@ -724,6 +758,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
             ruling: rulingFrom,
             conversationId: confirmation.conversationId,
             timeZone: place.timeZone,
+            ...(catalogueUnread ? { catalogueUnread: true } : {}),
             transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
             parentSelection: await parentSelectionOf(db, event.id),

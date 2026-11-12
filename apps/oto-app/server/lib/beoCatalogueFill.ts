@@ -23,6 +23,7 @@ import {
   type BeoAiRequestKind,
   type BeoAiSetMenuItem,
   type BeoAiSource,
+  type BeoAiSourced,
 } from "@shared/beoAiFill";
 import { BeoFillSchema, parkClockAt, type BeoFill } from "./aiFill";
 import type { InboxTranscriptLine } from "./inboxConfirmation";
@@ -363,8 +364,15 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
 /**
  * The rules for reading a whole conversation: which line wins, what the
  * family's values are, and that the conversation is read only into the
- * `catalogue` key (every entry names its line, so its source is known). The
- * form's own fields are read apart, from the ruling message alone, as before.
+ * `catalogue` key (every entry names its line, so its source is known).
+ *
+ * SCRUM-904 (Phase B): the whole form is read from the conversation into
+ * that key (`BEO_CONVERSATION_FORM_RULES`, below the catalogue's format), so
+ * the review proposes every field with the chat's words for it even when no
+ * message of the team's confirms the party yet; the ruling message's own read
+ * (the free-text fill) only fills what the conversation's read leaves out.
+ * The rules no longer say a RULING line always exists: with none, no line is
+ * marked and the conversation is read as it stands (SCRUM-903).
  *
  * SCRUM-826: ONE rule for which line wins, the same `laterLineWins` applies
  * in code wherever the model names the same thing twice — the latest line,
@@ -376,10 +384,74 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
 export const BEO_CONVERSATION_RULES = `
 
 THE CONVERSATION
-The new text is not one message: it is the whole conversation between the family and the park's team, oldest line first. Each line starts with its number, who wrote it ([family] is the customer, [team] is a person on the park's team) and its local time at the park. The line marked RULING is the team's final confirmation.
-- The latest line wins, whoever wrote it: where two lines speak about the same thing, give the value of the later line, with that line's number. The team's confirmation (the RULING line, or another team line) wins over every family line BEFORE it; a family line AFTER the confirmation that corrects or declines something is the current value, given as the family's
+The new text is not one message: it is the whole conversation between the family and the park's team, oldest line first. Each line starts with its number, who wrote it ([family] is the customer, [team] is a person on the park's team) and its local time at the park. A line marked RULING is the team's final confirmation. The team may not have confirmed the party yet: then no line is marked RULING, and the conversation is read as it stands.
+- The latest line wins, whoever wrote it: where two lines speak about the same thing, give the value of the later line, with that line's number. The team's confirmation (the RULING line when there is one, or another team line) wins over every family line BEFORE it; a family line AFTER the confirmation that corrects or declines something is the current value, given as the family's
 - The family's values are the defaults: what the family asked for that no later line changes is still given, as the family's
-- Answer ONLY the "catalogue" key described below and leave every other key of the structure above out: the form's other fields are read apart, from the RULING line alone`;
+- Answer ONLY the "catalogue" key described below and leave every other key of the structure above out: the whole form is read from the conversation into that key, every value with the number of its line`;
+
+/**
+ * SCRUM-904: the keys the rest of the form adds inside `catalogue`, in the
+ * conversation's read (`BEO_CONVERSATION_FORM_RULES`).
+ */
+export const BEO_CONVERSATION_OUTPUT_FORMAT = `"event": {
+    "bookingName": { "value": "the name the booking is under", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "locationText": { "value": "the room or area", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "eventDate": { "value": "YYYY-MM-DD", "said": "the conversation's words for the date", "line": 0, "source": "team | family" },
+    "childAge": { "value": 0, "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "whatsapp": { "value": "the number as written", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "kidsFoodTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "adultsFoodTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "barServiceTime": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" }
+  },
+  "setup": {
+    "readyBy": { "value": "HH:MM", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "responsible": { "value": "a name or a role, as written", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "notes": { "value": "the conversation's words", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "tasks": [ { "label": "the conversation's words for the task", "notes": "the conversation's words", "line": 0, "source": "team | family" } ]
+  },
+  "pos": {
+    "name": { "value": "the package or bill name", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "notes": { "value": "the conversation's words", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "items": [ { "description": "the conversation's words for the item", "type": "included | extra", "price": 0, "line": 0, "source": "team | family" } ]
+  },
+  "team": {
+    "partyHost": { "value": "a name, as written", "said": "the conversation's words", "line": 0, "source": "team | family" },
+    "entertainmentHost": { "value": "a name, as written", "said": "the conversation's words", "line": 0, "source": "team | family" }
+  },
+  "cake": { "quantity": 1, "included": true, "price": 0 },
+  "menuLines": [ { "notes": "the conversation's note on that dish" } ],
+  "setMenu": { "choices": [ { "notes": "the conversation's note on that dish" } ] },
+  "entertainment": [ { "time": "HH:MM" } ],
+  "requests": [ { "kind": "allergy" } ]`;
+
+/**
+ * SCRUM-904 (Phase B) — the rest of the form, read from the conversation
+ * into the same `catalogue` key: every field the BEO holds, each with the
+ * chat's own words (`said`) and its line, so the review proposes it with
+ * its reason as Book Date does. Only in the conversation's read: a park
+ * group's SAVED advice and output format replace the built-in ones, and this
+ * block reaches the model either way.
+ */
+export const BEO_CONVERSATION_FORM_RULES = `
+
+THE REST OF THE FORM, FROM THE CONVERSATION
+Read every field of the form below from the conversation too, from the family's lines and the team's alike, whatever the format at the top of this prompt says. Each value carries "said", the conversation's own words for it exactly as written (never translated), with "line" and "source" as above. Leave out every key the conversation does not speak to: never a default, a usual time, a guess or a price the conversation does not name.
+- "event.bookingName": the name the booking is under (a parent's or a company's name), as written
+- "event.locationText": the room or the area of the park the party is in
+- "event.eventDate": the party's date as YYYY-MM-DD. A day and month with no year is its next occurrence on or after the day its line was written; a weekday alone is the next such day after it. Never the date of a deposit, a payment or a call
+- "event.childAge": the age the child turns at this party, a whole number
+- "event.whatsapp": a phone number the conversation writes out for reaching the family on WhatsApp, its digits exactly as written; never a number of the park's
+- "event.kidsFoodTime" and "event.adultsFoodTime": when the kids' and the adults' food is served, HH:MM; "event.barServiceTime": when the drinks are served, HH:MM
+- "setup": "readyBy", the time the room must be ready, HH:MM; "responsible", a person or a role the conversation names for the setup, as written, without a role word or "the" before it; "notes", what the conversation says about the setup that is not a task; "tasks", each setup task ("a balloon arch", "a long table for 12") with its notes
+- "pos": the party's bill on the park's till. "name", the package or bill name the conversation gives it; "items", each item the bill includes or charges ("type": "included" or "extra"; "price" only a price the conversation names for it, in baht); "notes", what the conversation says of the bill or the payment
+- "team": "partyHost" and "entertainmentHost", a person the conversation names for that role, as written, without a role word or "the" before it. Never one you choose
+- "cake": "quantity", how many cakes, only when the conversation says; "included", true when the conversation says the cake comes with the package and false when it is charged on its own; "price", only a price the conversation names for the cake, in baht
+- A note the conversation gives about one dish ("no cheese on the pizza", "cut into squares") is that dish's "notes", on its "menuLines" entry or on its set-menu choice, in the conversation's own words: not a request
+- An allergy or a food intolerance (nuts, gluten, lactose, seafood) is a "requests" entry of the kind "allergy", one for each, in the conversation's own words; it is not given again as a "special_request"
+- A show or an act the conversation gives a time for ("the bubble show at 15:00") keeps its "entertainment" entry with that time as its "time", HH:MM, and is not given again as a "timeline" step
+
+Add these keys inside "catalogue", beside the ones above (the "event", "cake", "menuLines", "setMenu" choices, "entertainment" and "requests" entries take the keys shown here as well as their own):
+${BEO_CONVERSATION_OUTPUT_FORMAT}`;
 
 /** The format of the `catalogue` key the model adds to its answer. */
 export const BEO_CATALOGUE_OUTPUT_FORMAT = `"catalogue": {
@@ -405,7 +477,8 @@ export const BEO_CATALOGUE_OUTPUT_FORMAT = `"catalogue": {
 /**
  * What the system prompt gains for a fill from the conversation with the
  * park's catalogue: the conversation's rules (when it is a conversation), the
- * catalogue, how to match it, and the `catalogue` key's format.
+ * catalogue, how to match it, and the `catalogue` key's format. SCRUM-904: a
+ * conversation's read is asked the rest of the form too, after the format.
  */
 export function beoCatalogueSystemBlock(catalogue: BeoAiCatalogueView, opts: { conversation: boolean }): string {
   return (
@@ -431,7 +504,8 @@ Matching to the catalogue:
 - "timeline": each step the conversation gives a clock time for (the cake, a show, the food, the end), with that time as HH:MM and the conversation's words for it. Never invent a time or a step
 
 Add this key at the top level of the JSON object, leaving out any entry the conversation does not speak to:
-${BEO_CATALOGUE_OUTPUT_FORMAT}`
+${BEO_CATALOGUE_OUTPUT_FORMAT}` +
+    (opts.conversation ? BEO_CONVERSATION_FORM_RULES : "")
   );
 }
 
@@ -567,6 +641,94 @@ export const BEO_FILL_WITH_CATALOGUE_SHAPE = BeoFillSchema.extend({ catalogue: B
 /** SCRUM-816: what the conversation's read answers: the catalogue section alone. */
 export const CATALOGUE_ONLY_SHAPE = z.object({ catalogue: BeoCatalogueAnswerShape.optional() });
 
+// --- SCRUM-904: the rest of the form, read from the conversation into the same section ----------
+
+/** A value with the conversation's own words for it, and its line. */
+const saidWords = optStr(500).describe("the conversation's own words for it, exactly as written");
+const SaidText = (max: number, what: string) => z.object({ value: optStr(max).describe(what), said: saidWords, ...ref });
+const SaidTime = z.object({ value: optTime, said: saidWords, ...ref });
+const SaidDay = z.object({ value: optDay, said: saidWords, ...ref });
+const SaidCount = z.object({ value: optInt(0).describe("a whole number"), said: saidWords, ...ref });
+const SetupTaskAnswer = z.object({
+  label: optStr(300).describe("the conversation's own words for the setup task"),
+  notes: optStr(1000).describe("the conversation's own words"),
+  ...ref,
+});
+const PosItemAnswer = z.object({
+  description: optStr(500).describe("the conversation's own words for the item"),
+  type: z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : undefined), z.enum(["included", "extra"]).optional()).describe('one of "included", "extra"'),
+  price: optBaht.describe("a number in baht: only a price the conversation itself names for it"),
+  ...ref,
+});
+const dishNotes = optStr(1000).describe("the conversation's own note on that dish, exactly as written");
+
+/**
+ * SCRUM-904: what the conversation's read answers — the catalogue section,
+ * and in it the rest of the form (`BEO_CONVERSATION_FORM_RULES`): the event's
+ * other fields, the setup plan, the POS box, the hosts, the cake's quantity
+ * and price, each dish's note, each show's time and the allergies. Read
+ * leniently, entry by entry, as the catalogue's own keys are.
+ */
+export const BeoConversationAnswerShape = BeoCatalogueAnswerShape.extend({
+  menuLines: z.array(MenuLineAnswer.extend({ notes: dishNotes })),
+  setMenu: SetMenuAnswer.extend({ choices: z.array(ChoiceAnswer.extend({ notes: dishNotes })).optional() }),
+  entertainment: z.array(EntertainmentAnswer.extend({ time: optTime })),
+  event: z
+    .object({
+      childName: SourcedText,
+      numChildren: SourcedCount,
+      numAdults: SourcedCount,
+      startTime: SourcedTime,
+      endTime: SourcedTime,
+      bookingName: SaidText(200, "the name the booking is under, as written"),
+      locationText: SaidText(300, "the room or area of the park, as written"),
+      eventDate: SaidDay,
+      childAge: SaidCount,
+      whatsapp: SaidText(60, "the phone number as written"),
+      kidsFoodTime: SaidTime,
+      adultsFoodTime: SaidTime,
+      barServiceTime: SaidTime,
+    })
+    .partial(),
+  cake: CakeAnswer.extend({
+    quantity: optInt(1).describe("a whole number: how many cakes"),
+    included: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()).describe(
+      "true or false: true when the cake comes with the package",
+    ),
+    price: optBaht.describe("a number in baht: only a price the conversation itself names for the cake"),
+  }),
+  requests: z.array(
+    RequestAnswer.extend({
+      kind: z
+        .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase().replace(/[\s-]+/g, "_") : undefined), z.enum(BEO_AI_REQUEST_KINDS).optional())
+        .describe('one of "special_request", "decoration", "activity", "allergy"'),
+    }),
+  ),
+  setup: z
+    .object({
+      readyBy: SaidTime,
+      responsible: SaidText(200, "a name or a role as written, without a role word or \"the\" before it"),
+      notes: SaidText(4000, "the conversation's own words"),
+      tasks: z.array(SetupTaskAnswer),
+    })
+    .partial(),
+  pos: z
+    .object({
+      name: SaidText(300, "the package or bill name, as written"),
+      notes: SaidText(4000, "the conversation's own words"),
+      items: z.array(PosItemAnswer),
+    })
+    .partial(),
+  team: z
+    .object({
+      partyHost: SaidText(200, "a person only as the conversation names them, without a role word or \"the\" before it; never one you choose"),
+      entertainmentHost: SaidText(200, "a person only as the conversation names them, without a role word or \"the\" before it; never one you choose"),
+    })
+    .partial(),
+}).partial();
+/** SCRUM-904: what the conversation's read answers: the catalogue section, the rest of the form in it. */
+export const CONVERSATION_SHAPE = z.object({ catalogue: BeoConversationAnswerShape.optional() });
+
 /** One entry read leniently: an entry off its shape is left out, never fatal to the fill. */
 function readOne<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, raw: unknown): T | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -613,6 +775,9 @@ export function resolveCatalogueAnswer(
 ): BeoAiProposal {
   const answer = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   const allTeam = refs.length > 0 && refs.every((r) => r.source === "team");
+  /** SCRUM-904: the text of the line a value names (the ruling message read alone: its text). */
+  const lineTextOf = (entry: { line?: number }): string | null =>
+    (entry.line ? refs.find((r) => r.line === entry.line)?.text : undefined) ?? (refs.length === 0 ? fallbackText ?? null : null);
   const fromOf = (entry: { line?: number; source?: BeoAiSource }, words?: string | null): BeoAiFrom => {
     const known = entry.line ? refs.find((r) => r.line === entry.line) : undefined;
     if (known) return withQuote({ source: known.source, at: known.at, line: known.line }, words, known.text);
@@ -708,7 +873,9 @@ export function resolveCatalogueAnswer(
       }
       // A group of one choice holds one option (the later line's, whoever wrote it);
       // a group of several holds each option once, its source the same way.
-      const entry = { itemId: group.id, option, said: c.said ?? null, from: cFrom };
+      // SCRUM-904: the chat's note on the dish rides with it.
+      const notes = readOne(z.object({ notes: dishNotes }), c)?.notes;
+      const entry = { itemId: group.id, option, said: c.said ?? null, ...(notes ? { notes } : {}), from: cFrom };
       merge(chosen, entry, (x) => x.itemId === group.id && (!group.allowMultiple || x.option === option));
     }
     proposal.setMenu = { templateId: menu.id, from, choices: chosen };
@@ -721,6 +888,8 @@ export function resolveCatalogueAnswer(
     const itemName = m.itemName ?? food?.names[0];
     if (!itemName) continue;
     const menu = (m.menu ?? "kids") as BeoAiMenu;
+    // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
+    const notes = readOne(z.object({ notes: dishNotes }), m)?.notes;
     const line = {
       menu,
       itemName,
@@ -729,11 +898,30 @@ export function resolveCatalogueAnswer(
       matchedName: food?.names[0] ?? null,
       notInMenu: !food,
       chatPrice: m.chatPrice ?? null,
+      ...(notes ? { notes } : {}),
       from: fromOf(m, m.itemName),
     };
     // A dish the menu codes is one line per list; one it lacks stays as the conversation said it.
     if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.menu === menu);
-    else proposal.menuLines.push(line);
+    // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.
+    else merge(proposal.menuLines, line, (x) => x.productCode === null && x.menu === menu && fold(x.itemName) === fold(itemName));
+  }
+  // SCRUM-904: a kids' dish that is a set-menu choice already is that choice, not a second line (its note joins the choice).
+  if (proposal.setMenu && menu) {
+    const choices = proposal.setMenu.choices;
+    const group = (c: (typeof choices)[number]) =>
+      menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as Extract<BeoAiSetMenuItem, { type: "choice_group" }> | undefined;
+    proposal.menuLines = proposal.menuLines.filter((l) => {
+      if (l.menu !== "kids") return true;
+      const same = choices.find((c) => {
+        const code = group(c)?.optionProductCodes[c.option] ?? null;
+        if (code && l.productCode && code.toUpperCase() === l.productCode.toUpperCase()) return true;
+        return [c.option, c.said].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
+      });
+      if (!same) return true;
+      if (l.notes && !same.notes) same.notes = l.notes;
+      return false;
+    });
   }
 
   // Entertainment: one line per entertainment the menu has; a free line as said.
@@ -741,6 +929,8 @@ export function resolveCatalogueAnswer(
     const t = e.templateId ? catalogue.entertainment.find((x) => x.id === e.templateId) : undefined;
     const name = t?.name ?? e.said;
     if (!name) continue;
+    // SCRUM-904: the show's time, when the chat gives one: an Entertainment Act at that time.
+    const time = readOne(z.object({ time: optTime }), e)?.time;
     const entry = {
       templateId: t?.id ?? null,
       name,
@@ -748,6 +938,7 @@ export function resolveCatalogueAnswer(
       quantity: e.quantity ?? 1,
       chatPrice: e.chatPrice ?? null,
       notInCatalogue: !t,
+      ...(time ? { time } : {}),
       from: fromOf(e, e.said),
     };
     if (t) merge(proposal.entertainment, entry, (x) => x.templateId === t.id);
@@ -766,13 +957,39 @@ export function resolveCatalogueAnswer(
     const v = readOne(SourcedTime, ev[key]);
     if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v) };
   }
+  // SCRUM-904: the rest of the event the conversation gives, each with the chat's words for it.
+  const date = readOne(SaidDay, ev.eventDate);
+  if (date?.value && isCalendarDay(date.value)) {
+    proposal.event.eventDate = { value: date.value, said: date.said ?? null, from: fromOf(date, date.said) };
+  }
+  const age = readOne(SaidCount, ev.childAge);
+  if (age && age.value !== undefined && age.value <= 120) proposal.event.childAge = { value: age.value, from: fromOf(age, age.said) };
+  // A number the chat writes out: its digits are in the line it names, never one the model made up.
+  const phone = readOne(SaidText(60, ""), ev.whatsapp);
+  if (phone?.value && phoneInLine(phone.value, lineTextOf(phone))) proposal.event.whatsapp = { value: phone.value, from: fromOf(phone, phone.said ?? phone.value) };
+  for (const key of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
+    const v = readOne(SaidTime, ev[key]);
+    if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, v.said) };
+  }
 
   // SCRUM-787: a cake the conversation times or describes without saying who brings it
   // is proposed with no type ("not said"): the BEO's cake type is left as it is.
   const cake = readOne(CakeAnswer, answer.cake);
   const cakeMode = cake?.mode && cake.mode !== "NOT_SAID" ? cake.mode : null;
-  if (cake && (cakeMode || cake.time || cake.notes)) {
-    proposal.cake = { mode: cakeMode, notes: cake.notes ?? null, time: cake.time ?? null, from: fromOf(cake, cake.notes) };
+  // SCRUM-904: how many cakes, whether it comes with the package and its price — only as the chat says them.
+  const cakeMore = readOne(z.object({ quantity: optInt(1), included: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()), price: optBaht }), answer.cake);
+  const cakeQuantity = cakeMore?.quantity !== undefined && cakeMore.quantity <= 20 ? cakeMore.quantity : undefined;
+  const cakePrice = cakeMore?.price !== undefined ? Math.round(cakeMore.price) : undefined;
+  if (cake && (cakeMode || cake.time || cake.notes || cakeQuantity !== undefined || cakeMore?.included !== undefined || cakePrice !== undefined)) {
+    proposal.cake = {
+      mode: cakeMode,
+      notes: cake.notes ?? null,
+      time: cake.time ?? null,
+      ...(cakeQuantity !== undefined ? { quantity: cakeQuantity } : {}),
+      ...(cakeMore?.included !== undefined ? { included: cakeMore.included } : {}),
+      ...(cakePrice !== undefined ? { price: cakePrice } : {}),
+      from: fromOf(cake, cake.notes),
+    };
   }
 
   const deposit = readOne(DepositAnswer, answer.deposit);
@@ -781,19 +998,87 @@ export function resolveCatalogueAnswer(
   }
 
   // SCRUM-827: the chat's requests, one entry each; the same words again are the later line's.
+  // SCRUM-904: an allergy is its own kind (kept in Special Requests, shown first).
   for (const r of readMany(RequestAnswer, answer.requests, 60)) {
     if (!r.text) continue;
     const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r, r.text) };
     merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
   }
   // The chat's timed steps, one per step, in clock order.
+  // SCRUM-904: a show the entertainment carries at the same time is that act, not a second step.
+  const timedShows = proposal.entertainment.filter((e) => e.time).map((e) => ({ time: e.time!, names: [e.name, e.said].filter((n): n is string => !!n).map(fold) }));
   for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
     if (!t.time || !t.label) continue;
+    const label = fold(t.label);
+    if (timedShows.some((s) => s.time === t.time && s.names.some((n) => n.includes(label) || label.includes(n)))) continue;
     const entry = { time: t.time, label: t.label, from: fromOf(t, t.label) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
   }
   proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));
+
+  // SCRUM-904: the rest of the form the conversation gives — the booking name, the location,
+  // the setup plan, the POS box and the hosts — each with the chat's words for it.
+  const sourced = (v: { value?: string; said?: string; line?: number; source?: BeoAiSource } | null): BeoAiSourced<string> | null =>
+    v?.value ? { value: v.value, from: fromOf(v, v.said ?? v.value) } : null;
+  const bookingName = sourced(readOne(SaidText(200, ""), ev.bookingName));
+  if (bookingName) proposal.details.bookingName = bookingName;
+  const locationText = sourced(readOne(SaidText(300, ""), ev.locationText));
+  if (locationText) proposal.details.locationText = locationText;
+  const setup = answer.setup && typeof answer.setup === "object" ? (answer.setup as Record<string, unknown>) : {};
+  const readyBy = readOne(SaidTime, setup.readyBy);
+  if (readyBy?.value) proposal.details.setup.readyBy = { value: readyBy.value, from: fromOf(readyBy, readyBy.said) };
+  const responsible = sourced(readOne(SaidText(200, ""), setup.responsible));
+  if (responsible) proposal.details.setup.responsible = responsible;
+  const setupNotes = sourced(readOne(SaidText(4000, ""), setup.notes));
+  if (setupNotes) proposal.details.setup.notes = setupNotes;
+  for (const t of readMany(SetupTaskAnswer, setup.tasks, 50)) {
+    if (!t.label) continue;
+    const entry = { itemLabel: t.label, notes: t.notes ?? null, from: fromOf(t, t.label) };
+    merge(proposal.details.setup.tasks, entry, (x) => fold(x.itemLabel) === fold(entry.itemLabel));
+  }
+  const pos = answer.pos && typeof answer.pos === "object" ? (answer.pos as Record<string, unknown>) : {};
+  const posName = sourced(readOne(SaidText(300, ""), pos.name));
+  if (posName) proposal.details.pos.name = posName;
+  const posNotes = sourced(readOne(SaidText(4000, ""), pos.notes));
+  if (posNotes) proposal.details.pos.notes = posNotes;
+  for (const i of readMany(PosItemAnswer, pos.items, 50)) {
+    if (!i.description) continue;
+    const entry = {
+      description: i.description,
+      type: i.type === "extra" ? ("extra" as const) : ("included" as const),
+      ...(i.price !== undefined ? { price: Math.round(i.price) } : {}),
+      from: fromOf(i, i.description),
+    };
+    merge(proposal.details.pos.items, entry, (x) => fold(x.description) === fold(entry.description));
+  }
+  const team = answer.team && typeof answer.team === "object" ? (answer.team as Record<string, unknown>) : {};
+  const partyHost = sourced(readOne(SaidText(200, ""), team.partyHost));
+  const entertainmentHost = sourced(readOne(SaidText(200, ""), team.entertainmentHost));
+  if (partyHost || entertainmentHost) {
+    proposal.details.hosts = { ...(partyHost ? { partyHost } : {}), ...(entertainmentHost ? { entertainmentHost } : {}) };
+  }
   return proposal;
+}
+
+/** A real calendar day, YYYY-MM-DD. */
+function isCalendarDay(day: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d;
+}
+
+/**
+ * SCRUM-904: a phone number the chat writes out, as the line holds it: 6 to
+ * 15 digits, every one of them written in that line in that order (spaces,
+ * dashes, dots, brackets and a leading + aside). A number the line does not
+ * hold is the model's, never proposed.
+ */
+export function phoneInLine(value: string, lineText: string | null): boolean {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 6 || digits.length > 15 || !/^\+?[\d\s().\-]+$/.test(value.trim())) return false;
+  return !!lineText && lineText.replace(/\D/g, "").includes(digits);
 }
 
 // --- SCRUM-827: the rest of the BEO from the form's own read ------------------------------
@@ -805,6 +1090,13 @@ const heldText = (v: unknown): string | null => (typeof v === "string" && v.trim
 const sameText = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && fold(a) === fold(b);
 
 /**
+ * SCRUM-904 (Phase B): the conversation's read now gives the rest of the form
+ * itself (`resolveCatalogueAnswer`), each value with its line and words; what
+ * it gives stands, and the form's own read below only fills what it leaves
+ * out (a booking name, a location, the setup plan's ready-by and who, the POS
+ * box's name and notes, tasks and line items it does not hold). A task or
+ * line item the BEO already holds is not proposed again.
+ *
  * The rest of the BEO the form's own read gives (the ruling message, read
  * alone with the form as its baseline), put on the proposal with its source:
  * the booking name, the location, the setup plan and the POS box are the
@@ -838,24 +1130,26 @@ export function detailsFromFill(
   const kind = input.event?.eventType ?? heldText(formEvent.eventType);
   const title = kind === "birthday" ? beoEventTitleOf(child, input.event?.kidTurningAge ?? null) : null;
   details.title = title ? { value: title, from: { source: "default", at: null, line: null } } : null;
-  details.bookingName = sourced(fill.event?.bookingName, formEvent.bookingName);
-  details.locationText = sourced(fill.event?.locationText, formEvent.locationText);
-  details.setup.readyBy = sourced(fill.setupPlan?.readyBy, formSetup.readyBy);
-  details.setup.responsible = sourced(fill.setupPlan?.responsible, formSetup.responsible);
-  details.pos.name = sourced(fill.partyDetails?.packageName, formPos.packageName);
-  details.pos.notes = sourced(fill.partyDetails?.notes, formPos.notes);
+  details.bookingName = proposal.details.bookingName ?? sourced(fill.event?.bookingName, formEvent.bookingName);
+  details.locationText = proposal.details.locationText ?? sourced(fill.event?.locationText, formEvent.locationText);
+  details.setup.readyBy = proposal.details.setup.readyBy ?? sourced(fill.setupPlan?.readyBy, formSetup.readyBy);
+  details.setup.responsible = proposal.details.setup.responsible ?? sourced(fill.setupPlan?.responsible, formSetup.responsible);
+  details.pos.name = proposal.details.pos.name ?? sourced(fill.partyDetails?.packageName, formPos.packageName);
+  details.pos.notes = proposal.details.pos.notes ?? sourced(fill.partyDetails?.notes, formPos.notes);
 
   const heldTasks = (Array.isArray(formSetup.simplifiedTasks) ? formSetup.simplifiedTasks : []).map((t) => heldText(asRecord(t).itemLabel));
-  details.setup.tasks = [...proposal.details.setup.tasks];
+  details.setup.tasks = proposal.details.setup.tasks.filter((t) => !heldTasks.some((h) => sameText(h, t.itemLabel)));
   for (const t of fill.setupPlan?.simplifiedTasks ?? []) {
     if (heldTasks.some((h) => sameText(h, t.itemLabel)) || details.setup.tasks.some((x) => sameText(x.itemLabel, t.itemLabel))) continue;
     details.setup.tasks.push({ itemLabel: t.itemLabel, notes: t.notes ?? null, from });
   }
   const heldItems = (Array.isArray(formPos.items) ? formPos.items : []).map((i) => heldText(asRecord(i).description));
-  details.pos.items = [...proposal.details.pos.items];
+  details.pos.items = proposal.details.pos.items.filter((i) => !heldItems.some((h) => sameText(h, i.description)));
   for (const i of fill.partyDetails?.items ?? []) {
     if (heldItems.some((h) => sameText(h, i.description)) || details.pos.items.some((x) => sameText(x.description, i.description))) continue;
-    details.pos.items.push({ description: i.description, type: i.type === "extra" ? "extra" : "included", from });
+    // SCRUM-904: a price only when the message names one for the item.
+    const price = typeof i.price === "number" && i.price > 0 ? { price: Math.round(i.price) } : {};
+    details.pos.items.push({ description: i.description, type: i.type === "extra" ? "extra" : "included", ...price, from });
   }
 
   // The ruling's own request fields, only where the conversation's read holds no such words.

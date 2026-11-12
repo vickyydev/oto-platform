@@ -81,6 +81,8 @@ export interface ReviewMenuLine {
   changed: boolean;
   /** A line the menu does not have: kept as a free line, or left out. Null until decided. */
   decision: BeoAiDecision;
+  /** SCRUM-904: the chat's note on the dish ("no cheese"), written on its line; absent when none. */
+  notes?: string;
 }
 
 export interface ReviewEntertainment {
@@ -94,6 +96,8 @@ export interface ReviewEntertainment {
   from: BeoAiFrom | null;
   changed: boolean;
   decision: BeoAiDecision;
+  /** SCRUM-904: the show's time (HH:MM): approved, an Entertainment Act at that time too. */
+  time?: string;
 }
 
 export interface ReviewOtherLine {
@@ -112,6 +116,8 @@ export interface ReviewLine {
   extra: string;
   from: BeoAiFrom | null;
   changed: boolean;
+  /** SCRUM-904: a POS line item's price in whole baht, only as the chat names it. */
+  price?: number | null;
 }
 
 /** What AI Fill proposes for a BEO field that assigns somebody (server/lib/beoTeamProposals.ts). */
@@ -120,6 +126,8 @@ export interface ReviewTeamProposal {
   asked: string;
   match: ReviewTeamMatch | null;
   why: "no_match" | "several" | "same_as_party_host" | "host_list_not_employees" | null;
+  /** SCRUM-904: the chat's line that names them, with its words (the reason line under the row). */
+  from?: BeoAiFrom | null;
 }
 export type ReviewTeamField = "partyHost" | "entertainmentHost" | "setupResponsible";
 export type ReviewTeamProposals = Record<ReviewTeamField, ReviewTeamProposal | null>;
@@ -166,6 +174,9 @@ export interface ReviewDetails {
   timeline: ReviewLine[];
   /** The people the message named, matched to the park's roster; assigned only where ticked. */
   team: { proposals: ReviewTeamProposals; accepted: ReviewTeamField[] };
+  /** SCRUM-904: the family's WhatsApp number and the setup plan's notes, held text never overwritten. */
+  whatsapp: ReviewText;
+  setupNotes: ReviewText;
 }
 
 export interface BeoAiReviewState {
@@ -186,11 +197,23 @@ export interface BeoAiReviewState {
   numAdults: Reviewed<number> | null;
   startTime: Reviewed<string> | null;
   endTime: Reviewed<string> | null;
-  /** SCRUM-787: `mode` null is a cake whose type the chat does not say: the BEO keeps its own. */
-  cake: Reviewed<{ mode: BeoAiCakeMode | null; notes: string; time: string }> | null;
+  /**
+   * SCRUM-787: `mode` null is a cake whose type the chat does not say: the BEO keeps its own.
+   * SCRUM-904: how many cakes, whether it comes with the package and its price, present only as the chat says them.
+   */
+  cake: Reviewed<{ mode: BeoAiCakeMode | null; notes: string; time: string; quantity?: number; included?: boolean; price?: number }> | null;
   deposit: Reviewed<{ amount: number; paid: boolean; date: string }> | null;
-  /** SCRUM-814: the date the confirmation names beside the booked one; null when it names none. */
-  date: AiFillDateLine | null;
+  /**
+   * SCRUM-814: the date the confirmation names beside the booked one; null when it names none.
+   * SCRUM-904: the conversation's own date first (its words and its line), the ruling's read for a gap.
+   */
+  date: (AiFillDateLine & { from?: BeoAiFrom | null }) | null;
+  /** SCRUM-904: the age the child turns, as the chat gives it. */
+  childAge: Reviewed<number> | null;
+  /** SCRUM-904: when the kids' and the adults' food is served, and when the bar serves the drinks. */
+  kidsFoodTime: Reviewed<string> | null;
+  adultsFoodTime: Reviewed<string> | null;
+  barServiceTime: Reviewed<string> | null;
   /** The read date replaces the booked one only when this is ticked (and they differ). */
   useDate: boolean;
   /** SCRUM-827: the rest of the BEO, in the same pass. */
@@ -209,6 +232,9 @@ export interface ReviewHeld {
   setupResponsible: string;
   posName: string;
   posNotes: string;
+  /** SCRUM-904: the family's WhatsApp number and the setup plan's notes (absent from a caller before this rule: nothing held). */
+  whatsapp?: string;
+  setupNotes?: string;
 }
 export const NOTHING_HELD: ReviewHeld = {
   title: "",
@@ -221,6 +247,8 @@ export const NOTHING_HELD: ReviewHeld = {
   setupResponsible: "",
   posName: "",
   posNotes: "",
+  whatsapp: "",
+  setupNotes: "",
 };
 
 let seq = 0;
@@ -245,13 +273,26 @@ function reviewText(
   const isChats = chatText !== null && (heldText === null || sameText(heldText, chatText));
   return { value, from: isChats ? chat!.from : null, changed: false, held: heldText, saved: savedText, chat: chatText, chatFrom: chat?.from ?? null, froms };
 }
-const HELD_OF_KIND: Record<BeoAiRequestKind, keyof ReviewHeld> = { special_request: "specialRequests", decoration: "decoration", activity: "activities" };
+const HELD_OF_KIND: Record<BeoAiRequestKind, keyof ReviewHeld> = { special_request: "specialRequests", decoration: "decoration", activity: "activities", allergy: "specialRequests" };
+
+type ChatRequest = BeoAiReview["proposal"]["details"]["requests"][number];
+/**
+ * SCRUM-904: the chat's requests a field holds, in the order it shows them:
+ * Special Requests holds the allergies FIRST, then the special requests (the
+ * owner's decision of 12 November: an allergy keeps no field of its own).
+ */
+export function requestsOfField(requests: ChatRequest[], kind: Exclude<BeoAiRequestKind, "allergy">): ChatRequest[] {
+  if (kind !== "special_request") return requests.filter((r) => r.kind === kind);
+  return [...requests.filter((r) => r.kind === "allergy"), ...requests.filter((r) => r.kind === "special_request")];
+}
+/** SCRUM-904: a request's line as the field holds it: an allergy says so ("Allergy: no nuts"). */
+export const requestLineText = (r: Pick<ChatRequest, "kind" | "text">): string => (r.kind === "allergy" ? `Allergy: ${r.text}` : r.text);
 
 /** The chat's requests of one kind, joined one per line, with every line they came from. */
-function requestsText(requests: BeoAiReview["proposal"]["details"]["requests"], kind: BeoAiRequestKind): { value: string; from: BeoAiFrom } | null {
-  const lines = requests.filter((r) => r.kind === kind);
+function requestsText(requests: BeoAiReview["proposal"]["details"]["requests"], kind: Exclude<BeoAiRequestKind, "allergy">): { value: string; from: BeoAiFrom } | null {
+  const lines = requestsOfField(requests, kind);
   if (lines.length === 0) return null;
-  return { value: lines.map((r) => r.text).join("\n"), from: lines.reduce((a, r) => (laterLineWins(r.from, a) ? r.from : a), lines[0]!.from) };
+  return { value: lines.map(requestLineText).join("\n"), from: lines.reduce((a, r) => (laterLineWins(r.from, a) ? r.from : a), lines[0]!.from) };
 }
 const distinctFroms = (froms: BeoAiFrom[]): BeoAiFrom[] => {
   const out: BeoAiFrom[] = [];
@@ -284,11 +325,13 @@ export function initialReviewState(
   // What the saved BEO holds; the form's live text when the caller gives no saved one.
   const saved = opts.saved ?? held;
   const d = p.details;
-  const requestLine = (kind: BeoAiRequestKind) => {
+  const requestLine = (kind: Exclude<BeoAiRequestKind, "allergy">) => {
     const field = HELD_OF_KIND[kind];
-    return reviewText(held[field], requestsText(d.requests, kind), distinctFroms(d.requests.filter((r) => r.kind === kind).map((r) => r.from)), saved[field]);
+    return reviewText(held[field], requestsText(d.requests, kind), distinctFroms(requestsOfField(d.requests, kind).map((r) => r.from)), saved[field]);
   };
   const text = (field: keyof ReviewHeld, chat: { value: string; from: BeoAiFrom } | null) => reviewText(held[field], chat, undefined, saved[field]);
+  // SCRUM-904: the family's number the chat gives is offered only when it is another number than the form's.
+  const chatPhone = p.event.whatsapp && !samePhone(held.whatsapp ?? "", p.event.whatsapp.value) ? p.event.whatsapp : null;
   const proposals = asRecord(asRecord(opts.fill)?.proposals);
   const teamProposals: ReviewTeamProposals = { partyHost: null, entertainmentHost: null, setupResponsible: null };
   for (const { field } of REVIEW_TEAM_FIELDS) {
@@ -312,6 +355,7 @@ export function initialReviewState(
       from: l.from,
       changed: false,
       decision: null,
+      ...(l.notes ? { notes: l.notes } : {}),
     })),
     entertainment: p.entertainment.map((e) => ({
       key: key("ent"),
@@ -323,6 +367,7 @@ export function initialReviewState(
       from: e.from,
       changed: false,
       decision: null,
+      ...(e.time ? { time: e.time } : {}),
     })),
     otherLines: p.otherLines.map((o) => ({ key: key("other"), text: o.text, chatPrice: o.chatPrice, from: o.from, decision: null })),
     childName: sourced(p.event.childName),
@@ -330,10 +375,26 @@ export function initialReviewState(
     numAdults: sourced(p.event.numAdults),
     startTime: sourced(p.event.startTime),
     endTime: sourced(p.event.endTime),
-    cake: p.cake ? fresh({ mode: p.cake.mode, notes: p.cake.notes ?? "", time: p.cake.time ?? "" }, p.cake.from) : null,
+    cake: p.cake
+      ? fresh(
+          {
+            mode: p.cake.mode,
+            notes: p.cake.notes ?? "",
+            time: p.cake.time ?? "",
+            ...(p.cake.quantity !== undefined ? { quantity: p.cake.quantity } : {}),
+            ...(p.cake.included !== undefined ? { included: p.cake.included } : {}),
+            ...(p.cake.price !== undefined ? { price: p.cake.price } : {}),
+          },
+          p.cake.from,
+        )
+      : null,
     deposit: p.deposit ? fresh({ amount: p.deposit.amount, paid: depositOpensPaid(review), date: p.deposit.date ?? "" }, p.deposit.from) : null,
-    date: aiFillDateLine(opts.fill, opts.bookedDate),
+    date: reviewDateLine(review, opts.fill, opts.bookedDate),
     useDate: false,
+    childAge: sourced(p.event.childAge),
+    kidsFoodTime: sourced(p.event.kidsFoodTime),
+    adultsFoodTime: sourced(p.event.adultsFoodTime),
+    barServiceTime: sourced(p.event.barServiceTime),
     details: {
       title: text("title", d.title),
       bookingName: text("bookingName", d.bookingName),
@@ -346,11 +407,36 @@ export function initialReviewState(
       setupTasks: d.setup.tasks.map((t) => ({ key: key("task"), label: t.itemLabel, extra: t.notes ?? "", from: t.from, changed: false })),
       posName: text("posName", d.pos.name),
       posNotes: text("posNotes", d.pos.notes),
-      posItems: d.pos.items.map((i) => ({ key: key("pos"), label: i.description, extra: i.type, from: i.from, changed: false })),
+      posItems: d.pos.items.map((i) => ({ key: key("pos"), label: i.description, extra: i.type, from: i.from, changed: false, ...(i.price !== undefined ? { price: i.price } : {}) })),
       timeline: d.timeline.map((t) => ({ key: key("step"), label: t.label, extra: t.time, from: t.from, changed: false })),
       team: { proposals: teamProposals, accepted: [] },
+      whatsapp: text("whatsapp", chatPhone),
+      setupNotes: text("setupNotes", d.setup.notes ?? null),
     },
   };
+}
+
+/** SCRUM-904: the same phone number, however it is written (+66 81…, 081…): the last nine digits. */
+export function samePhone(a: string, b: string): boolean {
+  const da = a.replace(/\D/g, "");
+  const db = b.replace(/\D/g, "");
+  if (!da || !db) return false;
+  return da === db || (da.length >= 9 && db.length >= 9 && da.slice(-9) === db.slice(-9));
+}
+
+/**
+ * SCRUM-904: the party's date for the review's Date row — the conversation's
+ * own (its words and its line) first, else the date the ruling message's read
+ * gives (SCRUM-814) — beside the booked one, applied only when ticked.
+ */
+export function reviewDateLine(review: BeoAiReview, fill: unknown, bookedDate: string | null | undefined): (AiFillDateLine & { from?: BeoAiFrom | null }) | null {
+  const chat = review.proposal.event.eventDate;
+  if (chat) {
+    const line = aiFillDateLine({ event: { eventDate: chat.value, eventDateText: chat.said } }, bookedDate);
+    return line ? { ...line, from: chat.from } : null;
+  }
+  const line = aiFillDateLine(fill, bookedDate);
+  return line ? { ...line, from: review.ruling } : null;
 }
 
 /**
@@ -366,6 +452,13 @@ function depositOpensPaid(review: BeoAiReview): boolean {
   const d = review.proposal.deposit;
   if (!d?.paid) return false;
   return !(review.ruling === null && d.from.source === "family");
+}
+
+/** SCRUM-904: the chat's notes on the options of one group a review sends, joined (undefined when none). */
+function choiceNotesOf(review: BeoAiReview, groupId: string, options: string[]): string | undefined {
+  const notes = (review.proposal.setMenu?.choices ?? []).filter((c) => c.itemId === groupId && options.includes(c.option) && c.notes).map((c) => c.notes!.trim());
+  const joined = [...new Set(notes.filter(Boolean))].join(" · ");
+  return joined || undefined;
 }
 
 /** Of two sources for one group, the one its mark shows: the later line's, whoever wrote it (`laterLineWins`, SCRUM-826). */
@@ -488,9 +581,12 @@ export function chatTimeOf(at: string | null | undefined, timeZone?: string): st
   return `${part("weekday")} ${part("day")} ${part("month")} ${part("hour")}:${part("minute")}`;
 }
 
-/** SCRUM-903: the chat's requests of one kind, each with its line: the reasons under Special requests, Activities and Decoration. */
-export function requestFromsOf(review: BeoAiReview, kind: BeoAiRequestKind): BeoAiFrom[] {
-  return review.proposal.details.requests.filter((r) => r.kind === kind).map((r) => r.from);
+/**
+ * SCRUM-903: the chat's requests of one kind, each with its line: the reasons under Special requests, Activities and Decoration.
+ * SCRUM-904: under Special requests, the allergies' lines first.
+ */
+export function requestFromsOf(review: BeoAiReview, kind: Exclude<BeoAiRequestKind, "allergy">): BeoAiFrom[] {
+  return requestsOfField(review.proposal.details.requests, kind).map((r) => r.from);
 }
 
 /** SCRUM-903: the park's catalogue holds nothing to match: every item the chat names is a line to keep or leave out. */
@@ -562,7 +658,7 @@ export function approveDetailsOf(
 ): NonNullable<BeoAiApproveBody["details"]> {
   const d = state.details;
   const out: NonNullable<BeoAiApproveBody["details"]> = {};
-  const text = (field: keyof ReviewHeld, into: keyof NonNullable<BeoAiApproveBody["details"]>) => {
+  const text = (field: Exclude<keyof ReviewHeld, "whatsapp">, into: keyof NonNullable<BeoAiApproveBody["details"]>) => {
     const f = d[field];
     const value = f.value.trim();
     if (!value) return;
@@ -584,6 +680,8 @@ export function approveDetailsOf(
   text("setupResponsible", "setupResponsible");
   text("posName", "posName");
   text("posNotes", "posNotes");
+  // SCRUM-904: the setup plan's notes, as any text field of the rest.
+  text("setupNotes", "setupNotes");
   const tasks = d.setupTasks.filter((t) => t.label.trim());
   if (tasks.length > 0) {
     out.setupTasks = tasks.map((t, i) => {
@@ -595,7 +693,9 @@ export function approveDetailsOf(
   if (items.length > 0) {
     out.posItems = items.map((i, n) => {
       note(`posItem:${n}`, i);
-      return { description: i.label.trim(), type: i.extra === "extra" ? "extra" : "included" };
+      // SCRUM-904: a price only where the chat (or the reviewer) names one.
+      const price = typeof i.price === "number" && i.price >= 0 ? { price: Math.round(i.price) } : {};
+      return { description: i.label.trim(), type: i.extra === "extra" ? "extra" : "included", ...price };
     });
   }
   const steps = d.timeline.filter((s) => s.label.trim() && TIME.test(s.extra));
@@ -610,8 +710,8 @@ export function approveDetailsOf(
     const proposal = d.team.proposals[field];
     if (!proposal?.match || !d.team.accepted.includes(field)) continue;
     team[field] = { kind: proposal.match.kind, id: proposal.match.id, label: proposal.match.label };
-    // The name is the message's: the team's confirmation named them.
-    note(`team:${field}`, { from: { source: "team", at: null, line: null }, changed: false });
+    // The name is the chat's: the line that named them (SCRUM-904), else the team's confirmation.
+    note(`team:${field}`, { from: proposal.from ?? { source: "team", at: null, line: null }, changed: false });
   }
   if (Object.keys(team).length > 0) out.team = team;
   return out;
@@ -649,7 +749,10 @@ export function approveBodyOf(
     const options = g.options.filter((o) => c?.value.includes(o));
     if (!c || options.length === 0) return [];
     note(`choice:${g.id}`, c);
-    return [{ itemId: g.id, options: g.allowMultiple ? options : options.slice(-1) }];
+    const sent = g.allowMultiple ? options : options.slice(-1);
+    // SCRUM-904: the chat's note on the dish chosen rides onto its line of the set menu.
+    const notes = choiceNotesOf(review, g.id, sent);
+    return [{ itemId: g.id, options: sent, ...(notes ? { notes } : {}) }];
   });
   const setMenu = state.setMenuId.value ? { templateId: state.setMenuId.value, choices } : null;
   if (setMenu) note("setMenu", state.setMenuId);
@@ -664,7 +767,8 @@ export function approveBodyOf(
         itemName: l.itemName.trim(),
         quantity: Math.round(l.quantity),
         productCode: l.notInMenu ? null : l.productCode,
-        notes: null,
+        // SCRUM-904: the chat's note on the dish, as the reviewer left it.
+        notes: l.notes?.trim() || null,
       };
     });
 
@@ -674,7 +778,9 @@ export function approveBodyOf(
     .map((e, i) => {
       note(`entertainment:${i}`, e);
       const t = e.templateId ? review.catalogue.entertainment.find((x) => x.id === e.templateId) : undefined;
-      return { templateId: t?.id ?? null, name: (t?.name ?? e.name).trim(), quantity: Math.round(e.quantity), notes: null };
+      // SCRUM-904: a show with a time is an Entertainment Act at that time as well.
+      const time = e.time && TIME.test(e.time) ? { time: e.time } : {};
+      return { templateId: t?.id ?? null, name: (t?.name ?? e.name).trim(), quantity: Math.round(e.quantity), notes: null, ...time };
     });
 
   const otherLines = state.otherLines.filter((o) => o.decision === "keep").map((o, i) => {
@@ -702,21 +808,49 @@ export function approveBodyOf(
     }
   }
   // SCRUM-814: the date the confirmation names, only where it differs from the booked one and was ticked.
+  // SCRUM-904: its mark is the line it came from (the conversation's own date, else the ruling's).
   if (state.date?.differs && state.useDate) {
     event.eventDate = state.date.read;
-    note("eventDate", { from: review.ruling, changed: false });
+    note("eventDate", { from: state.date.from !== undefined ? state.date.from : review.ruling, changed: false });
   }
   if (review.finalMessage) event.internalStaffNotes = review.finalMessage;
+  // SCRUM-904: the age the child turns, and the family's number where it is not the saved one.
+  if (state.childAge && Number.isInteger(state.childAge.value) && state.childAge.value >= 0 && state.childAge.value <= 120) {
+    event.kidTurningAge = state.childAge.value;
+    note("kidTurningAge", state.childAge);
+  }
+  const phone = state.details.whatsapp;
+  if (phone.value.trim() && !(phone.saved !== null && samePhone(phone.value, phone.saved))) {
+    event.whatsappPhoneRaw = phone.value.trim();
+    note("whatsapp", phone);
+  }
+  // SCRUM-904: when the food and the drinks are served, only where the chat (or the reviewer) gives a time.
+  const service: NonNullable<BeoAiApproveBody["service"]> = {};
+  for (const k of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
+    const f = state[k];
+    if (f && TIME.test(f.value)) {
+      service[k] = f.value;
+      note(k, f);
+    }
+  }
 
-  const cakeDraft = state.cake
+  const c = state.cake?.value;
+  const cakeDraft = c
     ? {
-        mode: state.cake.value.mode,
-        notes: state.cake.value.notes.trim() || null,
-        time: TIME.test(state.cake.value.time) ? state.cake.value.time : null,
+        mode: c.mode,
+        notes: c.notes.trim() || null,
+        time: TIME.test(c.time) ? c.time : null,
+        // SCRUM-904: how many, whether it comes with the package and its price, only where given.
+        ...(typeof c.quantity === "number" && Number.isInteger(c.quantity) && c.quantity >= 1 && c.quantity <= 20 ? { quantity: c.quantity } : {}),
+        ...(typeof c.included === "boolean" ? { included: c.included } : {}),
+        ...(typeof c.price === "number" && c.price >= 0 ? { price: Math.round(c.price) } : {}),
       }
     : null;
   // SCRUM-787: a cake whose type is not said is sent for its time and notes only; with neither, nothing.
-  const cake = cakeDraft && (cakeDraft.mode || cakeDraft.notes || cakeDraft.time) ? cakeDraft : null;
+  const cake =
+    cakeDraft && (cakeDraft.mode || cakeDraft.notes || cakeDraft.time || cakeDraft.quantity !== undefined || cakeDraft.included !== undefined || cakeDraft.price !== undefined)
+      ? cakeDraft
+      : null;
   if (cake) note("cake", state.cake);
 
   const deposit =
@@ -741,6 +875,7 @@ export function approveBodyOf(
     entertainment,
     otherLines,
     event,
+    ...(Object.keys(service).length > 0 ? { service } : {}),
     cake,
     deposit,
     // SCRUM-843: the party's deposit as this review was read with, so one that moved since is kept.
@@ -764,12 +899,12 @@ export function approvedMarksOf(sources: BeoAiApproveBody["sources"]): ApprovedM
 
 /** The editor's sections, and the approved fields each one wears the "from the chat" chip for. */
 export const APPROVED_SECTIONS: Record<string, (field: string) => boolean> = {
-  "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration"].includes(f),
+  "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration", "kidTurningAge", "whatsapp"].includes(f),
   "party-host": (f) => f.startsWith("team:partyHost") || f.startsWith("team:entertainmentHost"),
   "birthday-package": (f) => f === "package" || f.startsWith("addOn:") || f.startsWith("entertainment:"),
   "party-details": (f) => f.startsWith("pos") || f === "deposit",
   "setup-plan": (f) => f.startsWith("setup") || f === "team:setupResponsible",
-  "kitchen-plan": (f) => f === "setMenu" || f === "cake" || f.startsWith("choice:") || f.startsWith("menu:"),
+  "kitchen-plan": (f) => f === "setMenu" || f === "cake" || f.startsWith("choice:") || f.startsWith("menu:") || f === "kidsFoodTime" || f === "adultsFoodTime" || f === "barServiceTime",
   timeline: (f) => f.startsWith("timeline:"),
 };
 
