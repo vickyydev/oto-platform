@@ -30,6 +30,7 @@ import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
 import { consentSlotPhoto } from '@/lib/consentForm';
+import { familyDoneDecision } from '@/lib/consentFinish';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { refreshSellableStock } from '@/api/stock';
@@ -600,6 +601,16 @@ export default function Till() {
   const [consentStaffOnly, setConsentStaffOnly] = useState(false);
   const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
   const [consentCompletedScope, setConsentCompletedScope] = useState<string | null>(null);
+  /**
+   * SCRUM-857 — THE FAMILY'S DONE MOVES THE SALE ON (the owner's ruling of 8
+   * November). While the gate writes the registration on the family's Done,
+   * the form they finished stays on their screen as it was, saying it is being
+   * saved (`finishing`), instead of opening again while the till works; if the
+   * write is refused or cannot be made, the reason is kept here for staff and
+   * the family's form opens again saying it was not saved (`notSaved`).
+   */
+  const [consentFinishing, setConsentFinishing] = useState<Omit<ConsentPrompt, 'kind' | 'requestId'> | null>(null);
+  const [consentNotSaved, setConsentNotSaved] = useState<string | null>(null);
   // True once the gate has resolved + converted the anonymous kids, so re-pressing
   // Pay (e.g. after assigning a nanny at step 3) doesn't re-open the gate.
   const [supervisionResolved, setSupervisionResolved] = useState<boolean>(false);
@@ -926,6 +937,8 @@ export default function Till() {
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
     setConsentCompletedScope(null);
+    setConsentFinishing(null);
+    setConsentNotSaved(null);
     setSupervisionResolved(false);
   };
 
@@ -2115,6 +2128,8 @@ export default function Till() {
     setConsentStaffOnly(false);
     setConsentPrivateOpen(false);
     setConsentCompletedScope(null);
+    setConsentFinishing(null);
+    setConsentNotSaved(null);
     // A returning member with saved children sees the re-confirm step first; their
     // details pre-fill the slots (text only, never the photo) but are applied only
     // after they confirm. First-timers / walk-ins skip straight to the gate.
@@ -2332,12 +2347,22 @@ export default function Till() {
   /** True while the gate's children are being written to the member's record. */
   const [gateSaving, setGateSaving] = useState(false);
 
-  const resolveSupervisionGate = async () => {
-    if (!tier || !operator) return;
+  /**
+   * SCRUM-857 — what became of one run of the gate: it is run by the staff's
+   * Continue and by the family's Done, and the family's screen is told when a
+   * Done they pressed could not be saved.
+   */
+  type GateOutcome = { ok: true } | { ok: false; message: string };
+  const resolveSupervisionGate = async (): Promise<GateOutcome> => {
+    if (!tier || !operator) return { ok: false, message: 'The till is not ready to register children yet.' };
     // SCRUM-887 — once a write of this gate is answered on the platform, the
     // rest of it is held there: a dropped link is retried online, never handed
-    // to a box that has not pulled the family yet. Released when the press ends.
+    // to a box that has not pulled the family yet. Released when the press ends
+    // (the staff's Continue and the family's Done alike, `runSupervisionGate`).
     gateOnline.beginPress();
+    // SCRUM-857 — the sale this run belongs to: a run that outlives it (the
+    // sale was abandoned or another started) changes nothing on the till.
+    const gateEpoch = saleEpochRef.current;
     const policy = getSupervisionPolicy();
     const resolved = resolveGroupRequirements(
       superSlots.map((s) => ({ id: s.id, age: slotAge(s) ?? -1 })),
@@ -2389,7 +2414,7 @@ export default function Till() {
         description: `${TILL_NOT_LINKED} Nobody has been checked in or charged — the details are still on screen.`,
         variant: 'destructive',
       });
-      return;
+      return { ok: false, message: TILL_NOT_LINKED };
     }
 
     /**
@@ -2478,7 +2503,7 @@ export default function Till() {
         description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
-      return;
+      return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' };
     }
 
     /**
@@ -2591,8 +2616,13 @@ export default function Till() {
         description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
-      return;
+      return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' };
     }
+
+    // SCRUM-857 — the sale moved on while the children were written (it was
+    // abandoned, or another began): what was written stays, audited, and this
+    // till's new sale is not touched.
+    if (gateEpoch !== saleEpochRef.current) return { ok: false, message: 'The sale changed while the children were being registered.' };
 
     // A source line fully converts when no plain kid remains on it. Its socks /
     // add-ons must not be silently dropped, so carry them onto the FIRST drop-off
@@ -2649,6 +2679,11 @@ export default function Till() {
     setLines(normalizeDropOffFees([...residual, ...dropLines], dropOffPricing));
     setSupervisionResolved(true);
     gateOnline.carryToSale();
+    // SCRUM-857 — the till moves on only from the form: staff who went back
+    // while the children were written stay where they went (the sale already
+    // carries the children, so the gate is not asked again). The online hold
+    // is carried to the sale above wherever staff are (SCRUM-887).
+    if (consentContext.current.step !== 7) return { ok: true };
 
     // Nanny kids still need a nanny — reuse the existing step-3 config. Otherwise
     // go straight to payment (consent already replaces the customer input step).
@@ -2660,18 +2695,45 @@ export default function Till() {
       setActiveLineId(null);
       setStep(5);
     }
+    return { ok: true };
   };
 
   // Resolving the gate now writes to the member API, so it is asynchronous and
   // can be pressed only once at a time; `gateSaving` also parks the Continue
   // button while the children are being saved.
+  //
+  // SCRUM-857 — the family's Done runs the very same gate (`runSupervisionGate`
+  // with `family`): one run at a time, whoever starts it (`gateRunningRef`
+  // holds it between the press and the render that shows `gateSaving`), and
+  // the registration's client-minted ids make a second run answer with the
+  // registration the first one wrote. A family's run that cannot be saved
+  // opens their form again, saying so, and tells staff why.
+  const gateRunningRef = useRef(false);
+  const runSupervisionGate = (source: 'staff' | 'family', finishing: Omit<ConsentPrompt, 'kind' | 'requestId'> | null = null) => {
+    if (gateRunningRef.current) return;
+    gateRunningRef.current = true;
+    const epoch = saleEpochRef.current;
+    setGateSaving(true);
+    setConsentNotSaved(null);
+    setConsentFinishing(finishing);
+    const settle = (outcome: GateOutcome) => {
+      if (source !== 'family' || outcome.ok || epoch !== saleEpochRef.current) return;
+      setConsentCompletedScope(null);
+      setConsentNotSaved(outcome.message);
+    };
+    void resolveSupervisionGate()
+      .then(settle, (err: unknown) => settle({ ok: false, message: err instanceof Error ? err.message : 'Unknown error' }))
+      .finally(() => {
+        // SCRUM-887 — the press ends, whoever started it.
+        gateOnline.endPress();
+        gateRunningRef.current = false;
+        setGateSaving(false);
+        setConsentFinishing(null);
+      });
+  };
   const handleSupervisionContinue = () => {
     if (gateSaving) return;
-    setGateSaving(true);
-    void resolveSupervisionGate().finally(() => {
-      gateOnline.endPress();
-      setGateSaving(false);
-    });
+    runSupervisionGate('staff');
   };
 
   /**
@@ -3612,11 +3674,25 @@ export default function Till() {
   };
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
+  /**
+   * SCRUM-857 — every check the staff's "Continue to payment" makes, on the
+   * till's own copy of the form: each child named and aged, the name and the
+   * consent, the confirmations, a photo of each child in care (canContinue),
+   * and the number confirmed for the channel and able to take messages. Only
+   * then does the family's Done write the registration and move the sale on.
+   */
+  const familyGateReady = consentBase.canContinue
+    && (!consentRequired || contactConfirmed && consentContactProblem === null);
+  // SCRUM-857 — while the family's Done is being saved their screen keeps the
+  // form they finished, saying so; a Done that could not be saved opens it
+  // again, saying that instead.
+  const consentShown = consentFinishing
+    ?? (consentNotSaved && !consentCandidate.completed ? { ...consentCandidate, notSaved: true } : consentCandidate);
   // SCRUM-764 — the form stays on the family’s screen when they ask for help:
   // reception helps with the details here, and the agreement ticks stay theirs.
   const consent = step === 7 && displayOnline
-    && ConsentPromptSchema.safeParse({ ...consentCandidate, kind: 'consent', requestId: 'validation' }).success
-    ? consentCandidate : undefined;
+    && ConsentPromptSchema.safeParse({ ...consentShown, kind: 'consent', requestId: 'validation' }).success
+    ? consentShown : undefined;
   const consentScope = `${reviewScope}:${consentSignature}`;
   const consentContext = useRef({ scope: consentScope, signature: consentSignature, consent, online: displayOnline, step });
   consentContext.current = { scope: consentScope, signature: consentSignature, consent, online: displayOnline, step };
@@ -3635,7 +3711,7 @@ export default function Till() {
     quoteRefreshing: reviewOnline && cart.pending,
     payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
     pricePending: voucherPricePending,
-    childReview, reviewRevision, consent, consentRevision: `${consentSignature}:${consentCandidate.completed}:${consentStaffOnly}`,
+    childReview, reviewRevision, consent, consentRevision: `${consentSignature}:${consentCandidate.completed}:${consentStaffOnly}:${consentFinishing ? 'finishing' : ''}:${consentNotSaved ? 'not-saved' : ''}`,
     answerRevision: displayAnswerRevision,
   }, async answer => {
     if (answer.type === 'consent') {
@@ -3662,6 +3738,16 @@ export default function Till() {
             ? previous : { at: new Date().toISOString(), by: 'family', ...contact });
         setConsentContactLegacy(false);
       };
+      // SCRUM-857 — THE FAMILY'S DONE MOVES THE SALE ON, without staff (the
+      // owner's ruling of 8 November). It is taken here only for this sale,
+      // this family and the form revision it was pressed on (the checks
+      // above), and then honoured only while the till is still on that form
+      // and every check the staff's Continue makes passes: the same gate then
+      // writes the registration and moves on, and the family's screen says it
+      // is saving. Otherwise the form stays finished on their screen and staff
+      // finish it here, as before.
+      const familyDone = action.data.action === 'done' && !unconfirmedDone;
+      const shownForm = current.consent;
       // SCRUM-764 — the family's step, mirrored here; every answer taken moves
       // their screen on to a new request, even one that changed nothing.
       takeConsentAction(action.data, {
@@ -3677,7 +3763,18 @@ export default function Till() {
         setFamilyStep: setConsentFamilyStep,
         contactConfirmationUnsupported: () => setConsentContactLegacy(true),
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
-        setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
+        setCompletedSignature: (signature) => {
+          setConsentCompletedScope(signature);
+          // A step from the family clears what an earlier Done could not save.
+          if (signature === null) { setConsentNotSaved(null); return; }
+          if (!familyDone) return;
+          const decision = familyDoneDecision({
+            onForm: consentContext.current.step === 7, sameForm: consentContext.current.scope === consentScope,
+            saving: gateRunningRef.current, ready: familyGateReady,
+          });
+          if (decision === 'move_on') runSupervisionGate('family', { ...shownForm, completed: true, finishing: true, notSaved: undefined });
+        },
+        askedForHelp: () => setConsentStaffOnly(true),
         answered: () => setDisplayAnswerRevision(previous => previous + 1),
         // SCRUM-857 — the family's photo, collected from the platform and kept
         // on the child's slot exactly as a photo staff take is kept: uploaded to
@@ -3694,8 +3791,9 @@ export default function Till() {
           }, () => undefined);
         },
       });
-      // Acknowledgement never authorises registration, policy changes or payment.
-      // Continue remains the existing staff action after all private checks.
+      // A step never authorises registration, policy changes or payment; only a
+      // Done on a form that passes every check does (SCRUM-857, above), through
+      // the gate staff's Continue runs.
       return true;
     }
     if (answer.type === 'child_review') {
@@ -3948,7 +4046,11 @@ export default function Till() {
           {step === 7 && tier && (
             <div className="flex h-full min-h-0 flex-col">
               {linkedDisplay.connected.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">{staffTicks
+                <p className="text-sm text-muted-foreground" data-testid="consent-staff-status">{consentFinishing
+                  ? 'The family pressed Done: the children are being registered, then the sale moves on by itself.'
+                  : consentNotSaved
+                  ? `The family pressed Done, but it could not be saved: ${consentNotSaved} Check it with them; they press Done again, or press Continue here.`
+                  : staffTicks
                   ? 'The display cannot show the form right now: open Private child details and go through it with the family, agreements included.'
                   : consentCandidate.completed
                   ? 'The family has finished the form on the display. Check the photo and details before Continue.'
@@ -4211,6 +4313,10 @@ export default function Till() {
               onUpdateChild={handleUpdateSlot}
               acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
               onToggleConfirmation={handleToggleConfirmation}
+              // SCRUM-857 — the family's Done on this customer half moves the sale
+              // on through the same gate, once every check passes.
+              onDone={() => { if (familyGateReady && !gateRunningRef.current) runSupervisionGate('family'); }}
+              doneReady={familyGateReady} doneBusy={gateSaving} doneNotSaved={!!consentNotSaved}
             />
           </div>
         )}

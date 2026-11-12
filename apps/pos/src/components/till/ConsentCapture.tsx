@@ -3,6 +3,8 @@ import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import { messagingPhoneProblem } from '@/lib/consentForm';
+import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
+import { Button } from '@/components/ui/button';
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { getDropOffPricing } from '@/mockApi';
 import { resolveDropOffPricing } from '@/lib/dropoff';
@@ -87,6 +89,19 @@ interface ConsentCaptureProps {
   contactConfirmed?: boolean;
   onContactConfirmedChange?: (v: boolean) => void;
   contactConfirmTickable?: boolean;
+  /**
+   * SCRUM-857 / SCRUM-875 — the family's Done on the till's own customer half
+   * (the owner's ruling of 8 November: no staff confirmation once every check
+   * passes). Given only there: Done writes the registration and moves the sale
+   * on, as the staff's Continue does. Until it can be pressed (`doneReady`, the
+   * till's own reading of every check) a short line says what is still
+   * missing; while the till writes (`doneBusy`) the bar says it is saving, and
+   * a Done that could not be saved says so (`doneNotSaved`).
+   */
+  onDone?: () => void;
+  doneReady?: boolean;
+  doneBusy?: boolean;
+  doneNotSaved?: boolean;
 }
 
 /**
@@ -173,6 +188,10 @@ export function ConsentCapture({
   contactConfirmed = false,
   onContactConfirmedChange,
   contactConfirmTickable = true,
+  onDone,
+  doneReady = false,
+  doneBusy = false,
+  doneNotSaved = false,
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   // The till draws this form twice at once (the customer's half and the staff's
@@ -215,6 +234,18 @@ export function ConsentCapture({
   });
   const anyNeedsConsent = rows.some((r) => r.needsConsent);
   const allAged = rows.every((r) => r.aged);
+  // SCRUM-875 — what is still missing before the family's Done, in their language.
+  const missingLine = onDone
+    ? consentMissingLine(t, consentMissing({
+      children: slots.map((s) => ({ name: s.name, ageYears: slotAge(s) })),
+      consentRequired: anyNeedsConsent,
+      guardianName: parentName,
+      consentAcknowledged: consentAck,
+      confirmations: confirmations.map((c) => ({ required: c.required, acknowledged: acknowledgedConfirmationIds.includes(c.id) })),
+      ...(onContactConfirmedChange ? { contact: { confirmed: contactConfirmed, problem: messagingPhoneProblem(parentPhone ?? '') } } : {}),
+      photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
+    }), CHANNEL_LABEL[parentContactMethod])
+    : null;
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[image:var(--cd-gradient)] text-foreground">
@@ -513,6 +544,17 @@ export function ConsentCapture({
           </div>
         )}
       </div>
+
+      {/* SCRUM-857 — the family's Done, on the till's own customer half. */}
+      {onDone && (
+        <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3" data-testid="consent-done-bar">
+          {doneBusy ? <p role="status">{t('superviseConsent.finishing')}</p> : <>
+            {doneNotSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
+            {missingLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{missingLine}</p>}
+            <Button disabled={!doneReady} onClick={onDone}>{t('common.done')}</Button>
+          </>}
+        </div>
+      )}
     </div>
   );
 }

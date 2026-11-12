@@ -14,6 +14,7 @@ import { ScreenKeyboard } from './ScreenKeyboard';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
+import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import type { DisplayPhotoForm } from '@/api/consentPhoto';
 import { DisplayChildPhoto, useCameraPresence } from './DisplayChildPhoto';
@@ -83,6 +84,14 @@ import { cn } from '@/lib/utils';
  * for this form and child, then a `photo` answer names it to the till. With
  * no camera, a refused camera or no mark (an older till or station), the
  * screen says reception will take the photo, and staff take it on the till.
+ *
+ * SCRUM-857 / SCRUM-875 — the family's Done moves the sale on by itself (no
+ * staff confirmation): while the till writes the registration the finished
+ * form says so (`finishing`), and if the write could not be made the form
+ * opens again and says the team will check it with them (`notSaved`). Until
+ * Done can be pressed, a short line under the agreements says what is still
+ * missing: each child's details, the name and consent, the confirmations, the
+ * number confirmation, a photo of each child.
  */
 
 interface ChildDraft {
@@ -483,6 +492,17 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     helpSent.current = true;
     onAction({ ...fence, action: 'staff_help' });
   });
+  // SCRUM-875 — what is still missing before Done, from what the family has
+  // entered here; the photos are the till's (staffReady says they are taken).
+  const missingLine = consentMissingLine(t, consentMissing({
+    children: prompt.slots.map((slot) => ({ name: draft.slots[slot.id]?.name ?? '', ageYears: draft.slots[slot.id]?.ageYears ?? null })),
+    consentRequired: prompt.consentRequired,
+    guardianName: draft.guardianName,
+    consentAcknowledged: draft.consentAcknowledged,
+    confirmations: prompt.confirmations.map((item) => ({ required: item.required, acknowledged: draft.confirmations.includes(item.id) })),
+    ...(asksConfirm ? { contact: { confirmed: draft.contactConfirmed === true, problem: contactProblem } } : {}),
+    photosTaken: prompt.staffReady,
+  }), CHANNEL_LABEL[contactChannel]);
   const setChild = (id: string, patch: Partial<ChildDraft>) =>
     edit((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
   const index = STEPS.indexOf(step);
@@ -632,7 +652,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     </div>
 
     <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3">
-      {prompt.completed ? <p role="status">{t('superviseConsent.waitForTeam')}</p> : <>
+      {prompt.completed ? <p role="status" data-testid="consent-finished">{t(prompt.finishing ? 'superviseConsent.finishing' : 'superviseConsent.waitForTeam')}</p> : <>
+        {prompt.notSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
+        {step === 'agreements' && missingLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{missingLine}</p>}
         {helpAsked && <p role="status" className="mr-auto flex items-center gap-2 text-base text-foreground/70"><Users className="h-5 w-5" />{t('superviseConsent.teamComing')}</p>}
         <Button variant="outline" disabled={busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
         {index > 0 && <Button variant="outline" disabled={locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
