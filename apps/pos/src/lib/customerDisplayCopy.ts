@@ -165,3 +165,13 @@ export function customerUnpricedReason(
 export function displayErrorText(message: string, lang: SupportedLang, t: TFunction): string {
   return lang === 'en' ? message : t('display.error.tryAgain');
 }
+
+/**
+ * SCRUM-960 — what the promo codes on an F&B or shop order take off, in baht,
+ * from the quote's code rows (`OrderTotals.scannedDiscounts`, baht each), for
+ * the customer half's "Discount code" row (`CodeDiscountRow`). Summed in
+ * satang so two codes of ฿16.50 and ฿0.10 read ฿16.60, not a float's tail.
+ */
+export function codeDiscountTotal(rows: readonly { amount: number }[]): number {
+  return rows.reduce((sum, row) => sum + Math.round(row.amount * 100), 0) / 100;
+}

@@ -7,6 +7,7 @@ import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStati
 import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
+import { codeDiscountTotal } from '@/lib/customerDisplayCopy';
 import { useCustomerTheme } from '@/lib/themePref';
 import {
   getDiscountByCode,
@@ -1346,6 +1347,14 @@ export default function OrderStation() {
   // payment has taken anything, so a figure being settled is never changed.
   useHeldBandOnBox(wristband, setWristband, () => stage !== 'confirmation' && !paymentStage.busy
     && paymentStage.state.settlements.length === 0 && paymentStage.state.creditSaleId === null);
+  /**
+   * The promo codes on the order as the quote has them: the order panel's code
+   * rows, and SCRUM-960's "Discount code" row on the customer half. A held
+   * voucher's row is its own card on the panel, not a code.
+   */
+  const promoRows = voucher.held
+    ? order.totals.scannedDiscounts.filter((p) => p.code !== voucher.held?.code)
+    : order.totals.scannedDiscounts;
   const backFromPayment = () => {
     // A pending gateway QR: Back abandons it and stays at the method choice.
     if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
@@ -1547,11 +1556,7 @@ export default function OrderStation() {
                 onRemoveManualDiscount={handleRemoveManualDiscount}
                 // The voucher's own row is its card below, not a promo row with a
                 // promo's remove button.
-                promoCodes={
-                  voucher.held
-                    ? order.totals.scannedDiscounts.filter((p) => p.code !== voucher.held?.code)
-                    : order.totals.scannedDiscounts
-                }
+                promoCodes={promoRows}
                 promoError={promoError}
                 onApplyPromoCode={handleApplyPromoCode}
                 onRemovePromoCode={handleRemovePromoCode}
@@ -1704,6 +1709,7 @@ export default function OrderStation() {
               payment={paymentStage.display}
               completedOrder={completedOrder}
               newBalance={newBalance}
+              codeDiscount={codeDiscountTotal(promoRows)}
             />
           </div>
         )}

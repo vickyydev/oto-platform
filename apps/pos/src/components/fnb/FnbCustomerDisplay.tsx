@@ -10,6 +10,7 @@ import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CodeDiscountRow } from '@/components/shared/CodeDiscountRow';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
 import { bahtText } from '@/lib/bahtText';
@@ -46,6 +47,12 @@ interface FnbCustomerDisplayProps {
   chargeTarget?: ChargeTarget;
   /** Captured public quote; this path never resolves a local menu or price. */
   presentation?: { cart: DisplayFnbCart; totals?: DisplayTotals };
+  /**
+   * SCRUM-960 — what the promo codes on the order take off, in baht, as the
+   * station's quote has it (`CodeDiscountRow`). Not on the captured frame: an
+   * order with a code is never sent to a separate display (`useFnbDisplay`).
+   */
+  codeDiscount?: number;
 }
 
 type PublicDiscount = DisplayFnbCart['manualDiscounts'][number];
@@ -271,11 +278,14 @@ function FnbOrderHeader({ wristband, chargeTarget }: { wristband: Wristband | nu
 function FnbOrderFooter({
   manualDiscounts,
   manualAmounts,
+  codeDiscount,
   taxBreakdown,
   total,
 }: {
   manualDiscounts: readonly (ManualDiscount | PublicDiscount)[];
   manualAmounts: Record<string, number>;
+  /** SCRUM-960 — the promo codes' discount, in baht (`CodeDiscountRow`). */
+  codeDiscount?: number;
   taxBreakdown: TaxBreakdownBaht | undefined;
   total: number;
 }) {
@@ -299,6 +309,7 @@ function FnbOrderFooter({
           </div>
         );
       })}
+      <CodeDiscountRow amount={codeDiscount} />
       {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
         <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
           <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
@@ -325,6 +336,7 @@ export function FnbCustomerDisplay({
   newBalance = null,
   chargeTarget: legacyChargeTarget,
   presentation,
+  codeDiscount: legacyCodeDiscount,
 }: FnbCustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const wristband = presentation ? null : legacyWristband;
@@ -332,6 +344,7 @@ export function FnbCustomerDisplay({
   const orderNote = presentation?.cart.orderNote ?? legacyOrderNote;
   const manualDiscounts = presentation?.cart.manualDiscounts ?? legacyDiscounts;
   const total = presentation?.totals?.total ?? legacyTotal;
+  const codeDiscount = presentation ? undefined : legacyCodeDiscount;
   const taxBreakdown = presentation ? presentation.totals ? capturedTaxes(presentation.totals) : undefined : legacyTaxBreakdown;
   const payment = suppliedPayment ?? { saleId: null, amountSatang: Math.round(total * 100), qrPayload: null,
     qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: globalThis.navigator?.onLine !== false };
@@ -408,7 +421,7 @@ export function FnbCustomerDisplay({
           {orderNote.trim() && <OrderNoteCallout note={orderNote.trim()} />}
         </div>
         <div className="p-8 border-t border-foreground/10 shrink-0">
-          <FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />
+          <FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} codeDiscount={codeDiscount} taxBreakdown={taxBreakdown} total={total} />
         </div>
       </Shell>
     );
@@ -455,7 +468,7 @@ export function FnbCustomerDisplay({
                 {orderNote.trim() && <OrderNoteCallout note={orderNote.trim()} />}
               </>
             }
-            summary={<FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />}
+            summary={<FnbOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} codeDiscount={codeDiscount} taxBreakdown={taxBreakdown} total={total} />}
             lead={lead}
             aside={aside}
           >

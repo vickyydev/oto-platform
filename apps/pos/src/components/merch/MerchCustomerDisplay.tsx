@@ -10,6 +10,7 @@ import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { bahtText } from '@/lib/bahtText';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CodeDiscountRow } from '@/components/shared/CodeDiscountRow';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
 import {
@@ -49,6 +50,8 @@ interface MerchCustomerDisplayProps {
    * as the F&B display does; the QR is never a locally drawn placeholder.
    */
   payment?: PaymentDisplayState;
+  /** SCRUM-960 — what the promo codes on the order take off, in baht (`CodeDiscountRow`). */
+  codeDiscount?: number;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -156,7 +159,10 @@ function merchManualAmounts(lines: MerchOrderLine[], manualDiscounts: ManualDisc
 function MerchOrderHeader({ wristband }: { wristband: Wristband | null }) {
   const { t } = useLanguage();
   return (
-    <div className="p-8 flex items-center justify-between border-b border-foreground/10 shrink-0">
+    // SCRUM-959 — clear of the language button (`Shell`, top right), as the
+    // F&B display's header and the separate display's already are (SCRUM-201):
+    // "Your Sale" was drawn under it in the split view (picture 16e).
+    <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
       <Brand />
       {wristband ? (
         <BalanceChip wristband={wristband} />
@@ -167,15 +173,17 @@ function MerchOrderHeader({ wristband }: { wristband: Wristband | null }) {
   );
 }
 
-/** The order's footer rows: order discounts, tax and the total. */
+/** The order's footer rows: order discounts, the code's discount, tax and the total. */
 function MerchOrderFooter({
   manualDiscounts,
   manualAmounts,
+  codeDiscount,
   taxBreakdown,
   total,
 }: {
   manualDiscounts: ManualDiscount[];
   manualAmounts: Record<string, number>;
+  codeDiscount?: number;
   taxBreakdown: TaxBreakdown;
   total: number;
 }) {
@@ -196,6 +204,7 @@ function MerchOrderFooter({
           </div>
         );
       })}
+      <CodeDiscountRow amount={codeDiscount} />
       {summarizeTax(taxBreakdown).map((row) => (
         <div
           key={row.key}
@@ -224,6 +233,7 @@ export function MerchCustomerDisplay({
   newBalance,
   creditSatang,
   payment,
+  codeDiscount,
 }: MerchCustomerDisplayProps) {
   const { t, lang } = useLanguage();
   if (stage === 'welcome') {
@@ -285,7 +295,7 @@ export function MerchCustomerDisplay({
           <OrderLines lines={lines} />
         </div>
         <div className="p-8 border-t border-foreground/10 shrink-0">
-          <MerchOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />
+          <MerchOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} codeDiscount={codeDiscount} taxBreakdown={taxBreakdown} total={total} />
         </div>
       </Shell>
     );
@@ -326,7 +336,7 @@ export function MerchCustomerDisplay({
           <PaymentStageLayout
             header={<MerchOrderHeader wristband={wristband} />}
             lines={<OrderLines lines={lines} />}
-            summary={<MerchOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} taxBreakdown={taxBreakdown} total={total} />}
+            summary={<MerchOrderFooter manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} codeDiscount={codeDiscount} taxBreakdown={taxBreakdown} total={total} />}
             lead={lead}
             aside={aside}
           >

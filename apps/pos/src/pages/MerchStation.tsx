@@ -3,6 +3,7 @@ import { StationHeader } from '@/components/shared/StationHeader';
 import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
 import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
+import { codeDiscountTotal } from '@/lib/customerDisplayCopy';
 import { useCustomerTheme } from '@/lib/themePref';
 import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerchOrder } from '@/mockApi';
 import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
@@ -889,6 +890,7 @@ export default function MerchStation() {
               newBalance={newBalance}
               creditSatang={paymentStage.display.creditSatang ?? 0}
               payment={stage === 'payment' ? paymentStage.display : undefined}
+              codeDiscount={codeDiscountTotal(sale.totals.scannedDiscounts)}
             />}
           </div>
         )}
