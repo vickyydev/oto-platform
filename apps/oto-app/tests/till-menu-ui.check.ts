@@ -153,6 +153,15 @@ const auth = { user: USER, isLoading: false, error: null, loginMutation: {}, log
 const settle = async (rounds = 6) => { for (let i = 0; i < rounds; i++) await act(async () => { await new Promise((r) => setTimeout(r, 15)); }); };
 const byTestId = (id: string) => doc.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 const required = (id: string) => { const el = byTestId(id); assert.ok(el, `the screen shows ${id}`); return el; };
+/**
+ * The screen does not show `id`. A node is never handed to `assert` as the
+ * value it judges: a failed assertion keeps that value, and Node reads it deep
+ * (a message it writes itself, 1000 levels with getters; the fatal-error
+ * printer, 5). A jsdom node reaches React's fiber tree, the query client and
+ * the window, so one failed `assert.equal(node, null)` here grew the process
+ * past 40 GB on 12 November instead of saying what failed.
+ */
+const absent = (id: string, why = "not on the screen") => assert.ok(byTestId(id) === null, `${why}: ${id} is on the screen`);
 const click = async (id: string) => { await act(async () => { required(id).click(); }); await settle(); };
 const setValue = async (input: HTMLInputElement, value: string) => {
   await act(async () => {
@@ -182,7 +191,7 @@ const pick = async (testId: string, search: string, code: string) => {
   const listed = options(testId);
   assert.ok(listed.includes(code), `${search} finds ${code}: ${listed.join(", ")}`);
   await click(`${testId}-option-${code}`);
-  assert.equal(byTestId(`${testId}-search`), null, "the search closes once an item is picked");
+  absent(`${testId}-search`, "the search closes once an item is picked");
   return listed;
 };
 const tillAsks = () => asked.filter((a) => a.path === "/api/beo/till-menu");
@@ -213,7 +222,15 @@ const saved = async () => {
 
 let checks = 0;
 const check = async (title: string, fn: () => Promise<void> | void) => {
-  await fn();
+  try {
+    await fn();
+  } catch (err) {
+    // Said in words and ended here: a failure never reaches Node's fatal-error
+    // printer, which reads whatever the error holds 5 levels deep (see `absent`).
+    const words = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    console.error(`  FAIL  ${title}\n${words.slice(0, 4000)}`);
+    process.exit(1);
+  }
   checks += 1;
   console.log(`  ok  ${title}`);
 };
@@ -237,8 +254,8 @@ await check("nothing is asked of the till until the kitchen or bar plan opens; t
 
 await check("a kitchen line whose code the till no longer has says so; a hand-typed line and a live code say nothing", () => {
   assert.equal(text("text-menu-code-dead-kids-1"), "No longer on the till");
-  assert.equal(byTestId("text-menu-code-dead-kids-0"), null, "a hand-typed line is not marked");
-  assert.equal(byTestId("text-menu-code-dead-kids-2"), null, "a live code (a BEO-made item) is not marked");
+  absent("text-menu-code-dead-kids-0", "a hand-typed line is not marked");
+  absent("text-menu-code-dead-kids-2", "a live code (a BEO-made item) is not marked");
   assert.equal(text("text-menu-code-kids-1"), "CF-99");
   assert.equal(required("text-menu-code-kids-2").getAttribute("title"), "On the till as ZZ TEST unicorn cake (made for a party)");
 });
@@ -259,19 +276,19 @@ await check("the search finds a pizza by part of its name; picking it writes the
 
 await check("a dead line picked again is live; + EXTRA, + NEW ITEM and free typing stay; Not from the till drops only the code", async () => {
   await pick("button-till-menu-kids-1", "fries", "CF-12");
-  assert.equal(byTestId("text-menu-code-dead-kids-1"), null, "picked again: no longer marked");
+  absent("text-menu-code-dead-kids-1", "picked again: no longer marked");
   assert.equal(text("input-menu-name-kids-1"), "French fries");
   assert.ok(byTestId("button-add-party-menu-item-kids"), "+ NEW ITEM (not in the menu) stays");
   assert.equal(text("button-add-party-menu-item-kids"), "+ NEW ITEM (not in the menu)");
   await click("button-add-menu-extra-kids");
   await typeInto("input-menu-name-kids-3", "Fish fingers");
   assert.equal(text("input-menu-name-kids-3"), "Fish fingers", "free typing: a dish the till lacks, by its name");
-  assert.equal(byTestId("text-menu-code-kids-3"), null);
+  absent("text-menu-code-kids-3");
   await pick("button-till-menu-kids-3", "haw", "CF-25");
   await click("button-till-menu-kids-3");
   await click("button-till-menu-kids-3-clear");
   assert.equal(text("input-menu-name-kids-3"), "Hawaiian", "the name stays");
-  assert.equal(byTestId("text-menu-code-kids-3"), null, "the code goes");
+  absent("text-menu-code-kids-3", "the code goes");
   const kids = (await saved()).kitchenPlan.menus.kids;
   assert.deepEqual(kids.map((l) => [l.itemName, l.productCode ?? null, l.price]), [
     ["Margherita", "CF-24", 290], ["French fries", "CF-12", 120], ["ZZ TEST unicorn cake", "PARTY-ZZ905A01", 0], ["Hawaiian", null, 310],
@@ -280,7 +297,7 @@ await check("a dead line picked again is live; + EXTRA, + NEW ITEM and free typi
 
 await check("the bar plan: drinks first, the code written on and kept through Save, a dead code marked", async () => {
   assert.equal(text("text-bar-code-dead-1"), "No longer on the till");
-  assert.equal(byTestId("text-bar-code-dead-0"), null);
+  absent("text-bar-code-dead-0");
   await click("button-till-menu-bar-0");
   assert.deepEqual(options("button-till-menu-bar-0").slice(0, 2), ["CF-66-1", "CF-66-4"], "the bar's drinks first");
   await click("button-till-menu-bar-0");
@@ -298,16 +315,16 @@ await check("a till that does not answer: the search says so and no line is mark
   BEOS.set(E2, { kids: [line("k1", "Old nuggets", { productCode: "CF-99" })], bar: [] });
   await openBeo(E2);
   await click("accordion-kitchen-plan");
-  assert.equal(byTestId("text-menu-code-dead-kids-0"), null, "an unknown menu marks nothing");
+  absent("text-menu-code-dead-kids-0", "an unknown menu marks nothing");
   await click("button-till-menu-kids-0");
   assert.equal(text("button-till-menu-kids-0-unavailable"), "The till did not answer, so its menu cannot be offered. Type the item, or try again in a moment.");
-  assert.equal(byTestId("button-till-menu-kids-0-search"), null);
+  absent("button-till-menu-kids-0-search");
 
   queryClient.clear();
   tillAnswer = (parkId) => okReading(parkId ?? PARK);
   await openBeo(E2, true);
   await click("accordion-kitchen-plan");
-  assert.equal(byTestId("button-till-menu-kids-0"), null, "read-only: no search");
+  absent("button-till-menu-kids-0", "read-only: no search");
   assert.equal(text("text-menu-code-dead-kids-0"), "No longer on the till");
 });
 
@@ -336,7 +353,7 @@ await check("Settings: the till's menu at every park asked once; a dead code mar
   assert.equal(tillAsks().at(-1)!.search, "", "every park the person may open: a template is the park group's");
   await click("toggle-template-tpl1");
   assert.equal(text("text-set-menu-view-code-dead-i1"), "No longer on the till");
-  assert.equal(byTestId("text-set-menu-view-option-code-dead-i2-0"), null, "a live option code");
+  absent("text-set-menu-view-option-code-dead-i2-0", "a live option code");
   assert.equal(text("text-set-menu-view-option-code-dead-i2-1"), "Pepperoni: No longer on the till");
 });
 
@@ -345,7 +362,7 @@ await check("Settings: the search beside a Code box writes the till's code, fill
   assert.equal(text("text-set-menu-item-code-dead-i1"), "No longer on the till");
   await pick("button-set-menu-item-till-i1", "fries", "CF-12");
   assert.equal((required("input-set-menu-item-code-i1") as HTMLInputElement).value, "CF-12");
-  assert.equal(byTestId("text-set-menu-item-code-dead-i1"), null);
+  absent("text-set-menu-item-code-dead-i1");
   assert.equal(text("text-set-menu-option-code-dead-i2-1"), "No longer on the till");
   await pick("button-set-menu-option-till-i2-1", "hawai", "CF-25");
   assert.equal((required("input-set-menu-option-code-i2-1") as HTMLInputElement).value, "CF-25");
