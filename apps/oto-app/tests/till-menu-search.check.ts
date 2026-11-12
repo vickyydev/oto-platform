@@ -7,8 +7,9 @@
 //   - "fries" finds French fries and nothing else: letters scattered across a
 //     code and a name ("CF-6 Porridge", "CF-2 Vegetarian breakfast") are no
 //     match;
-//   - the name first (the whole name, its start, the start of a word, anywhere
-//     in it), then the code, then the category ("pizza" lists the pizzas,
+//   - the name first (the whole name, whole words of it, the start of a word,
+//     anywhere in it: "water" is the waters before Fresh watermelon juice),
+//     then the code, then the category ("pizza" lists the pizzas,
 //     whose names do not say pizza), then the station;
 //   - several words must each be found; nothing typed keeps the whole menu;
 //   - the best answer comes first whatever its category ("chicken": Chicken
@@ -56,14 +57,18 @@ check("\"fries\" finds French fries and nothing else: scattered letters are no m
   assert.deepEqual(found("FRIES "), ["French fries"], "case and spaces around do not matter");
 });
 
-check("the name first: the whole name, its start, the start of a word, anywhere in it", () => {
+check("the name first: the whole name, whole words of it, the start of a word, anywhere in it", () => {
   assert.equal(tillMenuSearchScore(MENU[8], "pepperoni"), 1);
-  assert.equal(tillMenuSearchScore(MENU[5], "french fr"), 0.95);
-  assert.equal(tillMenuSearchScore(MENU[7], "brie"), 0.9, "a word after a comma starts a word");
-  assert.equal(tillMenuSearchScore(MENU[11], "pellegrino"), 0.9, "a word after a full stop starts a word");
+  assert.equal(tillMenuSearchScore(MENU[5], "french"), 0.97, "its first word, whole");
+  assert.equal(tillMenuSearchScore(MENU[5], "fries"), 0.93, "a later word, whole");
+  assert.equal(tillMenuSearchScore(MENU[7], "brie"), 0.93, "a word after a comma is a word");
+  assert.equal(tillMenuSearchScore(MENU[11], "pellegrino"), 0.93, "a word after a full stop is a word");
+  assert.equal(tillMenuSearchScore(MENU[5], "french fr"), 0.9, "the start of the name, a word unfinished");
+  assert.equal(tillMenuSearchScore(MENU[9], "water"), 0.85, "the start of a later word");
   assert.equal(tillMenuSearchScore(MENU[9], "melon"), 0.8, "inside a word");
   assert.deepEqual(found("juice"), ["Fresh watermelon juice", "Kids juice Apple"]);
   assert.deepEqual(found("gri"), ["Grilled tomato", "Pinot Grigio, glass", "S.Pellegrino sparkling water"], "the start of the name, then the start of a later word, then inside a word");
+  assert.deepEqual(found("water"), ["S.Pellegrino sparkling water", "Fresh watermelon juice"], "the whole word before the start of watermelon, though the juice comes first on the menu");
 });
 
 check("then the code, then the category, then the station", () => {

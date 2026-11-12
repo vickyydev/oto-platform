@@ -162,8 +162,8 @@ const foldForSearch = (s: string): string =>
  * name, which finds letters scattered across both: "fries" matched Porridge
  * and Vegetarian breakfast (the "CF-" of every code supplies the f) and left
  * French fries fifteenth. Here an item is found only by what was typed as it
- * stands: in the name first (the whole name, its start, the start of one of
- * its words, anywhere in it), then the code, then the category ("pizza" lists
+ * stands: in the name first (the whole name, whole words of it, the start of
+ * a word, anywhere in it), then the code, then the category ("pizza" lists
  * the pizzas, whose names do not say pizza), then the station. Several words
  * must each be found. Nothing typed keeps the menu as it is.
  */
@@ -176,10 +176,14 @@ export function tillMenuSearchScore(
   const name = foldForSearch(item.name);
   const code = foldForSearch(item.code);
   if (name === q || code === q) return 1;
-  if (name.startsWith(q)) return 0.95;
   const words = ` ${name.replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
   const typed = q.replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  if (typed && words.includes(` ${typed}`)) return 0.9;
+  // Whole words before the start of a word: "water" is Mineral water before
+  // Fresh watermelon juice, whichever the menu lists first.
+  if (typed && words.startsWith(` ${typed} `)) return 0.97;
+  if (typed && words.includes(` ${typed} `)) return 0.93;
+  if (name.startsWith(q) || (typed && words.startsWith(` ${typed}`))) return 0.9;
+  if (typed && words.includes(` ${typed}`)) return 0.85;
   if (name.includes(q)) return 0.8;
   if (code.startsWith(q)) return 0.75;
   const category = foldForSearch(`${item.parentCategory ?? ""} ${item.category ?? ""}`);
