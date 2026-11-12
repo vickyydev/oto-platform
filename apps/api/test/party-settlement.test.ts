@@ -1200,3 +1200,35 @@ describe('SCRUM-876 — a settlement left before its balance', () => {
     expect(closed.statusCode, closed.body).toBe(200);
   });
 });
+
+describe('SCRUM-889 — the sale list names a party settlement', () => {
+  it('a settlement left at its balance is listed with its party, so the till sends it to the party page', async () => {
+    const party = newId();
+    await appParty(party, 'ZZ TEST party left open on the till list', WEEKDAY, 16_900, 1_000);
+    await appPlan(party, WEEKDAY, FLORESTA, { depositSatang: 100_000 });
+    const opened = await settle(party, { kids: 10, adults: 4, socksGiven: 0 });
+    expect(opened.status, JSON.stringify(opened.body)).toBe(200);
+    const saleId = opened.body.sale.id;
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const [settlementRow] = await ctx.db.select().from(partySettlement).where(eq(partySettlement.saleId, saleId));
+
+    type Listed = { id: string; status: string; partySettlement?: { eventId: string; settlementId: string } };
+    // The till's own question when it opens: this station's unpaid sales of the day.
+    const list = await call<{ sales: Listed[] }>(
+      'GET',
+      reception,
+      `/sales?branchId=${central}&stationId=${till}&status=tendering&businessDate=${row!.businessDate}&limit=200`,
+    );
+    expect(list.status, JSON.stringify(list.body)).toBe(200);
+    const listed = list.body.sales.find((s) => s.id === saleId);
+    expect(listed).toMatchObject({ status: 'tendering', partySettlement: { eventId: party, settlementId: settlementRow!.id } });
+
+    // A sale that settles no party carries no marker at all.
+    const settled = new Set((await ctx.db.select({ saleId: partySettlement.saleId }).from(partySettlement)).map((s) => s.saleId));
+    const all = await call<{ sales: Listed[] }>('GET', reception, `/sales?branchId=${central}&limit=200`);
+    for (const s of all.body.sales) {
+      if (settled.has(s.id)) expect(s.partySettlement, s.id).toBeDefined();
+      else expect(s, s.id).not.toHaveProperty('partySettlement');
+    }
+  });
+});

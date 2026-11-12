@@ -127,8 +127,8 @@ import {
   type GiftTicketRequest,
 } from '@/lib/giftTicket';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
-import { useLeftBehindSales } from '@/lib/leftBehindSale';
-import { rebuildResumedSale } from '@/lib/resumeSale';
+import { partyPageHref, useLeftBehindSales } from '@/lib/leftBehindSale';
+import { isPartySettlementDetail, rebuildResumedSale, resumedPayLabel } from '@/lib/resumeSale';
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
 import { laneSale } from '@/api/boxSales';
@@ -937,6 +937,12 @@ export default function Till() {
                   : 'It was rung up at another till.',
           variant: 'destructive',
         });
+        return false;
+      }
+      // SCRUM-889 — a party's settlement is finished on the party page, never here.
+      if (isPartySettlementDetail(detail)) {
+        leftBehind.dismiss(saleId);
+        toast({ title: 'That sale is a party settlement', description: 'Resume it on the party page.', variant: 'destructive' });
         return false;
       }
       const rebuilt = rebuildResumedSale(detail, {
@@ -3943,6 +3949,8 @@ export default function Till() {
             onPay={handlePay}
             onCancel={() => void handleCancel()}
             canPay={canPay}
+            // SCRUM-889 — a resumed sale's Pay names its balance, as Amount Due does.
+            {...(resumed && step === 5 ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}
             // The voucher's own row is its card below, not a promo badge with
             // a promo's remove button.
             totals={
@@ -4044,6 +4052,7 @@ export default function Till() {
                     {...(left.resumable && !resumed
                       ? { onResume: () => void resumeSale(left.saleId) }
                       : {})}
+                    onOpenParty={() => navigate(partyPageHref(left))}
                   />
                 ))}
                 {leftBehind.refusal && (

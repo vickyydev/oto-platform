@@ -72,7 +72,8 @@ export default function Events() {
   const { branch } = useBranch();
 
   const [date, setDate] = useState(todayISO());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // SCRUM-889 — the till's "Party settlement open" card opens the party it settles.
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(search).get('party'));
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [version, setVersion] = useState(0);
 

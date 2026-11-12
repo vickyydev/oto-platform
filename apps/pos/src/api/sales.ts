@@ -587,6 +587,12 @@ export interface ApiSale {
    * (`lib/leftBehindSale.ts`).
    */
   resumedFromHold?: { accountId: string | null; stationId: string | null } | null;
+  /**
+   * SCRUM-889 — the sale settles a party, on a list row: the OTO App's party
+   * and the settlement. The left-behind card never reopens such a sale as a
+   * ticket order: it is finished on the party page (`lib/leftBehindSale.ts`).
+   */
+  partySettlement?: { eventId: string; settlementId: string } | null;
 }
 
 export interface SaleCommitResult {

@@ -11,6 +11,7 @@ import {
   member,
   modifierGroup,
   modifierOption,
+  partySettlement,
   paymentAttempt,
   product,
   productCategory,
@@ -5645,6 +5646,13 @@ export interface SaleListItem extends SaleReadView {
    * screen went would be offered only a void it refuses.
    */
   resumedFromHold: { accountId: string | null; stationId: string | null } | null;
+  /**
+   * SCRUM-889 — the sale is a party's settlement (`pos.party_settlement`),
+   * present only on such a row. The till's left-behind card reads it: a
+   * settlement is finished on the party page, never reopened on the Tickets
+   * tab as a ticket order.
+   */
+  partySettlement?: { eventId: string; settlementId: string };
 }
 
 /** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
@@ -5747,6 +5755,14 @@ export async function listSales(
     : [];
   // Oldest first, so the last resume of each sale is the one kept.
   const resumedOf = new Map(resumes.map((r) => [r.saleId, { accountId: r.accountId, stationId: r.stationId }]));
+  // SCRUM-889 — which of them settle a party, in one query.
+  const settlements = ids.length
+    ? await db
+        .select({ saleId: partySettlement.saleId, id: partySettlement.id, eventId: partySettlement.otoappEventId })
+        .from(partySettlement)
+        .where(inArray(partySettlement.saleId, ids))
+    : [];
+  const settlementOf = new Map(settlements.map((s) => [s.saleId, { eventId: s.eventId, settlementId: s.id }]));
   // SCRUM-430 — who voided each voided sale on the page, by name, in one query.
   const voiderNameOf = await accountNamesOf(
     db,
@@ -5780,6 +5796,7 @@ export async function listSales(
       revenueCategories: [...(areasBySale.get(row.sale.id) ?? [])],
       hold: holdOf.get(row.sale.id) ?? null,
       resumedFromHold: holdOf.has(row.sale.id) ? null : (resumedOf.get(row.sale.id) ?? null),
+      ...(settlementOf.has(row.sale.id) ? { partySettlement: settlementOf.get(row.sale.id)! } : {}),
     })),
   };
 }

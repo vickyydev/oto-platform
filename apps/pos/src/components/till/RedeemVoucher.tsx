@@ -367,16 +367,20 @@ export function LeftBehindSaleNotice({
   busy,
   onVoid,
   onResume,
+  onOpenParty,
   onDismiss,
 }: {
-  sale: RungUpSale;
+  sale: RungUpSale & { partySettlement?: { eventId: string } };
   busy?: boolean;
   /** Absent for an account without the void permission. */
   onVoid?: () => void;
   /** Present only for a sale this account rang up at this station: continue it here. */
   onResume?: () => void;
+  /** SCRUM-889 — the way to the party page, for a party's settlement. */
+  onOpenParty?: () => void;
   onDismiss: () => void;
 }) {
+  if (sale.partySettlement) return <PartySettlementLeftOpen sale={sale} onDismiss={onDismiss} {...(onOpenParty ? { onOpenParty } : {})} />;
   return (
     <TillRefusalNotice
       message={onResume ? 'Your sale rung up at this till was left unpaid' : 'A sale rung up at this till was left unpaid'}
@@ -390,6 +394,51 @@ export function LeftBehindSaleNotice({
         {...(onVoid ? { onVoid } : {})}
         {...(onResume ? { onResume } : {})}
       />
+    </TillRefusalNotice>
+  );
+}
+
+/**
+ * SCRUM-889 — A PARTY'S SETTLEMENT LEFT OPEN AT THIS TILL. Settle party rang
+ * the party up here and its balance is still to take. It is never reopened on
+ * the Tickets tab as a ticket order, and never voided from here: the party
+ * page's Resume settlement takes the balance (its Cancel settlement is the way
+ * out), so the card says where it is and takes staff there. No amount: the
+ * sale's gross is not what is owed once the deposit is on it, and the party
+ * page names the balance.
+ */
+function PartySettlementLeftOpen({
+  sale,
+  onOpenParty,
+  onDismiss,
+}: {
+  sale: RungUpSale;
+  onOpenParty?: () => void;
+  onDismiss: () => void;
+}) {
+  const facts = [
+    sale.stationName ? `Party settlement at ${sale.stationName}` : 'Party settlement',
+    sale.occurredAt ? `rung up ${formatVoucherStamp(sale.occurredAt, { time: true })}` : null,
+  ].filter(Boolean);
+  return (
+    <TillRefusalNotice
+      message="Party settlement open — Resume on the party page"
+      onDismiss={onDismiss}
+      testId="left-behind-party-settlement"
+    >
+      <div className="mt-2 space-y-2 border-t border-rose-500/30 pt-2">
+        <div className="text-xs leading-snug text-rose-700/90 dark:text-rose-300/90">{facts.join(' · ')}</div>
+        {onOpenParty && (
+          <Button
+            size="sm"
+            className="h-auto w-full whitespace-normal py-1.5"
+            onClick={onOpenParty}
+            data-testid="open-party-page"
+          >
+            Open the party page
+          </Button>
+        )}
+      </div>
     </TillRefusalNotice>
   );
 }

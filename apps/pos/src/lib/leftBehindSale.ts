@@ -33,6 +33,14 @@ import { saleOnScreen } from '@/lib/saleOnScreen';
  * its own and never listed; a sale another screen at the same station is
  * paying for right now is, and the card says how recently it was rung up.
  *
+ * A PARTY'S SETTLEMENT IS THE PARTY PAGE'S (SCRUM-889). Settle party rings
+ * the party up as one sale at this till, and a settlement left at its
+ * balance is listed here like any unpaid sale. It is never resumed as a
+ * ticket order — its deposit, its balance and its close belong to the party
+ * page's Resume settlement — so it is offered as "Party settlement open —
+ * Resume on the party page", with the way there, and nothing more: no
+ * resume, no void here (the party page's Cancel settlement is its way out).
+ *
  * TODAY'S TRADING DAY ONLY (SCRUM-865). A sale left unpaid on an earlier day
  * is nobody's to continue: the family it was rung up for has gone, and
  * opening it on the next customer's payment screen is exactly the mistake
@@ -46,6 +54,21 @@ export const VOIDED_LEFT_BEHIND = 'Left unpaid at the till (page reloaded or lef
 export interface LeftBehindSale extends RungUpSale {
   /** Rung up at this station by the signed-in account: offered to resume. */
   resumable: boolean;
+  /**
+   * SCRUM-889 — present when the sale settles a party: never resumable here,
+   * it is finished on the party page. Absent on every other sale.
+   */
+  partySettlement?: { eventId: string };
+}
+
+/** SCRUM-889 — the party page, opened on the party a settlement belongs to. */
+export function partyPageHref(sale: { partySettlement?: { eventId: string } }): string {
+  return sale.partySettlement ? `/parties?party=${encodeURIComponent(sale.partySettlement.eventId)}` : '/parties';
+}
+
+/** The party a listed sale settles, when it settles one (SCRUM-889). */
+export function partySettlementOf(sale: Pick<ApiSale, 'partySettlement'>): { eventId: string } | null {
+  return sale.partySettlement?.eventId ? { eventId: sale.partySettlement.eventId } : null;
 }
 
 export interface LeftBehindSales {
@@ -129,13 +152,18 @@ export function useLeftBehindSales(opts: {
         const listed = found
           // SCRUM-774 — a held sale waits in Held sales, where any till takes it back.
           .filter((s) => s.status === 'tendering' && s.stationId === stationId && !ownsRef.current(s.id) && !s.hold)
-          .map((s) => ({
-            saleId: s.id,
-            stationName,
-            occurredAt: s.occurredAt,
-            grossSatang: s.totals.grossSatang,
-            resumable: resumableHere(s, { stationId, accountId }),
-          }));
+          .map((s): LeftBehindSale => {
+            const party = partySettlementOf(s);
+            return {
+              saleId: s.id,
+              stationName,
+              occurredAt: s.occurredAt,
+              grossSatang: s.totals.grossSatang,
+              // SCRUM-889 — a settlement is the party page's to finish.
+              resumable: !party && resumableHere(s, { stationId, accountId }),
+              ...(party ? { partySettlement: party } : {}),
+            };
+          });
         setSales(listed);
         setResumeId(pickResumeId(listed, saleOnScreen(stationId)));
       })

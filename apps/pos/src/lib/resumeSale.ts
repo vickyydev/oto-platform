@@ -9,7 +9,12 @@ import type {
   SelectedAddOn,
   TicketType,
 } from '@/types';
-import { eventPassService, type TaxBreakdown as EngineTaxBreakdown } from '@oto/shared';
+import {
+  PARTY_INCLUDED_COMPONENT,
+  PARTY_PACKAGE_COMPONENT,
+  eventPassService,
+  type TaxBreakdown as EngineTaxBreakdown,
+} from '@oto/shared';
 import { isVoucherDiscount, type ApiSaleDetail, type ApiSaleDiscount, type ApiSaleLine } from '@/api/history';
 import type { CartQuote, OrderTotals } from '@/api/sales';
 import type { CartQuoteState } from '@/lib/cartQuote';
@@ -335,11 +340,35 @@ export function resumedCart(detail: ApiSaleDetail): CartQuoteState {
 }
 
 /**
+ * SCRUM-889 — whether the sale settles a party: its package fee or an
+ * included item is on it (`party_package` / `party_included`, written only by
+ * Settle party). Such a sale is finished on the party page and never rebuilt
+ * as a ticket order: its admission lines would come back as an editable Play
+ * ticket, and the order panel would ask for the gross while the deposit is
+ * already on it.
+ */
+export function isPartySettlementDetail(detail: Pick<ApiSaleDetail, 'lines'>): boolean {
+  return (detail.lines ?? []).some(
+    (row) => row.componentKey === PARTY_PACKAGE_COMPONENT || row.componentKey === PARTY_INCLUDED_COMPONENT,
+  );
+}
+
+/**
+ * SCRUM-889 — the order panel's Pay press on a resumed sale names what is
+ * still to pay: the payment stage's own balance (the platform's figure, after
+ * the money already taken on the sale), never the order's gross re-summed.
+ */
+export function resumedPayLabel(outstandingSatang: number): string {
+  return `Pay ฿${outstandingSatang / 100}`;
+}
+
+/**
  * The cart a rung-up sale was, rebuilt from the platform's read of it, or null
  * when the sale carries nothing a ticket cart is made of (an F&B or shop order,
- * which the ticket till never rang up).
+ * which the ticket till never rang up) or is a party's settlement (SCRUM-889).
  */
 export function rebuildResumedSale(detail: ApiSaleDetail, catalogue: ResumeCatalogue): ResumedCart | null {
+  if (isPartySettlementDetail(detail)) return null;
   const tier = detail.sale.customerTier;
   const groups = new Map<string, ApiSaleLine[]>();
   for (const row of detail.lines ?? []) {
