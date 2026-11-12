@@ -529,3 +529,87 @@ test('s740 — a child the box itself left as booked on its sale is named paid a
     box.close();
   }
 });
+
+test("s862 — the box's picker lists only today's waiting families; the board's hand-over names any", async () => {
+  const box = await openBox();
+  try {
+    const now = Date.now();
+    const family = (name: string, createdAt: Date, scheduledFor: Date | null) => ({
+      registrationId: uuidv7(),
+      branchId: BRANCH_ID,
+      memberId: null,
+      guardianName: `ZZ TEST ${name} parent`,
+      guardianPhone: '+66812345678',
+      contactChannel: 'whatsapp',
+      consentRecordedAt: createdAt.toISOString(),
+      source: 'pos',
+      photoFileId: null,
+      createdAt: createdAt.toISOString(),
+      contact: null,
+      tab: 'registered',
+      guardians: [],
+      children: [
+        {
+          id: uuidv7(),
+          childId: null,
+          childName: `ZZ TEST ${name}`,
+          childAgeYears: 6,
+          dateOfBirth: null,
+          allergies: null,
+          foodRestrictions: null,
+          mayOrderFood: false,
+          foodProvision: null,
+          service: 'drop_off',
+          status: 'registered',
+          scheduledFor: scheduledFor?.toISOString() ?? null,
+          bookedMinutes: 60,
+          nannyId: null,
+          nannyName: null,
+          checkedInAt: null,
+          checkedOutAt: null,
+          saleId: null,
+          bandId: null,
+          visitId: null,
+          photoFileId: null,
+          paidOnline: null,
+          paidAtTill: null,
+        },
+      ],
+    });
+    const yesterday = new Date(now - 30 * 3_600_000);
+    const leftover = family('Yesterday', yesterday, null);
+    const today = family('Today', new Date(now), null);
+    // Booked yesterday for today: on its day.
+    const bookedForToday = family('Booked for today', yesterday, new Date(now));
+    // Booked today for tomorrow: not yet.
+    const bookedForTomorrow = family('Booked for tomorrow', new Date(now), new Date(now + 24 * 3_600_000));
+    await box.harness.store.writeBundle(BOX_ID, {
+      scope: 'checkin',
+      schemaVersion: 1,
+      cursorSeq: 0,
+      payload: { items: [{ ...checkinItem(), families: [leftover, today, bookedForToday, bookedForTomorrow] }] },
+      appliedAt: new Date().toISOString(),
+    });
+
+    const waiting = await ask(box, BRIDGE_CHECKIN_INTENTS.awaiting, {});
+    const ids = (waiting.registrations as Array<{ id: string }>).map((r) => r.id);
+    assert.ok(ids.includes(today.registrationId), "today's family is offered");
+    assert.ok(ids.includes(bookedForToday.registrationId), 'a stay booked for today is offered on its day');
+    assert.ok(!ids.includes(leftover.registrationId), "yesterday's leftover is not offered");
+    assert.ok(!ids.includes(bookedForTomorrow.registrationId), "tomorrow's booking is not offered today");
+
+    // The board keeps them all, as online.
+    const board = await ask(box, BRIDGE_CHECKIN_INTENTS.board, {});
+    const onBoard = (board.families as Array<{ registrationId: string }>).map((f) => f.registrationId);
+    assert.ok(onBoard.includes(leftover.registrationId));
+
+    // The board's Check in names the family, whatever its day, and loads its child.
+    const named = await ask(box, BRIDGE_CHECKIN_INTENTS.awaiting, { registrationId: leftover.registrationId });
+    assert.deepEqual(
+      (named.registrations as Array<{ id: string; children: Array<{ id: string }> }>).map((r) => [r.id, r.children.map((c) => c.id)]),
+      [[leftover.registrationId, [leftover.children[0]!.id]]],
+    );
+  } finally {
+    box.close();
+  }
+});

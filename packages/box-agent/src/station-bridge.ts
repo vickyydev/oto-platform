@@ -1062,6 +1062,10 @@ export class StationBridge {
       blobs: () => (this.host.blobs ? this.host.blobs() : boxBlobs(this.host.boxId)),
       photosEnabled: () =>
         this.host.photosEnabled ? this.host.photosEnabled() : childPhotosEnabled(process.env.CHILD_PHOTOS_ENABLED),
+      tradingDayOf: (at) => {
+        const branch = this.host.branch();
+        return branch ? businessDate(at, branch.timezone, parseDayStart(branch.businessDayStart)) : null;
+      },
       resolveMember: async (memberId) => {
         const found = await this.resolveMember(memberId);
         if (!found) return null;

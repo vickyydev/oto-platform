@@ -141,6 +141,12 @@ export interface CheckinDeskHost {
   /** `CHILD_PHOTOS_ENABLED`: off, there is no capture path at all. */
   photosEnabled(): boolean;
   /**
+   * SCRUM-862 — the branch's trading day an instant falls in (its timezone and
+   * `business_day_start`), or null while the box holds no branch. The Add
+   * drop-off picker's list (`awaiting`) is the platform's: today's only.
+   */
+  tradingDayOf?(at: Date): string | null;
+  /**
    * A member as the box will file it — the survivor through the alias rule
    * (OD-7) — with the ids of the children the box shows under them. Null for
    * a member this box knows nothing of.
@@ -801,6 +807,27 @@ export class CheckinDesk {
     };
   }
 
+  /**
+   * SCRUM-862 — THE PICKER'S DAY RULE, AS THE PLATFORM'S
+   * (`registrationsAwaitingCheckIn`): a waiting child is offered on the
+   * trading day their stay is for — the booked start when one was chosen, else
+   * the day the family registered — so yesterday's leftovers do not come back
+   * when the till sells through its box. The board keeps them, as online. An
+   * online booking's visit date is not on the box: such a child is paid for
+   * and checked in from the board, never charged here, so the day they
+   * registered stands in. With no branch on the box nothing is filtered. The
+   * board's Check in names its registration and is answered whatever the day.
+   */
+  private forToday(fam: BridgeCheckinFamily): BridgeCheckinFamily {
+    const dayOf = this.host.tradingDayOf;
+    const today = dayOf?.(this.host.now()) ?? null;
+    if (!dayOf || today === null) return fam;
+    const children = fam.children.filter(
+      (c) => c.status !== 'registered' || dayOf(new Date(c.scheduledFor ?? fam.createdAt)) === today,
+    );
+    return children.length === fam.children.length ? fam : { ...fam, children };
+  }
+
   private registrationOf(fam: BridgeCheckinFamily) {
     return {
       id: fam.registrationId,
@@ -932,7 +959,10 @@ export class CheckinDesk {
       case BRIDGE_CHECKIN_INTENTS.awaiting: {
         this.require(caller, 'pos:checkin:read');
         const view = await this.view();
+        const named = typeof payload.registrationId === 'string' ? payload.registrationId : null;
         const registrations = [...view.families.values()]
+          .filter((f) => named === null || f.registrationId === named)
+          .map((f) => (named === null ? this.forToday(f) : f))
           .filter((f) => f.children.some((c) => c.status === 'registered'))
           .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
           .map((f) => this.registrationOf(f));
