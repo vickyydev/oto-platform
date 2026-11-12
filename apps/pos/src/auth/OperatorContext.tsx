@@ -503,6 +503,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // Signing in by hand answers the hand-off notice, whatever it said.
       setHandoffError(null);
       await authApi.signIn(phone, password);
+      // The screen a session left under the lock, if any: `hydrate` gives a
+      // fresh one only when there is none.
+      const screenBefore = tillSeatRef.current;
       const { operator: op, held } = await hydrate();
       /**
        * SCRUM-878 — the screen an ended session left under the lock. The same
@@ -529,7 +532,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       }
       setKeptOffer(null);
       if (outcome === 'continue') setReseat((n) => n + 1);
-      else freshSeat(op.id);
+      else if (screenBefore !== null) freshSeat(op.id);
       setLocked(false);
       return op;
     },
