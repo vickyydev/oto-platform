@@ -223,3 +223,27 @@ export function staffTicksAgreements(input: {
 }): boolean {
   return !(input.formPublished && input.displayConnected && input.displaySupported && !input.displayError);
 }
+
+/**
+ * SCRUM-857 — DOES THE FAMILY TAKE THIS CHILD'S PHOTO ON THE PAIRED DISPLAY?
+ *
+ * The owner's ruling of 8 November: the family takes the photo with a button
+ * in the care details, instead of reception. The till marks each child the
+ * photo is asked for (one who needs the consent) as `needed` until it holds a
+ * photo and `taken` once it does, whoever took it. Only at a station whose
+ * display follows the platform's own box: a counter box (the till's bridge
+ * origin) has no route for the picture yet, so its display keeps "reception
+ * will take the photo" and staff take it on the till, as they always have.
+ * The answer is the slot's field as the form carries it: absent, or `photo`.
+ */
+export function consentSlotPhoto(input: {
+  needsConsent: boolean;
+  hasPhoto: boolean;
+  /** The till stands at a station (the platform collects the picture for that station only). */
+  stationId: string | null | undefined;
+  /** The till publishes the display through a counter box. */
+  throughCounterBox: boolean;
+}): { photo?: 'needed' | 'taken' } {
+  if (!input.needsConsent || !input.stationId || input.throughCounterBox) return {};
+  return { photo: input.hasPhoto ? 'taken' : 'needed' };
+}

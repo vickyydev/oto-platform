@@ -683,6 +683,8 @@ describe('the words themselves', () => {
       'components/parties/PartySettlementCustomerScreen.tsx', 'components/shared/PhoneInput.tsx', 'components/shared/ChildDobPicker.tsx',
       'components/shared/ChildFoodProvisionPicker.tsx', 'components/shared/CameraCapture.tsx', 'pages/Display.tsx', 'lib/customerDisplayCopy.ts',
       'components/mobile/order-station/MobileOrderCustomerScreens.tsx', 'components/mobile/dropoff/MobileCheckInConsent.tsx',
+      // SCRUM-857 — the family's photo block on the paired display.
+      'components/till/DisplayChildPhoto.tsx',
     ];
     const keys = new Set<string>();
     for (const file of files) {
@@ -714,6 +716,7 @@ describe('the words themselves', () => {
       'components/shared/PublicSavedChildrenReview.tsx', 'components/shared/PromptPayCustomerScreen.tsx',
       'components/parties/PartySettlementCustomerScreen.tsx', 'components/till/NumberKeypad.tsx', 'components/till/PaymentQr.tsx',
       'components/mobile/order-station/MobileOrderCustomerScreens.tsx', 'components/mobile/dropoff/MobileCheckInConsent.tsx',
+      'components/till/DisplayChildPhoto.tsx',
     ];
     const jsxWord = /(?<=[>}])\s*([A-Z]?[a-z]{2,}(?: [a-z']+)*)\s*(?=[<{])/g;
     // A word inside a template literal, once class lists and the expressions it holds are set aside.

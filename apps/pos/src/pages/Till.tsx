@@ -29,6 +29,7 @@ import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
+import { consentSlotPhoto } from '@/lib/consentForm';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { refreshSellableStock } from '@/api/stock';
@@ -133,6 +134,7 @@ import { isPartySettlementDetail, rebuildResumedSale, resumedPayLabel } from '@/
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
 import { collectDisplayConsentPhoto } from '@/api/consentPhoto';
+import { hasBridgeOrigin } from '@/api/bridge';
 import { closedOnBox, laneSale } from '@/api/boxSales';
 import { HeldSaleDeskDialog, HeldSaleDeskPanel, HoldSaleButtons } from '@/components/till/HeldSales';
 import { bahtLabel, holdButtonReasons, partPaidShown, useHeldSaleDesk, type ResumedHold } from '@/lib/heldSales';
@@ -3584,7 +3586,8 @@ export default function Till() {
       dateOfBirth: slot.dateOfBirth ?? null,
       // SCRUM-857 — the family takes the photo on the paired display: each
       // child the photo is asked for, and whether this till holds one yet.
-      ...(outcome.needsConsent && station?.stationId ? { photo: slot.childPhotoUrl ? 'taken' as const : 'needed' as const } : {}),
+      ...consentSlotPhoto({ needsConsent: outcome.needsConsent, hasPhoto: !!slot.childPhotoUrl,
+        stationId: station?.stationId, throughCounterBox: hasBridgeOrigin() }),
       ...(slot.savedChildId ? { saved: true } : {
         allergiesMedical: slot.allergiesMedical.slice(0, 500), foodRestrictions: slot.foodRestrictions.slice(0, 200),
       }) })),

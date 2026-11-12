@@ -5,7 +5,8 @@ import { CameraCapture } from '@/components/shared/CameraCapture';
 import { DisplayChildPhoto, useCameraPresence } from '@/components/till/DisplayChildPhoto';
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 import { collectDisplayConsentPhoto, photoOfDataUrl, sendDisplayConsentPhoto } from '@/api/consentPhoto';
-import { takeConsentAction } from '@/lib/consentForm';
+import { consentSlotPhoto, takeConsentAction } from '@/lib/consentForm';
+import { DisplayError } from '@/api/display';
 import { renderHook } from './support/hooks';
 
 vi.mock('react', async (original) => ({ ...(await original<typeof import('react')>()), ...(await import('./support/hooks')) }));
@@ -115,6 +116,22 @@ describe('a child’s photo block on the display', () => {
     photo.view.unmount();
   });
 
+  it.each([[409, 'a form that no longer asks for it'], [404, 'a screen with no route for it']] as const)(
+    'a refusal (%s, %s) tells the family, in their language, that reception takes the photo', async (status, _why) => {
+      const photo = block({ upload: async () => { throw new DisplayError(status, 'DISPLAY_PHOTO_NOT_ASKED', 'English words from the platform'); } });
+      await expect((photo.camera()!.props.upload as (url: string) => Promise<string>)(PICTURE))
+        .rejects.toThrow('camera.saveFailed superviseConsent.photoByReception');
+      photo.view.unmount();
+    });
+
+  it('a dropped connection is a picture that can be saved again, said in their language', async () => {
+    const photo = block({ upload: async () => { throw new DisplayError(0, 'DISPLAY_UNAVAILABLE', 'Connection interrupted.'); } });
+    const failure = (photo.camera()!.props.upload as (url: string) => Promise<string>)(PICTURE);
+    await expect(failure).rejects.toThrow('camera.saveFailed');
+    await expect(failure).rejects.not.toThrow('Connection interrupted.');
+    photo.view.unmount();
+  });
+
   it('says the team has the photo once the till holds one', () => {
     expect(block({ mark: 'taken' }).text()).toContain('superviseConsent.photoReceived');
     expect(block({ mark: 'needed' }).text()).not.toContain('superviseConsent.photoReceived');
@@ -205,6 +222,22 @@ describe('the care step on the paired display', () => {
     expect(forms[1]!.id).toBe(forms[0]!.id);
     expect(forms[2]!.id).not.toBe(forms[0]!.id);
     display.view.unmount();
+  });
+});
+
+describe('which children the till asks the display to photograph', () => {
+  const base = { needsConsent: true, hasPhoto: false, stationId: 'station-1', throughCounterBox: false };
+
+  it('a child who needs the consent: needed until the till holds a photo, then taken', () => {
+    expect(consentSlotPhoto(base)).toEqual({ photo: 'needed' });
+    expect(consentSlotPhoto({ ...base, hasPhoto: true })).toEqual({ photo: 'taken' });
+  });
+
+  it('none for a child who needs no consent, a till at no station, or a display through a counter box', () => {
+    expect(consentSlotPhoto({ ...base, needsConsent: false })).toEqual({});
+    expect(consentSlotPhoto({ ...base, stationId: null })).toEqual({});
+    expect(consentSlotPhoto({ ...base, stationId: undefined })).toEqual({});
+    expect(consentSlotPhoto({ ...base, throughCounterBox: true })).toEqual({});
   });
 });
 

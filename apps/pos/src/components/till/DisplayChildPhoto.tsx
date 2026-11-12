@@ -3,6 +3,7 @@ import { Camera, CheckCircle2 } from 'lucide-react';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { DISPLAY_CONSENT_PHOTO_EDGE } from '@oto/shared';
+import { DisplayError } from '@/api/display';
 
 /**
  * SCRUM-857 — THE FAMILY TAKES THE CHILD'S PHOTO ON THEIR OWN SCREEN.
@@ -63,6 +64,17 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
 }) {
   const { t, lang } = useLanguage();
   const [picture, setPicture] = useState<string | undefined>(undefined);
+  // The family reads why a picture did not reach the team in their own
+  // language: a form that no longer asks for it (or a screen with no route
+  // for it) means reception takes the photo; anything else can be tried again.
+  const send = async (dataUrl: string): Promise<string> => {
+    try {
+      return await upload(dataUrl);
+    } catch (failure) {
+      const notHere = failure instanceof DisplayError && (failure.status === 404 || failure.status === 409);
+      throw new Error(notHere ? `${t('camera.saveFailed')} ${t('superviseConsent.photoByReception')}` : t('camera.saveFailed'));
+    }
+  };
   return <div data-testid="consent-photo">
     <label className="flex items-center gap-2 text-lg text-foreground/70"><Camera className="h-5 w-5" /> {t('superviseConsent.photoTitle')}</label>
     <p className="mt-1 text-sm text-foreground/50">{t('superviseConsent.photoInstructions')}</p>
@@ -72,7 +84,7 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
       : presence === 'available' && <CameraCapture lang={lang} className="mt-2" maxEdge={DISPLAY_CONSENT_PHOTO_EDGE}
         unavailableNote={t('superviseConsent.photoByReception')}
         value={picture} onCapture={setPicture} onClear={() => setPicture(undefined)}
-        upload={upload} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} />}
+        upload={send} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} />}
     {mark === 'taken' && <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-received">
       <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />{t('superviseConsent.photoReceived')}</p>}
   </div>;
