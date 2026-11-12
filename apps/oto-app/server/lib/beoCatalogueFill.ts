@@ -1011,27 +1011,6 @@ export function resolveCatalogueAnswer(
     // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.
     else merge(proposal.menuLines, line, (x) => x.productCode === null && x.menu === menu && fold(x.itemName) === fold(itemName));
   }
-  // SCRUM-904: a kids' dish that is a set-menu choice already is that choice, not a second line (its note joins the choice).
-  if (proposal.setMenu && menu) {
-    const choices = proposal.setMenu.choices;
-    const group = (c: (typeof choices)[number]) =>
-      menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as Extract<BeoAiSetMenuItem, { type: "choice_group" }> | undefined;
-    proposal.menuLines = proposal.menuLines.filter((l) => {
-      if (l.menu !== "kids") return true;
-      const same = choices.find((c) => {
-        const g = group(c);
-        const code = g?.optionProductCodes[c.option] ?? null;
-        if (code && l.productCode && code.toUpperCase() === l.productCode.toUpperCase()) return true;
-        // SCRUM-926: options sharing the group's code are told apart by name ("Fried rice (Chicken)").
-        const named = g ? `${g.label} (${c.option})` : null;
-        return [c.option, c.said, named].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
-      });
-      if (!same) return true;
-      if (l.notes && !same.notes) same.notes = l.notes;
-      return false;
-    });
-  }
-
   // Entertainment: one line per entertainment the menu has; a free line as said.
   for (const e of readMany(EntertainmentWithTime, answer.entertainment, 30)) {
     const t = e.templateId ? catalogue.entertainment.find((x) => x.id === e.templateId) : undefined;
@@ -1080,6 +1059,32 @@ export function resolveCatalogueAnswer(
   for (const key of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
     const v = readOne(SaidTime, ev[key]);
     if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, v.said, v.value) };
+  }
+
+  // SCRUM-904: a kids' dish that is a set-menu choice already is that choice, not a second line
+  // (its note joins the choice) — only when it is the same order: no price of its own, and one of
+  // it or one for each child. More of the dish, or a priced one, is an extra dish line of its own,
+  // kept with its quantity and price.
+  if (proposal.setMenu && menu) {
+    const choices = proposal.setMenu.choices;
+    const kids = proposal.event.numChildren?.value ?? null;
+    const group = (c: (typeof choices)[number]) =>
+      menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as Extract<BeoAiSetMenuItem, { type: "choice_group" }> | undefined;
+    proposal.menuLines = proposal.menuLines.filter((l) => {
+      if (l.menu !== "kids") return true;
+      if (l.chatPrice !== null || !(l.quantity === 1 || (kids !== null && l.quantity === kids))) return true;
+      const same = choices.find((c) => {
+        const g = group(c);
+        const code = g?.optionProductCodes[c.option] ?? null;
+        if (code && l.productCode && code.toUpperCase() === l.productCode.toUpperCase()) return true;
+        // SCRUM-926: options sharing the group's code are told apart by name ("Fried rice (Chicken)").
+        const named = g ? `${g.label} (${c.option})` : null;
+        return [c.option, c.said, named].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
+      });
+      if (!same) return true;
+      if (l.notes && !same.notes) same.notes = l.notes;
+      return false;
+    });
   }
 
   // SCRUM-787: a cake the conversation times or describes without saying who brings it

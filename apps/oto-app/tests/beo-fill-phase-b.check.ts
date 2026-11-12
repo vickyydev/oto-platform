@@ -541,6 +541,34 @@ try {
     // SCRUM-926 review: words that name no option name none, never the first (the line waits for staff).
     assert.equal(foodNameFor(rice, "fried rice"), null, "no option named: none, never the first");
     assert.equal(foodNameFor(["Margherita"], "pizza"), "Margherita");
+
+    // A kids' dish is the set menu's choice only when it is the same order: one more priced, or
+    // more of it, is an extra dish line of its own, with its quantity and price.
+    const extra = resolveCatalogueAnswer(
+      {
+        event: { numChildren: { value: 12, line: 1 } },
+        setMenu: { templateId: cat.setMenu, line: 2, choices: [{ itemId: PIZZA, option: "Hawaiian", said: "Hawaiian pizza", line: 2 }] },
+        menuLines: [
+          { productCode: "CF-27", itemName: "Hawaiian pizza", menu: "kids", line: 2 },
+          { productCode: "CF-27", itemName: "Hawaiian pizzas", menu: "kids", quantity: 2, chatPrice: 450, line: 5 },
+        ],
+      },
+      catalogue as any,
+      refs,
+    );
+    assert.deepEqual(extra.setMenu?.choices.map((c) => [c.itemId, c.option]), [[PIZZA, "Hawaiian"]], "one choice");
+    assert.deepEqual(extra.menuLines.map((l) => [l.menu, l.itemName, l.quantity, l.chatPrice]), [["kids", "Hawaiian pizzas", 2, 450]], "the extra order kept, with its quantity and price");
+    const forEachChild = resolveCatalogueAnswer(
+      {
+        event: { numChildren: { value: 12, line: 1 } },
+        setMenu: { templateId: cat.setMenu, line: 2, choices: [{ itemId: PIZZA, option: "Hawaiian", line: 2 }] },
+        menuLines: [{ productCode: "CF-27", itemName: "Hawaiian pizza", menu: "kids", quantity: 12, notes: "cut small", line: 2 }],
+      },
+      catalogue as any,
+      refs,
+    );
+    assert.deepEqual(forEachChild.menuLines, [], "one for each child is the set menu's own order");
+    assert.equal(forEachChild.setMenu?.choices[0]?.notes, "cut small", "its note joins the choice");
     assert.equal(phoneInLine("+66 81 234 5678", FAMILY_TEXTS[3]!), true);
     assert.equal(phoneInLine("081 234 5678", "call 0812345678"), true);
     assert.equal(phoneInLine("+66 99 999 9999", FAMILY_TEXTS[3]!), false);
