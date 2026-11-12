@@ -35,6 +35,7 @@ import {
 import { paymentMethodKind } from '@/lib/payments';
 import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { tierNeedsProof } from '@/lib/membership';
+import { bahtText } from '@/lib/bahtText';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 import {
@@ -89,11 +90,11 @@ function BreakdownRow({
         <span>
           {label}
           <span className="text-foreground/40 text-base ml-2">
-            {quantity} × {unpriced ? '—' : `฿${unitPrice}`}
+            {quantity} × {unpriced ? '—' : `฿${bahtText(unitPrice)}`}
           </span>
         </span>
       </span>
-      <span className="text-xl font-bold tabular-nums">{unpriced ? '—' : `฿${subtotal}`}</span>
+      <span className="text-xl font-bold tabular-nums">{unpriced ? '—' : `฿${bahtText(subtotal)}`}</span>
     </div>
   );
 }
@@ -445,7 +446,7 @@ function OrderLineCards({
                   : resolveName(line.ticketType, lang)}
               </div>
               <div className="text-2xl font-bold text-primary">
-                {lineUnpriced || lineAwaitingLength ? '—' : `฿${line.lineTotal}`}
+                {lineUnpriced || lineAwaitingLength ? '—' : `฿${bahtText(line.lineTotal)}`}
               </div>
             </div>
             <div className="mt-1">
@@ -492,7 +493,7 @@ function OrderLineCards({
                             <BadgePercent className="w-5 h-5 shrink-0" />
                             {customerDiscountTarget(md, rowLabel, t)} · {customerDiscountDetail(md, t)}
                           </span>
-                          <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+                          <span className="text-lg font-bold tabular-nums">−฿{bahtText(amt)}</span>
                         </div>
                       );
                     })}
@@ -512,7 +513,7 @@ function OrderLineCards({
                     <BadgePercent className="w-6 h-6 shrink-0" />
                     {customerDiscountDetail(md, t)}
                   </span>
-                  <span className="text-xl font-bold tabular-nums">−฿{amt}</span>
+                  <span className="text-xl font-bold tabular-nums">−฿{bahtText(amt)}</span>
                 </div>
               );
             })}
@@ -558,7 +559,7 @@ function OrderSummaryRows({
                   <BadgePercent className="w-5 h-5 shrink-0" />
                   {t('common.discount')} · {customerDiscountDetail(md, t)}
                 </span>
-                <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+                <span className="text-lg font-bold tabular-nums">−฿{bahtText(amt)}</span>
               </div>
             );
           })}
@@ -569,7 +570,7 @@ function OrderSummaryRows({
                   ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn
                   : t('till.order.discountCode')}
               </span>
-              <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
+              <span className="text-lg font-bold tabular-nums">−฿{bahtText(discountAmount)}</span>
             </div>
           )}
         </>
@@ -584,7 +585,7 @@ function OrderSummaryRows({
         taxRows.map((row) => (
           <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
             <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
-            <span className="text-lg tabular-nums">฿{row.amount}</span>
+            <span className="text-lg tabular-nums">฿{bahtText(row.amount)}</span>
           </div>
         ))}
       {/* The same sentence the staff panel shows, from the same helper, so
@@ -605,7 +606,7 @@ function OrderSummaryRows({
       <div className="flex items-center justify-between">
         <span className="text-2xl text-foreground/70">{t('common.total')}</span>
         <span className="text-5xl font-black text-primary">
-          {unquotable ? '—' : `฿${total}`}
+          {unquotable ? '—' : `฿${bahtText(total)}`}
         </span>
       </div>
     </>
