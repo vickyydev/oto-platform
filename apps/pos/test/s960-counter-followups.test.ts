@@ -45,7 +45,7 @@ afterEach(() => {
 type Stage = ReturnType<typeof usePaymentStage>;
 
 /** A payment stage as the F&B and shop stations hold it, with the given money on it. */
-function stageWith(over: { settlements?: Partial<PaymentSettlement>[]; outstandingSatang?: number; locked?: boolean; phase?: string } = {}): Stage {
+function stageWith(over: { settlements?: Partial<PaymentSettlement>[]; outstandingSatang?: number; locked?: boolean; busy?: boolean; phase?: string } = {}): Stage {
   const outstanding = over.outstandingSatang ?? 12_500;
   return {
     state: {
@@ -55,14 +55,14 @@ function stageWith(over: { settlements?: Partial<PaymentSettlement>[]; outstandi
       partial: true,
     },
     display: { saleId: 'sale-960', amountSatang: outstanding, qrPayload: null, qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: true, creditSatang: 0 },
-    busy: false, online: true, locked: over.locked ?? false, canBack: (over.settlements ?? []).length === 0, canCancel: false,
+    busy: over.busy ?? false, online: true, locked: over.locked ?? false, canBack: (over.settlements ?? []).length === 0, canCancel: false,
     canSubmit: false, creditCoversAll: false, creditPendingSatang: 0, creditRefusal: null, canInquire: false, canConfirm: false,
     selectMethod: () => undefined, setAmountSatang: () => undefined, setTenderedSatang: () => undefined, setPartial: () => undefined,
     submit: async () => undefined, retry: async () => undefined, inquire: async () => undefined, confirm: async () => undefined,
     manual: async () => undefined, cancel: async () => false,
   } as unknown as Stage;
 }
-const CASH_50: Partial<PaymentSettlement> = { kind: 'cash', amountSatang: 5_000 };
+const CASH_50: Partial<PaymentSettlement> = { attemptId: 'attempt-960', kind: 'cash', amountSatang: 5_000 };
 
 describe('SCRUM-960 (1): a part-paid F&B or shop order is left as it is, and the till goes on', () => {
   it('offered once money was taken on this screen and something is still owed', () => {
@@ -82,6 +82,20 @@ describe('SCRUM-960 (1): a part-paid F&B or shop order is left as it is, and the
   it('shut with the till’s own reason while a payment is in flight: the hold that protects it stays', () => {
     expect(itemPartPaidExit(stageWith({ settlements: [CASH_50], locked: true }))).toMatchObject({ shown: true, reason: PAYMENT_IN_FLIGHT });
     expect(PAYMENT_IN_FLIGHT).toBe('A payment is in progress — finish or cancel it first.');
+  });
+
+  it('in flight is the ticket till’s own test: busy, a charge pending, the manual card route, the sale writer mid-write', () => {
+    // The manual route (a card run on a standalone terminal, its approval code
+    // still to be typed) does not lock the stage, but the card's money is not
+    // on the order yet: leaving then would show History a wrong balance.
+    const shut = (stage: Stage, saleWriting = false) => itemPartPaidExit(stage, saleWriting);
+    expect(shut(stageWith({ settlements: [CASH_50], phase: 'manual' }))).toMatchObject({ shown: true, reason: PAYMENT_IN_FLIGHT });
+    expect(shut(stageWith({ settlements: [CASH_50], phase: 'pending' }))).toMatchObject({ shown: true, reason: PAYMENT_IN_FLIGHT });
+    expect(shut(stageWith({ settlements: [CASH_50], busy: true }))).toMatchObject({ shown: true, reason: PAYMENT_IN_FLIGHT });
+    expect(shut(stageWith({ settlements: [CASH_50] }), true)).toMatchObject({ shown: true, reason: PAYMENT_IN_FLIGHT });
+    // Not in flight: a failed or ready stage with its part paid can be left.
+    expect(shut(stageWith({ settlements: [CASH_50], phase: 'failed' })).reason).toBeNull();
+    expect(shut(stageWith({ settlements: [CASH_50], phase: 'ready' })).reason).toBeNull();
   });
 
   describe('the payment screen', () => {
@@ -112,6 +126,22 @@ describe('SCRUM-960 (1): a part-paid F&B or shop order is left as it is, and the
       expect(out).toContain(`data-testid="item-part-paid-reason">${PAYMENT_IN_FLIGHT}`);
       expect(/<button[^>]*disabled=""[^>]*>(?:(?!<\/button>).)*Save as partly paid/s.test(out)).toBe(true);
     });
+
+    it('shut while the manual card route waits for its approval code, and while the sale writer writes', () => {
+      const shutButton = /<button[^>]*disabled=""[^>]*>(?:(?!<\/button>).)*Save as partly paid/s;
+      const manual = screen(stageWith({ settlements: [CASH_50], phase: 'manual' }), () => undefined);
+      expect(manual).toContain(`data-testid="item-part-paid-reason">${PAYMENT_IN_FLIGHT}`);
+      expect(shutButton.test(manual)).toBe(true);
+      vi.spyOn(paymentMethods, 'getEnabledPaymentMethods').mockReturnValue([
+        { id: 'cash', label: 'Cash', kind: 'cash', enabled: true, sortOrder: 0 },
+      ] as ReturnType<typeof paymentMethods.getEnabledPaymentMethods>);
+      const writing = html(createElement(FnbPayment, {
+        total: 175, wristband: null, pickupCode: '84', stage: stageWith({ settlements: [CASH_50] }), onBack: () => undefined,
+        onSavePartPaid: () => undefined, saleWriting: true,
+      }));
+      expect(writing).toContain(`data-testid="item-part-paid-reason">${PAYMENT_IN_FLIGHT}`);
+      expect(shutButton.test(writing)).toBe(true);
+    });
   });
 
   it('both counters start afresh with their own reset, which voids nothing', () => {
@@ -122,6 +152,12 @@ describe('SCRUM-960 (1): a part-paid F&B or shop order is left as it is, and the
       const body = reset.slice(0, reset.indexOf('\n  };'));
       expect(body, page).not.toMatch(/letOrderGo|\.cancel\(|voidSale|refund/);
     }
+  });
+
+  it('each counter tells the button when its sale writer is mid-write, as the ticket till does', () => {
+    const wired = "saleWriting={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}";
+    expect(src('pages', 'OrderStation.tsx')).toContain(wired);
+    expect(src('pages', 'MerchStation.tsx')).toContain(wired);
   });
 });
 

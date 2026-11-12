@@ -23,6 +23,13 @@ import type { PaymentStageController } from '@/lib/usePaymentStage';
  * till's own reason, while a payment is in flight (a QR on the display, a
  * card being read, an answer awaited), so a hold that protects money moving
  * is never lifted.
+ *
+ * "In flight" is the ticket till's own test for its Save as partly paid
+ * (`paymentInProgress` beside `holdButtonReasons` in pages/Till.tsx): the
+ * stage busy or locked, a charge pending, the manual route open (a card run
+ * on a standalone terminal, its approval code and TID still to be typed: the
+ * stage is not locked then, but the card's money is not on the order yet),
+ * or the station's sale writer writing or finalising.
  */
 export interface ItemPartPaidExit {
   shown: boolean;
@@ -35,10 +42,16 @@ export interface ItemPartPaidExit {
 /** The ticket till's sentence for the same case (`holdButtonReasons`, lib/heldSales). */
 export const PAYMENT_IN_FLIGHT = 'A payment is in progress — finish or cancel it first.';
 
-export function itemPartPaidExit(stage: Pick<PaymentStageController, 'state' | 'locked'>): ItemPartPaidExit {
+export function itemPartPaidExit(
+  stage: Pick<PaymentStageController, 'state' | 'locked' | 'busy'>,
+  /** The station's sale writer is writing or finalising (`saleWriter.state.kind`). */
+  saleWriting = false,
+): ItemPartPaidExit {
   const taken = stage.state.settlements.filter((part) => !part.partyDeposit);
   const paidSatang = taken.reduce((sum, part) => sum + part.amountSatang, 0);
   const balanceSatang = stage.state.outstandingSatang;
   const shown = stage.state.phase !== 'complete' && taken.length > 0 && paidSatang > 0 && balanceSatang > 0;
-  return { shown, reason: shown && stage.locked ? PAYMENT_IN_FLIGHT : null, paidSatang, balanceSatang };
+  const inFlight = stage.busy || stage.locked || saleWriting
+    || stage.state.phase === 'pending' || stage.state.phase === 'manual';
+  return { shown, reason: shown && inFlight ? PAYMENT_IN_FLIGHT : null, paidSatang, balanceSatang };
 }

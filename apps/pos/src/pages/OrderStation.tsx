@@ -1626,6 +1626,7 @@ export default function OrderStation() {
               onUseCreditChange={setUseCredit}
               // SCRUM-960 — the order stays part-paid on the platform; the station starts afresh.
               onSavePartPaid={resetOrder}
+              saleWriting={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
             />
             {/*
               What the platform has done with this order, in the same panels the

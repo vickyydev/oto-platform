@@ -62,6 +62,11 @@ interface FnbPaymentProps {
    * Without it the button is not offered.
    */
   onSavePartPaid?: () => void;
+  /**
+   * The station's sale writer is writing or finalising (`saleWriter.state.kind`):
+   * Save as partly paid is shut then, as the ticket till's is.
+   */
+  saleWriting?: boolean;
 }
 
 /**
@@ -70,9 +75,9 @@ interface FnbPaymentProps {
  * their words and style, for an order that has had a part paid. The dialog
  * says what becomes of the order, as the till's does.
  */
-function SavePartPaid({ stage, onSave }: { stage: FnbPaymentProps['stage']; onSave: () => void }) {
+function SavePartPaid({ stage, saleWriting, onSave }: { stage: FnbPaymentProps['stage']; saleWriting: boolean; onSave: () => void }) {
   const [open, setOpen] = useState(false);
-  const exit = itemPartPaidExit(stage);
+  const exit = itemPartPaidExit(stage, saleWriting);
   if (!exit.shown) return null;
   const paid = formatTHB(exit.paidSatang);
   const balance = formatTHB(exit.balanceSatang);
@@ -106,7 +111,7 @@ function SavePartPaid({ stage, onSave }: { stage: FnbPaymentProps['stage']; onSa
   );
 }
 
-export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange, onSavePartPaid }: FnbPaymentProps) {
+export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange, onSavePartPaid, saleWriting = false }: FnbPaymentProps) {
   const methods = getEnabledPaymentMethods().filter((method) => ['cash', 'card', 'qr'].includes(method.kind));
   const balance = creditBalanceOverride ?? wristband?.creditBalanceTHB ?? 0;
   const outstandingSatang = stage.state.outstandingSatang;
@@ -341,7 +346,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
         </div>
 
         <div className="mt-6"><PaymentTenderPanel stage={stage} showSubmit={!free && !creditCoversAll} /></div>
-        {onSavePartPaid && <SavePartPaid stage={stage} onSave={onSavePartPaid} />}
+        {onSavePartPaid && <SavePartPaid stage={stage} saleWriting={saleWriting} onSave={onSavePartPaid} />}
         <div className="mt-4">
           <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack && !stage.canCancel}
             onClick={stage.canCancel ? () => { void stage.cancel(); } : onBack}><ArrowLeft className="w-5 h-5" />Back</Button>
