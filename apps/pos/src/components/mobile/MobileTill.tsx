@@ -19,7 +19,7 @@ import {
   unpricedReason,
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, sortedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { consentFormPhone, contactChangeWithdraws, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
