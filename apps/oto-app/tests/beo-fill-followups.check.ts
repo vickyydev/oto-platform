@@ -18,6 +18,9 @@
 //      charged EXTRA only when the family asks for more, names a price or a
 //      count of its own — thread D's "3 more Margherita pizzas for the
 //      adults" is written exactly as SCRUM-946 proved it.
+//   3. thread G, "The adults will eat the same as the kids, the Margherita
+//      pizza for them too.": the fold is said, in the review (with the chat's
+//      words) and in the toast after Approve.
 //
 // Every model answer here is scripted (the proof's own words): no model key is used.
 //
@@ -49,9 +52,9 @@ const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, resolveCatalogueAnswer, saidForTheAdults } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, undecidedOptions, approvalResultWords } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
-const { adultsSetMenuLineWords, setMenuOptionOf } = await import("../shared/beoAiFill");
+const { adultsFoldedWords, adultsFoldedOnOwnMenuWords, adultsSetMenuLineWords, setMenuOptionOf } = await import("../shared/beoAiFill");
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
 type BeoAiCatalogueView = import("../shared/beoAiFill").BeoAiCatalogueView;
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
@@ -72,7 +75,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 4;
+const CHECKS = 6;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -352,7 +355,7 @@ try {
       { itemId: RICE, option: "Chicken", said: "Chicken fried rice for the kids", line: 1 },
       { itemId: RICE, option: "Chicken", said: "Chicken fried rice for the adults too", line: 1 },
     ]);
-    assert.deepEqual([same.setMenu?.choices.map((c) => c.option), same.menuLines.length], [["Chicken"], 0]);
+    assert.deepEqual([same.setMenu?.choices.map((c) => c.option), same.menuLines.length, same.adultsFolded?.map((f) => f.dish)], [["Chicken"], 0, ["Chicken"]]);
     // A dish the model put on the kids' list whose words are said for the adults: the adults'.
     const kidsLine = resolveCatalogueAnswer(
       { setMenu: { templateId: cat.setMenu, line: 1, choices: [] }, menuLines: [{ productCode: "CF-43", itemName: "chicken fried rice", menu: "kids", line: 1 }], event: counts(12, 8) },
@@ -445,6 +448,54 @@ try {
     );
     const extras = (await viewLinesOf(ev.D)).filter((l) => l.source === "extra").map((l) => [l.name, l.qty, l.unit_price_satang, l.audience ?? null]);
     assert.deepEqual(extras, [["Margherita", 2, 45000, null], ["Margherita", 3, 40000, "adults"]], "both charged, as before");
+  });
+
+  // --- 3. A fold is said (thread G) -------------------------------------------------------------
+  await check("threadG_aFoldIsSaidInTheReviewAndTheToast", async () => {
+    const res = await fill(ev.G);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(review.proposal.menuLines, [], "the adults' list rightly stays empty");
+    assert.deepEqual(review.proposal.adultsFolded?.map((f) => [f.dish, f.from.source, f.from.line, f.from.quote]), [["Margherita", "family", 2, "the Margherita pizza for them too"]]);
+    const state = initialReviewState(review, { fill: res.body.fill });
+    assert.equal(adultsFoldNoticeOf(review, state), adultsFoldedWords(1));
+    const page = html(review, state);
+    const note = page.slice(page.indexOf('data-testid="text-ai-review-adults-folded"'));
+    assert.ok(note.startsWith(`data-testid="text-ai-review-adults-folded">${esc(adultsFoldedWords(1))}`), "the note under the Kitchen Plan");
+    assert.ok(note.includes("The chat says “the Margherita pizza for them too”"), "with the chat's words as its reason");
+    const body = approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null });
+    assert.equal(body.adultsFolded, 1, "a count, never the chat's words");
+    const ok = await approve(ev.G, body);
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal(ok.body.written.adultsLinesFolded, 1);
+    assert.equal(approvalResultWords(ok.body).includes(adultsFoldedWords(1)), true, "the toast says it");
+    const plan = await kitchenOf(ev.G);
+    assert.deepEqual([plan.menus.adultsDiffer, plan.menus.adults], [false, []], "the switch off, the adults' list empty");
+    // Staff choosing another set menu in the review: the fold was decided against the proposed one, so nothing is said.
+    const another = { ...state, setMenuId: { ...state.setMenuId, value: null, changed: true } };
+    assert.equal(adultsFoldNoticeOf(review, another), null);
+    assert.equal(approveBodyOf(review, another, ids).adultsFolded, undefined);
+  });
+
+  await check("aFoldBesideTheAdultsOwnLineIsSaidSo", async () => {
+    // Thread G's words with an adults' dish of their own: the folded Margherita is on their menu from the set menu.
+    const review: BeoAiReview = (await fill(ev.Gown)).body.review;
+    review.proposal = {
+      ...review.proposal,
+      menuLines: [{ menu: "adults", itemName: "a Caesar salad for the adults", quantity: 1, productCode: "CF-15", matchedName: "Caesar salad", notInMenu: false, chatPrice: null, from: { source: "family", at: at(1), line: 2 } }],
+    };
+    const state = initialReviewState(review, {});
+    assert.equal(adultsFoldNoticeOf(review, state), adultsFoldedOnOwnMenuWords(1));
+    const ok = await approve(ev.Gown, approveBodyOf(review, state, ids));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.deepEqual([ok.body.written.adultsLinesFolded, ok.body.written.adultsMenuOwn], [1, true]);
+    assert.equal(approvalResultWords(ok.body).includes(adultsFoldedOnOwnMenuWords(1)), true);
+    const plan = await kitchenOf(ev.Gown);
+    assert.deepEqual(
+      (plan.menus.adults as any[]).map((l) => [l.itemName, l.source]),
+      [["Margherita", "set_menu"], ["French fries", "set_menu"], ["Veggie sticks", "set_menu"], ["Caesar salad", "additional"]],
+      "the Margherita from the set menu, never as an extra",
+    );
   });
 
 } finally {

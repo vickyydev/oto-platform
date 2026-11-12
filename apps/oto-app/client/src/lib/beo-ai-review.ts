@@ -1,4 +1,5 @@
 import {
+  adultsFoldedOnOwnMenuWords,
   adultsFoldedWords,
   adultsLinesRepeatKids,
   foodNamesFor,
@@ -586,9 +587,11 @@ export function approvalResultWords(answer: ApproveAnswer): string {
     ? ` Not written: ${missing.steps.length === 1 ? "the timeline's step" : `the timeline's ${missing.steps.length} steps`} (${missing.steps.map((s) => `${s.time} ${s.label}`).join(", ")}) — ${missing.message}. Set the start time, then add them to the Timeline.`
     : "";
   const deposit = kept ? ` Not written: the deposit — ${kept.message}.` : "";
-  // SCRUM-946: adults' lines folded into the kids' menu are said, never left unseen.
+  // SCRUM-946: adults' lines folded into the kids' menu are said, never left unseen. SCRUM-958:
+  // with the adults' menu their own all the same, said so (`adultsMenuOwn`).
   const folded = Number(answer.written?.adultsLinesFolded) || 0;
-  return `Saved: ${saved}.${folded > 0 ? ` ${adultsFoldedWords(folded)}` : ""}${steps}${deposit}`;
+  const foldWords = answer.written?.adultsMenuOwn === true ? adultsFoldedOnOwnMenuWords(folded) : adultsFoldedWords(folded);
+  return `Saved: ${saved}.${folded > 0 ? ` ${foldWords}` : ""}${steps}${deposit}`;
 }
 
 /**
@@ -600,13 +603,20 @@ export function approvalResultWords(answer: ApproveAnswer): string {
  * names neither a set menu nor a kids' dish): the server decides, and its
  * toast says so.
  */
-export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue">, state: BeoAiReviewState): string | null {
+export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue"> & Partial<Pick<BeoAiReview, "proposal">>, state: BeoAiReviewState): string | null {
+  // SCRUM-958 (SCRUM-946's open point): the adults' lines the read folded before the review, said
+  // while the review keeps the set menu they were folded against.
+  const before = foldedBeforeReviewOf(review, state).length;
   const kept = state.menuLines.filter((l) => (!l.notInMenu || l.decision === "keep") && l.itemName.trim() && l.quantity > 0);
-  // SCRUM-958: an adults' SET line of a set-menu dish is the adults' own menu: nothing is folded.
+  // SCRUM-958: an adults' SET line of a set-menu dish is the adults' own menu, never folded.
   const setLines = kept.filter((l) => !!adultsSetLineGroupOf(review, state, l));
   const adults = kept.filter((l) => l.menu === "adults" && !setLines.includes(l));
-  if (adults.length === 0 || setLines.length > 0) return null;
-  return adultsLinesRepeatOf(review, state, kept, adults) === true ? adultsFoldedWords(adults.length) : null;
+  const repeat = adults.length > 0 && adultsLinesRepeatOf(review, state, kept, adults);
+  // The adults' menu is their own when a line of theirs is not the kids' menu repeated.
+  const own = setLines.length > 0 || (adults.length > 0 && repeat === false);
+  const n = before + (repeat === true ? adults.length : 0);
+  if (n === 0) return null;
+  return own ? adultsFoldedOnOwnMenuWords(n) : adultsFoldedWords(n);
 }
 
 /**
@@ -632,6 +642,17 @@ function adultsLinesRepeatOf(review: Pick<BeoAiReview, "catalogue">, state: BeoA
     adults.map((l) => ({ itemName: nameOf(l), quantity: l.quantity, price: own(l), said: [l.itemName, l.notes].filter(Boolean).join(" ") })),
     state.numAdults?.value ?? null,
   );
+}
+
+/**
+ * SCRUM-958: the adults' lines the read folded into the kids' set menu before the review
+ * (`BeoAiProposal.adultsFolded`), while the review keeps that set menu; none once staff choose
+ * another or none (the fold was decided against the proposed one).
+ */
+export function foldedBeforeReviewOf(review: Partial<Pick<BeoAiReview, "proposal">>, state: Pick<BeoAiReviewState, "setMenuId">): NonNullable<BeoAiReview["proposal"]["adultsFolded"]> {
+  const folded = review.proposal?.adultsFolded ?? [];
+  const menu = review.proposal?.setMenu?.templateId ?? null;
+  return folded.length > 0 && menu !== null && state.setMenuId.value === menu ? folded : [];
 }
 
 /**
@@ -1025,6 +1046,8 @@ export function approveBodyOf(
         ...(typeof l.price === "number" && Number.isFinite(l.price) && l.price > 0 ? { price: Math.round(l.price * 100) / 100 } : {}),
       };
     });
+  // SCRUM-958: the adults' lines the read folded before the review, counted for the toast.
+  const foldedBefore = foldedBeforeReviewOf(review, state).length;
 
   const entertainment = state.entertainment
     .filter((e) => !e.notInCatalogue || e.decision === "keep")
@@ -1126,6 +1149,7 @@ export function approveBodyOf(
     package: pkg ? { templateId: pkg.id, addOns } : null,
     setMenu,
     menuLines,
+    ...(foldedBefore > 0 ? { adultsFolded: foldedBefore } : {}),
     entertainment,
     otherLines,
     event,

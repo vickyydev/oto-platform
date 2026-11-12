@@ -1190,6 +1190,9 @@ export function resolveCatalogueAnswer(
       }
       return undefined;
     };
+    // SCRUM-958 (SCRUM-946's open point): an adults' line folded into the kids' set menu is kept
+    // (the dish and the line that said it), so the review and the toast say so.
+    const folded: NonNullable<BeoAiProposal["adultsFolded"]> = [];
     proposal.menuLines = proposal.menuLines.filter((l) => {
       if (l.menu === "bar" || l.chatPrice !== null) return true;
       const count = l.menu === "kids" ? kids : adultsN;
@@ -1207,11 +1210,13 @@ export function resolveCatalogueAnswer(
       const item = included.find((i) => (!!i.productCode && !!l.productCode && i.productCode.toUpperCase() === l.productCode.toUpperCase()) || named(l, i.label));
       if (item && (sameOrder || l.quantity === (item.qty ?? 1))) {
         noteToRequests(l, item.label);
+        if (l.menu === "adults") folded.push({ dish: item.label, from: l.from });
         return false;
       }
       const chosen = l.menu === "adults" && sameOrder ? choiceOf(l) : undefined;
       if (chosen) {
         noteToRequests(l, chosen.option);
+        folded.push({ dish: chosen.option, from: l.from });
         return false;
       }
       // SCRUM-958 (thread B: "fried rice for the adults please"): an adults' line of a dish the
@@ -1230,6 +1235,7 @@ export function resolveCatalogueAnswer(
       }
       return true;
     });
+    if (folded.length > 0) proposal.adultsFolded = folded;
   }
 
   // SCRUM-787: a cake the conversation times or describes without saying who brings it

@@ -356,6 +356,14 @@ export interface BeoAiProposal {
   deposit: { amount: number; paid: boolean; date: string | null; from: BeoAiFrom } | null;
   /** SCRUM-827: the rest of the BEO, proposed in the same pass. */
   details: BeoAiDetails;
+  /**
+   * SCRUM-958 (SCRUM-946's open point): the adults' lines the read folded
+   * because they only repeat the kids' set menu ("the adults will eat the
+   * same as the kids, the Margherita pizza for them too"): the set menu's
+   * dish, and the line whose words said it, so the review and the toast say
+   * so. Absent when none was folded (and from a server before this rule).
+   */
+  adultsFolded?: Array<{ dish: string; from: BeoAiFrom }>;
 }
 
 /**
@@ -502,6 +510,14 @@ export function adultsLinesRepeatKids(kids: readonly KitchenLineLike[], adults: 
 /** SCRUM-946: what the review and the toast say of adults' lines that only repeated the kids' menu. */
 export const adultsFoldedWords = (n: number): string =>
   `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' menu: the adults eat the kids' menu, and "Different for adults" stays off.`;
+
+/**
+ * SCRUM-958: the same, when the adults' menu is their own all the same (another
+ * line of theirs turns "Different for adults" on): the folded dish is on it as
+ * the copy of the kids' set menu, never as an extra.
+ */
+export const adultsFoldedOnOwnMenuWords = (n: number): string =>
+  `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' set menu: the adults' menu has ${n === 1 ? "it" : "them"} from the set menu, not as ${n === 1 ? "an extra" : "extras"}.`;
 
 /**
  * SCRUM-958: the option of a set menu's choice group a name stands for — the
@@ -682,6 +698,12 @@ export const BeoAiApproveBodySchema = z
           .strict(),
       )
       .max(100),
+    /**
+     * SCRUM-958: how many adults' lines the review showed as folded into the kids' set menu
+     * (`BeoAiProposal.adultsFolded`, folded before the review): counted into the answer's
+     * `adultsLinesFolded`, so the toast says it. A count, never the chat's words.
+     */
+    adultsFolded: z.number().int().min(1).max(100).optional(),
     entertainment: z
       .array(
         z

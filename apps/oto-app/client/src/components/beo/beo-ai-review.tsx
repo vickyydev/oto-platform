@@ -19,6 +19,7 @@ import {
   catalogueIsEmpty,
   adultsFoldNoticeOf,
   adultsSetLineGroupOf,
+  foldedBeforeReviewOf,
   chatOffered,
   chatOfferWords,
   chatSaysOf,
@@ -852,11 +853,17 @@ function ReviewSections({
             </div>
           );
         })}
-        {/* SCRUM-946: adults' lines that only repeat the kids' menu are folded by Approve and create: said before it. */}
+        {/* SCRUM-946: adults' lines that only repeat the kids' menu are folded by Approve and create: said before it.
+            SCRUM-958: and those the read folded before the review, with the chat's words as the reason. */}
         {adultsFoldNoticeOf(review, state) && (
-          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-adults-folded">
-            {adultsFoldNoticeOf(review, state)}
-          </p>
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground" data-testid="text-ai-review-adults-folded">
+              {adultsFoldNoticeOf(review, state)}
+            </p>
+            {foldedBeforeReviewOf(review, state).map((f, i) => (
+              <ChatSays key={`${f.dish}-${i}`} from={f.from} indent={false} />
+            ))}
+          </div>
         )}
         <Row label="Cake" field={state.cake} says={state.cake?.from}>
           <select

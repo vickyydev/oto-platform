@@ -618,9 +618,12 @@ export async function approveBeoAiFill(
       written.kitchenLines = kidsExtra.length + adultsWritten.length + adultsSetOwn.length;
       written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
       if (adultsSetOwn.length > 0) written.adultsSetLines = adultsSetOwn.length;
-      // SCRUM-958: and an adults' SET line the kids' set menu already holds.
-      const folded = adultsExtra.length - adultsWritten.length + (adultsSet.length - adultsSetOwn.length);
-      if (folded > 0) written.adultsLinesFolded = folded;
+      // SCRUM-958: and the lines the review showed folded before it (`adultsFolded`, a count).
+      const folded = adultsExtra.length - adultsWritten.length + (adultsSet.length - adultsSetOwn.length) + (body.adultsFolded ?? 0);
+      if (folded > 0) {
+        written.adultsLinesFolded = folded;
+        if (adultsOwn) written.adultsMenuOwn = true;
+      }
       if (!adultsOwn) {
         adults = [];
       } else {
