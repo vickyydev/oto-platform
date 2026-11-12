@@ -17,6 +17,7 @@ import {
   approveBodyOf,
   approvedMarksOf,
   catalogueIsEmpty,
+  adultsFoldNoticeOf,
   chatOffered,
   chatOfferWords,
   chatSaysOf,
@@ -836,6 +837,12 @@ function ReviewSections({
             </div>
           );
         })}
+        {/* SCRUM-946: adults' lines that only repeat the kids' menu are folded by Approve and create: said before it. */}
+        {adultsFoldNoticeOf(review, state) && (
+          <p className="text-xs text-muted-foreground" data-testid="text-ai-review-adults-folded">
+            {adultsFoldNoticeOf(review, state)}
+          </p>
+        )}
         <Row label="Cake" field={state.cake} says={state.cake?.from}>
           <select
             className={SELECT}

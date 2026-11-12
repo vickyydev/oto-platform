@@ -29,6 +29,10 @@
 //      Activities as text too.
 //   8. the cake is ticked "In the package" only when the chat or the package
 //      says so, never by default.
+//   1b. (the lane's reviews) the adults' lines are decided line by line: a
+//      mirror on a set menu stays a mirror, an adults' order of a dish the
+//      kids' list holds that the chat prices is theirs, and a folded line is
+//      said in the review and in the toast.
 //   9. SCRUM-927's points: another WhatsApp number is written with its stored
 //      international form (whatsapp_phone_e164) by the app's own phone rule;
 //      the Kitchen Plan does not say "Selections received" when no parent
@@ -69,11 +73,11 @@ const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { DepositRequestPanel, depositAskedOf, depositAskedWords } = await import("../client/src/components/beo/beo-till-billing");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
-const { emptyBeoAiDetails, foodNamesFor, choicesFromChatOnly, SET_MENU_CHOSEN_FROM_CHAT } = await import("../shared/beoAiFill");
+const { emptyBeoAiDetails, foodNamesFor, choicesFromChatOnly, SET_MENU_CHOSEN_FROM_CHAT, adultsLinesRepeatKids, adultsFoldedWords } = await import("../shared/beoAiFill");
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
 type BeoAiProposal = import("../shared/beoAiFill").BeoAiProposal;
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
@@ -94,7 +98,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 13;
+const CHECKS = 14;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -103,7 +107,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen", "toast", "mirrorSet", "ownPriced", "leftOut"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -281,6 +285,83 @@ try {
     assert.deepEqual(mirrored.menus.adults, []);
     assert.equal(mirror.body.written.kitchenLines, 2, "the folded adults' lines are not counted as written");
     assert.equal(mirror.body.written.adultsLinesFolded, 2, "and the answer says they were folded");
+  });
+
+  // --- 1b. Line by line, never by the dish names alone (the lane's reviews) -------------------
+  await check("anAdultsLineIsTheirOwnLineByLine", async () => {
+    const plainNames = (lines: any[]) => lines.map((l) => [l.itemName, l.quantity, l.source ?? null]);
+    // A real mirror on a set menu stays a mirror: the adults' nuggets in the adults' headcount, "the same as the kids".
+    const set = await approve(ev.mirrorSet, bodyOf({
+      setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Margherita"] }] },
+      menuLines: [
+        { menu: "kids", itemName: "Nuggets", quantity: 14, productCode: null, notes: null },
+        { menu: "adults", itemName: "nuggets", quantity: 10, productCode: null, notes: "adults eat the same as the kids" },
+      ],
+    }));
+    assert.equal(set.status, 200, JSON.stringify(set.body));
+    const setPlan = await kitchenOf(ev.mirrorSet);
+    assert.equal(setPlan.menus.adultsDiffer, false, "the set menu's copies counted with them, as SCRUM-829 has it");
+    assert.deepEqual(setPlan.menus.adults, []);
+    assert.deepEqual([set.body.written.kitchenLines, set.body.written.adultsLinesFolded], [1, 1]);
+    assert.equal(approvalResultWords(set.body).includes(adultsFoldedWords(1)), true, "the toast says the line was folded");
+    // The adults' own order of a dish the kids' list holds, priced by the chat: written, never folded.
+    const priced = await approve(ev.ownPriced, bodyOf({
+      menuLines: [
+        { menu: "kids", itemName: "Margherita", quantity: 14, productCode: "CF-24", notes: null },
+        { menu: "adults", itemName: "3 more Margherita for the adults at 450", quantity: 3, productCode: "CF-24", notes: null, price: 450 },
+      ],
+    }));
+    assert.equal(priced.status, 200, JSON.stringify(priced.body));
+    const pricedPlan = await kitchenOf(ev.ownPriced);
+    assert.equal(pricedPlan.menus.adultsDiffer, true);
+    assert.deepEqual((pricedPlan.menus.adults as any[]).map((l) => [l.itemName, l.quantity, l.price, l.productCode]), [["Margherita", 3, 450, "CF-24"]]);
+    assert.deepEqual([priced.body.written.kitchenLines, priced.body.written.adultsLinesFolded], [2, undefined]);
+    assert.equal(approvalResultWords(priced.body).includes("only repeat"), false, "nothing folded: nothing said");
+    // SCRUM-829's rule kept: an adults' list leaving one of the kids' dishes out is the adults' own.
+    const leftOut = await approve(ev.leftOut, bodyOf({
+      menuLines: [
+        { menu: "kids", itemName: "Margherita", quantity: 14, productCode: null, notes: null },
+        { menu: "kids", itemName: "Nuggets", quantity: 14, productCode: null, notes: null },
+        { menu: "adults", itemName: "Margherita", quantity: 10, productCode: null, notes: null },
+      ],
+    }));
+    assert.equal(leftOut.status, 200, JSON.stringify(leftOut.body));
+    const leftPlan = await kitchenOf(ev.leftOut);
+    assert.equal(leftPlan.menus.adultsDiffer, true, "no nuggets for the adults");
+    assert.deepEqual(plainNames(leftPlan.menus.adults), [["Margherita", 10, null]]);
+
+    // The rule alone: each line its own, by count, price and words.
+    const kids = [{ itemName: "Margherita", quantity: 1, source: "set_menu" }, { itemName: "French fries", quantity: 1, source: "set_menu" }, { itemName: "Margherita", quantity: 2 }];
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 10 }], 10), true, "the adults' headcount");
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 2 }], 10), true, "that kids' line's count");
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 3, said: "3 pizzas for the adults" }], 10), false, "another count: their own");
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 1, said: "one more Margherita for grandpa" }], 10), false, "a word asking for more");
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 10, price: 450 }], 10), false, "a price of its own");
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Margherita", quantity: 10, price: 0 }], 10), true);
+    assert.equal(adultsLinesRepeatKids(kids, [{ itemName: "Pasta", quantity: 10 }], 10), false, "a dish of their own");
+    assert.equal(adultsLinesRepeatKids(kids, [], 10), false);
+
+    // The review says it before Approve and create, from the same rule; their own order is not said.
+    const review = reviewOf({
+      setMenu: { templateId: cat.setMenu, from: familyFrom(2), choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita", from: familyFrom(2) }] },
+      menuLines: [
+        { menu: "kids", itemName: "Nuggets", quantity: 14, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: familyFrom(2) },
+        { menu: "adults", itemName: "nuggets", quantity: 10, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, notes: "adults eat the same as the kids", from: familyFrom(2) },
+      ],
+      event: { numAdults: { value: 10, from: familyFrom(1) } },
+    });
+    review.catalogue = await loadBeoCatalogue(db, { tenantId: tenant, branchId: park });
+    const state = initialReviewState(review, {});
+    const keptAll = { ...state, menuLines: state.menuLines.map((l) => ({ ...l, decision: "keep" as const })) };
+    assert.equal(adultsFoldNoticeOf(review, keptAll), adultsFoldedWords(1));
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state: keptAll, onChange: () => undefined }));
+    assert.equal(html.includes('data-testid="text-ai-review-adults-folded"'), true, "shown in the review");
+    const more = { ...keptAll, menuLines: keptAll.menuLines.map((l) => (l.menu === "adults" ? { ...l, itemName: "3 more nuggets for the adults", quantity: 3 } : l)) };
+    assert.equal(adultsFoldNoticeOf(review, more), null, "their own order: nothing folded");
+    const staffPriced = { ...keptAll, menuLines: keptAll.menuLines.map((l) => (l.menu === "adults" ? { ...l, price: 90, priceFrom: "staff" as const } : l)) };
+    assert.equal(adultsFoldNoticeOf(review, staffPriced), null, "a price staff entered: their own");
+    const tillPriced = { ...keptAll, menuLines: keptAll.menuLines.map((l) => (l.menu === "adults" ? { ...l, price: 90, priceFrom: "till" as const } : l)) };
+    assert.equal(adultsFoldNoticeOf(review, tillPriced), adultsFoldedWords(1), "the till's price a coded line opens with is no price of its own");
   });
 
   // --- 2. The chat's price on an extra dish ---------------------------------------------------

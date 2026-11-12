@@ -1,4 +1,6 @@
 import {
+  adultsFoldedWords,
+  adultsLinesRepeatKids,
   foodNamesFor,
   laterLineWins,
   tillItemOf,
@@ -574,7 +576,42 @@ export function approvalResultWords(answer: ApproveAnswer): string {
     ? ` Not written: ${missing.steps.length === 1 ? "the timeline's step" : `the timeline's ${missing.steps.length} steps`} (${missing.steps.map((s) => `${s.time} ${s.label}`).join(", ")}) — ${missing.message}. Set the start time, then add them to the Timeline.`
     : "";
   const deposit = kept ? ` Not written: the deposit — ${kept.message}.` : "";
-  return `Saved: ${saved}.${steps}${deposit}`;
+  // SCRUM-946: adults' lines folded into the kids' menu are said, never left unseen.
+  const folded = Number(answer.written?.adultsLinesFolded) || 0;
+  return `Saved: ${saved}.${folded > 0 ? ` ${adultsFoldedWords(folded)}` : ""}${steps}${deposit}`;
+}
+
+/**
+ * SCRUM-946: what the review says before Approve and create when its adults'
+ * lines only repeat the kids' menu, so Approve folds them away (the rule the
+ * server applies, `adultsLinesRepeatKids`): the kids' list as the review will
+ * write it — the set menu's lines and the review's kids' lines. Null when they
+ * are the adults' own, or when the kids' list is the BEO's own (the review
+ * names neither a set menu nor a kids' dish): the server decides, and its
+ * toast says so.
+ */
+export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue">, state: BeoAiReviewState): string | null {
+  const kept = state.menuLines.filter((l) => (!l.notInMenu || l.decision === "keep") && l.itemName.trim() && l.quantity > 0);
+  const adults = kept.filter((l) => l.menu === "adults");
+  if (adults.length === 0) return null;
+  const nameOf = (l: ReviewMenuLine) => (l.notInMenu ? l.itemName.trim() : (l.matchedName ?? l.itemName).trim());
+  const menu = state.setMenuId.value ? review.catalogue.setMenus.find((m) => m.id === state.setMenuId.value) : undefined;
+  const kidsLines = kept.filter((l) => l.menu === "kids");
+  if (!menu && kidsLines.length === 0) return null;
+  const portions = (qty: number | null) => (typeof qty === "number" && Number.isInteger(qty) && qty > 0 ? qty : 1);
+  const setLines = (menu?.items ?? []).flatMap((item) => {
+    if (item.type === "always_included") return [{ itemName: item.label, quantity: portions(item.qty), source: "set_menu" }];
+    const chosen = item.options.filter((o) => state.choices[item.id]?.value.includes(o));
+    return chosen.map((o) => ({ itemName: o, quantity: chosen.length === 1 ? portions(item.qty) : 1, source: "set_menu" }));
+  });
+  const kids = [...setLines, ...kidsLines.map((l) => ({ itemName: nameOf(l), quantity: l.quantity }))];
+  const own = (l: ReviewMenuLine) => (l.priceFrom === "chat" || l.priceFrom === "staff" ? l.price : null);
+  const repeat = adultsLinesRepeatKids(
+    kids,
+    adults.map((l) => ({ itemName: nameOf(l), quantity: l.quantity, price: own(l), said: [l.itemName, l.notes].filter(Boolean).join(" ") })),
+    state.numAdults?.value ?? null,
+  );
+  return repeat ? adultsFoldedWords(adults.length) : null;
 }
 
 /** The sources whose marks the form wears after an approval: not a step's, nor the deposit's, that was not written. */

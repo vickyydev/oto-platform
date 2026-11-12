@@ -17,8 +17,8 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
-import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
+import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
 import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
@@ -370,6 +370,15 @@ export async function approveBeoAiFill(
     }
     return onTill ? { code: onTill.code, name: onTill.name } : { code: null, name: null };
   };
+  /**
+   * SCRUM-946: a line's price of its own (the chat's, or one staff entered): the price it is
+   * written with, unless that is the till's weekday price for its code, which a coded line opens with.
+   */
+  const ownPriceOf = (l: BeoAiApproveBody["menuLines"][number]): number => {
+    const price = priceOf(l);
+    const onTill = till && l.productCode ? tillItemOf({ till }, l.productCode) : undefined;
+    return onTill && Math.round(price * 100) === onTill.priceSatang ? 0 : price;
+  };
   const written: Record<string, number | boolean> = {};
   const notWritten: NotWritten = {};
   const matches: Array<Record<string, unknown>> = [];
@@ -525,12 +534,25 @@ export async function approveBeoAiFill(
       // stale or missing. "Adults" lines that only name the kids' dishes again (a model told
       // "the adults eat the same" still marking them, as the free-text fill did) are the kids'
       // list in other words: they are not the adults' own, and the switch stays as the BEO holds it.
-      // SCRUM-946: that is the review's adults' lines THEMSELVES naming the kids' whole menu and
-      // nothing else. They were compared with the set menu's copies added to them, so an extra
-      // order of a dish the set menu already has ("3 more Margherita pizzas for the adults")
-      // read as the kids' menu repeated and was dropped, while the review showed it and the
-      // answer counted it.
-      const adultsSaid = adultsExtra.length > 0 && !sameKitchenDishNames(kids, adultsExtra);
+      // SCRUM-946: decided line by line, never by the dish names alone (`adultsLinesRepeatKids`):
+      // compared by names, an extra order of a dish the set menu already has ("3 more Margherita
+      // pizzas for the adults", one the chat prices) read as the kids' menu repeated and was
+      // dropped while the review showed it. A line is the kids' dish repeated only at 1, the
+      // adults' headcount or that kids' line's count, with no price of its own (the till's price
+      // a coded line opens with is not one) and no word asking for more; and, as SCRUM-829 has it,
+      // only when with the set menu's copies they name the kids' whole list and nothing else.
+      const adultsCount = body.event.numAdults ?? ev?.numAdults ?? null;
+      const adultsRepeat = adultsLinesRepeatKids(
+        kids,
+        adultsSaidLines.map((l, i) => ({
+          itemName: typeof adultsExtra[i]?.itemName === "string" ? (adultsExtra[i]!.itemName as string) : l.itemName,
+          quantity: l.quantity,
+          price: ownPriceOf(l),
+          said: [l.itemName, l.notes].filter(Boolean).join(" "),
+        })),
+        adultsCount,
+      );
+      const adultsSaid = adultsExtra.length > 0 && !adultsRepeat;
       const adultsOwn = adultsSaid || adultsDifferOf(menus);
       // What was written, counted as written: an adults' line folded into the kids' menu is not.
       const adultsWritten = adultsOwn ? adultsSaidLines : [];

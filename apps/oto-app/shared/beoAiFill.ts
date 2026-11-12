@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { foldDishName, sameKitchenDishNames, type KitchenLineLike } from "./kitchenAdults";
 import type { OneDeposit } from "./partyDeposit";
 
 /**
@@ -443,6 +444,55 @@ export function choicesFromChatOnly(selections: unknown): boolean {
   if (!Array.isArray(selections) || selections.length === 0) return false;
   return selections.every((s) => !!s && typeof s === "object" && (s as Record<string, unknown>).recordedFrom === CHOICE_FROM_CHAT);
 }
+
+/**
+ * SCRUM-946: words asking for a dish on top of what the party has ("3 more",
+ * "extra fries", "another pizza"), in the languages the park's chats are
+ * written in.
+ */
+const MORE_OF_A_DISH = /(^|[^\p{L}])(more|extra|extras|additional|additionally|another|on top)([^\p{L}]|$)|เพิ่ม|อีก|дополнительн|ещё|еще/iu;
+export const asksForMore = (words: string | null | undefined): boolean => !!words && MORE_OF_A_DISH.test(words);
+
+/** SCRUM-946: an adults' line of a fill, as `adultsLinesRepeatKids` reads it. */
+export interface AdultsFillLine {
+  /** The name it is written by (the till's or the set menu's, else the chat's words). */
+  itemName: string;
+  quantity: number;
+  /** A price of its own for each item (the chat's, or one staff entered); none when absent or 0. */
+  price?: number | null;
+  /** The chat's words for it and its note, for a word asking for more. */
+  said?: string | null;
+}
+
+/**
+ * SCRUM-946 (SCRUM-829's mirror, kept): whether a fill's adults' lines are the
+ * kids' menu said again, so they fold away and "Different for adults" stays
+ * off. Both must hold, line by line, never by the dish names alone:
+ *   - with the set menu's lines (which the adults' list copies anyway) they
+ *     name the kids' whole list and nothing else: a list leaving one of the
+ *     kids' dishes out, or naming one of its own, is the adults' own;
+ *   - each is that kids' dish repeated: a dish of the kids' list, at 1, at the
+ *     adults' headcount or at that kids' line's count, with no price of its
+ *     own and no word asking for more. "3 more Margherita pizzas for the
+ *     adults", or one the chat prices, is the adults' own order.
+ */
+export function adultsLinesRepeatKids(kids: readonly KitchenLineLike[], adults: readonly AdultsFillLine[], adultsCount: number | null | undefined): boolean {
+  if (adults.length === 0) return false;
+  const setMenu = kids.filter((l) => l.source === "set_menu");
+  if (!sameKitchenDishNames(kids, [...setMenu, ...adults.map((a) => ({ itemName: a.itemName }))])) return false;
+  return adults.every((a) => {
+    if (typeof a.price === "number" && a.price > 0) return false;
+    if (asksForMore(a.said) || asksForMore(a.itemName)) return false;
+    const name = foldDishName(a.itemName);
+    const same = kids.filter((k) => foldDishName(k.itemName) === name);
+    if (same.length === 0) return false;
+    return a.quantity === 1 || (typeof adultsCount === "number" && a.quantity === adultsCount) || same.some((k) => (k.quantity ?? 1) === a.quantity);
+  });
+}
+
+/** SCRUM-946: what the review and the toast say of adults' lines that only repeated the kids' menu. */
+export const adultsFoldedWords = (n: number): string =>
+  `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' menu: the adults eat the kids' menu, and "Different for adults" stays off.`;
 
 /** A set menu's choices as the parent link records them: each group's chosen options. */
 export interface BeoAiSetMenuChoices {
