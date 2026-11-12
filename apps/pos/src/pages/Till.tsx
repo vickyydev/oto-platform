@@ -3583,8 +3583,11 @@ export default function Till() {
     !voucherHoldsPay;
 
   // SCRUM-883 — the platform's answer for the finished sale, read once: both
-  // halves show the credit it granted, never the till's own list.
-  const saleIssue = useSaleIssue(saleResult?.id ?? '', undefined, saleResult ? boxSaleIssue(saleResult.id) : null);
+  // halves show the credit it granted, never the till's own list. SCRUM-963 —
+  // the receipt number the finalise answer carried is given at once, so the
+  // success line (and the door check-in dialog's) never waits for the read.
+  const writtenReceipt = saleWriter.state.kind === 'written' && saleWriter.state.saleId === saleResult?.id ? saleWriter.state.sale.receiptNumber : null;
+  const saleIssue = useSaleIssue(saleResult?.id ?? '', writtenReceipt ? { kind: 'receipt', number: writtenReceipt } : undefined, saleResult ? boxSaleIssue(saleResult.id) : null);
   const shownResult = saleResult
     ? withPlatformCredit(saleResult, saleIssue.grants, !!laneSale(saleResult.id)?.answer?.finalised)
     : null;
