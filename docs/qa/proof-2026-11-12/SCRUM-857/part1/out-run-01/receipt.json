@@ -1,0 +1,701 @@
+{
+  "ticket": "SCRUM-857 part 1",
+  "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+  "startedAt": "2026-11-12T06:34:02.013Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqlkdtbedkc73e10te0",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:31.110602Z",
+        "finishedAt": "2026-11-12T06:22:57.565094Z"
+      },
+      "serving": {
+        "id": "dep-dbqlkdtbedkc73e10te0",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:31.110602Z",
+        "finishedAt": "2026-11-12T06:22:57.565094Z"
+      },
+      "readAt": "2026-11-12T06:23:13.826Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqlke49v7es73cvp520",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:32.445725Z",
+        "finishedAt": "2026-11-12T06:19:35.672114Z"
+      },
+      "serving": {
+        "id": "dep-dbqlke49v7es73cvp520",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:32.445725Z",
+        "finishedAt": "2026-11-12T06:19:35.672114Z"
+      },
+      "readAt": "2026-11-12T06:23:14.445Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqlked6e07s73fjev1g",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:33.769442Z",
+        "finishedAt": "2026-11-12T06:22:12.426664Z"
+      },
+      "serving": {
+        "id": "dep-dbqlked6e07s73fjev1g",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:33.769442Z",
+        "finishedAt": "2026-11-12T06:22:12.426664Z"
+      },
+      "readAt": "2026-11-12T06:23:15.062Z"
+    }
+  },
+  "passes": [
+    "s",
+    "a",
+    "n",
+    "d",
+    "c",
+    "e"
+  ],
+  "points": {
+    "5c": {
+      "pass": true,
+      "pictures": [
+        "05c-board-edit-name-only.png",
+        "05d-board-clear-number.png",
+        "05d-board-clear-number-saved.png",
+        "05e-board-name-edit-and-clear-readback.png"
+      ],
+      "shows": "Check-in board: a name-only edit keeps the confirmation; clearing the number saves (\"Changes saved\") and leaves phone and confirmation null",
+      "seen": {
+        "registrationBefore": {
+          "id": "01a1ce78-993f-7e33-b348-df46dfb65f0c",
+          "guardianName": "ZZ TEST SCRUM-857 guardian c01",
+          "guardianPhone": "+66898570116",
+          "contactChannel": "whatsapp",
+          "contactConfirmedAt": "2026-11-12T06:36:11.219Z",
+          "contactConfirmedBy": "family"
+        },
+        "nameEdit": {
+          "shown": {
+            "phone": "898570116",
+            "channels": {
+              "shown": [
+                "WhatsApp",
+                "Telegram",
+                "LINE"
+              ],
+              "chosen": [
+                "WhatsApp"
+              ]
+            }
+          },
+          "edited": {
+            "phone": "898570116",
+            "channels": {
+              "shown": [
+                "WhatsApp",
+                "Telegram",
+                "LINE"
+              ],
+              "chosen": [
+                "WhatsApp"
+              ]
+            }
+          },
+          "sent": {
+            "guardianName": "ZZ TEST SCRUM-857 guardian c01 renamed"
+          },
+          "status": 200,
+          "changed": 1,
+          "errorCode": null,
+          "errorMessage": null,
+          "toast": "Changes saved 1 field updated for ZZ TEST SCRUM-857 child c01."
+        },
+        "afterName": {
+          "id": "01a1ce78-993f-7e33-b348-df46dfb65f0c",
+          "guardianName": "ZZ TEST SCRUM-857 guardian c01 renamed",
+          "guardianPhone": "+66898570116",
+          "contactChannel": "whatsapp",
+          "contactConfirmedAt": "2026-11-12T06:36:11.219Z",
+          "contactConfirmedBy": "family"
+        },
+        "clearEdit": {
+          "shown": {
+            "phone": "898570116",
+            "channels": {
+              "shown": [
+                "WhatsApp",
+                "Telegram",
+                "LINE"
+              ],
+              "chosen": [
+                "WhatsApp"
+              ]
+            }
+          },
+          "edited": {
+            "phone": "",
+            "channels": {
+              "shown": [
+                "WhatsApp",
+                "Telegram",
+                "LINE"
+              ],
+              "chosen": [
+                "WhatsApp"
+              ]
+            }
+          },
+          "sent": {
+            "guardianPhone": null
+          },
+          "status": 200,
+          "changed": 1,
+          "errorCode": null,
+          "errorMessage": null,
+          "toast": "Changes saved 1 field updated for ZZ TEST SCRUM-857 child c01."
+        },
+        "afterClear": {
+          "id": "01a1ce78-993f-7e33-b348-df46dfb65f0c",
+          "guardianName": "ZZ TEST SCRUM-857 guardian c01 renamed",
+          "guardianPhone": null,
+          "contactChannel": "whatsapp",
+          "contactConfirmedAt": null,
+          "contactConfirmedBy": null
+        },
+        "auditUpdates": [
+          {
+            "action": "registration.update",
+            "createdAt": "2026-11-12T06:36:36.590Z",
+            "before": {
+              "guardianPhone": "+66898570116",
+              "contactConfirmedAt": "2026-11-12T06:36:11.219Z",
+              "contactConfirmedBy": "family"
+            },
+            "after": {
+              "event": "edit",
+              "guardianPhone": null,
+              "contactConfirmedAt": null,
+              "contactConfirmedBy": null
+            }
+          },
+          {
+            "action": "registration.update",
+            "createdAt": "2026-11-12T06:36:26.603Z",
+            "before": {
+              "guardianName": "ZZ TEST SCRUM-857 guardian c01"
+            },
+            "after": {
+              "event": "edit",
+              "guardianName": "ZZ TEST SCRUM-857 guardian c01 renamed"
+            }
+          }
+        ]
+      }
+    },
+    "6a": {
+      "pass": true,
+      "pictures": [
+        "06a-ordinary-sale-payment-no-confirm-line.png",
+        "06a2-ordinary-sale-paid-cash.png"
+      ],
+      "shows": "Ordinary sale, one child with an adult: no confirm line or status row anywhere on the till, no registration written, paid in cash",
+      "seen": {
+        "childrenPlayingAloneShown": 0,
+        "confirmLineTill": 0,
+        "statusRow": 0,
+        "confirmWordsAnywhere": false,
+        "sale": {
+          "id": "01a1ce79-076d-7dc8-9e13-cc6383744661",
+          "status": "finalised",
+          "receipt": "Z85701-000002",
+          "grossSatang": 104000
+        },
+        "tillWrites": [
+          {
+            "at": "e: ordinary sale — number on the first screen, one adult and one child",
+            "method": "POST",
+            "path": "/api/sales"
+          }
+        ],
+        "registrationsWritten": 0
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce76-a496-7bb8-b7cc-098bf7800ce0",
+      "name": "ZZ TEST SCRUM-857 proof till 1794465242025",
+      "prefix": "Z85701"
+    },
+    {
+      "kind": "display",
+      "id": "01a1ce77-e07b-70e5-89fe-0f84eb35d86b"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1ce78-993f-7e33-b348-df46dfb65f0c",
+      "pass": "c"
+    },
+    {
+      "kind": "dropoff-ticket-sale",
+      "id": "01a1ce78-9d11-7594-9ed5-521c37e03652"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1ce79-076d-7dc8-9e13-cc6383744661"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": 1,
+      "confirmTestIds": 1,
+      "publicConfirmTestIds": 1,
+      "confirmLineEn": 1
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1ce77-e07b-70e5-89fe-0f84eb35d86b",
+      "revoked": true
+    },
+    {
+      "kind": "registration",
+      "pass": "c",
+      "id": "01a1ce78-993f-7e33-b348-df46dfb65f0c",
+      "children": [
+        {
+          "id": "01a1ce78-993f-7e33-b348-df47373c3a43",
+          "name": "ZZ TEST SCRUM-857 child c01",
+          "status": "out"
+        }
+      ],
+      "stillWaiting": 0,
+      "inPark": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce79-076d-7dc8-9e13-cc6383744661",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1ce79-1053-7940-b419-53774896fe35",
+          "status": "printed"
+        },
+        {
+          "id": "01a1ce79-104f-7644-a33e-5f87e64dda7b",
+          "status": "printed"
+        },
+        {
+          "id": "01a1ce79-1049-7571-a2dc-d508ae6b5a1a",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce78-9d11-7594-9ed5-521c37e03652",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1ce78-a2d2-75db-8c8b-6c53e3d922e5",
+          "status": "printed"
+        },
+        {
+          "id": "01a1ce78-a0fd-7169-936e-4d05ae0004d4",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1ce79-076d-7dc8-9e13-cc6383744661",
+          "status": "finalised",
+          "grossSatang": 104000
+        },
+        {
+          "id": "01a1ce78-9d11-7594-9ed5-521c37e03652",
+          "status": "finalised",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce76-a496-7bb8-b7cc-098bf7800ce0",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "sA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sB",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sX",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "nA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dB",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "cA",
+      "id": "01a1ce78-975a-71bd-99b0-49e0a12f227b",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "eA",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "sA": "0898570110",
+    "sB": "0898570111",
+    "sX": "0898570112",
+    "nA": "0898570113",
+    "dA": "0898570114",
+    "dB": "0898570115",
+    "cA": "0898570116",
+    "eA": "0898570117"
+  },
+  "failures": [
+    {
+      "pass": "s",
+      "failedAt": "s: guardian name, photo and the agreement ticks first, so only the number confirmation is left",
+      "failure": "TimeoutError: locator.innerText: Timeout 30000ms exceeded."
+    },
+    {
+      "pass": "a",
+      "failedAt": "s: guardian name, photo and the agreement ticks first, so only the number confirmation is left",
+      "failure": "AssertionError: pass s gave the till's own registration body shape"
+    },
+    {
+      "pass": "n",
+      "failedAt": "n: first screen — number A, WhatsApp; one child aged 3, no adult",
+      "failure": "TimeoutError: locator.innerText: Timeout 30000ms exceeded."
+    },
+    {
+      "pass": "d",
+      "failedAt": "d: one child, no adult; the form opens on the display",
+      "failure": "TimeoutError: locator.innerText: Timeout 30000ms exceeded."
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-12T06:36:50.531Z"
+}

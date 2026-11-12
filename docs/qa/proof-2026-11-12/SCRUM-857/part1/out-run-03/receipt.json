@@ -1,0 +1,1012 @@
+{
+  "ticket": "SCRUM-857 part 1",
+  "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+  "startedAt": "2026-11-12T06:39:38.633Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqlkdtbedkc73e10te0",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:31.110602Z",
+        "finishedAt": "2026-11-12T06:22:57.565094Z"
+      },
+      "serving": {
+        "id": "dep-dbqlkdtbedkc73e10te0",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:31.110602Z",
+        "finishedAt": "2026-11-12T06:22:57.565094Z"
+      },
+      "readAt": "2026-11-12T06:23:13.826Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqlke49v7es73cvp520",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:32.445725Z",
+        "finishedAt": "2026-11-12T06:19:35.672114Z"
+      },
+      "serving": {
+        "id": "dep-dbqlke49v7es73cvp520",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:32.445725Z",
+        "finishedAt": "2026-11-12T06:19:35.672114Z"
+      },
+      "readAt": "2026-11-12T06:23:14.445Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqlked6e07s73fjev1g",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:33.769442Z",
+        "finishedAt": "2026-11-12T06:22:12.426664Z"
+      },
+      "serving": {
+        "id": "dep-dbqlked6e07s73fjev1g",
+        "status": "live",
+        "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+        "createdAt": "2026-11-12T06:18:33.769442Z",
+        "finishedAt": "2026-11-12T06:22:12.426664Z"
+      },
+      "readAt": "2026-11-12T06:23:15.062Z"
+    }
+  },
+  "passes": [
+    "n",
+    "d",
+    "a"
+  ],
+  "points": {
+    "3": {
+      "pass": true,
+      "pictures": [
+        "03a-display-agreements-confirm-line-unticked.png",
+        "03b-display-landline-cannot-tick.png",
+        "03c-staff-private-copy-read-only-unticked.png",
+        "03d-display-done-disabled-until-tick.png",
+        "03e-display-ticked-done-enabled.png",
+        "03f-display-number-edited-clears-tick.png",
+        "03g-staff-private-copy-ticked-read-only.png",
+        "03h-display-pass-paid-cash.png",
+        "03i-display-registration-and-audit-readback.png"
+      ],
+      "shows": "Paired display: the confirm line on the agreements step; Done disabled until the family ticks it (and presses Continue); editing the number clears it; the staff copy shows it read-only; cash; read-back and audit as in point 2",
+      "seen": {
+        "steps": {
+          "1-agreements": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": false,
+            "continueShown": false
+          },
+          "2-landline": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": true,
+              "needed": null,
+              "invalid": "This doesn't look like a mobile number that can receive messages — please check it."
+            },
+            "done": "not shown",
+            "continueShown": true
+          },
+          "3-empty": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": true,
+              "needed": "Add the number we can message you on about your child.",
+              "invalid": null
+            },
+            "done": "not shown",
+            "continueShown": true
+          },
+          "4-saved-unconfirmed": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": false,
+            "continueShown": false
+          },
+          "5a-ticked-not-sent": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "checked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": "not shown",
+            "continueShown": true
+          },
+          "5-ticked-sent": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "checked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": true,
+            "continueShown": false
+          },
+          "6-number-edited": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": "not shown",
+            "continueShown": true
+          },
+          "6b-edited-sent": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "unchecked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": false,
+            "continueShown": false
+          },
+          "7-final": {
+            "form": {
+              "shown": true,
+              "text": "This is my WhatsApp number — send messages about my child here.",
+              "state": "checked",
+              "disabled": false,
+              "needed": null,
+              "invalid": null
+            },
+            "done": true,
+            "continueShown": false
+          }
+        },
+        "staffCopyBefore": {
+          "shown": true,
+          "text": "This is my WhatsApp number — send messages about my child here.(the family confirms this on their screen)",
+          "state": "unchecked",
+          "disabled": true,
+          "needed": null,
+          "invalid": null
+        },
+        "staffCopyAfterStaffPress": {
+          "shown": true,
+          "text": "This is my WhatsApp number — send messages about my child here.(the family confirms this on their screen)",
+          "state": "unchecked",
+          "disabled": true,
+          "needed": null,
+          "invalid": null
+        },
+        "gateBefore": {
+          "status": "WhatsApp number +66 89 857 0134 · not confirmed yet",
+          "blockers": [
+            "ZZ TEST SCRUM-857 child d03 (age 6) needs drop-off supervision.",
+            "Parent must confirm that the number is the one for their messaging channel on the customer screen."
+          ],
+          "continueEnabled": false
+        },
+        "staffCopyAfter": {
+          "shown": true,
+          "text": "This is my WhatsApp number — send messages about my child here.(confirmed by the family)",
+          "state": "checked",
+          "disabled": true,
+          "needed": null,
+          "invalid": null
+        },
+        "gateAfter": {
+          "status": "WhatsApp number +66 89 857 0135 · confirmed by the family",
+          "blockers": [
+            "ZZ TEST SCRUM-857 child d03 (age 6) needs drop-off supervision."
+          ],
+          "continueEnabled": true
+        },
+        "sentByTheTill": {
+          "guardianPhone": "+66898570135",
+          "contactChannel": "whatsapp",
+          "contactConfirmation": {
+            "confirmedAt": "2026-11-12T06:40:15.762Z",
+            "by": "family"
+          }
+        },
+        "registration": {
+          "id": "01a1ce7c-5ecc-77fa-9949-f673ce4b4dbb",
+          "guardianName": "ZZ TEST SCRUM-857 guardian d03",
+          "guardianPhone": "+66898570135",
+          "contactChannel": "whatsapp",
+          "contactConfirmedAt": "2026-11-12T06:40:15.762Z",
+          "contactConfirmedBy": "family"
+        },
+        "auditCreate": {
+          "action": "registration.create",
+          "createdAt": "2026-11-12T06:40:19.997Z",
+          "before": null,
+          "after": {
+            "guardianName": "ZZ TEST SCRUM-857 guardian d03",
+            "guardianPhone": "+66898570135",
+            "contactChannel": "whatsapp",
+            "contactConfirmedAt": "2026-11-12T06:40:15.762Z",
+            "contactConfirmedBy": "family"
+          }
+        },
+        "sale": {
+          "id": "01a1ce7c-6309-779e-ae08-94ab9bc964be",
+          "status": "finalised",
+          "receipt": "Z85703-000001",
+          "grossSatang": 91500
+        },
+        "checks": [
+          {
+            "what": "display agreements step: the confirm line, WhatsApp, unticked",
+            "ok": true
+          },
+          {
+            "what": "display: a landline greys the box out with the invalid line; an empty number with the needed line",
+            "ok": true
+          },
+          {
+            "what": "staff copy: the tick is read-only, \"(the family confirms this on their screen)\", and a staff press does nothing",
+            "ok": true
+          },
+          {
+            "what": "display: Done shown but disabled while the number is not ticked; till gate says why",
+            "ok": true
+          },
+          {
+            "what": "display: ticking needs Continue, then Done is enabled; the till status reads confirmed by the family",
+            "ok": true
+          },
+          {
+            "what": "display: editing the number clears the tick, Done is not offered, the till reads not confirmed",
+            "ok": true
+          },
+          {
+            "what": "final: Done enabled; staff copy ticked and read-only \"(confirmed by the family)\"; till status confirmed by the family",
+            "ok": true
+          },
+          {
+            "what": "read-back: number B (+66), WhatsApp, confirmed by the family; audit create carries it; sale finalised",
+            "ok": true
+          }
+        ]
+      }
+    },
+    "4": {
+      "pass": true,
+      "pictures": [
+        "04a-nanny-confirm-line-asked.png",
+        "04b-nanny-ticked.png"
+      ],
+      "shows": "Nanny age (3): the same confirm line is asked, Continue is blocked until the family ticks it; nothing written (backed out before Continue to payment)",
+      "seen": {
+        "nannyRequirementShown": true,
+        "requirement": null,
+        "before": {
+          "form": {
+            "shown": true,
+            "text": "This is my WhatsApp number — send messages about my child here.",
+            "state": "unchecked",
+            "disabled": false,
+            "needed": null,
+            "invalid": null
+          },
+          "staff": {
+            "status": "WhatsApp number +66 89 857 0133 · not confirmed yet",
+            "blockers": [
+              "ZZ TEST SCRUM-857 child n03 (age 3) needs a nanny before payment.",
+              "Parent must confirm that the number is the one for their messaging channel on the customer screen."
+            ],
+            "continueEnabled": false
+          }
+        },
+        "after": {
+          "form": {
+            "shown": true,
+            "text": "This is my WhatsApp number — send messages about my child here.",
+            "state": "checked",
+            "disabled": false,
+            "needed": null,
+            "invalid": null
+          },
+          "staff": {
+            "status": "WhatsApp number +66 89 857 0133 · confirmed by the family",
+            "blockers": [
+              "ZZ TEST SCRUM-857 child n03 (age 3) needs a nanny before payment."
+            ],
+            "continueEnabled": true
+          }
+        }
+      }
+    },
+    "7": {
+      "pass": true,
+      "pictures": [
+        "07-api-refusals.png"
+      ],
+      "shows": "The api refuses a landline, an invalid number (and text that is not a number) and a confirmation with no number, each 400 with a plain line; nothing is written",
+      "seen": {
+        "results": [
+          {
+            "case": "landline",
+            "sentPhone": "021234567",
+            "sentConfirmation": false,
+            "status": 400,
+            "code": "BAD_REQUEST",
+            "message": "That number is a landline or a service line, not one that can take WhatsApp, Telegram or LINE messages — check it with the guardian.",
+            "readBackStatus": 404,
+            "ok": true
+          },
+          {
+            "case": "invalid",
+            "sentPhone": "0112345678",
+            "sentConfirmation": false,
+            "status": 400,
+            "code": "BAD_REQUEST",
+            "message": "That phone number is not a valid number for its country — check it with the guardian.",
+            "readBackStatus": 404,
+            "ok": true
+          },
+          {
+            "case": "not-a-number",
+            "sentPhone": "abc",
+            "sentConfirmation": false,
+            "status": 400,
+            "code": "BAD_REQUEST",
+            "message": "That phone number doesn't look right — check it with the guardian.",
+            "readBackStatus": 404,
+            "ok": true
+          },
+          {
+            "case": "confirmation-without-number",
+            "sentPhone": null,
+            "sentConfirmation": true,
+            "status": 400,
+            "code": "BAD_REQUEST",
+            "message": "The number was confirmed but none was given — add the number the family confirmed.",
+            "readBackStatus": 404,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "6b": {
+      "pass": true,
+      "pictures": [
+        "06b-display-thai-confirm-line.png",
+        "06c-display-thai-landline-line.png",
+        "06d-display-russian-confirm-line.png"
+      ],
+      "shows": "Display language switch: the confirm line in Thai and in Russian with the channel filled in, the Thai landline line, no raw key",
+      "seen": {
+        "thai": {
+          "shown": true,
+          "text": "นี่คือหมายเลข WhatsApp ของฉัน — ส่งข้อความเกี่ยวกับลูกของฉันมาที่หมายเลขนี้",
+          "state": "unchecked",
+          "disabled": false,
+          "needed": null,
+          "invalid": null
+        },
+        "thaiRawKey": false,
+        "thaiLandline": {
+          "shown": true,
+          "text": "นี่คือหมายเลข WhatsApp ของฉัน — ส่งข้อความเกี่ยวกับลูกของฉันมาที่หมายเลขนี้",
+          "state": "unchecked",
+          "disabled": true,
+          "needed": null,
+          "invalid": "หมายเลขนี้ดูไม่เหมือนหมายเลขมือถือที่รับข้อความได้ — กรุณาตรวจสอบ"
+        },
+        "russian": {
+          "shown": true,
+          "text": "Это мой номер WhatsApp — присылайте сообщения о моём ребёнке сюда.",
+          "state": "unchecked",
+          "disabled": false,
+          "needed": null,
+          "invalid": null
+        },
+        "russianRawKey": false
+      }
+    },
+    "5b": {
+      "pass": true,
+      "pictures": [
+        "05b-board-edit-channel-readback.png",
+        "05b-board-edit-channel.png",
+        "05b-board-edit-channel-saved.png"
+      ],
+      "shows": "Check-in board: editing only the channel withdraws the confirmation (both fields null), the number is untouched",
+      "seen": {
+        "shown": {
+          "phone": "898570135",
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "WhatsApp"
+            ]
+          }
+        },
+        "edited": {
+          "phone": "898570135",
+          "channels": {
+            "shown": [
+              "WhatsApp",
+              "Telegram",
+              "LINE"
+            ],
+            "chosen": [
+              "Telegram"
+            ]
+          }
+        },
+        "sent": {
+          "contactChannel": "telegram"
+        },
+        "status": 200,
+        "changed": 1,
+        "errorCode": null,
+        "errorMessage": null,
+        "toast": "Changes saved 1 field updated for ZZ TEST SCRUM-857 child d03.",
+        "cardAfter": "ZZ TEST SCRUM-857 guardian d03 +66898570135 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in Telegram. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898570135 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST SCRUM-857 child d03 6 yrs DROP-OFF 1h 00m left Check Out",
+        "registrationAfter": {
+          "id": "01a1ce7c-5ecc-77fa-9949-f673ce4b4dbb",
+          "guardianName": "ZZ TEST SCRUM-857 guardian d03",
+          "guardianPhone": "+66898570135",
+          "contactChannel": "telegram",
+          "contactConfirmedAt": null,
+          "contactConfirmedBy": null
+        },
+        "auditUpdate": {
+          "action": "registration.update",
+          "createdAt": "2026-11-12T06:40:35.611Z",
+          "before": {
+            "contactChannel": "whatsapp",
+            "contactConfirmedAt": "2026-11-12T06:40:15.762Z",
+            "contactConfirmedBy": "family"
+          },
+          "after": {
+            "event": "edit",
+            "contactChannel": "telegram",
+            "contactConfirmedAt": null,
+            "contactConfirmedBy": null
+          }
+        },
+        "facts": "05b-board-edit-channel-readback.png"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations",
+      "status": 400,
+      "errorCode": "BAD_REQUEST"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations",
+      "status": 400,
+      "errorCode": "BAD_REQUEST"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations",
+      "status": 400,
+      "errorCode": "BAD_REQUEST"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations",
+      "status": 400,
+      "errorCode": "BAD_REQUEST"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce7b-c5e6-7499-a439-5d91d6f2c1b9",
+      "name": "ZZ TEST SCRUM-857 proof till 1794465578645",
+      "prefix": "Z85703"
+    },
+    {
+      "kind": "display",
+      "id": "01a1ce7c-0200-7025-a052-6ee0ba37be1c"
+    },
+    {
+      "kind": "registration",
+      "id": "01a1ce7c-5ecc-77fa-9949-f673ce4b4dbb",
+      "pass": "d"
+    },
+    {
+      "kind": "dropoff-ticket-sale",
+      "id": "01a1ce7c-6309-779e-ae08-94ab9bc964be"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": 1,
+      "confirmTestIds": 1,
+      "publicConfirmTestIds": 1,
+      "confirmLineEn": 1
+    },
+    "edit5b": {
+      "shown": {
+        "phone": "898570135",
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "WhatsApp"
+          ]
+        }
+      },
+      "edited": {
+        "phone": "898570135",
+        "channels": {
+          "shown": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ],
+          "chosen": [
+            "Telegram"
+          ]
+        }
+      },
+      "sent": {
+        "contactChannel": "telegram"
+      },
+      "status": 200,
+      "changed": 1,
+      "errorCode": null,
+      "errorMessage": null,
+      "toast": "Changes saved 1 field updated for ZZ TEST SCRUM-857 child d03.",
+      "cardAfter": "ZZ TEST SCRUM-857 guardian d03 +66898570135 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in Telegram. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898570135 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST SCRUM-857 child d03 6 yrs DROP-OFF 1h 00m left Check Out",
+      "registrationAfter": {
+        "id": "01a1ce7c-5ecc-77fa-9949-f673ce4b4dbb",
+        "guardianName": "ZZ TEST SCRUM-857 guardian d03",
+        "guardianPhone": "+66898570135",
+        "contactChannel": "telegram",
+        "contactConfirmedAt": null,
+        "contactConfirmedBy": null
+      },
+      "auditUpdate": {
+        "action": "registration.update",
+        "createdAt": "2026-11-12T06:40:35.611Z",
+        "before": {
+          "contactChannel": "whatsapp",
+          "contactConfirmedAt": "2026-11-12T06:40:15.762Z",
+          "contactConfirmedBy": "family"
+        },
+        "after": {
+          "event": "edit",
+          "contactChannel": "telegram",
+          "contactConfirmedAt": null,
+          "contactConfirmedBy": null
+        }
+      },
+      "facts": "05b-board-edit-channel-readback.png"
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "display",
+      "id": "01a1ce7c-0200-7025-a052-6ee0ba37be1c",
+      "revoked": true
+    },
+    {
+      "kind": "registration",
+      "pass": "d",
+      "id": "01a1ce7c-5ecc-77fa-9949-f673ce4b4dbb",
+      "children": [
+        {
+          "id": "01a1ce7c-5ecc-77fa-9949-f67427fbe9b3",
+          "name": "ZZ TEST SCRUM-857 child d03",
+          "status": "out"
+        }
+      ],
+      "stillWaiting": 0,
+      "inPark": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce7c-6309-779e-ae08-94ab9bc964be",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1ce7c-7045-7673-9633-79e2752d6358",
+          "status": "printed"
+        },
+        {
+          "id": "01a1ce7c-66c3-7907-9d96-62cc1e20f598",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1ce7c-6309-779e-ae08-94ab9bc964be",
+          "status": "finalised",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce7b-c5e6-7499-a439-5d91d6f2c1b9",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "sA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sB",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sX",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "nA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dA",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "dB",
+      "id": "01a1ce7c-5d44-776a-828d-2b1a44cf2feb",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "cA",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "eA",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "sA": "0898570130",
+    "sB": "0898570131",
+    "sX": "0898570132",
+    "nA": "0898570133",
+    "dA": "0898570134",
+    "dB": "0898570135",
+    "cA": "0898570136",
+    "eA": "0898570137"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T06:40:44.819Z"
+}

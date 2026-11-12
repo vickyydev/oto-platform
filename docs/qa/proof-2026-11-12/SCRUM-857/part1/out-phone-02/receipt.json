@@ -1,0 +1,211 @@
+{
+  "ticket": "SCRUM-857 part 1 — phone till extra",
+  "sha": "9383df00b00ca0614f1a7b7ba64dfc5f62236e5c",
+  "startedAt": "2026-11-12T06:41:57.157Z",
+  "number": "0898570161",
+  "steps": [
+    {
+      "what": "signed in",
+      "picture": "p01-phone-till-start.png",
+      "url": "/",
+      "buttons": [
+        "0 no gate",
+        "Redeem Online Booking",
+        "No items yet ฿0",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Check-in",
+        "Events",
+        "History",
+        "Today",
+        "7 Messages"
+      ]
+    },
+    {
+      "what": "ticket picked",
+      "picture": null,
+      "url": "/",
+      "buttons": [
+        "0 no gate",
+        "Cancel",
+        "Back to tickets",
+        "Sizes",
+        "Add Another Ticket",
+        "Continue",
+        "1 1 item ฿1040",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Check-in",
+        "Events",
+        "History",
+        "Today",
+        "7 Messages"
+      ]
+    },
+    {
+      "what": "one child, no adult",
+      "picture": "p02-phone-till-one-child.png",
+      "url": "/",
+      "buttons": [
+        "0 no gate",
+        "Cancel",
+        "Back to tickets",
+        "Sizes",
+        "Add Another Ticket",
+        "Continue",
+        "1 1 item ฿690",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Check-in",
+        "Events",
+        "History",
+        "Today",
+        "7 Messages"
+      ]
+    },
+    {
+      "what": "after Continue",
+      "picture": "p03-phone-till-after-continue.png",
+      "url": "/",
+      "buttons": [
+        "0 no gate",
+        "Cancel",
+        "Tap to set age",
+        "Back",
+        "Continue to payment",
+        "1 1 item ฿690",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Check-in",
+        "Events",
+        "History",
+        "Today",
+        "7 Messages"
+      ]
+    },
+    {
+      "what": "child named, age 6",
+      "picture": "p04-phone-till-gate-age-6.png",
+      "url": "/",
+      "buttons": [
+        "0 no gate",
+        "Cancel",
+        "6 yrs",
+        "Back",
+        "Continue to payment",
+        "1 1 item ฿690",
+        "Tickets",
+        "F&B",
+        "Shop",
+        "Check-in",
+        "Events",
+        "History",
+        "Today",
+        "7 Messages"
+      ]
+    }
+  ],
+  "pageErrors": [
+    {
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "phone-session",
+      "signedOutMe": 401
+    },
+    {
+      "kind": "sales-on-phone-till",
+      "count": 0,
+      "statuses": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce7d-e001-77c0-88c9-840680f7764d",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "member": null
+    },
+    {
+      "kind": "admin-session",
+      "me": 401
+    }
+  ],
+  "writes": [],
+  "station": {
+    "id": "01a1ce7d-e001-77c0-88c9-840680f7764d",
+    "prefix": "Z85705"
+  },
+  "gate": {
+    "text": "Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. 6 yrs Drop-off required Before payment • ZZ TEST SCRUM-857 phone child (age 6) needs drop-off supervision. • ZZ TEST SCRUM-857 phone child needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. Back Continue to payment 1 1 item ฿690 Tickets F&B Shop Check-in Events History Today 7 Messages",
+    "confirmLines": 0,
+    "note": "trimmed to start at the screen title (the phone header before it is left out)"
+  },
+  "failure": "TimeoutError: locator.click: Timeout 20000ms exceeded.",
+  "finishedAt": "2026-11-12T06:42:32.127Z"
+}

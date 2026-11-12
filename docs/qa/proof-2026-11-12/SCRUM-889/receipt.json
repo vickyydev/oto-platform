@@ -1,0 +1,840 @@
+{
+  "tickets": [
+    "SCRUM-889",
+    "SCRUM-890",
+    "SCRUM-891"
+  ],
+  "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+  "run": "01, 2026-11-12 13:34-13:52 Bangkok, step by step through an interactive driver (the steps of proof.mjs, in its order)",
+  "startedAt": "2026-11-12T06:34:00.179Z",
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce77-17e9-76ab-b6e7-b2571c05e0b6",
+      "name": "ZZ TEST SCRUM-889 proof till 1794465273500",
+      "prefix": "Z88901",
+      "at": "2026-11-12T06:34:33.639Z"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "2b21e826-acac-424c-b126-ee5de41a7e78",
+      "title": "ZZ TEST SCRUM-889 party",
+      "at": "2026-11-12T06:34:47.614Z"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1ce77-d926-7629-ba61-241b7ca02725",
+      "settlement": "01a1ce77-d926-7629-ba61-241a5fe54697"
+    },
+    {
+      "kind": "ticket-sale",
+      "id": "01a1ce7b-5714-7d68-b6ac-6e3f5bb7360f",
+      "number": "0898890010"
+    },
+    {
+      "kind": "fnb-part-paid-sale",
+      "id": "01a1ce7c-6394-71b6-bc73-7a2eca7177ce"
+    }
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "pictures": [
+        "01a-889-party-page-before-settle.png",
+        "01b-889-settle-confirmed-amount-due-is-the-balance.png",
+        "01b2-889-settle-payment-back-is-disabled.png",
+        "01c-889-after-back-party-page-resume-settlement.png",
+        "01d-889-tickets-tab-before-reload.png",
+        "01e-889-tickets-tab-after-reload-party-settlement-card.png",
+        "01f-889-open-the-party-page-lands-on-the-party.png",
+        "01g-889-resume-settlement-amount-due-is-the-balance.png"
+      ],
+      "shows": "Settle party + Confirm: sale tendering, gross 16,900, deposit 1,000 on it, Amount Due 15,900 (till and display). Out by the modal X (Back is disabled). Tickets tab + reload: Membership Check first screen, no Play ticket card, no steppers, no Resumed notice, no payment step, Pay 0; the card Party settlement open, Resume on the party page with one Open the party page button, no Resume this sale, no Void that unpaid sale. The button opened /parties?party=<id> on the ZZ TEST party; its button read Resume settlement 15900; Amount Due 15,900 (display Amount due 15,900)."
+    },
+    "2": {
+      "pass": true,
+      "pictures": [
+        "02a-889-ticket-order-at-payment.png",
+        "02b-889-ticket-order-back-on-its-payment-screen.png",
+        "02c-889-ticket-order-pay-button-equals-amount-due.png",
+        "02e-889-ticket-order-voided-till-back-to-start.png"
+      ],
+      "shows": "1 child + 1 adult walk-in (0898890010), 1 Hour Play 1,040, left at payment; History then Tickets: back on its payment screen with Resumed after a reload, Amount Due 1,040, Pay 1,040; Cancel voided it (void 200, sale voided)."
+    },
+    "3": {
+      "pass": true,
+      "pictures": [
+        "03a-890-fnb-partial-payment-50-of-175.png",
+        "03a2-890-fnb-after-partial-recorded.png",
+        "03d-890-history-list-card-partly-paid.png",
+        "03e-890-history-detail-partly-paid-balance-due-125.png",
+        "03b-876-history-list-settlement-card-unpaid.png",
+        "03c-876-deposit-only-settlement-still-unpaid-void-offered.png"
+      ],
+      "shows": "French fries 175, 50 cash partial: list card Partly paid 175 (api row partPaid paid 50 balance 125); detail badge Partly paid, Balance due 125, Payment Cash 50 approved, Refund (50 left), no Void. Deposit-only settlement: card Unpaid 16,900, detail Unpaid, Amount due 16,900, Void unpaid sale offered (not pressed), no Refund; api row partySettlement set, partPaid absent."
+    },
+    "4": {
+      "pass": true,
+      "pictures": [
+        "04a-891-manager-refund-dialog-whole-50.png",
+        "04b-891-after-refund-history-detail.png",
+        "04c-891-end-of-day-after-refund-nothing-part-paid.png"
+      ],
+      "shows": "Manager refund whole 50 cash: answer refundStatus refunded, sale voided; fresh GET /api/sales/:id (manager browser and admin) refundStatus refunded, status voided, refundable 0, refunded 50; History Voided, Total (voided) 175, Refunded -50; End of Day before: part_paid row (gross 175, paid 50, balance 125), after: none, page Held 0 Partly paid 0."
+    },
+    "5": {
+      "pass": true,
+      "pictures": [
+        "05a-889-cancel-settlement-with-a-reason.png",
+        "05b-889-party-after-cancel-settle-party-again.png",
+        "05c-889-tickets-tab-card-gone-after-cancel.png"
+      ],
+      "shows": "Cancel settlement with a ZZ TEST reason: void 200, settlement voided, sale voided, deposit attempt cancelled, party deposit still 1,000, button back to Settle party, card gone from the Tickets tab. Party deleted in the OTO App (204), read back 404 in the app and on the till."
+    },
+    "6": {
+      "pass": true,
+      "pictures": [
+        "06a-890-phone-history-list-partly-paid.png",
+        "06f-890-phone-history-list-part-paid-card.png",
+        "06b-890-phone-history-detail-partly-paid-balance-due.png",
+        "06d-890-phone-history-detail-refund-50-left.png",
+        "06e-890-phone-history-list-settlement-card-unpaid.png"
+      ],
+      "shows": "Phone till 390x844 (same ZZ TEST till), before the refund: list card Partly paid 175; detail Partly paid, Balance due 125, Payment Cash 50, Refund (50 left). The settlement card on the phone list reads Unpaid 16,900."
+    },
+    "look": {
+      "pictures": [
+        "07a-look-tickets-tab-with-part-paid-fnb-order-open.png"
+      ],
+      "shows": "Tickets tab with the part-paid F&B order open at the same till: a red toast That sale is not a ticket sale appeared on its own (read from the page; gone before the picture)."
+    }
+  },
+  "reads": {
+    "numbersBefore": {
+      "0898890010": "none",
+      "0898890011": "none",
+      "0898890012": "none",
+      "0898890013": "none",
+      "0898890014": "none",
+      "0898890015": "none"
+    },
+    "bundle": {
+      "files": 1,
+      "partyCard": 1,
+      "partlyPaid": 5,
+      "balanceDue": 3
+    },
+    "partyBefore": {
+      "status": 200,
+      "deposit": 100000,
+      "settlement": null,
+      "title": "ZZ TEST SCRUM-889 party"
+    },
+    "settle": {
+      "status": 200,
+      "saleStatus": "tendering",
+      "outstandingSatang": 1590000,
+      "settlement": {
+        "state": "open",
+        "depositSatang": 100000,
+        "paidSatang": 100000,
+        "outstandingSatang": 1590000
+      },
+      "amountDueOnScreen": "฿15900",
+      "buttonBefore": "Settle party",
+      "partyBillBehindModal": "Total ฿0 Deposit paid −฿1000 Outstanding ฿0 Event info Date Thu, 12 Nov 2026 Time 15:00 – 18:00 Room Headcount 2 kids · 2 adults Parent contact Parent Kitchen plan Package Birthday package, Central Florest"
+    },
+    "settleBackDisabled": true,
+    "afterReload": {
+      "afterBack": {
+        "url": "https://oto-pos-web-staging.onrender.com/parties",
+        "resumeBtn": "Resume settlement ฿15900",
+        "modalOpen": false
+      },
+      "beforeReload": {
+        "card": true,
+        "resumedNotice": false,
+        "playTicket": false
+      },
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "card": true,
+      "cardText": "Party settlement open — Resume on the party page Party settlement at ZZ TEST SCRUM-889 proof till 1794465273500 · rung up 12 Nov 2026 13:35 Open the party page",
+      "openPartyButtons": 1,
+      "resumeButtons": 0,
+      "voidButtons": 0,
+      "resumedNotice": false,
+      "playTicketCard": false,
+      "addKids": 0,
+      "paymentStep": false,
+      "payButton": "Pay ฿0",
+      "gross16900": false,
+      "firstScreen": true,
+      "membershipCheck": true
+    },
+    "resumeFromCard": {
+      "url": "https://oto-pos-web-staging.onrender.com/parties?party=2b21e826-acac-424c-b126-ee5de41a7e78",
+      "onParty": true,
+      "resumeBtn": "Resume settlement ฿15900",
+      "amountDue": "฿15900",
+      "customer": [
+        "Amount due ฿15900"
+      ],
+      "samples": [
+        {
+          "ms": 6,
+          "v": "฿0",
+          "checking": false
+        },
+        {
+          "ms": 341,
+          "v": "฿15900",
+          "checking": false
+        }
+      ]
+    },
+    "settlementInHistory": {
+      "cardText": "No receipt number 12 Nov, 13:35 [staff] Unpaid ฿16900",
+      "label": "Amount due",
+      "amount": "฿16900",
+      "voidBtn": true,
+      "voidText": "Void unpaid sale",
+      "refundBtn": false,
+      "partlyPaidWord": false,
+      "sale": {
+        "status": "tendering",
+        "gross": 1690000,
+        "refundStatus": "none",
+        "attempts": [
+          {
+            "method": "other",
+            "status": "approved",
+            "amountSatang": 100000,
+            "partyDeposit": true
+          }
+        ]
+      }
+    },
+    "ticketBefore": {
+      "status": 200,
+      "sale": "01a1ce7b-5714-7d68-b6ac-6e3f5bb7360f",
+      "amountDue": "฿1040",
+      "pay": "Pay ฿1040",
+      "settlementCardVisible": true
+    },
+    "ticketReturned": {
+      "url": "https://oto-pos-web-staging.onrender.com/",
+      "paymentStep": true,
+      "amountDue": "฿1040",
+      "pay": "Pay ฿1040",
+      "resumedNotice": "Resumed after a reload: this sale was rung up at this till 12 Nov 2026 13:39",
+      "settlementCard": true,
+      "kids": 1
+    },
+    "ticketCancelled": {
+      "dialogText": null,
+      "voidStatus": 200,
+      "sale": {
+        "status": "voided",
+        "gross": 104000
+      },
+      "settlementCardAfter": true,
+      "firstScreen": true
+    },
+    "fries": {
+      "chargeText": "Charge ฿175",
+      "finaliseStatus": 200,
+      "finalised": false,
+      "outstandingSatang": 12500
+    },
+    "friesInHistory": {
+      "apiRow": {
+        "status": "tendering",
+        "gross": 17500,
+        "partPaid": {
+          "paidSatang": 5000,
+          "balanceSatang": 12500
+        },
+        "partySettlement": null
+      },
+      "apiRowSettlement": {
+        "status": "tendering",
+        "partPaid": null,
+        "partySettlement": {
+          "eventId": "2b21e826-acac-424c-b126-ee5de41a7e78",
+          "settlementId": "01a1ce77-d926-7629-ba61-241a5fe54697"
+        }
+      },
+      "cardText": "No receipt number 12 Nov, 13:40 [staff] Partly paid ฿175",
+      "badge": "Partly paid",
+      "label": "Balance due",
+      "amount": "฿125",
+      "refund": "Refund (฿50 left)",
+      "voidShown": false,
+      "payments": "Payment Cash · Approved 12 Nov, 13:40 ฿50 Reprint Refund (฿50 left) Partly paid — the refund gives back everything taken and clo"
+    },
+    "ticketsTabWithFriesOpen": {
+      "settlementCard": true,
+      "notices": [
+        "That sale is not a ticket sale It was taken at the restaurant or shop counter and is resumed there"
+      ],
+      "paymentStep": false,
+      "resumeButtons": 0,
+      "voidButtons": 0,
+      "pay": "Pay ฿0"
+    },
+    "phone": {
+      "cardBadge": "Partly paid",
+      "badge": "Partly paid",
+      "balance": "Balance due ฿125",
+      "amountDue": null,
+      "refund": "Refund (฿50 left)",
+      "cash": "Cash · Approved 12 Nov, 13:40 ฿50"
+    },
+    "phoneLayout": [
+      {
+        "badge": "Partly paid",
+        "titleW": 61,
+        "titleH": 72,
+        "badgeW": 84,
+        "cardH": 184
+      },
+      {
+        "badge": "Unpaid",
+        "titleW": 61,
+        "titleH": 72,
+        "badgeW": 63,
+        "cardH": 168
+      }
+    ],
+    "refund891": {
+      "answer": {
+        "status": 200,
+        "refundStatus": "refunded",
+        "saleStatus": "voided",
+        "amountSatang": 5000,
+        "mode": "whole",
+        "tender": [
+          {
+            "route": "cash",
+            "method": "cash",
+            "amountSatang": 5000
+          }
+        ],
+        "refundNo": null,
+        "keys": [
+          "replay",
+          "refund",
+          "sale",
+          "refundStatus",
+          "refundableSatang",
+          "requestedSatang",
+          "clamped"
+        ]
+      },
+      "freshReadManager": {
+        "status": 200,
+        "saleStatus": "voided",
+        "refundStatus": "refunded",
+        "refundableSatang": 0,
+        "refunded": 5000
+      },
+      "freshReadAdmin": {
+        "saleStatus": "voided",
+        "refundStatus": "refunded",
+        "refundableSatang": 0,
+        "refunded": 5000,
+        "gross": 17500
+      },
+      "detailWords": {
+        "voided": true,
+        "refunded": "Refunded −฿50",
+        "label": "Total (voided)",
+        "startCorrected": true
+      },
+      "eodBefore": {
+        "counts": null,
+        "mine": [
+          {
+            "sale": "fries",
+            "kind": "part_paid",
+            "gross": 17500,
+            "paid": 5000,
+            "balance": 12500
+          }
+        ]
+      },
+      "eodAfter": {
+        "counts": null,
+        "mine": []
+      }
+    },
+    "eodPage": {
+      "partlyPaid": [
+        "Partly paid: 0 Nothing is held or partly paid on this day"
+      ],
+      "held": [
+        "Held sales Held: 0 Partly paid: 0 Nothing is"
+      ],
+      "locked": false,
+      "open": []
+    },
+    "cardDismiss": {
+      "before": true,
+      "xCount": 1,
+      "xLabel": "Dismiss",
+      "afterX": false,
+      "afterTabSwitch": true,
+      "afterReload": true
+    },
+    "cancel": {
+      "voidStatus": 200,
+      "buttonAfter": "Settle party",
+      "partyDepositSatang": 100000,
+      "settlement": "voided",
+      "sale": {
+        "status": "voided",
+        "refundStatus": "none",
+        "attempts": [
+          {
+            "method": "other",
+            "status": "cancelled",
+            "amountSatang": 100000,
+            "partyDeposit": true
+          }
+        ]
+      },
+      "cardOnTicketsTab": false
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "6: phone till history",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "6: phone till history",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "manager",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "till",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "till",
+      "at": "4: manager refunds the part-paid order whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "till",
+      "at": "look: the card dismissed, then a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "5: clean-up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "5: clean-up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "5: clean-up",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 401"
+    },
+    {
+      "page": "phone",
+      "at": "5: clean-up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "partyDelete": 204,
+    "partyReadBack": {
+      "app": 404,
+      "till": 404
+    },
+    "sales": [
+      {
+        "id": "01a1ce7c-6394-71b6-bc73-7a2eca7177ce",
+        "kind": "fries",
+        "status": "voided",
+        "gross": 17500
+      },
+      {
+        "id": "01a1ce7b-5714-7d68-b6ac-6e3f5bb7360f",
+        "kind": "ticket",
+        "status": "voided",
+        "gross": 104000
+      },
+      {
+        "id": "01a1ce77-d926-7629-ba61-241b7ca02725",
+        "kind": "settlement",
+        "status": "voided",
+        "gross": 1690000
+      }
+    ],
+    "members": {
+      "0898890010": null,
+      "0898890011": null,
+      "0898890012": null,
+      "0898890013": null,
+      "0898890014": null,
+      "0898890015": null
+    },
+    "eod": {
+      "held": 0,
+      "partPaid": 0,
+      "mine": 0
+    },
+    "phoneSignOut": {
+      "before": 200,
+      "signOut": 200,
+      "me": 401
+    },
+    "mgrSignOut": {
+      "before": 200,
+      "signOut": 200,
+      "me": 401
+    },
+    "tillSignOut": {
+      "before": 200,
+      "signOut": 200,
+      "me": 401
+    },
+    "displays": {
+      "station": 200,
+      "displays": null
+    },
+    "unassign": 200,
+    "archive": 200,
+    "station": {
+      "archived": true,
+      "devices": 0
+    },
+    "appSignOut": 200,
+    "adminSignOut": 200,
+    "adminMe": 401
+  },
+  "finishedAt": "2026-11-12T06:48:25.810Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqlp9tg1s2s73ensafg",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:28:55.92014Z",
+        "finishedAt": "2026-11-12T06:33:31.852857Z"
+      },
+      "serving": {
+        "id": "dep-dbqlp9tg1s2s73ensafg",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:28:55.92014Z",
+        "finishedAt": "2026-11-12T06:33:31.852857Z"
+      },
+      "readAt": "2026-11-12T06:33:54.241Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqlpajbc2fs73dp2rcg",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:28:58.271552Z",
+        "finishedAt": "2026-11-12T06:30:01.897701Z"
+      },
+      "serving": {
+        "id": "dep-dbqlpajbc2fs73dp2rcg",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:28:58.271552Z",
+        "finishedAt": "2026-11-12T06:30:01.897701Z"
+      },
+      "readAt": "2026-11-12T06:33:54.842Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqlpb2jnfac73939jn0",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:29:00.727257Z",
+        "finishedAt": "2026-11-12T06:32:34.965887Z"
+      },
+      "serving": {
+        "id": "dep-dbqlpb2jnfac73939jn0",
+        "status": "live",
+        "sha": "6944d5381e535866d62667bf3c7f3276a2bc94dc",
+        "createdAt": "2026-11-12T06:29:00.727257Z",
+        "finishedAt": "2026-11-12T06:32:34.965887Z"
+      },
+      "readAt": "2026-11-12T06:33:55.435Z"
+    }
+  },
+  "passed": true
+}

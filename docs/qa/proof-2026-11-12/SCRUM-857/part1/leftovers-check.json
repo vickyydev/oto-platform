@@ -1,0 +1,56 @@
+{
+ "ownTills": [
+  {
+   "id": "01a1ce7d-3a89-7f35-8f40-9612f98e0105",
+   "prefix": "Z85704",
+   "archived": true,
+   "devices": 0
+  },
+  {
+   "id": "01a1ce7d-e001-77c0-88c9-840680f7764d",
+   "prefix": "Z85705",
+   "archived": true,
+   "devices": 0
+  },
+  {
+   "id": "01a1ce76-a496-7bb8-b7cc-098bf7800ce0",
+   "prefix": "Z85701",
+   "archived": true,
+   "devices": 0
+  },
+  {
+   "id": "01a1ce79-84e0-75f8-9b11-4b2e563e99da",
+   "prefix": "Z85702",
+   "archived": true,
+   "devices": 0
+  },
+  {
+   "id": "01a1ce7b-c5e6-7499-a439-5d91d6f2c1b9",
+   "prefix": "Z85703",
+   "archived": true,
+   "devices": 0
+  }
+ ],
+ "waitingRegistrationsOfThisProof": [],
+ "boardChildrenOfThisProof": [
+  {
+   "id": "01a1ce7c-5ecc-77fa-9949-f67427fbe9b3",
+   "status": "out"
+  },
+  {
+   "id": "01a1ce7a-8c49-79f7-bfc1-09248e2582f5",
+   "status": "out"
+  },
+  {
+   "id": "01a1ce79-d387-7689-ad1f-de5a71f432e5",
+   "status": "out"
+  },
+  {
+   "id": "01a1ce78-993f-7e33-b348-df47373c3a43",
+   "status": "out"
+  }
+ ],
+ "membersOnUsedNumbers": [],
+ "adminMeAfterSignOut": 401,
+ "readAt": "2026-11-12T06:45:06.129Z"
+}
