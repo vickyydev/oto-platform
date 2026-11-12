@@ -24,6 +24,7 @@ import { EmptyState, ErrorNote, Loading } from '@/components/Panel';
 import { Chip } from '@/components/Status';
 import { CheckRow, ChoiceRow, Field, NumberInput, Select, Step, TextInput } from '@/components/Form';
 import type { BoxDeviceList } from '@/lib/deviceList';
+import { expectedVersion, isStationChanged, refillsFrom, stationSaveRefusal } from '@/lib/stationForm';
 import {
   accessSentence,
   capabilityWord,
@@ -59,6 +60,7 @@ export function StationDrawer({
   canEdit,
   onClose,
   onSaved,
+  onStale,
 }: {
   /** Null for a station that does not exist yet. */
   station: StationRow | null;
@@ -74,27 +76,54 @@ export function StationDrawer({
   onRetryDevices: (boxId: string) => void;
   canEdit: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  /** The station as the api answered the save (or the archive), for the list to hold at once. */
+  onSaved: (saved?: StationRow) => void;
+  /** A save was refused as made from an older version: the list is worth reading again. */
+  onStale?: () => void;
 }) {
   const working = useWorkingAuthority();
-  const [boxId, setBoxId] = useState(station?.boxId ?? boxes[0]?.id ?? '');
-  const [name, setName] = useState(station?.name ?? '');
-  const [kind, setKind] = useState<StationKind>((station?.kind as StationKind) ?? 'till');
-  const [codePrefix, setCodePrefix] = useState(station?.codePrefix ?? '');
-  const [capabilities, setCapabilities] = useState<StationCapability[]>(
-    (station?.capabilities as StationCapability[]) ?? [],
-  );
+  /**
+   * SCRUM-898 — the station the fields were filled from. The prop is the
+   * station as the list holds it now; while nobody has touched the form, a
+   * newer reading of it refills the fields (the effect below), and a save
+   * names this one's version so the api can refuse it when it is not the
+   * version the station holds.
+   */
+  const [filled, setFilled] = useState<StationRow | null>(station);
+  const [first] = useState(() => formOf(station, boxes));
+  const [boxId, setBoxId] = useState(first.boxId);
+  const [name, setName] = useState(first.name);
+  const [kind, setKind] = useState<StationKind>(first.kind);
+  const [codePrefix, setCodePrefix] = useState(first.codePrefix);
+  const [capabilities, setCapabilities] = useState<StationCapability[]>(first.capabilities);
   const [assignments, setAssignments] = useState<Partial<Record<StationDeviceRole, string | null>>>(
-    () => initialAssignments(station),
+    first.assignments,
   );
-  const [routing, setRouting] = useState<PaymentRouting>(station?.paymentRouting ?? {});
-  const [walletCap, setWalletCap] = useState<number | null>(station?.offlineWalletCapSatang ?? null);
-  const [accessScope, setAccessScope] = useState<StationAccessScope>(
-    (station?.accessScope as StationAccessScope) ?? 'all_staff',
-  );
-  const [staffIds, setStaffIds] = useState<string[]>(
-    station?.staff?.map((s) => s.accountId) ?? [],
-  );
+  const [routing, setRouting] = useState<PaymentRouting>(first.routing);
+  const [walletCap, setWalletCap] = useState<number | null>(first.walletCap);
+  const [accessScope, setAccessScope] = useState<StationAccessScope>(first.accessScope);
+  const [staffIds, setStaffIds] = useState<string[]>(first.staffIds);
+
+  // Untouched means the fields still say what they were filled with.
+  const edited =
+    JSON.stringify({ boxId, name, kind, codePrefix, capabilities, assignments, routing, walletCap, accessScope, staffIds }) !==
+    JSON.stringify(formOf(filled, boxes));
+
+  useEffect(() => {
+    if (!station || !refillsFrom(filled, station, edited)) return;
+    const next = formOf(station, boxes);
+    setBoxId(next.boxId);
+    setName(next.name);
+    setKind(next.kind);
+    setCodePrefix(next.codePrefix);
+    setCapabilities(next.capabilities);
+    setAssignments(next.assignments);
+    setRouting(next.routing);
+    setWalletCap(next.walletCap);
+    setAccessScope(next.accessScope);
+    setStaffIds(next.staffIds);
+    setFilled(station);
+  }, [station, filled, edited, boxes]);
 
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -134,11 +163,11 @@ export function StationDrawer({
     // this page does not know about yet, and sending only what it understands
     // would delete the rest.
     paymentRouting: takesMoney
-      ? mergeRouting(station?.paymentRouting, routing)
+      ? mergeRouting(filled?.paymentRouting, routing)
       : // A booth's step is hidden, not cleared: whatever an older setup saved is
         // sent back as it was rather than wiped by a form that never showed it.
         kind === 'booth'
-        ? (station?.paymentRouting ?? null)
+        ? (filled?.paymentRouting ?? null)
         : null,
     offlineWalletCapSatang: walletCap,
   });
@@ -148,13 +177,24 @@ export function StationDrawer({
     setBusy(true);
     setFailed(null);
     try {
-      if (station) await working.run(() => fleetApi.updateStation(station.id, write()));
-      else await working.run(() => fleetApi.createStation(branchId, write()));
+      // SCRUM-898 — the version these fields came from, so a form that fell
+      // behind is refused rather than writing older settings back.
+      const version = expectedVersion(filled);
+      const answer = station
+        ? await working.run(() =>
+            fleetApi.updateStation(station.id, {
+              ...write(),
+              ...(version !== null ? { expectedConfigVersion: version } : {}),
+            }),
+          )
+        : await working.run(() => fleetApi.createStation(branchId, write()));
       if (!working.isCurrent()) return;
-      onSaved();
+      onSaved(answer.station);
     } catch (err) {
       if (!working.isCurrent()) return;
-      setFailed(err instanceof Error ? err.message : 'The station could not be saved');
+      // Kept open, saying so: what was typed is still here to copy.
+      setFailed(stationSaveRefusal(err, filled?.kind ?? kind, 'The station could not be saved'));
+      if (isStationChanged(err)) onStale?.();
     } finally {
       if (working.isCurrent()) {
         setBusy(false);
@@ -170,7 +210,7 @@ export function StationDrawer({
     try {
       await working.run(() => fleetApi.archiveStation(station.id));
       if (!working.isCurrent()) return;
-      onSaved();
+      onSaved({ ...station, archived: true });
     } catch (err) {
       if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'The station could not be archived');
@@ -217,7 +257,7 @@ export function StationDrawer({
       subtitle={
         <span className="flex flex-wrap items-center gap-2">
           <Chip>{stationKindWord(kind)}</Chip>
-          {station && <span>config v{station.configVersion ?? 1}</span>}
+          {station && <span>config v{(filled ?? station).configVersion ?? 1}</span>}
           <span>at {branchLabel}</span>
         </span>
       }
@@ -514,6 +554,25 @@ export function StationDrawer({
       </Step>
     </Drawer>
   );
+}
+
+/**
+ * The form's fields as a station holds them, or a new station's defaults: what
+ * the drawer opens with, and what a refill writes (SCRUM-898).
+ */
+function formOf(station: StationRow | null, boxes: BoxRow[]) {
+  return {
+    boxId: station?.boxId ?? boxes[0]?.id ?? '',
+    name: station?.name ?? '',
+    kind: (station?.kind as StationKind) ?? 'till',
+    codePrefix: station?.codePrefix ?? '',
+    capabilities: (station?.capabilities as StationCapability[]) ?? [],
+    assignments: initialAssignments(station),
+    routing: (station?.paymentRouting ?? {}) as PaymentRouting,
+    walletCap: station?.offlineWalletCapSatang ?? null,
+    accessScope: (station?.accessScope as StationAccessScope) ?? 'all_staff',
+    staffIds: station?.staff?.map((s) => s.accountId) ?? [],
+  };
 }
 
 /** Role → device id, flattened from the assignments the API sends. */

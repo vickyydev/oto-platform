@@ -84,6 +84,7 @@ import { DisplayPresenceLine, PresenceChip, TillScreenPresence } from '@/compone
 import { elapsed, formatWhen, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { boxCardsForView, stationCardsForView, type FleetStatusFilter } from '@/lib/fleetFilters';
+import { newerStations, withSavedStation } from '@/lib/stationForm';
 
 /**
  * The views the chip row offers (SCRUM-474). Each shows one of the page's own
@@ -478,7 +479,15 @@ export function Devices() {
 
       {openStation && (openStation === 'new' || openStation.branchId === branchId) && (
         <StationDrawer
-          station={openStation === 'new' ? null : openStation}
+          // SCRUM-898 — the row as the list holds it now, which a save has
+          // already updated (`fleet.adopt`), and the row as opened until the
+          // list has it: a form is never filled from settings older than the
+          // last save.
+          station={
+            openStation === 'new'
+              ? null
+              : (fleet.stations.find((s) => s.id === openStation.id) ?? openStation)
+          }
           branchId={branchId}
           branchLabel={currentBranchName}
           boxes={fleet.boxes.filter((b) => !b.archived)}
@@ -486,10 +495,12 @@ export function Devices() {
           onRetryDevices={fleet.retryDevices}
           canEdit={openStation === 'new' ? canCreateStation : canUpdateStation}
           onClose={() => setOpenStation(null)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            if (saved) fleet.adopt(saved);
             setOpenStation(null);
             fleet.reload();
           }}
+          onStale={fleet.reload}
         />
       )}
     </>
@@ -519,6 +530,12 @@ interface Fleet {
   loading: boolean;
   error: string | null;
   reload: () => void;
+  /**
+   * SCRUM-898 — a station the api has just answered a save with, held at
+   * once: the card pressed next opens on it rather than on the row the
+   * re-read has not replaced yet.
+   */
+  adopt: (saved: StationRow) => void;
 }
 
 function useFleet(branchId: string): Fleet {
@@ -646,7 +663,9 @@ function useFleet(branchId: string): Fleet {
       loadedBoxes = v.boxes;
       setBoxes(v.boxes);
     });
-    take(stationRes, 'stations', (v) => setStations(v.stations));
+    // A read never takes a station back to an older config version than the
+    // one held — a read that left before a save can land after it (SCRUM-898).
+    take(stationRes, 'stations', (v) => setStations((held) => newerStations(held, v.stations)));
     take(credentialRes, 'credentials', (v) => setCredentials(v.credentials));
 
     // Devices are asked for per box, never per branch — a printer belongs to
@@ -699,6 +718,7 @@ function useFleet(branchId: string): Fleet {
     loading: dataBranch !== branchId || loading,
     error: dataBranch === branchId ? error : null,
     reload: () => void load(),
+    adopt: (saved: StationRow) => setStations((held) => withSavedStation(held, saved)),
   };
 }
 

@@ -575,7 +575,12 @@ export const fleetApi = {
       idempotencyKey: idemKey(),
     }),
 
-  updateStation: (id: string, body: StationWrite) =>
+  /**
+   * `expectedConfigVersion` (SCRUM-898) is the version the form was filled
+   * from: the api refuses the save 409 `STATION_CHANGED` when the station has
+   * moved on since, rather than writing the older settings back over it.
+   */
+  updateStation: (id: string, body: StationWrite & { expectedConfigVersion?: number }) =>
     api.patch<{ station: StationRow }>(`/stations/${encodeURIComponent(id)}`, body),
 
   archiveStation: (id: string) => api.delete<{ ok: true }>(`/stations/${encodeURIComponent(id)}`),
