@@ -2444,5 +2444,503 @@
         "masks": 1
       }
     ]
+  },
+  "round3": {
+    "landed": "f48d1df69fd70f107b41b9bb5efffee832a8e87e (contains e7d1469ef \"fix(oto-app): a whole word ranks above a word's start in menu search\", the change sent as e3e95f2af; tillMenuSearchScore tiers 0.97 first word whole, 0.93 later word whole, 0.9 start of the name or of a later word... )",
+    "deploys": {
+      "file": "deploys.json keys round3-before (12:16Z) and round3-after (12:18Z)",
+      "app": "oto-app-staging dep-dbqqq7tckfvc73d7ofk0 live 12:15:21Z at f48d1df69, still live at the end: the whole round was on it.",
+      "api": "oto-api-staging at 8e7f7d315 (dep-dbqqaeijnfac739er580) for the whole round; it supplies the menu only."
+    },
+    "startedAt": "2026-11-12T12:16:27.440Z",
+    "finishedAt": "2026-11-12T12:17:52.223Z",
+    "party": {
+      "id": "833c8b68-7ada-4813-8993-7363b0481555",
+      "title": "ZZ TEST 939 r3 till menu search",
+      "date": "2026-11-25",
+      "startTime": "14:00",
+      "route": "POST /api/admin/events",
+      "status": 201,
+      "createdAt": "2026-11-12T12:16:37.636Z"
+    },
+    "points": {
+      "p1_water": {
+        "result": "PASS",
+        "kitchen": {
+          "typed": "water",
+          "count": 4,
+          "listed": [
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60",
+            "Fresh watermelon juice | CF-63-2 | ฿210"
+          ],
+          "headings": [
+            "null (4)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-01-p1-kitchen-search-water.png"
+        },
+        "bar": {
+          "typed": "water",
+          "count": 4,
+          "listed": [
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60",
+            "Fresh watermelon juice | CF-63-2 | ฿210"
+          ],
+          "headings": [
+            "null (4)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-02-p1-bar-search-water.png"
+        },
+        "pictures": [
+          "r3-01-p1-kitchen-search-water.png",
+          "r3-02-p1-bar-search-water.png"
+        ]
+      },
+      "p2_asBefore": {
+        "result": "PASS",
+        "chicken": {
+          "typed": "chicken",
+          "count": 7,
+          "listed": [
+            "Chicken schnitzel | CF-37 | ฿425",
+            "Chicken soup | CF-52 | ฿210",
+            "Grilled chicken | CF-10-11 | ฿70",
+            "Caesar salad — With chicken | CF-15-1 | ฿415",
+            "Honey balsamic chicken | CF-34 | ฿480",
+            "Grilled chicken wrap | CF-39 | ฿380",
+            "Chinese dumpling in chicken broth | CF-45 | ฿240"
+          ],
+          "headings": [
+            "null (7)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-03-p2-kitchen-search-chicken.png"
+        },
+        "fries": {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "null (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-04-p2-kitchen-search-fries.png"
+        },
+        "pizza": {
+          "typed": "pizza",
+          "count": 9,
+          "listed": [
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390"
+          ],
+          "headings": [
+            "null (9)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-05-p2-kitchen-search-pizza.png"
+        },
+        "juice": {
+          "typed": "juice",
+          "count": 7,
+          "listed": [
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50"
+          ],
+          "headings": [
+            "null (7)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-06-p2-kitchen-search-juice.png"
+        },
+        "CF-24": {
+          "typed": "CF-24",
+          "count": 1,
+          "listed": [
+            "Margherita | CF-24 | ฿400"
+          ],
+          "headings": [
+            "null (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r3-07-p2-kitchen-search-cf-24.png"
+        }
+      },
+      "p3_threeWords": {
+        "result": "PASS (first result is what a person would expect for all three; odd lower down noted)",
+        "rice": {
+          "search": {
+            "typed": "rice",
+            "count": 2,
+            "listed": [
+              "Steamed jasmine rice | CF-10-17 | ฿50",
+              "Fried rice | CF-43 | ฿240"
+            ],
+            "headings": [
+              "null (2)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r3-08-p3-kitchen-search-rice.png"
+          },
+          "firstExpected": true,
+          "note": "both rice dishes; Steamed jasmine rice (side) then Fried rice (dish), equal whole-word answers in menu order"
+        },
+        "tea": {
+          "search": {
+            "typed": "tea",
+            "count": 9,
+            "listed": [
+              "Green tea | CF-64-4 | ฿115",
+              "Chinese TeaCF-CHINESE-TEA฿140",
+              "ZZ TEST 822 bubble tea [Party only] | PARTY-B73D36CC | ฿125",
+              "ZZ TEST 829 bubble tea [Party only] | PARTY-CBB7D66D | ฿125",
+              "Steamed jasmine rice | CF-10-17 | ฿50",
+              "English breakfast | CF-64-1 | ฿115",
+              "Earl grey | CF-64-2 | ฿115",
+              "Peppermint | CF-64-3 | ฿115",
+              "Camomile | CF-64-5 | ฿115"
+            ],
+            "headings": [
+              "null (9)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r3-09-p3-kitchen-search-tea.png"
+          },
+          "firstExpected": true,
+          "note": "Green tea and Chinese Tea first; then two ZZ TEST bubble teas (party only), then Steamed jasmine rice (\"tea\" inside \"steamed\") ABOVE English breakfast, Earl grey, Peppermint and Camomile, the Tea pot teas found only by their category"
+        },
+        "latte": {
+          "search": {
+            "typed": "latte",
+            "count": 7,
+            "listed": [
+              "Latte | CF-58-4 | ฿145",
+              "LatteCF-FREE-58-4฿0",
+              "Vanilla latte | CF-58-6 | ฿155",
+              "Iced latte | CF-59-2 | ฿155",
+              "Iced vanilla latte | CF-59-5 | ฿170",
+              "Sea Salt & Maple LatteCF-SPECIAL-01฿170",
+              "Iced LatteCF-FREE-59-2฿0"
+            ],
+            "headings": [
+              "null (7)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r3-10-p3-kitchen-search-latte.png"
+          },
+          "firstExpected": true,
+          "note": "Latte CF-58-4 ฿145 first, then the free Latte CF-FREE-58-4 ฿0 (Free Drinks Menu) second: two items named exactly \"Latte\", told apart only by code and price"
+        },
+        "pictures": [
+          "r3-08-p3-kitchen-search-rice.png",
+          "r3-09-p3-kitchen-search-tea.png",
+          "r3-10-p3-kitchen-search-latte.png"
+        ]
+      }
+    },
+    "moreWords": [
+      {
+        "typed": "coffee",
+        "count": 14,
+        "listed": [
+          "ZZ TEST 829 coffee [Party only] | PARTY-BCA4EB4E | ฿60",
+          "Espresso | CF-58-1 | ฿115",
+          "Americano | CF-58-2 | ฿115",
+          "Cappuccino | CF-58-3 | ฿140",
+          "Latte | CF-58-4 | ฿145",
+          "Mocha | CF-58-5 | ฿155",
+          "Vanilla latte | CF-58-6 | ฿155",
+          "Caramel macchiato | CF-58-7 | ฿155",
+          "Iced americano | CF-59-1 | ฿140",
+          "Iced latte | CF-59-2 | ฿155",
+          "Iced cappuccino | CF-59-3 | ฿155",
+          "Iced mocha | CF-59-4 | ฿170",
+          "Iced vanilla latte | CF-59-5 | ฿170",
+          "Iced caramel macchiato | CF-59-6 | ฿170"
+        ],
+        "headings": [
+          "null (14)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      {
+        "typed": "cake",
+        "count": 2,
+        "listed": [
+          "Pancakes | CF-5 | ฿255",
+          "Pancake | CF-50 | ฿180"
+        ],
+        "headings": [
+          "null (2)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      {
+        "typed": "ice cream",
+        "count": 1,
+        "listed": [
+          "Ice cream | CF-56 | ฿90"
+        ],
+        "headings": [
+          "null (1)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      {
+        "typed": "salad",
+        "count": 6,
+        "listed": [
+          "Caesar salad | CF-15 | ฿370",
+          "Caesar salad — With chicken | CF-15-1 | ฿415",
+          "Caesar salad — With shrimp | CF-15-2 | ฿425",
+          "Barley & quinoa warm salad | CF-16 | ฿415",
+          "Kale & rocket salad | CF-17 | ฿370",
+          "Burrata salad | CF-18 | ฿560"
+        ],
+        "headings": [
+          "null (6)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      {
+        "typed": "egg",
+        "count": 2,
+        "listed": [
+          "Eggs your way | CF-10-18 | ฿50",
+          "Veggie delight | CF-32 | ฿390"
+        ],
+        "headings": [
+          "null (2)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      {
+        "typed": "soup",
+        "count": 2,
+        "listed": [
+          "Special soup of the month | CF-19 | ฿240",
+          "Chicken soup | CF-52 | ฿210"
+        ],
+        "headings": [
+          "null (2)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      }
+    ],
+    "bar": {
+      "tea": {
+        "typed": "tea",
+        "count": 9,
+        "listed": [
+          "Green tea | CF-64-4 | ฿115",
+          "Chinese TeaCF-CHINESE-TEA฿140",
+          "ZZ TEST 822 bubble tea [Party only] | PARTY-B73D36CC | ฿125",
+          "ZZ TEST 829 bubble tea [Party only] | PARTY-CBB7D66D | ฿125",
+          "Steamed jasmine rice | CF-10-17 | ฿50",
+          "English breakfast | CF-64-1 | ฿115",
+          "Earl grey | CF-64-2 | ฿115",
+          "Peppermint | CF-64-3 | ฿115",
+          "Camomile | CF-64-5 | ฿115"
+        ],
+        "headings": [
+          "null (9)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      },
+      "latte": {
+        "typed": "latte",
+        "count": 7,
+        "listed": [
+          "Latte | CF-58-4 | ฿145",
+          "LatteCF-FREE-58-4฿0",
+          "Vanilla latte | CF-58-6 | ฿155",
+          "Iced latte | CF-59-2 | ฿155",
+          "Iced vanilla latte | CF-59-5 | ฿170",
+          "Sea Salt & Maple LatteCF-SPECIAL-01฿170",
+          "Iced LatteCF-FREE-59-2฿0"
+        ],
+        "headings": [
+          "null (7)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": null
+      }
+    },
+    "odd": [
+      "\"tea\": Steamed jasmine rice (the letters inside \"steamed\") is listed above four real teas (English breakfast, Earl grey, Peppermint, Camomile), which are found only by their Tea pot category: inside-a-word name matches outrank category matches.",
+      "\"egg\": Veggie delight (a pizza; \"egg\" inside \"veggie\") is listed second after Eggs your way. Same cause.",
+      "\"latte\" and the Free Drinks Menu: Latte ฿145 and the free Latte ฿0 share a name; the free one is second (also \"Iced Latte\" ฿0 last).",
+      "\"coffee\": the party-only \"ZZ TEST 829 coffee\" is first (the only name with the word), then the 13 coffees by category; \"cake\": only Pancakes and Pancake (no cake on the till menu).",
+      "Earlier test items still on the staging till as party-only products: ZZ TEST 822 bubble tea, ZZ TEST 829 bubble tea, coffee, juice, nuggets."
+    ],
+    "pageErrors": [
+      {
+        "page": "app-admin",
+        "at": "2026-11-12T12:16:40.477Z",
+        "kind": "console.error",
+        "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+      }
+    ],
+    "cleanup": {
+      "at": "2026-11-12T12:17:52.149Z",
+      "party": {
+        "id": "833c8b68-7ada-4813-8993-7363b0481555",
+        "title": "ZZ TEST 939 r3 till menu search",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        }
+      },
+      "readBack": {
+        "appEvent": {
+          "route": "GET /api/admin/events/:id",
+          "status": 404
+        },
+        "appBeo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 404
+        },
+        "tillParty": {
+          "route": "GET /api/parties/:id?branchId=<Central Floresta> (till)",
+          "status": 404,
+          "code": "NOT_FOUND"
+        },
+        "zzTest939AtCentralFloresta": []
+      },
+      "setMenuTemplates": {
+        "count": 9,
+        "unchangedSinceStart": true
+      }
+    },
+    "signOut": {
+      "at": "2026-11-12T12:17:52.223Z",
+      "app": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "pos": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "images": [
+      {
+        "file": "r3-01-p1-kitchen-search-water.png",
+        "at": "2026-11-12T12:16:51.004Z",
+        "shows": "button-till-menu-kids-0: \"water\" typed in the picker",
+        "namesMasked": 63,
+        "masks": 0
+      },
+      {
+        "file": "r3-02-p1-bar-search-water.png",
+        "at": "2026-11-12T12:17:25.713Z",
+        "shows": "button-till-menu-bar-0: \"water\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-03-p2-kitchen-search-chicken.png",
+        "at": "2026-11-12T12:16:53.523Z",
+        "shows": "button-till-menu-kids-0: \"chicken\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-04-p2-kitchen-search-fries.png",
+        "at": "2026-11-12T12:16:56.054Z",
+        "shows": "button-till-menu-kids-0: \"fries\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-05-p2-kitchen-search-pizza.png",
+        "at": "2026-11-12T12:16:58.592Z",
+        "shows": "button-till-menu-kids-0: \"pizza\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-06-p2-kitchen-search-juice.png",
+        "at": "2026-11-12T12:17:01.198Z",
+        "shows": "button-till-menu-kids-0: \"juice\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-07-p2-kitchen-search-cf-24.png",
+        "at": "2026-11-12T12:17:03.513Z",
+        "shows": "button-till-menu-kids-0: \"CF-24\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-08-p3-kitchen-search-rice.png",
+        "at": "2026-11-12T12:17:05.990Z",
+        "shows": "button-till-menu-kids-0: \"rice\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-09-p3-kitchen-search-tea.png",
+        "at": "2026-11-12T12:17:08.652Z",
+        "shows": "button-till-menu-kids-0: \"tea\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r3-10-p3-kitchen-search-latte.png",
+        "at": "2026-11-12T12:17:11.076Z",
+        "shows": "button-till-menu-kids-0: \"latte\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      }
+    ]
   }
 }
