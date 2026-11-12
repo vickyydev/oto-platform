@@ -351,8 +351,11 @@ try {
     assert.deepEqual([line(kids, "CF-53")?.itemName, line(kids, "CF-53")?.price], ["Vegetable sticks", 90]);
     // SCRUM-958 (the owner's rule of 12 November): "Fried rice for the adults too" is the set menu's Fried
     // rice on the adults' own menu, a SET line by the option chosen (not charged), no longer an EXTRA at CF-43.
+    // SCRUM-970: the SET line carries the set menu's till code for its option (CF-43), as the till reads the
+    // kids' line of the dish; still no EXTRA at CF-43.
     const rice = adults.find((l) => l.groupId === RICE);
-    assert.deepEqual([rice?.itemName, rice?.source, rice?.price, line(adults, "CF-43")], ["Chicken", "set_menu", 0, undefined], "SCRUM-926: the option chosen");
+    const riceExtra = adults.find((l) => (l.productCode ?? null) === "CF-43" && l.source !== "set_menu");
+    assert.deepEqual([rice?.itemName, rice?.source, rice?.price, rice?.productCode, riceExtra], ["Chicken", "set_menu", 0, "CF-43", undefined], "SCRUM-926: the option chosen");
     const dragon = kids.find((l) => l.itemName === "a dragon roll");
     assert.deepEqual([dragon?.productCode, dragon?.notes, dragon?.price], [undefined, "Not in the menu", 0], "a dish the till does not sell: by name, as today");
     assert.equal(kids.some((l) => l.itemName === "the party juice"), false, "left out");
