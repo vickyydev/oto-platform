@@ -37,6 +37,7 @@ import {
   partyCakeSlipLine,
   partyChoiceName,
   partyCountsMark,
+  partyBarReadyBy,
   partyReadyBy,
   partySlipsTime,
   type PartyDetailWithSlipsAnswer,
@@ -852,6 +853,27 @@ describe('the branch names the station whose printers take its party slips', () 
 // SCRUM-861 — a plan changed after the slips printed
 // =============================================================================
 
+describe("SCRUM-951 — the bar slip says the bar plan's own service time", () => {
+  it("the bar slip says the bar's time when the BEO gives one; the kitchen slip keeps its READY BY; with none, the kitchen's as before", () => {
+    const withBar = plan({ kitchen: { kidsFoodTime: '14:00', adultsFoodTime: null, readyOffsetMinutes: 20, slipsTime: null, barServiceTime: '19:15' } });
+    expect(partyBarReadyBy(withBar)).toBe('19:15');
+    expect(partyReadyBy(withBar)).toBe('13:40');
+    const slips = compose(withBar);
+    expect(slips.kitchen).toMatchObject({ readyBy: '13:40' });
+    expect(slips.bar).toMatchObject({ title: 'Bar', readyBy: '19:15' });
+    expect(slips.bar).not.toHaveProperty('readyByNote');
+    // No bar time: the kitchen's READY BY on the bar slip, as before.
+    expect(partyBarReadyBy(plan())).toBe('13:40');
+    expect(compose(plan()).bar).toMatchObject({ readyBy: '13:40' });
+    // A bar time and no kids' food time: the bar its own time, the kitchen the note.
+    const noFood = plan({ kitchen: { kidsFoodTime: null, adultsFoodTime: null, readyOffsetMinutes: 20, slipsTime: null, barServiceTime: '18:00' } });
+    expect(compose(noFood).bar).toMatchObject({ readyBy: '18:00' });
+    expect(compose(noFood).kitchen).toMatchObject({ readyByNote: PARTY_NO_KIDS_FOOD_TIME });
+    // A bar time that is no clock time is none.
+    expect(partyBarReadyBy(plan({ kitchen: { kidsFoodTime: '14:00', adultsFoodTime: null, readyOffsetMinutes: 20, slipsTime: null, barServiceTime: 'soon' } }))).toBe('13:40');
+  });
+});
+
 describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UPDATED slips, once per change', () => {
   const ORDER = { kitchen: 0, bar: 2 } as const;
   /** A party's change slips, run by run, the kitchen's before the bar's, void before updated. */
@@ -938,6 +960,22 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     // Nothing changed since: the next tick, and two at once, write nothing.
     await Promise.all([runPartySlipsJob(ctx.db, atBangkok(T, '11:12')), runPartySlipsJob(ctx.db, atBangkok(T, '11:12'))]);
     expect(await changesOf(id)).toHaveLength(2);
+  });
+
+  it("SCRUM-951: a change of the bar's service time alone sends the bar an UPDATED slip saying it, and the kitchen nothing", async () => {
+    await nameStation(t1.id);
+    const id = await appParty({ id: newId(), title: "Ploy's 7th", date: T });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:10'));
+    expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
+    expect(((await slipsOf(id))[1]!.document as PartySlipDocument).readyBy).toBe('13:40');
+    await ctx.db.execute(sql`update otoapp.beo_bar_plans set service_time = '19:15' where event_id = ${id}`);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:11'));
+    const rows = await changesOf(id);
+    expect(shape(rows)).toEqual([[1, 'bar', 'updated', 'printed']]);
+    expect(docOf(rows[0]!)).toMatchObject({ title: 'UPDATED — Bar', readyBy: '19:15', lines: [{ qty: 2, name: 'Juice pitcher' }] });
+    // Nothing more on the next tick.
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:12'));
+    expect(await changesOf(id)).toHaveLength(1);
   });
 
   it('a count cut: the bar gets a VOID slip of the difference and an UPDATED slip with the new count; a drink added or counted up is an UPDATED slip alone', async () => {
