@@ -37,7 +37,8 @@ import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
  * count guests (`@oto/shared` chat-dates `readChatNumbers`): never a clock
  * time's, a date's, a price's, a phone number's or an age's digits; and a Thai
  * "<n> คน" after the adults', the guests' or the total's word ("ผู้ใหญ่ 4 คน")
- * counts them, not the kids.
+ * counts them, not the kids; a Thai "เด็ก" with "<n> คน" after it is that
+ * next number's ("11:00 - 13 เด็ก 8 คน" is 8 kids, never 13).
  */
 
 export interface BeoData {
@@ -73,6 +74,8 @@ export interface BeoData {
 const KIDS_AFTER = /^\s*(детей|ребен|kids|children|kid|child|เด็ก|คน)/i;
 /** A Thai "<n> คน" counts the noun before it: the adults, the parents, the guests, the total — not the kids. */
 const OTHERS_COUNTED = /(?:ผู้?ใหญ่|ผู้ปกครอง|พ่อแม่|แขก|รวม|ทั้งหมด)\s*$/u;
+/** A Thai "เด็ก" with "<n> คน" after it is that next number's: "11:00 - 13 เด็ก 8 คน" is 8 kids. */
+const THAI_KIDS_OF_NEXT = /^\s*[0-9]+\s*(?:คน|ท่าน)/u;
 
 /**
  * The prototype's kids: the first number of one to three digits its words
@@ -85,6 +88,7 @@ export function kidsCountOf(customerText: string): string {
     const words = KIDS_AFTER.exec(text.slice(n.end));
     if (!words) continue;
     if (words[1] === 'คน' && OTHERS_COUNTED.test(text.slice(Math.max(0, n.start - 24), n.start))) continue;
+    if (words[1] === 'เด็ก' && THAI_KIDS_OF_NEXT.test(text.slice(n.end + words[0].length))) continue;
     return n.digits;
   }
   return '';

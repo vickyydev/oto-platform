@@ -289,3 +289,31 @@ describe('a real disagreement in the chat is still two ways', () => {
     expect(merged.choices.kids?.map((o) => o.value)).toEqual(['3', '0']);
   });
 });
+
+describe('a dash between a time, a date or an age and the count is no range', () => {
+  it.each([
+    ['ru', 'в 15:00 — 10 детей', '10'],
+    ['ru', 'Праздник 12 декабря в 15:00 — 10 детей и 6 взрослых', '10'],
+    ['ru', '12 декабря в 14:00 - 10 детей', '10'],
+    ['en', 'Party at 14:00 - 12 kids and 6 adults', '12'],
+    ['en', 'Booking details:\n- Saturday 12 December\n- 14:00\n- 12 kids\n- 6 adults', '12'],
+    ['en', 'Sat 12/12 – 10 kids, 5 adults', '10'],
+    ['en', 'Saturday 13 Dec 14:00 - 10 kids, 5 adults', '10'],
+    ['en', '14:00 - 10 kids', '10'],
+    ['en', '14:00 ~ 10 kids', '10'],
+    ['en', 'party on 21/12 - 15 kids', '15'],
+    ['en', 'Dec 12 - 10 kids', '10'],
+    ['en', 'turning 5 - 10 kids', '10'],
+    ['en', 'turning 6 - 10 kids', '10'],
+    ['th', 'วันเสาร์ที่ 12 ธันวาคม 14:00 - 10 คน', '10'],
+  ])('%s: "%s" reads %s', (language, text, kids) => {
+    expect(kidsOf(text, language)).toBe(kids);
+  });
+
+  it('a Thai "เด็ก" with "<n> คน" after it is that number’s, never the hour before it', () => {
+    expect(kidsOf('11:00-13 เด็ก 8 คน', 'th')).toBe('8');
+    expect(kidsOf('11:00 - 13 เด็ก 8 คน', 'th')).toBe('8');
+    expect(kidsOf('งานวันเกิด 20 เด็ก', 'th')).toBe('20');
+    expect(kidsOf('10 เด็ก 5 ผู้ใหญ่', 'th')).toBe('10');
+  });
+});
