@@ -33,6 +33,14 @@ import { PrintPanel } from '@/components/devices/PrintPanel';
 import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
 import {
+  NO_ADDRESS_LINE,
+  editedDeviceAddress,
+  newDeviceAddress,
+  printerWithoutAddress,
+  toneColor,
+  type AddressField,
+} from '@/lib/printerAddress';
+import {
   SENSING_OPTIONS,
   bandStockOf,
   gapFieldLabel,
@@ -539,7 +547,8 @@ function BoxDevices({
   );
 }
 
-function DeviceRowItem({
+/** Exported for its markup test (SCRUM-899), as `ScannerHealthLine` is. */
+export function DeviceRowItem({
   device,
   scannerHealth,
   canUpdate,
@@ -596,7 +605,13 @@ function DeviceRowItem({
         {device.lastSeenAt && <span title={formatExact(device.lastSeenAt, timezone)}>seen {timeAgo(device.lastSeenAt)}</span>}
       </div>
       {scannerHealth && <ScannerHealthLine health={scannerHealth} timezone={timezone} />}
-      {device.lastError && (
+      {/* SCRUM-899 — said plainly, and in place of the box's bare DEVICE_NO_ADDRESS. */}
+      {printerWithoutAddress(device) && (
+        <p className="mt-1 text-xs break-words" style={{ color: 'hsl(var(--status-down))' }}>
+          {NO_ADDRESS_LINE}
+        </p>
+      )}
+      {device.lastError && device.lastError !== 'DEVICE_NO_ADDRESS' && (
         <p className="mt-1 text-xs break-words" style={{ color: 'hsl(var(--status-down))' }}>
           {device.lastError}
         </p>
@@ -796,7 +811,7 @@ function ScannerFields({
   );
 }
 
-function AddDeviceForm({
+export function AddDeviceForm({
   boxId,
   onClose,
   onAdded,
@@ -819,6 +834,8 @@ function AddDeviceForm({
   const [failed, setFailed] = useState<string | null>(null);
   const isScanner = readsScanner(kind);
   const scannerProblem = isScanner ? scannerSetupProblem(scanner) : null;
+  // SCRUM-899 — a printer is not added without the address the box prints to.
+  const addressField = newDeviceAddress(kind, address);
 
   // A scanner the box reads is reached over USB as a keyboard or as a serial
   // port, and which one follows from the mode: picking the mode picks the
@@ -886,7 +903,7 @@ function AddDeviceForm({
             options={DEVICE_TRANSPORTS.map((t) => ({ value: t, label: transportWord(t) }))}
           />
         </Field>
-        <Field label="Address" hint="192.168.88.204:9100, or /dev/ttyACM0.">
+        <Field label="Address" hint={<AddressHint field={addressField} />}>
           <TextInput value={address} onChange={setAddress} placeholder="192.168.88.204:9100" />
         </Field>
         <Field label="Model">
@@ -910,7 +927,7 @@ function AddDeviceForm({
         <Button
           size="sm"
           onClick={() => void submit()}
-          disabled={busy || !label.trim() || scannerProblem !== null}
+          disabled={busy || !label.trim() || scannerProblem !== null || addressField.blocks}
         >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Add it
@@ -920,7 +937,13 @@ function AddDeviceForm({
   );
 }
 
-function EditDeviceForm({
+/** A device form's Address hint, in the tone its rule gives it (SCRUM-899). */
+function AddressHint({ field }: { field: AddressField }) {
+  const color = toneColor(field.tone);
+  return color ? <span style={{ color }}>{field.hint}</span> : <>{field.hint}</>;
+}
+
+export function EditDeviceForm({
   device,
   onClose,
   onSaved,
@@ -948,6 +971,9 @@ function EditDeviceForm({
   const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
   const isScanner = readsScanner(device.kind);
   const scannerProblem = isScanner ? scannerSetupProblem(scanner) : null;
+  // SCRUM-899 — a printer's address may be changed, never cleared; one saved
+  // without an address still renames and archives.
+  const addressField = editedDeviceAddress(device, address);
 
   const save = async () => {
     if (!working.isCurrent()) return;
@@ -1066,7 +1092,7 @@ function EditDeviceForm({
         <Field label="Label">
           <TextInput value={label} onChange={setLabel} />
         </Field>
-        <Field label="Address">
+        <Field label="Address" hint={addressField.hint ? <AddressHint field={addressField} /> : undefined}>
           <TextInput value={address} onChange={setAddress} />
         </Field>
         <Field label="Model">
@@ -1116,7 +1142,7 @@ function EditDeviceForm({
         <Button
           size="sm"
           onClick={() => void save()}
-          disabled={busy || !label.trim() || scannerProblem !== null}
+          disabled={busy || !label.trim() || scannerProblem !== null || addressField.blocks}
         >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Save

@@ -25,6 +25,7 @@ import { Chip } from '@/components/Status';
 import { CheckRow, ChoiceRow, Field, NumberInput, Select, Step, TextInput } from '@/components/Form';
 import type { BoxDeviceList } from '@/lib/deviceList';
 import { expectedVersion, isStationChanged, refillsFrom, stationSaveRefusal } from '@/lib/stationForm';
+import { printerWithoutAddress } from '@/lib/printerAddress';
 import {
   accessSentence,
   capabilityWord,
@@ -142,6 +143,10 @@ export function StationDrawer({
     [boxList, boxId],
   );
   const roles = rolesForStationKind(kind);
+  // SCRUM-899 — a printer the box cannot print to is not offered for a job.
+  const unaddressed = boxDevices.filter(
+    (d) => printerWithoutAddress(d) && roles.some((role) => roleAccepts(role, d.kind)),
+  );
   // A booth is a free prize wheel and is not asked how money reaches it
   // (SCRUM-434); a paid spin would bring the step back — see `stationTakesMoney`.
   const takesMoney = stationTakesMoney(kind);
@@ -441,7 +446,12 @@ export function StationDrawer({
                 .filter((d) => roleAccepts(role, d.kind))
                 .map((d) => {
                   const unusable = d.kind === 'terminal' && !supportedSellingTerminalProtocol(d.protocol);
-                  return { value: d.id, label: `${d.label} — ${unusable ? 'Unusable: no supported protocol' : deviceKindWord(d.kind)}`, disabled: unusable };
+                  const noAddress = printerWithoutAddress(d);
+                  return {
+                    value: d.id,
+                    label: `${d.label} — ${unusable ? 'Unusable: no supported protocol' : noAddress ? 'Unusable: no address' : deviceKindWord(d.kind)}`,
+                    disabled: unusable || noAddress,
+                  };
                 });
               return (
                 <Field key={role} label={deviceRoleWord(role)}>
@@ -456,6 +466,14 @@ export function StationDrawer({
               );
             })}
           </div>
+        )}
+        {unaddressed.length > 0 && (
+          <p className="text-xs" style={{ color: 'hsl(var(--status-warn))' }}>
+            {unaddressed.map((d) => d.label).join(', ')} {unaddressed.length === 1 ? 'has' : 'have'} no
+            address, so nothing would print on {unaddressed.length === 1 ? 'it' : 'them'}. Enter the
+            address the box prints to under this box&apos;s devices first, then choose{' '}
+            {unaddressed.length === 1 ? 'it' : 'them'} here.
+          </p>
         )}
       </Step>
 
