@@ -149,3 +149,52 @@ export function lineWithoutTillItem<L extends { productCode?: string }>(line: L)
   const { productCode: _code, ...rest } = line;
   return rest as L;
 }
+
+/** Lower case, accents off, runs of spaces as one: how the search reads both the menu and what was typed. */
+const foldForSearch = (s: string): string =>
+  s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * HOW WELL ONE TILL ITEM ANSWERS THE PICKER'S SEARCH (SCRUM-939). 0 leaves the
+ * item out; the picker lists the highest first.
+ *
+ * The picker used the list component's own fuzzy match over the code and the
+ * name, which finds letters scattered across both: "fries" matched Porridge
+ * and Vegetarian breakfast (the "CF-" of every code supplies the f) and left
+ * French fries fifteenth. Here an item is found only by what was typed as it
+ * stands: in the name first (the whole name, its start, the start of one of
+ * its words, anywhere in it), then the code, then the category ("pizza" lists
+ * the pizzas, whose names do not say pizza), then the station. Several words
+ * must each be found. Nothing typed keeps the menu as it is.
+ */
+export function tillMenuSearchScore(
+  item: Pick<TillMenuItem, "code" | "name" | "category" | "parentCategory" | "station">,
+  search: string,
+): number {
+  const q = foldForSearch(search);
+  if (!q) return 1;
+  const name = foldForSearch(item.name);
+  const code = foldForSearch(item.code);
+  if (name === q || code === q) return 1;
+  if (name.startsWith(q)) return 0.95;
+  const words = ` ${name.replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
+  const typed = q.replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  if (typed && words.includes(` ${typed}`)) return 0.9;
+  if (name.includes(q)) return 0.8;
+  if (code.startsWith(q)) return 0.75;
+  const category = foldForSearch(`${item.parentCategory ?? ""} ${item.category ?? ""}`);
+  if (category.includes(q)) return 0.6;
+  const parts = typed.split(" ").filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => name.includes(p) || code.includes(p) || category.includes(p))) {
+    return parts.every((p) => name.includes(p)) ? 0.7 : 0.5;
+  }
+  if (code.includes(q)) return 0.4;
+  if (item.station === q) return 0.3;
+  return 0;
+}
+
+/** The same reading for a row that is no till item ("Not from the till"): found by its own words only. */
+export function tillMenuWordsMatch(words: readonly string[], search: string): boolean {
+  const q = foldForSearch(search);
+  return !q || foldForSearch(words.join(" ")).includes(q);
+}

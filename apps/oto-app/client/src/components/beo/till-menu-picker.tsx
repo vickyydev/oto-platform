@@ -10,6 +10,8 @@ import {
   bahtOfSatang,
   tillCodeState,
   tillMenuIndexOf,
+  tillMenuSearchScore,
+  tillMenuWordsMatch,
   type TillMenuIndex,
   type TillMenuItem,
   type TillMenuPark,
@@ -131,6 +133,16 @@ export function TillMenuPick({
   const menu = useContext(TillMenuContext);
   const [open, setOpen] = useState(false);
   const groups = useMemo(() => groupsOf(menu.index.items, prefer), [menu.index.items, prefer]);
+  // SCRUM-939: the list's own fuzzy match found letters scattered across the
+  // code and the name; an item is found by what was typed as it stands, best first.
+  const filter = useMemo(() => {
+    const byValue = new Map(menu.index.items.map((item) => [item.code.trim().toLowerCase(), item] as const));
+    return (value: string, search: string, keywords?: string[]): number => {
+      const item = byValue.get(value.trim().toLowerCase());
+      if (item) return tillMenuSearchScore(item, search);
+      return tillMenuWordsMatch(keywords ?? [value], search) ? 0.2 : 0;
+    };
+  }, [menu.index.items]);
   if (!menu.editable) return null;
   const current = code?.trim() || null;
   return (
@@ -153,7 +165,7 @@ export function TillMenuPick({
             {menu.loading ? "Reading the till's menu…" : menu.message ?? "The till's menu is not available. Type the item instead."}
           </p>
         ) : (
-          <Command>
+          <Command filter={filter}>
             <CommandInput placeholder="Search the till's menu..." data-testid={`${testId}-search`} />
             <CommandList className="max-h-72">
               <CommandEmpty>Not on the till's menu. Type the item instead.</CommandEmpty>
