@@ -240,6 +240,10 @@ const NOT_YET_CALLED = new Map<string, string>([
   // screen. The erasure console (an Inbox or Console settings page, with the
   // 409 preview as its second confirmation) comes later and deletes this.
   ['POST /inbox/contacts/{id}/erase', 'the erasure console lands after I3 (the api ships first, plan §3.6)'],
+  [
+    'POST /inbox/test-lines',
+    'SCRUM-908: the WhatsApp test line is set up once per deployment by a person with inbox:channel:manage calling the api directly; there is no set-up screen yet',
+  ],
   // 2026-10-20, SCRUM-591 round I2: the internal assistant's api lands before
   // its screens. The launcher's ask panel, "My questions" and feedback (round
   // I3a) now call the ask routes; the reviewer's view is the Console's, later.
