@@ -2734,15 +2734,15 @@ export default function Till() {
       setConsentCompletedScope(null);
       setConsentNotSaved(outcome.message);
     };
-    void resolveSupervisionGate()
-      .then(settle, (err: unknown) => settle({ ok: false, message: err instanceof Error ? err.message : 'Unknown error' }))
-      .finally(() => {
-        // SCRUM-887 — the press ends, whoever started it.
-        gateOnline.endPress();
-        gateRunningRef.current = false;
-        setGateSaving(false);
-        setConsentFinishing(null);
-      });
+    // The press ends first, whatever its outcome and whoever started it
+    // (SCRUM-887: `endPress()` releases the gate's online hold unless it was
+    // carried to the sale), then the family hears the outcome.
+    void resolveSupervisionGate().finally(() => {
+      gateOnline.endPress();
+      gateRunningRef.current = false;
+      setGateSaving(false);
+      setConsentFinishing(null);
+    }).then(settle, (err: unknown) => settle({ ok: false, message: err instanceof Error ? err.message : 'Unknown error' }));
   };
   const handleSupervisionContinue = () => {
     if (gateSaving) return;

@@ -162,6 +162,13 @@ describe('a gate run whose sale was cancelled while it saved', () => {
     expect(stop).toBeLessThan(gate.indexOf('checkinApi.createRegistration('));
   });
 
+  it('the staff’s Continue and the family’s Done end the press the same way, before the family hears the outcome', () => {
+    const run = till.slice(till.indexOf('const runSupervisionGate'), till.indexOf('const findOrCreateGateMember'));
+    // (Where the SCRUM-887 hold is on the till, its `gateOnline.endPress();` comes first.)
+    expect(run).toMatch(/void resolveSupervisionGate\(\)\.finally\(\(\) => \{\s*(?:gateOnline\.endPress\(\);\s*)?gateRunningRef\.current = false;\s*setGateSaving\(false\);\s*setConsentFinishing\(null\);\s*\}\)\.then\(settle, /);
+    expect(run).toMatch(/const handleSupervisionContinue = \(\) => \{\s*if \(gateSaving\) return;\s*runSupervisionGate\('staff'\);\s*\};/);
+  });
+
   it('changes the cart only for its own sale, and says nothing of a failure on the next one', () => {
     expect(gate).toMatch(/if \(!ownSale\(\)\) return \{ ok: false, message: SALE_MOVED_ON \};\s*\/\/ A source line fully converts/);
     expect(gate.match(/\} catch \(err\) \{\s*if \(!ownSale\(\)\) return \{ ok: false, message: SALE_MOVED_ON \};\s*toast\(/g)).toHaveLength(2);
