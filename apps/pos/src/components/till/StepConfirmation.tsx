@@ -148,6 +148,18 @@ export function saleNumberLabel(number: SaleNumber): string | null {
   return null;
 }
 
+/**
+ * The line under "Payment Successful": the sale's name, its total and how it
+ * was paid ("Receipt T1-000123 • ฿1444.50 • Cash"). SCRUM-953 — the door
+ * check-in choice after a drop-off sale (`DoorCheckInChoiceModal`) opens over
+ * it, so the dialog carries the same line.
+ */
+export function paidLineOf(sale: Pick<Sale, 'total' | 'paymentMethod'>, number: SaleNumber): string {
+  return [saleNumberLabel(number), `฿${bahtText(sale.total)}`, paymentMethodLabel(sale.paymentMethod ?? '')]
+    .filter(Boolean)
+    .join(' • ');
+}
+
 interface StepConfirmationProps {
   sale: Sale;
   onNewSale: () => void;
@@ -276,7 +288,6 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
   const issue = given ? (saleNumber ? { ...given, number: saleNumber } : given) : asked;
   // SCRUM-883 — the credit rows are the platform's grants, never the till's own list.
   const creditGrants = withPlatformCredit(sale, issue.grants, !!boxIssue).creditGrants;
-  const numberLabel = saleNumberLabel(issue.number);
   // S2-11 — the codes the platform minted, on the rows they belong to, so a
   // band that fails to print can be read out and reprinted from History. The
   // platform files a band under the cart line id it was SENT, which is the
@@ -354,9 +365,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
         )}
         <h2 className="text-4xl font-bold tracking-tight">Payment Successful</h2>
         <p className="text-muted-foreground mt-2 text-xl">
-          {[numberLabel, `฿${bahtText(sale.total)}`, paymentMethodLabel(sale.paymentMethod ?? '')]
-            .filter(Boolean)
-            .join(' • ')}
+          {paidLineOf(sale, issue.number)}
         </p>
         {showTaxBreakdown && taxRows.length > 0 && (
           <p className="text-muted-foreground/80 mt-1 text-sm">

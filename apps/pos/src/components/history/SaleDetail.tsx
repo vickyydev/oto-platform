@@ -24,6 +24,8 @@ import {
   newActionId,
   refundItemOptions,
   withChildName,
+  lineShownSatang,
+  linesShownSatang,
   isPartySettlementSale,
   PARTY_SETTLEMENT_LABEL,
   refundRemainingSatang,
@@ -451,6 +453,22 @@ const STATUS_LABEL: Record<PaymentAttemptView['status'], { label: string; tone: 
 };
 
 /**
+ * SCRUM-953 — a party's deposit whose record on a settlement was cancelled
+ * with the settlement (`refunds.ts`, a part-paid settlement refunded whole, and
+ * `sale.ts`'s void, SCRUM-804 / 876): the platform closes the settlement and
+ * cancels the record of the deposit on it, but the deposit itself was paid in
+ * the OTO App and stays the party's, held for its next settlement. The row
+ * says so, not "Cancelled", which read as if the deposit had been given back.
+ */
+export const DEPOSIT_KEPT_LABEL = 'Stays with the party';
+
+/** The words and tone of one tender's state on the sale. */
+export function tenderStatusOf(attempt: Pick<PaymentAttemptView, 'status' | 'partyDeposit'>): { label: string; tone: string } {
+  if (attempt.partyDeposit && attempt.status === 'cancelled') return { label: DEPOSIT_KEPT_LABEL, tone: 'text-muted-foreground' };
+  return STATUS_LABEL[attempt.status];
+}
+
+/**
  * One tender: what kind, how much, and whether the money is ours.
  *
  * The second line carries only what that particular instrument actually
@@ -469,7 +487,7 @@ export function PaymentRow({
   sale: Pick<ApiSale, 'note'>;
   fmt: (iso: string) => string;
 }) {
-  const status = STATUS_LABEL[attempt.status];
+  const status = tenderStatusOf(attempt);
   const Icon =
     attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' || attempt.method === 'other' ? Wallet : CreditCard;
   const detail = [
@@ -1307,7 +1325,8 @@ export function SaleDetail(props: SaleDetailProps) {
         const first = lines[0]!;
         // SCRUM-934 — a drop-off or nanny child's card names the child.
         const name = withChildName(packageName(first.ticketPackageId) ?? first.stayDurationLabel ?? 'Items', lines);
-        const groupTotal = lines.reduce((sum, l) => sum + l.grossSatang, 0);
+        // SCRUM-953 — each line as the order panel showed it, so the cards add up to the Subtotal.
+        const groupTotal = linesShownSatang(lines);
         return (
           <div key={cartLineId} className="rounded-xl border bg-background/40 p-4">
             <div className="flex items-center justify-between font-bold text-lg">
@@ -1326,7 +1345,7 @@ export function SaleDetail(props: SaleDetailProps) {
                   <span>
                     {line.label} {line.quantity}× ฿{satangText(line.unitSatang)}
                   </span>
-                  <span className="tabular-nums">฿{satangText(line.grossSatang)}</span>
+                  <span className="tabular-nums">฿{satangText(lineShownSatang(line))}</span>
                 </div>
               ))}
             </div>

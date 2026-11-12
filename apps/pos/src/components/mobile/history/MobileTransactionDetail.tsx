@@ -12,7 +12,7 @@ import {
   Plus,
   Check,
 } from 'lucide-react';
-import { amountLabelOf, baht, withChildName } from '@/api/history';
+import { amountLabelOf, baht, lineShownSatang, linesShownSatang, withChildName } from '@/api/history';
 import { getDiscountReasons } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
 import { pricedOnDocument } from '@/lib/tierProof';
@@ -189,7 +189,8 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                           {withChildName(state.packageName(lines[0]?.ticketPackageId ?? null) ?? lines[0]?.label ?? '', lines)}
                         </span>
                         <span className="shrink-0 tabular-nums">
-                          ฿{satangText(lines.reduce((sum, line) => sum + line.grossSatang, 0))}
+                          {/* SCRUM-953 — as the order panel showed it: the cards add up to the Subtotal. */}
+                          ฿{satangText(linesShownSatang(lines))}
                         </span>
                       </div>
                       {lines.map((line) => (
@@ -202,7 +203,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                             {!!line.modifiers?.length && <span className="block">{line.modifiers.map((choice) => `${choice.groupName}: ${choice.optionName}`).join(', ')}</span>}
                             {line.note && <span className="block italic">{line.note}</span>}
                           </span>
-                          <span className="tabular-nums">฿{satangText(line.grossSatang)}</span>
+                          <span className="tabular-nums">฿{satangText(lineShownSatang(line))}</span>
                         </div>
                       ))}
                     </div>

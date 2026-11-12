@@ -837,6 +837,30 @@ export function withChildName(name: string, lines: readonly Pick<ApiSaleLine, 'c
   return child ? `${child} · ${name}` : name;
 }
 
+/**
+ * SCRUM-953 — WHAT AN ITEM CARD IN HISTORY SAYS A LINE COST: the order panel's
+ * figure for it (`OrderSummary`), so the cards, the Subtotal under them, each
+ * discount and the total read as one sum, desk and phone.
+ *
+ * The panel lists each line at its price before any discount (a 10 percent
+ * code on ฿1,605: ฿915 and ฿690), then Subtotal ฿1,605, the code −฿160.50 and
+ * Total ฿1,444.50. History listed the line's share AFTER the discount (฿823.50
+ * and ฿621) under the same Subtotal ฿1,605, so the cards did not add up to it.
+ * The ledger keeps both: `baseSatang` is the line before discounts, service
+ * charge and any tax added on top (the money card lists those below the
+ * Subtotal), and the Subtotal is their sum. A voucher's free item is the one
+ * line the panel shows at ฿0 though its shelf price is in the Subtotal: it
+ * reads ฿0 here too, as it was.
+ */
+export function lineShownSatang(line: Pick<ApiSaleLine, 'kind' | 'baseSatang' | 'grossSatang'>): number {
+  return line.kind === 'promo_item' ? line.grossSatang : line.baseSatang;
+}
+
+/** An item card's own figure: its lines' (`lineShownSatang`). */
+export function linesShownSatang(lines: readonly Pick<ApiSaleLine, 'kind' | 'baseSatang' | 'grossSatang'>[]): number {
+  return lines.reduce((sum, line) => sum + lineShownSatang(line), 0);
+}
+
 export function refundItemOptions(
   detail: Pick<ApiSaleDetail, 'lines' | 'refunds'>,
   nameOf: (line: ApiSaleLine) => string | null = () => null,

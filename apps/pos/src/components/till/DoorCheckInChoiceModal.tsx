@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Baby, LogIn, CalendarClock, UserCheck, ShieldAlert } from 'lucide-react';
+import { Baby, LogIn, CalendarClock, UserCheck, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 // One drop-off / nanny registration awaiting the door check-in choice. Siblings
 // on the same registration are grouped together so staff decide for them as one.
@@ -36,6 +36,13 @@ interface DoorCheckInChoiceModalProps {
   groups: DoorCheckInGroup[] | null;
   onCheckInNow: (group: DoorCheckInGroup) => void;
   onLeaveAsBooked: (group: DoorCheckInGroup) => void;
+  /**
+   * SCRUM-953 — the success line of the sale just paid ("Receipt T1-000123 •
+   * ฿1444.50 • Cash", `paidLineOf`). This dialog opens over the payment
+   * screen's own line under "Payment Successful" and hid it, so it says it
+   * under its title. Left out, the dialog reads as before.
+   */
+  paidLine?: string | null;
 }
 
 /**
@@ -48,6 +55,7 @@ export function DoorCheckInChoiceModal({
   groups,
   onCheckInNow,
   onLeaveAsBooked,
+  paidLine,
 }: DoorCheckInChoiceModalProps) {
   const open = !!groups && groups.length > 0;
   const multi = (groups?.length ?? 0) > 1;
@@ -61,6 +69,12 @@ export function DoorCheckInChoiceModal({
             <Baby className="w-5 h-5 text-primary" />
             Check in the drop-off {multi ? 'children' : 'child'}?
           </DialogTitle>
+          {paidLine && (
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400" data-testid="door-check-in-paid">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 break-words">{paidLine}</span>
+            </p>
+          )}
           <DialogDescription>
             Payment is complete. For each registration, choose whether to check the
             child in now or leave them booked for later.

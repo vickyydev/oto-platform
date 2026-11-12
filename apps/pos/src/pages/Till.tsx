@@ -152,7 +152,7 @@ import { DropOffLineConfig, type DropOffLineUpdate } from '@/components/till/Dro
 import { AddDropOffModal } from '@/components/till/AddDropOffModal';
 import { StepAwaitCustomer } from '@/components/till/StepAwaitCustomer';
 import { StepPayment } from '@/components/till/StepPayment';
-import { StepConfirmation, useSaleIssue } from '@/components/till/StepConfirmation';
+import { StepConfirmation, paidLineOf, useSaleIssue } from '@/components/till/StepConfirmation';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
 import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDisplay';
@@ -4645,6 +4645,7 @@ export default function Till() {
         groups={pendingCheckInChoices}
         onCheckInNow={handleCheckInGroupNow}
         onLeaveAsBooked={handleLeaveGroupBooked}
+        paidLine={shownResult ? paidLineOf(shownResult, saleIssue.number) : null}
       />
 
       {/* SCRUM-32 — confirm which saved children are visiting (draft visit). */}

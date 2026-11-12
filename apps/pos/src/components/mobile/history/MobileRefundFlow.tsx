@@ -167,7 +167,7 @@ export function MobileRefundFlow({
                       key={l.id}
                       type="button"
                       onClick={() => toggleLine(l.id)}
-                      className={`w-full flex items-center justify-between rounded-xl border p-4 text-left transition-colors ${
+                      className={`w-full flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors ${
                         checked
                           ? 'border-rose-400 ring-1 ring-rose-400/40 bg-rose-500/10'
                           : 'border-border hover:bg-muted/50'
@@ -183,7 +183,8 @@ export function MobileRefundFlow({
                         >
                           {checked && <Check className="w-3.5 h-3.5" />}
                         </span>
-                        <span className="truncate font-medium">{l.label}</span>
+                        {/* SCRUM-953 — a long name (a child's, then the ticket) wraps, never cut. */}
+                        <span className="min-w-0 break-words font-medium">{l.label}</span>
                       </span>
                       <span className="font-bold tabular-nums shrink-0">฿{bahtText(l.amount)}</span>
                     </button>
