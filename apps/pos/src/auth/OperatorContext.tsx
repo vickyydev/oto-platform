@@ -392,6 +392,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     const op = operatorRef.current;
     // Said once: the minute's heartbeat keeps being refused while nobody is signed in.
     if (!op || keptTill.current) return;
+    // Read before anything below moves state.
+    const nothingToKeep = Boolean(viewAsRef.current || mustChangeRef.current || preparedRef.current);
     clearTimers();
     setOfflineUnlock(null);
     setOfflinePreparation(null);
@@ -401,7 +403,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setMustChangePassword(false);
     setViewAs(null);
     setKeptOffer(null);
-    if (viewAsRef.current || mustChangeRef.current || preparedRef.current) {
+    if (nothingToKeep) {
       keptTill.current = null;
       setSessionEnded(null);
       setTillSeat(null);

@@ -133,6 +133,18 @@ export function sessionEndedLine(ended: SessionEnded): string {
   return `${what} Sign in again to carry on.${ended.saleKept ? ' The sale in progress is kept on this till.' : ''}`;
 }
 
+/**
+ * Whether the till is no longer at the station the kept sale was on: the
+ * station was let go when the new session asked for it, or another was taken.
+ * The sale then goes, and is never shown at another station.
+ */
+export function keptSaleElsewhere(
+  offer: Pick<KeptSaleOffer, 'stationId'>,
+  here: { stationId: string | null; resolved: boolean },
+): boolean {
+  return offer.stationId !== null && here.resolved && here.stationId !== offer.stationId;
+}
+
 /** "20:05", on the till's own clock. */
 export function clockTime(at: number): string {
   const d = new Date(at);

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowLeft, Receipt } from 'lucide-react';
 import { useOperator } from '@/auth/OperatorContext';
-import { keptSaleOfferLine, type KeptSaleOffer } from '@/auth/sessionEnd';
+import { keptSaleElsewhere, keptSaleOfferLine, type KeptSaleOffer } from '@/auth/sessionEnd';
 import { Button } from '@/components/ui/button';
 import { useStation } from '@/station/StationContext';
 
@@ -24,7 +24,7 @@ import { useStation } from '@/station/StationContext';
 export function KeptSaleOfferScreen({ offer }: { offer: KeptSaleOffer }) {
   const { continueKept, discardKept } = useOperator();
   const { station, resolved } = useStation();
-  const elsewhere = offer.stationId !== null && resolved && station?.stationId !== offer.stationId;
+  const elsewhere = keptSaleElsewhere(offer, { stationId: station?.stationId ?? null, resolved });
   useEffect(() => {
     if (elsewhere) discardKept();
   }, [elsewhere, discardKept]);
