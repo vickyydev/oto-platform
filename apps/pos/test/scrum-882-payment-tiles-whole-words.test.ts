@@ -68,7 +68,8 @@ if (!markup) console.warn(`SCRUM-882 tile measurement skipped: no browser to lay
 describe.skipIf(!markup)('SCRUM-882 — measured: every name whole, every language, every panel', () => {
   let page: MarkupPage;
   beforeAll(() => { page = markup!; });
-  afterAll(async () => { await markup?.close(); });
+  // Closing the browser and the dev server can take a while on a loaded machine.
+  afterAll(async () => { await markup?.close(); }, 60_000);
 
   for (const theme of ['light', 'dark'] as const) {
     it(`the three seeded methods (${theme})`, async () => {
