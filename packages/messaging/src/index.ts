@@ -18,6 +18,9 @@
  *   whatsapp-cloud.ts  `WhatsAppCloudChannel`: the skeleton, tested on
  *                      recorded fixtures only, never live in this story.
  *   config.ts          the `INBOX_*` variable names and their one reading.
+ *   twilio.ts          `TwilioWhatsAppChannel` (SCRUM-908): the WhatsApp
+ *                      test line on Twilio's sandbox — the URL-and-fields
+ *                      signature, the allow-list, the sandbox's pace.
  */
 
 export * from './contract';
@@ -55,3 +58,30 @@ export {
   type WhatsAppCloudConfig,
   type WhatsAppCloudDeps,
 } from './whatsapp-cloud';
+export {
+  TwilioWhatsAppChannel,
+  TWILIO_API_BASE,
+  TWILIO_API_VERSION,
+  TWILIO_MAX_PACE_WAIT_MS,
+  TWILIO_MEDIA_HOST,
+  TWILIO_SANDBOX_NUMBER,
+  TWILIO_SANDBOX_PACE_MS,
+  TWILIO_SIGNATURE_HEADER,
+  TWIML_EMPTY,
+  addressToE164,
+  buildTwilioSendRequest,
+  formFieldsOf,
+  isOwnMediaUrl,
+  mediaKindOf,
+  parseTwilioForm,
+  refusalForTwilioError,
+  signedUrlCandidates,
+  twilioRecipientOf,
+  twilioSignature,
+  verifyTwilioDelivery,
+  type TwilioChannelDeps,
+  type TwilioConfig,
+  type TwilioFetch,
+  type TwilioParseOptions,
+  type TwilioRequest,
+} from './twilio';

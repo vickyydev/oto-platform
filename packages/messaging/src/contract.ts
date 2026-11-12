@@ -41,7 +41,11 @@ export const CHANNELS = [
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
-/** `inbox.channel_account.provider`'s CHECK (plan §1). Only three have adapters here. */
+/**
+ * `inbox.channel_account.provider`'s CHECK (plan §1). `twilio` joined with
+ * SCRUM-908 (`0121_inbox_twilio_test_line`): the WhatsApp test line on
+ * Twilio's sandbox (`twilio.ts`).
+ */
 export const PROVIDERS = [
   'meta_cloud',
   'meta_graph',
@@ -50,6 +54,7 @@ export const PROVIDERS = [
   'webform',
   'simulator',
   'console',
+  'twilio',
 ] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
@@ -58,6 +63,7 @@ export const BUILT_PROVIDERS = [
   'console',
   'simulator',
   'meta_cloud',
+  'twilio',
 ] as const satisfies readonly Provider[];
 
 /** `inbox.channel_account.status`'s vocabulary, which is what `health()` answers in. */
@@ -106,6 +112,14 @@ export interface RawWebhook {
   /** The query string, parsed. The GET verify-token challenge lives here. */
   query: Readonly<Record<string, string | undefined>>;
   rawBody: string | Uint8Array;
+  /**
+   * The path and query string the provider called, as the route received it
+   * (SCRUM-908) — never a scheme, host or port, which a provider that signs
+   * the URL it called (Twilio) takes from its own configuration, so no
+   * `Host` or `X-Forwarded-*` header can change what is verified. Meta's
+   * signature covers the body only, and its adapters ignore this.
+   */
+  publicPath?: string;
 }
 
 /**
@@ -282,7 +296,8 @@ export interface OutboundMessage {
 }
 
 /**
- * The five refusals (plan §2.1). Each says what the send job does next:
+ * The refusals (plan §2.1: five; `NOT_ALLOWED` joined with SCRUM-908). Each
+ * says what the send job does next:
  *
  *  - `TEMPLATE_REQUIRED` — free text outside the window, refused HERE before
  *    any network: the composer asks for a template.
@@ -293,6 +308,9 @@ export interface OutboundMessage {
  *    recipient, bad template, bad credentials. Not retryable.
  *  - `UNREACHABLE`       — no answer from the provider (network, timeout,
  *    5xx). Retryable; the sweeper picks it up.
+ *  - `NOT_ALLOWED`       — the channel's own allow-list refused the recipient
+ *    before any network (SCRUM-908: a test line writes only to its allowed
+ *    numbers). Not retryable.
  */
 export const SEND_REFUSALS = [
   'OUT_OF_WINDOW',
@@ -300,6 +318,7 @@ export const SEND_REFUSALS = [
   'RATE_LIMITED',
   'REJECTED',
   'UNREACHABLE',
+  'NOT_ALLOWED',
 ] as const;
 export type SendRefusal = (typeof SEND_REFUSALS)[number];
 
