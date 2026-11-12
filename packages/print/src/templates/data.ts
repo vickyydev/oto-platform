@@ -289,6 +289,15 @@ export interface TestPageData {
   deviceLabel: string;
   model: string;
   address: string;
+  /**
+   * SCRUM-952 — where the printer the page ran on stands, and when the test
+   * was asked for, as the platform composes the page for that printer. Each
+   * is a row of its own under the address; left out, the row is left out, so
+   * the committed fixture's page is unchanged.
+   */
+  station?: string;
+  box?: string;
+  time?: string;
   transport: string;
   /** As rendered, so a 512-dot unit is visibly a 512-dot unit. */
   widthDots: number;

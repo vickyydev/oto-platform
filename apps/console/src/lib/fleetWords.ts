@@ -204,6 +204,12 @@ export function commandLabel(command: {
   if (command.kind !== 'test_print' || payload?.document !== 'platform') {
     return commandWord(command.kind);
   }
+  /**
+   * SCRUM-952 — a test page carries the platform's document too now, the page
+   * composed for the printer it runs on, and it is still the test print
+   * somebody pressed: it keeps that name.
+   */
+  if (payload.kind === 'test_page' && !payload.reprintOf) return commandWord(command.kind);
   const verb = payload.reprintOf ? 'Reprint' : 'Print';
   return typeof payload.kind === 'string' ? `${verb} ${printKindWord(payload.kind)}` : verb;
 }

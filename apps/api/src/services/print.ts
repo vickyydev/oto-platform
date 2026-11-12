@@ -806,6 +806,13 @@ export async function requestTestPrint(
          * found, and the unrouted case is answered below rather than queued.
          */
         ...(routed ? { deviceId: routed.deviceId } : {}),
+        /**
+         * SCRUM-952 — a test page names the printer it runs on: the box
+         * fetches the page the platform composes for this job
+         * (`testPageDocumentOf`) instead of printing the renderer's fixed
+         * sample. Every other kind tested here is still the sample.
+         */
+        ...(input.kind === 'test_page' ? { document: 'platform' } : {}),
       },
       actionId: input.actionId,
     });
@@ -1035,9 +1042,11 @@ export async function reprintJob(
          * S2-11 — a copy of a sale's printout (a receipt, a band, a prep
          * ticket) is printed from the platform's document for the NEW job,
          * built from the ledger as it stands, exactly as the original was.
-         * A test page has no document and the box prints its own sample.
+         * A station's test page is composed for its printer (SCRUM-952);
+         * any other test print has no document and the box prints its own
+         * sample.
          */
-        ...(source.subjectType && source.subjectType !== 'station'
+        ...(source.subjectType && (source.subjectType !== 'station' || source.kind === 'test_page')
           ? { document: 'platform', subjectType: source.subjectType, reprintOf: root }
           : {}),
       },

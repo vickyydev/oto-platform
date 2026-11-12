@@ -56,6 +56,7 @@ import {
   type BandView,
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
+import { testPageDocumentOf } from './test-page';
 import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf, saleCreditsOf } from './wallet';
 import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
@@ -1528,9 +1529,10 @@ export interface PrintDocumentView {
  * Build the content of one print job, for the box that is about to print it.
  *
  * Scoped to the asking box: a job on another box is 404, not 403, so an id
- * cannot be confirmed by probing — `recordPrintJobResult`'s rule. A job that
- * is not a sale's (a test page) has no document here; the box prints its own
- * sample for those.
+ * cannot be confirmed by probing — `recordPrintJobResult`'s rule. A station's
+ * test page is composed here for the printer it is routed to (SCRUM-952); a
+ * test print of any other kind has no document, and the box prints its own
+ * sample for it.
  */
 export async function buildPrintDocument(
   db: Exec,
@@ -1556,6 +1558,16 @@ export async function buildPrintDocument(
   };
   const noDocument = () =>
     new AppError(404, 'PRINT_DOCUMENT_NOT_FOUND', 'This print job has no document on the platform');
+  /**
+   * SCRUM-952 — a test page asked for at a station prints the printer it is
+   * routed to — its name, model, address, station, box and the time — rather
+   * than the renderer's fixed sample (`testPageDocumentOf`).
+   */
+  if (row.subjectType === 'station' && row.kind === 'test_page') {
+    const data = await testPageDocumentOf(db, row);
+    if (!data) throw noDocument();
+    return { ...base, job: { kind: 'test_page', data } as RenderJob };
+  }
   /**
    * S2-14a — a credit voucher prints one wallet: its QR, the credit it was
    * issued with and its holder (`creditVoucherDocumentOf`). The job row names

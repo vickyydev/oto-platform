@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/api/client';
 import type { HealthBox } from '@/api/observability';
 import { FleetSummary } from '@/components/devices/FleetSummary';
+import { commandLabel } from '@/lib/fleetWords';
 import { healthDeviceTone, readAsNotSetUp } from '@/lib/printerAddress';
 import { STATION_CHANGED_WORDS, stationSaveRefusal } from '@/lib/stationForm';
 
@@ -28,6 +29,22 @@ import { STATION_CHANGED_WORDS, stationSaveRefusal } from '@/lib/stationForm';
  */
 
 const API_FLEET = resolve(import.meta.dirname, '../../api/src/services/fleet.ts');
+
+/**
+ * Point 1: the test page is composed by the platform for the printer it runs
+ * on, so its command now carries `document: 'platform'` like a sale's
+ * receipt. In the box's command history it is still the test print somebody
+ * pressed.
+ */
+describe('point 1 — a test page that carries the platform’s page keeps its name', () => {
+  it('reads "Test print", not "Print test page"; a sale’s receipt still reads as what it printed', () => {
+    expect(commandLabel({ kind: 'test_print', payload: { document: 'platform', kind: 'test_page', deviceId: 'd' } }))
+      .toBe('Test print');
+    expect(commandLabel({ kind: 'test_print', payload: { document: 'platform', kind: 'receipt' } })).toBe('Print receipt');
+    expect(commandLabel({ kind: 'test_print', payload: { document: 'platform', kind: 'test_page', reprintOf: 'root' } }))
+      .toBe('Reprint test page');
+  });
+});
 
 describe('point 3 — the stale-save refusal in the platform’s words', () => {
   it('is the sentence the api refuses with, word for word', () => {

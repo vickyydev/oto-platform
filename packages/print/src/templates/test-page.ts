@@ -64,6 +64,11 @@ export function buildTestPage({ data, device }: TestPageInput): PrintDocument {
     ...fact(narrow, 'Device', data.deviceLabel),
     ...fact(narrow, 'Model', data.model),
     ...fact(narrow, 'Address', data.address),
+    // SCRUM-952 — the station, box and time of the printer it ran on, when the
+    // platform composed the page for it; absent on the committed fixture.
+    ...optionalFact(narrow, 'Station', data.station),
+    ...optionalFact(narrow, 'Box', data.box),
+    ...optionalFact(narrow, 'Time', data.time),
     ...fact(narrow, 'Transport', data.transport),
     ...fact(narrow, 'Dots/line', `${data.widthDots} (as rendered)`),
     ...fact(narrow, 'Renderer', data.rendererVersion),
@@ -150,6 +155,11 @@ function fact(narrow: boolean, label: string, value: string): Block[] {
       ],
     },
   ];
+}
+
+/** A fact the page carries only when it was given one: no row, rather than an empty one. */
+function optionalFact(narrow: boolean, label: string, value: string | undefined): Block[] {
+  return value?.trim() ? fact(narrow, label, value) : [];
 }
 
 const MONEY: [string, string, boolean][] = [

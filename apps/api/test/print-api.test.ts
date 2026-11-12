@@ -22,7 +22,6 @@ import {
   type AgentFetch,
   ROLE_FOR_KIND,
   profileFor,
-  testPrintJob,
   type BoxAgent,
 } from '@oto/box-agent';
 import { previewPng, renderJob } from '@oto/print';
@@ -43,6 +42,7 @@ import {
   type TestContext,
 } from './helpers';
 import { attachInProcessBox, provisionVirtualBox } from '../src/services/box';
+import { buildPrintDocument } from '../src/services/sale-printing';
 // The Console's own URL rule, not a copy of it — see `fromBrowser` below.
 import { apiUrl } from '../../console/src/api/url';
 
@@ -582,7 +582,7 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
     const { agent } = await buildAgent();
     const { till, receipt } = await seededIds();
 
-    await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
+    const started = await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
     expect(await agent.runPendingCommands()).toBe(1);
 
     const list = await get(`/devices/${receipt.id}/printouts?limit=1`);
@@ -594,9 +594,18 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
       .config()!
       .stations.flatMap((s) => s.devices)
       .find((d) => d.id === receipt.id)!;
-    const expected = previewPng(
-      renderJob(await testPrintJob('test_page'), { device: profileFor(deviceRow) }).bitmap,
-    );
+    /**
+     * SCRUM-952 — the test page is the one the platform composed for this
+     * printer, not the renderer's fixed sample: rendered here, independently,
+     * from the same document the box fetched for the job.
+     */
+    const [job] = await ctx.db
+      .select()
+      .from(printJob)
+      .where(eq(printJob.id, started.json().printJob.id as string))
+      .limit(1);
+    const composed = await buildPrintDocument(ctx.db, { boxId: job!.boxId, operatorId: job!.operatorId }, job!.id);
+    const expected = previewPng(renderJob(composed.job, { device: profileFor(deviceRow) }).bitmap);
     expect(Buffer.from(served.rawPayload).equals(Buffer.from(expected))).toBe(true);
   });
 
