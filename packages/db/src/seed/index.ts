@@ -1062,9 +1062,16 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   const box2Id = await mkBox('Virtual box 2', 'virtual-2');
 
   // The park's real devices (docs/architecture/DEVICE_INVENTORY.md §2) with
-  // their real models, addresses, protocols and terminal identifiers — but on
-  // the `simulated` transport, so the adapters are written against the truth
-  // and only the physical link changes on site.
+  // their real models, protocols and terminal identifiers — but on the
+  // `simulated` transport, so the adapters are written against the truth and
+  // only the physical link changes on site.
+  //
+  // SCRUM-952 — their addresses are NOT the park's. A seeded printer at the
+  // park's own 192.168.88.x read, on a test page and on the Console, as a
+  // printer of the park's network on a database that is not the park's. Each
+  // is in TEST-NET-1 (RFC 5737, kept for documentation) with the last number
+  // of the unit it stands for, as Chalong's below: a simulated printer only
+  // needs an address no other device on its box has.
   const mkDevice = async (d: {
     kind: (typeof s.DEVICE_KINDS)[number];
     label: string;
@@ -1112,35 +1119,35 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
     label: 'Receipt Printer 1',
     model: 'Welltech G4 (Xprinter XP-C260)',
     protocol: 'escpos',
-    address: '192.168.88.202:9100',
+    address: '192.0.2.202:9100',
   });
   const devKitchen = await mkDevice({
     kind: 'kitchen_printer',
     label: 'Kitchen Printer',
     model: 'Xprinter XP-80',
     protocol: 'escpos',
-    address: '192.168.88.206:9100',
+    address: '192.0.2.206:9100',
   });
   const devBooth = await mkDevice({
     kind: 'receipt_printer',
     label: 'Receipt Printer 2',
     model: 'Xprinter XP-80',
     protocol: 'escpos',
-    address: '192.168.88.207:9100',
+    address: '192.0.2.207:9100',
   });
   const devKidsBand = await mkDevice({
     kind: 'band_printer',
     label: 'Band Printer (kids)',
     model: '4B-2082A',
     protocol: 'tspl2',
-    address: '192.168.88.204:9100',
+    address: '192.0.2.204:9100',
   });
   const devAdultBand = await mkDevice({
     kind: 'band_printer',
     label: 'Band Printer (adults)',
     model: '4B-2082A',
     protocol: 'tspl2',
-    address: '192.168.88.210:9100',
+    address: '192.0.2.210:9100',
   });
   const devScanner = await mkDevice({
     kind: 'scanner',
@@ -1260,7 +1267,7 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
     label: 'Receipt Printer 3',
     model: 'Xprinter XP-80',
     protocol: 'escpos',
-    address: '192.168.88.208:9100',
+    address: '192.0.2.208:9100',
     box: box2Id,
   });
   const counter2Id = await mkStation({
@@ -1275,8 +1282,9 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   /**
    * The bar route (S2-06).
    *
-   * `192.168.88.208` is the park's **Bar / F&B** printer — DEVICE_INVENTORY §2
-   * row 7 — and it is the unit seeded above as Counter 2's receipt printer.
+   * The park's **Bar / F&B** printer — DEVICE_INVENTORY §2 row 7 — is the
+   * unit seeded above as Counter 2's receipt printer (at a documentation
+   * address, SCRUM-952).
    * One 80 mm Xprinter at the food counter does both jobs, which is what the
    * park does today, and `ROLE_ACCEPTS.bar` in `services/fleet.ts` allows a
    * plain receipt printer to take the bar role for exactly that reason.
@@ -1305,8 +1313,8 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   const chalongBoxId = await mkBox('Virtual box 3', 'virtual-3', chalongId);
 
   // No model, and an address that is nobody's. Nobody has surveyed Chalong's
-  // hardware — the models, addresses and terminal identifiers seeded above are
-  // Central Floresta's real units from DEVICE_INVENTORY §2, and there is no
+  // hardware — the models and terminal identifiers seeded above are Central
+  // Floresta's real units from DEVICE_INVENTORY §2, and there is no
   // equivalent list for this park. `simulated` transport is the honest shape:
   // it prints in the simulator and claims nothing about a machine on a wall in
   // Chalong. Its address is in TEST-NET-1 (RFC 5737, kept for documentation)
