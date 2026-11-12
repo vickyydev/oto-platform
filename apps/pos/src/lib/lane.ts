@@ -238,7 +238,12 @@ async function retryHeld<T>(call: () => Promise<T>): Promise<T> {
  * handle by its own lane rules. Without a hold it is the call, unchanged.
  */
 export function onPlatformWhileHeld<T>(call: () => Promise<T>): Promise<T> {
-  return platformHolds > 0 ? retryHeld(call) : call().then(heard);
+  if (platformHolds > 0) return retryHeld(call);
+  // Heard beside the call, not chained to it: the caller sees its answer, or
+  // its refusal, exactly as soon as before.
+  const answer = call();
+  answer.then(platformAnswered, () => undefined);
+  return answer;
 }
 
 /** Note a failure the platform lane met; moves to the box when it is a trigger. */
