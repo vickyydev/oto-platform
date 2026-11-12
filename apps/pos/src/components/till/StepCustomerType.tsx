@@ -72,7 +72,7 @@ export function StepCustomerType({
   const shownTiers = soleTier ? tiers.filter((t) => t.id === soleTier) : tiers;
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="@container/type flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-6 shrink-0 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Select Customer Type</h2>
@@ -83,12 +83,12 @@ export function StepCustomerType({
       {/* Member banner */}
       <div className="mb-6 shrink-0">
         {member ? (
-          <div className="flex items-center gap-4 rounded-xl border bg-card p-4">
+          <div className="flex items-center gap-4 rounded-xl border bg-card p-4 md:@max-xl/type:flex-wrap md:@max-xl/type:gap-y-3">
             <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-lg shrink-0">
               {member.nickname.charAt(0).toUpperCase()}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-bold text-lg truncate">{member.nickname}</div>
+            <div className="min-w-0 flex-1 md:@max-xl/type:basis-[calc(100%-4rem)]">
+              <div className="font-bold text-lg truncate md:@max-xl/type:whitespace-normal">{member.nickname}</div>
               <div className="text-sm text-muted-foreground truncate">{formatStoredPhone(member.phone)}</div>
             </div>
             {verification ? (
@@ -133,7 +133,7 @@ export function StepCustomerType({
           in the split till view the panel is far narrower than the screen and
           a viewport-keyed md:grid-cols-3 overflowed and clipped the cards. */}
       <div className="px-3 py-2 @container">
-      <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6 md:@max-xl/type:gap-3">
         {shownTiers.map((t) => {
           const tier = t.id;
           const isDefault = isDefaultTier(tier);
@@ -145,7 +145,7 @@ export function StepCustomerType({
           return (
             <Card
               key={tier}
-              className={`relative flex flex-col items-center justify-center p-8 cursor-pointer transition-all hover:-translate-y-1 active:translate-y-0 ${
+              className={`relative flex flex-col items-center justify-center p-8 md:@max-xl/type:flex-row md:@max-xl/type:justify-start md:@max-xl/type:gap-4 md:@max-xl/type:p-4 cursor-pointer transition-all hover:-translate-y-1 active:translate-y-0 ${
                 isSelected
                   ? 'border-primary ring-2 ring-primary bg-primary/5'
                   : verified && !isDefault
@@ -161,27 +161,31 @@ export function StepCustomerType({
                 </div>
               )}
               <div
-                className={`h-20 w-20 rounded-full flex items-center justify-center mb-6 ${
+                className={`h-20 w-20 rounded-full flex items-center justify-center mb-6 md:@max-xl/type:h-12 md:@max-xl/type:w-12 md:@max-xl/type:mb-0 md:@max-xl/type:shrink-0 ${
                   verified && !isDefault ? 'bg-emerald-500/15' : 'bg-primary/20'
                 }`}
               >
                 <Icon
-                  className={`h-10 w-10 ${
+                  className={`h-10 w-10 md:@max-xl/type:h-6 md:@max-xl/type:w-6 ${
                     verified && !isDefault ? 'text-emerald-500' : 'text-primary'
                   }`}
                 />
               </div>
-              <h3 className="text-2xl font-bold mb-2">{tierLabel(tier)}</h3>
-              <p className="text-muted-foreground text-center">{blurb}</p>
-              {needsVerify ? (
-                <p className="mt-3 text-sm font-semibold text-amber-600 dark:text-amber-400 text-center">
-                  Proof required — verify now
-                </p>
-              ) : !isDefault && verified ? (
-                <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400 text-center">
-                  {verification && tierProofLabel(verification.proofType, verification.note)} — no proof needed
-                </p>
-              ) : null}
+              {/* SCRUM-884 — the card's words as one block: centred under
+                  the icon as the prototype draws them, beside it in the split view. */}
+              <div className={`flex flex-col items-center md:@max-xl/type:items-start md:@max-xl/type:min-w-0 ${!isDefault && verified ? 'md:@max-xl/type:pr-20' : ''}`}>
+                <h3 className="text-2xl font-bold mb-2 md:@max-xl/type:text-xl md:@max-xl/type:mb-0.5">{tierLabel(tier)}</h3>
+                <p className="text-muted-foreground text-center md:@max-xl/type:text-left">{blurb}</p>
+                {needsVerify ? (
+                  <p className="mt-3 text-sm font-semibold text-amber-600 dark:text-amber-400 text-center md:@max-xl/type:mt-1 md:@max-xl/type:text-left">
+                    Proof required — verify now
+                  </p>
+                ) : !isDefault && verified ? (
+                  <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400 text-center md:@max-xl/type:mt-1 md:@max-xl/type:text-left">
+                    {verification && tierProofLabel(verification.proofType, verification.note)} — no proof needed
+                  </p>
+                ) : null}
+              </div>
             </Card>
           );
         })}

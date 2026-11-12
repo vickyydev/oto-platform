@@ -105,9 +105,22 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
     setSizeAddOnId(null);
   };
 
+  /**
+   * SCRUM-884 / SCRUM-918 — THE SPLIT VIEW. Beside the customer display the
+   * till's column is 310px of a 1440 window and 430px of a 1680 one, and two
+   * cards a row left each name a letter ("F..", "R..") beside the stepper and
+   * "Out of stock" one word a line. On a till screen (`md:`, 768px and up)
+   * whose grid is narrower than 36rem (`@max-xl/addons`), the cards take one a
+   * row and a name wraps between its words instead of being cut. The grid
+   * keys to its own width (`@container/addons`), so a till at full width — a
+   * column of 615px or more on any window from 1024px — and the phone keep
+   * the prototype's two cards a row exactly as before. (Class names are
+   * written whole: Tailwind finds them in the source as they stand.)
+   */
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="@container/addons">
+      <div className="grid grid-cols-2 gap-4 md:@max-xl/addons:grid-cols-1">
         {allAddOns.map((addon) => {
           const selectedEntry = selected.find((a) => a.id === addon.id);
           const qty = selectedEntry?.quantity ?? 0;
@@ -130,7 +143,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
               } ${isOos ? 'opacity-50' : ''}`}
             >
               <div className="min-w-0">
-                <div className="font-medium text-lg truncate">{addon.name}</div>
+                <div className="font-medium text-lg truncate md:@max-xl/addons:whitespace-normal">{addon.name}</div>
                 <div className="text-primary font-semibold text-sm">+฿{resolveRateToday(addon.price)}</div>
                 {isMultiVariant && breakdown.length > 0 && (
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -161,6 +174,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
             </div>
           );
         })}
+      </div>
       </div>
 
       {sizeAddOn && sizeInvItem && (

@@ -209,7 +209,13 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       {paymentStage && !amountUnavailable && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
       {holdControls}
 
-      <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+      {/* SCRUM-884 — in the split view at 1440x900 the tender (Partial
+          payment, Cash received, Change) under two rows of tiles pushed Back
+          and Confirm below the window. On a till screen (`md:`) whose panel is
+          under @xl the row stays at the panel's foot while what is above it
+          scrolls, on the column's own ground (the background with the
+          column's card tint over it). From @xl, and on the phone, as before. */}
+      <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 md:@max-xl:sticky md:@max-xl:bottom-0 md:@max-xl:z-10 md:@max-xl:pb-1 md:@max-xl:bg-background md:@max-xl:bg-linear-to-b md:@max-xl:from-card/30 md:@max-xl:to-card/30">
         {/* While a gateway QR is pending, Back is the way out of it: the QR is
             cancelled and this step stays, back at "Select Payment Method". */}
         <Button variant="outline" size="lg" className="w-full sm:w-24 @xl:w-32 shrink-0 h-16"

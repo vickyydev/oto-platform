@@ -33,7 +33,7 @@ function ParticipantStepper({
         active ? 'border-primary bg-primary/10 ring-1 ring-primary' : ''
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 md:@max-xl/step:flex-col md:@max-xl/step:items-start">
         <div
           className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
             active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
@@ -41,9 +41,9 @@ function ParticipantStepper({
         >
           <Icon className="w-6 h-6" />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 md:@max-xl/step:w-full">
           <div className="font-bold text-lg leading-tight">{label}</div>
-          {description && <div className="text-xs text-muted-foreground truncate">{description}</div>}
+          {description && <div className="text-xs text-muted-foreground truncate md:@max-xl/step:whitespace-normal">{description}</div>}
           {typeof price === 'number' && (
             <div className="text-xs text-primary font-medium mt-0.5">฿{price} each</div>
           )}
@@ -89,10 +89,10 @@ export function StepAddTicket({
 
   if (!activeLine) {
     return (
-      <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
-        <div className="flex justify-between items-center mb-6">
+      <div className="@container/step flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="flex justify-between items-center mb-6 md:@max-xl/step:flex-wrap md:@max-xl/step:gap-3">
           <h2 className="text-3xl font-bold tracking-tight">Add to Sale</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 md:@max-xl/step:flex-wrap">
             {!hideDropOff && (
               <Button variant="outline" size="lg" className="gap-2" onClick={onAddDropOff}>
                 <HandHeart className="w-5 h-5" />
@@ -114,7 +114,7 @@ export function StepAddTicket({
         {/* The step's host clips at its own height, so a ticket list taller
             than the screen scrolls here rather than being cut off. */}
         <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:@max-sm/step:grid-cols-1">
             {tickets.map((t) => (
               <TicketCard key={t.id} ticket={t} tier={tier} onClick={() => onSelectTicket(t)} />
             ))}
@@ -137,7 +137,7 @@ export function StepAddTicket({
   };
 
   return (
-    <div className="flex flex-col h-full animate-in slide-in-from-bottom-4 duration-300">
+    <div className="@container/step flex flex-col h-full animate-in slide-in-from-bottom-4 duration-300">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Configure: {activeLine.ticketType.name}</h2>
         <Button variant="ghost" className="gap-2" onClick={onBackToGrid}>
@@ -181,10 +181,10 @@ export function StepAddTicket({
       </div>
 
       <div className="shrink-0 mt-6 pt-6 border-t grid grid-cols-2 gap-4">
-        <Button variant="outline" size="lg" className="h-16 text-lg" onClick={onBackToGrid}>
+        <Button variant="outline" size="lg" className="h-16 text-lg md:@max-xl/step:h-auto md:@max-xl/step:min-h-16 md:@max-xl/step:px-3 md:@max-xl/step:py-2 md:@max-xl/step:whitespace-normal" onClick={onBackToGrid}>
           Add Another Ticket
         </Button>
-        <Button size="lg" className="h-16 text-xl font-bold" onClick={onDone}>
+        <Button size="lg" className="h-16 text-xl font-bold md:@max-xl/step:h-auto md:@max-xl/step:min-h-16 md:@max-xl/step:px-3 md:@max-xl/step:py-2 md:@max-xl/step:whitespace-normal" onClick={onDone}>
           Continue
         </Button>
       </div>

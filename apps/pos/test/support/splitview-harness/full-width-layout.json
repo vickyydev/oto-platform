@@ -1,0 +1,7479 @@
+{
+ "configure@1024x768": [
+  {
+   "key": "h2|Configure: 1 Hour Play|1",
+   "box": {
+    "left": 24,
+    "top": 231,
+    "right": 332.6,
+    "bottom": 267,
+    "width": 308.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Back to tickets|1",
+   "box": {
+    "left": 483.1,
+    "top": 230,
+    "right": 639,
+    "bottom": 268,
+    "width": 155.9,
+    "height": 38
+   }
+  },
+  {
+   "key": "h3|Participants|1",
+   "box": {
+    "left": 24,
+    "top": 292,
+    "right": 635,
+    "bottom": 320,
+    "width": 611,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Kids|1",
+   "box": {
+    "left": 97,
+    "top": 351.8,
+    "right": 304.5,
+    "bottom": 374.3,
+    "width": 207.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Requires adult supervision|1",
+   "box": {
+    "left": 97,
+    "top": 374.3,
+    "right": 304.5,
+    "bottom": 390.3,
+    "width": 207.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Kids|1",
+   "box": {
+    "left": 102.8,
+    "top": 405,
+    "right": 146.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|1",
+   "box": {
+    "left": 152.8,
+    "top": 411,
+    "right": 192.8,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Kids|1",
+   "box": {
+    "left": 198.8,
+    "top": 405,
+    "right": 242.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Adults|1",
+   "box": {
+    "left": 410.5,
+    "top": 351.8,
+    "right": 618,
+    "bottom": 374.3,
+    "width": 207.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Receives F&B credit|1",
+   "box": {
+    "left": 410.5,
+    "top": 374.3,
+    "right": 618,
+    "bottom": 390.3,
+    "width": 207.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Adults|1",
+   "box": {
+    "left": 416.3,
+    "top": 405,
+    "right": 460.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|2",
+   "box": {
+    "left": 466.3,
+    "top": 411,
+    "right": 506.3,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Adults|1",
+   "box": {
+    "left": 512.3,
+    "top": 405,
+    "right": 556.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "h3|Extras & Add-ons|1",
+   "box": {
+    "left": 24,
+    "top": 490,
+    "right": 635,
+    "bottom": 518,
+    "width": 611,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Regular Socks|1",
+   "box": {
+    "left": 41,
+    "top": 547,
+    "right": 152.5,
+    "bottom": 575,
+    "width": 111.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 50|1",
+   "box": {
+    "left": 41,
+    "top": 575,
+    "right": 152.5,
+    "bottom": 595,
+    "width": 111.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|1",
+   "box": {
+    "left": 41,
+    "top": 597,
+    "right": 152.5,
+    "bottom": 613,
+    "width": 111.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Regular Socks|1",
+   "box": {
+    "left": 164.5,
+    "top": 558,
+    "right": 208.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|1",
+   "box": {
+    "left": 214.5,
+    "top": 564,
+    "right": 254.5,
+    "bottom": 596,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Regular Socks|1",
+   "box": {
+    "left": 260.5,
+    "top": 558,
+    "right": 304.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Grip Socks|1",
+   "box": {
+    "left": 354.5,
+    "top": 556,
+    "right": 448.2,
+    "bottom": 584,
+    "width": 93.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 80|1",
+   "box": {
+    "left": 354.5,
+    "top": 584,
+    "right": 448.2,
+    "bottom": 604,
+    "width": 93.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Sizes|1",
+   "box": {
+    "left": 539.2,
+    "top": 564,
+    "right": 618,
+    "bottom": 596,
+    "width": 78.8,
+    "height": 32
+   }
+  },
+  {
+   "key": "div|Locker Rental|1",
+   "box": {
+    "left": 41,
+    "top": 663,
+    "right": 152.5,
+    "bottom": 691,
+    "width": 111.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 100|1",
+   "box": {
+    "left": 41,
+    "top": 691,
+    "right": 152.5,
+    "bottom": 711,
+    "width": 111.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|2",
+   "box": {
+    "left": 41,
+    "top": 713,
+    "right": 152.5,
+    "bottom": 729,
+    "width": 111.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Locker Rental|1",
+   "box": {
+    "left": 164.5,
+    "top": 674,
+    "right": 208.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|2",
+   "box": {
+    "left": 214.5,
+    "top": 680,
+    "right": 254.5,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Locker Rental|1",
+   "box": {
+    "left": 260.5,
+    "top": 674,
+    "right": 304.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Refillable Drink Cup|1",
+   "box": {
+    "left": 354.5,
+    "top": 663,
+    "right": 466,
+    "bottom": 691,
+    "width": 111.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 150|1",
+   "box": {
+    "left": 354.5,
+    "top": 691,
+    "right": 466,
+    "bottom": 711,
+    "width": 111.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|3",
+   "box": {
+    "left": 354.5,
+    "top": 713,
+    "right": 466,
+    "bottom": 729,
+    "width": 111.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Refillable Drink Cup|1",
+   "box": {
+    "left": 478,
+    "top": 674,
+    "right": 522,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|3",
+   "box": {
+    "left": 528,
+    "top": 680,
+    "right": 568,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Refillable Drink Cup|1",
+   "box": {
+    "left": 574,
+    "top": 674,
+    "right": 618,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Glow Band|1",
+   "box": {
+    "left": 41,
+    "top": 779,
+    "right": 133.3,
+    "bottom": 807,
+    "width": 92.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 60|1",
+   "box": {
+    "left": 41,
+    "top": 807,
+    "right": 133.3,
+    "bottom": 827,
+    "width": 92.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|4",
+   "box": {
+    "left": 41,
+    "top": 829,
+    "right": 133.3,
+    "bottom": 845,
+    "width": 92.3,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Glow Band|1",
+   "box": {
+    "left": 164.5,
+    "top": 790,
+    "right": 208.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|4",
+   "box": {
+    "left": 214.5,
+    "top": 796,
+    "right": 254.5,
+    "bottom": 828,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Glow Band|1",
+   "box": {
+    "left": 260.5,
+    "top": 790,
+    "right": 304.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "button|Add Another Ticket|1",
+   "box": {
+    "left": 24,
+    "top": 680,
+    "right": 323.5,
+    "bottom": 744,
+    "width": 299.5,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Continue|1",
+   "box": {
+    "left": 339.5,
+    "top": 680,
+    "right": 639,
+    "bottom": 744,
+    "width": 299.5,
+    "height": 64
+   }
+  }
+ ],
+ "tickets@1024x768": [
+  {
+   "key": "h2|Add to Sale|1",
+   "box": {
+    "left": 24,
+    "top": 232,
+    "right": 181.7,
+    "bottom": 268,
+    "width": 157.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Add drop-off child|1",
+   "box": {
+    "left": 261.6,
+    "top": 230,
+    "right": 474.3,
+    "bottom": 270,
+    "width": 212.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "button|Done Adding|1",
+   "box": {
+    "left": 486.3,
+    "top": 230,
+    "right": 639,
+    "bottom": 270,
+    "width": 152.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "span|Add ticket — select a play ticket for kids and adu|1",
+   "box": {
+    "left": 48,
+    "top": 294,
+    "right": 385.7,
+    "bottom": 314,
+    "width": 337.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|1 Hour Play|1",
+   "box": {
+    "left": 49,
+    "top": 351,
+    "right": 156.6,
+    "bottom": 379,
+    "width": 107.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|1 Hour|1",
+   "box": {
+    "left": 69,
+    "top": 383,
+    "right": 111,
+    "bottom": 403,
+    "width": 42,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 690|1",
+   "box": {
+    "left": 234.8,
+    "top": 351,
+    "right": 296.5,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|1",
+   "box": {
+    "left": 234.8,
+    "top": 379,
+    "right": 296.5,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|2 Hours Play|1",
+   "box": {
+    "left": 362.5,
+    "top": 351,
+    "right": 485.3,
+    "bottom": 379,
+    "width": 122.8,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|2 Hours|1",
+   "box": {
+    "left": 382.5,
+    "top": 383,
+    "right": 434.7,
+    "bottom": 403,
+    "width": 52.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 890|1",
+   "box": {
+    "left": 548.3,
+    "top": 351,
+    "right": 610,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|2",
+   "box": {
+    "left": 548.3,
+    "top": 379,
+    "right": 610,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Full Day Pass|1",
+   "box": {
+    "left": 49,
+    "top": 485,
+    "right": 177.3,
+    "bottom": 513,
+    "width": 128.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day|1",
+   "box": {
+    "left": 69,
+    "top": 517,
+    "right": 115,
+    "bottom": 537,
+    "width": 46,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1090|1",
+   "box": {
+    "left": 234.8,
+    "top": 485,
+    "right": 296.5,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|3",
+   "box": {
+    "left": 234.8,
+    "top": 513,
+    "right": 296.5,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Eat & Play Kids Pass|1",
+   "box": {
+    "left": 362.5,
+    "top": 485,
+    "right": 549.9,
+    "bottom": 541,
+    "width": 187.4,
+    "height": 56
+   }
+  },
+  {
+   "key": "span|All Day + Meal|1",
+   "box": {
+    "left": 382.5,
+    "top": 545,
+    "right": 477.8,
+    "bottom": 565,
+    "width": 95.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1300|1",
+   "box": {
+    "left": 549.9,
+    "top": 485,
+    "right": 610,
+    "bottom": 513,
+    "width": 60.1,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|4",
+   "box": {
+    "left": 549.9,
+    "top": 513,
+    "right": 610,
+    "bottom": 545,
+    "width": 60.1,
+    "height": 32
+   }
+  }
+ ],
+ "tiers-walkin@1024x768": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|Walk-in (no member) · default Tourist rate. Verify|1",
+   "box": {
+    "left": 77,
+    "top": 343,
+    "right": 622,
+    "bottom": 391,
+    "width": 545,
+    "height": 48
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 77.3,
+    "top": 591,
+    "right": 159.7,
+    "bottom": 623,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 57,
+    "top": 631,
+    "right": 180,
+    "bottom": 679,
+    "width": 123,
+    "height": 48
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 298.2,
+    "top": 577,
+    "right": 364.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 270.4,
+    "top": 617,
+    "right": 392.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 270,
+    "top": 653,
+    "right": 393,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 518.8,
+    "top": 577,
+    "right": 570.2,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 495.8,
+    "top": 617,
+    "right": 593.2,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 483,
+    "top": 653,
+    "right": 606,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  }
+ ],
+ "tiers-member@1024x768": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 448.4,
+    "bottom": 371,
+    "width": 343.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 448.4,
+    "bottom": 391,
+    "width": 343.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 464.4,
+    "top": 349,
+    "right": 622,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 115.6,
+    "top": 453,
+    "right": 200,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 85.2,
+    "top": 577,
+    "right": 151.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 57.4,
+    "top": 617,
+    "right": 179.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 57,
+    "top": 653,
+    "right": 180,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  },
+  {
+   "key": "button|Show all rates|1",
+   "box": {
+    "left": 24,
+    "top": 738,
+    "right": 154.1,
+    "bottom": 770,
+    "width": 130.1,
+    "height": 32
+   }
+  }
+ ],
+ "tiers-member-all@1024x768": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 448.4,
+    "bottom": 371,
+    "width": 343.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 448.4,
+    "bottom": 391,
+    "width": 343.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 464.4,
+    "top": 349,
+    "right": 622,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 77.3,
+    "top": 591,
+    "right": 159.7,
+    "bottom": 623,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 57,
+    "top": 631,
+    "right": 180,
+    "bottom": 679,
+    "width": 123,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 328.6,
+    "top": 453,
+    "right": 413,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 298.2,
+    "top": 577,
+    "right": 364.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 270.4,
+    "top": 617,
+    "right": 392.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 270,
+    "top": 653,
+    "right": 393,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 518.8,
+    "top": 577,
+    "right": 570.2,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 495.8,
+    "top": 617,
+    "right": 593.2,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 483,
+    "top": 653,
+    "right": 606,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  }
+ ],
+ "tiers-unverified@1024x768": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 885 split 1440 r01|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 445.5,
+    "bottom": 371,
+    "width": 340.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0022|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 445.5,
+    "bottom": 391,
+    "width": 340.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|No verified rate|1",
+   "box": {
+    "left": 461.5,
+    "top": 349,
+    "right": 622,
+    "bottom": 385,
+    "width": 160.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 77.3,
+    "top": 591,
+    "right": 159.7,
+    "bottom": 623,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 57,
+    "top": 631,
+    "right": 180,
+    "bottom": 679,
+    "width": 123,
+    "height": 48
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 298.2,
+    "top": 577,
+    "right": 364.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 270.4,
+    "top": 617,
+    "right": 392.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 270,
+    "top": 653,
+    "right": 393,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 518.8,
+    "top": 577,
+    "right": 570.2,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 495.8,
+    "top": 617,
+    "right": 593.2,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 483,
+    "top": 653,
+    "right": 606,
+    "bottom": 693,
+    "width": 123,
+    "height": 40
+   }
+  }
+ ],
+ "payment@1024x768": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 639,
+    "bottom": 270,
+    "width": 615,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 639,
+    "bottom": 338,
+    "width": 615,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 639,
+    "bottom": 398,
+    "width": 615,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 91.1,
+    "top": 535,
+    "right": 151.2,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 303.5,
+    "top": 535,
+    "right": 359.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 477.5,
+    "top": 535,
+    "right": 606.1,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 640,
+    "right": 325.5,
+    "bottom": 696,
+    "width": 301.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 720,
+    "right": 152,
+    "bottom": 784,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 720,
+    "right": 639,
+    "bottom": 784,
+    "width": 471,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash@1024x768": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 639,
+    "bottom": 270,
+    "width": 615,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 639,
+    "bottom": 338,
+    "width": 615,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 639,
+    "bottom": 398,
+    "width": 615,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 91.1,
+    "top": 535,
+    "right": 151.2,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 303.5,
+    "top": 535,
+    "right": 359.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 477.5,
+    "top": 535,
+    "right": 606.1,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Partial payment|1",
+   "box": {
+    "left": 24,
+    "top": 638,
+    "right": 325.5,
+    "bottom": 676,
+    "width": 301.5,
+    "height": 38
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 337.5,
+    "top": 620,
+    "right": 433.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 337.5,
+    "top": 640,
+    "right": 639,
+    "bottom": 676,
+    "width": 301.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 639,
+    "bottom": 716,
+    "width": 615,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 756,
+    "right": 325.5,
+    "bottom": 812,
+    "width": 301.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 836,
+    "right": 152,
+    "bottom": 900,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 836,
+    "right": 639,
+    "bottom": 900,
+    "width": 471,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash+Partial payment@1024x768": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 639,
+    "bottom": 270,
+    "width": 615,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 639,
+    "bottom": 338,
+    "width": 615,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 639,
+    "bottom": 398,
+    "width": 615,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 91.1,
+    "top": 535,
+    "right": 151.2,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 303.5,
+    "top": 535,
+    "right": 359.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 477.5,
+    "top": 535,
+    "right": 606.1,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "label|Payment amount|1",
+   "box": {
+    "left": 24,
+    "top": 617,
+    "right": 136.7,
+    "bottom": 631,
+    "width": 112.7,
+    "height": 14
+   }
+  },
+  {
+   "key": "button|Full amount|1",
+   "box": {
+    "left": 259.1,
+    "top": 616,
+    "right": 325.5,
+    "bottom": 632,
+    "width": 66.4,
+    "height": 16
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 24,
+    "top": 632,
+    "right": 325.5,
+    "bottom": 668,
+    "width": 301.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 337.5,
+    "top": 620,
+    "right": 433.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|2",
+   "box": {
+    "left": 337.5,
+    "top": 640,
+    "right": 639,
+    "bottom": 676,
+    "width": 301.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 639,
+    "bottom": 716,
+    "width": 615,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|1|1",
+   "box": {
+    "left": 107.5,
+    "top": 728,
+    "right": 248.8,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|2|1",
+   "box": {
+    "left": 260.8,
+    "top": 728,
+    "right": 402.2,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|3|1",
+   "box": {
+    "left": 414.2,
+    "top": 728,
+    "right": 555.5,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|4|1",
+   "box": {
+    "left": 107.5,
+    "top": 820,
+    "right": 248.8,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|5|1",
+   "box": {
+    "left": 260.8,
+    "top": 820,
+    "right": 402.2,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|6|1",
+   "box": {
+    "left": 414.2,
+    "top": 820,
+    "right": 555.5,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|7|1",
+   "box": {
+    "left": 107.5,
+    "top": 912,
+    "right": 248.8,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|8|1",
+   "box": {
+    "left": 260.8,
+    "top": 912,
+    "right": 402.2,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|9|1",
+   "box": {
+    "left": 414.2,
+    "top": 912,
+    "right": 555.5,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Clear|1",
+   "box": {
+    "left": 107.5,
+    "top": 1004,
+    "right": 248.8,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|0|1",
+   "box": {
+    "left": 260.8,
+    "top": 1004,
+    "right": 402.2,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Backspace|1",
+   "box": {
+    "left": 414.2,
+    "top": 1004,
+    "right": 555.5,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Decimal point|1",
+   "box": {
+    "left": 24,
+    "top": 1096,
+    "right": 639,
+    "bottom": 1144,
+    "width": 615,
+    "height": 48
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 1184,
+    "right": 325.5,
+    "bottom": 1240,
+    "width": 301.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Save as partly paid|1",
+   "box": {
+    "left": 337.5,
+    "top": 1184,
+    "right": 639,
+    "bottom": 1240,
+    "width": 301.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 1264,
+    "right": 152,
+    "bottom": 1328,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 1264,
+    "right": 639,
+    "bottom": 1328,
+    "width": 471,
+    "height": 64
+   }
+  }
+ ],
+ "configure@1280x800": [
+  {
+   "key": "h2|Configure: 1 Hour Play|1",
+   "box": {
+    "left": 24,
+    "top": 231,
+    "right": 332.6,
+    "bottom": 267,
+    "width": 308.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Back to tickets|1",
+   "box": {
+    "left": 739.1,
+    "top": 230,
+    "right": 895,
+    "bottom": 268,
+    "width": 155.9,
+    "height": 38
+   }
+  },
+  {
+   "key": "h3|Participants|1",
+   "box": {
+    "left": 24,
+    "top": 292,
+    "right": 891,
+    "bottom": 320,
+    "width": 867,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Kids|1",
+   "box": {
+    "left": 97,
+    "top": 351.8,
+    "right": 432.5,
+    "bottom": 374.3,
+    "width": 335.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Requires adult supervision|1",
+   "box": {
+    "left": 97,
+    "top": 374.3,
+    "right": 432.5,
+    "bottom": 390.3,
+    "width": 335.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Kids|1",
+   "box": {
+    "left": 166.8,
+    "top": 405,
+    "right": 210.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|1",
+   "box": {
+    "left": 216.8,
+    "top": 411,
+    "right": 256.8,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Kids|1",
+   "box": {
+    "left": 262.8,
+    "top": 405,
+    "right": 306.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Adults|1",
+   "box": {
+    "left": 538.5,
+    "top": 351.8,
+    "right": 874,
+    "bottom": 374.3,
+    "width": 335.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Receives F&B credit|1",
+   "box": {
+    "left": 538.5,
+    "top": 374.3,
+    "right": 874,
+    "bottom": 390.3,
+    "width": 335.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Adults|1",
+   "box": {
+    "left": 608.3,
+    "top": 405,
+    "right": 652.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|2",
+   "box": {
+    "left": 658.3,
+    "top": 411,
+    "right": 698.3,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Adults|1",
+   "box": {
+    "left": 704.3,
+    "top": 405,
+    "right": 748.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "h3|Extras & Add-ons|1",
+   "box": {
+    "left": 24,
+    "top": 490,
+    "right": 891,
+    "bottom": 518,
+    "width": 867,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Regular Socks|1",
+   "box": {
+    "left": 41,
+    "top": 547,
+    "right": 164.1,
+    "bottom": 575,
+    "width": 123.1,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 50|1",
+   "box": {
+    "left": 41,
+    "top": 575,
+    "right": 164.1,
+    "bottom": 595,
+    "width": 123.1,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|1",
+   "box": {
+    "left": 41,
+    "top": 597,
+    "right": 164.1,
+    "bottom": 613,
+    "width": 123.1,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Regular Socks|1",
+   "box": {
+    "left": 292.5,
+    "top": 558,
+    "right": 336.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|1",
+   "box": {
+    "left": 342.5,
+    "top": 564,
+    "right": 382.5,
+    "bottom": 596,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Regular Socks|1",
+   "box": {
+    "left": 388.5,
+    "top": 558,
+    "right": 432.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Grip Socks|1",
+   "box": {
+    "left": 482.5,
+    "top": 556,
+    "right": 576.2,
+    "bottom": 584,
+    "width": 93.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 80|1",
+   "box": {
+    "left": 482.5,
+    "top": 584,
+    "right": 576.2,
+    "bottom": 604,
+    "width": 93.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Sizes|1",
+   "box": {
+    "left": 795.2,
+    "top": 564,
+    "right": 874,
+    "bottom": 596,
+    "width": 78.8,
+    "height": 32
+   }
+  },
+  {
+   "key": "div|Locker Rental|1",
+   "box": {
+    "left": 41,
+    "top": 663,
+    "right": 158.2,
+    "bottom": 691,
+    "width": 117.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 100|1",
+   "box": {
+    "left": 41,
+    "top": 691,
+    "right": 158.2,
+    "bottom": 711,
+    "width": 117.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|2",
+   "box": {
+    "left": 41,
+    "top": 713,
+    "right": 158.2,
+    "bottom": 729,
+    "width": 117.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Locker Rental|1",
+   "box": {
+    "left": 292.5,
+    "top": 674,
+    "right": 336.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|2",
+   "box": {
+    "left": 342.5,
+    "top": 680,
+    "right": 382.5,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Locker Rental|1",
+   "box": {
+    "left": 388.5,
+    "top": 674,
+    "right": 432.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Refillable Drink Cup|1",
+   "box": {
+    "left": 482.5,
+    "top": 663,
+    "right": 651.7,
+    "bottom": 691,
+    "width": 169.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 150|1",
+   "box": {
+    "left": 482.5,
+    "top": 691,
+    "right": 651.7,
+    "bottom": 711,
+    "width": 169.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|3",
+   "box": {
+    "left": 482.5,
+    "top": 713,
+    "right": 651.7,
+    "bottom": 729,
+    "width": 169.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Refillable Drink Cup|1",
+   "box": {
+    "left": 734,
+    "top": 674,
+    "right": 778,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|3",
+   "box": {
+    "left": 784,
+    "top": 680,
+    "right": 824,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Refillable Drink Cup|1",
+   "box": {
+    "left": 830,
+    "top": 674,
+    "right": 874,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Glow Band|1",
+   "box": {
+    "left": 41,
+    "top": 779,
+    "right": 133.3,
+    "bottom": 807,
+    "width": 92.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 60|1",
+   "box": {
+    "left": 41,
+    "top": 807,
+    "right": 133.3,
+    "bottom": 827,
+    "width": 92.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|4",
+   "box": {
+    "left": 41,
+    "top": 829,
+    "right": 133.3,
+    "bottom": 845,
+    "width": 92.3,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Glow Band|1",
+   "box": {
+    "left": 292.5,
+    "top": 790,
+    "right": 336.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|4",
+   "box": {
+    "left": 342.5,
+    "top": 796,
+    "right": 382.5,
+    "bottom": 828,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Glow Band|1",
+   "box": {
+    "left": 388.5,
+    "top": 790,
+    "right": 432.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "button|Add Another Ticket|1",
+   "box": {
+    "left": 24,
+    "top": 712,
+    "right": 451.5,
+    "bottom": 776,
+    "width": 427.5,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Continue|1",
+   "box": {
+    "left": 467.5,
+    "top": 712,
+    "right": 895,
+    "bottom": 776,
+    "width": 427.5,
+    "height": 64
+   }
+  }
+ ],
+ "tickets@1280x800": [
+  {
+   "key": "h2|Add to Sale|1",
+   "box": {
+    "left": 24,
+    "top": 232,
+    "right": 181.7,
+    "bottom": 268,
+    "width": 157.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Add drop-off child|1",
+   "box": {
+    "left": 517.6,
+    "top": 230,
+    "right": 730.3,
+    "bottom": 270,
+    "width": 212.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "button|Done Adding|1",
+   "box": {
+    "left": 742.3,
+    "top": 230,
+    "right": 895,
+    "bottom": 270,
+    "width": 152.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "span|Add ticket — select a play ticket for kids and adu|1",
+   "box": {
+    "left": 48,
+    "top": 294,
+    "right": 385.7,
+    "bottom": 314,
+    "width": 337.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|1 Hour Play|1",
+   "box": {
+    "left": 49,
+    "top": 351,
+    "right": 156.6,
+    "bottom": 379,
+    "width": 107.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|1 Hour|1",
+   "box": {
+    "left": 69,
+    "top": 383,
+    "right": 111,
+    "bottom": 403,
+    "width": 42,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 690|1",
+   "box": {
+    "left": 362.8,
+    "top": 351,
+    "right": 424.5,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|1",
+   "box": {
+    "left": 362.8,
+    "top": 379,
+    "right": 424.5,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|2 Hours Play|1",
+   "box": {
+    "left": 490.5,
+    "top": 351,
+    "right": 613.3,
+    "bottom": 379,
+    "width": 122.8,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|2 Hours|1",
+   "box": {
+    "left": 510.5,
+    "top": 383,
+    "right": 562.7,
+    "bottom": 403,
+    "width": 52.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 890|1",
+   "box": {
+    "left": 804.3,
+    "top": 351,
+    "right": 866,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|2",
+   "box": {
+    "left": 804.3,
+    "top": 379,
+    "right": 866,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Full Day Pass|1",
+   "box": {
+    "left": 49,
+    "top": 485,
+    "right": 177.3,
+    "bottom": 513,
+    "width": 128.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day|1",
+   "box": {
+    "left": 69,
+    "top": 517,
+    "right": 115,
+    "bottom": 537,
+    "width": 46,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1090|1",
+   "box": {
+    "left": 362.8,
+    "top": 485,
+    "right": 424.5,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|3",
+   "box": {
+    "left": 362.8,
+    "top": 513,
+    "right": 424.5,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Eat & Play Kids Pass|1",
+   "box": {
+    "left": 490.5,
+    "top": 485,
+    "right": 686.1,
+    "bottom": 513,
+    "width": 195.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day + Meal|1",
+   "box": {
+    "left": 510.5,
+    "top": 517,
+    "right": 605.8,
+    "bottom": 537,
+    "width": 95.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1300|1",
+   "box": {
+    "left": 804.3,
+    "top": 485,
+    "right": 866,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|4",
+   "box": {
+    "left": 804.3,
+    "top": 513,
+    "right": 866,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  }
+ ],
+ "tiers-walkin@1280x800": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|Walk-in (no member) · default Tourist rate. Verify|1",
+   "box": {
+    "left": 77,
+    "top": 343,
+    "right": 645.6,
+    "bottom": 367,
+    "width": 568.6,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 120,
+    "top": 569,
+    "right": 202.4,
+    "bottom": 601,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 98.7,
+    "top": 609,
+    "right": 223.7,
+    "bottom": 633,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 426.2,
+    "top": 553,
+    "right": 492.8,
+    "bottom": 585,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 398.4,
+    "top": 593,
+    "right": 520.6,
+    "bottom": 617,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 364.7,
+    "top": 629,
+    "right": 554.3,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 732.1,
+    "top": 553,
+    "right": 783.5,
+    "bottom": 585,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 709.1,
+    "top": 593,
+    "right": 806.5,
+    "bottom": 617,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 663.1,
+    "top": 629,
+    "right": 852.6,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-member@1280x800": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 704.4,
+    "bottom": 371,
+    "width": 599.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 704.4,
+    "bottom": 391,
+    "width": 599.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 720.4,
+    "top": 349,
+    "right": 878,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 200.9,
+    "top": 453,
+    "right": 285.3,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 127.9,
+    "top": 577,
+    "right": 194.5,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 100.1,
+    "top": 617,
+    "right": 222.2,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 65.9,
+    "top": 653,
+    "right": 256.4,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Show all rates|1",
+   "box": {
+    "left": 24,
+    "top": 718,
+    "right": 154.1,
+    "bottom": 750,
+    "width": 130.1,
+    "height": 32
+   }
+  }
+ ],
+ "tiers-member-all@1280x800": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 704.4,
+    "bottom": 371,
+    "width": 599.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 704.4,
+    "bottom": 391,
+    "width": 599.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 720.4,
+    "top": 349,
+    "right": 878,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 120,
+    "top": 593,
+    "right": 202.4,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 98.7,
+    "top": 633,
+    "right": 223.7,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 499.2,
+    "top": 453,
+    "right": 583.7,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 426.2,
+    "top": 577,
+    "right": 492.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 398.4,
+    "top": 617,
+    "right": 520.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 364.2,
+    "top": 653,
+    "right": 554.8,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 732.1,
+    "top": 577,
+    "right": 783.5,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 709.1,
+    "top": 617,
+    "right": 806.5,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 663.1,
+    "top": 653,
+    "right": 852.6,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-unverified@1280x800": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 885 split 1440 r01|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 701.5,
+    "bottom": 371,
+    "width": 596.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0022|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 701.5,
+    "bottom": 391,
+    "width": 596.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|No verified rate|1",
+   "box": {
+    "left": 717.5,
+    "top": 349,
+    "right": 878,
+    "bottom": 385,
+    "width": 160.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 120,
+    "top": 593,
+    "right": 202.4,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 98.7,
+    "top": 633,
+    "right": 223.7,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 426.2,
+    "top": 577,
+    "right": 492.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 398.4,
+    "top": 617,
+    "right": 520.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 364.7,
+    "top": 653,
+    "right": 554.3,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 732.1,
+    "top": 577,
+    "right": 783.5,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 709.1,
+    "top": 617,
+    "right": 806.5,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 663.1,
+    "top": 653,
+    "right": 852.6,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "payment@1280x800": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 895,
+    "bottom": 270,
+    "width": 871,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 895,
+    "bottom": 338,
+    "width": 871,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 895,
+    "bottom": 398,
+    "width": 871,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 133.8,
+    "top": 535,
+    "right": 193.9,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 431.5,
+    "top": 535,
+    "right": 487.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 690.9,
+    "top": 535,
+    "right": 819.4,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 640,
+    "right": 453.5,
+    "bottom": 696,
+    "width": 429.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 720,
+    "right": 152,
+    "bottom": 784,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 720,
+    "right": 895,
+    "bottom": 784,
+    "width": 727,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash@1280x800": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 895,
+    "bottom": 270,
+    "width": 871,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 895,
+    "bottom": 338,
+    "width": 871,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 895,
+    "bottom": 398,
+    "width": 871,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 133.8,
+    "top": 535,
+    "right": 193.9,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 431.5,
+    "top": 535,
+    "right": 487.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 690.9,
+    "top": 535,
+    "right": 819.4,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Partial payment|1",
+   "box": {
+    "left": 24,
+    "top": 638,
+    "right": 453.5,
+    "bottom": 676,
+    "width": 429.5,
+    "height": 38
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 465.5,
+    "top": 620,
+    "right": 561.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 465.5,
+    "top": 640,
+    "right": 895,
+    "bottom": 676,
+    "width": 429.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 895,
+    "bottom": 716,
+    "width": 871,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 756,
+    "right": 453.5,
+    "bottom": 812,
+    "width": 429.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 836,
+    "right": 152,
+    "bottom": 900,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 836,
+    "right": 895,
+    "bottom": 900,
+    "width": 727,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash+Partial payment@1280x800": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 895,
+    "bottom": 270,
+    "width": 871,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 895,
+    "bottom": 338,
+    "width": 871,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 895,
+    "bottom": 398,
+    "width": 871,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 133.8,
+    "top": 535,
+    "right": 193.9,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 431.5,
+    "top": 535,
+    "right": 487.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 690.9,
+    "top": 535,
+    "right": 819.4,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "label|Payment amount|1",
+   "box": {
+    "left": 24,
+    "top": 617,
+    "right": 136.7,
+    "bottom": 631,
+    "width": 112.7,
+    "height": 14
+   }
+  },
+  {
+   "key": "button|Full amount|1",
+   "box": {
+    "left": 387.1,
+    "top": 616,
+    "right": 453.5,
+    "bottom": 632,
+    "width": 66.4,
+    "height": 16
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 24,
+    "top": 632,
+    "right": 453.5,
+    "bottom": 668,
+    "width": 429.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 465.5,
+    "top": 620,
+    "right": 561.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|2",
+   "box": {
+    "left": 465.5,
+    "top": 640,
+    "right": 895,
+    "bottom": 676,
+    "width": 429.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 895,
+    "bottom": 716,
+    "width": 871,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|1|1",
+   "box": {
+    "left": 235.5,
+    "top": 728,
+    "right": 376.8,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|2|1",
+   "box": {
+    "left": 388.8,
+    "top": 728,
+    "right": 530.2,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|3|1",
+   "box": {
+    "left": 542.2,
+    "top": 728,
+    "right": 683.5,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|4|1",
+   "box": {
+    "left": 235.5,
+    "top": 820,
+    "right": 376.8,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|5|1",
+   "box": {
+    "left": 388.8,
+    "top": 820,
+    "right": 530.2,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|6|1",
+   "box": {
+    "left": 542.2,
+    "top": 820,
+    "right": 683.5,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|7|1",
+   "box": {
+    "left": 235.5,
+    "top": 912,
+    "right": 376.8,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|8|1",
+   "box": {
+    "left": 388.8,
+    "top": 912,
+    "right": 530.2,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|9|1",
+   "box": {
+    "left": 542.2,
+    "top": 912,
+    "right": 683.5,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Clear|1",
+   "box": {
+    "left": 235.5,
+    "top": 1004,
+    "right": 376.8,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|0|1",
+   "box": {
+    "left": 388.8,
+    "top": 1004,
+    "right": 530.2,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Backspace|1",
+   "box": {
+    "left": 542.2,
+    "top": 1004,
+    "right": 683.5,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Decimal point|1",
+   "box": {
+    "left": 24,
+    "top": 1096,
+    "right": 895,
+    "bottom": 1144,
+    "width": 871,
+    "height": 48
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 1184,
+    "right": 453.5,
+    "bottom": 1240,
+    "width": 429.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Save as partly paid|1",
+   "box": {
+    "left": 465.5,
+    "top": 1184,
+    "right": 895,
+    "bottom": 1240,
+    "width": 429.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 1264,
+    "right": 152,
+    "bottom": 1328,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 1264,
+    "right": 895,
+    "bottom": 1328,
+    "width": 727,
+    "height": 64
+   }
+  }
+ ],
+ "configure@1440x900": [
+  {
+   "key": "h2|Configure: 1 Hour Play|1",
+   "box": {
+    "left": 24,
+    "top": 231,
+    "right": 332.6,
+    "bottom": 267,
+    "width": 308.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Back to tickets|1",
+   "box": {
+    "left": 899.1,
+    "top": 230,
+    "right": 1055,
+    "bottom": 268,
+    "width": 155.9,
+    "height": 38
+   }
+  },
+  {
+   "key": "h3|Participants|1",
+   "box": {
+    "left": 24,
+    "top": 292,
+    "right": 1051,
+    "bottom": 320,
+    "width": 1027,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Kids|1",
+   "box": {
+    "left": 97,
+    "top": 351.8,
+    "right": 512.5,
+    "bottom": 374.3,
+    "width": 415.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Requires adult supervision|1",
+   "box": {
+    "left": 97,
+    "top": 374.3,
+    "right": 512.5,
+    "bottom": 390.3,
+    "width": 415.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Kids|1",
+   "box": {
+    "left": 206.8,
+    "top": 405,
+    "right": 250.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|1",
+   "box": {
+    "left": 256.8,
+    "top": 411,
+    "right": 296.8,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Kids|1",
+   "box": {
+    "left": 302.8,
+    "top": 405,
+    "right": 346.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Adults|1",
+   "box": {
+    "left": 618.5,
+    "top": 351.8,
+    "right": 1034,
+    "bottom": 374.3,
+    "width": 415.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Receives F&B credit|1",
+   "box": {
+    "left": 618.5,
+    "top": 374.3,
+    "right": 1034,
+    "bottom": 390.3,
+    "width": 415.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Adults|1",
+   "box": {
+    "left": 728.3,
+    "top": 405,
+    "right": 772.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|2",
+   "box": {
+    "left": 778.3,
+    "top": 411,
+    "right": 818.3,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Adults|1",
+   "box": {
+    "left": 824.3,
+    "top": 405,
+    "right": 868.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "h3|Extras & Add-ons|1",
+   "box": {
+    "left": 24,
+    "top": 490,
+    "right": 1051,
+    "bottom": 518,
+    "width": 1027,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Regular Socks|1",
+   "box": {
+    "left": 41,
+    "top": 547,
+    "right": 164.1,
+    "bottom": 575,
+    "width": 123.1,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 50|1",
+   "box": {
+    "left": 41,
+    "top": 575,
+    "right": 164.1,
+    "bottom": 595,
+    "width": 123.1,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|1",
+   "box": {
+    "left": 41,
+    "top": 597,
+    "right": 164.1,
+    "bottom": 613,
+    "width": 123.1,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Regular Socks|1",
+   "box": {
+    "left": 372.5,
+    "top": 558,
+    "right": 416.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|1",
+   "box": {
+    "left": 422.5,
+    "top": 564,
+    "right": 462.5,
+    "bottom": 596,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Regular Socks|1",
+   "box": {
+    "left": 468.5,
+    "top": 558,
+    "right": 512.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Grip Socks|1",
+   "box": {
+    "left": 562.5,
+    "top": 556,
+    "right": 656.2,
+    "bottom": 584,
+    "width": 93.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 80|1",
+   "box": {
+    "left": 562.5,
+    "top": 584,
+    "right": 656.2,
+    "bottom": 604,
+    "width": 93.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Sizes|1",
+   "box": {
+    "left": 955.2,
+    "top": 564,
+    "right": 1034,
+    "bottom": 596,
+    "width": 78.8,
+    "height": 32
+   }
+  },
+  {
+   "key": "div|Locker Rental|1",
+   "box": {
+    "left": 41,
+    "top": 663,
+    "right": 158.2,
+    "bottom": 691,
+    "width": 117.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 100|1",
+   "box": {
+    "left": 41,
+    "top": 691,
+    "right": 158.2,
+    "bottom": 711,
+    "width": 117.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|2",
+   "box": {
+    "left": 41,
+    "top": 713,
+    "right": 158.2,
+    "bottom": 729,
+    "width": 117.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Locker Rental|1",
+   "box": {
+    "left": 372.5,
+    "top": 674,
+    "right": 416.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|2",
+   "box": {
+    "left": 422.5,
+    "top": 680,
+    "right": 462.5,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Locker Rental|1",
+   "box": {
+    "left": 468.5,
+    "top": 674,
+    "right": 512.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Refillable Drink Cup|1",
+   "box": {
+    "left": 562.5,
+    "top": 663,
+    "right": 731.7,
+    "bottom": 691,
+    "width": 169.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 150|1",
+   "box": {
+    "left": 562.5,
+    "top": 691,
+    "right": 731.7,
+    "bottom": 711,
+    "width": 169.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|3",
+   "box": {
+    "left": 562.5,
+    "top": 713,
+    "right": 731.7,
+    "bottom": 729,
+    "width": 169.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Refillable Drink Cup|1",
+   "box": {
+    "left": 894,
+    "top": 674,
+    "right": 938,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|3",
+   "box": {
+    "left": 944,
+    "top": 680,
+    "right": 984,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Refillable Drink Cup|1",
+   "box": {
+    "left": 990,
+    "top": 674,
+    "right": 1034,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Glow Band|1",
+   "box": {
+    "left": 41,
+    "top": 779,
+    "right": 133.3,
+    "bottom": 807,
+    "width": 92.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 60|1",
+   "box": {
+    "left": 41,
+    "top": 807,
+    "right": 133.3,
+    "bottom": 827,
+    "width": 92.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|4",
+   "box": {
+    "left": 41,
+    "top": 829,
+    "right": 133.3,
+    "bottom": 845,
+    "width": 92.3,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Glow Band|1",
+   "box": {
+    "left": 372.5,
+    "top": 790,
+    "right": 416.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|4",
+   "box": {
+    "left": 422.5,
+    "top": 796,
+    "right": 462.5,
+    "bottom": 828,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Glow Band|1",
+   "box": {
+    "left": 468.5,
+    "top": 790,
+    "right": 512.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "button|Add Another Ticket|1",
+   "box": {
+    "left": 24,
+    "top": 812,
+    "right": 531.5,
+    "bottom": 876,
+    "width": 507.5,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Continue|1",
+   "box": {
+    "left": 547.5,
+    "top": 812,
+    "right": 1055,
+    "bottom": 876,
+    "width": 507.5,
+    "height": 64
+   }
+  }
+ ],
+ "tickets@1440x900": [
+  {
+   "key": "h2|Add to Sale|1",
+   "box": {
+    "left": 24,
+    "top": 232,
+    "right": 181.7,
+    "bottom": 268,
+    "width": 157.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Add drop-off child|1",
+   "box": {
+    "left": 677.6,
+    "top": 230,
+    "right": 890.3,
+    "bottom": 270,
+    "width": 212.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "button|Done Adding|1",
+   "box": {
+    "left": 902.3,
+    "top": 230,
+    "right": 1055,
+    "bottom": 270,
+    "width": 152.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "span|Add ticket — select a play ticket for kids and adu|1",
+   "box": {
+    "left": 48,
+    "top": 294,
+    "right": 385.7,
+    "bottom": 314,
+    "width": 337.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|1 Hour Play|1",
+   "box": {
+    "left": 49,
+    "top": 351,
+    "right": 156.6,
+    "bottom": 379,
+    "width": 107.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|1 Hour|1",
+   "box": {
+    "left": 69,
+    "top": 383,
+    "right": 111,
+    "bottom": 403,
+    "width": 42,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 690|1",
+   "box": {
+    "left": 442.8,
+    "top": 351,
+    "right": 504.5,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|1",
+   "box": {
+    "left": 442.8,
+    "top": 379,
+    "right": 504.5,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|2 Hours Play|1",
+   "box": {
+    "left": 570.5,
+    "top": 351,
+    "right": 693.3,
+    "bottom": 379,
+    "width": 122.8,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|2 Hours|1",
+   "box": {
+    "left": 590.5,
+    "top": 383,
+    "right": 642.7,
+    "bottom": 403,
+    "width": 52.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 890|1",
+   "box": {
+    "left": 964.3,
+    "top": 351,
+    "right": 1026,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|2",
+   "box": {
+    "left": 964.3,
+    "top": 379,
+    "right": 1026,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Full Day Pass|1",
+   "box": {
+    "left": 49,
+    "top": 485,
+    "right": 177.3,
+    "bottom": 513,
+    "width": 128.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day|1",
+   "box": {
+    "left": 69,
+    "top": 517,
+    "right": 115,
+    "bottom": 537,
+    "width": 46,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1090|1",
+   "box": {
+    "left": 442.8,
+    "top": 485,
+    "right": 504.5,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|3",
+   "box": {
+    "left": 442.8,
+    "top": 513,
+    "right": 504.5,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Eat & Play Kids Pass|1",
+   "box": {
+    "left": 570.5,
+    "top": 485,
+    "right": 766.1,
+    "bottom": 513,
+    "width": 195.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day + Meal|1",
+   "box": {
+    "left": 590.5,
+    "top": 517,
+    "right": 685.8,
+    "bottom": 537,
+    "width": 95.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1300|1",
+   "box": {
+    "left": 964.3,
+    "top": 485,
+    "right": 1026,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|4",
+   "box": {
+    "left": 964.3,
+    "top": 513,
+    "right": 1026,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  }
+ ],
+ "tiers-walkin@1440x900": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|Walk-in (no member) · default Tourist rate. Verify|1",
+   "box": {
+    "left": 77,
+    "top": 343,
+    "right": 645.6,
+    "bottom": 367,
+    "width": 568.6,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 146.6,
+    "top": 569,
+    "right": 229,
+    "bottom": 601,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 125.3,
+    "top": 609,
+    "right": 250.3,
+    "bottom": 633,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 506.2,
+    "top": 553,
+    "right": 572.8,
+    "bottom": 585,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 478.4,
+    "top": 593,
+    "right": 600.6,
+    "bottom": 617,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 444.7,
+    "top": 629,
+    "right": 634.3,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 865.5,
+    "top": 553,
+    "right": 916.9,
+    "bottom": 585,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 842.4,
+    "top": 593,
+    "right": 939.9,
+    "bottom": 617,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 796.4,
+    "top": 629,
+    "right": 985.9,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-member@1440x900": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 864.4,
+    "bottom": 371,
+    "width": 759.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 864.4,
+    "bottom": 391,
+    "width": 759.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 880.4,
+    "top": 349,
+    "right": 1038,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 254.2,
+    "top": 453,
+    "right": 338.7,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 154.5,
+    "top": 577,
+    "right": 221.1,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 126.8,
+    "top": 617,
+    "right": 248.9,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 92.6,
+    "top": 653,
+    "right": 283.1,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Show all rates|1",
+   "box": {
+    "left": 24,
+    "top": 718,
+    "right": 154.1,
+    "bottom": 750,
+    "width": 130.1,
+    "height": 32
+   }
+  }
+ ],
+ "tiers-member-all@1440x900": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 864.4,
+    "bottom": 371,
+    "width": 759.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 864.4,
+    "bottom": 391,
+    "width": 759.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 880.4,
+    "top": 349,
+    "right": 1038,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 146.6,
+    "top": 593,
+    "right": 229,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 125.3,
+    "top": 633,
+    "right": 250.3,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 605.9,
+    "top": 453,
+    "right": 690.3,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 506.2,
+    "top": 577,
+    "right": 572.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 478.4,
+    "top": 617,
+    "right": 600.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 444.2,
+    "top": 653,
+    "right": 634.8,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 865.5,
+    "top": 577,
+    "right": 916.9,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 842.4,
+    "top": 617,
+    "right": 939.9,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 796.4,
+    "top": 653,
+    "right": 985.9,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-unverified@1440x900": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 885 split 1440 r01|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 861.5,
+    "bottom": 371,
+    "width": 756.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0022|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 861.5,
+    "bottom": 391,
+    "width": 756.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|No verified rate|1",
+   "box": {
+    "left": 877.5,
+    "top": 349,
+    "right": 1038,
+    "bottom": 385,
+    "width": 160.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 146.6,
+    "top": 593,
+    "right": 229,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 125.3,
+    "top": 633,
+    "right": 250.3,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 506.2,
+    "top": 577,
+    "right": 572.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 478.4,
+    "top": 617,
+    "right": 600.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 444.7,
+    "top": 653,
+    "right": 634.3,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 865.5,
+    "top": 577,
+    "right": 916.9,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 842.4,
+    "top": 617,
+    "right": 939.9,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 796.4,
+    "top": 653,
+    "right": 985.9,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "payment@1440x900": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1055,
+    "bottom": 270,
+    "width": 1031,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1055,
+    "bottom": 338,
+    "width": 1031,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1055,
+    "bottom": 398,
+    "width": 1031,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 160.5,
+    "top": 535,
+    "right": 220.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 511.5,
+    "top": 535,
+    "right": 567.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 824.2,
+    "top": 535,
+    "right": 952.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 640,
+    "right": 533.5,
+    "bottom": 696,
+    "width": 509.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 812,
+    "right": 152,
+    "bottom": 876,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 812,
+    "right": 1055,
+    "bottom": 876,
+    "width": 887,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash@1440x900": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1055,
+    "bottom": 270,
+    "width": 1031,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1055,
+    "bottom": 338,
+    "width": 1031,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1055,
+    "bottom": 398,
+    "width": 1031,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 160.5,
+    "top": 535,
+    "right": 220.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 511.5,
+    "top": 535,
+    "right": 567.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 824.2,
+    "top": 535,
+    "right": 952.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Partial payment|1",
+   "box": {
+    "left": 24,
+    "top": 638,
+    "right": 533.5,
+    "bottom": 676,
+    "width": 509.5,
+    "height": 38
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 545.5,
+    "top": 620,
+    "right": 641.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 545.5,
+    "top": 640,
+    "right": 1055,
+    "bottom": 676,
+    "width": 509.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 1055,
+    "bottom": 716,
+    "width": 1031,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 756,
+    "right": 533.5,
+    "bottom": 812,
+    "width": 509.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 836,
+    "right": 152,
+    "bottom": 900,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 836,
+    "right": 1055,
+    "bottom": 900,
+    "width": 887,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash+Partial payment@1440x900": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1055,
+    "bottom": 270,
+    "width": 1031,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1055,
+    "bottom": 338,
+    "width": 1031,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1055,
+    "bottom": 398,
+    "width": 1031,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 160.5,
+    "top": 535,
+    "right": 220.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 511.5,
+    "top": 535,
+    "right": 567.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 824.2,
+    "top": 535,
+    "right": 952.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "label|Payment amount|1",
+   "box": {
+    "left": 24,
+    "top": 617,
+    "right": 136.7,
+    "bottom": 631,
+    "width": 112.7,
+    "height": 14
+   }
+  },
+  {
+   "key": "button|Full amount|1",
+   "box": {
+    "left": 467.1,
+    "top": 616,
+    "right": 533.5,
+    "bottom": 632,
+    "width": 66.4,
+    "height": 16
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 24,
+    "top": 632,
+    "right": 533.5,
+    "bottom": 668,
+    "width": 509.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 545.5,
+    "top": 620,
+    "right": 641.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|2",
+   "box": {
+    "left": 545.5,
+    "top": 640,
+    "right": 1055,
+    "bottom": 676,
+    "width": 509.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 1055,
+    "bottom": 716,
+    "width": 1031,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|1|1",
+   "box": {
+    "left": 315.5,
+    "top": 728,
+    "right": 456.8,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|2|1",
+   "box": {
+    "left": 468.8,
+    "top": 728,
+    "right": 610.2,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|3|1",
+   "box": {
+    "left": 622.2,
+    "top": 728,
+    "right": 763.5,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|4|1",
+   "box": {
+    "left": 315.5,
+    "top": 820,
+    "right": 456.8,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|5|1",
+   "box": {
+    "left": 468.8,
+    "top": 820,
+    "right": 610.2,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|6|1",
+   "box": {
+    "left": 622.2,
+    "top": 820,
+    "right": 763.5,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|7|1",
+   "box": {
+    "left": 315.5,
+    "top": 912,
+    "right": 456.8,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|8|1",
+   "box": {
+    "left": 468.8,
+    "top": 912,
+    "right": 610.2,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|9|1",
+   "box": {
+    "left": 622.2,
+    "top": 912,
+    "right": 763.5,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Clear|1",
+   "box": {
+    "left": 315.5,
+    "top": 1004,
+    "right": 456.8,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|0|1",
+   "box": {
+    "left": 468.8,
+    "top": 1004,
+    "right": 610.2,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Backspace|1",
+   "box": {
+    "left": 622.2,
+    "top": 1004,
+    "right": 763.5,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Decimal point|1",
+   "box": {
+    "left": 24,
+    "top": 1096,
+    "right": 1055,
+    "bottom": 1144,
+    "width": 1031,
+    "height": 48
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 1184,
+    "right": 533.5,
+    "bottom": 1240,
+    "width": 509.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Save as partly paid|1",
+   "box": {
+    "left": 545.5,
+    "top": 1184,
+    "right": 1055,
+    "bottom": 1240,
+    "width": 509.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 1264,
+    "right": 152,
+    "bottom": 1328,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 1264,
+    "right": 1055,
+    "bottom": 1328,
+    "width": 887,
+    "height": 64
+   }
+  }
+ ],
+ "configure@1680x1050": [
+  {
+   "key": "h2|Configure: 1 Hour Play|1",
+   "box": {
+    "left": 24,
+    "top": 231,
+    "right": 332.6,
+    "bottom": 267,
+    "width": 308.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Back to tickets|1",
+   "box": {
+    "left": 1139.1,
+    "top": 230,
+    "right": 1295,
+    "bottom": 268,
+    "width": 155.9,
+    "height": 38
+   }
+  },
+  {
+   "key": "h3|Participants|1",
+   "box": {
+    "left": 24,
+    "top": 292,
+    "right": 1291,
+    "bottom": 320,
+    "width": 1267,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Kids|1",
+   "box": {
+    "left": 97,
+    "top": 351.8,
+    "right": 632.5,
+    "bottom": 374.3,
+    "width": 535.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Requires adult supervision|1",
+   "box": {
+    "left": 97,
+    "top": 374.3,
+    "right": 632.5,
+    "bottom": 390.3,
+    "width": 535.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Kids|1",
+   "box": {
+    "left": 266.8,
+    "top": 405,
+    "right": 310.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|1",
+   "box": {
+    "left": 316.8,
+    "top": 411,
+    "right": 356.8,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Kids|1",
+   "box": {
+    "left": 362.8,
+    "top": 405,
+    "right": 406.8,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Adults|1",
+   "box": {
+    "left": 738.5,
+    "top": 351.8,
+    "right": 1274,
+    "bottom": 374.3,
+    "width": 535.5,
+    "height": 22.5
+   }
+  },
+  {
+   "key": "div|Receives F&B credit|1",
+   "box": {
+    "left": 738.5,
+    "top": 374.3,
+    "right": 1274,
+    "bottom": 390.3,
+    "width": 535.5,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Adults|1",
+   "box": {
+    "left": 908.3,
+    "top": 405,
+    "right": 952.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|1|2",
+   "box": {
+    "left": 958.3,
+    "top": 411,
+    "right": 998.3,
+    "bottom": 443,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Adults|1",
+   "box": {
+    "left": 1004.3,
+    "top": 405,
+    "right": 1048.3,
+    "bottom": 449,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "h3|Extras & Add-ons|1",
+   "box": {
+    "left": 24,
+    "top": 490,
+    "right": 1291,
+    "bottom": 518,
+    "width": 1267,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Regular Socks|1",
+   "box": {
+    "left": 41,
+    "top": 547,
+    "right": 164.1,
+    "bottom": 575,
+    "width": 123.1,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 50|1",
+   "box": {
+    "left": 41,
+    "top": 575,
+    "right": 164.1,
+    "bottom": 595,
+    "width": 123.1,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|1",
+   "box": {
+    "left": 41,
+    "top": 597,
+    "right": 164.1,
+    "bottom": 613,
+    "width": 123.1,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Regular Socks|1",
+   "box": {
+    "left": 492.5,
+    "top": 558,
+    "right": 536.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|1",
+   "box": {
+    "left": 542.5,
+    "top": 564,
+    "right": 582.5,
+    "bottom": 596,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Regular Socks|1",
+   "box": {
+    "left": 588.5,
+    "top": 558,
+    "right": 632.5,
+    "bottom": 602,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Grip Socks|1",
+   "box": {
+    "left": 682.5,
+    "top": 556,
+    "right": 776.2,
+    "bottom": 584,
+    "width": 93.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 80|1",
+   "box": {
+    "left": 682.5,
+    "top": 584,
+    "right": 776.2,
+    "bottom": 604,
+    "width": 93.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Sizes|1",
+   "box": {
+    "left": 1195.2,
+    "top": 564,
+    "right": 1274,
+    "bottom": 596,
+    "width": 78.8,
+    "height": 32
+   }
+  },
+  {
+   "key": "div|Locker Rental|1",
+   "box": {
+    "left": 41,
+    "top": 663,
+    "right": 158.2,
+    "bottom": 691,
+    "width": 117.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 100|1",
+   "box": {
+    "left": 41,
+    "top": 691,
+    "right": 158.2,
+    "bottom": 711,
+    "width": 117.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|2",
+   "box": {
+    "left": 41,
+    "top": 713,
+    "right": 158.2,
+    "bottom": 729,
+    "width": 117.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Locker Rental|1",
+   "box": {
+    "left": 492.5,
+    "top": 674,
+    "right": 536.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|2",
+   "box": {
+    "left": 542.5,
+    "top": 680,
+    "right": 582.5,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Locker Rental|1",
+   "box": {
+    "left": 588.5,
+    "top": 674,
+    "right": 632.5,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Refillable Drink Cup|1",
+   "box": {
+    "left": 682.5,
+    "top": 663,
+    "right": 851.7,
+    "bottom": 691,
+    "width": 169.2,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 150|1",
+   "box": {
+    "left": 682.5,
+    "top": 691,
+    "right": 851.7,
+    "bottom": 711,
+    "width": 169.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|3",
+   "box": {
+    "left": 682.5,
+    "top": 713,
+    "right": 851.7,
+    "bottom": 729,
+    "width": 169.2,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Refillable Drink Cup|1",
+   "box": {
+    "left": 1134,
+    "top": 674,
+    "right": 1178,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|3",
+   "box": {
+    "left": 1184,
+    "top": 680,
+    "right": 1224,
+    "bottom": 712,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Refillable Drink Cup|1",
+   "box": {
+    "left": 1230,
+    "top": 674,
+    "right": 1274,
+    "bottom": 718,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "div|Glow Band|1",
+   "box": {
+    "left": 41,
+    "top": 779,
+    "right": 133.3,
+    "bottom": 807,
+    "width": 92.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+฿ 60|1",
+   "box": {
+    "left": 41,
+    "top": 807,
+    "right": 133.3,
+    "bottom": 827,
+    "width": 92.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Out of stock|4",
+   "box": {
+    "left": 41,
+    "top": 829,
+    "right": 133.3,
+    "bottom": 845,
+    "width": 92.3,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Remove one Glow Band|1",
+   "box": {
+    "left": 492.5,
+    "top": 790,
+    "right": 536.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "span|0|4",
+   "box": {
+    "left": 542.5,
+    "top": 796,
+    "right": 582.5,
+    "bottom": 828,
+    "width": 40,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Add one Glow Band|1",
+   "box": {
+    "left": 588.5,
+    "top": 790,
+    "right": 632.5,
+    "bottom": 834,
+    "width": 44,
+    "height": 44
+   }
+  },
+  {
+   "key": "button|Add Another Ticket|1",
+   "box": {
+    "left": 24,
+    "top": 962,
+    "right": 651.5,
+    "bottom": 1026,
+    "width": 627.5,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Continue|1",
+   "box": {
+    "left": 667.5,
+    "top": 962,
+    "right": 1295,
+    "bottom": 1026,
+    "width": 627.5,
+    "height": 64
+   }
+  }
+ ],
+ "tickets@1680x1050": [
+  {
+   "key": "h2|Add to Sale|1",
+   "box": {
+    "left": 24,
+    "top": 232,
+    "right": 181.7,
+    "bottom": 268,
+    "width": 157.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Add drop-off child|1",
+   "box": {
+    "left": 917.6,
+    "top": 230,
+    "right": 1130.3,
+    "bottom": 270,
+    "width": 212.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "button|Done Adding|1",
+   "box": {
+    "left": 1142.3,
+    "top": 230,
+    "right": 1295,
+    "bottom": 270,
+    "width": 152.7,
+    "height": 40
+   }
+  },
+  {
+   "key": "span|Add ticket — select a play ticket for kids and adu|1",
+   "box": {
+    "left": 48,
+    "top": 294,
+    "right": 385.7,
+    "bottom": 314,
+    "width": 337.7,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|1 Hour Play|1",
+   "box": {
+    "left": 49,
+    "top": 351,
+    "right": 156.6,
+    "bottom": 379,
+    "width": 107.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|1 Hour|1",
+   "box": {
+    "left": 69,
+    "top": 383,
+    "right": 111,
+    "bottom": 403,
+    "width": 42,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 690|1",
+   "box": {
+    "left": 562.8,
+    "top": 351,
+    "right": 624.5,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|1",
+   "box": {
+    "left": 562.8,
+    "top": 379,
+    "right": 624.5,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|2 Hours Play|1",
+   "box": {
+    "left": 690.5,
+    "top": 351,
+    "right": 813.3,
+    "bottom": 379,
+    "width": 122.8,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|2 Hours|1",
+   "box": {
+    "left": 710.5,
+    "top": 383,
+    "right": 762.7,
+    "bottom": 403,
+    "width": 52.2,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 890|1",
+   "box": {
+    "left": 1204.3,
+    "top": 351,
+    "right": 1266,
+    "bottom": 379,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|2",
+   "box": {
+    "left": 1204.3,
+    "top": 379,
+    "right": 1266,
+    "bottom": 395,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Full Day Pass|1",
+   "box": {
+    "left": 49,
+    "top": 485,
+    "right": 177.3,
+    "bottom": 513,
+    "width": 128.3,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day|1",
+   "box": {
+    "left": 69,
+    "top": 517,
+    "right": 115,
+    "bottom": 537,
+    "width": 46,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1090|1",
+   "box": {
+    "left": 562.8,
+    "top": 485,
+    "right": 624.5,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|3",
+   "box": {
+    "left": 562.8,
+    "top": 513,
+    "right": 624.5,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "h3|Eat & Play Kids Pass|1",
+   "box": {
+    "left": 690.5,
+    "top": 485,
+    "right": 886.1,
+    "bottom": 513,
+    "width": 195.6,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|All Day + Meal|1",
+   "box": {
+    "left": 710.5,
+    "top": 517,
+    "right": 805.8,
+    "bottom": 537,
+    "width": 95.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|฿ 1300|1",
+   "box": {
+    "left": 1204.3,
+    "top": 485,
+    "right": 1266,
+    "bottom": 513,
+    "width": 61.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|per person|4",
+   "box": {
+    "left": 1204.3,
+    "top": 513,
+    "right": 1266,
+    "bottom": 529,
+    "width": 61.7,
+    "height": 16
+   }
+  }
+ ],
+ "tiers-walkin@1680x1050": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "span|Walk-in (no member) · default Tourist rate. Verify|1",
+   "box": {
+    "left": 77,
+    "top": 343,
+    "right": 645.6,
+    "bottom": 367,
+    "width": 568.6,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 186.6,
+    "top": 569,
+    "right": 269,
+    "bottom": 601,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 165.3,
+    "top": 609,
+    "right": 290.3,
+    "bottom": 633,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 626.2,
+    "top": 553,
+    "right": 692.8,
+    "bottom": 585,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 598.4,
+    "top": 593,
+    "right": 720.6,
+    "bottom": 617,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 564.7,
+    "top": 629,
+    "right": 754.3,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 1065.5,
+    "top": 553,
+    "right": 1116.9,
+    "bottom": 585,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 1042.4,
+    "top": 593,
+    "right": 1139.9,
+    "bottom": 617,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 996.4,
+    "top": 629,
+    "right": 1185.9,
+    "bottom": 649,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-member@1680x1050": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 1104.4,
+    "bottom": 371,
+    "width": 999.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 1104.4,
+    "bottom": 391,
+    "width": 999.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 1120.4,
+    "top": 349,
+    "right": 1278,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 334.2,
+    "top": 453,
+    "right": 418.7,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 194.5,
+    "top": 577,
+    "right": 261.1,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 166.8,
+    "top": 617,
+    "right": 288.9,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 132.6,
+    "top": 653,
+    "right": 323.1,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "button|Show all rates|1",
+   "box": {
+    "left": 24,
+    "top": 718,
+    "right": 154.1,
+    "bottom": 750,
+    "width": 130.1,
+    "height": 32
+   }
+  }
+ ],
+ "tiers-member-all@1680x1050": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 858 Expat|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 1104.4,
+    "bottom": 371,
+    "width": 999.4,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0021|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 1104.4,
+    "bottom": 391,
+    "width": 999.4,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|Expat · verified|1",
+   "box": {
+    "left": 1120.4,
+    "top": 349,
+    "right": 1278,
+    "bottom": 385,
+    "width": 157.6,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 186.6,
+    "top": 593,
+    "right": 269,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 165.3,
+    "top": 633,
+    "right": 290.3,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "div|Verified|1",
+   "box": {
+    "left": 765.9,
+    "top": 453,
+    "right": 850.3,
+    "bottom": 477,
+    "width": 84.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 626.2,
+    "top": 577,
+    "right": 692.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 598.4,
+    "top": 617,
+    "right": 720.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Passport — no proof needed|1",
+   "box": {
+    "left": 564.2,
+    "top": 653,
+    "right": 754.8,
+    "bottom": 673,
+    "width": 190.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 1065.5,
+    "top": 577,
+    "right": 1116.9,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 1042.4,
+    "top": 617,
+    "right": 1139.9,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 996.4,
+    "top": 653,
+    "right": 1185.9,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "tiers-unverified@1680x1050": [
+  {
+   "key": "h2|Select Customer Type|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 359.7,
+    "bottom": 266,
+    "width": 335.7,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Choose the pricing tier to start the sale.|1",
+   "box": {
+    "left": 24,
+    "top": 274,
+    "right": 359.7,
+    "bottom": 302,
+    "width": 335.7,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|Z|1",
+   "box": {
+    "left": 41,
+    "top": 343,
+    "right": 89,
+    "bottom": 391,
+    "width": 48,
+    "height": 48
+   }
+  },
+  {
+   "key": "div|ZZ TEST 885 split 1440 r01|1",
+   "box": {
+    "left": 105,
+    "top": 343,
+    "right": 1101.5,
+    "bottom": 371,
+    "width": 996.5,
+    "height": 28
+   }
+  },
+  {
+   "key": "div|+66 89 858 0022|1",
+   "box": {
+    "left": 105,
+    "top": 371,
+    "right": 1101.5,
+    "bottom": 391,
+    "width": 996.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|No verified rate|1",
+   "box": {
+    "left": 1117.5,
+    "top": 349,
+    "right": 1278,
+    "bottom": 385,
+    "width": 160.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "h3|Tourist|1",
+   "box": {
+    "left": 186.6,
+    "top": 593,
+    "right": 269,
+    "bottom": 625,
+    "width": 82.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Standard pricing|1",
+   "box": {
+    "left": 165.3,
+    "top": 633,
+    "right": 290.3,
+    "bottom": 657,
+    "width": 125,
+    "height": 24
+   }
+  },
+  {
+   "key": "h3|Expat|1",
+   "box": {
+    "left": 626.2,
+    "top": 577,
+    "right": 692.8,
+    "bottom": 609,
+    "width": 66.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Resident pricing|1",
+   "box": {
+    "left": 598.4,
+    "top": 617,
+    "right": 720.6,
+    "bottom": 641,
+    "width": 122.2,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|1",
+   "box": {
+    "left": 564.7,
+    "top": 653,
+    "right": 754.3,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  },
+  {
+   "key": "h3|Thai|1",
+   "box": {
+    "left": 1065.5,
+    "top": 577,
+    "right": 1116.9,
+    "bottom": 609,
+    "width": 51.4,
+    "height": 32
+   }
+  },
+  {
+   "key": "p|Local pricing|1",
+   "box": {
+    "left": 1042.4,
+    "top": 617,
+    "right": 1139.9,
+    "bottom": 641,
+    "width": 97.4,
+    "height": 24
+   }
+  },
+  {
+   "key": "p|Proof required — verify now|2",
+   "box": {
+    "left": 996.4,
+    "top": 653,
+    "right": 1185.9,
+    "bottom": 673,
+    "width": 189.5,
+    "height": 20
+   }
+  }
+ ],
+ "payment@1680x1050": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1295,
+    "bottom": 270,
+    "width": 1271,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1295,
+    "bottom": 338,
+    "width": 1271,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1295,
+    "bottom": 398,
+    "width": 1271,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 200.5,
+    "top": 535,
+    "right": 260.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 631.5,
+    "top": 535,
+    "right": 687.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 1024.2,
+    "top": 535,
+    "right": 1152.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 640,
+    "right": 653.5,
+    "bottom": 696,
+    "width": 629.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 962,
+    "right": 152,
+    "bottom": 1026,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 962,
+    "right": 1295,
+    "bottom": 1026,
+    "width": 1127,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash@1680x1050": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1295,
+    "bottom": 270,
+    "width": 1271,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1295,
+    "bottom": 338,
+    "width": 1271,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1295,
+    "bottom": 398,
+    "width": 1271,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 200.5,
+    "top": 535,
+    "right": 260.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 631.5,
+    "top": 535,
+    "right": 687.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 1024.2,
+    "top": 535,
+    "right": 1152.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "button|Partial payment|1",
+   "box": {
+    "left": 24,
+    "top": 638,
+    "right": 653.5,
+    "bottom": 676,
+    "width": 629.5,
+    "height": 38
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 665.5,
+    "top": 620,
+    "right": 761.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 665.5,
+    "top": 640,
+    "right": 1295,
+    "bottom": 676,
+    "width": 629.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 1295,
+    "bottom": 716,
+    "width": 1271,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 756,
+    "right": 653.5,
+    "bottom": 812,
+    "width": 629.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 962,
+    "right": 152,
+    "bottom": 1026,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 962,
+    "right": 1295,
+    "bottom": 1026,
+    "width": 1127,
+    "height": 64
+   }
+  }
+ ],
+ "payment+Cash+Partial payment@1680x1050": [
+  {
+   "key": "h2|Amount Due|1",
+   "box": {
+    "left": 24,
+    "top": 230,
+    "right": 1295,
+    "bottom": 270,
+    "width": 1271,
+    "height": 40
+   }
+  },
+  {
+   "key": "div|฿1040|1",
+   "box": {
+    "left": 24,
+    "top": 278,
+    "right": 1295,
+    "bottom": 338,
+    "width": 1271,
+    "height": 60
+   }
+  },
+  {
+   "key": "h3|Select Payment Method|1",
+   "box": {
+    "left": 24,
+    "top": 370,
+    "right": 1295,
+    "bottom": 398,
+    "width": 1271,
+    "height": 28
+   }
+  },
+  {
+   "key": "h3|Cash|1",
+   "box": {
+    "left": 200.5,
+    "top": 535,
+    "right": 260.5,
+    "bottom": 567,
+    "width": 60.1,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|Card|1",
+   "box": {
+    "left": 631.5,
+    "top": 535,
+    "right": 687.5,
+    "bottom": 567,
+    "width": 56,
+    "height": 32
+   }
+  },
+  {
+   "key": "h3|PromptPay|1",
+   "box": {
+    "left": 1024.2,
+    "top": 535,
+    "right": 1152.8,
+    "bottom": 567,
+    "width": 128.6,
+    "height": 32
+   }
+  },
+  {
+   "key": "label|Payment amount|1",
+   "box": {
+    "left": 24,
+    "top": 617,
+    "right": 136.7,
+    "bottom": 631,
+    "width": 112.7,
+    "height": 14
+   }
+  },
+  {
+   "key": "button|Full amount|1",
+   "box": {
+    "left": 587.1,
+    "top": 616,
+    "right": 653.5,
+    "bottom": 632,
+    "width": 66.4,
+    "height": 16
+   }
+  },
+  {
+   "key": "input|input|1",
+   "box": {
+    "left": 24,
+    "top": 632,
+    "right": 653.5,
+    "bottom": 668,
+    "width": 629.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "label|Cash received|1",
+   "box": {
+    "left": 665.5,
+    "top": 620,
+    "right": 761.3,
+    "bottom": 637,
+    "width": 95.8,
+    "height": 17
+   }
+  },
+  {
+   "key": "input|input|2",
+   "box": {
+    "left": 665.5,
+    "top": 640,
+    "right": 1295,
+    "bottom": 676,
+    "width": 629.5,
+    "height": 36
+   }
+  },
+  {
+   "key": "p|Change ฿ 0.00|1",
+   "box": {
+    "left": 24,
+    "top": 688,
+    "right": 1295,
+    "bottom": 716,
+    "width": 1271,
+    "height": 28
+   }
+  },
+  {
+   "key": "button|1|1",
+   "box": {
+    "left": 435.5,
+    "top": 728,
+    "right": 576.8,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|2|1",
+   "box": {
+    "left": 588.8,
+    "top": 728,
+    "right": 730.2,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|3|1",
+   "box": {
+    "left": 742.2,
+    "top": 728,
+    "right": 883.5,
+    "bottom": 808,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|4|1",
+   "box": {
+    "left": 435.5,
+    "top": 820,
+    "right": 576.8,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|5|1",
+   "box": {
+    "left": 588.8,
+    "top": 820,
+    "right": 730.2,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|6|1",
+   "box": {
+    "left": 742.2,
+    "top": 820,
+    "right": 883.5,
+    "bottom": 900,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|7|1",
+   "box": {
+    "left": 435.5,
+    "top": 912,
+    "right": 576.8,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|8|1",
+   "box": {
+    "left": 588.8,
+    "top": 912,
+    "right": 730.2,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|9|1",
+   "box": {
+    "left": 742.2,
+    "top": 912,
+    "right": 883.5,
+    "bottom": 992,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Clear|1",
+   "box": {
+    "left": 435.5,
+    "top": 1004,
+    "right": 576.8,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|0|1",
+   "box": {
+    "left": 588.8,
+    "top": 1004,
+    "right": 730.2,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Backspace|1",
+   "box": {
+    "left": 742.2,
+    "top": 1004,
+    "right": 883.5,
+    "bottom": 1084,
+    "width": 141.3,
+    "height": 80
+   }
+  },
+  {
+   "key": "button|Decimal point|1",
+   "box": {
+    "left": 24,
+    "top": 1096,
+    "right": 1295,
+    "bottom": 1144,
+    "width": 1271,
+    "height": 48
+   }
+  },
+  {
+   "key": "button|Hold sale|1",
+   "box": {
+    "left": 24,
+    "top": 1184,
+    "right": 653.5,
+    "bottom": 1240,
+    "width": 629.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Save as partly paid|1",
+   "box": {
+    "left": 665.5,
+    "top": 1184,
+    "right": 1295,
+    "bottom": 1240,
+    "width": 629.5,
+    "height": 56
+   }
+  },
+  {
+   "key": "button|Back|1",
+   "box": {
+    "left": 24,
+    "top": 1264,
+    "right": 152,
+    "bottom": 1328,
+    "width": 128,
+    "height": 64
+   }
+  },
+  {
+   "key": "button|Confirm Payment Received|1",
+   "box": {
+    "left": 168,
+    "top": 1264,
+    "right": 1295,
+    "bottom": 1328,
+    "width": 1127,
+    "height": 64
+   }
+  }
+ ],
+ "card-single@560": [
+  {
+   "key": "span|ZZ TEST guardian 496|1",
+   "box": {
+    "left": 33,
+    "top": 33,
+    "right": 207.8,
+    "bottom": 53,
+    "width": 174.8,
+    "height": 20
+   }
+  },
+  {
+   "key": "div|+66898904960|1",
+   "box": {
+    "left": 33,
+    "top": 55,
+    "right": 406.8,
+    "bottom": 71,
+    "width": 373.8,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|button|1",
+   "box": {
+    "left": 418.8,
+    "top": 33,
+    "right": 452.8,
+    "bottom": 69,
+    "width": 34,
+    "height": 36
+   }
+  },
+  {
+   "key": "button|Message|1",
+   "box": {
+    "left": 458.8,
+    "top": 33,
+    "right": 559,
+    "bottom": 69,
+    "width": 100.2,
+    "height": 36
+   }
+  },
+  {
+   "key": "span|WhatsApp confirmed|1",
+   "box": {
+    "left": 33,
+    "top": 83,
+    "right": 176.7,
+    "bottom": 99,
+    "width": 143.7,
+    "height": 16
+   }
+  },
+  {
+   "key": "span|Z|1",
+   "box": {
+    "left": 48.3,
+    "top": 123,
+    "right": 57.6,
+    "bottom": 143,
+    "width": 9.3,
+    "height": 20
+   }
+  },
+  {
+   "key": "span|ZZ TEST Single|1",
+   "box": {
+    "left": 85,
+    "top": 111.8,
+    "right": 189.1,
+    "bottom": 129.3,
+    "width": 104.1,
+    "height": 17.5
+   }
+  },
+  {
+   "key": "span|5 yrs|1",
+   "box": {
+    "left": 197.1,
+    "top": 111,
+    "right": 233.4,
+    "bottom": 130,
+    "width": 36.3,
+    "height": 19
+   }
+  },
+  {
+   "key": "span|Drop-Off|1",
+   "box": {
+    "left": 241.4,
+    "top": 111,
+    "right": 307.3,
+    "bottom": 130,
+    "width": 65.9,
+    "height": 19
+   }
+  },
+  {
+   "key": "button|Edit ZZ TEST Single|1",
+   "box": {
+    "left": 527,
+    "top": 111,
+    "right": 559,
+    "bottom": 143,
+    "width": 32,
+    "height": 32
+   }
+  },
+  {
+   "key": "span|No arrival time set|1",
+   "box": {
+    "left": 33,
+    "top": 165,
+    "right": 559,
+    "bottom": 181,
+    "width": 526,
+    "height": 16
+   }
+  },
+  {
+   "key": "button|Check in|1",
+   "box": {
+    "left": 33,
+    "top": 193,
+    "right": 413.7,
+    "bottom": 237,
+    "width": 380.7,
+    "height": 44
+   }
+  },
+  {
+   "key": "button|Cancel booking|1",
+   "box": {
+    "left": 421.7,
+    "top": 193,
+    "right": 559,
+    "bottom": 237,
+    "width": 137.3,
+    "height": 44
+   }
+  }
+ ]
+}

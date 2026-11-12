@@ -43,18 +43,23 @@ export interface HoldButtonsProps {
   showPartPaid?: boolean;
 }
 
+// SCRUM-884 — in the split view (a till screen whose payment panel is under
+// @xl, `StepPayment`'s container) "Save as partly paid" ran past its half of
+// the row: the labels wrap between words there and the buttons grow with them.
+const SPLIT_BUTTON = 'md:@max-xl:h-auto md:@max-xl:min-h-14 md:@max-xl:px-3 md:@max-xl:py-2 md:@max-xl:whitespace-normal';
+
 export function HoldSaleButtons({ holdReason, partPaidReason, onHold, onSavePartPaid, showPartPaid = true }: HoldButtonsProps) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-3" data-testid="hold-sale-buttons">
       <div className="flex flex-col gap-1">
-        <Button variant="outline" size="lg" className="h-14 gap-2" disabled={holdReason !== null} onClick={onHold}>
+        <Button variant="outline" size="lg" className={`h-14 gap-2 ${SPLIT_BUTTON}`} disabled={holdReason !== null} onClick={onHold}>
           <PauseCircle className="h-5 w-5" />
           Hold sale
         </Button>
         {holdReason && <p className="text-xs text-muted-foreground" data-testid="hold-sale-reason">{holdReason}</p>}
       </div>
       {showPartPaid && <div className="flex flex-col gap-1">
-        <Button variant="outline" size="lg" className="h-14 gap-2" disabled={partPaidReason !== null} onClick={onSavePartPaid}>
+        <Button variant="outline" size="lg" className={`h-14 gap-2 ${SPLIT_BUTTON}`} disabled={partPaidReason !== null} onClick={onSavePartPaid}>
           <Wallet className="h-5 w-5" />
           Save as partly paid
         </Button>
