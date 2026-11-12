@@ -66,6 +66,15 @@ import { loadVisibleConversation, type InboxViewer } from './read-visibility';
  *     so every inbox read skips it (`visibleConversationsSql`) and the thread
  *     key no longer holds it — the number's next message opens a NEW
  *     conversation, routed and answered as a first contact;
+ *   - a party or booking the thread was linked to is let go
+ *     (`event_order_ref`/`booking_ref` cleared, the old ids in the audit
+ *     row's `before`): the party stays in the OTO App, its BEO reads "no
+ *     conversation", and a press that would post to the family's chat
+ *     (Request deposit, the menu link, the choices received, Resend) is
+ *     refused NO_CONVERSATION. A line the party still owes on its own (a
+ *     reminder, the hand-over, a paid confirmation) is kept on the cleared
+ *     thread so the money's history stays whole, and is never sent: the send
+ *     path refuses every line of a cleared thread (`CONVERSATION_CLEARED`);
  *   - what the inbox and the assistant remember of the number is reset on its
  *     contact: the shown name, the channel's profile name, a staff-set name
  *     and the language — refilled from the next message, as for a first
@@ -344,7 +353,9 @@ export async function startOver(tx: Tx, storage: FileStorage | null, input: Star
       ),
     );
 
-  // 4. The thread leaves the inbox and the thread key.
+  // 4. The thread leaves the inbox and the thread key — and lets go of a
+  // party or booking linked to it, so the party's later lines find no chat
+  // (`conversationOfParty`: NO_CONVERSATION) instead of a thread nobody sees.
   await tx
     .update(s.conversation)
     .set({
@@ -353,6 +364,8 @@ export async function startOver(tx: Tx, storage: FileStorage | null, input: Star
       lastMessagePreview: null,
       aiSummary: null,
       memberId: null,
+      eventOrderRef: null,
+      bookingRef: null,
       updatedAt: now,
     })
     .where(and(eq(s.conversation.operatorId, operatorId), eq(s.conversation.id, conv.id)));
@@ -391,7 +404,13 @@ export async function startOver(tx: Tx, storage: FileStorage | null, input: Star
     operatorId,
     branchId: conv.branchId,
     requestId: input.requestId,
-    before: { archived: false, status: conv.status, category: conv.category },
+    before: {
+      archived: false,
+      status: conv.status,
+      category: conv.category,
+      eventOrderRef: conv.eventOrderRef,
+      bookingRef: conv.bookingRef,
+    },
     after: { ...result, withdrawnMessageIds: [...cancelled.messagesWithdrawn, ...withdrawn.map((w) => w.id)] },
   });
   return result;

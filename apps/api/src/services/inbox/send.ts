@@ -153,12 +153,15 @@ export type SendOutcome =
  * Refusal words the api adds to the channel's five, for a send it never
  * handed to a channel. `MEDIA_UNAVAILABLE`: the file cannot be linked (no
  * storage, or storage not answering — retried; no such inbox file, or more
- * than one — not); `MEDIA_UNSUPPORTED`: the channel sends no media.
+ * than one — not); `MEDIA_UNSUPPORTED`: the channel sends no media;
+ * `CONVERSATION_CLEARED`: the thread was cleared with a test line's Start
+ * over (SCRUM-908) — nothing of it is sent again, whoever posted the line.
  */
 type LocalRefusal =
   | 'CHANNEL_NOT_CONNECTED'
   | 'CHANNEL_CANNOT_REPLY'
   | 'CONTACT_ERASED'
+  | 'CONVERSATION_CLEARED'
   | 'MEDIA_UNAVAILABLE'
   | 'MEDIA_UNSUPPORTED';
 interface LocalResult {
@@ -297,6 +300,8 @@ export async function sendQueuedMessage(
     result = local('CHANNEL_NOT_CONNECTED', false, 'no channel account');
   } else if (row.erasedAt) {
     result = local('CONTACT_ERASED', false, 'the contact was erased');
+  } else if (row.conversation.archivedAt) {
+    result = local('CONVERSATION_CLEARED', false, 'the conversation was cleared with Start over');
   } else if (row.account.archivedAt || !row.account.canReply) {
     result = local('CHANNEL_CANNOT_REPLY', false, 'the account cannot reply');
   } else {

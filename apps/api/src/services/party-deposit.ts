@@ -199,12 +199,15 @@ async function partyOfRow(exec: Exec, row: Pick<RequestRow, 'operatorId' | 'otoa
   return getEventAtBranches(exec, { branchIds: parks.map((p) => p.id), eventId: row.otoappEventId });
 }
 
-/** The family's thread for the party: the conversation Book Date linked to it, the newest when several. */
+/**
+ * The family's thread for the party: the conversation Book Date linked to it, the newest when several.
+ * A thread cleared with Start over (SCRUM-908, `archived_at`) is no family's chat any more.
+ */
 async function conversationOfParty(db: Exec, operatorId: string, eventId: string): Promise<ConversationRow | null> {
   const [row] = await db
     .select()
     .from(conversation)
-    .where(and(eq(conversation.operatorId, operatorId), eq(conversation.eventOrderRef, eventId)))
+    .where(and(eq(conversation.operatorId, operatorId), eq(conversation.eventOrderRef, eventId), isNull(conversation.archivedAt)))
     .orderBy(desc(conversation.createdAt))
     .limit(1);
   return row ?? null;
@@ -836,6 +839,8 @@ export async function resendPartyDeposit(
     const [live] = await tx.select().from(partyDepositRequest).where(eq(partyDepositRequest.id, row.id)).for('update').limit(1);
     if (!live) throw errors.notFound('Deposit request not found');
     const conv = await lockedConversation(tx, input.operatorId, live.conversationId);
+    // SCRUM-908: the chat was cleared with Start over; nothing is posted to it again.
+    if (conv.archivedAt) throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NO_CONVERSATION.code, PARTY_DEPOSIT_REFUSALS.NO_CONVERSATION.message);
     if (live.state !== 'requested' || !live.paymentLink) {
       throw errors.conflict(PARTY_DEPOSIT_REFUSALS.NOT_OPEN.code, PARTY_DEPOSIT_REFUSALS.NOT_OPEN.message, { state: live.state });
     }
