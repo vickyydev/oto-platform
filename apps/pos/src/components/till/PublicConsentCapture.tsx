@@ -1,7 +1,7 @@
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useRef, useState } from 'react';
-import type { ConsentAction, ConsentPrompt, FilledConsentSlot } from '@oto/shared';
-import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users } from 'lucide-react';
+import { CONSENT_FORM_STEPS, type ConsentAction, type ConsentFormStep, type ConsentPrompt, type FilledConsentSlot } from '@oto/shared';
+import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,6 +47,31 @@ import { cn } from '@/lib/utils';
  * Done. Shown only on a form whose till asks for it (`contactConfirmed` in
  * the prompt): a till from before the tick, or a station between that drops
  * the field, gets a form that asks for nothing and sends nothing new.
+ *
+ * SCRUM-857 — STAFF WATCH THE FORM AS IT IS FILLED (the owner's ruling of 12
+ * November, Tom's point: the form opened and staff just kept waiting). The
+ * family's entries travel to the till as they type, not only when a step is
+ * finished: a `fill` goes a few hundred milliseconds after they stop typing
+ * (at the latest every second while they keep typing), at once for a choice
+ * (a tick, the age, the channel, a step), and at once when a box loses focus.
+ * One answer is out at a time, and the form never locks for a `fill`: the
+ * family keeps typing while the till takes the last one, and what they typed
+ * since goes next. The step they are on goes with it (`step`, on a form whose
+ * till follows it: `familyStep` in the prompt), so the till's copy of this
+ * same form (`mirror`) opens on that step for staff, read-only, and a display
+ * that re-pairs mid-form comes back to it with everything the till holds.
+ *
+ * WHO WINS A FIELD (`mergeConsentDraft`). The station and the till take a
+ * `fill` only for the copy of the form it was based on (its request id), so a
+ * family fill based on an older copy is never laid over a newer staff edit.
+ * When the till's newer copy arrives, each field is settled on its own: the
+ * till's value where the family has not changed the field; the family's where
+ * the till still holds the value it had, or any value this screen sent on
+ * that copy (their newer typing goes next, and an older fill of theirs that
+ * the station took late never pulls their text back); and the till's where it
+ * changed the field to something else meanwhile. The last change the station
+ * accepted wins, so typing that had not reached the till before staff changed
+ * the same field gives way to staff's, which the family then sees.
  */
 
 interface ChildDraft {
@@ -84,49 +109,86 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
 }
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+/**
+ * The form as it is sent and as the till keeps it (`fillOf` below sends
+ * exactly this), so what the family typed and the till's copy of it read as
+ * the same form: a name with a space still being typed after it, a number
+ * typed with its leading zero, a tick the till cannot take yet.
+ */
 const trimmed = (draft: FormDraft): FormDraft => ({
   ...draft,
-  guardianName: draft.guardianName.trim(),
+  guardianName: draft.guardianName.trim().slice(0, 100),
   // The number as it is sent and as the till keeps it, so a number typed with
   // its leading zero is the same one once the till's copy comes back.
   guardianPhone: consentFormPhone(draft.guardianPhone),
+  ...(draft.contactConfirmed !== undefined
+    ? { contactConfirmed: draft.contactConfirmed && messagingPhoneProblem(draft.guardianPhone) === null } : {}),
+  // A tick without a name is not one the till can take (`fillOf`).
+  consentAcknowledged: draft.consentAcknowledged && !!draft.guardianName.trim(),
   confirmations: [...draft.confirmations].sort(),
-  slots: Object.fromEntries(Object.entries(draft.slots).map(([id, child]) => [id, { ...child, name: child.name.trim() }])),
+  slots: Object.fromEntries(Object.entries(draft.slots).map(([id, child]) => [id, { ...child,
+    name: child.name.trim().slice(0, 100), allergiesMedical: child.allergiesMedical.slice(0, 500),
+    foodRestrictions: child.foodRestrictions.slice(0, 200) }])),
 });
 
 /**
- * The till's newer copy of the form, laid over what is on this screen: a field
- * the family has not touched since the last copy takes the till's value (staff
- * helping, or the family's own step coming back); a field they are still
- * typing in keeps what they typed.
+ * The till's newer copy of the form (`next`), laid over what is on this
+ * screen (`local`), field by field. `base` is the copy the family last had;
+ * `sent` is every form this screen sent on that copy (`trimmed`), oldest
+ * first: `next` is the till's answer to one of them (whichever the station
+ * took first; a lost reply retried, or one the station still held, may be an
+ * older one than the last), or to a staff edit.
+ *
+ * - The family has not changed the field: the till's value (staff helping, or
+ *   the family's own entry coming back).
+ * - The till holds a value this screen sent on that copy, or still holds the
+ *   value it had: the family's, so what they typed since stays on their
+ *   screen and goes next — never a flicker back to their own older text.
+ * - The till changed it to something else (staff on the till): the till's. The
+ *   station took that change first; the family's typing in that field, not yet
+ *   at the till, was done before they could see it, and gives way.
  */
-export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormDraft): FormDraft {
-  const pick = <T,>(mine: T, was: T, theirs: T): T => (same(mine, was) ? theirs : mine);
+export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormDraft,
+  sent: FormDraft | readonly FormDraft[] = []): FormDraft {
+  const history: readonly FormDraft[] = Array.isArray(sent) ? sent : [sent as FormDraft];
+  const pick = <T,>(mine: T, was: T, theirs: T, sentValues: readonly (T | undefined)[], eq: (a: T, b: T) => boolean = same): T => {
+    if (eq(mine, theirs)) return mine;
+    if (sentValues.some((value) => value !== undefined && eq(theirs, value))) return mine;
+    return eq(theirs, was) ? mine : theirs;
+  };
+  // A name is the same name with a space still being typed after it.
+  const text = (a: string, b: string) => a.trim() === b.trim();
   const slots: Record<string, ChildDraft> = {};
   for (const [id, theirs] of Object.entries(next.slots)) {
     const mine = local.slots[id];
     const was = base.slots[id];
+    const gone = history.map((form) => form.slots[id]);
     if (!mine || !was) { slots[id] = theirs; continue; }
     slots[id] = {
-      name: pick(mine.name, was.name, theirs.name),
+      name: pick(mine.name, was.name, theirs.name, gone.map((child) => child?.name), text),
       // The date and the age move together: one picker sets both.
       ...pick({ dateOfBirth: mine.dateOfBirth, ageYears: mine.ageYears }, { dateOfBirth: was.dateOfBirth, ageYears: was.ageYears },
-        { dateOfBirth: theirs.dateOfBirth, ageYears: theirs.ageYears }),
-      allergiesMedical: pick(mine.allergiesMedical, was.allergiesMedical, theirs.allergiesMedical),
-      foodRestrictions: pick(mine.foodRestrictions, was.foodRestrictions, theirs.foodRestrictions),
+        { dateOfBirth: theirs.dateOfBirth, ageYears: theirs.ageYears },
+        gone.map((child) => child ? { dateOfBirth: child.dateOfBirth, ageYears: child.ageYears } : undefined)),
+      allergiesMedical: pick(mine.allergiesMedical, was.allergiesMedical, theirs.allergiesMedical, gone.map((child) => child?.allergiesMedical)),
+      foodRestrictions: pick(mine.foodRestrictions, was.foodRestrictions, theirs.foodRestrictions, gone.map((child) => child?.foodRestrictions)),
     };
   }
+  // SCRUM-863 — a number is the same number typed with its leading zero or
+  // in its stored form.
+  const number = (a: string, b: string) => consentFormPhone(a) === consentFormPhone(b);
+  const sorted = (ids: string[]) => [...ids].sort();
+  const all = <K extends keyof FormDraft>(key: K) => history.map((form) => form[key]);
   return {
     slots,
-    guardianName: pick(local.guardianName, base.guardianName, next.guardianName),
-    // SCRUM-863 — a number is the same number typed with its leading zero or
-    // in its stored form: once the till has kept what the family typed, the
-    // field follows the till again, so a correction staff make later shows here.
-    guardianPhone: consentFormPhone(local.guardianPhone) === consentFormPhone(base.guardianPhone) ? next.guardianPhone : local.guardianPhone,
-    ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel) } : {}),
-    ...(next.contactConfirmed !== undefined ? { contactConfirmed: pick(local.contactConfirmed, base.contactConfirmed, next.contactConfirmed) } : {}),
-    consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged),
-    confirmations: pick(local.confirmations, base.confirmations, next.confirmations),
+    guardianName: pick(local.guardianName, base.guardianName, next.guardianName, all('guardianName'), text),
+    guardianPhone: pick(local.guardianPhone, base.guardianPhone, next.guardianPhone, all('guardianPhone'), number),
+    ...(next.contactChannel ? { contactChannel: pick(local.contactChannel, base.contactChannel, next.contactChannel, all('contactChannel')) } : {}),
+    ...(next.contactConfirmed !== undefined
+      ? { contactConfirmed: pick(local.contactConfirmed, base.contactConfirmed, next.contactConfirmed, all('contactConfirmed')) } : {}),
+    consentAcknowledged: pick(local.consentAcknowledged, base.consentAcknowledged, next.consentAcknowledged, all('consentAcknowledged')),
+    confirmations: pick(local.confirmations, base.confirmations, next.confirmations, all('confirmations'),
+      (a, b) => same(sorted(a), sorted(b))),
   };
 }
 
@@ -156,30 +218,82 @@ function TouchText({ value, onChange, placeholder, className, id, disabled, maxL
 }
 
 const FIELD = 'mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30';
-const STEPS = ['children', 'care', 'agreements'] as const;
-type Step = (typeof STEPS)[number];
+const STEPS = CONSENT_FORM_STEPS;
+type Step = ConsentFormStep;
+/** SCRUM-857 — a `fill` goes this long after the family stops typing… */
+export const LIVE_FILL_MS = 300;
+/** …and at the latest this long after their first unsent change, while they keep typing. */
+export const LIVE_FILL_MAX_MS = 1_000;
+/**
+ * A `fill` the station did not take is tried again after this long, a few
+ * times for each copy of the form and each new change the family makes.
+ */
+const LIVE_RETRY_MS = 1_000;
+const LIVE_TRIES = 3;
+/**
+ * The till took the same form this many times in a row without keeping it
+ * (a value it reads differently, such as an age from a date of birth): the
+ * form stops sending it until the family changes something or presses on.
+ */
+const LIVE_IGNORED = 2;
 
 /** The public part of ConsentCapture: the family fills it; the photo and staff decisions remain at the till. */
-export function PublicConsentCapture({ prompt, busy, onAction }: {
-  prompt: ConsentPrompt; busy: boolean; onAction: (action: ConsentAction) => void;
+export function PublicConsentCapture({ prompt, busy, onAction, answerPending = busy, mirror }: {
+  prompt: ConsentPrompt;
+  /** The form is locked: the family pressed Done or asked something the till must answer first. */
+  busy: boolean;
+  onAction: (action: ConsentAction) => void;
+  /**
+   * SCRUM-857 — an answer from this screen is on its way to the till, or kept
+   * by the station until the till takes it. The form stays open (a `fill`
+   * never locks it); the next answer waits until this one is taken.
+   */
+  answerPending?: boolean;
+  /**
+   * SCRUM-857 — this is the till's own copy of the family's screen, for staff
+   * to watch as it is filled: the form as the till holds it (`prompt`), on the
+   * step the family is on, read-only. `step` is null when the family's screen
+   * does not say (an older display, or a station between that drops it): every
+   * step is shown, one under the other.
+   */
+  mirror?: { step: ConsentFormStep | null };
 }) {
   const { t, lang } = useLanguage();
-  const [draft, setDraft] = useState<FormDraft>(() => draftOf(prompt));
+  const [localDraft, setDraft] = useState<FormDraft>(() => draftOf(prompt));
   const base = useRef<FormDraft>(draftOf(prompt));
-  const [step, setStep] = useState<Step>('children');
+  // SCRUM-857 — a display that re-paired mid-form opens where the family was.
+  const [localStep, setStep] = useState<Step>(() => prompt.familyStep ?? 'children');
+  const draft = mirror ? draftOf(prompt) : localDraft;
+  const step: Step = mirror ? mirror.step ?? 'children' : localStep;
+  const shows = (name: Step) => (mirror && mirror.step === null) || step === name;
   const [helpAsked, setHelpAsked] = useState(false);
   const lastRequest = useRef(prompt.requestId);
+  /** Every form this screen sent on the copy it has, until the till's next copy arrives (`mergeConsentDraft`). */
+  const sent = useRef<FormDraft[]>([]);
+  /** Copies in a row in which the till did not keep what was sent (`LIVE_IGNORED`). */
+  const ignored = useRef(0);
   useEffect(() => {
-    if (lastRequest.current === prompt.requestId) return;
+    if (mirror || lastRequest.current === prompt.requestId) return;
     lastRequest.current = prompt.requestId;
     const next = draftOf(prompt);
-    setDraft((local) => mergeConsentDraft(local, base.current, next));
+    const gone = sent.current;
+    sent.current = [];
+    // The till took a form from here but its copy is the one before, unchanged.
+    ignored.current = gone.length > 0 && !gone.some((form) => same(trimmed(next), form))
+      && same(trimmed(next), trimmed(base.current)) ? ignored.current + 1 : 0;
+    setDraft((local) => mergeConsentDraft(local, base.current, next, gone));
     base.current = next;
-  }, [prompt]);
+  }, [prompt, mirror]);
 
   const fence = { requestId: prompt.requestId, visitorId: prompt.visitorId };
   const locked = busy || prompt.completed;
   const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
+  // SCRUM-857 — a till that follows the family's step (`familyStep`) hears
+  // every step change; one that does not is sent the form as before.
+  const followsStep = !mirror && prompt.familyStep !== undefined;
+  const stepSaved = !followsStep || prompt.familyStep === step;
+  const unsent = !saved || !stepSaved;
+  const sendable = !mirror && !locked && !answerPending;
   // SCRUM-863 — a till that sends the channel takes the number and the channel
   // back with every step, so the form asks for both. One that does not (an
   // older till, or a station that drops the field) would leave a changed
@@ -202,7 +316,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     const child = draft.slots[slot.id];
     return !!child && child.name.trim().length > 0 && child.ageYears !== null;
   });
-  const fillOf = (form: FormDraft): ConsentAction => ({
+  const fillOf = (form: FormDraft, at: Step = step): ConsentAction => ({
     ...fence,
     action: 'fill',
     slots: prompt.slots.map((slot): FilledConsentSlot => {
@@ -222,14 +336,72 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     // A tick without a name is not one the till can take; it is kept here until the name is in.
     consentAcknowledged: form.consentAcknowledged && !!form.guardianName.trim(),
     acknowledgedConfirmationIds: form.confirmations,
+    // SCRUM-857 — where the family is, for the till's copy of this screen.
+    ...(followsStep ? { step: at } : {}),
   });
-  const fill = (): ConsentAction => fillOf(draft);
+
+  /**
+   * SCRUM-857 — THE FORM TRAVELS AS IT IS FILLED. One answer is out at a
+   * time: while one is, the next waits (`urgent` sends it the moment the till
+   * has taken the last), and the family keeps typing meanwhile.
+   */
+  const tries = useRef({ requestId: '', count: 0 });
+  const dirtySince = useRef<number | null>(null);
+  const urgent = useRef(false);
+  const send = (form: FormDraft, at: Step) => {
+    if (!sendable) { urgent.current = true; return; }
+    if (tries.current.requestId !== prompt.requestId) tries.current = { requestId: prompt.requestId, count: 0 };
+    tries.current.count += 1;
+    urgent.current = false;
+    dirtySince.current = null;
+    sent.current = [...sent.current, trimmed(form)].slice(-20);
+    onAction(fillOf(form, at));
+  };
+  const flush = useRef<() => void>(() => undefined);
+  flush.current = () => { if (unsent) send(draft, step); };
+  useEffect(() => {
+    if (!unsent) { dirtySince.current = null; urgent.current = false; return; }
+    if (!sendable || ignored.current >= LIVE_IGNORED) return;
+    const tried = tries.current.requestId === prompt.requestId ? tries.current.count : 0;
+    if (tried >= LIVE_TRIES) return;
+    const now = Date.now();
+    dirtySince.current ??= now;
+    const delay = urgent.current ? 0 : tried > 0 ? LIVE_RETRY_MS
+      : Math.min(LIVE_FILL_MS, Math.max(0, dirtySince.current + LIVE_FILL_MAX_MS - now));
+    const timer = setTimeout(() => flush.current(), delay);
+    return () => clearTimeout(timer);
+  }, [draft, step, unsent, sendable, prompt.requestId]);
+  /** The family typed: sent a moment after they stop. */
+  const edit = (update: (current: FormDraft) => FormDraft) => {
+    // Something new to send: the tries on this copy start again.
+    ignored.current = 0;
+    tries.current.count = 0;
+    setDraft(update);
+  };
+  /** The family chose something: sent at once. */
+  const choose = (update: (current: FormDraft) => FormDraft) => {
+    urgent.current = true;
+    edit(update);
+  };
+  /** The family pressed on (Continue, a step, Back): whatever is unsent goes now, with the step. */
+  const goTo = (to: Step) => {
+    ignored.current = 0;
+    if (!saved || followsStep && prompt.familyStep !== to) send(draft, to);
+    setStep(to);
+  };
+  // "Ask the team" goes as soon as nothing else is out.
+  const helpSent = useRef(false);
+  useEffect(() => {
+    if (!helpAsked || helpSent.current || !sendable) return;
+    helpSent.current = true;
+    onAction({ ...fence, action: 'staff_help' });
+  });
   const setChild = (id: string, patch: Partial<ChildDraft>) =>
-    setDraft((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
+    edit((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
   const index = STEPS.indexOf(step);
   const next = () => {
-    if (!saved) onAction(fill());
-    if (index < STEPS.length - 1) setStep(STEPS[index + 1]!);
+    if (index < STEPS.length - 1) goTo(STEPS[index + 1]!);
+    else if (!saved) { ignored.current = 0; send(draft, step); }
   };
 
   const requirementOf = (slot: ConsentPrompt['slots'][number]) => {
@@ -243,8 +415,13 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     return meta;
   };
 
-  return <div className="relative flex h-full w-full min-h-0 flex-col bg-[image:var(--cd-gradient)] text-foreground" data-testid="display-consent">
-    <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" /></div>
+  return <div className="relative flex h-full w-full min-h-0 flex-col bg-[image:var(--cd-gradient)] text-foreground"
+    data-testid={mirror ? 'consent-mirror' : 'display-consent'} inert={mirror ? true : undefined}
+    onBlurCapture={mirror ? undefined : () => { urgent.current = true; flush.current(); }}>
+    {mirror
+      ? <div className="absolute top-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
+        <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div>
+      : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" /></div>}
     <div className="shrink-0 px-8 pt-8 pb-4 text-center">
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
         <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
@@ -253,7 +430,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
       <div className="mt-4 flex items-center justify-center gap-2" data-testid="consent-steps">
         {STEPS.map((name, at) => (
           <button key={name} type="button" disabled={locked || at > index && !childrenComplete}
-            onClick={() => { if (at !== index) { if (!saved) onAction(fill()); setStep(name); } }}
+            onClick={() => { if (at !== index) goTo(name); }}
             className={cn('rounded-full border px-4 py-1.5 text-base font-semibold transition-colors',
               at === index ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 bg-foreground/5 text-foreground/70')}>
             {at + 1}. {t(name === 'children' ? 'superviseConsent.stepChildren' : name === 'care' ? 'superviseConsent.stepCare' : 'superviseConsent.stepAgreements')}
@@ -264,7 +441,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     </div>
 
     <div className="flex-1 min-h-0 space-y-5 overflow-y-auto px-8 pb-6">
-      {step === 'children' && prompt.slots.map((slot, at) => {
+      {shows('children') && prompt.slots.map((slot, at) => {
         const child = draft.slots[slot.id]!;
         const meta = requirementOf(slot);
         const Icon = meta.icon;
@@ -284,9 +461,7 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
                   // An age is a choice, not typing: it goes to the till at once, so
                   // what this child needs is worked out there and shown here.
                   const chosen = { dateOfBirth, ageYears: Math.min(17, Math.max(0, age)) };
-                  const form = { ...draft, slots: { ...draft.slots, [slot.id]: { ...child, ...chosen } } };
-                  setDraft(form);
-                  onAction(fillOf(form));
+                  choose((current) => ({ ...current, slots: { ...current.slots, [slot.id]: { ...current.slots[slot.id]!, ...chosen } } }));
                 }} />
             </div>
           </div>
@@ -296,9 +471,9 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
           </div>}
         </div>;
       })}
-      {step === 'children' && !childrenComplete && <p className="text-center text-base text-foreground/60">{t('superviseConsent.nameAndAgeFirst')}</p>}
+      {shows('children') && !childrenComplete && <p className="text-center text-base text-foreground/60">{t('superviseConsent.nameAndAgeFirst')}</p>}
 
-      {step === 'care' && <>
+      {shows('care') && <>
         {prompt.slots.map((slot) => {
           const child = draft.slots[slot.id]!;
           return <div key={slot.id} className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-4" data-testid="consent-care">
@@ -321,21 +496,21 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
         {prompt.consentRequired && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
       </>}
 
-      {step === 'agreements' && <>
+      {shows('agreements') && <>
         <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
           <div><label htmlFor="public-consent-guardian" className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
             <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked}
-              onChange={(guardianName) => setDraft((current) => ({ ...current, guardianName }))}
+              onChange={(guardianName) => edit((current) => ({ ...current, guardianName }))}
               placeholder={t('superviseConsent.yourFullName')} className={FIELD} /></div>
           <div>
             <label className="flex items-center gap-2 text-lg text-foreground/70"><Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}</label>
             {phoneKept ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
-            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) setDraft((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
+            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) edit((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
-              onChannelChange={takesContact ? (contactChannel) => { if (!locked) setDraft((current) => ({ ...current, contactChannel, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); } : undefined}
+              onChannelChange={takesContact ? (contactChannel) => { if (!locked) choose((current) => ({ ...current, contactChannel, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); } : undefined}
               inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground" />}
             {/* SCRUM-857 — the family confirms that this is the number for the
                 channel they chose; a changed number or channel asks again. */}
@@ -343,20 +518,20 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
             {asksConfirm && contactProblem === 'invalid' && <p className="mt-3 text-base text-(--cd-amber)" data-testid="consent-contact-invalid">{t('superviseConsent.phoneInvalid')}</p>}
             {asksConfirm && <label className="mt-3 flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
               <Checkbox checked={draft.contactConfirmed === true} disabled={locked || contactProblem !== null} data-testid="public-consent-contact-confirm"
-                onCheckedChange={(value) => setDraft((current) => ({ ...current, contactConfirmed: value === true }))}
+                onCheckedChange={(value) => choose((current) => ({ ...current, contactConfirmed: value === true }))}
                 className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
               <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.confirmContact', { channel: CHANNEL_LABEL[contactChannel] })}</span></label>}
           </div>
           {prompt.consentRequired && <label className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
             <Checkbox checked={draft.consentAcknowledged} disabled={locked} data-testid="public-consent-ack"
-              onCheckedChange={(value) => setDraft((current) => ({ ...current, consentAcknowledged: value === true }))}
+              onCheckedChange={(value) => choose((current) => ({ ...current, consentAcknowledged: value === true }))}
               className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
             <span className="text-lg leading-snug text-foreground/80">{t('superviseConsent.consentText')}</span></label>}
         </div>
         {prompt.confirmations.length > 0 && <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-3">
           <div className="flex items-center gap-2 text-lg font-semibold text-foreground/80"><ClipboardCheck className="h-5 w-5" />{t('superviseConsent.pleaseConfirm')}</div>
           {prompt.confirmations.map((item) => <label key={item.id} className="flex w-full items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-left">
-            <Checkbox checked={draft.confirmations.includes(item.id)} disabled={locked} onCheckedChange={(value) => setDraft((current) => ({
+            <Checkbox checked={draft.confirmations.includes(item.id)} disabled={locked} onCheckedChange={(value) => choose((current) => ({
               ...current,
               confirmations: value === true ? [...current.confirmations.filter((id) => id !== item.id), item.id] : current.confirmations.filter((id) => id !== item.id),
             }))} className="mt-1 h-6 w-6 border-foreground/30 data-[state=checked]:bg-primary" />
@@ -369,12 +544,12 @@ export function PublicConsentCapture({ prompt, busy, onAction }: {
     <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3">
       {prompt.completed ? <p role="status">{t('superviseConsent.waitForTeam')}</p> : <>
         {helpAsked && <p role="status" className="mr-auto flex items-center gap-2 text-base text-foreground/70"><Users className="h-5 w-5" />{t('superviseConsent.teamComing')}</p>}
-        <Button variant="outline" disabled={busy || helpAsked} onClick={() => { setHelpAsked(true); onAction({ ...fence, action: 'staff_help' }); }}>{t('superviseConsent.askTeam')}</Button>
-        {index > 0 && <Button variant="outline" disabled={locked} onClick={() => setStep(STEPS[index - 1]!)}>{t('common.back')}</Button>}
+        <Button variant="outline" disabled={busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
+        {index > 0 && <Button variant="outline" disabled={locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
         {step !== 'agreements'
           ? <Button disabled={locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
           : saved
-            ? <Button disabled={locked || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
+            ? <Button disabled={locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
             : <Button disabled={locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
     </div>

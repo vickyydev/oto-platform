@@ -11,7 +11,7 @@ import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHando
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentSlotsComplete, consentActionAllowed,
-  newId, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  newId, type ChildReviewPrompt, type ConsentFormStep, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -38,7 +38,7 @@ import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
-import { tFor, useLanguage, type TFunction } from '@/i18n/LanguageContext';
+import { LanguageProvider, tFor, useLanguage, type TFunction } from '@/i18n/LanguageContext';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
@@ -153,6 +153,7 @@ import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
 import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDisplay';
 import { SupervisionGate, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { ConsentCapture, ConsentTicksStatus } from '@/components/till/ConsentCapture';
+import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 import { RedeemBookingModal } from '@/components/till/RedeemBookingModal';
 import { KioskDeskPanel } from '@/components/till/KioskDeskPanel';
 import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till/DoorCheckInChoiceModal';
@@ -569,6 +570,13 @@ export default function Till() {
    * unconfirmed. Staff then confirm the number with the family on the till.
    */
   const [consentContactLegacy, setConsentContactLegacy] = useState(false);
+  /**
+   * SCRUM-857 — the step the family is on, on the paired display, as their
+   * last `fill` said: the till's copy of their screen opens on it for staff.
+   * Null when the display (or the station between) does not say: the copy
+   * then shows every step, one under the other.
+   */
+  const [consentFamilyStep, setConsentFamilyStep] = useState<ConsentFormStep | null>('children');
   const [superConsentAck, setSuperConsentAck] = useState<boolean>(false);
   // Confirmations checklist ticked on the customer screen (admin-configurable,
   // policy.confirmations) — required for ANY unaccompanied registration, not
@@ -2086,6 +2094,7 @@ export default function Till() {
     // number for this registration, on this form.
     setSuperContactConfirmation(null);
     setConsentContactLegacy(false);
+    setConsentFamilyStep('children');
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
@@ -3582,6 +3591,9 @@ export default function Till() {
     // confirm or change and sends both back with each step.
     contactChannel: superParentContactMethod,
     fees: { nannyHourlyTHB: dropOffPricing.nannyHourlyRateTHB, dropOffFeeTHB: dropOffPricing.oneTimeFeeTHB },
+    // SCRUM-857 — the till follows the family's step: their screen sends it
+    // with every fill, and a display that re-pairs opens on it.
+    familyStep: consentFamilyStep ?? 'children',
     staffReady: consentStaffReady,
     canContinue: consentStaffReady && consentSlotsComplete(consentRows.map(({ slot }) => ({ name: slot.name, ageYears: slotAgeOf(slot) })))
       && (!consentRequired || !!superParentName.trim() && superConsentAck)
@@ -3634,6 +3646,15 @@ export default function Till() {
       const unconfirmedDone = action.data.action === 'done' && prompt.data.contactConfirmed === false
         && consentActionAllowed({ ...prompt.data, contactConfirmed: true }, action.data);
       if (!unconfirmedDone && !consentActionAllowed(prompt.data, action.data)) return false;
+      // SCRUM-857 — the form now travels as it is filled, so the tick comes
+      // back with every fill: it keeps the time it first arrived for this
+      // number and channel.
+      const familyContactConfirmation = (confirmed: boolean, contact: { phone: string; channel: ContactChannel }) => {
+        setSuperContactConfirmation(previous => !confirmed ? null
+          : previous && previous.by === 'family' && previous.phone === contact.phone && previous.channel === contact.channel
+            ? previous : { at: new Date().toISOString(), by: 'family', ...contact });
+        setConsentContactLegacy(false);
+      };
       // SCRUM-764 — the family's step, mirrored here; every answer taken moves
       // their screen on to a new request, even one that changed nothing.
       takeConsentAction(action.data, {
@@ -3645,10 +3666,8 @@ export default function Till() {
         contactChannel: superParentContactMethod,
         asksContactConfirmation: prompt.data.contactConfirmed !== undefined,
         contactConfirmed: prompt.data.contactConfirmed === true,
-        setContactConfirmed: (confirmed, contact) => {
-          setSuperContactConfirmation(confirmed ? { at: new Date().toISOString(), by: 'family', ...contact } : null);
-          setConsentContactLegacy(false);
-        },
+        setContactConfirmed: familyContactConfirmation,
+        setFamilyStep: setConsentFamilyStep,
         contactConfirmationUnsupported: () => setConsentContactLegacy(true),
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: setConsentCompletedScope, askedForHelp: () => setConsentStaffOnly(true),
@@ -3728,6 +3747,16 @@ export default function Till() {
   // a price still being worked out), staff go through them with the family here.
   const staffTicks = staffTicksAgreements({ formPublished: !!consent, displayConnected: linkedDisplay.connected.length > 0,
     displaySupported: linkedDisplay.supported, displayError: !!linkedDisplay.error });
+  /**
+   * SCRUM-857 — STAFF WATCH THE FAMILY FILL THE FORM (the owner's ruling of
+   * 12 November). While the drop-off or nanny form is on the paired display,
+   * the till shows the same form beside the staff gate, where the prototype's
+   * split view puts the customer's half: as the till holds it, which is what
+   * the family has typed (their screen sends it as they go), on the step they
+   * are on, read-only, in the staff's language. Staff help from the gate and
+   * Private child details, and see the family's screen follow.
+   */
+  const consentMirror = step === 7 && !!consent && !staffTicks && !inlineDisplay;
   const displayInUse = linkedDisplay.connected.length > 0;
   useEffect(() => {
     // A visitor may be typing on the separate display while staff are locked.
@@ -4130,9 +4159,17 @@ export default function Till() {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${inlineDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
+        <div className={`${inlineDisplay || consentMirror ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
           {staffTill}
         </div>
+        {consentMirror && consent && (
+          <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
+            <LanguageProvider>
+              <PublicConsentCapture prompt={{ ...consent, kind: 'consent', requestId: 'staff-mirror' }} busy={false}
+                onAction={() => undefined} mirror={{ step: consentFamilyStep }} />
+            </LanguageProvider>
+          </div>
+        )}
         {inlineDisplay && step === 7 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <ConsentCapture

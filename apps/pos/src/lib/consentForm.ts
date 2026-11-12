@@ -1,4 +1,4 @@
-import { normalizePhone, validateMessagingPhone, type ConsentAction, type FilledConsentSlot } from '@oto/shared';
+import { normalizePhone, validateMessagingPhone, type ConsentAction, type ConsentFormStep, type FilledConsentSlot } from '@oto/shared';
 import type { SupervisedSlot } from '@/components/till/SupervisionGate';
 import type { ContactChannel } from '@/types';
 
@@ -122,6 +122,12 @@ export interface ConsentFormTill {
    * show it. Staff confirm the number with the family on the till instead.
    */
   contactConfirmationUnsupported?: () => void;
+  /**
+   * SCRUM-857 — the step the family is on, as their `fill` carried it, so
+   * the till's copy of the form opens on it for staff (and a display that
+   * re-pairs comes back to it). Optional, like the confirmation above.
+   */
+  setFamilyStep?: (step: ConsentFormStep | null) => void;
 }
 
 /**
@@ -161,6 +167,9 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
       if (phone !== till.guardianPhone.trim()) till.setGuardianPhone(phone);
     }
     if (action.contactChannel !== undefined) till.setContactChannel(action.contactChannel);
+    // SCRUM-857 — where the family is on their screen; a step from a display
+    // (or a station between) that does not send it leaves the till not knowing.
+    till.setFamilyStep?.(action.step ?? null);
     // SCRUM-857 — the family's tick that this number is the one for the
     // channel comes with the step, for the number and channel the step
     // carries (the till's own when the step carries none). A step without

@@ -221,8 +221,12 @@ describe('the number as the form sends it and the till keeps it', () => {
     const fromTill = { ...base, guardianPhone: OTHER_STORED, contactChannel: 'line' as const };
     // Untouched here: the till's values. Changed here: the family's.
     expect(mergeConsentDraft(base, base, fromTill)).toMatchObject({ guardianPhone: OTHER_STORED, contactChannel: 'line' });
+    // SCRUM-857 — the family's screen now sends as they type, so a field the
+    // till changed to something else since (staff on the till) is the till's:
+    // the station took that change first, and the family's unsent choice of
+    // Telegram gives way to staff's LINE rather than being sent over it.
     expect(mergeConsentDraft({ ...base, guardianPhone: OTHER_TYPED, contactChannel: 'telegram' }, base, fromTill))
-      .toMatchObject({ guardianPhone: OTHER_TYPED, contactChannel: 'telegram' });
+      .toMatchObject({ guardianPhone: OTHER_TYPED, contactChannel: 'line' });
     // The same number typed with its leading zero is not a change: the till's copy wins.
     expect(mergeConsentDraft({ ...base, guardianPhone: '+660898020001' }, base, fromTill).guardianPhone).toBe(OTHER_STORED);
   });

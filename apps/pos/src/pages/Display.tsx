@@ -283,7 +283,14 @@ export default function Display() {
     pending.current = null;
   }, [requestId]);
 
-  const send = useCallback(async (type: string, payload: Record<string, unknown>) => {
+  /**
+   * SCRUM-857 — `quiet`: a refusal is not shown. The drop-off form sends its
+   * `fill` as the family types, and the station refuses one that was based on
+   * a copy of the form the till has just replaced (staff typing at the same
+   * moment); the form sends again on the till's newer copy, so the family is
+   * not told about it. A lost reply (no status) still shows Retry.
+   */
+  const send = useCallback(async (type: string, payload: Record<string, unknown>, quiet = false) => {
     const current = sessionRef.current;
     if (!current || inFlight.current) return;
     if (pending.current && pending.current.type !== type) return;
@@ -309,7 +316,9 @@ export default function Display() {
     } catch (failure) {
       if (!active()) return;
       if (failure instanceof DisplayError && failure.status !== 0) pending.current = null;
-      setError(failure instanceof Error ? failure.message : 'Please try again.');
+      if (!(quiet && failure instanceof DisplayError && failure.status !== 0 && failure.status !== 401)) {
+        setError(failure instanceof Error ? failure.message : 'Please try again.');
+      }
       if (failure instanceof DisplayError && failure.status === 401) { setSession(null); setRestart(value => value + 1); }
     } finally {
       if (inFlight.current === operation) inFlight.current = null;
@@ -351,6 +360,16 @@ export default function Display() {
     ? { cart: tenderCart, payment: tenderPayment.data } : null;
   const view = document && !isFnb && !isMerch && !isTender ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
+  /**
+   * SCRUM-857 — the drop-off form never locks for its own `fill`: the family
+   * keeps typing while the till takes the last one (the form sends the next
+   * when it has). It locks, and says to wait, for anything else it sent.
+   */
+  const consentAnswerPending = busy || !!answer || !!pending.current;
+  const isFill = (value: unknown): boolean => (value as { action?: unknown } | null | undefined)?.action === 'fill';
+  const consentLocked = consentAnswerPending
+    && !((!pending.current || pending.current.type === 'display.consent' && isFill(pending.current.payload))
+      && (!answer || isFill((answer as { payload?: unknown }).payload)));
   // SCRUM-762 — on the details screen, a number the till already holds was
   // given on the first screen: it is shown there, not asked for again.
   const keptPhone = view?.stage === 'input' && document?.prompt?.kind === 'contact'
@@ -411,12 +430,12 @@ export default function Display() {
       </p>}
     </> : view?.consent ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
-      <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
+      <div className="flex-1 min-h-0" inert={consentLocked}>
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
-          busy={busy || !!answer || !!pending.current}
-          onAction={action => { void send('display.consent', action); }} />
+          busy={consentLocked} answerPending={consentAnswerPending}
+          onAction={action => { void send('display.consent', action, action.action === 'fill'); }} />
       </div>
-      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
+      {consentLocked && <p role="status" className="shrink-0 text-center py-3">
         {busy ? t('display.sending') : t('display.waitForConfirm')}
       </p>}
     </> : merch && document ? <>
