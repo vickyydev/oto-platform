@@ -1112,10 +1112,31 @@ describe('SCRUM-906 — the slip composed from the whole kitchen plan', () => {
     );
     expect(slips.bar?.lines).toEqual([
       { qty: 10, name: 'Kids juice', note: 'no ice' },
+      // A till item that prints nowhere on a sale is still the bar's to bring.
+      { qty: 10, name: 'Water bottle' },
       { qty: 2, name: 'Juice pitcher', note: `orange · ${PARTY_NOT_ON_TILL_MENU}` },
       { qty: 1, name: 'Old mocktail', note: PARTY_NOT_ON_TILL_MENU },
     ]);
     expect(slips.kitchen?.lines).toEqual([{ qty: 2, name: 'French fries' }]);
+  });
+
+  it('a bar line whose till item prints nowhere is never dropped: it is on the bar slip, and alone it still makes one', () => {
+    const slips = compose(
+      plan({
+        setMenu: [],
+        barItems: [{ productCode: 'AO-BOTTLE', name: 'Water bottle', qty: 12, note: 'cold' }],
+      }),
+    );
+    expect(slips.bar?.lines).toEqual([{ qty: 12, name: 'Water bottle', note: 'cold' }]);
+    expect(slips.kitchen).toBeNull();
+    // A set-menu line of the same product still prints nowhere, as on a sale.
+    const setMenuOnly = compose(
+      plan({
+        setMenu: [{ productCode: 'AO-BOTTLE', name: 'Water bottle', qty: 12, choiceGroup: null, chosenOption: null, note: null }],
+        barItems: [],
+      }),
+    );
+    expect(setMenuOnly).toEqual({ kitchen: null, bar: null });
   });
 
   it('a chosen dish under its group, "Fried rice: Veggie"; an open choice is not marked off the menu; a typed extra is', () => {

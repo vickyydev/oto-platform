@@ -22,8 +22,10 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     code no live product carries — by the plan's own name. A line nobody has
  *     placed goes to the kitchen, as `groupPrepTickets` sends one.
  *   - The BAR slip: the set-menu lines whose product prints at the bar, and
- *     every line of the bar plan.
- *   - A product whose prep station is `none` prints nowhere, as on a sale.
+ *     every line of the bar plan but one whose till code prints in the kitchen.
+ *   - A set-menu product whose prep station is `none` prints nowhere, as on a
+ *     sale. A bar-plan line never vanishes: one whose product prints nowhere
+ *     (a bottled water) is still the bar's to bring, so it is on the bar slip.
  *   - A choice group prints the dish chosen for this party; one still open
  *     prints the group's name, marked as not chosen (the view names no options
  *     for an open group).
@@ -50,12 +52,12 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     coded. A line no live till product carries — typed by hand, or a code
  *     the till no longer sells — prints by its name, marked "not on the till
  *     menu" (decision 1). A chosen dish prints under its group's name,
- *     "Fried rice: Veggie", never a bare "Veggie". The bar plan's lines go
- *     where their own till code prints (a drink to the bar, a dish the bar
- *     plan names to the kitchen), the bar's when they have none, with their
- *     note. The cake prints on the kitchen slip as the BEO's cake choice says
- *     it — "Our Cake" or "Own Cake", its quantity, its time and its notes —
- *     and not at all when the BEO says no cake (decision 4).
+ *     "Fried rice: Veggie", never a bare "Veggie". The bar plan's lines go to
+ *     the bar with their note, unless their own till code prints in the
+ *     kitchen (a dish the bar plan names goes to the kitchen). The cake
+ *     prints on the kitchen slip as the BEO's cake choice says it — "Our
+ *     Cake" or "Own Cake", its quantity, its time and its notes — and not
+ *     at all when the BEO says no cake (decision 4).
  */
 
 /** The two slips, kitchen first: the prep stations that print (`print.ts`). */
@@ -269,16 +271,18 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
     kitchen: drafts.kitchen.map(draftToLine),
     bar: drafts.bar.map(draftToLine),
   };
-  // SCRUM-906: the bar plan's lines go where their own till code prints; the bar's when they have none.
+  // SCRUM-906: every bar-plan line prints. It goes to the kitchen when its own till code prints there
+  // (decision 7), and to the bar otherwise: a drink, a line with no code, and one whose till item
+  // prints nowhere on a sale (a bottled water), which the bar still has to bring.
   for (const item of input.plan.barItems) {
     const name = item.name.trim();
     if (!name) continue;
     const place = item.productCode ? input.prepStationOf(item.productCode) : null;
-    if (place === 'none') continue;
     const notes = [item.note?.trim() || null, place === null ? PARTY_NOT_ON_TILL_MENU : null].filter(
       (n): n is string => !!n,
     );
-    lines[place ?? 'bar'].push({ qty: item.qty, name, ...(notes.length ? { note: notes.join(' · ') } : {}) });
+    const station: PartySlipStation = place === 'kitchen' ? 'kitchen' : 'bar';
+    lines[station].push({ qty: item.qty, name, ...(notes.length ? { note: notes.join(' · ') } : {}) });
   }
   // SCRUM-906: the cake, as the BEO's cake choice says it (decision 4).
   if (input.plan.cake) lines.kitchen.push(partyCakeSlipLine(input.plan.cake));
