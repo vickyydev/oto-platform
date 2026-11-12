@@ -15,6 +15,7 @@ import {
   newId,
   refundScopeOf,
   refundStatusOf,
+  saleRefundStatusOf,
   refundableSatang,
   resolveRefundAmount,
   restockLineIds,
@@ -164,8 +165,8 @@ async function answerFor(
     replay: extra.replay,
     refund: await viewOfRefund(db, refundRow),
     sale: await saleViewOf(db, saleRow),
-    // A part-paid sale closed by its refund gave back everything it took.
-    refundStatus: saleRow.status === 'voided' ? 'refunded' : refundStatusOf(saleRow.grossSatang, saleRow.refundedSatang),
+    // A part-paid sale closed by its refund gave back everything it took (SCRUM-891: as the sale read says).
+    refundStatus: saleRefundStatusOf(saleRow),
     refundableSatang: saleRow.status === 'voided' ? 0 : refundableSatang(saleRow.grossSatang, saleRow.refundedSatang),
     requestedSatang: extra.requestedSatang,
     clamped: extra.clamped,
@@ -679,7 +680,7 @@ export async function refundSale(
     after: {
       status: after.status,
       refundedSatang,
-      refundStatus: refundStatusOf(after.grossSatang, refundedSatang),
+      refundStatus: saleRefundStatusOf({ status: after.status, grossSatang: after.grossSatang, refundedSatang }),
       refundId,
       number: number.number,
       amountSatang: amount.amountSatang,

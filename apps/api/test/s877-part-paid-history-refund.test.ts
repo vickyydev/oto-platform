@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { box, branch, product, refund, sale, station, wallet } from '@oto/db';
+import { auditLog, box, branch, product, refund, sale, station, wallet } from '@oto/db';
 import { mintVoucherQr, newId, type EndOfDayRecord } from '@oto/shared';
 import { createWalletWithGrant } from '../src/services/wallet';
 import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
@@ -245,5 +245,56 @@ describe('SCRUM-877 — a part-paid F&B or shop sale is refunded whole from Hist
     const closed = await closeDay(date);
     expect(closed.statusCode, closed.body).toBe(200);
     expect((closed.json() as EndOfDayRecord).closedAt).toBeTruthy();
+  });
+});
+
+// =============================================================================
+
+describe('SCRUM-891 — after the whole refund of a part-paid sale, the answer and the read agree', () => {
+  type Read = { sale: { status: string; totals: { refundedSatang: number } }; refundStatus: string; refundableSatang: number };
+  const readSale = async (saleId: string): Promise<Read> => {
+    const res = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie: manager } });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json() as Read;
+  };
+  const auditAfter = async (saleId: string) => {
+    const rows = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, saleId), eq(auditLog.action, 'sale.refund')));
+    expect(rows).toHaveLength(1);
+    return rows[0]!.after as { refundStatus: string; refundedSatang: number };
+  };
+
+  it('a fully paid sale refunded whole reads refunded in the answer, the read and the audit', async () => {
+    const { saleId, owed } = await shopOrder();
+    const paid = await finalise(saleId, { method: 'cash', kind: 'cash', amountSatang: owed, tenderedSatang: owed, actionId: newId() });
+    expect(paid.statusCode, paid.body).toBe(200);
+    const refunded = await refundFromHistory(manager, saleId, { actionId: newId() });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(refunded.json()).toMatchObject({ refundStatus: 'refunded', refundableSatang: 0 });
+    expect(await readSale(saleId)).toMatchObject({ refundStatus: 'refunded', refundableSatang: 0 });
+    expect(await auditAfter(saleId)).toMatchObject({ refundStatus: 'refunded', refundedSatang: owed });
+  });
+
+  it('a part-paid sale refunded whole reads refunded the same way, its money unchanged', async () => {
+    const { saleId, owed } = await shopOrder();
+    const part = await finalise(saleId, { method: 'cash', kind: 'cash', amountSatang: 5_000, tenderedSatang: 5_000, actionId: newId() });
+    expect(part.statusCode, part.body).toBe(200);
+    expect(part.json()).toMatchObject({ finalised: false, outstandingSatang: owed - 5_000 });
+    const refunded = await refundFromHistory(manager, saleId, { actionId: newId() });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(refunded.json()).toMatchObject({
+      refund: { amountSatang: 5_000 },
+      sale: { status: 'voided' },
+      refundStatus: 'refunded',
+      refundableSatang: 0,
+    });
+    // The read said partially_refunded here (50 of 175 in the proof): now it agrees with the answer.
+    const read = await readSale(saleId);
+    expect(read).toMatchObject({ sale: { status: 'voided', totals: { refundedSatang: 5_000 } }, refundStatus: 'refunded', refundableSatang: 0 });
+    expect(await auditAfter(saleId)).toMatchObject({ refundStatus: 'refunded', refundedSatang: 5_000 });
+    // Nothing about the money moved: the sale's own figures.
+    expect(await saleRow(saleId)).toMatchObject({ status: 'voided', grossSatang: owed, refundedSatang: 5_000 });
   });
 });

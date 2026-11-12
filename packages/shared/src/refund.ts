@@ -138,6 +138,22 @@ export function refundStatusOf(
 }
 
 /**
+ * SCRUM-891 — the state a SALE's refunds put it in, as every read says it.
+ * A part-paid sale refunded whole gave back everything it took and closed as
+ * void (SCRUM-877): it reads `refunded`, as a fully paid sale refunded whole
+ * does, even though what it took (50 of a 175 order) is less than its gross.
+ * Every other sale reads by its running total (`refundStatusOf`).
+ */
+export function saleRefundStatusOf(sale: {
+  status: string;
+  grossSatang: Satang;
+  refundedSatang: Satang;
+}): 'none' | 'partially_refunded' | 'refunded' {
+  if (sale.status === 'voided' && sale.refundedSatang > 0) return 'refunded';
+  return refundStatusOf(sale.grossSatang, sale.refundedSatang);
+}
+
+/**
  * How much this refund is for — the prototype's clamp, "never refund more than
  * is left", applied whatever the caller asked for.
  *

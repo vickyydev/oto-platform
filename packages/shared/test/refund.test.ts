@@ -3,6 +3,7 @@ import {
   allocateRefund,
   refundStatusOf,
   refundableSatang,
+  saleRefundStatusOf,
   resolveRefundAmount,
   restockLineIds,
   type RefundableTender,
@@ -50,6 +51,15 @@ describe('the amount — never more than is left (mockApi.ts:recordRefund)', () 
     expect(refundStatusOf(1000, 400)).toBe('partially_refunded');
     expect(refundStatusOf(1000, 1000)).toBe('refunded');
     expect(refundableSatang(1000, 1200)).toBe(0);
+  });
+
+  it('SCRUM-891: a part-paid sale refunded whole and closed as void reads refunded, as a whole refund of a paid sale does', () => {
+    expect(saleRefundStatusOf({ status: 'voided', grossSatang: 17_500, refundedSatang: 5_000 })).toBe('refunded');
+    expect(saleRefundStatusOf({ status: 'refunded', grossSatang: 17_500, refundedSatang: 17_500 })).toBe('refunded');
+    expect(saleRefundStatusOf({ status: 'finalised', grossSatang: 17_500, refundedSatang: 5_000 })).toBe('partially_refunded');
+    expect(saleRefundStatusOf({ status: 'finalised', grossSatang: 17_500, refundedSatang: 0 })).toBe('none');
+    // A sale voided before it took any money was never refunded.
+    expect(saleRefundStatusOf({ status: 'voided', grossSatang: 17_500, refundedSatang: 0 })).toBe('none');
   });
 });
 

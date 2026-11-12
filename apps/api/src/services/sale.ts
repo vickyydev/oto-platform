@@ -69,7 +69,7 @@ import {
   EVENT_PASS_DURATION_LABEL,
   PROTOTYPE_BAHT_ROUNDING,
   priceCartLine,
-  refundStatusOf,
+  saleRefundStatusOf,
   refundableSatang,
   splitLedgerUnitMoney,
   tierApprovalReasonLabel,
@@ -5865,7 +5865,8 @@ export async function getSaleDetail(
      * by their short codes.
      */
     correctionBandShortCode: correctionBands[0] ? bandShortCode(correctionBands[0].code) : null,
-    refundStatus: refundStatusOf(row.grossSatang, row.refundedSatang),
+    // SCRUM-891 — a part-paid sale refunded whole reads `refunded`, as the refund's answer says.
+    refundStatus: saleRefundStatusOf(row),
     refundableSatang:
       row.status === 'finalised' || row.status === 'refunded'
         ? refundableSatang(row.grossSatang, row.refundedSatang)
