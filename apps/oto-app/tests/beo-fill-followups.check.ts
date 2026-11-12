@@ -23,7 +23,8 @@
 //      choice made on the till first); the adults' copies follow it.
 //   3. thread G, "The adults will eat the same as the kids, the Margherita
 //      pizza for them too.": the fold is said, in the review (with the chat's
-//      words) and in the toast after Approve.
+//      words) and in the toast after Approve. An adults' SET line's count
+//      is the set menu's own, shown and not typed.
 //   4. thread I, "2 Margherita pizzas for 900": written at the till's price
 //      each, and the review names the chat's 900 in the line's reason.
 //   6. the BEO's sheet has a title for screen readers (the proof's console
@@ -86,7 +87,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 9;
+const CHECKS = 10;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -511,6 +512,30 @@ try {
     plan = await kitchenOf(ev.B2);
     assert.deepEqual([riceOf(plan.menus.kids), riceOf(plan.menus.adults)], [["Chicken"], ["Shrimp"]], "the kids' Fried rice is the family's Chicken; the adults' own Shrimp stays");
     assert.deepEqual(setLines(plan.menus.adults).map(([name]) => name), ["Hawaiian", "Chicken schnitzel", "French fries", "Veggie sticks", "Shrimp"]);
+  });
+
+  await check("anAdultsSetLinesCountIsTheSetMenusOwn", async () => {
+    // Thread A's words: the adults' Fried rice: Chicken, a SET line. Approve and create writes it with
+    // the set menu's own portions, so the review shows that count and takes none typed.
+    const review: BeoAiReview = (await fill(ev.both)).body.review;
+    const typed = initialReviewState(review, {});
+    typed.menuLines = typed.menuLines.map((l) => ({ ...l, quantity: 8 }));
+    const rowOf = (page: string) => {
+      const from = page.slice(page.indexOf('data-testid="ai-review-menu-line"'));
+      return from.slice(0, from.indexOf('data-testid="text-ai-review-match"'));
+    };
+    const row = rowOf(html(review, typed));
+    assert.ok(row.includes('data-testid="text-ai-review-menu-set-qty">1</span>'), `the set menu's one portion, shown: ${row}`);
+    assert.ok(!row.includes('type="number"'), "no count box to type in");
+    // A set menu that names its portions ("Fried rice x3"): that count.
+    const three: BeoAiReview = {
+      ...review,
+      catalogue: { ...review.catalogue, setMenus: review.catalogue.setMenus.map((m) => ({ ...m, items: m.items.map((i) => (i.id === RICE ? { ...i, qty: 3 } : i)) })) },
+    };
+    assert.ok(rowOf(html(three, typed)).includes('data-testid="text-ai-review-menu-set-qty">3</span>'), "the set menu's own count");
+    // Any other line keeps its count box.
+    const extra = { ...typed, menuLines: typed.menuLines.map(({ setMenuItemId: _set, ...l }) => l) };
+    assert.ok(rowOf(html(review, extra)).includes('type="number"'), "an EXTRA's count is typed as before");
   });
 
   await check("anExtraOnlyWhenMoreIsAskedOrPricedOrCounted", async () => {

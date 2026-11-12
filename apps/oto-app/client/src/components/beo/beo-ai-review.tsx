@@ -20,6 +20,7 @@ import {
   adultsFoldNoticeOf,
   adultsSetLineGroupOf,
   foldedBeforeReviewOf,
+  setMenuPortionsOf,
   chatOffered,
   chatOfferWords,
   chatSaysOf,
@@ -770,13 +771,18 @@ function ReviewSections({
                     ))}
                   </select>
                 )}
-                <Input
-                  type="number"
-                  min={1}
-                  className="h-8 w-16"
-                  value={l.quantity}
-                  onChange={(e) => update({ quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
-                />
+                {setGroup ? (
+                  // SCRUM-958: the set menu's own portions, as Approve and create writes the SET line.
+                  <span className="w-16 text-sm text-center" data-testid="text-ai-review-menu-set-qty">{setMenuPortionsOf(setGroup)}</span>
+                ) : (
+                  <Input
+                    type="number"
+                    min={1}
+                    className="h-8 w-16"
+                    value={l.quantity}
+                    onChange={(e) => update({ quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                  />
+                )}
                 {l.notInMenu ? (
                   <Input className="h-8 flex-1 min-w-[8rem]" value={l.itemName} onChange={(e) => update({ itemName: e.target.value })} />
                 ) : (

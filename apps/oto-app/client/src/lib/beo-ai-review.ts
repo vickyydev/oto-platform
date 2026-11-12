@@ -672,6 +672,14 @@ export function adultsSetLineGroupOf(
   return choiceGroupsOf(review as BeoAiReview, state.setMenuId.value).find((g) => g.id === line.setMenuItemId);
 }
 
+/**
+ * SCRUM-958 (the lane's reviews): the portions the set menu gives for one choice of a group (its
+ * `qty`, else 1), which an adults' SET line is written with (`resolveSetMenuLines`, as the
+ * approval resolves it) whatever count the chat's line gave: shown, never typed.
+ */
+export const setMenuPortionsOf = (group: Pick<Extract<BeoAiSetMenuItem, { type: "choice_group" }>, "qty">): number =>
+  typeof group.qty === "number" && Number.isInteger(group.qty) && group.qty > 0 ? group.qty : 1;
+
 /** The sources whose marks the form wears after an approval: not a step's, nor the deposit's, that was not written. */
 export function writtenSourcesOf(sources: BeoAiApproveBody["sources"], answer: ApproveAnswer): BeoAiApproveBody["sources"] {
   const noSteps = !!answer.notWritten?.timeline;
