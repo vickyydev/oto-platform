@@ -27,6 +27,8 @@
 //      and one cake line at the cake's time (SCRUM-941).
 //   7. a show that becomes an Entertainment Act is not written into
 //      Activities as text too.
+//   8. the cake is ticked "In the package" only when the chat or the package
+//      says so, never by default.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -55,7 +57,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
@@ -82,7 +84,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 7;
+const CHECKS = 8;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -91,7 +93,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -511,6 +513,54 @@ try {
     assert.equal(namesOnlyShows("Bubble show and face painting", shows), false, "words of its own: kept");
     assert.equal(namesOnlyShows("games", shows), false, "no show named: kept");
   });
+
+  // --- 8. "In the package" only when the chat or the package says so --------------------------
+  await check("theCakeIsInThePackageOnlyWhenSaid", async () => {
+    const confirmed =
+      "Confirmed: ZZ Test Toby's 9th birthday party on Saturday 19 December 2026, 13:00 to 15:30, 15 kids and 6 adults, Birthday package, Central Floresta, Pepperoni pizza, the Bubble show at 14:00, drinks from 13:15, the park's cake at 15:00, booking name ZZ TEST Toby, in the Party Room. Deposit 3,000 THB asked.";
+    const refsOf = (text: string): TranscriptRef[] => [{ line: 1, id: "c1", source: "team", at: at(0), ruling: true, text }];
+    const catalogue = await loadBeoCatalogue(db, { tenantId: tenant, branchId: park });
+    const read = (text: string, cake: Record<string, unknown>, pkg?: string) =>
+      resolveCatalogueAnswer({ ...(pkg ? { package: { templateId: pkg, line: 1 } } : {}), cake: { line: 1, ...cake } }, catalogue, refsOf(text)).cake;
+    // The proof's thread E: the model said included; the line names the package far from the cake.
+    assert.equal(read(confirmed, { mode: "INTERNAL", notes: "the park's cake", time: "15:00", included: true })?.included, undefined, "not ticked by default");
+    assert.equal(read("Our cake at 16:00, it is included in the package.", { mode: "INTERNAL", time: "16:00", included: true })?.included, true, "the chat says so");
+    assert.equal(read("2 cakes, free with the package", { mode: "INTERNAL", included: true })?.included, true);
+    assert.equal(read("2 of the park's cakes at 800 baht each", { mode: "INTERNAL", included: false, price: 800 })?.included, false, "charged on its own: EXTRA");
+    assert.equal(cakeSaidIncluded(confirmed), false);
+    assert.equal(cakeSaidIncluded("เค้กรวมในแพ็กเกจค่ะ"), true, "in Thai");
+    // The package says so: a package whose included lines hold a cake.
+    const withCake = randomUUID();
+    await q(
+      `insert into birthday_package_templates (id, tenant_id, name, base_price, kids_included, adults_included, socks_included, hours, price_weekday, price_weekend, branch_id, sort_order)
+       values ($1, $2, 'Cake package 946', 1000000, 10, 4, -1, 3, 1000000, 1200000, $3, 2)`,
+      [withCake, tenant, park],
+    );
+    await q(
+      `insert into package_line_item_templates (id, package_template_id, label, category, included, qty_default, default_unit_price, sort_order)
+       values ($1, $2, 'Birthday cake (1 kg)', 'food', true, 1, 0, 1)`,
+      [randomUUID(), withCake],
+    );
+    const withPackage = await loadBeoCatalogue(db, { tenantId: tenant, branchId: park });
+    const byPackage = resolveCatalogueAnswer({ package: { templateId: withCake, line: 1 }, cake: { mode: "INTERNAL", time: "15:00", line: 1 } }, withPackage, refsOf("The cake package, our cake at 15:00 please."));
+    assert.equal(byPackage.cake?.included, true, "the package includes a cake");
+    const theirOwn = resolveCatalogueAnswer({ package: { templateId: withCake, line: 1 }, cake: { mode: "EXTERNAL", time: "15:00", line: 1 } }, withPackage, refsOf("The cake package; we bring our own cake."));
+    assert.equal(theirOwn.cake?.included, undefined, "the family's own cake is not the package's");
+
+    // Approve and create: a cake with nothing said is written unticked, not on the form's INCL default.
+    const body = bodyOf({ cake: { mode: "INTERNAL", notes: "the park's cake", time: "15:00" } });
+    const ok = await approve(ev.cake, body);
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal((await kitchenOf(ev.cake)).menus.cakeIncluded, false);
+    const ticked = await approve(ev.cake, bodyOf({ cake: { mode: "INTERNAL", notes: "the park's cake", time: "15:00", included: true } }));
+    assert.equal(ticked.status, 200);
+    assert.equal((await kitchenOf(ev.cake)).menus.cakeIncluded, true, "ticked in the review: ticked");
+    // Staff's own tick on a plan is kept by an approval that says nothing of it.
+    await q("insert into beo_kitchen_plans (event_id, menus, cake_mode) values ($1, $2, 'INTERNAL')", [ev.cakeHeld, JSON.stringify({ kids: [], adults: [], cakeIncluded: true })]);
+    const held = await approve(ev.cakeHeld, body);
+    assert.equal(held.status, 200, JSON.stringify(held.body));
+    assert.equal((await kitchenOf(ev.cakeHeld)).menus.cakeIncluded, true);
+  });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
   const events = Object.values(ev);
@@ -518,6 +568,7 @@ try {
   await q("delete from beo_timeline_items where event_id = any($1::uuid[])", [events]).catch(() => undefined);
   await q("delete from beo_set_menu_selections where event_id = any($1::uuid[])", [events]).catch(() => undefined);
   await q("delete from core_events where tenant_id = $1", [tenant]).catch(() => undefined);
+  await q("delete from package_line_item_templates where package_template_id in (select id from birthday_package_templates where tenant_id = $1)", [tenant]).catch(() => undefined);
   await q("delete from birthday_package_templates where tenant_id = $1", [tenant]).catch(() => undefined);
   await q("delete from entertainment_package_templates where tenant_id = $1", [tenant]).catch(() => undefined);
   await q("delete from beo_set_menu_templates where tenant_id = $1", [tenant]).catch(() => undefined);

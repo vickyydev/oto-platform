@@ -492,6 +492,10 @@ export async function approveBeoAiFill(
         ...(service.kidsFoodTime ? { kidsFoodTime: service.kidsFoodTime } : {}),
         ...(service.adultsFoodTime ? { adultsFoodTime: service.adultsFoodTime } : {}),
         ...(body.cake?.included !== undefined ? { cakeIncluded: body.cake.included } : {}),
+        // SCRUM-946: a cake the review writes without a word of the package, on a plan that never
+        // said, is not ticked "In the package" (the form reads a missing key as INCL): the review
+        // showed it unticked. A plan that holds staff's own tick keeps it.
+        ...(body.cake && body.cake.included === undefined && body.cake.mode !== "NONE" && typeof menus.cakeIncluded !== "boolean" ? { cakeIncluded: false } : {}),
         ...(body.cake?.price !== undefined ? { cakePrice: body.cake.price } : {}),
       };
       const values = {

@@ -1079,13 +1079,27 @@ export function resolveCatalogueAnswer(
   const cakeMore = readOne(z.object({ quantity: optInt(1), included: z.preprocess((v) => (typeof v === "boolean" ? v : undefined), z.boolean().optional()), price: optBaht }), answer.cake);
   const cakeQuantity = cakeMore?.quantity !== undefined && cakeMore.quantity <= 20 ? cakeMore.quantity : undefined;
   const cakePrice = cakeMore?.price !== undefined ? Math.round(cakeMore.price) : undefined;
-  if (cake && (cakeMode || cake.time || cake.notes || cakeQuantity !== undefined || cakeMore?.included !== undefined || cakePrice !== undefined)) {
+  // SCRUM-946: "In the package" is ticked only when the chat or the package says so, never by
+  // default (the proof's confirmed party: "the park's cake at 15:00" came back included). The
+  // model's `true` stands when the cake's line speaks of the package or of the cake being
+  // included or free; the park's cake is the package's when the chosen package includes a cake.
+  const cakeLine = cake ? lineTextOf(cake) ?? "" : "";
+  const packageHasCake = !!pkg?.lines.some((l) => l.included && CAKE_WORDS.test(l.label));
+  const cakeIncluded =
+    cakeMore?.included === true
+      ? (cakeSaidIncluded(cakeLine) || packageHasCake ? true : undefined)
+      : cakeMore?.included === false
+        ? false
+        : cakeMode === "INTERNAL" && packageHasCake
+          ? true
+          : undefined;
+  if (cake && (cakeMode || cake.time || cake.notes || cakeQuantity !== undefined || cakeIncluded !== undefined || cakePrice !== undefined)) {
     proposal.cake = {
       mode: cakeMode,
       notes: cake.notes ?? null,
       time: cake.time ?? null,
       ...(cakeQuantity !== undefined ? { quantity: cakeQuantity } : {}),
-      ...(cakeMore?.included !== undefined ? { included: cakeMore.included } : {}),
+      ...(cakeIncluded !== undefined ? { included: cakeIncluded } : {}),
       ...(cakePrice !== undefined ? { price: cakePrice } : {}),
       from: fromOf(cake, cake.notes, cake.time),
     };
@@ -1226,6 +1240,24 @@ export function namesOnlyShows(text: string, entertainment: BeoAiProposal["enter
   return rest.split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean).every((w) => /^\d+$/.test(w) || SHOW_FILLER.has(w));
 }
 
+/** SCRUM-946: words saying a thing comes with the package, is included or free. */
+const INCLUDED_WORDS = /includ|package|free|no charge|ฟรี|รวม|แพ็ก|แพค|включ|пакет|бесплатн/giu;
+const CAKE_AT = /cakes?|เค้ก|торт/giu;
+/**
+ * SCRUM-946: whether a line says the cake comes with the package (is included,
+ * is free): such words within a few words of the cake, in the same sentence.
+ * A long confirmation naming the "Birthday package" far from "the park's cake
+ * at 15:00" does not say so.
+ */
+export function cakeSaidIncluded(line: string): boolean {
+  for (const sentence of line.split(/[.!?\n]+/)) {
+    const cakes = [...sentence.matchAll(CAKE_AT)].map((m) => m.index ?? 0);
+    if (cakes.length === 0) continue;
+    const words = [...sentence.matchAll(INCLUDED_WORDS)].map((m) => m.index ?? 0);
+    if (words.some((w) => cakes.some((c) => Math.abs(w - c) <= 40))) return true;
+  }
+  return false;
+}
 /** SCRUM-941: words for the cake, in the languages the park's chats are written in. */
 const CAKE_WORDS = /(^|[^\p{L}])cakes?([^\p{L}]|$)|เค้ก|торт/iu;
 /** SCRUM-946: words for getting the room ready. */
