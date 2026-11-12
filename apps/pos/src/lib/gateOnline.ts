@@ -183,11 +183,19 @@ export const GATE_BOX_NOT_SYNCED =
  * gate has already written the guardian or a child on the platform.
  */
 export function gateFailureDescription(err: unknown, startedOnline: boolean): string {
-  if (startedOnline && isConnectionDrop(err)) return `${GATE_CONNECTION_DROPPED} ${GATE_NOTHING_TAKEN}`;
-  if (startedOnline && err instanceof ApiError && err.status === 404 && answeredByBox(err)) {
-    return `${GATE_BOX_NOT_SYNCED} ${GATE_NOTHING_TAKEN}`;
-  }
-  return `${err instanceof Error ? err.message : 'Unknown error'} ${GATE_NOTHING_TAKEN}`;
+  return `${gateFailureCause(err, startedOnline)} ${GATE_NOTHING_TAKEN}`;
+}
+
+/**
+ * SCRUM-857 — the cause alone, without the tail: the reason the till's staff
+ * line gives when the family's Done could not be saved ("The family pressed
+ * Done, but it could not be saved: …"). The same words the toast gives, so a
+ * box that has not pulled the family is never shown as "Member not found".
+ */
+export function gateFailureCause(err: unknown, startedOnline: boolean): string {
+  if (startedOnline && isConnectionDrop(err)) return GATE_CONNECTION_DROPPED;
+  if (startedOnline && err instanceof ApiError && err.status === 404 && answeredByBox(err)) return GATE_BOX_NOT_SYNCED;
+  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 /**

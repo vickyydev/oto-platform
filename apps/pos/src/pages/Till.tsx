@@ -18,7 +18,7 @@ import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
-import { gateFailureDescription, gateOnlineHold, gateSaleFailure } from '@/lib/gateOnline';
+import { gateFailureCause, gateFailureDescription, gateOnlineHold, gateSaleFailure } from '@/lib/gateOnline';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
@@ -2510,7 +2510,7 @@ export default function Till() {
         description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
-      return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' };
+      return { ok: false, message: gateFailureCause(err, gateOnline.startedOnline) };
     }
 
     /**
@@ -2629,7 +2629,7 @@ export default function Till() {
         description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
-      return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' };
+      return { ok: false, message: gateFailureCause(err, gateOnline.startedOnline) };
     }
 
     // SCRUM-857 — the sale moved on while the children were written (it was

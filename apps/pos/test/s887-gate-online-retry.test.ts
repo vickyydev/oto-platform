@@ -11,6 +11,7 @@ import {
   GATE_BOX_NOT_SYNCED,
   GATE_CONNECTION_DROPPED,
   GATE_NOTHING_TAKEN,
+  gateFailureCause,
   gateFailureDescription,
   gateOnlineHold,
 } from '@/lib/gateOnline';
@@ -472,6 +473,9 @@ describe('SCRUM-887: what staff read', () => {
     expect(gateFailureDescription(err, true)).toBe(`${GATE_BOX_NOT_SYNCED} ${GATE_NOTHING_TAKEN}`);
     // A gate that did not start online keeps the box's own words, as before.
     expect(gateFailureDescription(err, false)).toBe(`Member not found ${GATE_NOTHING_TAKEN}`);
+    // SCRUM-857 — the staff line under the family's form gives the same cause.
+    expect(gateFailureCause(err, true)).toBe(GATE_BOX_NOT_SYNCED);
+    expect(gateFailureCause(err, false)).toBe('Member not found');
   });
 
   it('every other failure keeps the words it always had', () => {
