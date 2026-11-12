@@ -83,46 +83,55 @@ export function WaitingFamily({
       : 'Paid';
   return (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-bold truncate">
-            {group.parentName || 'Booking'}'s booking
-          </div>
-          {group.phone && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-              <Phone className="w-3 h-3" />
-              {group.phone}
+      {/* SCRUM-888 — the buttons fit the card at every width. In a card wide
+          enough (the counter till's window), the name keeps its row and takes
+          the room it needs, and the buttons take the rest, never less than
+          their narrowest layout: Cancel booking goes under Add to sale when
+          both do not fit beside the name, and only a name too long for what
+          is left is cut short. In a narrow card (the phone till), the buttons
+          sit under the name, at the right. */}
+      <div className="@container">
+        <div className="grid grid-cols-1 @md:grid-cols-[minmax(0,max-content)_minmax(min-content,1fr)] items-start gap-3">
+          <div className="min-w-0">
+            <div className="font-bold truncate">
+              {group.parentName || 'Booking'}'s booking
             </div>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              disabled={fresh.length === 0}
-              onClick={() => {
-                if (fresh.length > 0) onAddToSale(fresh);
-              }}
-              className="shrink-0"
-            >
-              {allPaid ? paidLabel : fresh.length === 0 ? 'Added' : 'Add to sale'}
-            </Button>
-            {cancelBlock !== undefined && (
+            {group.phone && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <Phone className="w-3 h-3" />
+                {group.phone}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5"
-                disabled={cancelBlock !== null}
-                onClick={() => onCancel?.(group)}
+                disabled={fresh.length === 0}
+                onClick={() => {
+                  if (fresh.length > 0) onAddToSale(fresh);
+                }}
+                className="shrink-0"
               >
-                <Ban className="w-4 h-4" />
-                Cancel booking
+                {allPaid ? paidLabel : fresh.length === 0 ? 'Added' : 'Add to sale'}
               </Button>
-            )}
+              {cancelBlock !== undefined && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5"
+                  disabled={cancelBlock !== null}
+                  onClick={() => onCancel?.(group)}
+                >
+                  <Ban className="w-4 h-4" />
+                  Cancel booking
+                </Button>
+              )}
+            </div>
+            {cancelBlock && <p className="text-xs text-muted-foreground">{cancelBlock}</p>}
           </div>
-          {cancelBlock && <p className="text-xs text-muted-foreground">{cancelBlock}</p>}
         </div>
       </div>
 
@@ -333,7 +342,12 @@ export function AddDropOffModal({
             <p>No bookings are waiting to be checked in.</p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[60vh] -mx-2 px-2">
+          // SCRUM-888 — Radix lays a scroll area's content out as a table, as
+          // wide as its narrowest possible layout; a family card then grew past
+          // the window and its right end, Cancel booking with it, was cut off.
+          // As a block it is the window's width (the override StepConfirmation
+          // and the F&B and shop carts use).
+          <ScrollArea className="max-h-[60vh] -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
             <div className="space-y-3">
               {groups.map((group) => (
                 <Card key={group.registrationId} className="p-4 space-y-3">
