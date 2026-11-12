@@ -550,6 +550,32 @@ describe('SCRUM-950 — Settle party names each extra it charges', () => {
     expect(text).not.toContain('Add-ons ฿4,815');
   });
 
+  it('an extra of a thousand baht or more is grouped like the form\'s other figures', async () => {
+    const big = [
+      { name: 'ZZ seafood platter', productCode: null, qty: 2, unitSatang: 65_000, totalSatang: 130_000, charged: true },
+      { name: 'ZZ cake tower', productCode: null, qty: 1, unitSatang: 125_000, totalSatang: 125_000, charged: true },
+    ];
+    const addOnsSatang = QUOTE.addOnsSatang + 130_000 + 125_000;
+    const text = await summaryOf({
+      ...QUOTE,
+      addOnsSatang,
+      totalSatang: QUOTE.packageSatang + addOnsSatang,
+      balanceSatang: QUOTE.packageSatang + addOnsSatang - QUOTE.depositSatang,
+      extras: [...(QUOTE.extras ?? []), ...big],
+    });
+    for (const words of [
+      'ZZ seafood platter · 2 × ฿650 ฿1,300',
+      'ZZ cake tower · 1 × ฿1,250 ฿1,250',
+      'Calamari · 2 × ฿120 ฿240',
+      'Add-ons ฿4,000',
+      'Total ฿24,265',
+    ]) {
+      expect(text).toContain(words);
+    }
+    expect(text).not.toContain('฿1300');
+    expect(text).not.toContain('฿1250');
+  });
+
   it('a quote from a platform before it keeps the one add-ons row', async () => {
     const { extras: _extras, ...before } = QUOTE;
     const text = await summaryOf(before);

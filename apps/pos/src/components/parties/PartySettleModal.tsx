@@ -22,7 +22,7 @@ import { StepPayment } from '@/components/till/StepPayment';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import type { PartyBooking } from '@/types';
 import { Baby, Check, CheckCircle2, Minus, PartyPopper, Plus, Sparkles, Users, Wallet, X } from 'lucide-react';
-import { bahtText, satangText } from '@/lib/bahtText';
+import { bahtText, groupedSatangText } from '@/lib/bahtText';
 
 /**
  * SCRUM-804 — "SETTLE PARTY": the party's package rung up as ONE sale from the
@@ -121,6 +121,7 @@ function QuoteSummary({ quote }: { quote: PartySettleQuote }) {
   const extras = quote.extraChildrenSatang + quote.extraAdultsSatang;
   // SCRUM-950 — the kitchen plan's extras, each by name with its count, the price of one and its
   // amount, before Confirm; the add-ons row keeps the plan's own add-ons. The total is the platform's.
+  // Grouped like every other figure on this form ("฿1,300" beside "Add-ons ฿4,000"): one form, one way.
   const named = quote.extras ?? [];
   const charged = named.filter((e) => e.charged);
   const planAddOns = quote.addOnsSatang - charged.reduce((sum, e) => sum + e.totalSatang, 0);
@@ -136,7 +137,7 @@ function QuoteSummary({ quote }: { quote: PartySettleQuote }) {
         row(`Socks · ${quote.freeSocks} free${quote.paidSocks ? `, ${quote.paidSocks} sold` : ''}`, money(quote.socksSatang))}
       {planAddOns > 0 && row('Add-ons', money(planAddOns))}
       {charged.map((e, i) =>
-        <div key={`extra-${i}`}>{row(`${e.name} · ${e.qty} × ฿${satangText(e.unitSatang ?? 0)}`, `฿${satangText(e.totalSatang)}`)}</div>,
+        <div key={`extra-${i}`}>{row(`${e.name} · ${e.qty} × ฿${groupedSatangText(e.unitSatang ?? 0)}`, `฿${groupedSatangText(e.totalSatang)}`)}</div>,
       )}
       {named
         .filter((e) => !e.charged)
