@@ -115,8 +115,8 @@ async function main(): Promise<number> {
     return 1;
   }
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? '';
-  if (adminPhone && adminPassword.length < 16) {
-    console.log('refused: BOOTSTRAP_ADMIN_PASSWORD must be set in the environment, 16 characters or more.');
+  if (adminPhone && adminPassword.length < 12) {
+    console.log('refused: BOOTSTRAP_ADMIN_PASSWORD must be set in the environment, 12 characters or more.');
     return 1;
   }
 
