@@ -167,3 +167,24 @@ Left: a lost Done or Ask the team reply still shows the older Retry banner in th
 13. On the phone the wide button under the family's form reads "Return phone to staff" and only hands the phone back. Keep, hide it until the form is done, or make it register the children when the form is complete?
 14. The till's customer half stops at the display's lengths (500 for allergies, 200 for dietary) only when the on-screen keys are on. Cap it with a real keyboard too?
 15. On the parent's check-in screen on the phone (a dark screen) with the light staff theme, the camera notice now shows as a pale panel; both lines read. Keep, or keep the old amber look there?
+
+## The split-view lane landed (12 November 22:47, main 013e97348)
+Tickets: SCRUM-884 (staff screens fit the split view at 1440 and 1680), SCRUM-918 (add-on cards readable in the split view), SCRUM-901 (a long check-in label stays inside its button), SCRUM-948 (F&B, Shop and the remaining screens write satang to two places), point 1 of SCRUM-917 (no refusal toast on Tickets for a part-paid food order) and the last point of SCRUM-938 (a waiting sibling's family under Upcoming). Service: the till only (both staging tills); no platform change, no migration.
+Counter box: nothing is needed for these fixes, except that Till 1's counter display (Pi) takes the payment-stage figure ("฿1605") from the box's next release.
+Left and ticketed: the phone family screen cuts lines at the right edge with long child names (SCRUM-956). Left as it was: the F&B payment screen groups "Amount due" (1,605) but not "Order total ฿1605" (as before); the ticket till's add-on price and "each" price are whole baht written by hand.
+
+### Questions for the owner from this lane
+1. The split-view layout applies to any till screen 768 pixels or wider whose step column is under 576 pixels. A desk at full width (a window of 1024 or wider) is exactly as before. A full-width till on a tablet held upright (768 to about 980 wide) also gets the readable narrow layout. Is that right, or should a tablet held upright keep the old layout?
+2. The phone till's ticket step still cuts add-on names ("F..") and captions; the phone was left exactly as it was. Should the phone get the same readable add-on cards?
+3. In the split view the rate cards show the icon beside the words (a smaller icon) so all three fit, and the participant cards show the icon above the words so the captions are whole. Is that acceptable, or would you rather keep the tall cards and scroll?
+4. In the split view Back and Confirm Payment Received stay pinned at the foot of the payment panel; the tender (Cash received, Change, Hold sale) scrolls behind them. Keep?
+5. The staff tender panel still writes two places ("Balance ฿1605.00", "Change ฿0.00"); the prototype has no tender panel, so it was left. Should it read "฿1605" and "฿0" like Amount Due?
+6. The customer display's payment stage now reads "฿1605" as the prototype does, no longer "฿1605.00". Confirm.
+7. The party settlement card comes back on the next visit to Tickets after × (SCRUM-889's rule: an open settlement is listed until it is paid or cancelled; × hides it for this visit only). Should × hide it for the rest of the day on that till?
+8. An F&B or Shop order left unpaid at the counter till is now left off the Tickets tab entirely (not even a void-only card). Today it can be finished only from History (refund or void) and is seen in End of Day's open sales; the balance cannot be collected anywhere, as before this lane. Should the F&B and Shop counters get their own left-unpaid card (resume, collect the balance, void)?
+9. A family with one child in the park and one waiting is listed under both Upcoming and In Park, with the whole card (all children, all actions), because cancel and check-in rules need the whole family. Keep, or should the Upcoming card show only the waiting children?
+10. A family with one child checked out and a sibling still in the park (or waiting) is counted under Out but not listed there. Should it be listed under Out too?
+11. End of Day and Performance changed on the desk too, not only the phone, because the phone tabs share their parts with the desk. Keep?
+12. The button that cancels one child on their own (desk and phone) also wraps its label inside the button; before, a long name ran past the card. Keep?
+13. The party page's payment step (Take the balance, the door-fee pass) keeps the prototype's footer; in a window under about 560 pixels high Confirm sits below the window there, as it always did. Should those dialogs get the till's pinned footer too?
+14. Menu, shop and modifier prices now go through the same formatter: whole-baht prices are unchanged, a catalogue price with satang would show two places. Keep?
