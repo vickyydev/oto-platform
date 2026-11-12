@@ -196,6 +196,10 @@ jobs:
           # screens at one till and a gift voucher, on codes each test issues.
           pnpm --filter @oto/pos e2e e2e/sale-ledger.spec.ts
           pnpm --filter @oto/pos e2e e2e/voucher.spec.ts
+          # SCRUM-960: a food order part-paid at the counter is saved as
+          # partly paid; the counter starts afresh, its tabs work again, and
+          # the platform still holds the order part-paid (nothing voided).
+          pnpm --filter @oto/pos e2e e2e/item-part-paid-exit.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file
