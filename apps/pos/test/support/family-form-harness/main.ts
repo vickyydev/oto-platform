@@ -156,8 +156,8 @@ function PhoneForm() {
   return h('div', { className: 'h-[100dvh] bg-background', id: 'ready' },
     state,
     h(HandToCustomer, { title: t('handToCustomer.consentTitle'), subtitle: t('handToCustomer.consentSubtitle'),
-      handBackLabel: t('handToCustomer.returnPhone'), onDone: () => undefined, onCancel: () => undefined },
-    h(ConsentCapture, { ...props, phoneScroll: true })));
+      handBackLabel: t('handToCustomer.returnPhone'), onDone: () => undefined, onCancel: () => undefined,
+      children: h(ConsentCapture, { ...props, phoneScroll: true }) }));
 }
 
 createRoot(document.getElementById('root')!).render(h(LanguageProvider, null,

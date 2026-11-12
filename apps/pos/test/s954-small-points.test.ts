@@ -151,7 +151,7 @@ const consentProps = {
   },
   onParentNameChange: () => undefined, onConsentAckChange: () => undefined, onUpdateChild: () => undefined,
   acknowledgedConfirmationIds: [], onToggleConfirmation: () => undefined,
-} as never;
+} as unknown as React.ComponentProps<typeof ConsentCapture>;
 
 describe('SCRUM-954 (6) — the phone till’s form scrolls its heading away', () => {
   const body = (html: string) => /<div class="([^"]*)" data-testid="consent-form-body">/.exec(html)?.[1] ?? '';
