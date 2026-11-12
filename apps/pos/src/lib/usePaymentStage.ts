@@ -17,6 +17,12 @@ export interface PaymentSettlement extends SaleTenderPayload {
   attemptId: string;
   /** S2-14a — on the credit settlement only: what the wallet held after it, the platform's figure. */
   walletBalanceAfterSatang?: number;
+  /**
+   * SCRUM-916 — a party's deposit, recorded on its settlement sale as paid in
+   * advance (`PaymentAttemptView.partyDeposit`): not taken on this screen, so
+   * it never holds Back shut.
+   */
+  partyDeposit?: true;
 }
 
 /**
@@ -353,6 +359,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     update({ settlements: [...stateRef.current.settlements, {
       attemptId: attempt.id, method, kind, amountSatang: attempt.amountSatang,
       tenderedSatang: attempt.tenderedSatang ?? attempt.amountSatang, changeSatang: attempt.changeSatang ?? 0,
+      ...(attempt.partyDeposit ? { partyDeposit: true as const } : {}),
     }] });
   };
   const adopt = async (ctx: Context, attempt: PaymentAttemptView, outstanding: number | null, qr?: PaymentQrMetadata) => {
@@ -871,7 +878,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   return {
     state, busy, online, locked, canSubmit: canSubmit && online, creditCoversAll, creditPendingSatang, creditRefusal, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
     canCancel,
-    canBack: !locked && state.settlements.length === 0 && state.phase !== 'complete',
+    // SCRUM-916 — Back leaves while nothing was taken on this screen; a party's
+    // deposit, recorded on its settlement before, is not.
+    canBack: !locked && state.settlements.every((part) => part.partyDeposit) && state.phase !== 'complete',
     // Staging F2 — the guest's "left to pay" is the order less the credit from
     // the moment credit is chosen, not once a tender is picked: the tender
     // panel's amount is the whole order until the station sets the remainder.

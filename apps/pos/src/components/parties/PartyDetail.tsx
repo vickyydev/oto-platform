@@ -15,13 +15,12 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PartyBooking, PartyPaymentMethod } from '@/types';
 import {
-  computePartyTotal,
   computePartyOutstanding,
   partyExtraChargesTotal,
-  partyPaymentsTotal,
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
+import { partyBillShown } from '@/lib/partySettlementBill';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
@@ -194,11 +193,13 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const settlement = party.settlement ?? null;
   const settledByPlan = partySettlementLive(settlement);
 
-  const total = computePartyTotal(party);
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);
-  const paid = partyPaymentsTotal(party);
   const lineItemsTotal = partyLineItemsTotal(party);
+  // SCRUM-916 — the bill as shown: an open settlement's own total, deposit
+  // and balance beside the tab's, never "Fully paid" while it is owed.
+  const bill = partyBillShown(party);
+  const takesSettlement = bill.settlementOwed > 0;
 
   /**
    * S2-20 E4 — THE PARTY TAB IS THE PLATFORM'S. What the till can know is
@@ -433,18 +434,18 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         )}
         <div className="flex items-center justify-between py-1.5 font-semibold border-t mt-1 pt-2">
           <span>Total</span>
-          <span className="tabular-nums">฿{total}</span>
+          <span className="tabular-nums">฿{bill.total}</span>
         </div>
-        <InfoRow label="Deposit paid" value={`−฿${party.deposit}`} />
-        {paid > 0 && <InfoRow label="Payments taken" value={`−฿${paid}`} />}
+        <InfoRow label="Deposit paid" value={`−฿${bill.deposit}`} />
+        {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bill.paid}`} />}
         <div className="flex items-center justify-between mt-2 pt-3 border-t">
           <span className="font-bold">Outstanding</span>
           <span
             className={`text-3xl font-black tabular-nums ${
-              outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
+              bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
             }`}
           >
-            ฿{outstanding}
+            ฿{bill.outstanding}
           </span>
         </div>
       </div>
@@ -808,14 +809,21 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               <GlassWater className="w-5 h-5" />
               Add F&amp;B to party
             </Button>
+            {/* SCRUM-916 — an open settlement's balance is taken on its own
+                payment screen (the settlement resumed), the tab's on the
+                balance screen once the settlement is paid. */}
             <Button
               size="lg"
               className="gap-2 h-12"
-              disabled={outstanding <= 0}
-              onClick={() => openUnlessBlocked(() => setShowBalance(true), true)}
+              disabled={bill.outstanding <= 0 || (takesSettlement && !plan)}
+              onClick={() =>
+                takesSettlement
+                  ? openUnlessBlocked(() => setShowSettle(true), true)
+                  : openUnlessBlocked(() => setShowBalance(true), true)
+              }
             >
               <Wallet className="w-5 h-5" />
-              {outstanding > 0 ? `Take balance ฿${outstanding}` : 'Fully paid'}
+              {bill.outstanding > 0 ? `Take balance ฿${takesSettlement ? bill.settlementOwed : outstanding}` : 'Fully paid'}
             </Button>
           </div>
         </div>

@@ -4,16 +4,16 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PartyBooking } from '@/types';
 import {
-  computePartyTotal,
   computePartyOutstanding,
   partyExtraChargesTotal,
-  partyPaymentsTotal,
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
+import { partyBillShown } from '@/lib/partySettlementBill';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import {
   ArrowLeft,
+  CheckCircle2,
   Wallet,
   GlassWater,
   CalendarDays,
@@ -107,11 +107,15 @@ export function MobilePartyDetail({
   onTakePayment,
   onAddFnb,
 }: MobilePartyDetailProps) {
-  const total = computePartyTotal(party);
+  // The tab's own balance: what Take payment takes on this phone.
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);
-  const paid = partyPaymentsTotal(party);
   const lineItemsTotal = partyLineItemsTotal(party);
+  // SCRUM-916 — the bill as shown, as on the counter's party page: an open
+  // settlement's own total, deposit and balance, never "Fully paid" while it
+  // is owed. Its balance is taken by resuming it on a counter till.
+  const bill = partyBillShown(party);
+  const settlementOpen = party.settlement?.state === 'open';
   const cake = party.kitchen.cake;
   const cakeLabel =
     cake.type === 'none'
@@ -150,10 +154,10 @@ export function MobilePartyDetail({
           </div>
           {/* Outstanding badge */}
           <div className="shrink-0 text-right">
-            {outstanding > 0 ? (
+            {bill.outstanding > 0 ? (
               <>
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Due</div>
-                <div className="text-xl font-black tabular-nums text-amber-400">฿{outstanding}</div>
+                <div className="text-xl font-black tabular-nums text-amber-400">฿{bill.outstanding}</div>
               </>
             ) : (
               <div className="text-sm font-bold text-emerald-400">Fully paid</div>
@@ -168,7 +172,11 @@ export function MobilePartyDetail({
           {/* Bill */}
           <SectionCard icon={ReceiptText} title="Party bill">
             <div className="text-xs">
-              <InfoRow label={party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+              {settlementOpen ? (
+                <InfoRow icon={CheckCircle2} label="Settlement open" value={`฿${bill.settlementOwed} to take`} />
+              ) : (
+                <InfoRow label={party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+              )}
               {party.lineItems.map((li) => (
                 <InfoRow
                   key={li.id}
@@ -187,18 +195,18 @@ export function MobilePartyDetail({
               )}
               <div className="flex items-center justify-between py-1 font-semibold border-t mt-1 pt-1.5">
                 <span>Total</span>
-                <span className="tabular-nums">฿{total}</span>
+                <span className="tabular-nums">฿{bill.total}</span>
               </div>
-              <InfoRow label="Deposit paid" value={`−฿${party.deposit}`} />
-              {paid > 0 && <InfoRow label="Payments taken" value={`−฿${paid}`} />}
+              <InfoRow label="Deposit paid" value={`−฿${bill.deposit}`} />
+              {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bill.paid}`} />}
               <div className="flex items-center justify-between mt-1.5 pt-2 border-t">
                 <span className="font-bold">Outstanding</span>
                 <span
                   className={`text-2xl font-black tabular-nums ${
-                    outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
+                    bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
                   }`}
                 >
-                  ฿{outstanding}
+                  ฿{bill.outstanding}
                 </span>
               </div>
             </div>
@@ -406,8 +414,17 @@ export function MobilePartyDetail({
           onClick={onTakePayment}
         >
           <Wallet className="w-5 h-5" />
-          {outstanding > 0 ? `Take payment · ฿${outstanding}` : 'Fully paid'}
+          {outstanding > 0
+            ? `Take payment · ฿${outstanding}`
+            : bill.settlementOwed > 0
+              ? `Settlement open · ฿${bill.settlementOwed}`
+              : 'Fully paid'}
         </Button>
+        {outstanding <= 0 && bill.settlementOwed > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            Take it with Resume settlement on a counter till's party page.
+          </p>
+        )}
       </div>
     </div>
   );
