@@ -1,4 +1,4 @@
-import { laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
+import { foodNamesFor, laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
 import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, type ApprovedMarks } from "./beo-ai-review";
@@ -489,7 +489,8 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
   for (const l of p.menuLines) {
     const name = l.matchedName ?? l.itemName;
     // SCRUM-926: a code several options share ("Fried rice" Veggie, Chicken, Pork) is the same dish only by its name too.
-    const shared = (cat.food.find((f) => !!l.productCode && f.code.toUpperCase() === l.productCode.toUpperCase())?.names.length ?? 0) > 1;
+    // SCRUM-946: the names the party's own set menu gives the code.
+    const shared = !!l.productCode && foodNamesFor(cat, l.productCode, p.setMenu?.templateId ?? null).length > 1;
     const line = held.menuLines.find(
       (h) =>
         (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||

@@ -163,6 +163,54 @@ export interface BeoAiCatalogueView {
   food: BeoAiFood[];
 }
 
+/**
+ * The food the set menus know by till code: every set-menu dish with a code,
+ * under the names the menus give it ("Margherita"; a group's own code with an
+ * option, "Fried rice (Veggie)").
+ */
+export function foodOfSetMenus(setMenus: Array<{ items: BeoAiSetMenuItem[] }>): BeoAiFood[] {
+  const byCode = new Map<string, string[]>();
+  const add = (code: string | null, name: string) => {
+    if (!code) return;
+    const key = code.trim().toUpperCase();
+    const names = byCode.get(key) ?? [];
+    if (!names.includes(name)) names.push(name);
+    byCode.set(key, names);
+  };
+  for (const menu of setMenus) {
+    for (const item of menu.items) {
+      if (item.type === "always_included") add(item.productCode, item.label);
+      else {
+        for (const opt of item.options) {
+          const own = item.optionProductCodes[opt];
+          if (own) add(own, opt);
+          else if (item.productCode) add(item.productCode, `${item.label} (${opt})`);
+        }
+      }
+    }
+  }
+  return [...byCode.entries()].map(([code, names]) => ({ code, names })).sort((a, b) => a.code.localeCompare(b.code, "en", { numeric: true }));
+}
+
+/**
+ * SCRUM-946: the names a till code carries FOR THIS PARTY: the ones its own
+ * set menu gives the code, so the options of a code several options share are
+ * that set menu's (CF-43 is Fried rice Veggie, Chicken or Shrimp, never also
+ * another set menu's "Fried Rice"; CF-24 is "Margherita", never also
+ * "Margherita Pizza"). A code the party's set menu does not name, or a party
+ * with none, keeps every name the park group's set menus give it.
+ */
+export function foodNamesFor(
+  catalogue: Pick<BeoAiCatalogueView, "food" | "setMenus">,
+  code: string,
+  setMenuId: string | null | undefined,
+): string[] {
+  const key = code.trim().toUpperCase();
+  const menu = setMenuId ? catalogue.setMenus.find((m) => m.id === setMenuId) : undefined;
+  const own = menu ? foodOfSetMenus([menu]).find((f) => f.code === key)?.names : undefined;
+  return own && own.length > 0 ? own : (catalogue.food.find((f) => f.code.toUpperCase() === key)?.names ?? []);
+}
+
 // --- What the model proposed, checked ---------------------------------------------------
 
 export interface BeoAiMenuLine {

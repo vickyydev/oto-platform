@@ -14,6 +14,8 @@ import {
   beoEventTitleOf,
   emptyBeoAiDetails,
   foodNameFor,
+  foodNamesFor,
+  foodOfSetMenus,
   foodOptionNamed,
   laterLineWins,
   type BeoAiCatalogueView,
@@ -98,31 +100,10 @@ function setMenuItemsOf(items: unknown): BeoAiSetMenuItem[] {
 /**
  * The food the catalogue knows by till code: every set-menu dish with a code,
  * under the names the menus give it ("Margherita"; a group's own code with an
- * option, "Fried rice (Veggie)").
+ * option, "Fried rice (Veggie)"). SCRUM-946: the rule is shared/beoAiFill.ts's,
+ * so the review reads a code's names for the party's own set menu the same way.
  */
-export function foodOfSetMenus(setMenus: Array<{ items: BeoAiSetMenuItem[] }>): BeoAiFood[] {
-  const byCode = new Map<string, string[]>();
-  const add = (code: string | null, name: string) => {
-    if (!code) return;
-    const key = code.trim().toUpperCase();
-    const names = byCode.get(key) ?? [];
-    if (!names.includes(name)) names.push(name);
-    byCode.set(key, names);
-  };
-  for (const menu of setMenus) {
-    for (const item of menu.items) {
-      if (item.type === "always_included") add(item.productCode, item.label);
-      else {
-        for (const opt of item.options) {
-          const own = item.optionProductCodes[opt];
-          if (own) add(own, opt);
-          else if (item.productCode) add(item.productCode, `${item.label} (${opt})`);
-        }
-      }
-    }
-  }
-  return [...byCode.entries()].map(([code, names]) => ({ code, names })).sort((a, b) => a.code.localeCompare(b.code, "en", { numeric: true }));
-}
+export { foodOfSetMenus };
 
 /**
  * The catalogue for a party at `branchId`: the park group's active packages
@@ -980,15 +961,18 @@ export function resolveCatalogueAnswer(
 
   // Dishes and drinks beyond the set menu.
   const codes = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
+  // SCRUM-946: a code's names are the party's own set menu's (the one proposed), never another's.
+  const partyMenuId = proposal.setMenu?.templateId ?? null;
   for (const m of readMany(MenuLineWithNotes, answer.menuLines, 100)) {
     const food = m.productCode ? codes.get(m.productCode.trim().toUpperCase()) : undefined;
-    const itemName = m.itemName ?? food?.names[0];
+    const names = food ? foodNamesFor(catalogue, food.code, partyMenuId) : [];
+    const itemName = m.itemName ?? names[0];
     if (!itemName) continue;
     const menu = (m.menu ?? "kids") as BeoAiMenu;
     // SCRUM-926: of the names one code carries (a set menu's options sharing it), the option the
     // read names when it is one of them, else the one the chat's words name; none (null) when
     // neither says which: staff choose it in the review, never the first option.
-    const matchedName = food ? foodOptionNamed(food.names, m.option) ?? foodNameFor(food.names, m.itemName) : null;
+    const matchedName = food ? foodOptionNamed(names, m.option) ?? foodNameFor(names, m.itemName) : null;
     const line = {
       menu,
       itemName,

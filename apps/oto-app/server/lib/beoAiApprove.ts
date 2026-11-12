@@ -17,7 +17,7 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { foodNameFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
@@ -433,7 +433,8 @@ export async function approveBeoAiFill(
       const lineOf = (l: BeoAiApproveBody["menuLines"][number]): KitchenLine => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
         // SCRUM-926: the option the review showed when options share one code (never the first).
-        const matchedName = matched ? catalogueNameOf(matched.names, l) : null;
+        // SCRUM-946: among the names the party's own set menu gives the code.
+        const matchedName = matched ? catalogueNameOf(foodNamesFor(catalogue, matched.code, setMenuTemplateId), l) : null;
         if (matched) matches.push({ kind: "menu", code: matched.code, name: matchedName });
         return {
           id: `ai_${randomUUID()}`,
@@ -522,7 +523,7 @@ export async function approveBeoAiFill(
     if (barLines.length > 0) {
       const items = barLines.map((l) => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        const matchedName = matched ? catalogueNameOf(matched.names, l) : null;
+        const matchedName = matched ? catalogueNameOf(foodNamesFor(catalogue, matched.code, body.setMenu?.templateId ?? null), l) : null;
         if (matched) matches.push({ kind: "bar", code: matched.code, name: matchedName });
         return {
           id: `ai_${randomUUID()}`,

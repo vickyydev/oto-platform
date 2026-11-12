@@ -19,6 +19,9 @@
 //      its own and can be accepted alone.
 //   4. a phone number the form holds (or the review offers) as the WhatsApp
 //      number is not offered as a Special requests line too.
+//   5. a till code's names are the party's own set menu's: CF-43 offers Fried
+//      rice Veggie, Chicken or Shrimp, never another set menu's "Fried Rice";
+//      CF-24 is "Margherita", never also "Margherita Pizza".
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -49,10 +52,10 @@ const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
-const { emptyBeoAiDetails } = await import("../shared/beoAiFill");
+const { emptyBeoAiDetails, foodNamesFor } = await import("../shared/beoAiFill");
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
 type BeoAiProposal = import("../shared/beoAiFill").BeoAiProposal;
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
@@ -73,7 +76,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 4;
+const CHECKS = 5;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -82,7 +85,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced"] as const;
+const KEYS = ["extra", "mirror", "priced", "options"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -369,6 +372,47 @@ try {
     assert.equal(namesPhone("call the nanny on 081 234 5678", ["089 870 0417"]), false);
     assert.equal(namesPhone("call me on +66-89-870-0417 please", ["0898700417"]), true);
     assert.equal(namesPhone("table for 12 at 14:30", ["0898700417"]), false, "a count or a time is no phone number");
+  });
+
+  // --- 5. The options of a shared code are the party's own set menu's --------------------------
+  await check("aCodesOptionsAreThePartysOwnSetMenus", async () => {
+    chats.set("options", [
+      { id: `${conv.options}-1`, author: "customer", at: at(0), text: "The Floresta birthday package for 14 kids and 10 adults. OPTIONS-946" },
+      { id: `${conv.options}-2`, author: "customer", at: at(1), text: "Fried rice for the adults, and 2 more Margherita pizzas for the kids. OPTIONS-946" },
+    ]);
+    answers.set("OPTIONS-946", {
+      catalogue: {
+        package: { templateId: cat.pkg, said: "The Floresta birthday package", line: 1 },
+        menuLines: [
+          { productCode: "CF-43", itemName: "Fried rice for the adults", menu: "adults", quantity: 1, line: 2 },
+          { productCode: "CF-24", itemName: "2 more Margherita pizzas", menu: "kids", quantity: 2, line: 2 },
+        ],
+      },
+    });
+    const res = await fill(ev.options);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.equal(review.proposal.setMenu?.templateId, cat.setMenu, "the package's own set menu");
+    // The park group's other set menu names both codes too; the party's names them otherwise.
+    assert.deepEqual(review.catalogue.food.find((f) => f.code === "CF-43")?.names, ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Shrimp)", "Fried Rice"]);
+    const [rice, pizza] = review.proposal.menuLines;
+    assert.deepEqual([rice?.productCode, rice?.matchedName], ["CF-43", null], "no option named: staff choose");
+    assert.deepEqual([pizza?.productCode, pizza?.matchedName], ["CF-24", "Margherita"], "the party's Margherita, not Margherita Pizza");
+    const state = initialReviewState(review, { fill: res.body.fill });
+    assert.deepEqual(state.menuLines[0]?.options, ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Shrimp)"], "only the party's set menu's options");
+    assert.equal(state.menuLines[1]?.options, undefined, "one name: nothing to choose");
+    assert.equal(undecidedOptions(state), 1);
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(!html.includes(">Fried Rice<") && !html.includes("Margherita Pizza"), "another set menu's names are not offered");
+    const chosen = { ...state, menuLines: state.menuLines.map((l, i) => (i === 0 ? { ...l, matchedName: "Fried rice (Chicken)", changed: true } : l)) };
+    const ok = await approve(ev.options, approveBodyOf(review, chosen, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const plan = await kitchenOf(ev.options);
+    const lines = [...(plan.menus.kids as any[]), ...(plan.menus.adults as any[])].filter((l) => l.source === "additional").map((l) => [l.itemName, l.quantity]);
+    assert.deepEqual(lines, [["Margherita", 2], ["Fried rice (Chicken)", 1]], "written by the party's own names");
+    // A party on the other set menu reads the code by that menu's names; with no set menu, every name.
+    assert.deepEqual(foodNamesFor(review.catalogue, "CF-43", cat.otherMenu), ["Fried Rice"]);
+    assert.deepEqual(foodNamesFor(review.catalogue, "cf-24", null), ["Margherita", "Margherita Pizza"]);
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

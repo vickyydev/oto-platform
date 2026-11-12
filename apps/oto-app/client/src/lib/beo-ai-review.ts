@@ -1,4 +1,5 @@
 import {
+  foodNamesFor,
   laterLineWins,
   type BeoAiApproveBody,
   type BeoAiCakeMode,
@@ -363,7 +364,7 @@ export function initialReviewState(
     choices,
     menuLines: p.menuLines.map((l) => {
       // SCRUM-926: the options sharing the line's code, for staff to choose where the chat does not say.
-      const options = !l.notInMenu && l.productCode ? optionsOfCode(review, l.productCode) : [];
+      const options = !l.notInMenu && l.productCode ? optionsOfCode(review, l.productCode, p.setMenu?.templateId ?? null) : [];
       return {
         key: key("menu"),
         menu: l.menu,
@@ -442,9 +443,12 @@ export function initialReviewState(
   };
 }
 
-/** SCRUM-926: the catalogue's names a till code carries (several when a set menu's options share it). */
-export function optionsOfCode(review: Pick<BeoAiReview, "catalogue">, code: string): string[] {
-  return review.catalogue.food.find((f) => f.code.toUpperCase() === code.toUpperCase())?.names ?? [];
+/**
+ * SCRUM-926: the catalogue's names a till code carries (several when a set menu's options share it).
+ * SCRUM-946: the party's own set menu's names for it (`setMenuId`), never another set menu's.
+ */
+export function optionsOfCode(review: Pick<BeoAiReview, "catalogue">, code: string, setMenuId?: string | null): string[] {
+  return foodNamesFor(review.catalogue, code, setMenuId);
 }
 
 /** SCRUM-904: the same phone number, however it is written (+66 81…, 081…): the last nine digits. */
