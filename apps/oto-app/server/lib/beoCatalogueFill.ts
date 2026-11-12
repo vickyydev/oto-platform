@@ -674,7 +674,19 @@ export function resolveCatalogueAnswer(
   const named = setAnswer?.templateId ? catalogue.setMenus.find((m) => m.id === setAnswer.templateId) : undefined;
   const fromPackage = !named && pkg?.setMenuTemplateId ? catalogue.setMenus.find((m) => m.id === pkg.setMenuTemplateId) : undefined;
   const menu = named ?? fromPackage;
-  if (setAnswer && !menu) other(setAnswer.said, undefined, fromOf(setAnswer, setAnswer.said));
+  if (setAnswer && !menu) {
+    other(setAnswer.said, undefined, fromOf(setAnswer, setAnswer.said));
+    // SCRUM-903: the choices of a set menu the catalogue lacks (with an empty catalogue, every
+    // one) are dishes of their own for staff to keep or leave out, as an unlisted option is:
+    // never dropped unseen.
+    for (const c of readMany(ChoiceAnswer, setAnswer.choices)) {
+      const itemName = c.said ?? c.option;
+      if (!itemName) continue;
+      proposal.menuLines.push({
+        menu: "kids", itemName, quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: fromOf(c, itemName),
+      });
+    }
+  }
   if (menu) {
     const from = named && setAnswer ? fromOf(setAnswer, setAnswer.said) : proposal.package!.from;
     const chosen: Array<{ itemId: string; option: string; said: string | null; from: BeoAiFrom }> = [];
