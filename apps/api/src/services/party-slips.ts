@@ -50,7 +50,7 @@ import {
   OtoAppSeamNotGrantedError,
   type SeamEvent,
 } from './otoapp-events';
-import { partyKitchenOfRow, partyPlanSourceOf, readPartyPlan, type PartyPlanSource } from './party-plan';
+import { partyKitchenOfRow, readPartyPlan, type PartyPlanSource } from './party-plan';
 import { overlayPartyEdits, partyLedgersOf } from './party-tab';
 import { nextPartyChangeRun, partySlipsLastGiven, writePrepSlips } from './prep-slips';
 import { routeOnBox } from './print';
