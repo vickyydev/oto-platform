@@ -415,48 +415,62 @@ its stand. The box turns the picture and the touch for it, so nobody turns them 
 more. It needs a box release built after SCRUM-928 (part G). Cables as above: the picture by
 HDMI, the touch by the monitor's USB cable (a **data** cable), its own power.
 
-**Install** with the box's usual options plus four (the address is staging's POS):
+**Install** with the box's usual options plus five (the address is staging's POS). The park's
+monitor is on the Pi's `HDMI-A-2` socket, and the turn that stands it upright is `270` (the
+one it was given by hand on 12 November, after the owner asked for a flip):
 
 ```
-sudo bash oto-box/pi/install.sh --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 90
+sudo bash oto-box/pi/install.sh --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 270 --display-output HDMI-A-2
 ```
 
 or from the laptop (part G):
 
 ```
-scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-<release>.tgz -- --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 90
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-<release>.tgz -- --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 270 --display-output HDMI-A-2
 ```
 
-- `--display-rotate 90` turns the **screen**. `--rotate off` keeps the **page** from turning as
-  well; the installer refuses the two together, in a plain line, rather than turn it twice.
+- `--display-rotate 270` turns the **screen**. `--rotate off` keeps the **page** from turning
+  as well; the installer refuses the two together, in a plain line, rather than turn it twice.
 - `--kiosk-scale 1`: the page is then 600 wide and 1024 tall, the size the display's screens
   are built and tested for.
-- The installer finds which socket the monitor is on. If it says it cannot tell (the monitor
-  was off, or two screens are plugged in), switch the monitor on and run it again, or add
-  `--display-output HDMI-A-1` (the socket nearest the power cable on a Pi 5; the other is
-  `HDMI-A-2`).
-- Later updates need none of these again: the box keeps the turn, the address and the scale.
+- `--display-output HDMI-A-2` names the socket the monitor is on (on a Pi 5, `HDMI-A-1` is the
+  socket nearest the power cable, `HDMI-A-2` the other). Without it the installer finds the
+  socket itself when one screen is on; if it says it cannot tell (the monitor was off, or two
+  screens are plugged in), switch the monitor on and run it again. If the monitor's cable is
+  ever moved to the other socket, change the name on the line.
+- Later updates need none of these again: the box keeps the turn, the socket, the address and
+  the scale.
 
 The summary ends with three lines about the screen: `Screen:` (the address and where the
-page comes from, see "Which page" below), `Display turn:` (`90 on HDMI-A-1, from the next
-boot`) and `Camera:`. Then **`sudo reboot`** once: the turn takes effect when the desktop
+page comes from, see "Which page" below), `Display turn:` (`270 on HDMI-A-2, from the next
+boot`, and on the park's Pi `the hand-made profile turns HDMI-A-2 270 too, so the screen turns
+as it did`) and `Camera:`. Then **`sudo reboot`** once: the turn takes effect when the desktop
 starts.
 
 **Check on the screen**, after the reboot:
 
-1. The picture stands upright and fills the screen. On its side the wrong way round: run the
-   installer again with `--display-rotate 270` and reboot. Upside down: `180`.
+1. The picture stands upright and fills the screen. Upside down: run the installer again with
+   the other of `90` and `270` (here `--display-rotate 90`) and reboot. Never `180`: it turns
+   a landscape picture over, and a monitor standing on its end then shows it lying on its side.
 2. Press each of the **four corners** and the **middle** of a button: each press lands under
    the finger. A press that lands somewhere else: see "Touch in the wrong place" below.
 3. Type a phone number and a nickname with the screen's own keys.
 4. `sudo reboot` once more: it all comes back the same, paired, with nobody touching it.
 
-**If the screen was turned by hand before** (the park's Pi was, on 12 November, with the
-Screen Configuration tool): the installer leaves that setting where it is, in the desktop
-user's `~/.config/kanshi/config`, and puts the box's own above it, between two lines marked
-`oto-box display (SCRUM-928)`. The box's is the one the desktop uses; the summary's
-`Display turn:` line says the earlier one is kept. Using the Screen Configuration tool again
-afterwards may rewrite that file: run the installer again (part G) to put the box's turn back.
+**If the screen was turned by hand before** (the park's Pi was, on 12 November: `transform 270`
+on `HDMI-A-2`, with the Screen Configuration tool): the installer leaves that setting where it
+is, in the desktop user's `~/.config/kanshi/config`, and puts the box's own above it, between
+two lines marked `oto-box display (SCRUM-928)`. The box's is the one the desktop uses. It reads
+the hand-made one first and copies its screen size and place (`mode 1024x600@60.000 position
+0,0` on the park's Pi) into the box's, so with `--display-rotate 270` the box's setting is the
+same as the hand-made one and the screen looks exactly as before. The summary's `Display turn:`
+line says the earlier one is kept and, when the turns agree, `the hand-made profile turns
+HDMI-A-2 270 too`. When they **differ** (say `--display-rotate 90` on the park's Pi), the
+installer prints a line starting `WARN: the profile made by hand … turns HDMI-A-2 270, and the
+box's turn (90) now goes above it`, and the `Display turn:` line ends with `WARNING:` naming
+both turns: unless the hand-made turn was wrong, run the installer again with the turn it
+names. Using the Screen Configuration tool again afterwards may rewrite that file: run the
+installer again (part G) to put the box's turn back.
 
 **Touch in the wrong place.** The installer maps the touch to the turned screen in the
 desktop user's `~/.config/labwc/rc.xml` (again between marked lines). A touch calibration set
