@@ -1872,7 +1872,7 @@ function totalInClause(line: string, breaks: Array<{ start: number; end: number 
   if (said === null && afterCount) said = Number(afterCount[1] ?? afterCount[2]);
   // The figures of money in the clause: never a count ("2 pizzas", "x2", "12 kids"), a time or a
   // price for one ("300 each", "по 300"); under 20 only with a money word beside it.
-  const figures = [...clause.matchAll(/(?<![\d.,])(\d+(?:[.,]\d{1,2})?)(?![\d:])/g)].flatMap((m) => {
+  const figures = [...clause.matchAll(/(?<![\d.,:])(\d+(?:[.,]\d{1,2})?)(?!\d|[:.]\d{2}(?!\d))/g)].flatMap((m) => {
     const at = m.index ?? 0;
     const value = Number(m[1]!.replace(",", "."));
     const lead = clause.slice(Math.max(0, at - 14), at);
