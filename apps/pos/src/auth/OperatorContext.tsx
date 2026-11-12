@@ -259,6 +259,15 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   // SCRUM-878 — a session ended on the platform, and the screen it left (`auth/sessionEnd.ts`).
   const [sessionEnded, setSessionEnded] = useState<SessionEnded | null>(null);
   const [keptOffer, setKeptOffer] = useState<KeptSaleOffer | null>(null);
+  /**
+   * SCRUM-878 — the offer fell asleep: the person signed in over it left it
+   * past the inactivity limit, so the till locked in the ordinary way (the
+   * platform session locked, the password asked) and the offer is shown
+   * again after the unlock, the kept sale untouched.
+   */
+  const [keptOfferAsleep, setKeptOfferAsleep] = useState(false);
+  const keptOfferRef = useRef(keptOffer);
+  keptOfferRef.current = keptOffer;
   const [tillSeat, setTillSeatState] = useState<string | null>(null);
   const [reseat, setReseat] = useState(0);
   const operatorRef = useRef(operator);
@@ -333,6 +342,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     keptTill.current = null;
     setSessionEnded(null);
     setKeptOffer(null);
+    setKeptOfferAsleep(false);
     setTillSeat(null);
     // The next person's theme arrives with their sign-in; nothing is written
     // to this one's account after the shift ends.
@@ -367,6 +377,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     clearTimers();
     setWarningActive(false);
     setLocked(true);
+    // SCRUM-878 — a kept sale's offer waiting for the person signed in sleeps
+    // under the lock: the password first, then the offer again, as it was.
+    if (keptOfferRef.current) setKeptOfferAsleep(true);
     // A box session ends at lock (offline plan §2.2): the next unlock proves
     // the password again, at whichever door answers.
     const station = laneStation();
@@ -412,6 +425,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setMustChangePassword(false);
     setViewAs(null);
     setKeptOffer(null);
+    setKeptOfferAsleep(false);
     if (nothingToKeep) {
       keptTill.current = null;
       setSessionEnded(null);
@@ -534,6 +548,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
        */
       const ended = keptTill.current;
       keptTill.current = null;
+      setKeptOfferAsleep(false);
       if (owesPasswordChange) {
         // A temporary password (issuing one ends every session, which is how
         // this till got here) opens the change-password form and nothing else:
@@ -577,6 +592,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   /** SCRUM-878 — the person now signed in carries on the kept sale: it is theirs from the next press. */
   const continueKept = useCallback(() => {
     setKeptOffer(null);
+    setKeptOfferAsleep(false);
     setLocked(false);
   }, []);
 
@@ -584,6 +600,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const discardKept = useCallback(() => {
     const op = operatorRef.current;
     setKeptOffer(null);
+    setKeptOfferAsleep(false);
     if (op) freshSeat(op.id);
     else setTillSeat(null);
     setLocked(false);
@@ -634,6 +651,13 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
    * Pi on the counter's own network — the bench step of plan §4, round 5.
    */
   const unlock = useCallback(async (password: string): Promise<void> => {
+    // SCRUM-878 — what an unlock opens: the till, or, when the lock fell over
+    // a kept sale's offer still waiting for an answer, the offer again. The
+    // password never answers it for the person signed in.
+    const reopen = () => {
+      if (keptOfferRef.current) setKeptOfferAsleep(false);
+      else setLocked(false);
+    };
     const held = readStaffToken();
     const token = staffTokenLive(held) ? (held?.token ?? null) : null;
     const station = laneStation();
@@ -655,7 +679,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       if (answer.permissions) setHeld(new Set(answer.permissions));
       setMustChangePassword(answer.mustChangePassword);
       setOfflineUnlock({ method: answer.method, cacheAgeSeconds: answer.cacheAgeSeconds });
-      setLocked(false);
+      reopen();
     };
     if (station && currentLane() === 'box' && !platformNeedsUnlock()) return throughBox(station);
     try {
@@ -673,11 +697,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         // catalogue the lock refused (SCRUM-744): read before the till opens,
         // so it opens on the real park and never on the sample one.
         const resumed = await hydrate();
-        setLocked(resumed.sessionLocked);
+        if (resumed.sessionLocked) setLocked(true);
+        else reopen();
         return;
       }
       setOfflineUnlock(null);
-      setLocked(false);
+      reopen();
       return;
     } catch (err) {
       // SCRUM-878 — no session behind this lock any more (its twelve hours ran
@@ -711,9 +736,16 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     logoutTimer.current = window.setTimeout(lockNow, INACTIVITY_TIMEOUT_MS);
   }, [clearTimers, lockNow]);
 
+  /**
+   * SCRUM-878 — a kept sale's offer on screen for the person signed in. The
+   * till is still locked over the sale, but the person's session is open, so
+   * the offer is under the same inactivity rule as any signed-in screen.
+   */
+  const offerAwake = keptOffer !== null && !keptOfferAsleep;
+
   const stayActive = useCallback(() => {
-    if (operator && !locked) armTimers();
-  }, [operator, locked, armTimers]);
+    if (operator && (!locked || offerAwake)) armTimers();
+  }, [operator, locked, offerAwake, armTimers]);
 
   // On mount, resume a still-valid server session (e.g. an accidental reload
   // inside the TTL). Failing quietly keeps the lock screen as the default.
@@ -765,9 +797,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
   // While signed in and unlocked, listen for activity and reset the timer.
   // A locked till must NOT re-arm on touch: tapping the lock screen is not a
-  // reason to keep the session alive.
+  // reason to keep the session alive. The kept sale's offer (SCRUM-878) is a
+  // signed-in screen: it is timed as one, and its timeout locks as one.
   useEffect(() => {
-    if (!operator || locked) {
+    if (!operator || (locked && !offerAwake)) {
       clearTimers();
       return;
     }
@@ -780,7 +813,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity));
       clearTimers();
     };
-  }, [operator, locked, armTimers, clearTimers]);
+  }, [operator, locked, offerAwake, armTimers, clearTimers]);
 
   // Session died server-side (expiry, deactivation, force sign-out, password
   // reset elsewhere): any API 401 returns the POS to the SIGN-IN screen —
@@ -803,7 +836,11 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   // locked (another tab locked it, or the box did). Follow it.
   useEffect(() => {
     if (!operator) return;
-    const onLocked = () => setLocked(true);
+    const onLocked = () => {
+      setLocked(true);
+      // SCRUM-878 — locked elsewhere while the offer waits: the password first, as at `lockNow`.
+      if (keptOfferRef.current) setKeptOfferAsleep(true);
+    };
     window.addEventListener('oto:session-locked', onLocked);
     return () => window.removeEventListener('oto:session-locked', onLocked);
   }, [operator]);
@@ -829,7 +866,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         sessionResolved,
         offlinePreparation,
         sessionEnded,
-        keptOffer,
+        // Asleep, the offer is not shown: the lock screen asks for the password.
+        keptOffer: keptOfferAsleep ? null : keptOffer,
         continueKept,
         discardKept,
         tillSeat,

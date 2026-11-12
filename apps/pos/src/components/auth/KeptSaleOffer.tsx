@@ -9,6 +9,7 @@ import {
   type KeptSaleOffer,
 } from '@/auth/sessionEnd';
 import { Button } from '@/components/ui/button';
+import { InactivityWarning } from '@/components/auth/InactivityWarning';
 import { useStation } from '@/station/StationContext';
 
 /**
@@ -32,6 +33,11 @@ import { useStation } from '@/station/StationContext';
  * Only ever at the station the sale was on: if the station is let go while
  * the platform is asked to seat this session there (`StationContext`'s
  * `reseat`), the sale is dropped and the picker asks, as for any sign-in.
+ *
+ * The person who signed in is signed in, so the offer locks after the same
+ * inactivity as any signed-in screen, with the same "Locking soon" warning
+ * (`InactivityWarning`): the till locks in the ordinary way, and the offer is
+ * shown again after the password (`auth/OperatorContext.tsx`).
  */
 export function KeptSaleOfferScreen({ offer }: { offer: KeptSaleOffer }) {
   const { continueKept, discardKept } = useOperator();
@@ -76,6 +82,7 @@ export function KeptSaleOfferScreen({ offer }: { offer: KeptSaleOffer }) {
           </button>
         )}
       </div>
+      <InactivityWarning />
     </div>
   );
 }

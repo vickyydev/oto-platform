@@ -119,6 +119,25 @@ describe('SCRUM-878 — the offer to the next person', () => {
     expect(html).toContain('Continue it, or discard it and start a new sale.');
   }, 60_000);
 
+  it('is timed as a signed-in screen: the same "Locking soon" warning in its final seconds', () => {
+    const ben = { id: 'zz-test-ben', name: 'ZZ TEST Ben', role: 'staff' };
+    expect(draw({ ...base, operator: ben, keptOffer: OFFER, warningActive: false })).not.toContain('Locking soon');
+    const html = draw({ ...base, operator: ben, keptOffer: OFFER, warningActive: true, secondsLeft: 9,
+      stayActive: vi.fn(), lockNow: vi.fn() });
+    expect(html).toContain('A sale is open on this till');
+    expect(html).toContain('Locking soon…');
+    expect(html).toContain('Auto-lock in 9s with no activity');
+  }, 60_000);
+
+  it('once it has locked, the ordinary lock asks for the password and the offer is not drawn', () => {
+    // The context gives no offer while it sleeps under the lock (`auth/OperatorContext.tsx`).
+    const html = draw({ ...base, operator: { id: 'zz-test-ben', name: 'ZZ TEST Ben', role: 'staff' }, keptOffer: null });
+    expect(html).toContain('ZZ TEST Ben is still signed in — enter your password to continue.');
+    expect(html).toContain('type="password"');
+    expect(html).not.toContain('A sale is open on this till');
+    expect(html).not.toContain('Continue this sale');
+  }, 60_000);
+
   it('is drawn by the offer component itself in the lock screen’s layout', () => {
     const html = draw({ ...base, keptOffer: OFFER }, React.createElement(KeptSaleOfferScreen, { offer: OFFER }));
     expect(html).toContain('h-[100dvh] w-full flex flex-col items-center justify-center bg-background');

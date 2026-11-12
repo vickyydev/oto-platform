@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from './support/hooks';
 import { OperatorProvider, type useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
+import { INACTIVITY_TIMEOUT_MS } from '@/auth/timings';
 import { setSaleOpen } from '@/pwa/openSale';
 import { rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import {
@@ -46,8 +47,14 @@ const BEN = { id: 'zz-test-ben', name: 'ZZ TEST Ben' };
 const PASSWORD = 'ZZ TEST synthetic password';
 
 const seam = vi.hoisted(() => {
+  // The page's timers are read when called, so a test that fakes them (the
+  // inactivity lock) moves the till's own countdown with the test clock.
   const browser = Object.assign(new EventTarget(), {
-    location: { hash: '', pathname: '/', search: '' }, setTimeout, clearTimeout, setInterval, clearInterval,
+    location: { hash: '', pathname: '/', search: '' },
+    setTimeout: (run: () => void, ms?: number) => globalThis.setTimeout(run, ms),
+    clearTimeout: (id?: ReturnType<typeof setTimeout>) => globalThis.clearTimeout(id),
+    setInterval: (run: () => void, ms?: number) => globalThis.setInterval(run, ms),
+    clearInterval: (id?: ReturnType<typeof setInterval>) => globalThis.clearInterval(id),
   });
   vi.stubGlobal('window', browser);
   return {
@@ -444,6 +451,89 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
       await value().signIn('ZZ TEST other phone', PASSWORD);
       expect(value().keptOffer).toBeNull();
       expect(value().locked).toBe(false);
+    } finally { hook.unmount(); }
+  });
+
+  it('SECURITY: the offer left alone locks after the same inactivity as any signed-in screen; the password brings it back, the sale untouched', async () => {
+    // The countdown itself on the test clock, not only the date.
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(T0);
+    const { hook, value, seat } = await endedMidCart();
+    try {
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      const offered = value().keptOffer;
+      expect(offered).not.toBeNull();
+      expect(value().locked).toBe(true);
+      expect(seam.lock).not.toHaveBeenCalled();
+
+      // A touch on the offer is activity, as on any signed-in screen.
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1_000);
+      expect(value().warningActive).toBe(true);
+      window.dispatchEvent(new Event('pointerdown'));
+      expect(value().warningActive).toBe(false);
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1_000);
+      expect(value().keptOffer).toEqual(offered);
+      expect(seam.lock).not.toHaveBeenCalled();
+      // "Stay" on the warning keeps it open too.
+      value().stayActive();
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1_000);
+      expect(seam.lock).not.toHaveBeenCalled();
+
+      // Left alone past the limit: locked in the ordinary way. The platform
+      // session is locked, the offer is not on screen, the password is asked.
+      vi.advanceTimersByTime(1_000);
+      expect(seam.lock).toHaveBeenCalledTimes(1);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(true);
+      expect(value().sessionEnded).toBeNull();
+      expect(value().operator?.id).toBe(BEN.id);
+      expect(value().tillSeat).toBe(seat);
+      // Locked, a touch keeps nothing alive and nothing is answered for anybody.
+      window.dispatchEvent(new Event('pointerdown'));
+      vi.advanceTimersByTime(10 * INACTIVITY_TIMEOUT_MS);
+      expect(seam.lock).toHaveBeenCalledTimes(1);
+      expect(value().keptOffer).toBeNull();
+
+      // A wrong password is a wrong password: still locked, no offer.
+      seam.onlineUnlock.mockRejectedValueOnce(new ApiError(401, 'INVALID_CREDENTIALS', 'Password is incorrect'));
+      await expect(value().unlock('ZZ TEST wrong')).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(true);
+
+      // The right one brings the offer back as it was, still locked over the
+      // sale until they choose; the unlock never chose for them.
+      await value().unlock(PASSWORD);
+      expect(value().keptOffer).toEqual(offered);
+      expect(value().locked).toBe(true);
+      expect(value().tillSeat).toBe(seat);
+      // And it is timed again.
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS);
+      expect(seam.lock).toHaveBeenCalledTimes(2);
+      expect(value().keptOffer).toBeNull();
+      await value().unlock(PASSWORD);
+
+      value().continueKept();
+      expect(value().locked).toBe(false);
+      expect(value().keptOffer).toBeNull();
+      expect(value().tillSeat).toBe(seat);
+      expect(value().reseat).toBe(1);
+    } finally { hook.unmount(); }
+  });
+
+  it('the offer locked from elsewhere (a 423 on any request) asks for the password first too', async () => {
+    const { hook, value } = await endedMidCart();
+    try {
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      const offered = value().keptOffer;
+      window.dispatchEvent(new Event('oto:session-locked'));
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(true);
+      await value().unlock(PASSWORD);
+      expect(value().keptOffer).toEqual(offered);
+      expect(value().locked).toBe(true);
     } finally { hook.unmount(); }
   });
 
