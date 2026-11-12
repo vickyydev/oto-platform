@@ -287,6 +287,10 @@ export type StationLeaseHolderKind = (typeof STATION_LEASE_HOLDER_KINDS)[number]
 export const STATION_LANGUAGES = ['en', 'zh', 'th', 'ru', 'fr'] as const;
 export type StationLanguage = (typeof STATION_LANGUAGES)[number];
 
+/** SCRUM-929 — a paired display's look; mirrors `STATION_DISPLAY_THEMES` in `@oto/shared`. */
+export const STATION_DISPLAY_THEMES = ['light', 'dark'] as const;
+export type StationDisplayTheme = (typeof STATION_DISPLAY_THEMES)[number];
+
 /** Bumped when a field changes MEANING. Readers migrate on read. */
 export const STATION_SESSION_SCHEMA_VERSION = 1;
 
@@ -341,6 +345,11 @@ export interface StationSessionDocument {
   payment?: Record<string, unknown> | null;
   prompt?: Record<string, unknown> | null;
   language: StationLanguage;
+  /**
+   * SCRUM-929 — the paired display's look as a till last told it; null when
+   * none has. Absent only where the store has no column for it yet.
+   */
+  theme?: StationDisplayTheme | null;
   lease: StationLease | null;
   takeoverCount: number;
   updatedAt: string;

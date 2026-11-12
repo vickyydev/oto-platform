@@ -788,6 +788,12 @@ export const stationSession = edge.table(
     /** The display's language toggle. One of `SUPPORTED_LANGS` in `@oto/shared`. */
     language: text('language').notNull().default('en'),
     /**
+     * SCRUM-929 — the paired display's light or dark look, as the till's
+     * Theme > Display switch last told it. Null until a till tells one; the
+     * display keeps the look it remembers until then.
+     */
+    theme: text('theme').$type<'light' | 'dark'>(),
+    /**
      * The fencing token. Minted on every claim and quoted by every intent, so
      * a till that was displaced and did not notice is refused by value rather
      * than by timing.
@@ -835,6 +841,7 @@ export const stationSession = edge.table(
       sql`${t.stage} in ('identify','welcome','order','input','payment','thankyou')`,
     ),
     check('station_session_language_check', sql`${t.language} in ('en','zh','th','ru','fr')`),
+    check('station_session_theme_check', sql`${t.theme} is null or ${t.theme} in ('light','dark')`),
     check(
       'station_session_lease_holder_kind_check',
       sql`${t.leaseHolderKind} is null or ${t.leaseHolderKind} in ('till','kiosk','booth','console')`,

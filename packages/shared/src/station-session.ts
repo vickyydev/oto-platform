@@ -39,6 +39,15 @@ export type StationSessionStage = (typeof STATION_SESSION_STAGES)[number];
 export const STATION_LEASE_HOLDER_KINDS = ['till', 'kiosk', 'booth', 'console'] as const;
 export type StationLeaseHolderKind = (typeof STATION_LEASE_HOLDER_KINDS)[number];
 
+/**
+ * SCRUM-929 — the look of a paired customer display, as the till's Theme >
+ * Display switch last set it. The till sends it with a publication only after
+ * somebody pressed that switch, the box keeps it with the document, and the
+ * display remembers the last one it was told in its own browser.
+ */
+export const STATION_DISPLAY_THEMES = ['light', 'dark'] as const;
+export type StationDisplayTheme = (typeof STATION_DISPLAY_THEMES)[number];
+
 /** Bumped when a field changes MEANING. Readers migrate on read. */
 export const STATION_SESSION_SCHEMA_VERSION = 1;
 
@@ -144,6 +153,12 @@ export const StationSessionDocumentSchema = z.object({
   /** What the display is being asked for: a phone number, a consent tick, a signature. */
   prompt: z.record(z.unknown()).nullable().optional(),
   language: z.enum(SUPPORTED_LANGS),
+  /**
+   * SCRUM-929 — the paired display's light or dark look. Null: no till has
+   * told this box one yet. Absent: a box from before this field, which a till
+   * never sends a theme to. Either way the display keeps the one it remembers.
+   */
+  theme: z.enum(STATION_DISPLAY_THEMES).nullable().optional(),
   lease: StationLeaseSchema.nullable(),
   /** How many times a live lease has been taken over. Zero is the normal state. */
   takeoverCount: z.number().int().min(0).default(0),

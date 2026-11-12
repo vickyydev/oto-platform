@@ -54,6 +54,7 @@ test('the station session vocabularies match @oto/shared item for item', () => {
   assert.deepEqual([...box.STATION_INTENT_REFUSALS], [...sharedStation.STATION_INTENT_REFUSALS]);
   assert.deepEqual([...box.STATION_CHANNEL_MESSAGES], [...sharedStation.STATION_CHANNEL_MESSAGES]);
   assert.deepEqual([...box.STATION_LANGUAGES], [...SUPPORTED_LANGS]);
+  assert.deepEqual([...box.STATION_DISPLAY_THEMES], [...sharedStation.STATION_DISPLAY_THEMES]);
   assert.equal(box.STATION_SESSION_SCHEMA_VERSION, sharedStation.STATION_SESSION_SCHEMA_VERSION);
   assert.equal(box.STATION_LEASE_HEARTBEAT_S, sharedStation.STATION_LEASE_HEARTBEAT_S);
   assert.equal(box.STATION_LEASE_TTL_S, sharedStation.STATION_LEASE_TTL_S);

@@ -6,6 +6,7 @@
  */
 import type { PrintJob as RenderPrintJob } from '@oto/print';
 import type {
+  StationDisplayTheme,
   StationLanguage,
   StationLease,
   StationSessionDocument,
@@ -179,6 +180,8 @@ export interface SessionWrite {
   payment?: Record<string, unknown> | null;
   prompt?: Record<string, unknown> | null;
   language?: StationLanguage;
+  /** SCRUM-929 — the paired display's look. Written only by a publication that carries one. */
+  theme?: StationDisplayTheme | null;
   lastActionId?: string | null;
 }
 

@@ -1,8 +1,10 @@
 import {
+  STATION_DISPLAY_THEMES,
   STATION_LANGUAGES,
   STATION_LEASE_TTL_S,
   STATION_SESSION_STAGES,
   type StationChannelMessage,
+  type StationDisplayTheme,
   type StationIntent,
   type StationIntentRefusal,
   type StationLanguage,
@@ -1146,10 +1148,11 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
     sources: ['till'],
     requiresLease: true,
     apply({ document, intent, serverTime }) {
-      const { stage, step, cart, member, totals, payment, prompt } = intent.payload;
-      if (!exactFields(intent.payload, ['stage', 'step', 'cart', 'member', 'totals', 'payment', 'prompt'])
+      const { stage, step, cart, member, totals, payment, prompt, theme } = intent.payload;
+      if (!exactFields(intent.payload, ['stage', 'step', 'cart', 'member', 'totals', 'payment', 'prompt', 'theme'])
         || typeof stage !== 'string' || !isStage(stage)
-        || (step !== undefined && step !== null && (!Number.isInteger(step) || Number(step) < 1 || Number(step) > 9))) {
+        || (step !== undefined && step !== null && (!Number.isInteger(step) || Number(step) < 1 || Number(step) > 9))
+        || (theme !== undefined && (typeof theme !== 'string' || !isDisplayTheme(theme)))) {
         return notPermitted('That display presentation is not valid.');
       }
       for (const value of [cart, member, totals, payment, prompt]) {
@@ -1233,6 +1236,8 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         totals: isGuestOrder && !shownCart?.supported ? null : shownTotals.success ? shownTotals.data : null,
         payment: isGuestOrder && !shownCart?.supported ? null : shownPayment.success ? shownPayment.data : null,
         prompt: ['child_review', 'consent'].includes(String(savedPrompt?.kind)) ? savedPrompt : stripKeys(savedPrompt),
+        // SCRUM-929 — kept until a till tells another; a publication without one leaves it.
+        ...(typeof theme === 'string' && isDisplayTheme(theme) ? { theme } : {}),
       });
     },
   },
@@ -1349,6 +1354,10 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
 
 function isLanguage(value: string): value is StationLanguage {
   return (STATION_LANGUAGES as readonly string[]).includes(value);
+}
+
+function isDisplayTheme(value: string): value is StationDisplayTheme {
+  return (STATION_DISPLAY_THEMES as readonly string[]).includes(value);
 }
 
 function isStage(value: string): value is StationSessionStage {

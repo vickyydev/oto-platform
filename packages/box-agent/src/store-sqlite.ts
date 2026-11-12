@@ -128,6 +128,7 @@ create table if not exists station_session (
   payment text,
   prompt text,
   language text not null default 'en',
+  theme text,
   lease_id text,
   lease_holder text,
   lease_holder_kind text,
@@ -298,6 +299,22 @@ export function prepareSqliteBoxStore(db: SqliteDatabaseLike): void {
   for (const pragma of SQLITE_PRAGMAS) db.exec(pragma);
   db.exec(SQLITE_BOX_SCHEMA);
   widenSqliteOverlayKinds(db);
+  addSqliteSessionTheme(db);
+}
+
+/**
+ * SCRUM-929 — a card whose station session predates the display's theme.
+ *
+ * `create table if not exists` leaves an older `station_session` without the
+ * column, so it is added once, nullable: every row reads as never told, and
+ * the display keeps the look it remembers until a till tells it one. One read
+ * on every boot, and nothing more once the column is there.
+ */
+export function addSqliteSessionTheme(db: SqliteDatabaseLike): boolean {
+  const columns = db.prepare(`pragma table_info(station_session)`).all() as Array<{ name?: unknown }>;
+  if (!columns.length || columns.some((column) => column.name === 'theme')) return false;
+  db.exec('alter table station_session add column theme text');
+  return true;
 }
 
 /**

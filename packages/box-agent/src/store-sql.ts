@@ -253,6 +253,7 @@ const SESSION_COLUMNS: ReadonlyArray<[keyof SessionWrite, string, boolean]> = [
   ['payment', 'payment', true],
   ['prompt', 'prompt', true],
   ['language', 'language', false],
+  ['theme', 'theme', false],
   ['lastActionId', 'last_action_id', false],
 ];
 
@@ -1797,6 +1798,12 @@ function decodeSession(row: SqlRow): StationSessionDocument {
     payment: parseJson(row.payment) as Record<string, unknown> | null,
     prompt: parseJson(row.prompt) as Record<string, unknown> | null,
     language: String(row.language) as StationSessionDocument['language'],
+    /**
+     * SCRUM-929 — present whenever the table has the column, null until a
+     * till tells one, so a till can see that this box keeps a display's look.
+     * A store without the column yet leaves it out, and no till sends one.
+     */
+    ...('theme' in row ? { theme: row.theme === 'light' || row.theme === 'dark' ? row.theme : null } : {}),
     lease: leaseId
       ? {
           leaseId,
