@@ -20,7 +20,7 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { partyBillShown } from '@/lib/partySettlementBill';
+import { partyBillShown, usePlannedSettleQuote } from '@/lib/partySettlementBill';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
@@ -194,7 +194,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const lineItemsTotal = partyLineItemsTotal(party);
   // SCRUM-916 — the bill as shown: an open settlement's own total, deposit
   // and balance beside the tab's, never "Fully paid" while it is owed.
-  const bill = partyBillShown(party);
+  // SCRUM-936 — before a settlement, the package the plan owes, priced by
+  // the platform as Settle party will price it.
+  const planned = usePlannedSettleQuote(party, plan, station?.stationId ?? null);
+  const bill = partyBillShown(party, planned);
   const takesSettlement = bill.settlementOwed > 0;
 
   /**
@@ -410,7 +413,16 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             }
           />
         ) : (
-          <InfoRow label={plan?.package.name ?? party.packageName ?? 'Base package'} value={`฿${bahtText(party.basePrice)}`} />
+          <>
+            <InfoRow
+              label={plan?.package.name ?? party.packageName ?? 'Base package'}
+              value={planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
+            />
+            {/* SCRUM-936 — what Settle party adds to the package as planned. */}
+            {planned && planned.totalSatang > planned.packageSatang && (
+              <InfoRow label="Add-ons and extras" value={`฿${satangText(planned.totalSatang - planned.packageSatang)}`} />
+            )}
+          </>
         )}
         {party.lineItems.map((li) => (
           <InfoRow

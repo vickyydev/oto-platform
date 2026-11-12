@@ -33,7 +33,8 @@ import {
   Ticket,
   ChevronRight,
 } from 'lucide-react';
-import { bahtText } from '@/lib/bahtText';
+import { bahtText, satangText } from '@/lib/bahtText';
+import type { PartySettleQuote } from '@oto/shared';
 
 const STATUS_STYLE: Record<PartyBooking['status'], string> = {
   upcoming: 'bg-sky-500/15 text-sky-400',
@@ -100,6 +101,8 @@ function InfoRow({
 
 interface MobilePartyDetailProps {
   party: PartyBooking;
+  /** SCRUM-936 — the platform's quote for Settle party, while the party is not settled. */
+  planned?: PartySettleQuote | null;
   onBack: () => void;
   onTakePayment: () => void;
   onAddFnb: () => void;
@@ -107,6 +110,7 @@ interface MobilePartyDetailProps {
 
 export function MobilePartyDetail({
   party: given,
+  planned = null,
   onBack,
   onTakePayment,
   onAddFnb,
@@ -123,7 +127,9 @@ export function MobilePartyDetail({
   // SCRUM-916 — the bill as shown, as on the counter's party page: an open
   // settlement's own total, deposit and balance, never "Fully paid" while it
   // is owed. Its balance is taken by resuming it on a counter till.
-  const bill = partyBillShown(party);
+  // SCRUM-936 — before a settlement, the package the plan owes, as the
+  // counter's page shows it; settled on a counter till.
+  const bill = partyBillShown(party, planned);
   const settlementOpen = party.settlement?.state === 'open';
   const cake = party.kitchen.cake;
   const cakeLabel = partyCakeLabel(cake);
@@ -179,7 +185,15 @@ export function MobilePartyDetail({
               {settlementOpen ? (
                 <InfoRow icon={CheckCircle2} label="Settlement open" value={`฿${bahtText(bill.settlementOwed)} to take`} />
               ) : (
-                <InfoRow label={party.packageName ?? 'Base package'} value={`฿${bahtText(party.basePrice)}`} />
+                <>
+                  <InfoRow
+                    label={party.packageName ?? 'Base package'}
+                    value={planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
+                  />
+                  {planned && planned.totalSatang > planned.packageSatang && (
+                    <InfoRow label="Add-ons and extras" value={`฿${satangText(planned.totalSatang - planned.packageSatang)}`} />
+                  )}
+                </>
               )}
               {party.lineItems.map((li) => (
                 <InfoRow
@@ -425,12 +439,14 @@ export function MobilePartyDetail({
           {outstanding > 0
             ? `Take payment · ฿${bahtText(outstanding)}`
             : bill.settlementOwed > 0
-              ? `Settlement open · ฿${bahtText(bill.settlementOwed)}`
+              ? `${settlementOpen ? 'Settlement open' : 'Not settled'} · ฿${bahtText(bill.settlementOwed)}`
               : 'Fully paid'}
         </Button>
         {outstanding <= 0 && bill.settlementOwed > 0 && (
           <p className="text-xs text-muted-foreground text-center">
-            Take it with Resume settlement on a counter till's party page.
+            {settlementOpen
+              ? "Take it with Resume settlement on a counter till's party page."
+              : "Take it with Settle party on a counter till's party page."}
           </p>
         )}
       </div>

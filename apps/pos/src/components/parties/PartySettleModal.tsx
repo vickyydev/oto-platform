@@ -143,7 +143,7 @@ function QuoteSummary({ quote }: { quote: PartySettleQuote }) {
 }
 
 /** What the guest sees opposite the payment stage: the QR, or the amount to pay staff. */
-function CustomerPaymentPane({ amount, qr, method, title }: { amount: number; qr: PaymentDisplayState; method: string | null; title: string }) {
+function CustomerPaymentPane({ amount, unread = false, qr, method, title }: { amount: number; unread?: boolean; qr: PaymentDisplayState; method: string | null; title: string }) {
   if (method && paymentMethodKind(method) === 'qr') {
     return <PromptPayCustomerScreen amount={amount} qrPayload={qr.qrPayload} qrImageUrl={qr.qrImageUrl} expiresAt={qr.expiresAt} note={title} />;
   }
@@ -153,7 +153,8 @@ function CustomerPaymentPane({ amount, qr, method, title }: { amount: number; qr
         <Wallet className="w-8 h-8 text-sky-300" />
       </div>
       <h2 className="text-3xl font-black mb-3">Amount due</h2>
-      <div className="text-6xl font-black text-sky-300 tabular-nums">฿{bahtText(amount)}</div>
+      {/* SCRUM-902 — the balance not read yet: a dash, never ฿0. */}
+      <div className="text-6xl font-black text-sky-300 tabular-nums">{unread ? '—' : `฿${bahtText(amount)}`}</div>
       <p className="text-lg text-white/60 mt-3">{title}</p>
       <p className="text-xl text-white/60 mt-6 max-w-md">
         {method ? 'Please complete payment with our staff.' : 'Our staff will help you choose how to pay.'}
@@ -323,6 +324,11 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
     // A tender waiting for its answer holds the screen, as it holds the ticket till.
     if (phase === 'payment' && stage.locked) return;
     onOpenChange(false);
+    // SCRUM-935 — closed with a settlement rung up (a part taken, a
+    // settlement confirmed or resumed): the party page reads the party again,
+    // so its bill and buttons show the balance the platform now holds
+    // without a reload. Closed from the form, nothing changed: nothing is read.
+    if (saleId) onSettled();
   };
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -454,7 +460,7 @@ export function PartySettleModal({ open, onOpenChange, party, plan, stationId, r
 
   const customerPane =
     phase === 'payment' ? (
-      <CustomerPaymentPane amount={balance} qr={stage.display} method={stage.state.method} title={party.title} />
+      <CustomerPaymentPane amount={balance} unread={Boolean(stage.recovering)} qr={stage.display} method={stage.state.method} title={party.title} />
     ) : (
       <div className="h-full w-full bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-white flex flex-col items-center justify-center text-center px-10">
         <div className="h-16 w-16 rounded-full bg-white/10 flex items-center justify-center mb-5">

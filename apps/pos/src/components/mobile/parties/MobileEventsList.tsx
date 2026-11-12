@@ -3,7 +3,8 @@ import { EventType, PartyBooking } from '@/types';
 import { addDaysToIsoDate } from '@oto/shared';
 import { eventsToday, useEventsForDate } from '@/api/events';
 import { useBranch } from '@/branch/BranchContext';
-import { computePartyOutstanding, PARTY_STATUS_LABELS } from '@/lib/party';
+import { PARTY_STATUS_LABELS } from '@/lib/party';
+import { partyListFigure } from '@/lib/partySettlementBill';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -153,9 +154,8 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
           <div className="p-4 space-y-3">
             {events.map((ev) => {
               const isParty = ev.type === 'party';
-              const outstanding = isParty
-                ? computePartyOutstanding(ev as unknown as PartyBooking)
-                : null;
+              // SCRUM-936 — the bill the party page shows: never Paid while it is owed.
+              const figure = isParty ? partyListFigure(ev as unknown as PartyBooking) : null;
               const attendeeCount = ev.attendees?.length ?? 0;
 
               return (
@@ -216,14 +216,14 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
 
                       {/* Balance / chevron */}
                       <div className="flex items-center gap-2 shrink-0">
-                        {isParty && outstanding !== null ? (
-                          outstanding > 0 ? (
+                        {isParty && figure ? (
+                          figure.kind === 'owed' ? (
                             <div className="text-right">
                               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                                 Due
                               </div>
                               <div className="text-base font-bold tabular-nums text-amber-400">
-                                ฿{bahtText(outstanding)}
+                                ฿{bahtText(figure.amount)}
                               </div>
                             </div>
                           ) : (

@@ -127,6 +127,13 @@ export interface PaymentStageController {
   online: boolean;
   locked: boolean;
   canBack: boolean;
+  /**
+   * SCRUM-902 — a resumed sale whose balance is still being read from the
+   * platform: `state.outstandingSatang` is the stand-in the stage opened on
+   * (a resumed settlement's is 0), not the balance, so no screen shows it.
+   * Optional: screens and tests that build a controller by hand leave it out.
+   */
+  recovering?: boolean;
   canSubmit: boolean;
   /** S2-14a — the scanned credit is expected to cover what is owed: confirm needs no tender. */
   creditCoversAll: boolean;
@@ -876,7 +883,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     && (state.outstandingSatang === 0 || creditCoversAll || Boolean(method?.enabled && money(state.amountSatang) && state.amountSatang > 0
       && state.amountSatang <= state.outstandingSatang && (method.kind !== 'cash' || state.tenderedSatang >= state.amountSatang)));
   return {
-    state, busy, online, locked, canSubmit: canSubmit && online, creditCoversAll, creditPendingSatang, creditRefusal, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
+    state, busy, online, locked, recovering, canSubmit: canSubmit && online, creditCoversAll, creditPendingSatang, creditRefusal, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
     canCancel,
     // SCRUM-916 — Back leaves while nothing was taken on this screen; a party's
     // deposit, recorded on its settlement before, is not.

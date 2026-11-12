@@ -646,7 +646,8 @@ describe('the fix — one collect is one request under one set of ids, and the t
     const screen = ipad();
     screen.open();
     expect(screen.press('Cash')).toBe(true);
-    expect(screen.press('Take ฿9000.5 by Cash')).toBe(true);
+    // SCRUM-933 — an amount with satang shows its two places on the staff till.
+    expect(screen.press('Take ฿9000.50 by Cash')).toBe(true);
     expect(await screen.received()).toBe(true);
     expect(thisTill()).toEqual([expect.objectContaining({ askedSatang: 900_050, amountSatang: 900_000 })]);
     expect(screen.words()).toContain('Collected now ฿9000 ');
@@ -659,7 +660,8 @@ describe('the fix — one collect is one request under one set of ids, and the t
     server.chargeSatang = 50;
     const screen = phone();
     screen.press('Cash');
-    expect(screen.press('Show bill · ฿9000.5 by Cash')).toBe(true);
+    // SCRUM-933 — an amount with satang shows its two places on the staff till.
+    expect(screen.press('Show bill · ฿9000.50 by Cash')).toBe(true);
     screen.handBack();
     server.loseNextAnswer = true;
     await screen.received();
