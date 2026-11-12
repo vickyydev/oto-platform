@@ -233,9 +233,11 @@ describe('what the till does with it', () => {
 
   it('the confirmation stands for the number and channel the form holds, so an edit un-confirms it', () => {
     expect(till).toMatch(/const contactConfirmed = contactConfirmationStands\(superContactConfirmation, superParentPhone, superParentContactMethod\);/);
-    // The setters are the plain ones (SCRUM-863): nothing clears by hand.
-    expect(till.match(/onParentPhoneChange=\{setSuperParentPhone\}/g)).toHaveLength(2);
-    expect(till.match(/onParentContactMethodChange=\{setSuperParentContactMethod\}/g)).toHaveLength(2);
+    // SCRUM-914 (the owner, 12 November): a change of the number or the
+    // channel withdraws the confirmation until the family ticks again, so the
+    // setters go through the rule that clears it (both copies of the form).
+    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
+    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
   });
 
   it('the family ticks on the customer half, staff on their copy only when the display cannot', () => {

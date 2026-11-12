@@ -137,7 +137,8 @@ describe('the till follows the form', () => {
     const till = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Till.tsx'), 'utf8');
     expect(till).toMatch(/consentActionAllowed\(prompt\.data, action\.data\)\) return false;\s*\/\/[\s\S]*?takeConsentAction\(action\.data, \{[\s\S]*?answered: \(\) => setDisplayAnswerRevision\(previous => previous \+ 1\),/);
     expect(till).toMatch(/answerRevision: displayAnswerRevision,/);
-    expect(till).toMatch(/const consent = step === 7 && displayOnline\n/);
+    // SCRUM-943 (b), the owner on 12 November: also while the family's Done is saved after staff went Back.
+    expect(till).toMatch(/const consent = \(step === 7 \|\| savingAfterBack\) && displayOnline\n/);
     expect(till).toMatch(/<ConsentTicksStatus consentRequired=\{consentRequired\}/);
     expect(till).toMatch(/ticksReadOnly=\{!staffTicks\}/);
   });

@@ -85,7 +85,9 @@ describe('the parent’s block on the paired display', () => {
     form.toAgreements();
     form.typePhone(OTHER_TYPED);
     form.choose('telegram');
-    expect(form.field()!.props).toMatchObject({ value: OTHER_TYPED, channel: 'telegram' });
+    // SCRUM-943 (c), the owner on 12 November: the number is drawn one way on
+    // the display and the till's copy, so a complete one shows as it is kept.
+    expect(form.field()!.props).toMatchObject({ value: OTHER_STORED, channel: 'telegram' });
     // Unsaved, so the step is sent before the form can be finished.
     expect(form.button('common.done')).toBeUndefined();
     form.press('common.continue');
@@ -96,9 +98,9 @@ describe('the parent’s block on the paired display', () => {
     expect(consentActionAllowed(prompt, parsed.data!)).toBe(true);
 
     // The till's copy comes back with what it kept: the family's change is not
-    // lost, the field keeps what they typed, and the form can now be finished.
+    // lost, and the form can now be finished (the field draws it as kept, SCRUM-943 c).
     form.view.rerender(promptOf({ requestId: 'zz-test-request-2', guardianPhone: OTHER_STORED, contactChannel: 'telegram' }));
-    expect(form.field()!.props).toMatchObject({ value: OTHER_TYPED, channel: 'telegram' });
+    expect(form.field()!.props).toMatchObject({ value: OTHER_STORED, channel: 'telegram' });
     expect(form.button('common.done')).toBeDefined();
     expect(form.sent).toHaveLength(1);
 
@@ -118,7 +120,8 @@ describe('the parent’s block on the paired display', () => {
     form.choose('line');
     // Staff typed the guardian's name on the till meanwhile: a new copy, old number.
     form.view.rerender(promptOf({ requestId: 'zz-test-request-2', guardianName: 'ZZ TEST guardian Ploy' }));
-    expect(form.field()!.props).toMatchObject({ value: OTHER_TYPED, channel: 'line' });
+    // The family's number, drawn as it is kept (SCRUM-943 c).
+    expect(form.field()!.props).toMatchObject({ value: OTHER_STORED, channel: 'line' });
     expect(form.all().find(node => node.props.id === 'public-consent-guardian')!.props.value).toBe('ZZ TEST guardian Ploy');
     form.press('common.continue');
     expect(form.sent.at(-1)).toMatchObject({ requestId: 'zz-test-request-2', guardianPhone: OTHER_STORED, contactChannel: 'line', guardianName: 'ZZ TEST guardian Ploy' });

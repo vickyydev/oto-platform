@@ -163,7 +163,8 @@ describe('(c) the number is drawn one way on both screens', () => {
     const phone = display.all().find((node) => node.type === PhoneInput)!;
     expect(phone.props.value).toBe('+66898570210');
     display.view.unmount();
-    expect(src('components/till/ConsentCapture.tsx')).toContain("value={consentPhoneShown(parentPhone ?? '')}");
+    // The till's own customer half keeps SCRUM-783's rule: the field as typed, its stored form beside it.
+    expect(src('components/till/ConsentCapture.tsx')).not.toContain('consentPhoneShown');
   });
 });
 

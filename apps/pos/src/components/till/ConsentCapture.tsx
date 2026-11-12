@@ -2,7 +2,7 @@ import { useId, useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
-import { consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
+import { messagingPhoneProblem } from '@/lib/consentForm';
 import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
 import { Button } from '@/components/ui/button';
 import { formatStoredPhone } from '@/lib/phoneUtils';
@@ -432,7 +432,7 @@ export function ConsentCapture({
                   <Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}
                 </label>
                 <PhoneInput
-                  value={consentPhoneShown(parentPhone ?? '')}
+                  value={parentPhone ?? ''}
                   onChange={onParentPhoneChange}
                   label=""
                   inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground"

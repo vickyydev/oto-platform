@@ -130,8 +130,12 @@ describe('what the till does with it', () => {
   });
 
   it('both copies of the form write the registration’s contact, and nothing fixes the customer’s copy', () => {
-    expect(till.match(/onParentPhoneChange=\{setSuperParentPhone\}/g)).toHaveLength(2);
-    expect(till.match(/onParentContactMethodChange=\{setSuperParentContactMethod\}/g)).toHaveLength(2);
+    // SCRUM-914 — through the rule that withdraws the confirmation, which
+    // writes the registration's contact (never the customer's own number).
+    expect(till.match(/onParentPhoneChange=\{changeGuardianPhone\}/g)).toHaveLength(2);
+    expect(till.match(/onParentContactMethodChange=\{changeGuardianChannel\}/g)).toHaveLength(2);
+    expect(till).toMatch(/const changeGuardianPhone = \(next: string\) => \{[\s\S]{0,200}?setSuperParentPhone\(next\);/);
+    expect(till).toMatch(/const changeGuardianChannel = \(next: ContactChannel\) => \{[\s\S]{0,200}?setSuperParentContactMethod\(next\);/);
     expect(till).not.toMatch(/parentPhoneKept|gatePhoneKept/);
     expect(form_).not.toMatch(/parentPhoneKept|consent-kept-phone|till\.input\.phoneKept/);
     // The field is the prototype's: the shared input, translated on the customer's side.
