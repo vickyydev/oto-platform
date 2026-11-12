@@ -12,6 +12,7 @@ import { TouchKeypad } from '@/components/shared/TouchKeypad';
 import type { RefundMode } from '@/lib/payments';
 import { refundAmountFor, type RefundItemOption } from '@/api/history';
 import { Undo2, Wallet, RefreshCw, HandCoins, WifiOff } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 export interface RefundLineOption {
   id: string;
@@ -180,7 +181,7 @@ export function RefundModal({
             Refund
           </DialogTitle>
           <DialogDescription>
-            By {operatorName} · up to ฿{maxRefund} refundable · logged for the refunds report.
+            By {operatorName} · up to ฿{bahtText(maxRefund)} refundable · logged for the refunds report.
           </DialogDescription>
         </DialogHeader>
 
@@ -251,13 +252,13 @@ export function RefundModal({
                         </span>
                         <span className="truncate">{l.label}</span>
                       </span>
-                      <span className="font-bold tabular-nums shrink-0">฿{l.amount}</span>
+                      <span className="font-bold tabular-nums shrink-0">฿{bahtText(l.amount)}</span>
                     </button>
                   );
                 })}
               </div>
               {resolved.clamped && resolved.requestedSatang > 0 && (
-                <p className="text-sm font-semibold text-amber-400">capped at ฿{maxRefund}</p>
+                <p className="text-sm font-semibold text-amber-400">capped at ฿{bahtText(maxRefund)}</p>
               )}
             </div>
           )}
@@ -269,7 +270,7 @@ export function RefundModal({
               <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 px-4 h-14">
                 <span className="text-3xl font-bold tabular-nums">฿{customValue || '0'}</span>
                 {resolved.clamped && resolved.requestedSatang > 0 && (
-                  <span className="text-sm font-semibold text-amber-400">capped at ฿{maxRefund}</span>
+                  <span className="text-sm font-semibold text-amber-400">capped at ฿{bahtText(maxRefund)}</span>
                 )}
               </div>
               <TouchKeypad value={customValue} onChange={setCustomValue} maxLength={6} />
@@ -311,7 +312,7 @@ export function RefundModal({
           <div className="rounded-lg bg-muted p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Refund amount</span>
-              <span className="text-2xl font-black text-rose-400 tabular-nums">−฿{amountTHB}</span>
+              <span className="text-2xl font-black text-rose-400 tabular-nums">−฿{bahtText(amountTHB)}</span>
             </div>
             {creditRestoredTHB > 0 && (
               <div className="flex items-center justify-between text-sm text-primary">
@@ -319,7 +320,7 @@ export function RefundModal({
                   <Wallet className="w-4 h-4" />
                   Back to wristband
                 </span>
-                <span className="tabular-nums font-semibold">+฿{creditRestoredTHB}</span>
+                <span className="tabular-nums font-semibold">+฿{bahtText(creditRestoredTHB)}</span>
               </div>
             )}
             {refundMode && !offline && (
@@ -368,8 +369,8 @@ export function RefundModal({
               : busy
                 ? 'Refunding…'
                 : offline
-                  ? `Note refund request ฿${amountTHB}`
-                  : `Refund ฿${amountTHB}`}
+                  ? `Note refund request ฿${bahtText(amountTHB)}`
+                  : `Refund ฿${bahtText(amountTHB)}`}
           </Button>
         </div>
       </DialogContent>

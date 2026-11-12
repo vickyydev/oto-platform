@@ -76,6 +76,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
+import { bahtText, satangText } from '@/lib/bahtText';
 
 interface PartyDetailProps {
   party: PartyBooking;
@@ -383,7 +384,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     onChanged();
     toast({
       title: 'Settlement cancelled',
-      description: `Nothing was refunded. The deposit of ฿${settlement.depositSatang / 100} stays with the party — settle it again when ready.`,
+      description: `Nothing was refunded. The deposit of ฿${satangText(settlement.depositSatang)} stays with the party — settle it again when ready.`,
     });
   };
 
@@ -405,34 +406,34 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             value={
               settlement.state === 'settled'
                 ? `Receipt ${settlement.receiptNumber ?? '—'}`
-                : `฿${settlement.outstandingSatang / 100} to take`
+                : `฿${satangText(settlement.outstandingSatang)} to take`
             }
           />
         ) : (
-          <InfoRow label={plan?.package.name ?? party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+          <InfoRow label={plan?.package.name ?? party.packageName ?? 'Base package'} value={`฿${bahtText(party.basePrice)}`} />
         )}
         {party.lineItems.map((li) => (
           <InfoRow
             key={li.id}
             label={`${li.name}${li.qty ? ` ×${li.qty}` : ''}`}
-            value={`฿${li.qty * li.price}`}
+            value={`฿${bahtText(li.qty * li.price)}`}
           />
         ))}
         {party.lineItems.length > 0 && (
           <div className="flex items-center justify-between py-1.5 text-muted-foreground border-t mt-1 pt-2">
             <span>Add-ons subtotal</span>
-            <span className="tabular-nums">฿{lineItemsTotal}</span>
+            <span className="tabular-nums">฿{bahtText(lineItemsTotal)}</span>
           </div>
         )}
         {party.partyExtraCharges.length > 0 && (
-          <InfoRow icon={ReceiptText} label="Extra charges" value={`+฿${extras}`} />
+          <InfoRow icon={ReceiptText} label="Extra charges" value={`+฿${bahtText(extras)}`} />
         )}
         <div className="flex items-center justify-between py-1.5 font-semibold border-t mt-1 pt-2">
           <span>Total</span>
-          <span className="tabular-nums">฿{bill.total}</span>
+          <span className="tabular-nums">฿{bahtText(bill.total)}</span>
         </div>
-        <InfoRow label="Deposit paid" value={`−฿${bill.deposit}`} />
-        {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bill.paid}`} />}
+        <InfoRow label="Deposit paid" value={`−฿${bahtText(bill.deposit)}`} />
+        {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bahtText(bill.paid)}`} />}
         <div className="flex items-center justify-between mt-2 pt-3 border-t">
           <span className="font-bold">Outstanding</span>
           <span
@@ -440,7 +441,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
             }`}
           >
-            ฿{bill.outstanding}
+            ฿{bahtText(bill.outstanding)}
           </span>
         </div>
       </div>
@@ -648,7 +649,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
                 )}
                 {c.kind === 'ticket' ? 'Extra tickets' : 'Extra F&B'}
               </span>
-              <span className="tabular-nums">+฿{c.total}</span>
+              <span className="tabular-nums">+฿{bahtText(c.total)}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               {c.items.map((it) => `${it.qty}× ${it.name}`).join(', ')}
@@ -667,7 +668,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
                   <Icon className="w-4 h-4 text-emerald-400" />
                   Payment · {paymentMethodLabel(p.method)}
                 </span>
-                <span className="tabular-nums text-emerald-400">−฿{p.amount}</span>
+                <span className="tabular-nums text-emerald-400">−฿{bahtText(p.amount)}</span>
               </div>
               <div className="text-xs text-muted-foreground mt-1">
                 {p.takenBy} · {fmtTimestamp(p.takenAt)}
@@ -784,7 +785,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
                 {settlement?.state === 'settled'
                   ? `Settled, receipt ${settlement.receiptNumber ?? '—'}`
                   : settlement?.state === 'open'
-                    ? `Resume settlement ฿${settlement.outstandingSatang / 100}`
+                    ? `Resume settlement ฿${satangText(settlement.outstandingSatang)}`
                     : 'Settle party'}
               </Button>
             ) : (
@@ -834,7 +835,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               }
             >
               <Wallet className="w-5 h-5" />
-              {bill.outstanding > 0 ? `Take balance ฿${takesSettlement ? bill.settlementOwed : outstanding}` : 'Fully paid'}
+              {bill.outstanding > 0 ? `Take balance ฿${bahtText(takesSettlement ? bill.settlementOwed : outstanding)}` : 'Fully paid'}
             </Button>
           </div>
         </div>
@@ -899,7 +900,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           <DialogHeader>
             <DialogTitle>Cancel this settlement</DialogTitle>
             <DialogDescription>
-              {`${party.title}: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿${(settlement?.depositSatang ?? 0) / 100} stays with the party and is used again when it is settled.`}
+              {`${party.title}: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿${satangText(settlement?.depositSatang ?? 0)} stays with the party and is used again when it is settled.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">

@@ -16,6 +16,7 @@ import { TicketCard } from './TicketCard';
 import { AddOnsGrid } from './AddOnsGrid';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { ArrowLeft, Baby, UserCheck, AlertTriangle, Users, Footprints } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 // Semantic patch the till applies to a drop-off line (it recomputes the fee +
 // lineTotal). Keeps pricing logic in one place (handleUpdateDropOffLine).
@@ -184,7 +185,7 @@ export function DropOffLineConfig({
               onClick={() => onUpdate(line.id, { service: 'drop_off' })}
             >
               <span className="text-base font-bold">Drop-Off</span>
-              <span className="text-xs opacity-80">Flat ฿{pricing.oneTimeFeeTHB}</span>
+              <span className="text-xs opacity-80">Flat ฿{bahtText(pricing.oneTimeFeeTHB)}</span>
             </Button>
             <Button
               type="button"
@@ -193,7 +194,7 @@ export function DropOffLineConfig({
               onClick={() => onUpdate(line.id, { service: 'nanny' })}
             >
               <span className="text-base font-bold">Nanny</span>
-              <span className="text-xs opacity-80">฿{pricing.nannyHourlyRateTHB}/hr · shared</span>
+              <span className="text-xs opacity-80">฿{bahtText(pricing.nannyHourlyRateTHB)}/hr · shared</span>
             </Button>
           </div>
         </div>
@@ -306,7 +307,7 @@ export function DropOffLineConfig({
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold text-lg leading-tight">Regular Socks</div>
-                  <div className="text-xs text-primary font-medium mt-0.5">฿{socksPrice} each</div>
+                  <div className="text-xs text-primary font-medium mt-0.5">฿{bahtText(socksPrice)} each</div>
                 </div>
               </div>
               <QuantityStepper
@@ -330,7 +331,7 @@ export function DropOffLineConfig({
             <>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{line.ticketType.name}</span>
-                <span className="tabular-nums">฿{priceForTier(line.ticketType, tier)}</span>
+                <span className="tabular-nums">฿{bahtText(priceForTier(line.ticketType, tier))}</span>
               </div>
               {line.socks > 0 && (
                 <div className="flex justify-between">
@@ -338,7 +339,7 @@ export function DropOffLineConfig({
                     Regular Socks × {line.socks}
                     {extras.socks.free > 0 && ` · ${extras.socks.free} free`}
                   </span>
-                  <span className="tabular-nums">฿{extras.socks.amount}</span>
+                  <span className="tabular-nums">฿{bahtText(extras.socks.amount)}</span>
                 </div>
               )}
               {line.addOns.map((a, i) => (
@@ -348,7 +349,7 @@ export function DropOffLineConfig({
                     {a.quantity > 1 && ` × ${a.quantity}`}
                     {(extras.addOns[i]?.free ?? 0) > 0 && ` · ${extras.addOns[i]!.free} free`}
                   </span>
-                  <span className="tabular-nums">฿{extras.addOns[i]?.amount ?? 0}</span>
+                  <span className="tabular-nums">฿{bahtText(extras.addOns[i]?.amount ?? 0)}</span>
                 </div>
               ))}
               {d.service === 'nanny' ? (
@@ -358,7 +359,7 @@ export function DropOffLineConfig({
                     <span className="text-xs opacity-70">(shared, billed once)</span>
                   </span>
                   <span className="tabular-nums text-muted-foreground">
-                    ฿{pricing.nannyHourlyRateTHB * d.hours}
+                    ฿{bahtText(pricing.nannyHourlyRateTHB * d.hours)}
                   </span>
                 </div>
               ) : (
@@ -368,13 +369,13 @@ export function DropOffLineConfig({
                   <span className="text-muted-foreground">
                     {d.service === 'none' ? t('superviseConsent.registeredNoFee') : 'Drop-off service'}
                   </span>
-                  <span className="tabular-nums">฿{d.serviceFeeTHB}</span>
+                  <span className="tabular-nums">฿{bahtText(d.serviceFeeTHB)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold pt-1.5 border-t">
                 <span>{d.service === 'nanny' ? 'Child subtotal' : 'Line total'}</span>
                 <span className="text-primary tabular-nums">
-                  ฿{d.service === 'nanny' ? ownTotal : line.lineTotal}
+                  ฿{bahtText(d.service === 'nanny' ? ownTotal : line.lineTotal)}
                 </span>
               </div>
               {d.service === 'nanny' && (

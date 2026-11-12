@@ -8,6 +8,7 @@ import type { PaymentMethodKind } from '@/types';
 import type { PaymentStageController } from '@/lib/usePaymentStage';
 import { voucherPriceUnavailableLine } from '@/lib/tillVoucher';
 import { PaymentTenderPanel, paymentSubmitLabel } from './PaymentTenderPanel';
+import { bahtText } from '@/lib/bahtText';
 
 interface StepPaymentProps {
   total: number;
@@ -126,7 +127,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
     <div data-testid="payment-step" className="@container flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-4 @xl:mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
-        <div className="text-5xl sm:text-6xl break-words font-black text-primary">{amountUnavailable ? '—' : `฿${total}`}</div>
+        <div className="text-5xl sm:text-6xl break-words font-black text-primary">{amountUnavailable ? '—' : `฿${bahtText(total)}`}</div>
       </div>
 
       {free ? (

@@ -96,6 +96,7 @@ import {
   WifiOff,
   Wallet,
 } from 'lucide-react';
+import { satangText } from '@/lib/bahtText';
 
 /**
  * ONE SALE OUT OF THE PLATFORM LEDGER — SCRUM-238.
@@ -314,7 +315,7 @@ export function VoidSaleDialog({
           <div className="rounded-lg bg-muted p-4 space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Amount due</span>
-              <span className="text-2xl font-black tabular-nums">฿{baht(sale.totals.grossSatang)}</span>
+              <span className="text-2xl font-black tabular-nums">฿{satangText(sale.totals.grossSatang)}</span>
             </div>
             <div className="text-sm text-muted-foreground">
               Rung up {fmt(sale.occurredAt)}
@@ -468,7 +469,7 @@ export function PaymentRow({
     attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' || attempt.method === 'other' ? Wallet : CreditCard;
   const detail = [
     attempt.changeSatang !== null && attempt.changeSatang > 0
-      ? `฿${baht(attempt.tenderedSatang ?? 0)} given, ฿${baht(attempt.changeSatang)} change`
+      ? `฿${satangText(attempt.tenderedSatang ?? 0)} given, ฿${satangText(attempt.changeSatang)} change`
       : null,
     attempt.last4 ? `•••• ${attempt.last4}` : null,
     attempt.approvalCode ? `Approval ${attempt.approvalCode}` : null,
@@ -491,7 +492,7 @@ export function PaymentRow({
           </span>
         </span>
       </span>
-      <span className="tabular-nums shrink-0 font-semibold">฿{baht(attempt.amountSatang)}</span>
+      <span className="tabular-nums shrink-0 font-semibold">฿{satangText(attempt.amountSatang)}</span>
     </div>
   );
 }
@@ -557,7 +558,7 @@ export function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[];
           return (
             <div key={r.id} className="text-sm border-l-2 border-rose-500/40 pl-3">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-rose-400 tabular-nums">−฿{baht(r.amountSatang)}</span>
+                <span className="font-semibold text-rose-400 tabular-nums">−฿{satangText(r.amountSatang)}</span>
                 <span className="text-xs text-muted-foreground">{fmt(r.createdAt)}</span>
               </div>
               <div className="text-muted-foreground">
@@ -570,7 +571,7 @@ export function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[];
                   return (
                     <div key={i} className={`flex items-start justify-between gap-2 text-xs ${words.tone}`}>
                       <span className="min-w-0">{words.text}</span>
-                      <span className="tabular-nums shrink-0">฿{baht(slice.amountSatang)}</span>
+                      <span className="tabular-nums shrink-0">฿{satangText(slice.amountSatang)}</span>
                     </div>
                   );
                 })}
@@ -690,7 +691,7 @@ export function RefundRequests({
         {requests.map((r) => (
           <div key={r.id} className="text-sm border-l-2 border-amber-500/40 pl-3">
             <div className="flex items-center justify-between">
-              <span className="font-semibold tabular-nums">฿{baht(r.amountSatang)}</span>
+              <span className="font-semibold tabular-nums">฿{satangText(r.amountSatang)}</span>
               <span className="text-xs text-muted-foreground">{fmt(r.requestedAt)}</span>
             </div>
             <div className="text-muted-foreground">{r.reason}</div>
@@ -1310,15 +1311,15 @@ export function SaleDetail(props: SaleDetailProps) {
                   · {tierLabel(first.customerTier)}
                 </span>
               </span>
-              <span className="tabular-nums">฿{baht(groupTotal)}</span>
+              <span className="tabular-nums">฿{satangText(groupTotal)}</span>
             </div>
             <div className="mt-2 space-y-1">
               {lines.map((line) => (
                 <div key={line.id} className="flex justify-between text-sm text-muted-foreground">
                   <span>
-                    {line.label} {line.quantity}× ฿{baht(line.unitSatang)}
+                    {line.label} {line.quantity}× ฿{satangText(line.unitSatang)}
                   </span>
-                  <span className="tabular-nums">฿{baht(line.grossSatang)}</span>
+                  <span className="tabular-nums">฿{satangText(line.grossSatang)}</span>
                 </div>
               ))}
             </div>
@@ -1461,7 +1462,7 @@ export function SaleDetail(props: SaleDetailProps) {
             <div className="space-y-1 pb-2 border-b text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span className="tabular-nums">฿{baht(totals.subtotalSatang)}</span>
+                <span className="tabular-nums">฿{satangText(totals.subtotalSatang)}</span>
               </div>
               {(detail?.discounts ?? []).map((d) => (
                 <div key={d.id} className="flex items-start justify-between text-emerald-400">
@@ -1475,13 +1476,13 @@ export function SaleDetail(props: SaleDetailProps) {
                       </span>
                     )}
                   </span>
-                  <span className="tabular-nums shrink-0">−฿{baht(d.amountSatang)}</span>
+                  <span className="tabular-nums shrink-0">−฿{satangText(d.amountSatang)}</span>
                 </div>
               ))}
               {totals.serviceChargeSatang > 0 && (
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>Service charge</span>
-                  <span className="tabular-nums">฿{baht(totals.serviceChargeSatang)}</span>
+                  <span className="tabular-nums">฿{satangText(totals.serviceChargeSatang)}</span>
                 </div>
               )}
               {taxTotal > 0 && (
@@ -1490,7 +1491,7 @@ export function SaleDetail(props: SaleDetailProps) {
                     {taxName}
                     {totals.taxInclusiveSatang > 0 ? ' (included)' : ''}
                   </span>
-                  <span className="tabular-nums">฿{baht(taxTotal)}</span>
+                  <span className="tabular-nums">฿{satangText(taxTotal)}</span>
                 </div>
               )}
             </div>
@@ -1499,13 +1500,13 @@ export function SaleDetail(props: SaleDetailProps) {
                 {amountLabelOf(badge)}
               </span>
               <span className="text-4xl font-black tabular-nums leading-none" data-testid="sale-amount-shown">
-                ฿{baht(amountShownSatang)}
+                ฿{satangText(amountShownSatang)}
               </span>
             </div>
             {totals.refundedSatang > 0 && (
               <div className="border-t pt-2 flex items-center justify-between text-rose-400 font-semibold">
                 <span>Refunded</span>
-                <span className="tabular-nums">−฿{baht(totals.refundedSatang)}</span>
+                <span className="tabular-nums">−฿{satangText(totals.refundedSatang)}</span>
               </div>
             )}
             {detail?.timeExtension && <p className="border-t pt-2 text-sm text-muted-foreground">
@@ -1583,14 +1584,14 @@ export function SaleDetail(props: SaleDetailProps) {
             <Card className="p-4 bg-card/50 space-y-2" data-testid="refund-recorded">
               <div className="text-sm font-semibold flex items-center gap-2 text-emerald-400">
                 <Check className="w-4 h-4" />
-                Refund recorded · {justRefunded.number} · −฿{baht(justRefunded.amountSatang)}
+                Refund recorded · {justRefunded.number} · −฿{satangText(justRefunded.amountSatang)}
               </div>
               {justRefunded.tenderAllocation.map((slice, i) => {
                 const words = refundSliceWords(slice);
                 return (
                   <div key={i} className={`flex items-start justify-between gap-2 text-sm ${words.tone}`}>
                     <span className="min-w-0">{words.text}</span>
-                    <span className="tabular-nums shrink-0">฿{baht(slice.amountSatang)}</span>
+                    <span className="tabular-nums shrink-0">฿{satangText(slice.amountSatang)}</span>
                   </div>
                 );
               })}
@@ -1656,8 +1657,8 @@ export function SaleDetail(props: SaleDetailProps) {
                     {!refundable
                       ? 'Refund'
                       : offline
-                        ? `Refund — online only (฿${baht(remainingSatang)} left)`
-                        : `Refund (฿${baht(remainingSatang)} left)`}
+                        ? `Refund — online only (฿${satangText(remainingSatang)} left)`
+                        : `Refund (฿${satangText(remainingSatang)} left)`}
                   </Button>
                   {partPaidOpen && (
                     <p className="text-sm text-muted-foreground" data-testid="refund-part-paid-note">

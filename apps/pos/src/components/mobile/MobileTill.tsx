@@ -22,7 +22,7 @@ import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/
 import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied } from '@/lib/supervision';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
-import { shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
+import { taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { savedRateSummary } from '@/lib/tierApproval';
@@ -111,6 +111,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLane } from '@/lib/lane';
+import { bahtText } from '@/lib/bahtText';
 
 /** One empty cart, so a resumed sale does not hand a new array to every render. */
 const NO_LINES: readonly CartLine[] = [];
@@ -169,13 +170,13 @@ function MobileConfirmation({
         <h2 className="text-xl font-bold tracking-tight">Payment Successful</h2>
         {/* The receipt number, never the internal id — SCRUM-203. */}
         <p className="text-muted-foreground mt-1 text-sm">
-          {[saleNumberLabel(saleNumber), `฿${sale.total}`, paymentMethodLabel(sale.paymentMethod ?? '')]
+          {[saleNumberLabel(saleNumber), `฿${bahtText(sale.total)}`, paymentMethodLabel(sale.paymentMethod ?? '')]
             .filter(Boolean)
             .join(' · ')}
         </p>
         {taxRows.length > 0 && (
           <p className="text-muted-foreground/70 mt-0.5 text-[11px]">
-            {taxRows.map((r) => `${r.label} ฿${shownBaht(r.amount)}`).join(' · ')}
+            {taxRows.map((r) => `${r.label} ฿${bahtText(r.amount)}`).join(' · ')}
           </p>
         )}
       </div>
@@ -236,7 +237,7 @@ function MobileConfirmation({
                     <div className="min-w-0 flex-1">
                       <div className="text-xs text-muted-foreground truncate">{v.label}</div>
                       {v.type === 'fnb_credit' ? (
-                        <div className="font-bold text-primary">฿{v.valueTHB} credit</div>
+                        <div className="font-bold text-primary">฿{v.valueTHB === undefined ? '' : bahtText(v.valueTHB)} credit</div>
                       ) : (
                         <div className="font-bold">×{v.quantity}</div>
                       )}

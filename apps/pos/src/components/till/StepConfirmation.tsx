@@ -20,8 +20,9 @@ import type { BoxSaleIssue } from '@/api/boxSales';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
 import { grantsOf, walletQrFor, type ApiWalletGrant } from '@/api/wallet';
 import { withPlatformCredit } from '@/lib/saleCredit';
-import { platformId, shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
+import { platformId, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * WHAT THIS SALE IS CALLED — SCRUM-203.
@@ -243,7 +244,7 @@ function CreditGrantRow({ voucher: grant, index, qrCode }: { voucher: CreditGran
         </div>
         {isCredit ? (
           <div className="text-2xl font-bold text-primary leading-tight">
-            ฿{grant.valueTHB} <span className="text-base font-medium text-muted-foreground">credit</span>
+            ฿{grant.valueTHB === undefined ? '' : bahtText(grant.valueTHB)} <span className="text-base font-medium text-muted-foreground">credit</span>
           </div>
         ) : (
           <div className="text-2xl font-bold leading-tight">
@@ -330,13 +331,13 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
         )}
         <h2 className="text-4xl font-bold tracking-tight">Payment Successful</h2>
         <p className="text-muted-foreground mt-2 text-xl">
-          {[numberLabel, `฿${sale.total}`, paymentMethodLabel(sale.paymentMethod ?? '')]
+          {[numberLabel, `฿${bahtText(sale.total)}`, paymentMethodLabel(sale.paymentMethod ?? '')]
             .filter(Boolean)
             .join(' • ')}
         </p>
         {showTaxBreakdown && taxRows.length > 0 && (
           <p className="text-muted-foreground/80 mt-1 text-sm">
-            {taxRows.map((r) => `${r.label} ฿${shownBaht(r.amount)}`).join(' · ')}
+            {taxRows.map((r) => `${r.label} ฿${bahtText(r.amount)}`).join(' · ')}
           </p>
         )}
         {note && <div className="mt-2">{note}</div>}

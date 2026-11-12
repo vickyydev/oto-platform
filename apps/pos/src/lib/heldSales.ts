@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { HeldSale, HeldSaleKind, Permission } from '@oto/shared';
+import { formatTHB, type HeldSale, type HeldSaleKind, type Permission } from '@oto/shared';
 import { heldSalesApi } from '@/api/heldSales';
 import { NetworkError, idemKey } from '@/api/client';
 import { newActionId, refundSale } from '@/api/history';
@@ -86,9 +86,8 @@ export function useHeldSales(opts: { branchId: string | null; enabled: boolean }
   return { sales, counts, error, loaded, refresh };
 }
 
-/** "฿1,234" or "฿1,234.50", from satang — the till's own money face. */
-export const bahtLabel = (satang: number): string =>
-  `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: satang % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`;
+/** "฿1,234" or "฿1,234.50", from satang — the till's own money face (`formatTHB`, SCRUM-933). */
+export const bahtLabel = (satang: number): string => formatTHB(satang);
 
 /**
  * WHY EACH PAYMENT-SCREEN BUTTON IS SHUT, in the words the till shows under it

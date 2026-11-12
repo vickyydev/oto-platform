@@ -21,6 +21,7 @@ import {
   Tent,
   Sparkles,
 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 type TypeFilter = 'all' | EventType;
 
@@ -247,7 +248,7 @@ export default function Events() {
                                       Outstanding
                                     </span>
                                     <span className="block text-lg font-bold tabular-nums text-amber-400">
-                                      ฿{outstanding}
+                                      ฿{bahtText(outstanding)}
                                     </span>
                                   </span>
                                 ) : (

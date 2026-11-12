@@ -3,6 +3,7 @@ import type { BadgeStatus } from '@/api/history';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/history/StatusBadge';
 import { Ticket, GlassWater, Baby, ShoppingBag, ChevronRight, Clock, User as UserIcon, QrCode, MapPin } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * `timeZone` is the BRANCH's, when the caller knows it (SCRUM-238). A sale is a
@@ -112,7 +113,7 @@ export function TransactionCard({
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <StatusBadge status={badge ?? txn.status} />
-          <span className="text-lg font-bold tabular-nums w-20 text-right">฿{txn.total}</span>
+          <span className="text-lg font-bold tabular-nums w-20 text-right">฿{bahtText(txn.total)}</span>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
       </Card>

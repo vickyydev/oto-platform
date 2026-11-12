@@ -33,6 +33,7 @@ import {
   Ticket,
   ChevronRight,
 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 const STATUS_STYLE: Record<PartyBooking['status'], string> = {
   upcoming: 'bg-sky-500/15 text-sky-400',
@@ -160,7 +161,7 @@ export function MobilePartyDetail({
             {bill.outstanding > 0 ? (
               <>
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Due</div>
-                <div className="text-xl font-black tabular-nums text-amber-400">฿{bill.outstanding}</div>
+                <div className="text-xl font-black tabular-nums text-amber-400">฿{bahtText(bill.outstanding)}</div>
               </>
             ) : (
               <div className="text-sm font-bold text-emerald-400">Fully paid</div>
@@ -176,32 +177,32 @@ export function MobilePartyDetail({
           <SectionCard icon={ReceiptText} title="Party bill">
             <div className="text-xs">
               {settlementOpen ? (
-                <InfoRow icon={CheckCircle2} label="Settlement open" value={`฿${bill.settlementOwed} to take`} />
+                <InfoRow icon={CheckCircle2} label="Settlement open" value={`฿${bahtText(bill.settlementOwed)} to take`} />
               ) : (
-                <InfoRow label={party.packageName ?? 'Base package'} value={`฿${party.basePrice}`} />
+                <InfoRow label={party.packageName ?? 'Base package'} value={`฿${bahtText(party.basePrice)}`} />
               )}
               {party.lineItems.map((li) => (
                 <InfoRow
                   key={li.id}
                   label={`${li.name}${li.qty ? ` ×${li.qty}` : ''}`}
-                  value={`฿${li.qty * li.price}`}
+                  value={`฿${bahtText(li.qty * li.price)}`}
                 />
               ))}
               {party.lineItems.length > 0 && (
                 <div className="flex items-center justify-between py-1 text-muted-foreground border-t mt-1 pt-1.5">
                   <span>Add-ons subtotal</span>
-                  <span className="tabular-nums">฿{lineItemsTotal}</span>
+                  <span className="tabular-nums">฿{bahtText(lineItemsTotal)}</span>
                 </div>
               )}
               {party.partyExtraCharges.length > 0 && (
-                <InfoRow icon={ReceiptText} label="Extra charges" value={`+฿${extras}`} />
+                <InfoRow icon={ReceiptText} label="Extra charges" value={`+฿${bahtText(extras)}`} />
               )}
               <div className="flex items-center justify-between py-1 font-semibold border-t mt-1 pt-1.5">
                 <span>Total</span>
-                <span className="tabular-nums">฿{bill.total}</span>
+                <span className="tabular-nums">฿{bahtText(bill.total)}</span>
               </div>
-              <InfoRow label="Deposit paid" value={`−฿${bill.deposit}`} />
-              {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bill.paid}`} />}
+              <InfoRow label="Deposit paid" value={`−฿${bahtText(bill.deposit)}`} />
+              {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bahtText(bill.paid)}`} />}
               <div className="flex items-center justify-between mt-1.5 pt-2 border-t">
                 <span className="font-bold">Outstanding</span>
                 <span
@@ -209,7 +210,7 @@ export function MobilePartyDetail({
                     bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
                   }`}
                 >
-                  ฿{bill.outstanding}
+                  ฿{bahtText(bill.outstanding)}
                 </span>
               </div>
             </div>
@@ -371,7 +372,7 @@ export function MobilePartyDetail({
                         )}
                         {c.kind === 'ticket' ? 'Extra tickets' : 'Extra F&B'}
                       </span>
-                      <span className="tabular-nums">+฿{c.total}</span>
+                      <span className="tabular-nums">+฿{bahtText(c.total)}</span>
                     </div>
                     <div className="text-muted-foreground mt-1">
                       {c.items.map((it) => `${it.qty}× ${it.name}`).join(', ')}
@@ -390,7 +391,7 @@ export function MobilePartyDetail({
                           <Icon className="w-3.5 h-3.5 text-emerald-400" />
                           Payment · {paymentMethodLabel(p.method)}
                         </span>
-                        <span className="tabular-nums text-emerald-400">−฿{p.amount}</span>
+                        <span className="tabular-nums text-emerald-400">−฿{bahtText(p.amount)}</span>
                       </div>
                       <div className="text-muted-foreground mt-0.5">
                         {p.takenBy} · {fmtTimestamp(p.takenAt)}
@@ -422,9 +423,9 @@ export function MobilePartyDetail({
         >
           <Wallet className="w-5 h-5" />
           {outstanding > 0
-            ? `Take payment · ฿${outstanding}`
+            ? `Take payment · ฿${bahtText(outstanding)}`
             : bill.settlementOwed > 0
-              ? `Settlement open · ฿${bill.settlementOwed}`
+              ? `Settlement open · ฿${bahtText(bill.settlementOwed)}`
               : 'Fully paid'}
         </Button>
         {outstanding <= 0 && bill.settlementOwed > 0 && (

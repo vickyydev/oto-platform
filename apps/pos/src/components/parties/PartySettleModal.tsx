@@ -22,6 +22,7 @@ import { StepPayment } from '@/components/till/StepPayment';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import type { PartyBooking } from '@/types';
 import { Baby, Check, CheckCircle2, Minus, PartyPopper, Plus, Sparkles, Users, Wallet, X } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * SCRUM-804 — "SETTLE PARTY": the party's package rung up as ONE sale from the
@@ -152,7 +153,7 @@ function CustomerPaymentPane({ amount, qr, method, title }: { amount: number; qr
         <Wallet className="w-8 h-8 text-sky-300" />
       </div>
       <h2 className="text-3xl font-black mb-3">Amount due</h2>
-      <div className="text-6xl font-black text-sky-300 tabular-nums">฿{amount}</div>
+      <div className="text-6xl font-black text-sky-300 tabular-nums">฿{bahtText(amount)}</div>
       <p className="text-lg text-white/60 mt-3">{title}</p>
       <p className="text-xl text-white/60 mt-6 max-w-md">
         {method ? 'Please complete payment with our staff.' : 'Our staff will help you choose how to pay.'}

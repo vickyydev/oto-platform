@@ -13,6 +13,7 @@ import { ManualDiscount, DiscountComponentTarget } from '@/types';
 import { resolveDiscountAmount } from '@/lib/manualDiscount';
 import { componentKey } from '@/lib/pricing';
 import { BadgePercent, Gift } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /** A single discountable component of a line (kids/adults/socks/an add-on). */
 export interface DiscountComponentOption {
@@ -207,7 +208,7 @@ export function ManualDiscountModal({
                             </span>
                           )}
                         </span>
-                        <span className="font-bold tabular-nums shrink-0">฿{l.amount}</span>
+                        <span className="font-bold tabular-nums shrink-0">฿{bahtText(l.amount)}</span>
                       </button>
                       {hasComponents && (
                         <div className="ml-3 pl-3 border-l space-y-1">
@@ -223,7 +224,7 @@ export function ManualDiscountModal({
                               }`}
                             >
                               <span className="truncate pr-2">{c.label}</span>
-                              <span className="font-bold tabular-nums shrink-0">฿{c.amount}</span>
+                              <span className="font-bold tabular-nums shrink-0">฿{bahtText(c.amount)}</span>
                             </button>
                           ))}
                         </div>
@@ -281,7 +282,7 @@ export function ManualDiscountModal({
                 </span>
                 {value !== '' && previewAmount > 0 && (
                   <span className="text-lg font-semibold text-emerald-500 tabular-nums">
-                    = −฿{previewAmount}
+                    = −฿{bahtText(previewAmount)}
                   </span>
                 )}
               </div>
@@ -328,12 +329,12 @@ export function ManualDiscountModal({
           <div className="flex items-center justify-between rounded-lg bg-muted p-4">
             <span className="text-muted-foreground">Discount</span>
             <span className="text-2xl font-black text-emerald-500 tabular-nums">
-              −฿{previewAmount}
+              −฿{bahtText(previewAmount)}
             </span>
           </div>
 
           <Button className="w-full h-14 text-lg" disabled={!canApply} onClick={handleApply}>
-            {reason ? `Apply −฿${previewAmount}` : 'Choose a reason to apply'}
+            {reason ? `Apply −฿${bahtText(previewAmount)}` : 'Choose a reason to apply'}
           </Button>
         </div>
       </DialogContent>

@@ -131,7 +131,7 @@ import {
 } from '@/lib/giftTicket';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { partyPageHref, useLeftBehindSales } from '@/lib/leftBehindSale';
-import { isPartySettlementDetail, rebuildResumedSale, resumedPayLabel } from '@/lib/resumeSale';
+import { isPartySettlementDetail, payNamesBalance, rebuildResumedSale, resumedPayLabel } from '@/lib/resumeSale';
 import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import { getSale } from '@/api/history';
 import { collectDisplayConsentPhoto } from '@/api/consentPhoto';
@@ -4157,8 +4157,9 @@ export default function Till() {
             onPay={handlePay}
             onCancel={() => void handleCancel()}
             canPay={canPay}
-            // SCRUM-889 — a resumed sale's Pay names its balance, as Amount Due does.
-            {...(resumed && step === 5 ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}
+            // SCRUM-889 — a resumed sale's Pay names its balance, as Amount Due
+            // does; SCRUM-902 — so does a sale part-paid on this screen.
+            {...(payNamesBalance({ resumed: Boolean(resumed), step, paidOnScreenSatang: paidOnScreen }) ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}
             // The voucher's own row is its card below, not a promo badge with
             // a promo's remove button.
             totals={

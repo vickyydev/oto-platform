@@ -5,6 +5,7 @@ import type { RefundLineOption, RefundResult } from '@/components/history/Refund
 import { refundAmountFor, type RefundItemOption } from '@/api/history';
 import type { RefundMode } from '@/lib/payments';
 import { ArrowLeft, Undo2, RefreshCw, HandCoins, Wallet, Check } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 type Mode = 'full' | 'item' | 'custom';
 type Step = 'scope' | 'reason' | 'confirm';
@@ -127,7 +128,7 @@ export function MobileRefundFlow({
       {step === 'scope' && (
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="text-sm text-muted-foreground">
-            Up to <span className="font-bold text-foreground">฿{maxRefund}</span> refundable · by{' '}
+            Up to <span className="font-bold text-foreground">฿{bahtText(maxRefund)}</span> refundable · by{' '}
             {operatorName}
           </div>
 
@@ -184,7 +185,7 @@ export function MobileRefundFlow({
                         </span>
                         <span className="truncate font-medium">{l.label}</span>
                       </span>
-                      <span className="font-bold tabular-nums shrink-0">฿{l.amount}</span>
+                      <span className="font-bold tabular-nums shrink-0">฿{bahtText(l.amount)}</span>
                     </button>
                   );
                 })}
@@ -199,7 +200,7 @@ export function MobileRefundFlow({
               <div className="flex items-baseline justify-between rounded-xl border bg-muted/40 px-5 h-16">
                 <span className="text-4xl font-bold tabular-nums">฿{customValue || '0'}</span>
                 {Number(customValue) > maxRefund && (
-                  <span className="text-sm font-semibold text-amber-400">max ฿{maxRefund}</span>
+                  <span className="text-sm font-semibold text-amber-400">max ฿{bahtText(maxRefund)}</span>
                 )}
               </div>
               <TouchKeypad value={customValue} onChange={setCustomValue} maxLength={6} />
@@ -210,7 +211,7 @@ export function MobileRefundFlow({
           {amountTHB > 0 && (
             <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 flex items-center justify-between">
               <span className="text-sm text-rose-300">Refund amount</span>
-              <span className="text-2xl font-black tabular-nums text-rose-400">−฿{amountTHB}</span>
+              <span className="text-2xl font-black tabular-nums text-rose-400">−฿{bahtText(amountTHB)}</span>
             </div>
           )}
         </div>
@@ -221,7 +222,7 @@ export function MobileRefundFlow({
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-rose-300">Refund amount</span>
-            <span className="text-2xl font-black tabular-nums text-rose-400">−฿{amountTHB}</span>
+            <span className="text-2xl font-black tabular-nums text-rose-400">−฿{bahtText(amountTHB)}</span>
           </div>
 
           <div className="space-y-3">
@@ -266,7 +267,7 @@ export function MobileRefundFlow({
             <div className="rounded-xl border bg-card/50 p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Refund amount</span>
-                <span className="text-3xl font-black tabular-nums text-rose-400">−฿{amountTHB}</span>
+                <span className="text-3xl font-black tabular-nums text-rose-400">−฿{bahtText(amountTHB)}</span>
               </div>
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
@@ -295,7 +296,7 @@ export function MobileRefundFlow({
                 <Wallet className="w-5 h-5 text-primary shrink-0" />
                 <div>
                   <div className="text-sm font-semibold text-primary">
-                    ฿{creditRestoredTHB} back to wristband
+                    ฿{bahtText(creditRestoredTHB)} back to wristband
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Credit will be restored automatically.
@@ -358,7 +359,7 @@ export function MobileRefundFlow({
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            {busy ? 'Recording…' : offline ? 'Note refund request' : `Confirm refund ฿${amountTHB}`}
+            {busy ? 'Recording…' : offline ? 'Note refund request' : `Confirm refund ฿${bahtText(amountTHB)}`}
           </Button>
         )}
       </div>

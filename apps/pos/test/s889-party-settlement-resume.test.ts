@@ -195,12 +195,14 @@ describe('the Pay press names the balance', () => {
   it('on a resumed sale: the payment stage’s outstanding, never the gross', () => {
     // The proof's figures: ฿16,900 gross with the ฿1,000 deposit on it.
     expect(resumedPayLabel(1_590_000)).toBe('Pay ฿15900');
-    expect(resumedPayLabel(1_250)).toBe('Pay ฿12.5');
+    // SCRUM-933 — an amount with satang shows its two places on the staff till.
+    expect(resumedPayLabel(1_250)).toBe('Pay ฿12.50');
   });
 
   it('the counter till wires it, and refuses a settlement on its resume path in the party page’s words', () => {
     const till = src('pages/Till.tsx');
-    expect(till).toContain('{...(resumed && step === 5 ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}');
+    // SCRUM-902 — the same balance once a part is paid at the payment step.
+    expect(till).toContain('{...(payNamesBalance({ resumed: Boolean(resumed), step, paidOnScreenSatang: paidOnScreen }) ? { payLabel: resumedPayLabel(paymentStage.state.outstandingSatang) } : {})}');
     expect(till).toMatch(/if \(isPartySettlementDetail\(detail\)\) \{\s*leftBehind\.dismiss\(saleId\);\s*toast\(\{ title: 'That sale is a party settlement', description: 'Resume it on the party page\.'/);
     // The guard comes before the cart is rebuilt and before the writer adopts the sale.
     expect(till.indexOf('if (isPartySettlementDetail(detail))')).toBeLessThan(till.indexOf('const rebuilt = rebuildResumedSale(detail'));
@@ -215,7 +217,7 @@ describe('the Pay press names the balance', () => {
     expect(modal).toContain('<CustomerPaymentPane amount={balance}');
     expect(modal).toContain("`Confirm · ${money(quote.balanceSatang)} to pay`");
     // The party page's own Resume settlement names the balance too.
-    expect(src('components/parties/PartyDetail.tsx')).toContain('`Resume settlement ฿${settlement.outstandingSatang / 100}`');
+    expect(src('components/parties/PartyDetail.tsx')).toContain('`Resume settlement ฿${satangText(settlement.outstandingSatang)}`');
   });
 
   it('the party page opens on the party the till’s card names', () => {

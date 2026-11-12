@@ -16,6 +16,7 @@ import {
   Users,
   CalendarDays,
 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 type TypeFilter = 'all' | EventType;
 
@@ -222,7 +223,7 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
                                 Due
                               </div>
                               <div className="text-base font-bold tabular-nums text-amber-400">
-                                ฿{outstanding}
+                                ฿{bahtText(outstanding)}
                               </div>
                             </div>
                           ) : (

@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Check, Wallet } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 type Step = 'pick' | 'bill-review' | 'collect' | 'done';
 
@@ -221,7 +222,7 @@ export function MobilePartyPayment({
           </div>
           <h2 className="text-2xl font-bold mb-1">{paymentMethodLabel(shown.method)}</h2>
           <p className="text-muted-foreground mb-4">{party.title}</p>
-          <div className="text-5xl font-black tabular-nums mb-4">฿{shown.amount}</div>
+          <div className="text-5xl font-black tabular-nums mb-4">฿{bahtText(shown.amount)}</div>
           <p className="text-muted-foreground max-w-xs text-sm mb-8">
             {collectHint(shown.method)}
           </p>
@@ -284,7 +285,7 @@ export function MobilePartyPayment({
           <div className="rounded-lg border p-4 w-full max-w-sm space-y-2 text-sm mb-8">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Collected</span>
-              <span className="tabular-nums font-semibold text-emerald-500">฿{collectAmount}</span>
+              <span className="tabular-nums font-semibold text-emerald-500">฿{bahtText(collectAmount)}</span>
             </div>
             <div className="flex items-center justify-between border-t pt-2 mt-1 font-bold">
               <span>Outstanding</span>
@@ -293,7 +294,7 @@ export function MobilePartyPayment({
                   newOutstanding > 0 ? 'text-amber-500' : 'text-emerald-500'
                 }`}
               >
-                ฿{newOutstanding}
+                ฿{bahtText(newOutstanding)}
               </span>
             </div>
           </div>
@@ -331,27 +332,27 @@ export function MobilePartyPayment({
           <div className="rounded-lg border p-4 space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Package total</span>
-              <span className="tabular-nums">฿{total - extras}</span>
+              <span className="tabular-nums">฿{bahtText(total - extras)}</span>
             </div>
             {extras > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Extra F&amp;B charges</span>
-                <span className="tabular-nums">+฿{extras}</span>
+                <span className="tabular-nums">+฿{bahtText(extras)}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Deposit paid</span>
-              <span className="tabular-nums">−฿{party.deposit}</span>
+              <span className="tabular-nums">−฿{bahtText(party.deposit)}</span>
             </div>
             {paid > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Payments taken</span>
-                <span className="tabular-nums">−฿{paid}</span>
+                <span className="tabular-nums">−฿{bahtText(paid)}</span>
               </div>
             )}
             <div className="flex items-center justify-between border-t pt-2 mt-1 font-bold">
               <span>Outstanding</span>
-              <span className="text-2xl tabular-nums">฿{outstanding}</span>
+              <span className="text-2xl tabular-nums">฿{bahtText(outstanding)}</span>
             </div>
           </div>
 
@@ -371,7 +372,7 @@ export function MobilePartyPayment({
                     className="h-14"
                     onClick={() => setMode('full')}
                   >
-                    Full ฿{outstanding}
+                    Full ฿{bahtText(outstanding)}
                   </Button>
                   <Button
                     type="button"
@@ -389,7 +390,7 @@ export function MobilePartyPayment({
                     min={1}
                     max={outstanding}
                     autoFocus
-                    placeholder={`Up to ฿${outstanding}`}
+                    placeholder={`Up to ฿${bahtText(outstanding)}`}
                     value={partialText}
                     onChange={(e) => setPartialText(e.target.value)}
                     className="h-14 text-lg tabular-nums"
@@ -424,7 +425,7 @@ export function MobilePartyPayment({
               {/* Summary */}
               <div className="rounded-lg bg-muted p-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Amount to collect</span>
-                <span className="text-2xl font-black tabular-nums">฿{amount}</span>
+                <span className="text-2xl font-black tabular-nums">฿{bahtText(amount)}</span>
               </div>
             </>
           )}
@@ -444,7 +445,7 @@ export function MobilePartyPayment({
               ? 'Choose a payment method'
               : amount <= 0
                 ? 'Enter an amount'
-                : `Show bill · ฿${amount} by ${paymentMethodLabel(method)}`}
+                : `Show bill · ฿${bahtText(amount)} by ${paymentMethodLabel(method)}`}
           </Button>
         </div>
       )}

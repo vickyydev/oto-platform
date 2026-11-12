@@ -200,9 +200,9 @@ describe('the rules, and the badge', () => {
   it('both detail layouts show the figure and the words the controller chose', () => {
     const desktop = src('components/history/SaleDetail.tsx');
     expect(desktop).toContain('{amountLabelOf(badge)}');
-    expect(desktop).toContain('฿{baht(amountShownSatang)}');
+    expect(desktop).toContain('฿{satangText(amountShownSatang)}');
     const phone = src('components/mobile/history/MobileTransactionDetail.tsx');
     expect(phone).toContain('{amountLabelOf(badge)}');
-    expect(phone).toContain('฿{baht(state.amountShownSatang)}');
+    expect(phone).toContain('฿{satangText(state.amountShownSatang)}');
   });
 });

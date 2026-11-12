@@ -19,6 +19,7 @@ import { isVoucherDiscount, type ApiSaleDetail, type ApiSaleDiscount, type ApiSa
 import type { CartQuote, OrderTotals } from '@/api/sales';
 import type { CartQuoteState } from '@/lib/cartQuote';
 import { breakdownToBaht, toBaht } from '@/lib/cartWire';
+import { satangText } from '@/lib/bahtText';
 import type { RateMode } from '@/lib/pricingMode';
 
 /**
@@ -357,9 +358,21 @@ export function isPartySettlementDetail(detail: Pick<ApiSaleDetail, 'lines'>): b
  * SCRUM-889 — the order panel's Pay press on a resumed sale names what is
  * still to pay: the payment stage's own balance (the platform's figure, after
  * the money already taken on the sale), never the order's gross re-summed.
+ * SCRUM-902 — and on a sale part-paid at its payment step, the same. Through
+ * the till's one formatter (SCRUM-933): "Pay ฿15900", "Pay ฿12.50".
  */
 export function resumedPayLabel(outstandingSatang: number): string {
-  return `Pay ฿${outstandingSatang / 100}`;
+  return `Pay ฿${satangText(outstandingSatang)}`;
+}
+
+/**
+ * SCRUM-902 — WHEN THE ORDER PANEL'S PAY NAMES THE BALANCE: at the payment
+ * step of a sale resumed after a reload or from Held sales (SCRUM-889), and of
+ * a sale with money already taken on it on this screen — a part payment at the
+ * payment step. Otherwise Pay names the order's total, as it always has.
+ */
+export function payNamesBalance(input: { resumed: boolean; step: number; paidOnScreenSatang: number }): boolean {
+  return input.step === 5 && (input.resumed || input.paidOnScreenSatang > 0);
 }
 
 /**

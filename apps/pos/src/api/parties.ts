@@ -19,19 +19,20 @@
 // twice is one charge, one payment or one edit.
 
 import type { ApiResponse } from '@oto/api-types';
-import type {
-  EventDetailAnswer,
-  PartyDetailAnswer,
-  PartyEditFields,
-  PartyKitchenPlan,
-  PartyPlan,
-  PartyPlanStatus,
-  PartySettleAnswer,
-  PartySettleBody,
-  PartySettlePreviewBody,
-  PartySettleQuote,
-  PartyTenderBody,
-  PartyWriteAnswer,
+import {
+  formatTHB,
+  type EventDetailAnswer,
+  type PartyDetailAnswer,
+  type PartyEditFields,
+  type PartyKitchenPlan,
+  type PartyPlan,
+  type PartyPlanStatus,
+  type PartySettleAnswer,
+  type PartySettleBody,
+  type PartySettlePreviewBody,
+  type PartySettleQuote,
+  type PartyTenderBody,
+  type PartyWriteAnswer,
 } from '@oto/shared';
 import type { PartyEditPatch } from '@/components/parties/PartyEditForm';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
@@ -514,7 +515,7 @@ export type PartyCancelSettlementOutcome =
 export function cancelSettlementTakenRefusal(takenSatang: number | null): string {
   const taken =
     takenSatang !== null && takenSatang > 0
-      ? `฿${(takenSatang / 100).toLocaleString('en-US', { minimumFractionDigits: takenSatang % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })} was already taken`
+      ? `${formatTHB(takenSatang)} was already taken`
       : 'Money was already taken';
   return `${taken} on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.`;
 }

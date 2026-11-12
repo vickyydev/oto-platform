@@ -31,6 +31,7 @@ import {
   Monitor,
   PartyPopper,
 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 interface PartyBalanceModalProps {
   displayHandoff?: StationDisplayHandoff;
@@ -195,7 +196,7 @@ export function PartyBalanceModal({
     stage === 'review'
       ? 'Reviewing the bill'
       : stage === 'collect'
-        ? `Collecting ฿${shown.amount} by ${paymentMethodLabel(shown.method)}`
+        ? `Collecting ฿${bahtText(shown.amount)} by ${paymentMethodLabel(shown.method)}`
         : 'Payment recorded';
 
   return (
@@ -248,7 +249,7 @@ export function PartyBalanceModal({
                     <div className="rounded-lg border p-4 space-y-2 text-sm mb-5">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Package total</span>
-                        <span className="tabular-nums">฿{total - extras}</span>
+                        <span className="tabular-nums">฿{bahtText(total - extras)}</span>
                       </div>
                       {extraGroups.length > 0 && (
                         <div className="border-t pt-2 mt-1 space-y-2">
@@ -259,24 +260,24 @@ export function PartyBalanceModal({
                           {extraGroups.map((g) => (
                             <div key={g.kind} className="flex items-center justify-between">
                               <span className="text-muted-foreground">{g.label}</span>
-                              <span className="tabular-nums">+฿{g.total}</span>
+                              <span className="tabular-nums">+฿{bahtText(g.total)}</span>
                             </div>
                           ))}
                         </div>
                       )}
                       <div className="flex items-center justify-between border-t pt-2 mt-1">
                         <span className="text-muted-foreground">Deposit paid</span>
-                        <span className="tabular-nums">−฿{party.deposit}</span>
+                        <span className="tabular-nums">−฿{bahtText(party.deposit)}</span>
                       </div>
                       {paid > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Payments taken</span>
-                          <span className="tabular-nums">−฿{paid}</span>
+                          <span className="tabular-nums">−฿{bahtText(paid)}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-between border-t pt-2 mt-1 font-bold">
                         <span>Outstanding</span>
-                        <span className="text-2xl tabular-nums">฿{outstanding}</span>
+                        <span className="text-2xl tabular-nums">฿{bahtText(outstanding)}</span>
                       </div>
                     </div>
 
@@ -298,7 +299,7 @@ export function PartyBalanceModal({
                               className="h-14"
                               onClick={() => setMode('full')}
                             >
-                              Full ฿{outstanding}
+                              Full ฿{bahtText(outstanding)}
                             </Button>
                             <Button
                               type="button"
@@ -316,7 +317,7 @@ export function PartyBalanceModal({
                               min={1}
                               max={outstanding}
                               autoFocus
-                              placeholder={`Up to ฿${outstanding}`}
+                              placeholder={`Up to ฿${bahtText(outstanding)}`}
                               value={partialText}
                               onChange={(e) => setPartialText(e.target.value)}
                               className="h-14 text-lg tabular-nums"
@@ -351,7 +352,7 @@ export function PartyBalanceModal({
                         {/* Summary */}
                         <div className="rounded-lg bg-muted p-4 flex items-center justify-between">
                           <span className="text-muted-foreground">Amount to collect</span>
-                          <span className="text-2xl font-black tabular-nums">฿{amount}</span>
+                          <span className="text-2xl font-black tabular-nums">฿{bahtText(amount)}</span>
                         </div>
 
                         <Button
@@ -363,7 +364,7 @@ export function PartyBalanceModal({
                             ? 'Choose a payment method'
                             : amount <= 0
                               ? 'Enter an amount'
-                              : `Take ฿${amount} by ${paymentMethodLabel(method)}`}
+                              : `Take ฿${bahtText(amount)} by ${paymentMethodLabel(method)}`}
                         </Button>
                       </div>
                     )}
@@ -382,7 +383,7 @@ export function PartyBalanceModal({
                       {paymentMethodLabel(shown.method)} payment
                     </h2>
                     <p className="text-muted-foreground mb-6">{party.title}</p>
-                    <div className="text-5xl font-black tabular-nums mb-6">฿{shown.amount}</div>
+                    <div className="text-5xl font-black tabular-nums mb-6">฿{bahtText(shown.amount)}</div>
                     <p className="text-muted-foreground max-w-sm mb-8">
                       {collectHint(shown.method)}
                     </p>
@@ -440,7 +441,7 @@ export function PartyBalanceModal({
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Collected now</span>
                         <span className="tabular-nums font-semibold text-emerald-500">
-                          ฿{collectAmount}
+                          ฿{bahtText(collectAmount)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between border-t pt-2 mt-1 font-bold">
@@ -450,7 +451,7 @@ export function PartyBalanceModal({
                             outstanding > 0 ? 'text-amber-500' : 'text-emerald-500'
                           }`}
                         >
-                          ฿{outstanding}
+                          ฿{bahtText(outstanding)}
                         </span>
                       </div>
                     </div>

@@ -36,6 +36,7 @@ import {
 } from '@/components/history/SaleDetail';
 import { MobileRefundFlow } from './MobileRefundFlow';
 import { MobileReprintFlow } from './MobileReprintFlow';
+import { satangText } from '@/lib/bahtText';
 
 /** Phone presentation; all amounts and mutations come from the shared ledger controller. */
 export function MobileTransactionDetail(props: SaleDetailProps) {
@@ -187,7 +188,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                           {state.packageName(lines[0]?.ticketPackageId ?? null) ?? lines[0]?.label}
                         </span>
                         <span className="shrink-0 tabular-nums">
-                          ฿{baht(lines.reduce((sum, line) => sum + line.grossSatang, 0))}
+                          ฿{satangText(lines.reduce((sum, line) => sum + line.grossSatang, 0))}
                         </span>
                       </div>
                       {lines.map((line) => (
@@ -196,11 +197,11 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                           className="flex justify-between text-xs text-muted-foreground mt-1"
                         >
                           <span>
-                            {line.label} · {line.quantity}× ฿{baht(line.unitSatang)}
+                            {line.label} · {line.quantity}× ฿{satangText(line.unitSatang)}
                             {!!line.modifiers?.length && <span className="block">{line.modifiers.map((choice) => `${choice.groupName}: ${choice.optionName}`).join(', ')}</span>}
                             {line.note && <span className="block italic">{line.note}</span>}
                           </span>
-                          <span className="tabular-nums">฿{baht(line.grossSatang)}</span>
+                          <span className="tabular-nums">฿{satangText(line.grossSatang)}</span>
                         </div>
                       ))}
                     </div>
@@ -237,7 +238,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
           <Card className="p-4 bg-card/50 space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span>฿{baht(totals.subtotalSatang)}</span>
+              <span>฿{satangText(totals.subtotalSatang)}</span>
             </div>
             {detail?.discounts.map((discount) => (
               <div key={discount.id} className="flex justify-between gap-2 text-emerald-400">
@@ -251,13 +252,13 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                     </div>
                   )}
                 </div>
-                <span className="shrink-0">−฿{baht(discount.amountSatang)}</span>
+                <span className="shrink-0">−฿{satangText(discount.amountSatang)}</span>
               </div>
             ))}
             {totals.serviceChargeSatang > 0 && (
               <div className="flex justify-between">
                 <span>Service charge</span>
-                <span>฿{baht(totals.serviceChargeSatang)}</span>
+                <span>฿{satangText(totals.serviceChargeSatang)}</span>
               </div>
             )}
             {state.taxTotal > 0 && (
@@ -266,19 +267,19 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   {state.taxName}
                   {totals.taxInclusiveSatang > 0 ? ' (included)' : ''}
                 </span>
-                <span>฿{baht(state.taxTotal)}</span>
+                <span>฿{satangText(state.taxTotal)}</span>
               </div>
             )}
             <div className="border-t pt-3 flex items-end justify-between">
               <span className="font-semibold text-muted-foreground">
                 {amountLabelOf(badge)}
               </span>
-              <span className="text-3xl font-black">฿{baht(state.amountShownSatang)}</span>
+              <span className="text-3xl font-black">฿{satangText(state.amountShownSatang)}</span>
             </div>
             {totals.refundedSatang > 0 && (
               <div className="flex justify-between text-rose-400 font-semibold">
                 <span>Refunded</span>
-                <span>−฿{baht(totals.refundedSatang)}</span>
+                <span>−฿{satangText(totals.refundedSatang)}</span>
               </div>
             )}
             {detail?.timeExtension && <p className="border-t pt-2 text-muted-foreground">
@@ -330,7 +331,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
               <div className="text-sm text-emerald-400 font-semibold flex gap-2">
                 <Check className="w-4 h-4" />
                 Refund recorded · {state.justRefunded.number} · −฿
-                {baht(state.justRefunded.amountSatang)}
+                {satangText(state.justRefunded.amountSatang)}
               </div>
               {state.justRefunded.tenderAllocation.map((slice, index) => (
                 <div
@@ -338,7 +339,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   className={`text-sm flex justify-between ${refundSliceWords(slice).tone}`}
                 >
                   <span>{refundSliceWords(slice).text}</span>
-                  <span>฿{baht(slice.amountSatang)}</span>
+                  <span>฿{satangText(slice.amountSatang)}</span>
                 </div>
               ))}
               {txn.kind !== 'merch' && !detail?.timeExtension && (
@@ -397,7 +398,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   onClick={state.openRefund}
                 >
                   <Undo2 className="w-4 h-4" />
-                  {offline ? 'Refund — online only' : 'Refund'} (฿{baht(remainingSatang)} left)
+                  {offline ? 'Refund — online only' : 'Refund'} (฿{satangText(remainingSatang)} left)
                 </Button>
               )}
               {state.partPaidOpen && (

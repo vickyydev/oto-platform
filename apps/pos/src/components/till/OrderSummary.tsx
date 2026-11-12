@@ -20,6 +20,7 @@ import {
 } from '@/lib/pricing';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, type LucideIcon } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 interface OrderSummaryProps {
   tier: CustomerTier | null;
@@ -126,7 +127,7 @@ function ManualDiscountRow({
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        <span className="font-bold">-฿{amount}</span>
+        <span className="font-bold">-฿{bahtText(amount)}</span>
         <Button
           variant="ghost"
           size="icon"
@@ -166,7 +167,7 @@ function QtyRow({
         <span className="truncate">{label}</span>
         {unitPrice !== undefined ? (
           <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-            ฿{unitPrice} each{unitNote ? ` · ${unitNote}` : ''}
+            ฿{bahtText(unitPrice)} each{unitNote ? ` · ${unitNote}` : ''}
           </span>
         ) : unitWarning ? (
           <span className="text-xs font-medium text-amber-300 shrink-0">{unitWarning}</span>
@@ -283,7 +284,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   const unquotable = unpriced.length > 0 || awaitingLength.length > 0;
   const ticketPriceText = (line: CartLine) => {
     const price = tierPriceTHB(line.ticketType, line.tier);
-    return price === null ? '—' : `฿${price}`;
+    return price === null ? '—' : `฿${bahtText(price)}`;
   };
 
   // Whole-line discounts (no component target) — shown under the line as before.
@@ -412,7 +413,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                       <div className="font-bold text-base shrink-0">
                         {!line.dropOff.lengthChosen || lineIsUnpriced(line)
                           ? '—'
-                          : `฿${line.dropOff.service === 'nanny' ? priceForTier(line.ticketType, line.tier) + dropOffExtras(line) : line.lineTotal}`}
+                          : `฿${bahtText(line.dropOff.service === 'nanny' ? priceForTier(line.ticketType, line.tier) + dropOffExtras(line) : line.lineTotal)}`}
                       </div>
                     </div>
                     <div className="space-y-1 mt-1 text-sm text-muted-foreground">
@@ -435,7 +436,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                                 </span>
                               </span>
                               <span className="tabular-nums shrink-0">
-                                ฿{lineExtrasCharge(line, socksPrice).socks.amount}
+                                ฿{bahtText(lineExtrasCharge(line, socksPrice).socks.amount)}
                               </span>
                             </div>
                           )}
@@ -449,7 +450,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                                   {addOnCharge(line, i).note}
                                 </span>
                               </span>
-                              <span className="tabular-nums shrink-0">฿{addOnCharge(line, i).amount}</span>
+                              <span className="tabular-nums shrink-0">฿{bahtText(addOnCharge(line, i).amount)}</span>
                             </div>
                           ))}
                         </>
@@ -474,7 +475,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                               <span className="truncate">Drop-off service</span>
                             </span>
                             {line.dropOff.lengthChosen && line.dropOff.serviceFeeTHB > 0 && (
-                              <span className="tabular-nums shrink-0">฿{line.dropOff.serviceFeeTHB}</span>
+                              <span className="tabular-nums shrink-0">฿{bahtText(line.dropOff.serviceFeeTHB)}</span>
                             )}
                           </>
                         )}
@@ -509,7 +510,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                     )}
                   </div>
                   <div className="font-bold text-base shrink-0">
-                    {lineIsUnpriced(line) ? '—' : `฿${line.lineTotal}`}
+                    {lineIsUnpriced(line) ? '—' : `฿${bahtText(line.lineTotal)}`}
                   </div>
                 </div>
                 <div className="space-y-1.5 mt-2">
@@ -550,7 +551,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                                 {addOnCharge(line, i).note}
                               </span>
                             </span>
-                            <span className="tabular-nums shrink-0">฿{addOnCharge(line, i).amount}</span>
+                            <span className="tabular-nums shrink-0">฿{bahtText(addOnCharge(line, i).amount)}</span>
                           </div>
                           {renderComponentDiscounts(line.id, `addon:${a.id}`)}
                         </div>
@@ -617,7 +618,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                         </div>
                       )}
                     </div>
-                    <div className="font-bold shrink-0 tabular-nums">฿{g.fee}</div>
+                    <div className="font-bold shrink-0 tabular-nums">฿{bahtText(g.fee)}</div>
                   </div>
                 ))}
               </div>
@@ -643,7 +644,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-bold">-฿{sd.amount.toFixed(0)}</span>
+                <span className="font-bold">-฿{bahtText(sd.amount)}</span>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-600" onClick={() => onRemoveDiscount(sd.code)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -747,19 +748,19 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
               an order that has no amount. */}
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
-            <span>{unquotable ? '—' : `฿${subtotal}`}</span>
+            <span>{unquotable ? '—' : `฿${bahtText(subtotal)}`}</span>
           </div>
           {!unquotable &&
             taxRows.map((row) => (
               <div key={row.key} className="flex justify-between text-muted-foreground text-sm">
                 <span>{row.label}</span>
-                <span className="tabular-nums">฿{row.amount}</span>
+                <span className="tabular-nums">฿{bahtText(row.amount)}</span>
               </div>
             ))}
           <Separator />
           <div className="flex justify-between font-bold text-2xl pt-2">
             <span>Total</span>
-            <span className="text-primary">{unquotable ? '—' : `฿${total}`}</span>
+            <span className="text-primary">{unquotable ? '—' : `฿${bahtText(total)}`}</span>
           </div>
           {priceNote}
         </div>
@@ -779,7 +780,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                 nobody has priced — or "Pay ฿690" on one whose subtotal says ฿0
                 — is the one figure staff would repeat out loud to the family in
                 front of them. */}
-            {payLabel ?? (unquotable ? 'Pay —' : `Pay ฿${total}`)}
+            {payLabel ?? (unquotable ? 'Pay —' : `Pay ฿${bahtText(total)}`)}
           </Button>
         </div>
       </div>

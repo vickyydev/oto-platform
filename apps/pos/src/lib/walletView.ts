@@ -5,7 +5,7 @@
 // status in the counter's words, the ledger newest first with the prototype
 // popover's columns (kind · source · by · time, the signed amount), and
 // whether — and how much — expired credit can be brought back.
-import type { WalletEntryView, WalletView } from '@oto/shared';
+import { formatTHB, type WalletEntryView, type WalletView } from '@oto/shared';
 
 export type WalletViewStatus = 'active' | 'expired' | 'lapsed';
 
@@ -66,7 +66,10 @@ export function reactivationReasonError(reason: string): string | null {
   return reason.trim() ? null : 'Type why this credit is coming back.';
 }
 
-/** Baht with satang only when there are some — the till's money style. */
+/**
+ * Baht with satang only when there are some — the till's money style, through
+ * its one formatter (SCRUM-933): "฿1,444.50", never "฿1,444.5".
+ */
 export function bahtOf(satang: number): string {
-  return `฿${(satang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  return formatTHB(satang);
 }
