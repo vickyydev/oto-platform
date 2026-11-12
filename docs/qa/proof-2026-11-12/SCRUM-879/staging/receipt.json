@@ -1,0 +1,976 @@
+{
+  "tickets": [
+    "SCRUM-879",
+    "SCRUM-880",
+    "SCRUM-881",
+    "SCRUM-882"
+  ],
+  "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+  "startedAt": "2026-11-12T03:27:56.965Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqitu5g1s2s73efqflg",
+        "status": "live",
+        "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+        "createdAt": "2026-11-12T03:14:00.551919Z",
+        "finishedAt": "2026-11-12T03:15:05.508939Z"
+      },
+      "serving": {
+        "id": "dep-dbqitu5g1s2s73efqflg",
+        "status": "live",
+        "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+        "createdAt": "2026-11-12T03:14:00.551919Z",
+        "finishedAt": "2026-11-12T03:15:05.508939Z"
+      },
+      "readAt": "2026-11-12T03:27:53.966Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqituqfngtc73fo4agg",
+        "status": "live",
+        "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+        "createdAt": "2026-11-12T03:14:03.082489Z",
+        "finishedAt": "2026-11-12T03:17:07.089916Z"
+      },
+      "serving": {
+        "id": "dep-dbqituqfngtc73fo4agg",
+        "status": "live",
+        "sha": "6660dd4dbbbb104b45accf8afb1b9ef63c03f2d3",
+        "createdAt": "2026-11-12T03:14:03.082489Z",
+        "finishedAt": "2026-11-12T03:17:07.089916Z"
+      },
+      "readAt": "2026-11-12T03:27:54.543Z"
+    }
+  },
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01b-dropoff-step-light.png",
+      "shows": "Drop-off step at 1440x900: the banner, the overdue bar and the \"Before payment\" list on light (lowest contrast 6.06:1) and dark (01d, lowest 6.76:1); close-ups 01c-*/01e-*",
+      "seen": {
+        "light": {
+          "theme": "light",
+          "banner": {
+            "label": {
+              "text": "Test harness — staff till and customer display sha",
+              "color": "oklch(0.473 0.137 46.201)",
+              "ink": "#973c00",
+              "background": "#faebd7",
+              "contrast": 6.06,
+              "rootClass": "light"
+            },
+            "hideButton": {
+              "text": "Hide customer display",
+              "color": "oklch(0.473 0.137 46.201)",
+              "ink": "#973c00",
+              "background": "#faebd7",
+              "contrast": 6.06,
+              "rootClass": "light"
+            }
+          },
+          "bannerPicture": {
+            "picture": "01c-banner-hide-customer-display-light.png",
+            "width": 1440,
+            "height": 49
+          },
+          "overdue": {
+            "bar": {
+              "text": "7 overdue",
+              "color": "oklch(0.473 0.137 46.201)",
+              "ink": "#973c00",
+              "background": "#faebd7",
+              "contrast": 6.06,
+              "rootClass": "light"
+            },
+            "review": {
+              "text": "Review →",
+              "color": "oklch(0.473 0.137 46.201)",
+              "ink": "#973c00",
+              "background": "#faebd7",
+              "contrast": 6.06,
+              "rootClass": "light"
+            }
+          },
+          "overduePicture": {
+            "picture": "01c-overdue-bar-review-light.png",
+            "width": 1408,
+            "height": 48
+          },
+          "beforePayment": {
+            "heading": {
+              "text": "Before payment",
+              "color": "oklch(0.473 0.137 46.201)",
+              "ink": "#973c00",
+              "background": "#fbedda",
+              "contrast": 6.16,
+              "rootClass": "light"
+            },
+            "items": [
+              {
+                "text": "• ZZ TEST SCRUM-879 child 77015 (age 6) needs drop",
+                "color": "oklab(0.414 0.0779366 0.0804356 / 0.9)",
+                "ink": "#88451b",
+                "background": "#fbedda",
+                "contrast": 6.26,
+                "rootClass": "light"
+              },
+              {
+                "text": "• ZZ TEST SCRUM-879 child 77015 needs a photo take",
+                "color": "oklab(0.414 0.0779366 0.0804356 / 0.9)",
+                "ink": "#88451b",
+                "background": "#fbedda",
+                "contrast": 6.26,
+                "rootClass": "light"
+              },
+              {
+                "text": "• Parent must give their name and consent on the c",
+                "color": "oklab(0.414 0.0779366 0.0804356 / 0.9)",
+                "ink": "#88451b",
+                "background": "#fbedda",
+                "contrast": 6.26,
+                "rootClass": "light"
+              },
+              {
+                "text": "• Parent must accept every required confirmation o",
+                "color": "oklab(0.414 0.0779366 0.0804356 / 0.9)",
+                "ink": "#88451b",
+                "background": "#fbedda",
+                "contrast": 6.26,
+                "rootClass": "light"
+              }
+            ]
+          },
+          "beforePaymentPicture": {
+            "picture": "01c-before-payment-list-light.png",
+            "width": 670,
+            "height": 150
+          }
+        },
+        "dark": {
+          "theme": "dark",
+          "banner": {
+            "label": {
+              "text": "Test harness — staff till and customer display sha",
+              "color": "oklch(0.879 0.169 91.605)",
+              "ink": "#ffd230",
+              "background": "#262425",
+              "contrast": 10.68,
+              "rootClass": "dark"
+            },
+            "hideButton": {
+              "text": "Hide customer display",
+              "color": "oklch(0.879 0.169 91.605)",
+              "ink": "#ffd230",
+              "background": "#262425",
+              "contrast": 10.68,
+              "rootClass": "dark"
+            }
+          },
+          "bannerPicture": {
+            "picture": "01e-banner-hide-customer-display-dark.png",
+            "width": 1440,
+            "height": 49
+          },
+          "overdue": {
+            "bar": {
+              "text": "7 overdue",
+              "color": "oklch(0.879 0.169 91.605)",
+              "ink": "#ffd230",
+              "background": "#332b23",
+              "contrast": 9.66,
+              "rootClass": "dark"
+            },
+            "review": {
+              "text": "Review →",
+              "color": "oklch(0.879 0.169 91.605)",
+              "ink": "#d6b12d",
+              "background": "#332b23",
+              "contrast": 6.76,
+              "rootClass": "dark"
+            }
+          },
+          "overduePicture": {
+            "picture": "01e-overdue-bar-review-dark.png",
+            "width": 1408,
+            "height": 48
+          },
+          "beforePayment": {
+            "heading": {
+              "text": "Before payment",
+              "color": "oklch(0.879 0.169 91.605)",
+              "ink": "#ffd230",
+              "background": "#282629",
+              "contrast": 10.42,
+              "rootClass": "dark"
+            },
+            "items": [
+              {
+                "text": "• ZZ TEST SCRUM-879 child 77015 (age 6) needs drop",
+                "color": "oklab(0.924 -0.0120142 0.119397 / 0.9)",
+                "ink": "#e9d37c",
+                "background": "#282629",
+                "contrast": 10.11,
+                "rootClass": "dark"
+              },
+              {
+                "text": "• ZZ TEST SCRUM-879 child 77015 needs a photo take",
+                "color": "oklab(0.924 -0.0120142 0.119397 / 0.9)",
+                "ink": "#e9d37c",
+                "background": "#282629",
+                "contrast": 10.11,
+                "rootClass": "dark"
+              },
+              {
+                "text": "• Parent must give their name and consent on the c",
+                "color": "oklab(0.924 -0.0120142 0.119397 / 0.9)",
+                "ink": "#e9d37c",
+                "background": "#282629",
+                "contrast": 10.11,
+                "rootClass": "dark"
+              },
+              {
+                "text": "• Parent must accept every required confirmation o",
+                "color": "oklab(0.924 -0.0120142 0.119397 / 0.9)",
+                "ink": "#e9d37c",
+                "background": "#282629",
+                "contrast": 10.11,
+                "rootClass": "dark"
+              }
+            ]
+          },
+          "beforePaymentPicture": {
+            "picture": "01e-before-payment-list-dark.png",
+            "width": 670,
+            "height": 150
+          }
+        },
+        "darkInks": [
+          "#ffd230",
+          "#ffd230",
+          "#ffd230",
+          "#d6b12d",
+          "#ffd230",
+          "#e9d37c",
+          "#e9d37c",
+          "#e9d37c",
+          "#e9d37c"
+        ]
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02a-readout-ten-digits-leading-zero.png",
+      "shows": "First screen, customer half: \"+66 0898790042\" reads on one line inside its box (text-2xl); the longest the keypad takes, 15 digits, \"+66 089879004234567\", one line (text-xl) — 02c",
+      "seen": {
+        "ten": {
+          "text": "+66 0898790042",
+          "fontSizePx": 24,
+          "sizeClass": "text-2xl",
+          "lines": 1,
+          "spanWidth": 226,
+          "spanRight": 1244,
+          "boxWidth": 307,
+          "boxRight": 1304,
+          "boxHeight": 64,
+          "insideTheBox": true,
+          "overflowsItsBox": false,
+          "closeUp": {
+            "picture": "02a-readout-ten-digits-leading-zero.png",
+            "width": 448,
+            "height": 64
+          }
+        },
+        "long": {
+          "text": "+66 089879004234567",
+          "fontSizePx": 20,
+          "sizeClass": "text-xl",
+          "lines": 1,
+          "spanWidth": 257,
+          "spanRight": 1274,
+          "boxWidth": 307,
+          "boxRight": 1304,
+          "boxHeight": 64,
+          "insideTheBox": true,
+          "overflowsItsBox": false,
+          "closeUp": {
+            "picture": "02c-readout-longest-the-keypad-takes.png",
+            "width": 448,
+            "height": 64
+          },
+          "digitsAccepted": 15
+        }
+      }
+    },
+    "3": {
+      "pass": true,
+      "picture": "03a-checkin-tab-1440.png",
+      "shows": "Check-in reads whole at 1440 (band scrolled 141px; printer chip: 3 jobs waiting) and at 1280 (03c, band scrolled 0px); out of view at the left — 1440: Tickets, F&B; 1280: none",
+      "seen": {
+        "at1440": {
+          "band": {
+            "left": 465,
+            "right": 796,
+            "width": 331,
+            "scrollLeft": 141,
+            "scrollWidth": 782,
+            "clientWidth": 331
+          },
+          "tabs": [
+            {
+              "label": "Tickets",
+              "active": false,
+              "whole": false,
+              "outLeft": true,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "F&B",
+              "active": false,
+              "whole": false,
+              "outLeft": false,
+              "partLeft": true,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Shop",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Events",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Check-in",
+              "active": true,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "History",
+              "active": false,
+              "whole": false,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": true,
+              "partRight": false
+            },
+            {
+              "label": "Today",
+              "active": false,
+              "whole": false,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": true,
+              "partRight": false
+            },
+            {
+              "label": "7Messages",
+              "active": false,
+              "whole": false,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": true,
+              "partRight": false
+            }
+          ],
+          "active": {
+            "label": "Check-in",
+            "active": true,
+            "whole": true,
+            "outLeft": false,
+            "partLeft": false,
+            "outRight": false,
+            "partRight": false
+          },
+          "printerChip": "3 jobs waiting",
+          "headerPicture": {
+            "picture": "03b-checkin-tab-band-1440.png",
+            "width": 331,
+            "height": 44
+          }
+        },
+        "at1280": {
+          "band": {
+            "left": 469,
+            "right": 1252,
+            "width": 782,
+            "scrollLeft": 0,
+            "scrollWidth": 782,
+            "clientWidth": 782
+          },
+          "tabs": [
+            {
+              "label": "Tickets",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "F&B",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Shop",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Events",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Check-in",
+              "active": true,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "History",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "Today",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            },
+            {
+              "label": "7Messages",
+              "active": false,
+              "whole": true,
+              "outLeft": false,
+              "partLeft": false,
+              "outRight": false,
+              "partRight": false
+            }
+          ],
+          "active": {
+            "label": "Check-in",
+            "active": true,
+            "whole": true,
+            "outLeft": false,
+            "partLeft": false,
+            "outRight": false,
+            "partRight": false
+          },
+          "printerChip": "3 jobs waiting",
+          "headerPicture": {
+            "picture": "03d-checkin-tab-band-1280.png",
+            "width": 782,
+            "height": 44
+          }
+        },
+        "chipsSeen": [
+          "3 jobs waiting"
+        ]
+      }
+    },
+    "4": {
+      "pass": true,
+      "picture": "04a-payment-step-split-view-light.png",
+      "shows": "Payment step, split view 1440x900, light: Cash and Card on one row, PromptPay below, each name on one line; Confirm Payment Received ends at y=876 and Back at y=867 (window 900), nothing scrolled; display hidden (04c): 1 row of three",
+      "seen": {
+        "split": {
+          "tiles": {
+            "Cash": {
+              "x": 76,
+              "y": 479,
+              "width": 45,
+              "height": 28,
+              "lines": 1,
+              "cut": false
+            },
+            "Card": {
+              "x": 238,
+              "y": 479,
+              "width": 42,
+              "height": 28,
+              "lines": 1,
+              "cut": false
+            },
+            "PromptPay": {
+              "x": 50,
+              "y": 613,
+              "width": 96,
+              "height": 28,
+              "lines": 1,
+              "cut": false
+            }
+          },
+          "rows": 2,
+          "confirm": {
+            "x": 136,
+            "y": 794,
+            "width": 198,
+            "height": 82,
+            "right": 334,
+            "bottom": 876,
+            "textCut": false,
+            "text": "Confirm Payment Received"
+          },
+          "back": {
+            "x": 24,
+            "y": 803,
+            "width": 96,
+            "height": 64,
+            "right": 120,
+            "bottom": 867,
+            "textCut": false,
+            "text": "Back"
+          },
+          "scroll": {
+            "scrolled": false,
+            "pageY": 0
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          }
+        },
+        "alone": {
+          "tiles": {
+            "Cash": {
+              "x": 160,
+              "y": 535,
+              "width": 60,
+              "height": 32,
+              "lines": 1,
+              "cut": false
+            },
+            "Card": {
+              "x": 511,
+              "y": 535,
+              "width": 56,
+              "height": 32,
+              "lines": 1,
+              "cut": false
+            },
+            "PromptPay": {
+              "x": 824,
+              "y": 535,
+              "width": 129,
+              "height": 32,
+              "lines": 1,
+              "cut": false
+            }
+          },
+          "rows": 1,
+          "confirm": {
+            "x": 168,
+            "y": 812,
+            "width": 887,
+            "height": 64,
+            "right": 1055,
+            "bottom": 876,
+            "textCut": false,
+            "text": "Confirm Payment Received"
+          },
+          "back": {
+            "x": 24,
+            "y": 812,
+            "width": 128,
+            "height": 64,
+            "right": 152,
+            "bottom": 876,
+            "textCut": false,
+            "text": "Back"
+          },
+          "scroll": {
+            "scrolled": false,
+            "pageY": 0
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          }
+        },
+        "tilesClose": {
+          "picture": "04b-payment-tiles-split-view-close.png",
+          "width": 310,
+          "height": 646
+        },
+        "cashChosen": {
+          "confirm": {
+            "x": 136,
+            "y": 898,
+            "width": 198,
+            "height": 82,
+            "right": 334,
+            "bottom": 980,
+            "textCut": false,
+            "text": "Confirm Payment Received"
+          },
+          "back": {
+            "x": 24,
+            "y": 907,
+            "width": 96,
+            "height": 64,
+            "right": 120,
+            "bottom": 971,
+            "textCut": false,
+            "text": "Back"
+          },
+          "panel": {
+            "scrolls": true,
+            "scrollHeight": 750,
+            "clientHeight": 646,
+            "scrollTop": 0
+          }
+        },
+        "confirmBeforeClick": {
+          "x": 136,
+          "y": 794,
+          "width": 198,
+          "height": 82,
+          "right": 334,
+          "bottom": 876,
+          "textCut": false,
+          "text": "Confirm Payment Received"
+        }
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05b-ordinary-sale-paid-cash.png",
+      "shows": "Ordinary walk-in sale (one child, one adult) paid in cash: finalised, receipt Z87904-000001, 1040 baht; customer type step 05a and the drop-off form 01b as before",
+      "seen": {
+        "sale": {
+          "id": "01a1cdcc-cf61-7274-b15f-d3b5f814304e",
+          "status": "finalised",
+          "receipt": "Z87904-000001",
+          "grossSatang": 104000
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cdcc-cf61-7274-b15f-d3b5f814304e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/01a1cdcc-42ba-74af-a646-ab895b190faa",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/01a1cdcc-cf61-7274-b15f-d3b5f814304e",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/01a1cdcc-42ba-74af-a646-ab895b190faa",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/01a1cdcc-42ba-74af-a646-ab895b190faa",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cdcc-42ba-74af-a646-ab895b190faa",
+      "name": "ZZ TEST SCRUM-879 proof till 1794454077015",
+      "prefix": "Z87904"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cdcc-cf61-7274-b15f-d3b5f814304e"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-LYkKqzLK.js",
+        "index-C70HUJta.css"
+      ],
+      "markers": {
+        "s879HideButton": 1,
+        "s879BeforePaymentItems": 1,
+        "s881BandScroll": 1,
+        "s882ContainerTiles": 14,
+        "s880NoWrapReadout": 14
+      }
+    },
+    "theme": {
+      "accountPreference": "light",
+      "darkSwitchedBy": "the root class in this page only (the account preference is not written)"
+    },
+    "leftDropOff": "Cancel button"
+  },
+  "odd": [
+    {
+      "at": "pay cash",
+      "what": "once Cash is chosen the cash panel opens and Confirm Payment Received moves to y=898..980, below the 900-high window: staff scroll the left panel to reach it",
+      "cashChosen": {
+        "confirm": {
+          "x": 136,
+          "y": 898,
+          "width": 198,
+          "height": 82,
+          "right": 334,
+          "bottom": 980,
+          "textCut": false,
+          "text": "Confirm Payment Received"
+        },
+        "back": {
+          "x": 24,
+          "y": 907,
+          "width": 96,
+          "height": 64,
+          "right": 120,
+          "bottom": 971,
+          "textCut": false,
+          "text": "Back"
+        },
+        "panel": {
+          "scrolls": true,
+          "scrollHeight": 750,
+          "clientHeight": 646,
+          "scrollTop": 0
+        }
+      },
+      "picture": "04d-payment-step-cash-chosen.png"
+    },
+    {
+      "at": "Check-in tab at 1280",
+      "what": "the tab band starts part-way: tabs to the left of Check-in are scrolled out of view (the side effect the builder reported)",
+      "at1440": [
+        "Tickets",
+        "F&B"
+      ],
+      "at1280": []
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registrations-of-this-proof",
+      "count": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdcc-cf61-7274-b15f-d3b5f814304e",
+      "retained": true,
+      "printJobs": [
+        {
+          "id": "01a1cdcc-eb5d-73cc-b95c-0a4d75d0e4f3",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cdcc-eb57-7f23-b144-64dc97d0fca3",
+          "status": "printed"
+        },
+        {
+          "id": "01a1cdcc-eb51-7509-967d-c3877a48948b",
+          "status": "printed"
+        }
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cdcc-cf61-7274-b15f-d3b5f814304e",
+          "status": "finalised",
+          "grossSatang": 104000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cdcc-42ba-74af-a646-ab895b190faa",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "readout",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dropoff",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "sale",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedInBefore": true,
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "readout": "0898790042",
+    "dropoff": "0898790043",
+    "sale": "0898790044"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T03:28:51.262Z"
+}
