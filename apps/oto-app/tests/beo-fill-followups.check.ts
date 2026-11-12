@@ -378,6 +378,24 @@ try {
     assert.equal(saidForTheAdults("chicken fried rice", "And chicken fried rice for the adults. (ZZ TEST)"), true, "thread A in the model's shorter words");
     assert.equal(saidForTheAdults("Hawaiian pizza", "Hawaiian pizza for the kids, no pineapple on half. And chicken fried rice for the adults."), false);
     assert.equal(saidForTheAdults("Hawaiian pizza", "Hawaiian pizza please."), false);
+    // The lane's reviews: a label names whom its part is for; a joined audience names both; the
+    // family writing is the parents.
+    assert.equal(saidForTheAdults("chicken fried rice", "Kids: Hawaiian pizza. Adults: chicken fried rice."), true, "a label");
+    assert.equal(saidForTheAdults("Hawaiian pizza", "Kids: Hawaiian pizza. Adults: chicken fried rice."), false);
+    assert.equal(saidForTheAdults("chicken fried rice", "For the adults: chicken fried rice."), true, "a label with for");
+    assert.equal(saidForTheAdults("chicken fried rice", "Adults: pizza, chicken fried rice."), true, "the label reaches past a comma");
+    assert.equal(saidForTheAdults("Chicken fried rice", "Chicken fried rice for the adults and the kids"), false, "both, joined");
+    assert.equal(saidForTheAdults("Chicken fried rice", "Chicken fried rice for both adults and kids."), false, "both, joined");
+    assert.equal(saidForTheAdults("Hawaiian pizza", "The parents would like the Hawaiian pizza."), false, "the parents writing");
+    assert.equal(saidForTheAdults("chicken fried rice", "Chicken fried rice for the parents' table, pizza for the kids."), true, "for the parents");
+    const labelled = read(["Kids: Hawaiian pizza. Adults: chicken fried rice."], [
+      { itemId: PIZZA, option: "Hawaiian", said: "Hawaiian pizza", line: 1 },
+      { itemId: RICE, option: "Chicken", said: "chicken fried rice", line: 1 },
+    ]);
+    assert.deepEqual(labelled.setMenu?.choices.map((c) => c.option), ["Hawaiian"], "the kids' pizza only");
+    assert.deepEqual(labelled.menuLines.map((l) => [l.menu, l.setMenuItemId, l.matchedName]), [["adults", RICE, "Fried rice (Chicken)"]]);
+    const joined = read(["Chicken fried rice for the adults and the kids please."], [{ itemId: RICE, option: "Chicken", said: "Chicken fried rice", line: 1 }]);
+    assert.deepEqual([joined.setMenu?.choices.map((c) => c.option), joined.menuLines.length], [["Chicken"], 0], "the kids' choice, which the adults eat");
     // The option a name stands for.
     const rice = setMenuItems[3] as any;
     assert.deepEqual(["Chicken", "Fried rice (Chicken)", "fried rice (shrimp)", "Beef"].map((n) => setMenuOptionOf(rice, n)), ["Chicken", "Chicken", "Shrimp", null]);

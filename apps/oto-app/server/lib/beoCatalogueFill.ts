@@ -1452,37 +1452,82 @@ export function moreAsked(itemName: string, text: string | null): boolean {
   }
   return false;
 }
-/** SCRUM-958: words naming the adults, in the languages the park's chats are written in. */
-const ADULT_WORDS = /(^|[^\p{L}])(adults?|grown[- ]?ups?|parents)([^\p{L}]|$)|ผู้ใหญ่|взросл|родител/iu;
+/**
+ * SCRUM-958: words naming the adults, in the languages the park's chats are
+ * written in. "Parents" only as whom a dish is for ("for the parents", "для
+ * родителей"): the family writing is usually the parents ("The parents would
+ * like the Hawaiian pizza" chooses for the kids).
+ */
+const ADULT_WORDS = /(^|[^\p{L}])(adults?|grown[- ]?ups?)([^\p{L}]|$)|(^|[^\p{L}])for (the )?parents([^\p{L}]|$)|ผู้ใหญ่|взросл|для родителей/iu;
 /** SCRUM-958: words naming the kids. */
 const KID_WORDS = /(^|[^\p{L}])(kids?|kiddies|child|children|little ones)([^\p{L}]|$)|เด็ก|дет[иейяскм]|ребён|ребен/iu;
-/** SCRUM-958: what ends the part of a line that says one thing: a stop, a comma, a joining word. */
-const PART_BREAK = /[.,;:!?\n]|(?:^|\s)(?:and|but|while|whereas|plus)(?=\s)|(?:^|\s)(?:и|а|но)(?=\s)|และ|ส่วน|แต่/giu;
+/**
+ * SCRUM-958: what ends the part of a line that says one thing: a stop, a
+ * comma, a joining word. Never a colon: "Adults: chicken fried rice" is one
+ * part, its label naming whom it is for.
+ */
+const PART_BREAK = /[.,;!?\n]|(?:^|\s)(?:and|but|while|whereas|plus)(?=\s)|(?:^|\s)(?:и|а|но)(?=\s)|และ|ส่วน|แต่/giu;
+/** SCRUM-958: what ends a sentence, back to which a part's label is read. */
+const HARD_STOP = /[.;!?\n]/g;
+/** SCRUM-958: the words naming the kids or the adults, each whole, to take out of a phrase. */
+const AUDIENCE_WORDS =
+  /(?<!\p{L})(?:adults?|grown[- ]?ups?|parents|kids?|kiddies|children|child|little ones)(?!\p{L})|ผู้ใหญ่|เด็ก|(?<!\p{L})(?:взросл|дет|ребён|ребен|родител)\p{L}*/giu;
+/** SCRUM-958: the words that only join whom a dish is for ("and the kids too", "и детям"). */
+const AUDIENCE_FILLER = new Set(["the", "for", "all", "both", "too", "also", "as", "well", "our", "of", "them", "their", "to", "please", "s", "для", "всех", "всем", "тоже", "также", "обоих", "пожалуйста"]);
+const THAI_FILLER = /ทั้งหมด|ทั้ง|ด้วย|สำหรับ|ค่ะ|ครับ|นะ|ทุกคน/gu;
+/** SCRUM-958: whether a phrase names the kids or the adults and nothing else ("the kids", "both adults"). */
+function onlyAudience(text: string): boolean {
+  const rest = text.replace(AUDIENCE_WORDS, " ");
+  if (rest === text) return false;
+  return rest
+    .replace(THAI_FILLER, " ")
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .filter(Boolean)
+    .every((w) => AUDIENCE_FILLER.has(w) || /^\d+$/.test(w));
+}
+/** SCRUM-958: whom a phrase names: the adults, the kids, both or neither. */
+const audienceOf = (text: string) => ({ adults: ADULT_WORDS.test(text), kids: KID_WORDS.test(text) });
 /**
  * SCRUM-958 (the 12 November proof, thread A: "And chicken fried rice for the
  * adults."): whether the chat says a set-menu choice only for the adults. The
  * chat's words for it name the adults and not the kids; or, when they name
  * nobody, the part of their line that holds them (up to a stop, a comma or a
  * joining word: "Veggie fried rice for the kids and chicken fried rice for the
- * adults" is two parts) does. Words that name nobody anywhere ("chicken fried
- * rice") are the set menu's choice, as before.
+ * adults" is two parts) does. A joining word between whom a dish is for only
+ * joins them ("for the adults and the kids", "for both adults and kids": both
+ * named). A part naming nobody after a label of its sentence ("Adults: pizza,
+ * chicken fried rice") is the label's. Words that name nobody anywhere
+ * ("chicken fried rice") are the set menu's choice, as before.
  */
 export function saidForTheAdults(said: string | null | undefined, lineText: string | null | undefined): boolean {
   const words = said?.trim() ?? "";
   if (!words) return false;
-  const adults = ADULT_WORDS.test(words);
-  const kids = KID_WORDS.test(words);
-  if (adults || kids) return adults && !kids;
+  const named = audienceOf(words);
+  if (named.adults || named.kids) return named.adults && !named.kids;
   if (!lineText) return false;
   const line = fold(lineText);
   const at = line.indexOf(fold(words));
   if (at < 0) return false;
   const end = at + fold(words).length;
-  let from = 0;
-  for (const m of line.slice(0, at).matchAll(PART_BREAK)) from = (m.index ?? 0) + m[0].length;
-  const after = new RegExp(PART_BREAK.source, "iu").exec(line.slice(end));
-  const part = line.slice(from, after ? end + after.index : line.length);
-  return ADULT_WORDS.test(part) && !KID_WORDS.test(part);
+  // The line's breaks, but a joining word with only whom a dish is for on one side of it.
+  const raw = [...line.matchAll(PART_BREAK)].map((m) => ({ start: m.index ?? 0, end: (m.index ?? 0) + m[0].length, joining: !/^[.,;!?\n]$/.test(m[0]) }));
+  const breaks = raw.filter((b, i) => {
+    if (!b.joining) return true;
+    const before = line.slice(i > 0 ? raw[i - 1]!.end : 0, b.start);
+    const after = line.slice(b.end, i + 1 < raw.length ? raw[i + 1]!.start : line.length);
+    return !onlyAudience(before) && !onlyAudience(after);
+  });
+  const from = breaks.filter((b) => b.end <= at).at(-1)?.end ?? 0;
+  const to = breaks.find((b) => b.start >= end)?.start ?? line.length;
+  const part = audienceOf(line.slice(from, to));
+  if (part.adults || part.kids) return part.adults && !part.kids;
+  // A part naming nobody: the label of its sentence before it, when there is one.
+  const sentence = [...line.slice(0, from).matchAll(HARD_STOP)].at(-1);
+  const lead = line.slice(sentence ? (sentence.index ?? 0) + 1 : 0, from);
+  const colon = Math.max(lead.lastIndexOf(":"), lead.lastIndexOf(" - "), lead.lastIndexOf(" – "));
+  if (colon < 0) return false;
+  const label = audienceOf(lead.slice(0, colon));
+  return label.adults && !label.kids;
 }
 /** SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450"). */
 const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
