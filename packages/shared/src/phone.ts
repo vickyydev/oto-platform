@@ -1,4 +1,11 @@
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
+/**
+ * SCRUM-857 — the `max` metadata: the set with the digit patterns and the
+ * number types, so `isValid()` and `getType()` mean something. The default
+ * (`min`) set knows lengths only, which left `isValid()` the same test as
+ * `isPossible()` and `getType()` undefined for most countries. One metadata
+ * set for the whole module, so a bundle carries one, not two.
+ */
+import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 
 /**
  * Phone conventions (CLAUDE.md §3): normalised to E.164 on write, default
@@ -66,4 +73,38 @@ export function samePhone(a: string, b: string): boolean {
   const na = normalizePhone(a);
   const nb = normalizePhone(b);
   return na !== null && na === nb;
+}
+
+/** Why a number was refused as one to message a family on. */
+export type MessagingPhoneProblem = 'empty' | 'not_a_number' | 'not_valid' | 'not_mobile';
+
+/**
+ * Number types that cannot take a WhatsApp, Telegram or LINE message. A type
+ * the metadata cannot tell (`undefined`), a personal number and a VoIP number
+ * are let through: they may well be on a messaging app.
+ */
+const NOT_MESSAGING_TYPES = new Set(['FIXED_LINE', 'TOLL_FREE', 'PREMIUM_RATE', 'SHARED_COST', 'PAGER', 'UAN', 'VOICEMAIL']);
+
+/**
+ * SCRUM-857 — IS THIS A NUMBER THE PARK CAN MESSAGE A FAMILY ON?
+ *
+ * The drop-off and nanny form asks the family to confirm the number their
+ * child's messages go to (the owner's ruling of 8 November). Before they can,
+ * the number must read as a phone number at all (`normalizePhone`), be a
+ * valid number for its country — the digits, not only the length — and be of
+ * a type that can run a messaging app, where the library can tell. The form
+ * and the api both ask this, so a number that cannot be a phone is refused
+ * with a clear line before anything is written.
+ */
+export function validateMessagingPhone(
+  input: string,
+): { ok: true; e164: string } | { ok: false; problem: MessagingPhoneProblem } {
+  if (!input || !input.trim()) return { ok: false, problem: 'empty' };
+  const e164 = normalizePhone(input);
+  if (!e164) return { ok: false, problem: 'not_a_number' };
+  const parsed = parsePhoneNumberFromString(e164);
+  if (!parsed || !parsed.isValid()) return { ok: false, problem: 'not_valid' };
+  const type = parsed.getType();
+  if (type !== undefined && NOT_MESSAGING_TYPES.has(type)) return { ok: false, problem: 'not_mobile' };
+  return { ok: true, e164 };
 }

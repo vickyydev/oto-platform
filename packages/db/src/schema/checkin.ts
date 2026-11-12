@@ -363,6 +363,15 @@ export const registration = crm.table(
     /** E.164 when given. */
     guardianPhone: text('guardian_phone'),
     contactChannel: text('contact_channel').notNull().default('whatsapp'),
+    /**
+     * SCRUM-857 — when the family confirmed that `guardian_phone` is the number
+     * for `contact_channel`, and who gave the tick: the family on their own
+     * screen, or staff on the till with the family beside them. Null on a
+     * registration taken without the confirmation (a station's offline path,
+     * the booking site, a registration from before the field).
+     */
+    contactConfirmedAt: timestamp('contact_confirmed_at', { withTimezone: true, mode: 'date' }),
+    contactConfirmedBy: text('contact_confirmed_by').$type<'family' | 'staff'>(),
     /** When the guardian gave consent; null only on a registration with no supervised child. */
     consentRecordedAt: timestamp('consent_recorded_at', { withTimezone: true, mode: 'date' }),
     /** Each ticked confirmation: its id, its wording at the time, and when. */
@@ -392,6 +401,12 @@ export const registration = crm.table(
     check(
       'registration_phone_check',
       sql`${t.guardianPhone} is null or ${t.guardianPhone} ~ '^\\+[1-9][0-9]{6,14}$'`,
+    ),
+    // SCRUM-857 — a confirmation names who gave it, and confirms a number that is there.
+    check('registration_contact_confirmed_by_check', sql`${t.contactConfirmedBy} is null or ${t.contactConfirmedBy} in ('family','staff')`),
+    check(
+      'registration_contact_confirmed_check',
+      sql`(${t.contactConfirmedAt} is null) = (${t.contactConfirmedBy} is null) and (${t.contactConfirmedAt} is null or ${t.guardianPhone} is not null)`,
     ),
   ],
 );

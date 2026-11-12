@@ -841,6 +841,13 @@
       "when": 1794456353019,
       "tag": "0119_prep_slips",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1794458686997,
+      "tag": "0120_registration_contact_confirmed",
+      "breakpoints": true
     }
   ]
 }

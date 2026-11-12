@@ -485,6 +485,20 @@ export const CreateRegistrationSchema = z
     contactChannel: z.enum(['whatsapp', 'telegram', 'line']).default('whatsapp'),
     consentAcknowledged: z.boolean(),
     acknowledgedConfirmationIds: z.array(z.string().min(1).max(200)).max(50).default([]),
+    /**
+     * SCRUM-857 — the family's confirmation that `guardianPhone` is the number
+     * for `contactChannel`: when it was given and by whom (the family on their
+     * own screen, or staff on the till with the family beside them, where the
+     * customer screen could not show the tick). Kept with the registration
+     * beside the number and the channel it was given for. Optional: the till
+     * is what requires it before the registration is written; a station's
+     * offline path and the booking site do not send it.
+     */
+    contactConfirmation: z
+      .object({ confirmedAt: z.string().datetime(), by: z.enum(['family', 'staff']) })
+      .strict()
+      .nullable()
+      .optional(),
     children: z.array(RegistrationChildSchema).min(1).max(20),
   })
   .strict();

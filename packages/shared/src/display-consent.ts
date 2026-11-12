@@ -45,6 +45,18 @@ const promptObject = z.object({
    */
   guardianPhone: z.string().max(32).optional(),
   contactChannel: contactChannel.optional(),
+  /**
+   * SCRUM-857 — whether the family has confirmed that this number is the one
+   * for the chosen channel (the owner's ruling of 8 November). Sent by a till
+   * that asks for it, as `false` until the family ticks it and `true` after;
+   * a form that shows it takes the tick back with every step. Absent from an
+   * older till's form, and dropped by a station from before this field, so a
+   * form without it is shown as it was and asks for nothing. Deliberately NOT
+   * part of `canContinue`: that cross-check is older than this field, and a
+   * station that does not know it would refuse a form whose `canContinue`
+   * waited on it. The tick gates `done` instead (`consentActionAllowed`).
+   */
+  contactConfirmed: z.boolean().optional(),
   /** What the drop-off service and a nanny cost, from the till's own drop-off pricing, for the requirement notes. */
   fees: z.object({ nannyHourlyTHB: z.number().nonnegative(), dropOffFeeTHB: z.number().nonnegative() }).optional(),
   staffReady: z.boolean(), canContinue: z.boolean(), completed: z.boolean(),
@@ -68,6 +80,11 @@ function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCt
     && value.confirmations.every(item => !item.required || item.acknowledged);
   if (value.canContinue !== ready || value.completed && !ready) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['canContinue'], message: 'Consent completion requires the current acknowledgements and staff readiness' });
+  }
+  // SCRUM-857 — a form the till asks the number confirmation on is never
+  // finished without it.
+  if (value.completed && value.contactConfirmed === false) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['contactConfirmed'], message: 'Consent completion requires the messaging number to be confirmed' });
   }
 }
 
@@ -104,10 +121,16 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
    * changed is what the registration keeps. Both stay optional: an older
    * display sends a number only when none was given at the start, and never a
    * channel, and its steps are taken as they always were.
+   *
+   * SCRUM-857 — `contactConfirmed` travels with every step from a form whose
+   * prompt carried it: the family's tick that this number is the one for the
+   * chosen channel, cleared on their screen when either changes. Optional
+   * for the same reason as the two above.
    */
   fence.extend({ action: z.literal('fill'), slots: z.array(FilledSlotSchema).max(50)
     .refine(value => new Set(value.map(slot => slot.id)).size === value.length),
   guardianName, guardianPhone: z.string().trim().max(32).optional(), contactChannel: contactChannel.optional(),
+  contactConfirmed: z.boolean().optional(),
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),
@@ -117,7 +140,9 @@ export type ConsentAction = z.infer<typeof ConsentActionSchema>;
 /** Only declared visitor acknowledgements can cross the public handoff. */
 export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentAction): boolean {
   if (action.requestId !== prompt.requestId || action.visitorId !== prompt.visitorId || prompt.completed) return false;
-  if (action.action === 'done') return prompt.canContinue;
+  // SCRUM-857 — a till that asks the family to confirm their messaging number
+  // takes no `done` before they have (`contactConfirmed` is `false` until then).
+  if (action.action === 'done') return prompt.canContinue && prompt.contactConfirmed !== false;
   if (action.action === 'acknowledge' || action.action === 'fill') {
     if (action.consentAcknowledged && !action.guardianName.trim() && (action.action === 'fill' || prompt.consentRequired)) {
       return false;
