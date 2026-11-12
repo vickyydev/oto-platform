@@ -23,7 +23,7 @@ import { useBranch } from '@/branch/BranchContext';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import { toast } from '@/hooks/use-toast';
-import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
+import { HISTORY_SEARCH_PLACEHOLDER, explainLookup, useSearchLookup } from '@/lib/historyLookup';
 import { readTabScan, useStationScans, type StationScanEvent, type TabScan } from '@/lib/scanChannel';
 import { usePageScanRoute } from '@/lib/pageScan';
 import { decideHistoryTabScan, type BandScanSlot } from '@/lib/tabScan';
@@ -643,7 +643,7 @@ export default function History() {
                     aria-label="Search transactions"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search by name, receipt number, bracelet, phone, operator, amount…"
+                    placeholder={HISTORY_SEARCH_PLACEHOLDER}
                     className="w-full h-12 pl-12 pr-12 rounded-xl bg-muted/50 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   {query && (

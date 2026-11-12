@@ -1,0 +1,6243 @@
+{
+ "platform": "win32",
+ "layouts": {
+  "tiers-two-line@1024x768": [
+   {
+    "key": "h2|Select Customer Type|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 359.7,
+     "bottom": 266,
+     "width": 335.7,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|Choose the pricing tier to start the sale.|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 359.7,
+     "bottom": 302,
+     "width": 335.7,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Z|1",
+    "box": {
+     "left": 41,
+     "top": 343,
+     "right": 89,
+     "bottom": 391,
+     "width": 48,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|ZZ TEST 884 Expat Verified Member|1",
+    "box": {
+     "left": 105,
+     "top": 343,
+     "right": 448.4,
+     "bottom": 371,
+     "width": 343.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|+66 89 888 4010|1",
+    "box": {
+     "left": 105,
+     "top": 371,
+     "right": 448.4,
+     "bottom": 391,
+     "width": 343.4,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Expat · verified|1",
+    "box": {
+     "left": 464.4,
+     "top": 349,
+     "right": 622,
+     "bottom": 385,
+     "width": 157.6,
+     "height": 36
+    }
+   },
+   {
+    "key": "h3|Tourist|1",
+    "box": {
+     "left": 77.3,
+     "top": 591,
+     "right": 159.7,
+     "bottom": 623,
+     "width": 82.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Standard pricing|1",
+    "box": {
+     "left": 57,
+     "top": 631,
+     "right": 180,
+     "bottom": 679,
+     "width": 123,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|Verified|1",
+    "box": {
+     "left": 328.6,
+     "top": 453,
+     "right": 413,
+     "bottom": 477,
+     "width": 84.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Expat|1",
+    "box": {
+     "left": 298.2,
+     "top": 577,
+     "right": 364.8,
+     "bottom": 609,
+     "width": 66.6,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Resident pricing|1",
+    "box": {
+     "left": 270.4,
+     "top": 617,
+     "right": 392.6,
+     "bottom": 641,
+     "width": 122.2,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Passport — no proof needed|1",
+    "box": {
+     "left": 270,
+     "top": 653,
+     "right": 393,
+     "bottom": 693,
+     "width": 123,
+     "height": 40
+    }
+   },
+   {
+    "key": "h3|Thai|1",
+    "box": {
+     "left": 518.8,
+     "top": 577,
+     "right": 570.2,
+     "bottom": 609,
+     "width": 51.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Local pricing|1",
+    "box": {
+     "left": 495.8,
+     "top": 617,
+     "right": 593.2,
+     "bottom": 641,
+     "width": 97.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Proof required — verify now|1",
+    "box": {
+     "left": 483,
+     "top": 653,
+     "right": 606,
+     "bottom": 693,
+     "width": 123,
+     "height": 40
+    }
+   }
+  ],
+  "identify@1024x768": [
+   {
+    "key": "h2|Membership Check|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 639,
+     "bottom": 266,
+     "width": 615,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|The customer is entering their phone on their disp|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 639,
+     "bottom": 330,
+     "width": 615,
+     "height": 56
+    }
+   },
+   {
+    "key": "p|Waiting for the customer…|1",
+    "box": {
+     "left": 205.3,
+     "top": 470,
+     "right": 457.7,
+     "bottom": 498,
+     "width": 252.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Enter phone to look up membership|1",
+    "box": {
+     "left": 184.8,
+     "top": 502,
+     "right": 478.3,
+     "bottom": 526,
+     "width": 293.5,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|A phone number is required for every visit — it is|1",
+    "box": {
+     "left": 24,
+     "top": 530,
+     "right": 639,
+     "bottom": 570,
+     "width": 615,
+     "height": 40
+    }
+   },
+   {
+    "key": "div|Phone|1",
+    "box": {
+     "left": 128.5,
+     "top": 615,
+     "right": 170.6,
+     "bottom": 635,
+     "width": 42.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|1",
+    "box": {
+     "left": 128.5,
+     "top": 637,
+     "right": 148.5,
+     "bottom": 661,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Nickname|1",
+    "box": {
+     "left": 424.5,
+     "top": 615,
+     "right": 490.7,
+     "bottom": 635,
+     "width": 66.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|2",
+    "box": {
+     "left": 424.5,
+     "top": 637,
+     "right": 444.5,
+     "bottom": 661,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Event Passes|1",
+    "box": {
+     "left": 48,
+     "top": 724,
+     "right": 157.2,
+     "bottom": 744,
+     "width": 109.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Flat day entry — no membership needed|1",
+    "box": {
+     "left": 165.2,
+     "top": 726,
+     "right": 395.8,
+     "bottom": 742,
+     "width": 230.7,
+     "height": 16
+    }
+   },
+   {
+    "key": "p|No active events|1",
+    "box": {
+     "left": 49,
+     "top": 781,
+     "right": 614,
+     "bottom": 801,
+     "width": 565,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Today's camp sessions and upcoming events appear h|1",
+    "box": {
+     "left": 49,
+     "top": 805,
+     "right": 614,
+     "bottom": 821,
+     "width": 565,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Redeem Booking|1",
+    "box": {
+     "left": 24,
+     "top": 680,
+     "right": 210.9,
+     "bottom": 744,
+     "width": 186.9,
+     "height": 64
+    }
+   }
+  ],
+  "confirm@1024x768": [
+   {
+    "key": "p|Oto Play Park|1",
+    "box": {
+     "left": 463.9,
+     "top": 322,
+     "right": 559.1,
+     "bottom": 342,
+     "width": 95.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "h2|Payment Successful|1",
+    "box": {
+     "left": 339.7,
+     "top": 346,
+     "right": 683.3,
+     "bottom": 386,
+     "width": 343.7,
+     "height": 40
+    }
+   },
+   {
+    "key": "p|Receipt Z88401-000001 • ฿1040 • Cash|1",
+    "box": {
+     "left": 321.9,
+     "top": 394,
+     "right": 701.1,
+     "bottom": 422,
+     "width": 379.2,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|VAT included ฿68.04|1",
+    "box": {
+     "left": 442.8,
+     "top": 426,
+     "right": 580.2,
+     "bottom": 446,
+     "width": 137.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Thank you for visiting! · Tax ID 0105500000000|1",
+    "box": {
+     "left": 376.8,
+     "top": 450,
+     "right": 646.2,
+     "bottom": 466,
+     "width": 269.4,
+     "height": 16
+    }
+   },
+   {
+    "key": "h3|Bracelets to Print|1",
+    "box": {
+     "left": 85,
+     "top": 515,
+     "right": 285.8,
+     "bottom": 547,
+     "width": 200.8,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|2 total|1",
+    "box": {
+     "left": 414.2,
+     "top": 521,
+     "right": 474.5,
+     "bottom": 541,
+     "width": 60.3,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 × Child bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 597,
+     "right": 372.8,
+     "bottom": 625,
+     "width": 242.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|1",
+    "box": {
+     "left": 130,
+     "top": 625,
+     "right": 372.8,
+     "bottom": 645,
+     "width": 242.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|1",
+    "box": {
+     "left": 388.8,
+     "top": 609,
+     "right": 457.5,
+     "bottom": 633,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|1 × Adult bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 691,
+     "right": 372.8,
+     "bottom": 719,
+     "width": 242.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|2",
+    "box": {
+     "left": 130,
+     "top": 719,
+     "right": 372.8,
+     "bottom": 739,
+     "width": 242.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|2",
+    "box": {
+     "left": 388.8,
+     "top": 703,
+     "right": 457.5,
+     "bottom": 727,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Credit Grants Issued|1",
+    "box": {
+     "left": 584.5,
+     "top": 515,
+     "right": 823.9,
+     "bottom": 547,
+     "width": 239.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|1 total|1",
+    "box": {
+     "left": 916.5,
+     "top": 521,
+     "right": 974,
+     "bottom": 541,
+     "width": 57.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Credit|1",
+    "box": {
+     "left": 665.5,
+     "top": 600,
+     "right": 706.1,
+     "bottom": 620,
+     "width": 40.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|฿ 350|1",
+    "box": {
+     "left": 641.5,
+     "top": 620,
+     "right": 931.8,
+     "bottom": 650,
+     "width": 290.3,
+     "height": 30
+    }
+   },
+   {
+    "key": "span|credit|1",
+    "box": {
+     "left": 707.8,
+     "top": 627,
+     "right": 751.6,
+     "bottom": 647,
+     "width": 43.9,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|# 1|1",
+    "box": {
+     "left": 947.8,
+     "top": 617,
+     "right": 961,
+     "bottom": 633,
+     "width": 13.2,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Start New Sale|1",
+    "box": {
+     "left": 24,
+     "top": 664,
+     "right": 999,
+     "bottom": 744,
+     "width": 975,
+     "height": 80
+    }
+   }
+  ],
+  "fnb-menu@1024x768": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 619,
+     "bottom": 214,
+     "width": 595,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Breakfast|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 167.1,
+     "bottom": 274,
+     "width": 143.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sides|1",
+    "box": {
+     "left": 175.1,
+     "top": 226,
+     "right": 288.5,
+     "bottom": 274,
+     "width": 113.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sharing|1",
+    "box": {
+     "left": 296.5,
+     "top": 226,
+     "right": 427.3,
+     "bottom": 274,
+     "width": 130.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soup|1",
+    "box": {
+     "left": 435.3,
+     "top": 226,
+     "right": 545.6,
+     "bottom": 274,
+     "width": 110.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Salads|1",
+    "box": {
+     "left": 24,
+     "top": 282,
+     "right": 146.4,
+     "bottom": 330,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pasta|1",
+    "box": {
+     "left": 154.4,
+     "top": 282,
+     "right": 268.1,
+     "bottom": 330,
+     "width": 113.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pizza|1",
+    "box": {
+     "left": 276.1,
+     "top": 282,
+     "right": 388.4,
+     "bottom": 330,
+     "width": 112.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Mains|1",
+    "box": {
+     "left": 396.4,
+     "top": 282,
+     "right": 513.9,
+     "bottom": 330,
+     "width": 117.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Asian Food|1",
+    "box": {
+     "left": 24,
+     "top": 338,
+     "right": 180.8,
+     "bottom": 386,
+     "width": 156.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids|1",
+    "box": {
+     "left": 188.8,
+     "top": 338,
+     "right": 293.8,
+     "bottom": 386,
+     "width": 105,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Desserts|1",
+    "box": {
+     "left": 301.8,
+     "top": 338,
+     "right": 441.8,
+     "bottom": 386,
+     "width": 140.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Coffee|1",
+    "box": {
+     "left": 449.8,
+     "top": 338,
+     "right": 572.3,
+     "bottom": 386,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Iced Coffee|1",
+    "box": {
+     "left": 24,
+     "top": 394,
+     "right": 183.8,
+     "bottom": 442,
+     "width": 159.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Chocolate|1",
+    "box": {
+     "left": 191.8,
+     "top": 394,
+     "right": 341.5,
+     "bottom": 442,
+     "width": 149.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soda|1",
+    "box": {
+     "left": 349.5,
+     "top": 394,
+     "right": 459.1,
+     "bottom": 442,
+     "width": 109.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Smoothies|1",
+    "box": {
+     "left": 24,
+     "top": 450,
+     "right": 177.4,
+     "bottom": 498,
+     "width": 153.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Juice|1",
+    "box": {
+     "left": 185.4,
+     "top": 450,
+     "right": 298,
+     "bottom": 498,
+     "width": 112.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tea pot|1",
+    "box": {
+     "left": 306,
+     "top": 450,
+     "right": 434,
+     "bottom": 498,
+     "width": 128,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soft drinks|1",
+    "box": {
+     "left": 442,
+     "top": 450,
+     "right": 596.8,
+     "bottom": 498,
+     "width": 154.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids juice|1",
+    "box": {
+     "left": 24,
+     "top": 506,
+     "right": 170.4,
+     "bottom": 554,
+     "width": 146.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Wine|1",
+    "box": {
+     "left": 178.4,
+     "top": 506,
+     "right": 288.8,
+     "bottom": 554,
+     "width": 110.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Beer|1",
+    "box": {
+     "left": 296.8,
+     "top": 506,
+     "right": 403,
+     "bottom": 554,
+     "width": 106.2,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|American Breakfast฿290|1",
+    "box": {
+     "left": 24,
+     "top": 566,
+     "right": 214.3,
+     "bottom": 693,
+     "width": 190.3,
+     "height": 127
+    }
+   },
+   {
+    "key": "div|American Breakfast|1",
+    "box": {
+     "left": 41,
+     "top": 583,
+     "right": 165.3,
+     "bottom": 628,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 290|1",
+    "box": {
+     "left": 41,
+     "top": 644,
+     "right": 86.4,
+     "bottom": 672,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Pancakes฿175|1",
+    "box": {
+     "left": 226.3,
+     "top": 566,
+     "right": 416.7,
+     "bottom": 693,
+     "width": 190.3,
+     "height": 127
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 379.7,
+     "top": 575,
+     "right": 407.7,
+     "bottom": 603,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Pancakes|1",
+    "box": {
+     "left": 243.3,
+     "top": 583,
+     "right": 367.7,
+     "bottom": 605.5,
+     "width": 124.3,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 243.3,
+     "top": 644,
+     "right": 288.7,
+     "bottom": 672,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice฿150|1",
+    "box": {
+     "left": 428.7,
+     "top": 566,
+     "right": 619,
+     "bottom": 693,
+     "width": 190.3,
+     "height": 127
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice|1",
+    "box": {
+     "left": 445.7,
+     "top": 583,
+     "right": 570,
+     "bottom": 628,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 445.7,
+     "top": 644,
+     "right": 491,
+     "bottom": 672,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt฿190|1",
+    "box": {
+     "left": 24,
+     "top": 705,
+     "right": 214.3,
+     "bottom": 854.5,
+     "width": 190.3,
+     "height": 149.5
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt|1",
+    "box": {
+     "left": 41,
+     "top": 722,
+     "right": 165.3,
+     "bottom": 789.5,
+     "width": 124.3,
+     "height": 67.5
+    }
+   },
+   {
+    "key": "span|฿ 190|1",
+    "box": {
+     "left": 41,
+     "top": 805.5,
+     "right": 86.4,
+     "bottom": 833.5,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Croissant฿95|1",
+    "box": {
+     "left": 226.3,
+     "top": 705,
+     "right": 416.7,
+     "bottom": 854.5,
+     "width": 190.3,
+     "height": 149.5
+    }
+   },
+   {
+    "key": "div|Croissant|1",
+    "box": {
+     "left": 243.3,
+     "top": 722,
+     "right": 367.7,
+     "bottom": 744.5,
+     "width": 124.3,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 95|1",
+    "box": {
+     "left": 243.3,
+     "top": 805.5,
+     "right": 277.1,
+     "bottom": 833.5,
+     "width": 33.8,
+     "height": 28
+    }
+   }
+  ],
+  "fnb-search@1024x768": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 619,
+     "bottom": 214,
+     "width": 595,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Clear search|1",
+    "box": {
+     "left": 583,
+     "top": 178,
+     "right": 611,
+     "bottom": 206,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|French fries฿175|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 214.3,
+     "bottom": 338,
+     "width": 190.3,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|French fries|1",
+    "box": {
+     "left": 41,
+     "top": 243,
+     "right": 165.3,
+     "bottom": 265.5,
+     "width": 124.3,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 41,
+     "top": 289,
+     "right": 86.4,
+     "bottom": 317,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "merch-grid@1024x768": [
+   {
+    "key": "button|All|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 84.6,
+     "bottom": 218,
+     "width": 60.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tickets & passes|1",
+    "box": {
+     "left": 92.6,
+     "top": 170,
+     "right": 266.5,
+     "bottom": 218,
+     "width": 173.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Balloons|1",
+    "box": {
+     "left": 274.5,
+     "top": 170,
+     "right": 383.6,
+     "bottom": 218,
+     "width": 109.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Merchandise|1",
+    "box": {
+     "left": 391.6,
+     "top": 170,
+     "right": 535.7,
+     "bottom": 218,
+     "width": 144.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Workshop|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 146.5,
+     "bottom": 274,
+     "width": 122.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|Golden Ticket฿1500|1",
+    "box": {
+     "left": 24,
+     "top": 286,
+     "right": 214.3,
+     "bottom": 466,
+     "width": 190.3,
+     "height": 180
+    }
+   },
+   {
+    "key": "div|Golden Ticket|1",
+    "box": {
+     "left": 41,
+     "top": 303,
+     "right": 165.3,
+     "bottom": 325.5,
+     "width": 124.3,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1500|1",
+    "box": {
+     "left": 41,
+     "top": 417,
+     "right": 98,
+     "bottom": 445,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|School Admission Ticket฿250|1",
+    "box": {
+     "left": 226.3,
+     "top": 286,
+     "right": 416.7,
+     "bottom": 466,
+     "width": 190.3,
+     "height": 180
+    }
+   },
+   {
+    "key": "div|School Admission Ticket|1",
+    "box": {
+     "left": 243.3,
+     "top": 303,
+     "right": 367.7,
+     "bottom": 370.5,
+     "width": 124.3,
+     "height": 67.5
+    }
+   },
+   {
+    "key": "span|฿ 250|1",
+    "box": {
+     "left": 243.3,
+     "top": 417,
+     "right": 288.7,
+     "bottom": 445,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket฿200|1",
+    "box": {
+     "left": 428.7,
+     "top": 286,
+     "right": 619,
+     "bottom": 466,
+     "width": 190.3,
+     "height": 180
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket|1",
+    "box": {
+     "left": 445.7,
+     "top": 303,
+     "right": 570,
+     "bottom": 393,
+     "width": 124.3,
+     "height": 90
+    }
+   },
+   {
+    "key": "span|฿ 200|1",
+    "box": {
+     "left": 445.7,
+     "top": 417,
+     "right": 491,
+     "bottom": 445,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Helium Balloon (65)฿65|1",
+    "box": {
+     "left": 24,
+     "top": 478,
+     "right": 214.3,
+     "bottom": 613,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 177.3,
+     "top": 487,
+     "right": 205.3,
+     "bottom": 515,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (65)|1",
+    "box": {
+     "left": 41,
+     "top": 495,
+     "right": 165.3,
+     "bottom": 540,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 65|1",
+    "box": {
+     "left": 41,
+     "top": 564,
+     "right": 74.8,
+     "bottom": 592,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)฿75|1",
+    "box": {
+     "left": 226.3,
+     "top": 478,
+     "right": 416.7,
+     "bottom": 613,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)|1",
+    "box": {
+     "left": 243.3,
+     "top": 495,
+     "right": 367.7,
+     "bottom": 540,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 75|1",
+    "box": {
+     "left": 243.3,
+     "top": 564,
+     "right": 277.1,
+     "bottom": 592,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S฿150|1",
+    "box": {
+     "left": 428.7,
+     "top": 478,
+     "right": 619,
+     "bottom": 613,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S|1",
+    "box": {
+     "left": 445.7,
+     "top": 495,
+     "right": 570,
+     "bottom": 540,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 445.7,
+     "top": 564,
+     "right": 491,
+     "bottom": 592,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack฿1050|1",
+    "box": {
+     "left": 24,
+     "top": 625,
+     "right": 214.3,
+     "bottom": 760,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack|1",
+    "box": {
+     "left": 41,
+     "top": 642,
+     "right": 165.3,
+     "bottom": 687,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 1050|1",
+    "box": {
+     "left": 41,
+     "top": 711,
+     "right": 98,
+     "bottom": 739,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck฿1200|1",
+    "box": {
+     "left": 226.3,
+     "top": 625,
+     "right": 416.7,
+     "bottom": 760,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck|1",
+    "box": {
+     "left": 243.3,
+     "top": 642,
+     "right": 367.7,
+     "bottom": 687,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 1200|1",
+    "box": {
+     "left": 243.3,
+     "top": 711,
+     "right": 300.3,
+     "bottom": 739,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet฿100|1",
+    "box": {
+     "left": 428.7,
+     "top": 625,
+     "right": 619,
+     "bottom": 760,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet|1",
+    "box": {
+     "left": 445.7,
+     "top": 642,
+     "right": 570,
+     "bottom": 687,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 100|1",
+    "box": {
+     "left": 445.7,
+     "top": 711,
+     "right": 491,
+     "bottom": 739,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Slime Workshop฿350|1",
+    "box": {
+     "left": 24,
+     "top": 772,
+     "right": 214.3,
+     "bottom": 907,
+     "width": 190.3,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Slime Workshop|1",
+    "box": {
+     "left": 41,
+     "top": 789,
+     "right": 165.3,
+     "bottom": 834,
+     "width": 124.3,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 350|1",
+    "box": {
+     "left": 41,
+     "top": 858,
+     "right": 86.4,
+     "bottom": 886,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "tiers-two-line@1280x800": [
+   {
+    "key": "h2|Select Customer Type|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 359.7,
+     "bottom": 266,
+     "width": 335.7,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|Choose the pricing tier to start the sale.|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 359.7,
+     "bottom": 302,
+     "width": 335.7,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Z|1",
+    "box": {
+     "left": 41,
+     "top": 343,
+     "right": 89,
+     "bottom": 391,
+     "width": 48,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|ZZ TEST 884 Expat Verified Member|1",
+    "box": {
+     "left": 105,
+     "top": 343,
+     "right": 704.4,
+     "bottom": 371,
+     "width": 599.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|+66 89 888 4010|1",
+    "box": {
+     "left": 105,
+     "top": 371,
+     "right": 704.4,
+     "bottom": 391,
+     "width": 599.4,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Expat · verified|1",
+    "box": {
+     "left": 720.4,
+     "top": 349,
+     "right": 878,
+     "bottom": 385,
+     "width": 157.6,
+     "height": 36
+    }
+   },
+   {
+    "key": "h3|Tourist|1",
+    "box": {
+     "left": 120,
+     "top": 593,
+     "right": 202.4,
+     "bottom": 625,
+     "width": 82.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Standard pricing|1",
+    "box": {
+     "left": 98.7,
+     "top": 633,
+     "right": 223.7,
+     "bottom": 657,
+     "width": 125,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Verified|1",
+    "box": {
+     "left": 499.2,
+     "top": 453,
+     "right": 583.7,
+     "bottom": 477,
+     "width": 84.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Expat|1",
+    "box": {
+     "left": 426.2,
+     "top": 577,
+     "right": 492.8,
+     "bottom": 609,
+     "width": 66.6,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Resident pricing|1",
+    "box": {
+     "left": 398.4,
+     "top": 617,
+     "right": 520.6,
+     "bottom": 641,
+     "width": 122.2,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Passport — no proof needed|1",
+    "box": {
+     "left": 364.2,
+     "top": 653,
+     "right": 554.8,
+     "bottom": 673,
+     "width": 190.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "h3|Thai|1",
+    "box": {
+     "left": 732.1,
+     "top": 577,
+     "right": 783.5,
+     "bottom": 609,
+     "width": 51.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Local pricing|1",
+    "box": {
+     "left": 709.1,
+     "top": 617,
+     "right": 806.5,
+     "bottom": 641,
+     "width": 97.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Proof required — verify now|1",
+    "box": {
+     "left": 663.1,
+     "top": 653,
+     "right": 852.6,
+     "bottom": 673,
+     "width": 189.5,
+     "height": 20
+    }
+   }
+  ],
+  "identify@1280x800": [
+   {
+    "key": "h2|Membership Check|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 895,
+     "bottom": 266,
+     "width": 871,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|The customer is entering their phone on their disp|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 895,
+     "bottom": 302,
+     "width": 871,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Waiting for the customer…|1",
+    "box": {
+     "left": 333.3,
+     "top": 442,
+     "right": 585.7,
+     "bottom": 470,
+     "width": 252.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Enter phone to look up membership|1",
+    "box": {
+     "left": 312.8,
+     "top": 474,
+     "right": 606.3,
+     "bottom": 498,
+     "width": 293.5,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|A phone number is required for every visit — it is|1",
+    "box": {
+     "left": 104.2,
+     "top": 502,
+     "right": 814.8,
+     "bottom": 522,
+     "width": 710.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Phone|1",
+    "box": {
+     "left": 256.5,
+     "top": 567,
+     "right": 298.6,
+     "bottom": 587,
+     "width": 42.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|1",
+    "box": {
+     "left": 256.5,
+     "top": 589,
+     "right": 276.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Nickname|1",
+    "box": {
+     "left": 552.5,
+     "top": 567,
+     "right": 618.7,
+     "bottom": 587,
+     "width": 66.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|2",
+    "box": {
+     "left": 552.5,
+     "top": 589,
+     "right": 572.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Event Passes|1",
+    "box": {
+     "left": 48,
+     "top": 676,
+     "right": 157.2,
+     "bottom": 696,
+     "width": 109.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Flat day entry — no membership needed|1",
+    "box": {
+     "left": 165.2,
+     "top": 678,
+     "right": 395.8,
+     "bottom": 694,
+     "width": 230.7,
+     "height": 16
+    }
+   },
+   {
+    "key": "p|No active events|1",
+    "box": {
+     "left": 49,
+     "top": 733,
+     "right": 870,
+     "bottom": 753,
+     "width": 821,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Today's camp sessions and upcoming events appear h|1",
+    "box": {
+     "left": 49,
+     "top": 757,
+     "right": 870,
+     "bottom": 773,
+     "width": 821,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Redeem Booking|1",
+    "box": {
+     "left": 24,
+     "top": 712,
+     "right": 210.9,
+     "bottom": 776,
+     "width": 186.9,
+     "height": 64
+    }
+   }
+  ],
+  "confirm@1280x800": [
+   {
+    "key": "p|Oto Play Park|1",
+    "box": {
+     "left": 591.9,
+     "top": 322,
+     "right": 687.1,
+     "bottom": 342,
+     "width": 95.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "h2|Payment Successful|1",
+    "box": {
+     "left": 467.7,
+     "top": 346,
+     "right": 811.3,
+     "bottom": 386,
+     "width": 343.7,
+     "height": 40
+    }
+   },
+   {
+    "key": "p|Receipt Z88401-000001 • ฿1040 • Cash|1",
+    "box": {
+     "left": 449.9,
+     "top": 394,
+     "right": 829.1,
+     "bottom": 422,
+     "width": 379.2,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|VAT included ฿68.04|1",
+    "box": {
+     "left": 570.8,
+     "top": 426,
+     "right": 708.2,
+     "bottom": 446,
+     "width": 137.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Thank you for visiting! · Tax ID 0105500000000|1",
+    "box": {
+     "left": 504.8,
+     "top": 450,
+     "right": 774.2,
+     "bottom": 466,
+     "width": 269.4,
+     "height": 16
+    }
+   },
+   {
+    "key": "h3|Bracelets to Print|1",
+    "box": {
+     "left": 85,
+     "top": 515,
+     "right": 285.8,
+     "bottom": 547,
+     "width": 200.8,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|2 total|1",
+    "box": {
+     "left": 542.2,
+     "top": 521,
+     "right": 602.5,
+     "bottom": 541,
+     "width": 60.3,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 × Child bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 597,
+     "right": 500.8,
+     "bottom": 625,
+     "width": 370.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|1",
+    "box": {
+     "left": 130,
+     "top": 625,
+     "right": 500.8,
+     "bottom": 645,
+     "width": 370.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|1",
+    "box": {
+     "left": 516.8,
+     "top": 609,
+     "right": 585.5,
+     "bottom": 633,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|1 × Adult bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 691,
+     "right": 500.8,
+     "bottom": 719,
+     "width": 370.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|2",
+    "box": {
+     "left": 130,
+     "top": 719,
+     "right": 500.8,
+     "bottom": 739,
+     "width": 370.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|2",
+    "box": {
+     "left": 516.8,
+     "top": 703,
+     "right": 585.5,
+     "bottom": 727,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Credit Grants Issued|1",
+    "box": {
+     "left": 712.5,
+     "top": 515,
+     "right": 951.9,
+     "bottom": 547,
+     "width": 239.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|1 total|1",
+    "box": {
+     "left": 1172.5,
+     "top": 521,
+     "right": 1230,
+     "bottom": 541,
+     "width": 57.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Credit|1",
+    "box": {
+     "left": 793.5,
+     "top": 600,
+     "right": 834.1,
+     "bottom": 620,
+     "width": 40.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|฿ 350|1",
+    "box": {
+     "left": 769.5,
+     "top": 620,
+     "right": 1187.8,
+     "bottom": 650,
+     "width": 418.3,
+     "height": 30
+    }
+   },
+   {
+    "key": "span|credit|1",
+    "box": {
+     "left": 835.8,
+     "top": 627,
+     "right": 879.6,
+     "bottom": 647,
+     "width": 43.9,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|# 1|1",
+    "box": {
+     "left": 1203.8,
+     "top": 617,
+     "right": 1217,
+     "bottom": 633,
+     "width": 13.2,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Start New Sale|1",
+    "box": {
+     "left": 24,
+     "top": 696,
+     "right": 1255,
+     "bottom": 776,
+     "width": 1231,
+     "height": 80
+    }
+   }
+  ],
+  "fnb-menu@1280x800": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 875,
+     "bottom": 214,
+     "width": 851,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Breakfast|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 167.1,
+     "bottom": 274,
+     "width": 143.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sides|1",
+    "box": {
+     "left": 175.1,
+     "top": 226,
+     "right": 288.5,
+     "bottom": 274,
+     "width": 113.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sharing|1",
+    "box": {
+     "left": 296.5,
+     "top": 226,
+     "right": 427.3,
+     "bottom": 274,
+     "width": 130.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soup|1",
+    "box": {
+     "left": 435.3,
+     "top": 226,
+     "right": 545.6,
+     "bottom": 274,
+     "width": 110.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Salads|1",
+    "box": {
+     "left": 553.6,
+     "top": 226,
+     "right": 676,
+     "bottom": 274,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pasta|1",
+    "box": {
+     "left": 684,
+     "top": 226,
+     "right": 797.7,
+     "bottom": 274,
+     "width": 113.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pizza|1",
+    "box": {
+     "left": 24,
+     "top": 282,
+     "right": 136.3,
+     "bottom": 330,
+     "width": 112.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Mains|1",
+    "box": {
+     "left": 144.3,
+     "top": 282,
+     "right": 261.8,
+     "bottom": 330,
+     "width": 117.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Asian Food|1",
+    "box": {
+     "left": 269.8,
+     "top": 282,
+     "right": 426.5,
+     "bottom": 330,
+     "width": 156.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids|1",
+    "box": {
+     "left": 434.5,
+     "top": 282,
+     "right": 539.5,
+     "bottom": 330,
+     "width": 105,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Desserts|1",
+    "box": {
+     "left": 547.5,
+     "top": 282,
+     "right": 687.6,
+     "bottom": 330,
+     "width": 140.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Coffee|1",
+    "box": {
+     "left": 695.6,
+     "top": 282,
+     "right": 818.1,
+     "bottom": 330,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Iced Coffee|1",
+    "box": {
+     "left": 24,
+     "top": 338,
+     "right": 183.8,
+     "bottom": 386,
+     "width": 159.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Chocolate|1",
+    "box": {
+     "left": 191.8,
+     "top": 338,
+     "right": 341.5,
+     "bottom": 386,
+     "width": 149.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soda|1",
+    "box": {
+     "left": 349.5,
+     "top": 338,
+     "right": 459.1,
+     "bottom": 386,
+     "width": 109.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Smoothies|1",
+    "box": {
+     "left": 467.1,
+     "top": 338,
+     "right": 620.5,
+     "bottom": 386,
+     "width": 153.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Juice|1",
+    "box": {
+     "left": 628.5,
+     "top": 338,
+     "right": 741.1,
+     "bottom": 386,
+     "width": 112.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tea pot|1",
+    "box": {
+     "left": 24,
+     "top": 394,
+     "right": 152,
+     "bottom": 442,
+     "width": 128,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soft drinks|1",
+    "box": {
+     "left": 160,
+     "top": 394,
+     "right": 314.8,
+     "bottom": 442,
+     "width": 154.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids juice|1",
+    "box": {
+     "left": 322.8,
+     "top": 394,
+     "right": 469.2,
+     "bottom": 442,
+     "width": 146.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Wine|1",
+    "box": {
+     "left": 477.2,
+     "top": 394,
+     "right": 587.7,
+     "bottom": 442,
+     "width": 110.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Beer|1",
+    "box": {
+     "left": 595.7,
+     "top": 394,
+     "right": 701.8,
+     "bottom": 442,
+     "width": 106.2,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|American Breakfast฿290|1",
+    "box": {
+     "left": 24,
+     "top": 454,
+     "right": 299.7,
+     "bottom": 566,
+     "width": 275.7,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|American Breakfast|1",
+    "box": {
+     "left": 41,
+     "top": 471,
+     "right": 250.7,
+     "bottom": 493.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 290|1",
+    "box": {
+     "left": 41,
+     "top": 517,
+     "right": 86.4,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Pancakes฿175|1",
+    "box": {
+     "left": 311.7,
+     "top": 454,
+     "right": 587.3,
+     "bottom": 566,
+     "width": 275.7,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 550.3,
+     "top": 463,
+     "right": 578.3,
+     "bottom": 491,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Pancakes|1",
+    "box": {
+     "left": 328.7,
+     "top": 471,
+     "right": 538.3,
+     "bottom": 493.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 328.7,
+     "top": 517,
+     "right": 374,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice฿150|1",
+    "box": {
+     "left": 599.3,
+     "top": 454,
+     "right": 875,
+     "bottom": 566,
+     "width": 275.7,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice|1",
+    "box": {
+     "left": 616.3,
+     "top": 471,
+     "right": 826,
+     "bottom": 493.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 616.3,
+     "top": 517,
+     "right": 661.7,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt฿190|1",
+    "box": {
+     "left": 24,
+     "top": 578,
+     "right": 299.7,
+     "bottom": 705,
+     "width": 275.7,
+     "height": 127
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt|1",
+    "box": {
+     "left": 41,
+     "top": 595,
+     "right": 250.7,
+     "bottom": 640,
+     "width": 209.7,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 190|1",
+    "box": {
+     "left": 41,
+     "top": 656,
+     "right": 86.4,
+     "bottom": 684,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Croissant฿95|1",
+    "box": {
+     "left": 311.7,
+     "top": 578,
+     "right": 587.3,
+     "bottom": 705,
+     "width": 275.7,
+     "height": 127
+    }
+   },
+   {
+    "key": "div|Croissant|1",
+    "box": {
+     "left": 328.7,
+     "top": 595,
+     "right": 538.3,
+     "bottom": 617.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 95|1",
+    "box": {
+     "left": 328.7,
+     "top": 656,
+     "right": 362.4,
+     "bottom": 684,
+     "width": 33.8,
+     "height": 28
+    }
+   }
+  ],
+  "fnb-search@1280x800": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 875,
+     "bottom": 214,
+     "width": 851,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Clear search|1",
+    "box": {
+     "left": 839,
+     "top": 178,
+     "right": 867,
+     "bottom": 206,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|French fries฿175|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 299.7,
+     "bottom": 338,
+     "width": 275.7,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|French fries|1",
+    "box": {
+     "left": 41,
+     "top": 243,
+     "right": 250.7,
+     "bottom": 265.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 41,
+     "top": 289,
+     "right": 86.4,
+     "bottom": 317,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "merch-grid@1280x800": [
+   {
+    "key": "button|All|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 84.6,
+     "bottom": 218,
+     "width": 60.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tickets & passes|1",
+    "box": {
+     "left": 92.6,
+     "top": 170,
+     "right": 266.5,
+     "bottom": 218,
+     "width": 173.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Balloons|1",
+    "box": {
+     "left": 274.5,
+     "top": 170,
+     "right": 383.6,
+     "bottom": 218,
+     "width": 109.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Merchandise|1",
+    "box": {
+     "left": 391.6,
+     "top": 170,
+     "right": 535.7,
+     "bottom": 218,
+     "width": 144.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Workshop|1",
+    "box": {
+     "left": 543.7,
+     "top": 170,
+     "right": 666.2,
+     "bottom": 218,
+     "width": 122.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|Golden Ticket฿1500|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 299.7,
+     "bottom": 365,
+     "width": 275.7,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Golden Ticket|1",
+    "box": {
+     "left": 41,
+     "top": 247,
+     "right": 250.7,
+     "bottom": 269.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1500|1",
+    "box": {
+     "left": 41,
+     "top": 316,
+     "right": 98,
+     "bottom": 344,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|School Admission Ticket฿250|1",
+    "box": {
+     "left": 311.7,
+     "top": 230,
+     "right": 587.3,
+     "bottom": 365,
+     "width": 275.7,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|School Admission Ticket|1",
+    "box": {
+     "left": 328.7,
+     "top": 247,
+     "right": 538.3,
+     "bottom": 292,
+     "width": 209.7,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 250|1",
+    "box": {
+     "left": 328.7,
+     "top": 316,
+     "right": 374,
+     "bottom": 344,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket฿200|1",
+    "box": {
+     "left": 599.3,
+     "top": 230,
+     "right": 875,
+     "bottom": 365,
+     "width": 275.7,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket|1",
+    "box": {
+     "left": 616.3,
+     "top": 247,
+     "right": 826,
+     "bottom": 292,
+     "width": 209.7,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 200|1",
+    "box": {
+     "left": 616.3,
+     "top": 316,
+     "right": 661.7,
+     "bottom": 344,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Helium Balloon (65)฿65|1",
+    "box": {
+     "left": 24,
+     "top": 377,
+     "right": 299.7,
+     "bottom": 505,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 262.7,
+     "top": 386,
+     "right": 290.7,
+     "bottom": 414,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (65)|1",
+    "box": {
+     "left": 41,
+     "top": 394,
+     "right": 250.7,
+     "bottom": 416.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 65|1",
+    "box": {
+     "left": 41,
+     "top": 456,
+     "right": 74.8,
+     "bottom": 484,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)฿75|1",
+    "box": {
+     "left": 311.7,
+     "top": 377,
+     "right": 587.3,
+     "bottom": 505,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)|1",
+    "box": {
+     "left": 328.7,
+     "top": 394,
+     "right": 538.3,
+     "bottom": 416.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 75|1",
+    "box": {
+     "left": 328.7,
+     "top": 456,
+     "right": 362.4,
+     "bottom": 484,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S฿150|1",
+    "box": {
+     "left": 599.3,
+     "top": 377,
+     "right": 875,
+     "bottom": 505,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S|1",
+    "box": {
+     "left": 616.3,
+     "top": 394,
+     "right": 826,
+     "bottom": 416.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 616.3,
+     "top": 456,
+     "right": 661.7,
+     "bottom": 484,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack฿1050|1",
+    "box": {
+     "left": 24,
+     "top": 517,
+     "right": 299.7,
+     "bottom": 645,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack|1",
+    "box": {
+     "left": 41,
+     "top": 534,
+     "right": 250.7,
+     "bottom": 556.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1050|1",
+    "box": {
+     "left": 41,
+     "top": 596,
+     "right": 98,
+     "bottom": 624,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck฿1200|1",
+    "box": {
+     "left": 311.7,
+     "top": 517,
+     "right": 587.3,
+     "bottom": 645,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck|1",
+    "box": {
+     "left": 328.7,
+     "top": 534,
+     "right": 538.3,
+     "bottom": 556.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1200|1",
+    "box": {
+     "left": 328.7,
+     "top": 596,
+     "right": 385.7,
+     "bottom": 624,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet฿100|1",
+    "box": {
+     "left": 599.3,
+     "top": 517,
+     "right": 875,
+     "bottom": 645,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet|1",
+    "box": {
+     "left": 616.3,
+     "top": 534,
+     "right": 826,
+     "bottom": 556.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 100|1",
+    "box": {
+     "left": 616.3,
+     "top": 596,
+     "right": 661.7,
+     "bottom": 624,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Slime Workshop฿350|1",
+    "box": {
+     "left": 24,
+     "top": 657,
+     "right": 299.7,
+     "bottom": 785,
+     "width": 275.7,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Slime Workshop|1",
+    "box": {
+     "left": 41,
+     "top": 674,
+     "right": 250.7,
+     "bottom": 696.5,
+     "width": 209.7,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 350|1",
+    "box": {
+     "left": 41,
+     "top": 736,
+     "right": 86.4,
+     "bottom": 764,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "tiers-two-line@1440x900": [
+   {
+    "key": "h2|Select Customer Type|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 359.7,
+     "bottom": 266,
+     "width": 335.7,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|Choose the pricing tier to start the sale.|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 359.7,
+     "bottom": 302,
+     "width": 335.7,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Z|1",
+    "box": {
+     "left": 41,
+     "top": 343,
+     "right": 89,
+     "bottom": 391,
+     "width": 48,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|ZZ TEST 884 Expat Verified Member|1",
+    "box": {
+     "left": 105,
+     "top": 343,
+     "right": 864.4,
+     "bottom": 371,
+     "width": 759.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|+66 89 888 4010|1",
+    "box": {
+     "left": 105,
+     "top": 371,
+     "right": 864.4,
+     "bottom": 391,
+     "width": 759.4,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Expat · verified|1",
+    "box": {
+     "left": 880.4,
+     "top": 349,
+     "right": 1038,
+     "bottom": 385,
+     "width": 157.6,
+     "height": 36
+    }
+   },
+   {
+    "key": "h3|Tourist|1",
+    "box": {
+     "left": 146.6,
+     "top": 593,
+     "right": 229,
+     "bottom": 625,
+     "width": 82.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Standard pricing|1",
+    "box": {
+     "left": 125.3,
+     "top": 633,
+     "right": 250.3,
+     "bottom": 657,
+     "width": 125,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Verified|1",
+    "box": {
+     "left": 605.9,
+     "top": 453,
+     "right": 690.3,
+     "bottom": 477,
+     "width": 84.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Expat|1",
+    "box": {
+     "left": 506.2,
+     "top": 577,
+     "right": 572.8,
+     "bottom": 609,
+     "width": 66.6,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Resident pricing|1",
+    "box": {
+     "left": 478.4,
+     "top": 617,
+     "right": 600.6,
+     "bottom": 641,
+     "width": 122.2,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Passport — no proof needed|1",
+    "box": {
+     "left": 444.2,
+     "top": 653,
+     "right": 634.8,
+     "bottom": 673,
+     "width": 190.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "h3|Thai|1",
+    "box": {
+     "left": 865.4,
+     "top": 577,
+     "right": 916.8,
+     "bottom": 609,
+     "width": 51.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Local pricing|1",
+    "box": {
+     "left": 842.4,
+     "top": 617,
+     "right": 939.9,
+     "bottom": 641,
+     "width": 97.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Proof required — verify now|1",
+    "box": {
+     "left": 796.4,
+     "top": 653,
+     "right": 985.9,
+     "bottom": 673,
+     "width": 189.5,
+     "height": 20
+    }
+   }
+  ],
+  "identify@1440x900": [
+   {
+    "key": "h2|Membership Check|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 1055,
+     "bottom": 266,
+     "width": 1031,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|The customer is entering their phone on their disp|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 1055,
+     "bottom": 302,
+     "width": 1031,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Waiting for the customer…|1",
+    "box": {
+     "left": 413.3,
+     "top": 442,
+     "right": 665.7,
+     "bottom": 470,
+     "width": 252.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Enter phone to look up membership|1",
+    "box": {
+     "left": 392.8,
+     "top": 474,
+     "right": 686.3,
+     "bottom": 498,
+     "width": 293.5,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|A phone number is required for every visit — it is|1",
+    "box": {
+     "left": 184.2,
+     "top": 502,
+     "right": 894.8,
+     "bottom": 522,
+     "width": 710.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Phone|1",
+    "box": {
+     "left": 336.5,
+     "top": 567,
+     "right": 378.6,
+     "bottom": 587,
+     "width": 42.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|1",
+    "box": {
+     "left": 336.5,
+     "top": 589,
+     "right": 356.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Nickname|1",
+    "box": {
+     "left": 632.5,
+     "top": 567,
+     "right": 698.7,
+     "bottom": 587,
+     "width": 66.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|2",
+    "box": {
+     "left": 632.5,
+     "top": 589,
+     "right": 652.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Event Passes|1",
+    "box": {
+     "left": 48,
+     "top": 676,
+     "right": 157.2,
+     "bottom": 696,
+     "width": 109.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Flat day entry — no membership needed|1",
+    "box": {
+     "left": 165.2,
+     "top": 678,
+     "right": 395.8,
+     "bottom": 694,
+     "width": 230.7,
+     "height": 16
+    }
+   },
+   {
+    "key": "p|No active events|1",
+    "box": {
+     "left": 49,
+     "top": 733,
+     "right": 1030,
+     "bottom": 753,
+     "width": 981,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Today's camp sessions and upcoming events appear h|1",
+    "box": {
+     "left": 49,
+     "top": 757,
+     "right": 1030,
+     "bottom": 773,
+     "width": 981,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Redeem Booking|1",
+    "box": {
+     "left": 24,
+     "top": 812,
+     "right": 210.9,
+     "bottom": 876,
+     "width": 186.9,
+     "height": 64
+    }
+   }
+  ],
+  "confirm@1440x900": [
+   {
+    "key": "p|Oto Play Park|1",
+    "box": {
+     "left": 671.9,
+     "top": 322,
+     "right": 767.1,
+     "bottom": 342,
+     "width": 95.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "h2|Payment Successful|1",
+    "box": {
+     "left": 547.7,
+     "top": 346,
+     "right": 891.3,
+     "bottom": 386,
+     "width": 343.7,
+     "height": 40
+    }
+   },
+   {
+    "key": "p|Receipt Z88401-000001 • ฿1040 • Cash|1",
+    "box": {
+     "left": 529.9,
+     "top": 394,
+     "right": 909.1,
+     "bottom": 422,
+     "width": 379.2,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|VAT included ฿68.04|1",
+    "box": {
+     "left": 650.8,
+     "top": 426,
+     "right": 788.2,
+     "bottom": 446,
+     "width": 137.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Thank you for visiting! · Tax ID 0105500000000|1",
+    "box": {
+     "left": 584.8,
+     "top": 450,
+     "right": 854.2,
+     "bottom": 466,
+     "width": 269.4,
+     "height": 16
+    }
+   },
+   {
+    "key": "h3|Bracelets to Print|1",
+    "box": {
+     "left": 85,
+     "top": 515,
+     "right": 285.8,
+     "bottom": 547,
+     "width": 200.8,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|2 total|1",
+    "box": {
+     "left": 622.2,
+     "top": 521,
+     "right": 682.5,
+     "bottom": 541,
+     "width": 60.3,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 × Child bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 597,
+     "right": 580.8,
+     "bottom": 625,
+     "width": 450.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|1",
+    "box": {
+     "left": 130,
+     "top": 625,
+     "right": 580.8,
+     "bottom": 645,
+     "width": 450.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|1",
+    "box": {
+     "left": 596.8,
+     "top": 609,
+     "right": 665.5,
+     "bottom": 633,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|1 × Adult bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 691,
+     "right": 580.8,
+     "bottom": 719,
+     "width": 450.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|2",
+    "box": {
+     "left": 130,
+     "top": 719,
+     "right": 580.8,
+     "bottom": 739,
+     "width": 450.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|2",
+    "box": {
+     "left": 596.8,
+     "top": 703,
+     "right": 665.5,
+     "bottom": 727,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Credit Grants Issued|1",
+    "box": {
+     "left": 792.5,
+     "top": 515,
+     "right": 1031.9,
+     "bottom": 547,
+     "width": 239.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|1 total|1",
+    "box": {
+     "left": 1332.5,
+     "top": 521,
+     "right": 1390,
+     "bottom": 541,
+     "width": 57.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Credit|1",
+    "box": {
+     "left": 873.5,
+     "top": 600,
+     "right": 914.1,
+     "bottom": 620,
+     "width": 40.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|฿ 350|1",
+    "box": {
+     "left": 849.5,
+     "top": 620,
+     "right": 1347.8,
+     "bottom": 650,
+     "width": 498.3,
+     "height": 30
+    }
+   },
+   {
+    "key": "span|credit|1",
+    "box": {
+     "left": 915.8,
+     "top": 627,
+     "right": 959.6,
+     "bottom": 647,
+     "width": 43.9,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|# 1|1",
+    "box": {
+     "left": 1363.8,
+     "top": 617,
+     "right": 1377,
+     "bottom": 633,
+     "width": 13.2,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Start New Sale|1",
+    "box": {
+     "left": 24,
+     "top": 796,
+     "right": 1415,
+     "bottom": 876,
+     "width": 1391,
+     "height": 80
+    }
+   }
+  ],
+  "fnb-menu@1440x900": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 1035,
+     "bottom": 214,
+     "width": 1011,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Breakfast|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 167.1,
+     "bottom": 274,
+     "width": 143.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sides|1",
+    "box": {
+     "left": 175.1,
+     "top": 226,
+     "right": 288.5,
+     "bottom": 274,
+     "width": 113.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sharing|1",
+    "box": {
+     "left": 296.5,
+     "top": 226,
+     "right": 427.3,
+     "bottom": 274,
+     "width": 130.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soup|1",
+    "box": {
+     "left": 435.3,
+     "top": 226,
+     "right": 545.6,
+     "bottom": 274,
+     "width": 110.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Salads|1",
+    "box": {
+     "left": 553.6,
+     "top": 226,
+     "right": 676,
+     "bottom": 274,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pasta|1",
+    "box": {
+     "left": 684,
+     "top": 226,
+     "right": 797.7,
+     "bottom": 274,
+     "width": 113.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pizza|1",
+    "box": {
+     "left": 805.7,
+     "top": 226,
+     "right": 918,
+     "bottom": 274,
+     "width": 112.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Mains|1",
+    "box": {
+     "left": 24,
+     "top": 282,
+     "right": 141.5,
+     "bottom": 330,
+     "width": 117.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Asian Food|1",
+    "box": {
+     "left": 149.5,
+     "top": 282,
+     "right": 306.2,
+     "bottom": 330,
+     "width": 156.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids|1",
+    "box": {
+     "left": 314.2,
+     "top": 282,
+     "right": 419.2,
+     "bottom": 330,
+     "width": 105,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Desserts|1",
+    "box": {
+     "left": 427.2,
+     "top": 282,
+     "right": 567.3,
+     "bottom": 330,
+     "width": 140.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Coffee|1",
+    "box": {
+     "left": 575.3,
+     "top": 282,
+     "right": 697.7,
+     "bottom": 330,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Iced Coffee|1",
+    "box": {
+     "left": 705.7,
+     "top": 282,
+     "right": 865.5,
+     "bottom": 330,
+     "width": 159.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Chocolate|1",
+    "box": {
+     "left": 873.5,
+     "top": 282,
+     "right": 1023.2,
+     "bottom": 330,
+     "width": 149.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soda|1",
+    "box": {
+     "left": 24,
+     "top": 338,
+     "right": 133.7,
+     "bottom": 386,
+     "width": 109.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Smoothies|1",
+    "box": {
+     "left": 141.7,
+     "top": 338,
+     "right": 295.1,
+     "bottom": 386,
+     "width": 153.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Juice|1",
+    "box": {
+     "left": 303.1,
+     "top": 338,
+     "right": 415.7,
+     "bottom": 386,
+     "width": 112.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tea pot|1",
+    "box": {
+     "left": 423.7,
+     "top": 338,
+     "right": 551.6,
+     "bottom": 386,
+     "width": 128,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soft drinks|1",
+    "box": {
+     "left": 559.6,
+     "top": 338,
+     "right": 714.5,
+     "bottom": 386,
+     "width": 154.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids juice|1",
+    "box": {
+     "left": 722.5,
+     "top": 338,
+     "right": 868.9,
+     "bottom": 386,
+     "width": 146.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Wine|1",
+    "box": {
+     "left": 876.9,
+     "top": 338,
+     "right": 987.3,
+     "bottom": 386,
+     "width": 110.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Beer|1",
+    "box": {
+     "left": 24,
+     "top": 394,
+     "right": 130.2,
+     "bottom": 442,
+     "width": 106.2,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|American Breakfast฿290|1",
+    "box": {
+     "left": 24,
+     "top": 454,
+     "right": 353,
+     "bottom": 566,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|American Breakfast|1",
+    "box": {
+     "left": 41,
+     "top": 471,
+     "right": 304,
+     "bottom": 493.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 290|1",
+    "box": {
+     "left": 41,
+     "top": 517,
+     "right": 86.4,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Pancakes฿175|1",
+    "box": {
+     "left": 365,
+     "top": 454,
+     "right": 694,
+     "bottom": 566,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 657,
+     "top": 463,
+     "right": 685,
+     "bottom": 491,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Pancakes|1",
+    "box": {
+     "left": 382,
+     "top": 471,
+     "right": 645,
+     "bottom": 493.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 382,
+     "top": 517,
+     "right": 427.4,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice฿150|1",
+    "box": {
+     "left": 706,
+     "top": 454,
+     "right": 1035,
+     "bottom": 566,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice|1",
+    "box": {
+     "left": 723,
+     "top": 471,
+     "right": 986,
+     "bottom": 493.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 723,
+     "top": 517,
+     "right": 768.4,
+     "bottom": 545,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt฿190|1",
+    "box": {
+     "left": 24,
+     "top": 578,
+     "right": 353,
+     "bottom": 690,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt|1",
+    "box": {
+     "left": 41,
+     "top": 595,
+     "right": 304,
+     "bottom": 617.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 190|1",
+    "box": {
+     "left": 41,
+     "top": 641,
+     "right": 86.4,
+     "bottom": 669,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Croissant฿95|1",
+    "box": {
+     "left": 365,
+     "top": 578,
+     "right": 694,
+     "bottom": 690,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Croissant|1",
+    "box": {
+     "left": 382,
+     "top": 595,
+     "right": 645,
+     "bottom": 617.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 95|1",
+    "box": {
+     "left": 382,
+     "top": 641,
+     "right": 415.8,
+     "bottom": 669,
+     "width": 33.8,
+     "height": 28
+    }
+   }
+  ],
+  "fnb-search@1440x900": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 1035,
+     "bottom": 214,
+     "width": 1011,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Clear search|1",
+    "box": {
+     "left": 999,
+     "top": 178,
+     "right": 1027,
+     "bottom": 206,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|French fries฿175|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 353,
+     "bottom": 338,
+     "width": 329,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|French fries|1",
+    "box": {
+     "left": 41,
+     "top": 243,
+     "right": 304,
+     "bottom": 265.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 41,
+     "top": 289,
+     "right": 86.4,
+     "bottom": 317,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "merch-grid@1440x900": [
+   {
+    "key": "button|All|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 84.6,
+     "bottom": 218,
+     "width": 60.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tickets & passes|1",
+    "box": {
+     "left": 92.6,
+     "top": 170,
+     "right": 266.5,
+     "bottom": 218,
+     "width": 173.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Balloons|1",
+    "box": {
+     "left": 274.5,
+     "top": 170,
+     "right": 383.6,
+     "bottom": 218,
+     "width": 109.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Merchandise|1",
+    "box": {
+     "left": 391.6,
+     "top": 170,
+     "right": 535.7,
+     "bottom": 218,
+     "width": 144.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Workshop|1",
+    "box": {
+     "left": 543.7,
+     "top": 170,
+     "right": 666.2,
+     "bottom": 218,
+     "width": 122.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|Golden Ticket฿1500|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 353,
+     "bottom": 365,
+     "width": 329,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Golden Ticket|1",
+    "box": {
+     "left": 41,
+     "top": 247,
+     "right": 304,
+     "bottom": 269.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1500|1",
+    "box": {
+     "left": 41,
+     "top": 316,
+     "right": 98,
+     "bottom": 344,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|School Admission Ticket฿250|1",
+    "box": {
+     "left": 365,
+     "top": 230,
+     "right": 694,
+     "bottom": 365,
+     "width": 329,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|School Admission Ticket|1",
+    "box": {
+     "left": 382,
+     "top": 247,
+     "right": 645,
+     "bottom": 269.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 250|1",
+    "box": {
+     "left": 382,
+     "top": 316,
+     "right": 427.4,
+     "bottom": 344,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket฿200|1",
+    "box": {
+     "left": 706,
+     "top": 230,
+     "right": 1035,
+     "bottom": 365,
+     "width": 329,
+     "height": 135
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket|1",
+    "box": {
+     "left": 723,
+     "top": 247,
+     "right": 986,
+     "bottom": 292,
+     "width": 263,
+     "height": 45
+    }
+   },
+   {
+    "key": "span|฿ 200|1",
+    "box": {
+     "left": 723,
+     "top": 316,
+     "right": 768.4,
+     "bottom": 344,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Helium Balloon (65)฿65|1",
+    "box": {
+     "left": 24,
+     "top": 377,
+     "right": 353,
+     "bottom": 505,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 316,
+     "top": 386,
+     "right": 344,
+     "bottom": 414,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (65)|1",
+    "box": {
+     "left": 41,
+     "top": 394,
+     "right": 304,
+     "bottom": 416.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 65|1",
+    "box": {
+     "left": 41,
+     "top": 456,
+     "right": 74.8,
+     "bottom": 484,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)฿75|1",
+    "box": {
+     "left": 365,
+     "top": 377,
+     "right": 694,
+     "bottom": 505,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)|1",
+    "box": {
+     "left": 382,
+     "top": 394,
+     "right": 645,
+     "bottom": 416.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 75|1",
+    "box": {
+     "left": 382,
+     "top": 456,
+     "right": 415.8,
+     "bottom": 484,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S฿150|1",
+    "box": {
+     "left": 706,
+     "top": 377,
+     "right": 1035,
+     "bottom": 505,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S|1",
+    "box": {
+     "left": 723,
+     "top": 394,
+     "right": 986,
+     "bottom": 416.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 723,
+     "top": 456,
+     "right": 768.4,
+     "bottom": 484,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack฿1050|1",
+    "box": {
+     "left": 24,
+     "top": 517,
+     "right": 353,
+     "bottom": 645,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack|1",
+    "box": {
+     "left": 41,
+     "top": 534,
+     "right": 304,
+     "bottom": 556.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1050|1",
+    "box": {
+     "left": 41,
+     "top": 596,
+     "right": 98,
+     "bottom": 624,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck฿1200|1",
+    "box": {
+     "left": 365,
+     "top": 517,
+     "right": 694,
+     "bottom": 645,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck|1",
+    "box": {
+     "left": 382,
+     "top": 534,
+     "right": 645,
+     "bottom": 556.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1200|1",
+    "box": {
+     "left": 382,
+     "top": 596,
+     "right": 439,
+     "bottom": 624,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet฿100|1",
+    "box": {
+     "left": 706,
+     "top": 517,
+     "right": 1035,
+     "bottom": 645,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet|1",
+    "box": {
+     "left": 723,
+     "top": 534,
+     "right": 986,
+     "bottom": 556.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 100|1",
+    "box": {
+     "left": 723,
+     "top": 596,
+     "right": 768.4,
+     "bottom": 624,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Slime Workshop฿350|1",
+    "box": {
+     "left": 24,
+     "top": 657,
+     "right": 353,
+     "bottom": 785,
+     "width": 329,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Slime Workshop|1",
+    "box": {
+     "left": 41,
+     "top": 674,
+     "right": 304,
+     "bottom": 696.5,
+     "width": 263,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 350|1",
+    "box": {
+     "left": 41,
+     "top": 736,
+     "right": 86.4,
+     "bottom": 764,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "tiers-two-line@1680x1050": [
+   {
+    "key": "h2|Select Customer Type|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 359.7,
+     "bottom": 266,
+     "width": 335.7,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|Choose the pricing tier to start the sale.|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 359.7,
+     "bottom": 302,
+     "width": 335.7,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Z|1",
+    "box": {
+     "left": 41,
+     "top": 343,
+     "right": 89,
+     "bottom": 391,
+     "width": 48,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|ZZ TEST 884 Expat Verified Member|1",
+    "box": {
+     "left": 105,
+     "top": 343,
+     "right": 1104.4,
+     "bottom": 371,
+     "width": 999.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|+66 89 888 4010|1",
+    "box": {
+     "left": 105,
+     "top": 371,
+     "right": 1104.4,
+     "bottom": 391,
+     "width": 999.4,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Expat · verified|1",
+    "box": {
+     "left": 1120.4,
+     "top": 349,
+     "right": 1278,
+     "bottom": 385,
+     "width": 157.6,
+     "height": 36
+    }
+   },
+   {
+    "key": "h3|Tourist|1",
+    "box": {
+     "left": 186.6,
+     "top": 593,
+     "right": 269,
+     "bottom": 625,
+     "width": 82.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Standard pricing|1",
+    "box": {
+     "left": 165.3,
+     "top": 633,
+     "right": 290.3,
+     "bottom": 657,
+     "width": 125,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Verified|1",
+    "box": {
+     "left": 765.9,
+     "top": 453,
+     "right": 850.3,
+     "bottom": 477,
+     "width": 84.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Expat|1",
+    "box": {
+     "left": 626.2,
+     "top": 577,
+     "right": 692.8,
+     "bottom": 609,
+     "width": 66.6,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Resident pricing|1",
+    "box": {
+     "left": 598.4,
+     "top": 617,
+     "right": 720.6,
+     "bottom": 641,
+     "width": 122.2,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Passport — no proof needed|1",
+    "box": {
+     "left": 564.2,
+     "top": 653,
+     "right": 754.8,
+     "bottom": 673,
+     "width": 190.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "h3|Thai|1",
+    "box": {
+     "left": 1065.4,
+     "top": 577,
+     "right": 1116.8,
+     "bottom": 609,
+     "width": 51.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "p|Local pricing|1",
+    "box": {
+     "left": 1042.4,
+     "top": 617,
+     "right": 1139.9,
+     "bottom": 641,
+     "width": 97.4,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|Proof required — verify now|1",
+    "box": {
+     "left": 996.4,
+     "top": 653,
+     "right": 1185.9,
+     "bottom": 673,
+     "width": 189.5,
+     "height": 20
+    }
+   }
+  ],
+  "identify@1680x1050": [
+   {
+    "key": "h2|Membership Check|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 1295,
+     "bottom": 266,
+     "width": 1271,
+     "height": 36
+    }
+   },
+   {
+    "key": "p|The customer is entering their phone on their disp|1",
+    "box": {
+     "left": 24,
+     "top": 274,
+     "right": 1295,
+     "bottom": 302,
+     "width": 1271,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Waiting for the customer…|1",
+    "box": {
+     "left": 533.3,
+     "top": 442,
+     "right": 785.7,
+     "bottom": 470,
+     "width": 252.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|Enter phone to look up membership|1",
+    "box": {
+     "left": 512.8,
+     "top": 474,
+     "right": 806.3,
+     "bottom": 498,
+     "width": 293.5,
+     "height": 24
+    }
+   },
+   {
+    "key": "p|A phone number is required for every visit — it is|1",
+    "box": {
+     "left": 304.2,
+     "top": 502,
+     "right": 1014.8,
+     "bottom": 522,
+     "width": 710.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|Phone|1",
+    "box": {
+     "left": 456.5,
+     "top": 567,
+     "right": 498.6,
+     "bottom": 587,
+     "width": 42.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|1",
+    "box": {
+     "left": 456.5,
+     "top": 589,
+     "right": 476.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|Nickname|1",
+    "box": {
+     "left": 752.5,
+     "top": 567,
+     "right": 818.7,
+     "bottom": 587,
+     "width": 66.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|—|2",
+    "box": {
+     "left": 752.5,
+     "top": 589,
+     "right": 772.5,
+     "bottom": 613,
+     "width": 20,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Event Passes|1",
+    "box": {
+     "left": 48,
+     "top": 676,
+     "right": 157.2,
+     "bottom": 696,
+     "width": 109.2,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Flat day entry — no membership needed|1",
+    "box": {
+     "left": 165.2,
+     "top": 678,
+     "right": 395.8,
+     "bottom": 694,
+     "width": 230.7,
+     "height": 16
+    }
+   },
+   {
+    "key": "p|No active events|1",
+    "box": {
+     "left": 49,
+     "top": 733,
+     "right": 1270,
+     "bottom": 753,
+     "width": 1221,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Today's camp sessions and upcoming events appear h|1",
+    "box": {
+     "left": 49,
+     "top": 757,
+     "right": 1270,
+     "bottom": 773,
+     "width": 1221,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Redeem Booking|1",
+    "box": {
+     "left": 24,
+     "top": 962,
+     "right": 210.9,
+     "bottom": 1026,
+     "width": 186.9,
+     "height": 64
+    }
+   }
+  ],
+  "confirm@1680x1050": [
+   {
+    "key": "p|Oto Play Park|1",
+    "box": {
+     "left": 791.9,
+     "top": 322,
+     "right": 887.1,
+     "bottom": 342,
+     "width": 95.1,
+     "height": 20
+    }
+   },
+   {
+    "key": "h2|Payment Successful|1",
+    "box": {
+     "left": 667.7,
+     "top": 346,
+     "right": 1011.3,
+     "bottom": 386,
+     "width": 343.7,
+     "height": 40
+    }
+   },
+   {
+    "key": "p|Receipt Z88401-000001 • ฿1040 • Cash|1",
+    "box": {
+     "left": 649.9,
+     "top": 394,
+     "right": 1029.1,
+     "bottom": 422,
+     "width": 379.2,
+     "height": 28
+    }
+   },
+   {
+    "key": "p|VAT included ฿68.04|1",
+    "box": {
+     "left": 770.8,
+     "top": 426,
+     "right": 908.2,
+     "bottom": 446,
+     "width": 137.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "p|Thank you for visiting! · Tax ID 0105500000000|1",
+    "box": {
+     "left": 704.8,
+     "top": 450,
+     "right": 974.2,
+     "bottom": 466,
+     "width": 269.4,
+     "height": 16
+    }
+   },
+   {
+    "key": "h3|Bracelets to Print|1",
+    "box": {
+     "left": 85,
+     "top": 515,
+     "right": 285.8,
+     "bottom": 547,
+     "width": 200.8,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|2 total|1",
+    "box": {
+     "left": 742.2,
+     "top": 521,
+     "right": 802.5,
+     "bottom": 541,
+     "width": 60.3,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 × Child bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 597,
+     "right": 700.8,
+     "bottom": 625,
+     "width": 570.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|1",
+    "box": {
+     "left": 130,
+     "top": 625,
+     "right": 700.8,
+     "bottom": 645,
+     "width": 570.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|1",
+    "box": {
+     "left": 716.8,
+     "top": 609,
+     "right": 785.5,
+     "bottom": 633,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "div|1 × Adult bracelet|1",
+    "box": {
+     "left": 130,
+     "top": 691,
+     "right": 700.8,
+     "bottom": 719,
+     "width": 570.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1 Hour • 1 Hour Play|2",
+    "box": {
+     "left": 130,
+     "top": 719,
+     "right": 700.8,
+     "bottom": 739,
+     "width": 570.8,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|1 Hour|2",
+    "box": {
+     "left": 716.8,
+     "top": 703,
+     "right": 785.5,
+     "bottom": 727,
+     "width": 68.7,
+     "height": 24
+    }
+   },
+   {
+    "key": "h3|Credit Grants Issued|1",
+    "box": {
+     "left": 912.5,
+     "top": 515,
+     "right": 1151.9,
+     "bottom": 547,
+     "width": 239.4,
+     "height": 32
+    }
+   },
+   {
+    "key": "span|1 total|1",
+    "box": {
+     "left": 1572.5,
+     "top": 521,
+     "right": 1630,
+     "bottom": 541,
+     "width": 57.5,
+     "height": 20
+    }
+   },
+   {
+    "key": "span|Credit|1",
+    "box": {
+     "left": 993.5,
+     "top": 600,
+     "right": 1034.1,
+     "bottom": 620,
+     "width": 40.6,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|฿ 350|1",
+    "box": {
+     "left": 969.5,
+     "top": 620,
+     "right": 1587.8,
+     "bottom": 650,
+     "width": 618.3,
+     "height": 30
+    }
+   },
+   {
+    "key": "span|credit|1",
+    "box": {
+     "left": 1035.8,
+     "top": 627,
+     "right": 1079.6,
+     "bottom": 647,
+     "width": 43.9,
+     "height": 20
+    }
+   },
+   {
+    "key": "div|# 1|1",
+    "box": {
+     "left": 1603.8,
+     "top": 617,
+     "right": 1617,
+     "bottom": 633,
+     "width": 13.2,
+     "height": 16
+    }
+   },
+   {
+    "key": "button|Start New Sale|1",
+    "box": {
+     "left": 24,
+     "top": 946,
+     "right": 1655,
+     "bottom": 1026,
+     "width": 1631,
+     "height": 80
+    }
+   }
+  ],
+  "fnb-menu@1680x1050": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 1275,
+     "bottom": 214,
+     "width": 1251,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Breakfast|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 167.1,
+     "bottom": 274,
+     "width": 143.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sides|1",
+    "box": {
+     "left": 175.1,
+     "top": 226,
+     "right": 288.5,
+     "bottom": 274,
+     "width": 113.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Sharing|1",
+    "box": {
+     "left": 296.5,
+     "top": 226,
+     "right": 427.3,
+     "bottom": 274,
+     "width": 130.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soup|1",
+    "box": {
+     "left": 435.3,
+     "top": 226,
+     "right": 545.6,
+     "bottom": 274,
+     "width": 110.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Salads|1",
+    "box": {
+     "left": 553.6,
+     "top": 226,
+     "right": 676,
+     "bottom": 274,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pasta|1",
+    "box": {
+     "left": 684,
+     "top": 226,
+     "right": 797.7,
+     "bottom": 274,
+     "width": 113.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Pizza|1",
+    "box": {
+     "left": 805.7,
+     "top": 226,
+     "right": 918,
+     "bottom": 274,
+     "width": 112.3,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Mains|1",
+    "box": {
+     "left": 926,
+     "top": 226,
+     "right": 1043.5,
+     "bottom": 274,
+     "width": 117.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Asian Food|1",
+    "box": {
+     "left": 1051.5,
+     "top": 226,
+     "right": 1208.2,
+     "bottom": 274,
+     "width": 156.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids|1",
+    "box": {
+     "left": 24,
+     "top": 282,
+     "right": 129,
+     "bottom": 330,
+     "width": 105,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Desserts|1",
+    "box": {
+     "left": 137,
+     "top": 282,
+     "right": 277.1,
+     "bottom": 330,
+     "width": 140.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Coffee|1",
+    "box": {
+     "left": 285.1,
+     "top": 282,
+     "right": 407.5,
+     "bottom": 330,
+     "width": 122.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Iced Coffee|1",
+    "box": {
+     "left": 415.5,
+     "top": 282,
+     "right": 575.3,
+     "bottom": 330,
+     "width": 159.8,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Chocolate|1",
+    "box": {
+     "left": 583.3,
+     "top": 282,
+     "right": 733,
+     "bottom": 330,
+     "width": 149.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soda|1",
+    "box": {
+     "left": 741,
+     "top": 282,
+     "right": 850.7,
+     "bottom": 330,
+     "width": 109.7,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Smoothies|1",
+    "box": {
+     "left": 858.7,
+     "top": 282,
+     "right": 1012.1,
+     "bottom": 330,
+     "width": 153.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Juice|1",
+    "box": {
+     "left": 1020.1,
+     "top": 282,
+     "right": 1132.7,
+     "bottom": 330,
+     "width": 112.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tea pot|1",
+    "box": {
+     "left": 1140.7,
+     "top": 282,
+     "right": 1268.6,
+     "bottom": 330,
+     "width": 128,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Soft drinks|1",
+    "box": {
+     "left": 24,
+     "top": 338,
+     "right": 178.9,
+     "bottom": 386,
+     "width": 154.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Kids juice|1",
+    "box": {
+     "left": 186.9,
+     "top": 338,
+     "right": 333.3,
+     "bottom": 386,
+     "width": 146.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Wine|1",
+    "box": {
+     "left": 341.3,
+     "top": 338,
+     "right": 451.7,
+     "bottom": 386,
+     "width": 110.4,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Beer|1",
+    "box": {
+     "left": 459.7,
+     "top": 338,
+     "right": 565.9,
+     "bottom": 386,
+     "width": 106.2,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|American Breakfast฿290|1",
+    "box": {
+     "left": 24,
+     "top": 398,
+     "right": 433,
+     "bottom": 510,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|American Breakfast|1",
+    "box": {
+     "left": 41,
+     "top": 415,
+     "right": 384,
+     "bottom": 437.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 290|1",
+    "box": {
+     "left": 41,
+     "top": 461,
+     "right": 86.4,
+     "bottom": 489,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Pancakes฿175|1",
+    "box": {
+     "left": 445,
+     "top": 398,
+     "right": 854,
+     "bottom": 510,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 817,
+     "top": 407,
+     "right": 845,
+     "bottom": 435,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Pancakes|1",
+    "box": {
+     "left": 462,
+     "top": 415,
+     "right": 805,
+     "bottom": 437.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 462,
+     "top": 461,
+     "right": 507.4,
+     "bottom": 489,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice฿150|1",
+    "box": {
+     "left": 866,
+     "top": 398,
+     "right": 1275,
+     "bottom": 510,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Thai Omelette with Rice|1",
+    "box": {
+     "left": 883,
+     "top": 415,
+     "right": 1226,
+     "bottom": 437.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 883,
+     "top": 461,
+     "right": 928.4,
+     "bottom": 489,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt฿190|1",
+    "box": {
+     "left": 24,
+     "top": 522,
+     "right": 433,
+     "bottom": 634,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Granola Strawberry Yoghurt|1",
+    "box": {
+     "left": 41,
+     "top": 539,
+     "right": 384,
+     "bottom": 561.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 190|1",
+    "box": {
+     "left": 41,
+     "top": 585,
+     "right": 86.4,
+     "bottom": 613,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Croissant฿95|1",
+    "box": {
+     "left": 445,
+     "top": 522,
+     "right": 854,
+     "bottom": 634,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|Croissant|1",
+    "box": {
+     "left": 462,
+     "top": 539,
+     "right": 805,
+     "bottom": 561.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 95|1",
+    "box": {
+     "left": 462,
+     "top": 585,
+     "right": 495.8,
+     "bottom": 613,
+     "width": 33.8,
+     "height": 28
+    }
+   }
+  ],
+  "fnb-search@1680x1050": [
+   {
+    "key": "input|input|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 1275,
+     "bottom": 214,
+     "width": 1251,
+     "height": 44
+    }
+   },
+   {
+    "key": "button|Clear search|1",
+    "box": {
+     "left": 1239,
+     "top": 178,
+     "right": 1267,
+     "bottom": 206,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|French fries฿175|1",
+    "box": {
+     "left": 24,
+     "top": 226,
+     "right": 433,
+     "bottom": 338,
+     "width": 409,
+     "height": 112
+    }
+   },
+   {
+    "key": "div|French fries|1",
+    "box": {
+     "left": 41,
+     "top": 243,
+     "right": 384,
+     "bottom": 265.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 175|1",
+    "box": {
+     "left": 41,
+     "top": 289,
+     "right": 86.4,
+     "bottom": 317,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ],
+  "merch-grid@1680x1050": [
+   {
+    "key": "button|All|1",
+    "box": {
+     "left": 24,
+     "top": 170,
+     "right": 84.6,
+     "bottom": 218,
+     "width": 60.6,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Tickets & passes|1",
+    "box": {
+     "left": 92.6,
+     "top": 170,
+     "right": 266.5,
+     "bottom": 218,
+     "width": 173.9,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Balloons|1",
+    "box": {
+     "left": 274.5,
+     "top": 170,
+     "right": 383.6,
+     "bottom": 218,
+     "width": 109.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Merchandise|1",
+    "box": {
+     "left": 391.6,
+     "top": 170,
+     "right": 535.7,
+     "bottom": 218,
+     "width": 144.1,
+     "height": 48
+    }
+   },
+   {
+    "key": "button|Workshop|1",
+    "box": {
+     "left": 543.7,
+     "top": 170,
+     "right": 666.2,
+     "bottom": 218,
+     "width": 122.5,
+     "height": 48
+    }
+   },
+   {
+    "key": "div|Golden Ticket฿1500|1",
+    "box": {
+     "left": 24,
+     "top": 230,
+     "right": 433,
+     "bottom": 358,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Golden Ticket|1",
+    "box": {
+     "left": 41,
+     "top": 247,
+     "right": 384,
+     "bottom": 269.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1500|1",
+    "box": {
+     "left": 41,
+     "top": 309,
+     "right": 98,
+     "bottom": 337,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|School Admission Ticket฿250|1",
+    "box": {
+     "left": 445,
+     "top": 230,
+     "right": 854,
+     "bottom": 358,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|School Admission Ticket|1",
+    "box": {
+     "left": 462,
+     "top": 247,
+     "right": 805,
+     "bottom": 269.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 250|1",
+    "box": {
+     "left": 462,
+     "top": 309,
+     "right": 507.4,
+     "bottom": 337,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket฿200|1",
+    "box": {
+     "left": 866,
+     "top": 230,
+     "right": 1275,
+     "bottom": 358,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Thai-International Admission Ticket|1",
+    "box": {
+     "left": 883,
+     "top": 247,
+     "right": 1226,
+     "bottom": 269.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 200|1",
+    "box": {
+     "left": 883,
+     "top": 309,
+     "right": 928.4,
+     "bottom": 337,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|1Helium Balloon (65)฿65|1",
+    "box": {
+     "left": 24,
+     "top": 370,
+     "right": 433,
+     "bottom": 498,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|1|1",
+    "box": {
+     "left": 396,
+     "top": 379,
+     "right": 424,
+     "bottom": 407,
+     "width": 28,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (65)|1",
+    "box": {
+     "left": 41,
+     "top": 387,
+     "right": 384,
+     "bottom": 409.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 65|1",
+    "box": {
+     "left": 41,
+     "top": 449,
+     "right": 74.8,
+     "bottom": 477,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)฿75|1",
+    "box": {
+     "left": 445,
+     "top": 370,
+     "right": 854,
+     "bottom": 498,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Balloon (75)|1",
+    "box": {
+     "left": 462,
+     "top": 387,
+     "right": 805,
+     "bottom": 409.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 75|1",
+    "box": {
+     "left": 462,
+     "top": 449,
+     "right": 495.8,
+     "bottom": 477,
+     "width": 33.8,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S฿150|1",
+    "box": {
+     "left": 866,
+     "top": 370,
+     "right": 1275,
+     "bottom": 498,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Helium Foil Balloon S|1",
+    "box": {
+     "left": 883,
+     "top": 387,
+     "right": 1226,
+     "bottom": 409.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 150|1",
+    "box": {
+     "left": 883,
+     "top": 449,
+     "right": 928.4,
+     "bottom": 477,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack฿1050|1",
+    "box": {
+     "left": 24,
+     "top": 510,
+     "right": 433,
+     "bottom": 638,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Deer Kids Backpack|1",
+    "box": {
+     "left": 41,
+     "top": 527,
+     "right": 384,
+     "bottom": 549.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1050|1",
+    "box": {
+     "left": 41,
+     "top": 589,
+     "right": 98,
+     "bottom": 617,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck฿1200|1",
+    "box": {
+     "left": 445,
+     "top": 510,
+     "right": 854,
+     "bottom": 638,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Dino Monster Truck|1",
+    "box": {
+     "left": 462,
+     "top": 527,
+     "right": 805,
+     "bottom": 549.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 1200|1",
+    "box": {
+     "left": 462,
+     "top": 589,
+     "right": 519,
+     "bottom": 617,
+     "width": 57,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet฿100|1",
+    "box": {
+     "left": 866,
+     "top": 510,
+     "right": 1275,
+     "bottom": 638,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|OTO CS Bracelet|1",
+    "box": {
+     "left": 883,
+     "top": 527,
+     "right": 1226,
+     "bottom": 549.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 100|1",
+    "box": {
+     "left": 883,
+     "top": 589,
+     "right": 928.4,
+     "bottom": 617,
+     "width": 45.4,
+     "height": 28
+    }
+   },
+   {
+    "key": "div|Slime Workshop฿350|1",
+    "box": {
+     "left": 24,
+     "top": 650,
+     "right": 433,
+     "bottom": 778,
+     "width": 409,
+     "height": 128
+    }
+   },
+   {
+    "key": "div|Slime Workshop|1",
+    "box": {
+     "left": 41,
+     "top": 667,
+     "right": 384,
+     "bottom": 689.5,
+     "width": 343,
+     "height": 22.5
+    }
+   },
+   {
+    "key": "span|฿ 350|1",
+    "box": {
+     "left": 41,
+     "top": 729,
+     "right": 86.4,
+     "bottom": 757,
+     "width": 45.4,
+     "height": 28
+    }
+   }
+  ]
+ },
+ "lines": {
+  "tiers-two-line@1024x768": {
+   "Select Customer Type": 1,
+   "Choose the pricing tier to start the sale.": 1,
+   "Z": 1,
+   "ZZ TEST 884 Expat Verified Member": 1,
+   "+66 89 888 4010": 1,
+   "Expat": 1,
+   "· verified": 1,
+   "Tourist": 1,
+   "Standard pricing": 2,
+   "Verified": 1,
+   "Resident pricing": 1,
+   "Passport": 1,
+   "— no proof needed": 2,
+   "Thai": 1,
+   "Local pricing": 1,
+   "Proof required — verify now": 2
+  },
+  "identify@1024x768": {
+   "Membership Check": 1,
+   "The customer is entering their phone on their display to app": 2,
+   "Waiting for the customer…": 1,
+   "Enter phone to look up membership": 1,
+   "A phone number is required for every visit — it is how the t": 2,
+   "Phone": 1,
+   "—": 1,
+   "Nickname": 1,
+   "Event Passes": 1,
+   "Flat day entry — no membership needed": 1,
+   "No active events": 1,
+   "Today's camp sessions and upcoming events appear here.": 1,
+   "Redeem Booking": 1
+  },
+  "confirm@1024x768": {
+   "1": 1,
+   "2": 1,
+   "350": 1,
+   "Oto Play Park": 1,
+   "Payment Successful": 1,
+   "Receipt Z88401-000001 • ฿1040 • Cash": 1,
+   "VAT included ฿68.04": 1,
+   "Thank you for visiting! · Tax ID 0105500000000": 1,
+   "Bracelets to Print": 1,
+   "total": 1,
+   "×": 1,
+   "Child": 1,
+   "bracelet": 1,
+   "1 Hour": 1,
+   "•": 1,
+   "1 Hour Play": 1,
+   "Adult": 1,
+   "Credit Grants Issued": 1,
+   "Credit": 1,
+   "฿": 1,
+   "credit": 1,
+   "#": 1,
+   "Start New Sale": 1
+  },
+  "fnb-menu@1024x768": {
+   "1": 1,
+   "95": 1,
+   "150": 1,
+   "175": 1,
+   "190": 1,
+   "290": 1,
+   "Breakfast": 1,
+   "Sides": 1,
+   "Sharing": 1,
+   "Soup": 1,
+   "Salads": 1,
+   "Pasta": 1,
+   "Pizza": 1,
+   "Mains": 1,
+   "Asian Food": 1,
+   "Kids": 1,
+   "Desserts": 1,
+   "Coffee": 1,
+   "Iced Coffee": 1,
+   "Chocolate": 1,
+   "Soda": 1,
+   "Smoothies": 1,
+   "Juice": 1,
+   "Tea pot": 1,
+   "Soft drinks": 1,
+   "Kids juice": 1,
+   "Wine": 1,
+   "Beer": 1,
+   "American Breakfast": 2,
+   "฿": 1,
+   "Pancakes": 1,
+   "Thai Omelette with Rice": 2,
+   "Granola Strawberry Yoghurt": 3,
+   "Croissant": 1
+  },
+  "fnb-search@1024x768": {
+   "175": 1,
+   "French fries": 1,
+   "฿": 1
+  },
+  "merch-grid@1024x768": {
+   "1": 1,
+   "65": 1,
+   "75": 1,
+   "100": 1,
+   "150": 1,
+   "200": 1,
+   "250": 1,
+   "350": 1,
+   "1050": 1,
+   "1200": 1,
+   "1500": 1,
+   "All": 1,
+   "Tickets & passes": 1,
+   "Balloons": 1,
+   "Merchandise": 1,
+   "Workshop": 1,
+   "Golden Ticket": 1,
+   "฿": 1,
+   "School Admission Ticket": 3,
+   "Thai-International Admission Ticket": 4,
+   "Helium Balloon (65)": 2,
+   "Helium Balloon (75)": 2,
+   "Helium Foil Balloon S": 2,
+   "Deer Kids Backpack": 2,
+   "Dino Monster Truck": 2,
+   "OTO CS Bracelet": 2,
+   "Slime Workshop": 2
+  },
+  "tiers-two-line@1280x800": {
+   "Select Customer Type": 1,
+   "Choose the pricing tier to start the sale.": 1,
+   "Z": 1,
+   "ZZ TEST 884 Expat Verified Member": 1,
+   "+66 89 888 4010": 1,
+   "Expat": 1,
+   "· verified": 1,
+   "Tourist": 1,
+   "Standard pricing": 1,
+   "Verified": 1,
+   "Resident pricing": 1,
+   "Passport": 1,
+   "— no proof needed": 1,
+   "Thai": 1,
+   "Local pricing": 1,
+   "Proof required — verify now": 1
+  },
+  "identify@1280x800": {
+   "Membership Check": 1,
+   "The customer is entering their phone on their display to app": 1,
+   "Waiting for the customer…": 1,
+   "Enter phone to look up membership": 1,
+   "A phone number is required for every visit — it is how the t": 1,
+   "Phone": 1,
+   "—": 1,
+   "Nickname": 1,
+   "Event Passes": 1,
+   "Flat day entry — no membership needed": 1,
+   "No active events": 1,
+   "Today's camp sessions and upcoming events appear here.": 1,
+   "Redeem Booking": 1
+  },
+  "confirm@1280x800": {
+   "1": 1,
+   "2": 1,
+   "350": 1,
+   "Oto Play Park": 1,
+   "Payment Successful": 1,
+   "Receipt Z88401-000001 • ฿1040 • Cash": 1,
+   "VAT included ฿68.04": 1,
+   "Thank you for visiting! · Tax ID 0105500000000": 1,
+   "Bracelets to Print": 1,
+   "total": 1,
+   "×": 1,
+   "Child": 1,
+   "bracelet": 1,
+   "1 Hour": 1,
+   "•": 1,
+   "1 Hour Play": 1,
+   "Adult": 1,
+   "Credit Grants Issued": 1,
+   "Credit": 1,
+   "฿": 1,
+   "credit": 1,
+   "#": 1,
+   "Start New Sale": 1
+  },
+  "fnb-menu@1280x800": {
+   "1": 1,
+   "95": 1,
+   "150": 1,
+   "175": 1,
+   "190": 1,
+   "290": 1,
+   "Breakfast": 1,
+   "Sides": 1,
+   "Sharing": 1,
+   "Soup": 1,
+   "Salads": 1,
+   "Pasta": 1,
+   "Pizza": 1,
+   "Mains": 1,
+   "Asian Food": 1,
+   "Kids": 1,
+   "Desserts": 1,
+   "Coffee": 1,
+   "Iced Coffee": 1,
+   "Chocolate": 1,
+   "Soda": 1,
+   "Smoothies": 1,
+   "Juice": 1,
+   "Tea pot": 1,
+   "Soft drinks": 1,
+   "Kids juice": 1,
+   "Wine": 1,
+   "Beer": 1,
+   "American Breakfast": 1,
+   "฿": 1,
+   "Pancakes": 1,
+   "Thai Omelette with Rice": 1,
+   "Granola Strawberry Yoghurt": 2,
+   "Croissant": 1
+  },
+  "fnb-search@1280x800": {
+   "175": 1,
+   "French fries": 1,
+   "฿": 1
+  },
+  "merch-grid@1280x800": {
+   "1": 1,
+   "65": 1,
+   "75": 1,
+   "100": 1,
+   "150": 1,
+   "200": 1,
+   "250": 1,
+   "350": 1,
+   "1050": 1,
+   "1200": 1,
+   "1500": 1,
+   "All": 1,
+   "Tickets & passes": 1,
+   "Balloons": 1,
+   "Merchandise": 1,
+   "Workshop": 1,
+   "Golden Ticket": 1,
+   "฿": 1,
+   "School Admission Ticket": 2,
+   "Thai-International Admission Ticket": 2,
+   "Helium Balloon (65)": 1,
+   "Helium Balloon (75)": 1,
+   "Helium Foil Balloon S": 1,
+   "Deer Kids Backpack": 1,
+   "Dino Monster Truck": 1,
+   "OTO CS Bracelet": 1,
+   "Slime Workshop": 1
+  },
+  "tiers-two-line@1440x900": {
+   "Select Customer Type": 1,
+   "Choose the pricing tier to start the sale.": 1,
+   "Z": 1,
+   "ZZ TEST 884 Expat Verified Member": 1,
+   "+66 89 888 4010": 1,
+   "Expat": 1,
+   "· verified": 1,
+   "Tourist": 1,
+   "Standard pricing": 1,
+   "Verified": 1,
+   "Resident pricing": 1,
+   "Passport": 1,
+   "— no proof needed": 1,
+   "Thai": 1,
+   "Local pricing": 1,
+   "Proof required — verify now": 1
+  },
+  "identify@1440x900": {
+   "Membership Check": 1,
+   "The customer is entering their phone on their display to app": 1,
+   "Waiting for the customer…": 1,
+   "Enter phone to look up membership": 1,
+   "A phone number is required for every visit — it is how the t": 1,
+   "Phone": 1,
+   "—": 1,
+   "Nickname": 1,
+   "Event Passes": 1,
+   "Flat day entry — no membership needed": 1,
+   "No active events": 1,
+   "Today's camp sessions and upcoming events appear here.": 1,
+   "Redeem Booking": 1
+  },
+  "confirm@1440x900": {
+   "1": 1,
+   "2": 1,
+   "350": 1,
+   "Oto Play Park": 1,
+   "Payment Successful": 1,
+   "Receipt Z88401-000001 • ฿1040 • Cash": 1,
+   "VAT included ฿68.04": 1,
+   "Thank you for visiting! · Tax ID 0105500000000": 1,
+   "Bracelets to Print": 1,
+   "total": 1,
+   "×": 1,
+   "Child": 1,
+   "bracelet": 1,
+   "1 Hour": 1,
+   "•": 1,
+   "1 Hour Play": 1,
+   "Adult": 1,
+   "Credit Grants Issued": 1,
+   "Credit": 1,
+   "฿": 1,
+   "credit": 1,
+   "#": 1,
+   "Start New Sale": 1
+  },
+  "fnb-menu@1440x900": {
+   "1": 1,
+   "95": 1,
+   "150": 1,
+   "175": 1,
+   "190": 1,
+   "290": 1,
+   "Breakfast": 1,
+   "Sides": 1,
+   "Sharing": 1,
+   "Soup": 1,
+   "Salads": 1,
+   "Pasta": 1,
+   "Pizza": 1,
+   "Mains": 1,
+   "Asian Food": 1,
+   "Kids": 1,
+   "Desserts": 1,
+   "Coffee": 1,
+   "Iced Coffee": 1,
+   "Chocolate": 1,
+   "Soda": 1,
+   "Smoothies": 1,
+   "Juice": 1,
+   "Tea pot": 1,
+   "Soft drinks": 1,
+   "Kids juice": 1,
+   "Wine": 1,
+   "Beer": 1,
+   "American Breakfast": 1,
+   "฿": 1,
+   "Pancakes": 1,
+   "Thai Omelette with Rice": 1,
+   "Granola Strawberry Yoghurt": 1,
+   "Croissant": 1
+  },
+  "fnb-search@1440x900": {
+   "175": 1,
+   "French fries": 1,
+   "฿": 1
+  },
+  "merch-grid@1440x900": {
+   "1": 1,
+   "65": 1,
+   "75": 1,
+   "100": 1,
+   "150": 1,
+   "200": 1,
+   "250": 1,
+   "350": 1,
+   "1050": 1,
+   "1200": 1,
+   "1500": 1,
+   "All": 1,
+   "Tickets & passes": 1,
+   "Balloons": 1,
+   "Merchandise": 1,
+   "Workshop": 1,
+   "Golden Ticket": 1,
+   "฿": 1,
+   "School Admission Ticket": 1,
+   "Thai-International Admission Ticket": 2,
+   "Helium Balloon (65)": 1,
+   "Helium Balloon (75)": 1,
+   "Helium Foil Balloon S": 1,
+   "Deer Kids Backpack": 1,
+   "Dino Monster Truck": 1,
+   "OTO CS Bracelet": 1,
+   "Slime Workshop": 1
+  },
+  "tiers-two-line@1680x1050": {
+   "Select Customer Type": 1,
+   "Choose the pricing tier to start the sale.": 1,
+   "Z": 1,
+   "ZZ TEST 884 Expat Verified Member": 1,
+   "+66 89 888 4010": 1,
+   "Expat": 1,
+   "· verified": 1,
+   "Tourist": 1,
+   "Standard pricing": 1,
+   "Verified": 1,
+   "Resident pricing": 1,
+   "Passport": 1,
+   "— no proof needed": 1,
+   "Thai": 1,
+   "Local pricing": 1,
+   "Proof required — verify now": 1
+  },
+  "identify@1680x1050": {
+   "Membership Check": 1,
+   "The customer is entering their phone on their display to app": 1,
+   "Waiting for the customer…": 1,
+   "Enter phone to look up membership": 1,
+   "A phone number is required for every visit — it is how the t": 1,
+   "Phone": 1,
+   "—": 1,
+   "Nickname": 1,
+   "Event Passes": 1,
+   "Flat day entry — no membership needed": 1,
+   "No active events": 1,
+   "Today's camp sessions and upcoming events appear here.": 1,
+   "Redeem Booking": 1
+  },
+  "confirm@1680x1050": {
+   "1": 1,
+   "2": 1,
+   "350": 1,
+   "Oto Play Park": 1,
+   "Payment Successful": 1,
+   "Receipt Z88401-000001 • ฿1040 • Cash": 1,
+   "VAT included ฿68.04": 1,
+   "Thank you for visiting! · Tax ID 0105500000000": 1,
+   "Bracelets to Print": 1,
+   "total": 1,
+   "×": 1,
+   "Child": 1,
+   "bracelet": 1,
+   "1 Hour": 1,
+   "•": 1,
+   "1 Hour Play": 1,
+   "Adult": 1,
+   "Credit Grants Issued": 1,
+   "Credit": 1,
+   "฿": 1,
+   "credit": 1,
+   "#": 1,
+   "Start New Sale": 1
+  },
+  "fnb-menu@1680x1050": {
+   "1": 1,
+   "95": 1,
+   "150": 1,
+   "175": 1,
+   "190": 1,
+   "290": 1,
+   "Breakfast": 1,
+   "Sides": 1,
+   "Sharing": 1,
+   "Soup": 1,
+   "Salads": 1,
+   "Pasta": 1,
+   "Pizza": 1,
+   "Mains": 1,
+   "Asian Food": 1,
+   "Kids": 1,
+   "Desserts": 1,
+   "Coffee": 1,
+   "Iced Coffee": 1,
+   "Chocolate": 1,
+   "Soda": 1,
+   "Smoothies": 1,
+   "Juice": 1,
+   "Tea pot": 1,
+   "Soft drinks": 1,
+   "Kids juice": 1,
+   "Wine": 1,
+   "Beer": 1,
+   "American Breakfast": 1,
+   "฿": 1,
+   "Pancakes": 1,
+   "Thai Omelette with Rice": 1,
+   "Granola Strawberry Yoghurt": 1,
+   "Croissant": 1
+  },
+  "fnb-search@1680x1050": {
+   "175": 1,
+   "French fries": 1,
+   "฿": 1
+  },
+  "merch-grid@1680x1050": {
+   "1": 1,
+   "65": 1,
+   "75": 1,
+   "100": 1,
+   "150": 1,
+   "200": 1,
+   "250": 1,
+   "350": 1,
+   "1050": 1,
+   "1200": 1,
+   "1500": 1,
+   "All": 1,
+   "Tickets & passes": 1,
+   "Balloons": 1,
+   "Merchandise": 1,
+   "Workshop": 1,
+   "Golden Ticket": 1,
+   "฿": 1,
+   "School Admission Ticket": 1,
+   "Thai-International Admission Ticket": 1,
+   "Helium Balloon (65)": 1,
+   "Helium Balloon (75)": 1,
+   "Helium Foil Balloon S": 1,
+   "Deer Kids Backpack": 1,
+   "Dino Monster Truck": 1,
+   "OTO CS Bracelet": 1,
+   "Slime Workshop": 1
+  }
+ }
+}
