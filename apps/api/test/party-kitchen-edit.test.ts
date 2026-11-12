@@ -54,7 +54,7 @@ const appCentral = newId();
 const template = newId();
 const PARTY_DATE = '2099-05-16';
 
-type Mode = 'apply' | 'refuse' | 'silent';
+type Mode = 'apply' | 'refuse' | 'silent' | 'gone' | 'no-door';
 let mode: Mode = 'apply';
 const editCalls: Array<{ eventId: string; body: DirectoryKitchenPlanEditBody }> = [];
 /** The edit ids the stub's app has written, as the app's door keeps them on its activity row. */
@@ -89,6 +89,13 @@ const directory: OtoAppDirectory = {
     editCalls.push({ eventId, body });
     if (mode === 'silent') {
       return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'The OTO App did not answer', retryable: true };
+    }
+    if (mode === 'gone') {
+      return { ok: false, status: 404, code: 'OTOAPP_EVENT_NOT_FOUND', message: 'Event not found', retryable: false };
+    }
+    if (mode === 'no-door') {
+      // An OTO App released before the door: Express's own 404, no answer of the app's.
+      return { ok: false, status: 404, code: 'OTOAPP_HTTP_404', message: 'The OTO App answered 404', retryable: false };
     }
     if (mode === 'refuse') {
       return {
@@ -308,6 +315,22 @@ describe('a manager changes the plan and the BEO is changed', () => {
     expect(again.status, JSON.stringify(again.body)).toBe(200);
     expect(again.body.kitchenPlan?.setMenu.find((m) => m.lineId === 'm1')?.qty).toBe(6);
     expect(editCalls.map((c) => c.body.id)).toEqual([payload.editId, payload.editId]);
+  });
+
+  it("the app's own not-found is a party it no longer knows; an app with no door yet is told apart, and nothing is recorded", async () => {
+    const id = await appParty(newId(), 'ZZ TEST 907 gone');
+    mode = 'gone';
+    const gone = await put(manager, id, body([{ op: 'set', lineId: 'm1', qty: 3 }]));
+    expect(gone.status).toBe(404);
+    expect((gone.body as unknown as { error: { code: string } }).error.code).toBe('PARTY_NOT_IN_OTO_APP');
+    mode = 'no-door';
+    const old = await put(manager, id, body([{ op: 'set', lineId: 'm1', qty: 3 }]));
+    expect(old.status).toBe(503);
+    expect((old.body as unknown as { error: { code: string; message: string } }).error).toMatchObject({
+      code: 'OTOAPP_KITCHEN_DOOR_MISSING',
+      message: 'The OTO App cannot take a kitchen plan change from the till yet, so nothing was changed. Change it in the BEO.',
+    });
+    expect(await auditsOf(id)).toEqual([]);
   });
 
   it('a deployment with no directory says the plan was not changed', async () => {

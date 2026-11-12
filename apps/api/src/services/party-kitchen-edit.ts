@@ -104,6 +104,9 @@ function touchedLines(kitchen: PartyKitchenPlan | null, changes: readonly PartyK
   };
 }
 
+/** The code the directory gives the app's own 404 (`{ error: "event_not_found" }`, refusalOf in otoapp-directory.ts). */
+const APP_EVENT_NOT_FOUND = 'OTOAPP_EVENT_NOT_FOUND';
+
 /** The app's refusal, or its silence, in the till's words. Never a 2xx. */
 function refusalOf(outcome: Extract<DirectoryOutcome<unknown>, { ok: false }>): AppError {
   if (outcome.code === DIRECTORY_NOT_CONFIGURED) {
@@ -121,8 +124,16 @@ function refusalOf(outcome: Extract<DirectoryOutcome<unknown>, { ok: false }>): 
       { code: outcome.code },
     );
   }
-  if (outcome.status === 404) {
+  if (outcome.status === 404 && outcome.code === APP_EVENT_NOT_FOUND) {
     return new AppError(404, 'PARTY_NOT_IN_OTO_APP', 'The OTO App does not know this party any more, so nothing was changed.');
+  }
+  if (outcome.status === 404) {
+    // Not the app's own "event not found": an OTO App released before its kitchen-plan door.
+    return new AppError(
+      503,
+      'OTOAPP_KITCHEN_DOOR_MISSING',
+      'The OTO App cannot take a kitchen plan change from the till yet, so nothing was changed. Change it in the BEO.',
+    );
   }
   // The app's own words: what it would not change and why.
   return new AppError(409, outcome.code, `The OTO App did not change the kitchen plan: ${outcome.message}`);
@@ -207,9 +218,11 @@ export async function partyKitchenChoices(
       message:
         outcome.code === DIRECTORY_NOT_CONFIGURED
           ? 'This till cannot read the set menu from the OTO App yet.'
-          : outcome.status === 404
+          : outcome.status === 404 && outcome.code === APP_EVENT_NOT_FOUND
             ? 'The OTO App does not know this party any more.'
-            : 'The OTO App did not answer, so the set menu choices cannot be changed here now.',
+            : outcome.status === 404
+              ? 'The OTO App cannot read the set menu for the till yet. Change the choice in the BEO.'
+              : 'The OTO App did not answer, so the set menu choices cannot be changed here now.',
       groups: [],
     };
   }
