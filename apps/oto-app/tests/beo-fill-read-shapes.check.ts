@@ -17,12 +17,15 @@
 //      set-menu choice, a kids' line, or nothing — the review shows the note
 //      with the chat's words, the toast ends with its sentence, and changing
 //      the kids' choice brings the adults' own SET line; a sentence naming
-//      no dish is said once; words giving the adults something else are not
-//      a fold. One more wording ("Same Hawaiian pizza for the adults too").
+//      no dish is said once, and only about food; words giving the adults
+//      something else are not a fold, and "for them" is the adults when the
+//      sentence names them first. One more wording ("Same Hawaiian pizza for
+//      the adults too").
 //   2. thread I, "2 Margherita pizzas for 900": the chat's total is read from
 //      its own words whether the read gave 900, no price, or a figure it
-//      worked out; never a price each; a price for one stays the price. One
-//      more wording ("3 Caesar salads, 1,050 baht in total"), Thai, Russian.
+//      worked out; never a price each; a price for one stays the price, and
+//      so does one said for each ("450/each", "450 for each one"). One more
+//      wording ("3 Caesar salads, 1,050 baht in total"), Thai, Russian.
 //   3. threads A and B: the adults' own SET line is written with its till
 //      code (CF-43), the till's plan view reads it so; the family's link and
 //      the till's kitchen edit keep it; the kids' choice coming to the same
@@ -91,7 +94,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 17;
+const CHECKS = 18;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -159,6 +162,9 @@ const SHAPES: Record<string, { opener: string; text: string; answers: Record<str
       dropped: { package: pkg, setMenu: { templateId: cat.setMenu, line: 2, choices: [kidsMargherita] }, menuLines: [], event: counts(12, 8) },
       // The words as a kids' line, which the fill merges into the kids' choice.
       kidsLine: { package: pkg, setMenu: { templateId: cat.setMenu, line: 2, choices: [kidsMargherita] }, menuLines: [{ productCode: "CF-24", itemName: "the Margherita pizza for them too", menu: "kids", quantity: 1, line: 2 }], event: counts(12, 8) },
+      // The lane's reviews: the words as a kids' line at the adults' count. "For them" is the
+      // adults (the sentence's subject): the fold, never an 8 x Margherita kids' EXTRA.
+      kidsLineAtCount: { package: pkg, setMenu: { templateId: cat.setMenu, line: 2, choices: [kidsMargherita] }, menuLines: [{ productCode: "CF-24", itemName: "the Margherita pizza for them too", menu: "kids", quantity: 8, line: 2 }], event: counts(12, 8) },
     },
   },
   Gw: {
@@ -368,7 +374,7 @@ try {
 
   // --- 1. Thread G: the fold, in every shape the read gave --------------------------------------
   const G_QUOTE = "the Margherita pizza for them too";
-  for (const shape of ["adultsLine", "asChoice", "dropped", "kidsLine"] as const) {
+  for (const shape of ["adultsLine", "asChoice", "dropped", "kidsLine", "kidsLineAtCount"] as const) {
     await check(`threadG_${shape}_theFoldIsSaidFromTheChatsWords`, async () => {
       const { review, fill: f } = await fill("G", shape);
       assert.deepEqual(review.proposal.menuLines, [], "the adults' list rightly stays empty");
@@ -404,6 +410,7 @@ try {
       assert.ok(approvalResultWords(ok.body).endsWith(adultsFoldedWords(1)), approvalResultWords(ok.body));
       const plan = await kitchenOf(ev[`G.${shape}`]!);
       assert.deepEqual([plan.menus.adultsDiffer, plan.menus.adults], [false, []]);
+      assert.deepEqual((plan.menus.kids as any[]).filter((l) => l.source !== "set_menu"), [], "no kids' EXTRA of the adults' words");
     });
   }
 
@@ -437,6 +444,14 @@ try {
     // "...the same as the kids, but chicken fried rice for them": the adults get something else, no fold.
     const other = await fill("Ge", "asChoice");
     assert.equal(other.review.proposal.adultsFolded, undefined, "no fold");
+    // The lane's reviews: "for them" is the adults (the sentence's subject): the Chicken is the
+    // adults' own SET line; the kids' Fried rice stays unchosen, never the adults' dish.
+    assert.deepEqual(other.review.proposal.setMenu?.choices.map((c) => [c.itemId, c.option]), [[PIZZA, "Margherita"]], "the kids' Fried rice unchosen");
+    assert.deepEqual(
+      other.review.proposal.menuLines.map((l) => [l.menu, l.setMenuItemId ?? null, l.productCode, l.matchedName]),
+      [["adults", RICE, "CF-43", "Fried rice (Chicken)"]],
+      "the adults' own Chicken SET line",
+    );
     // Pure: the Thai and Russian forms, a denial, a dish no set menu gives, a headcount.
     const menu = { name: "Birthday set menu 970", items: other.review.catalogue.setMenus.find((m) => m.id === cat.setMenu)!.items };
     const said = (text: string, choices = [{ itemId: PIZZA, option: "Margherita" }]) =>

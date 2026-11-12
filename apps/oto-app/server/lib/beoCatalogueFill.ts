@@ -1597,6 +1597,13 @@ export function saidForTheAdults(said: string | null | undefined, lineText: stri
   const to = breaks.find((b) => b.start >= end)?.start ?? line.length;
   const part = audienceOf(line.slice(from, to));
   if (part.adults || part.kids) return part.adults && !part.kids;
+  // SCRUM-970 (the lane's reviews): "them" in a part naming nobody is whom its sentence names
+  // first, its subject — "The adults the same as the kids, but chicken fried rice for them" and
+  // "The adults will eat the same as the kids, the Margherita pizza for them too" are the adults'.
+  if (THEM.test(line.slice(from, to))) {
+    const first = firstAudienceOf(sentenceAround(line, at, end));
+    if (first) return first === "adults";
+  }
   // A part naming nobody: the label of its sentence before it, when there is one.
   const sentence = [...line.slice(0, from).matchAll(HARD_STOP)].at(-1);
   const lead = line.slice(sentence ? (sentence.index ?? 0) + 1 : 0, from);
@@ -1604,6 +1611,22 @@ export function saidForTheAdults(said: string | null | undefined, lineText: stri
   if (colon < 0) return false;
   const label = audienceOf(lead.slice(0, colon));
   return label.adults && !label.kids;
+}
+/** SCRUM-970: "them" naming whom a dish is for ("for them", "them too", "для них", "им"). */
+const THEM = /(?<!\p{L})them(?!\p{L})|(?<!\p{L})(?:для\s+них|им)(?!\p{L})|พวกเขา/iu;
+/** SCRUM-970: the sentence of a line holding [start, end), up to its stops. */
+function sentenceAround(line: string, start: number, end: number): string {
+  const opens = [...line.slice(0, start).matchAll(HARD_STOP)].at(-1);
+  const closes = /[.;!?\n]/.exec(line.slice(end));
+  return line.slice(opens ? (opens.index ?? 0) + 1 : 0, closes ? end + closes.index : line.length);
+}
+/** SCRUM-970: whom a sentence names first, the adults or the kids (a headcount names nobody); null when neither. */
+function firstAudienceOf(text: string): "adults" | "kids" | null {
+  const words = withoutHeadcounts(text);
+  const adults = ADULT_WORDS.exec(words)?.index ?? -1;
+  const kids = KID_WORDS.exec(words)?.index ?? -1;
+  if (adults < 0 && kids < 0) return null;
+  return kids < 0 || (adults >= 0 && adults < kids) ? "adults" : "kids";
 }
 /**
  * SCRUM-970: words saying the adults eat what the kids eat, whatever else the sentence names —
