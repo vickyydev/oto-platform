@@ -1,0 +1,119 @@
+{
+  "note": "The BEO fill lane (SCRUM-946, SCRUM-944) landed on main at 7e8470135. oto-app-staging dep-dbqtljrm8hqs7386ptrg at 7e8470135 was triggered at 15:27:11Z (22:27 Bangkok) and went live at 15:30:31Z, polled every 30 seconds. Every AI Fill and Fetch from chat of this proof (15:38Z to 16:04Z) ran on it; no app deploy happened during the run. The inbox and the api were not changed by this lane and are recorded as they were (both at 0ab361a86).",
+  "named": {
+    "service": "oto-app-staging",
+    "deployId": "dep-dbqtljrm8hqs7386ptrg",
+    "commit": "7e8470135ed9488aed7b14304f1f95eab3f65315"
+  },
+  "before": {
+    "at": "2026-11-12T15:34:02.018Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqti049v7es73c9lvtg",
+        "status": "live",
+        "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+        "finishedAt": "2026-11-12T15:24:30.793406Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqti09srm7s73991tgg",
+        "status": "live",
+        "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+        "finishedAt": "2026-11-12T15:20:35.571294Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbqtljrm8hqs7386ptrg",
+        "status": "live",
+        "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+        "finishedAt": "2026-11-12T15:30:31.380826Z"
+      }
+    ],
+    "appLiveOnFixSha": true,
+    "inboxLive": true
+  },
+  "afterDriver": {
+    "at": "2026-11-12T16:05:46.711Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqti049v7es73c9lvtg",
+        "status": "live",
+        "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+        "finishedAt": "2026-11-12T15:24:30.793406Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqti09srm7s73991tgg",
+        "status": "live",
+        "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+        "finishedAt": "2026-11-12T15:20:35.571294Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbqtljrm8hqs7386ptrg",
+        "status": "live",
+        "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+        "finishedAt": "2026-11-12T15:30:31.380826Z"
+      }
+    ],
+    "appLiveOnFixSha": true,
+    "inboxLive": true
+  },
+  "after": {
+    "readAt": "2026-11-12T16:06:08.000Z",
+    "services": {
+      "oto-app-staging": {
+        "named": {
+          "id": "dep-dbqtljrm8hqs7386ptrg",
+          "status": "live",
+          "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+          "createdAt": "2026-11-12T15:27:11.158836Z",
+          "finishedAt": "2026-11-12T15:30:31.380826Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqtljrm8hqs7386ptrg",
+          "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+          "createdAt": "2026-11-12T15:27:11.158836Z",
+          "finishedAt": "2026-11-12T15:30:31.380826Z"
+        },
+        "latest": {
+          "id": "dep-dbqtljrm8hqs7386ptrg",
+          "status": "live",
+          "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+          "createdAt": "2026-11-12T15:27:11.158836Z"
+        }
+      },
+      "oto-api-staging": {
+        "live": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "finishedAt": "2026-11-12T15:24:30.793406Z"
+        },
+        "latest": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z"
+        }
+      },
+      "oto-inbox-staging": {
+        "live": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z"
+        },
+        "latest": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z"
+        }
+      }
+    }
+  }
+}
