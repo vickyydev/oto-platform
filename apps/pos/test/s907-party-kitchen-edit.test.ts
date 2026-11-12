@@ -527,8 +527,8 @@ describe('the party page saves the kitchen plan to the BEO', () => {
       return { member: null };
     }) as unknown as typeof api.get);
   }
-  const saveOn = (form: El, changes: unknown[]) =>
-    (form.props.onSave as (p: unknown, c: unknown) => Promise<void>)({ ...partyOf() }, changes);
+  const saveOn = (form: El, changes: unknown[], patch: Partial<PartyBooking> = {}) =>
+    (form.props.onSave as (p: unknown, c: unknown) => Promise<void>)({ ...partyOf(), ...patch }, changes);
 
   it('a refusal asking to read the party again reads it now; Cancel reads it again and Edit opens on the BEO as it is', async () => {
     const beo = { now: KITCHEN, hold: false, waiting: [] as Array<() => void> };
@@ -604,6 +604,75 @@ describe('the party page saves the kitchen plan to the BEO', () => {
     await settle();
     expect(planReads()).toBe(reads);
     expect((await openEdit(host)).props.kitchenPlan).toEqual(KITCHEN);
+  });
+
+  // --- The kitchen plan and the party's own fields in one Save -------------------------------
+  const patchMock = vi.mocked(api.patch);
+  const saved = (kitchen: PartyKitchenPlan) =>
+    ({ ...detailAnswer(kitchen), kitchenEdit: { id: 'e1', replayed: false } }) as unknown as PartyKitchenEditAnswer;
+
+  it('a Save of the kitchen plan alone still says what is kept in the OTO App', async () => {
+    const { host } = page();
+    const editForm = await openEdit(host);
+    putMock.mockResolvedValueOnce(saved(KITCHEN));
+    // The date of birth is kept in the OTO App: no field of the party is sent, only the kitchen plan.
+    await saveOn(editForm, [{ op: 'set', lineId: 'm1', qty: 3 }], { kidDob: '2020-11-18' });
+    await settle();
+    expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
+    expect(toastMock).toHaveBeenCalledWith({
+      title: 'Kitchen plan saved',
+      description: 'The BEO in the OTO App now has the change. date of birth is kept in the OTO App — change it there.',
+    });
+  });
+
+  it('the kitchen plan and the fields together: the fields fail, and Save again sends the same kitchen edit and the fields again', async () => {
+    patchMock.mockReset();
+    const { host } = page();
+    const editForm = await openEdit(host);
+    putMock.mockResolvedValue(saved(KITCHEN));
+    patchMock.mockRejectedValueOnce(new ApiError(503, 'OTOAPP_NOT_ANSWERED', 'The OTO App did not answer'));
+    await saveOn(editForm, [{ op: 'set', lineId: 'm1', qty: 3 }], { title: 'ZZ TEST new title' });
+    await settle();
+    expect(putMock).toHaveBeenCalledTimes(1);
+    expect(patchMock).toHaveBeenCalledTimes(1);
+    expect(elementOf(host.result.current, PartyEditForm)).not.toBeNull();
+    patchMock.mockResolvedValueOnce({ replayed: false, party: viewOf(), edit: { id: 'x', syncState: 'synced', syncError: null, ignored: [] } });
+    await saveOn(elementOf(host.result.current, PartyEditForm)!, [{ op: 'set', lineId: 'm1', qty: 3 }], { title: 'ZZ TEST new title' });
+    await settle();
+    // The kitchen edit again under its first id and key: the OTO App writes it once.
+    expect(putMock).toHaveBeenCalledTimes(2);
+    const [first, second] = putMock.mock.calls;
+    expect((second![1] as { editId: string }).editId).toBe((first![1] as { editId: string }).editId);
+    expect(second![2]).toEqual(first![2]);
+    expect(second![1]).toEqual(first![1]);
+    // Then the party's fields again, under the same edit key.
+    expect(patchMock).toHaveBeenCalledTimes(2);
+    expect(patchMock.mock.calls[1]![1]).toMatchObject({ title: 'ZZ TEST new title' });
+    expect(patchMock.mock.calls[1]![2]).toEqual(patchMock.mock.calls[0]![2]);
+    expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
+  });
+
+  it('the kitchen plan written and the fields refused: Cancel reads the plan again and Edit opens on the BEO as it is', async () => {
+    patchMock.mockReset();
+    const beo = { now: KITCHEN, hold: false, waiting: [] as Array<() => void> };
+    beoReads(beo);
+    const { host } = page();
+    const editForm = await openEdit(host);
+    const after: PartyKitchenPlan = { ...KITCHEN, setMenu: KITCHEN.setMenu.map((m) => (m.lineId === 'm1' ? { ...m, qty: 3 } : m)) };
+    putMock.mockImplementationOnce((async () => {
+      beo.now = after;
+      return saved(after);
+    }) as unknown as typeof api.put);
+    patchMock.mockRejectedValueOnce(new ApiError(409, 'PARTY_EDIT_REFUSED', 'The party was not saved.'));
+    await saveOn(editForm, [{ op: 'set', lineId: 'm1', qty: 3 }], { title: 'ZZ TEST new title' });
+    await settle();
+    expect(elementOf(host.result.current, PartyEditForm)).not.toBeNull();
+    const reads = planReads();
+    (elementOf(host.result.current, PartyEditForm)!.props.onCancel as () => void)();
+    await settle();
+    expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
+    expect(planReads()).toBeGreaterThan(reads);
+    expect((await openEdit(host)).props.kitchenPlan).toEqual(after);
   });
 
   it('reception open the form read-only and the choices are not asked for', async () => {

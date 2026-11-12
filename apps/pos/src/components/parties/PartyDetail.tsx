@@ -431,10 +431,13 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         }
         setFresh(kitchen.party);
         onChanged();
+        // The BEO now holds the change, so the form's plan is behind it: closed by Save or by Cancel
+        // (the party's own fields failed), the page reads the plan again before Edit opens on it.
+        markPlanStale();
         if (Object.keys(fields).length === 0) {
           ids.current.kitchen = undefined;
           closeEdit();
-          toast({ title: 'Kitchen plan saved', description: 'The BEO in the OTO App now has the change.' });
+          toast({ title: 'Kitchen plan saved', description: `The BEO in the OTO App now has the change.${kept ? ` ${kept}` : ''}` });
           return;
         }
       }
