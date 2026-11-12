@@ -1,0 +1,117 @@
+{
+  "note": "SCRUM-955 landed on main at b70798d3ef35e024d6bec84380e4370c9f84936a (the inbox only: no platform change, no migration). oto-inbox-staging was deployed at that commit at 01:12 Bangkok on 13 November (dep-dbr03856e07s738ne6d0). Read-only reads of the Render API; no service was changed by this proof. The api and the OTO App are recorded as they were (the proof uses the api through the inbox and the OTO App for the day check and the archive).",
+  "atStart": {
+    "readAt": "2026-11-12T18:16:51.620Z",
+    "services": {
+      "oto-inbox-staging": {
+        "named": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "status": "live",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z",
+          "finishedAt": "2026-11-12T18:14:00.224953Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z",
+          "finishedAt": "2026-11-12T18:14:00.224953Z"
+        },
+        "latest": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "status": "live",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z"
+        }
+      },
+      "oto-api-staging": {
+        "live": {
+          "id": "dep-dbqvrloae00c73bf4da0",
+          "sha": "f0a47eb792c4f78248bc8a5924286215687f9529",
+          "createdAt": "2026-11-12T17:56:39.458367Z",
+          "finishedAt": "2026-11-12T18:01:44.098022Z"
+        },
+        "latest": {
+          "id": "dep-dbqvrloae00c73bf4da0",
+          "status": "live",
+          "sha": "f0a47eb792c4f78248bc8a5924286215687f9529",
+          "createdAt": "2026-11-12T17:56:39.458367Z"
+        }
+      },
+      "oto-app-staging": {
+        "live": {
+          "id": "dep-dbqtljrm8hqs7386ptrg",
+          "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+          "createdAt": "2026-11-12T15:27:11.158836Z",
+          "finishedAt": "2026-11-12T15:30:31.380826Z"
+        },
+        "latest": {
+          "id": "dep-dbqtljrm8hqs7386ptrg",
+          "status": "live",
+          "sha": "7e8470135ed9488aed7b14304f1f95eab3f65315",
+          "createdAt": "2026-11-12T15:27:11.158836Z"
+        }
+      }
+    },
+    "inboxLiveOnTheNamedDeploy": true,
+    "inboxLiveSha": "b70798d3ef35e024d6bec84380e4370c9f84936a"
+  },
+  "after": {
+    "readAt": "2026-11-12T18:49:00.336Z",
+    "services": {
+      "oto-inbox-staging": {
+        "named": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "status": "live",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z",
+          "finishedAt": "2026-11-12T18:14:00.224953Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z",
+          "finishedAt": "2026-11-12T18:14:00.224953Z"
+        },
+        "latest": {
+          "id": "dep-dbr03856e07s738ne6d0",
+          "status": "live",
+          "sha": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+          "createdAt": "2026-11-12T18:12:48.907612Z"
+        }
+      },
+      "oto-api-staging": {
+        "live": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "createdAt": "2026-11-12T18:21:55.111581Z",
+          "finishedAt": "2026-11-12T18:27:21.018394Z"
+        },
+        "latest": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "createdAt": "2026-11-12T18:21:55.111581Z"
+        }
+      },
+      "oto-app-staging": {
+        "live": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "createdAt": "2026-11-12T18:18:26.09656Z",
+          "finishedAt": "2026-11-12T18:21:49.118016Z"
+        },
+        "latest": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "createdAt": "2026-11-12T18:18:26.09656Z"
+        }
+      }
+    },
+    "inboxLiveOnTheNamedDeploy": true,
+    "inboxLiveSha": "b70798d3ef35e024d6bec84380e4370c9f84936a"
+  }
+}

@@ -1,0 +1,2166 @@
+{
+  "unit": "SCRUM-955 staging proof",
+  "ticket": "SCRUM-955",
+  "title": "Book Date: an empty count does not read as 0, and a count the chat reads two ways is chosen before saving",
+  "landedCommit": "b70798d3ef35e024d6bec84380e4370c9f84936a",
+  "deploys": "see deploys.json (oto-inbox-staging dep-dbr03856e07s738ne6d0, live at b70798d3e before and after the run)",
+  "startedAt": "2026-11-12T18:19:07.968Z",
+  "finishedAt": "2026-11-12T18:48:48.761Z",
+  "browser": "Chromium 153.0.8010.12 (one headless browser, closed at the end)",
+  "rules": "ZZ TEST conversations on the inbox simulator only, each from a new ZZ TEST simulator number, invented names; one ZZ TEST event booked (point 7) on a day with no real party (checked first) and archived after, read back; every conversation marked handled, read back; no direct database write; staff names and the phone box masked in pictures and kept out of this file; every session signed out",
+  "inboxViewer": {
+    "roles": [
+      "owner"
+    ],
+    "birthdaysTeams": [
+      {
+        "id": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+        "name": "Birthdays & Events",
+        "branchId": null,
+        "member": false
+      }
+    ]
+  },
+  "conversations": {
+    "A": {
+      "id": "01a1d0fc-96e1-792f-b2b5-e733a98f18db",
+      "name": "ZZ TEST 955 two ways",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi, a party on 12 December at 13:00 for 10 kids (ZZ TEST)",
+          "at": "2026-11-12T18:19:36.438Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "sorry, 12 kids, not 10 (ZZ TEST)",
+          "at": "2026-11-12T18:20:16.209Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        },
+        {
+          "afterLine": 2,
+          "turnShown": false,
+          "kinds": [],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "B": {
+      "id": "01a1d0fc-a26a-7c4b-a098-1f49341d255b",
+      "name": "ZZ TEST 955 no count",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi, a party on 12 December at 13:00 please (ZZ TEST)",
+          "at": "2026-11-12T18:19:39.434Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_replied"
+          ],
+          "aiState": "ready"
+        }
+      ]
+    },
+    "C": {
+      "id": "01a1d0fc-ac3d-7f99-97ea-64dfdac8e550",
+      "name": "ZZ TEST 955 zero",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Party on 12 December at 13:00, 0 kids and 10 adults (ZZ TEST)",
+          "at": "2026-11-12T18:19:42.015Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "D": {
+      "id": "01a1d0fc-b660-77ae-a911-659634e4866a",
+      "name": "ZZ TEST 955 adults",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Party on 12 December at 13:00 for 8 kids and 4 adults (ZZ TEST)",
+          "at": "2026-11-12T18:19:44.515Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "sorry, 6 adults (ZZ TEST)",
+          "at": "2026-11-12T18:20:19.375Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        },
+        {
+          "afterLine": 2,
+          "turnShown": false,
+          "kinds": [],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "E": {
+      "id": "01a1d0fc-c036-7c79-8114-520b46b074d8",
+      "name": "ZZ TEST 955 time and age",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Party on 12 December at 13:00 for 8 kids, she turns 5 years (ZZ TEST)",
+          "at": "2026-11-12T18:19:47.010Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "sorry, can we start at 15:00 instead? and she turns 6 years, not 5 (ZZ TEST)",
+          "at": "2026-11-12T18:20:22.681Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        },
+        {
+          "afterLine": 2,
+          "turnShown": false,
+          "kinds": [],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "T": {
+      "id": "01a1d0fc-cac1-78de-9ea4-e9d39e832047",
+      "name": "ZZ TEST 955 Thai two ways",
+      "language": "th",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "สวัสดีค่ะ จองงานวันเกิด วันที่ 12 ธันวาคม 13:00 เด็ก 10 คน (ZZ TEST)",
+          "at": "2026-11-12T18:19:49.715Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0,
+          "dialogSaid": "Received: a new conversation, routed."
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "ขอโทษค่ะ เด็ก 12 คน ไม่ใช่ 10 คน (ZZ TEST)",
+          "at": "2026-11-12T18:20:25.510Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0,
+          "dialogSaid": "Received into the existing conversation."
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "turnShown": true,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        },
+        {
+          "afterLine": 2,
+          "turnShown": false,
+          "kinds": [],
+          "aiState": "left_for_team"
+        }
+      ]
+    }
+  },
+  "points": {
+    "1 two ways (kids)": {
+      "verdict": "PASS",
+      "opened": {
+        "conversation": "A",
+        "pressed": "Book Date",
+        "viewport": {
+          "width": 1440,
+          "height": 1500
+        },
+        "buttonsBefore": [
+          "Book Date",
+          "Create BEO"
+        ],
+        "readWaitedMs": 4418,
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "01-p1-two-ways-kids-empty-dash-line-and-book-date-held.png"
+      },
+      "pressOnTheHeldBookDate": {
+        "how": "a real mouse press on the button's centre",
+        "before": {
+          "disabled": true,
+          "title": "The chat reads two ways for the number of kids: choose one."
+        },
+        "requestsIn5s": [],
+        "writesIn5s": [],
+        "windowStillOpen": true,
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "02-p1-after-pressing-the-held-book-date-nothing-saved.png"
+      }
+    },
+    "2 a typed figure frees it": {
+      "verdict": "PASS",
+      "typed11": {
+        "action": "type:Kids",
+        "value": "11",
+        "boxAfter": "11",
+        "window": {
+          "kids": {
+            "value": "11",
+            "placeholder": "—",
+            "shows": "11 (a value)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": null,
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "03-p2-typed-11-line-gone-book-date-live.png"
+      },
+      "deleted11": {
+        "action": "back:Kids",
+        "value": "2",
+        "boxAfter": "",
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "04-p2-11-deleted-readings-line-and-hold-back.png"
+      },
+      "aSpaceTypedFirst": {
+        "action": "type:Kids",
+        "value": "␠",
+        "boxAfter": " ",
+        "window": {
+          "kids": {
+            "value": " ",
+            "placeholder": "—",
+            "shows": "  (a value)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "05-p2-a-space-typed-first-still-two-ways-and-held.png"
+      },
+      "spaceDeleted": {
+        "action": "back:Kids",
+        "value": "1",
+        "boxAfter": "",
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": null
+      }
+    },
+    "3 a pick frees it": {
+      "verdict": "PASS",
+      "picked10": {
+        "action": "pick:kids",
+        "value": "10",
+        "readingsBefore": [
+          "12 “12 kids” from the family",
+          "10"
+        ],
+        "window": {
+          "kids": {
+            "value": "10",
+            "placeholder": "—",
+            "shows": "10 (a value)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": null,
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "06-p3-reading-10-pressed-box-10-book-date-live.png"
+      },
+      "cancel": {
+        "action": "cancel",
+        "value": "",
+        "afterCancel": {
+          "key": "A",
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "event": null,
+          "buttons": [
+            "Book Date",
+            "Create BEO"
+          ]
+        },
+        "picture": "07-p3-after-cancel-button-still-book-date-no-event.png"
+      }
+    },
+    "4 no count at all": {
+      "verdict": "PASS",
+      "opened": {
+        "conversation": "B",
+        "pressed": "Book Date",
+        "viewport": {
+          "width": 1440,
+          "height": 1500
+        },
+        "buttonsBefore": [
+          "Book Date",
+          "Create BEO"
+        ],
+        "readWaitedMs": 4409,
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": null,
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 no count"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "08-p4-no-count-both-dashes-no-line-book-date-live.png"
+      },
+      "typed0InAdults": {
+        "action": "type:Adults",
+        "value": "0",
+        "boxAfter": "0",
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "0",
+            "placeholder": "—",
+            "shows": "0 (a value)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": null,
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 no count"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "09-p4-typed-0-in-adults-shows-0-as-a-value.png"
+      },
+      "cancel": {
+        "action": "cancel",
+        "value": "",
+        "afterCancel": {
+          "key": "B",
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "event": null,
+          "buttons": [
+            "Book Date",
+            "Create BEO"
+          ]
+        },
+        "picture": null
+      }
+    },
+    "5 a stated zero": {
+      "verdict": "PASS",
+      "opened": {
+        "conversation": "C",
+        "pressed": "Book Date",
+        "viewport": {
+          "width": 1440,
+          "height": 1500
+        },
+        "buttonsBefore": [
+          "Book Date",
+          "Create BEO"
+        ],
+        "readWaitedMs": 4396,
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "window": {
+          "kids": {
+            "value": "0",
+            "placeholder": "—",
+            "shows": "0 (a value)"
+          },
+          "adults": {
+            "value": "10",
+            "placeholder": "—",
+            "shows": "10 (a value)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat says “0 kids”from the family",
+            "adults": "The chat says “10 adults”from the family",
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 zero"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "10-p5-stated-zero-kids-shows-0-as-a-value.png"
+      },
+      "cancel": {
+        "action": "cancel",
+        "value": "",
+        "afterCancel": {
+          "key": "C",
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "event": null,
+          "buttons": [
+            "Book Date",
+            "Create BEO"
+          ]
+        },
+        "picture": null
+      }
+    },
+    "6 another field two ways": {
+      "verdict": "PASS for the start time and the age; the adults (the lane's step 10 exactly) cannot be read two ways: the pattern never reads adults (apps/inbox/src/lib/beo.ts:195 numAdults is always empty), so the model's 6 fills the box with no choice, as the lane said",
+      "adultsLaneStep10": {
+        "opened": {
+          "conversation": "D",
+          "pressed": "Book Date",
+          "viewport": {
+            "width": 1440,
+            "height": 1500
+          },
+          "buttonsBefore": [
+            "Book Date",
+            "Create BEO"
+          ],
+          "readWaitedMs": 4419,
+          "proposalRoute": {
+            "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+            "status": 200
+          },
+          "window": {
+            "kids": {
+              "value": "8",
+              "placeholder": "—",
+              "shows": "8 (a value)"
+            },
+            "adults": {
+              "value": "6",
+              "placeholder": "—",
+              "shows": "6 (a value)"
+            },
+            "turningAge": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "readings": {},
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat says “at 13:00”from the family",
+              "kids": "The chat says “8 kids”from the family",
+              "adults": "The chat says “6 adults”from the family",
+              "childAge": "Turning (age)"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "13:00",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 adults"
+            },
+            "footerWaitingLine": null,
+            "saveButton": {
+              "text": "Book date",
+              "disabled": false,
+              "title": null,
+              "opacity": "1"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": "11-p6-lane-step-10-adults-4-then-6.png"
+        },
+        "cancel": {
+          "action": "cancel",
+          "value": "",
+          "afterCancel": {
+            "key": "D",
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "event": null,
+            "buttons": [
+              "Book Date",
+              "Create BEO"
+            ]
+          },
+          "picture": null
+        }
+      },
+      "startTimeAndAge": {
+        "opened": {
+          "conversation": "E",
+          "pressed": "Book Date",
+          "viewport": {
+            "width": 1440,
+            "height": 1500
+          },
+          "buttonsBefore": [
+            "Book Date",
+            "Create BEO"
+          ],
+          "readWaitedMs": 5949,
+          "proposalRoute": {
+            "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+            "status": 200
+          },
+          "window": {
+            "kids": {
+              "value": "8",
+              "placeholder": "—",
+              "shows": "8 (a value)"
+            },
+            "adults": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "turningAge": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "readings": {
+              "startTime": [
+                "15:00 “start at 15:00” from the family",
+                "13:00 “at 13:00”"
+              ],
+              "childAge": [
+                "6 “she turns 6 years” from the family",
+                "5"
+              ]
+            },
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat reads two ways: choose one 15:00 “start at 15:00” from the family 13:00 “at 13:00”",
+              "kids": "The chat says “8 kids”from the family",
+              "adults": null,
+              "childAge": "Turning (age) The chat reads two ways: choose one 6 “she turns 6 years” from the family 5"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 time and age"
+            },
+            "footerWaitingLine": "The chat reads two ways for the start time: choose one.",
+            "saveButton": {
+              "text": "Book date",
+              "disabled": true,
+              "title": "The chat reads two ways for the start time: choose one.",
+              "opacity": "0.6"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": "12-p6-start-time-and-age-two-ways-held-for-the-start-time.png"
+        },
+        "pickedStartTime1500": {
+          "action": "pick:startTime",
+          "value": "15:00",
+          "readingsBefore": [
+            "15:00 “start at 15:00” from the family",
+            "13:00 “at 13:00”"
+          ],
+          "window": {
+            "kids": {
+              "value": "8",
+              "placeholder": "—",
+              "shows": "8 (a value)"
+            },
+            "adults": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "turningAge": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "readings": {
+              "childAge": [
+                "6 “she turns 6 years” from the family",
+                "5"
+              ]
+            },
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat says “start at 15:00”from the family",
+              "kids": "The chat says “8 kids”from the family",
+              "adults": null,
+              "childAge": "Turning (age) The chat reads two ways: choose one 6 “she turns 6 years” from the family 5"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "15:00",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 time and age"
+            },
+            "footerWaitingLine": "The chat reads two ways for the age: choose one.",
+            "saveButton": {
+              "text": "Book date",
+              "disabled": true,
+              "title": "The chat reads two ways for the age: choose one.",
+              "opacity": "0.6"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": "13-p6-start-time-picked-line-now-names-the-age.png"
+        },
+        "typed6InTheAge": {
+          "action": "type:Turning age",
+          "value": "6",
+          "boxAfter": "6",
+          "window": {
+            "kids": {
+              "value": "8",
+              "placeholder": "—",
+              "shows": "8 (a value)"
+            },
+            "adults": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "turningAge": {
+              "value": "6",
+              "placeholder": "—",
+              "shows": "6 (a value)"
+            },
+            "readings": {},
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat says “start at 15:00”from the family",
+              "kids": "The chat says “8 kids”from the family",
+              "adults": null,
+              "childAge": "Turning (age)"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "15:00",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 time and age"
+            },
+            "footerWaitingLine": null,
+            "saveButton": {
+              "text": "Book date",
+              "disabled": false,
+              "title": null,
+              "opacity": "1"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": "14-p6-age-typed-6-nothing-two-ways-book-date-live.png"
+        },
+        "cancel": {
+          "action": "cancel",
+          "value": "",
+          "afterCancel": {
+            "key": "E",
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "event": null,
+            "buttons": [
+              "Book Date",
+              "Create BEO"
+            ]
+          },
+          "picture": null
+        }
+      }
+    },
+    "7 a whole booking": {
+      "verdict": "PASS",
+      "dayChecks": [
+        {
+          "at": "2026-11-12T18:19:26.954Z",
+          "role": "global_admin",
+          "centralFloresta": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "listRoute": {
+            "route": "GET /api/admin/events?range=all&includeArchived=true&branchId=<Central Floresta>",
+            "status": 200,
+            "events": 152
+          },
+          "day": "2026-12-12",
+          "onDay": [
+            {
+              "id": "01a1d076-89b4-7c85-b22a-c7661b3138e3",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            },
+            {
+              "id": "01a1cfc2-9441-7c98-a396-311ad2959aea",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            },
+            {
+              "id": "01a1cac9-71b5-7e93-b26e-311069b3799a",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            }
+          ],
+          "realLivePartiesOnDay": 0
+        },
+        {
+          "at": "2026-11-12T18:44:11.030Z",
+          "role": "global_admin",
+          "centralFloresta": "6427e84d-723f-4dbd-be58-8ef89cf7dc99",
+          "listRoute": {
+            "route": "GET /api/admin/events?range=all&includeArchived=true&branchId=<Central Floresta>",
+            "status": 200,
+            "events": 152
+          },
+          "day": "2026-12-12",
+          "onDay": [
+            {
+              "id": "01a1d076-89b4-7c85-b22a-c7661b3138e3",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            },
+            {
+              "id": "01a1cfc2-9441-7c98-a396-311ad2959aea",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            },
+            {
+              "id": "01a1cac9-71b5-7e93-b26e-311069b3799a",
+              "zzTest": true,
+              "archived": true,
+              "startTime": "11:00",
+              "status": "tentative"
+            }
+          ],
+          "realLivePartiesOnDay": 0
+        }
+      ],
+      "opened": {
+        "conversation": "A",
+        "pressed": "Book Date",
+        "viewport": {
+          "width": 1440,
+          "height": 1500
+        },
+        "buttonsBefore": [
+          "Book Date",
+          "Create BEO"
+        ],
+        "readWaitedMs": 4913,
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": null
+      },
+      "picked12": {
+        "action": "pick:kids",
+        "value": "12",
+        "readingsBefore": [
+          "12 “12 kids” from the family",
+          "10"
+        ],
+        "window": {
+          "kids": {
+            "value": "12",
+            "placeholder": "—",
+            "shows": "12 (a value)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {},
+          "lineUnder": {
+            "date": "The chat says “12 December”from the family",
+            "startTime": "The chat says “at 13:00”from the family",
+            "kids": "The chat says “12 kids”from the family",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 two ways"
+          },
+          "footerWaitingLine": null,
+          "saveButton": {
+            "text": "Book date",
+            "disabled": false,
+            "title": null,
+            "opacity": "1"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": "23-p7-reading-12-chosen-before-booking.png"
+      },
+      "booked": {
+        "at": "2026-11-12T18:46:28.756Z",
+        "bookingName": "ZZ TEST 955 two ways",
+        "save": {
+          "route": "POST /api/inbox/conversations/:id/book-date (the window's Book date)",
+          "status": 200,
+          "sent": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "kids": 12,
+            "adults": null,
+            "childName": null,
+            "childAge": null,
+            "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+            "contactName": "ZZ TEST 955 two ways",
+            "hasId": true
+          },
+          "error": null,
+          "event": {
+            "id": "01a1d113-21ae-7479-bc3d-aae7437699db",
+            "title": "Birthday · ZZ TEST 955 two ways",
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "statusName": "Tentative",
+            "branchName": "Oto Play Park, Central Floresta",
+            "kids": 12,
+            "adults": null
+          }
+        },
+        "note": "Event: 12 Dec 2026 at Central Floresta · tentative in the Events calendar",
+        "chip": "Event: 12 Dec 2026 at Central Floresta",
+        "buttons": [
+          "Date Booked",
+          "Create BEO"
+        ],
+        "afterPicture": "24-p7-booked-date-booked-and-the-event-chip.png",
+        "convEvent": {
+          "id": "01a1d113-21ae-7479-bc3d-aae7437699db",
+          "title": "Birthday · ZZ TEST 955 two ways",
+          "date": "2026-12-12",
+          "startTime": "13:00",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "status": "tentative",
+          "kids": 12,
+          "adults": null,
+          "archived": false
+        }
+      },
+      "eventRemoved": {
+        "A": {
+          "id": "01a1d113-21ae-7479-bc3d-aae7437699db",
+          "title": "Birthday · ZZ TEST 955 two ways",
+          "archive": {
+            "route": "POST /api/admin/events/:id/archive",
+            "status": 200,
+            "archivedAt": "2026-11-12T18:47:43.987Z",
+            "isArchived": true,
+            "error": null
+          },
+          "readBack": {
+            "route": "GET /api/admin/events/:id",
+            "status": 200,
+            "archivedAt": "2026-11-12T18:47:43.987Z",
+            "isArchived": true
+          }
+        }
+      },
+      "upcomingListAfter": {
+        "route": "GET /api/admin/events?range=upcoming&branchId=<Central Floresta>",
+        "status": 200,
+        "thisRunsEventsStillListed": [],
+        "zzTest955Listed": []
+      },
+      "conversationAfter": {
+        "at": "2026-11-12T18:48:05.815Z",
+        "key": "A",
+        "buttons": [
+          "Book Date",
+          "Create BEO",
+          "Reopen"
+        ],
+        "archivedTitle": null,
+        "picture": "25-p7-after-cleanup-event-archived-conversation-handled.png"
+      }
+    },
+    "8 phone width 375 by 812": {
+      "verdict": "PASS from the conversation's Book Date (the line squeezed to three lines, whole); DEFECT from Create BEO (the line crushed to 0 px wide, its words one per line under the Cancel button, the footer 223 px tall)",
+      "fromBookDate": {
+        "opened": {
+          "conversation": "A",
+          "pressed": "Book Date",
+          "viewport": {
+            "width": 375,
+            "height": 812
+          },
+          "buttonsBefore": [
+            "Book Date",
+            "Create BEO"
+          ],
+          "readWaitedMs": 4415,
+          "proposalRoute": {
+            "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+            "status": 200
+          },
+          "window": {
+            "kids": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "adults": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "turningAge": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "readings": {
+              "kids": [
+                "12 “12 kids” from the family",
+                "10"
+              ]
+            },
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat says “at 13:00”from the family",
+              "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+              "adults": null,
+              "childAge": "Turning (age)"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "13:00",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 two ways"
+            },
+            "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+            "saveButton": {
+              "text": "Book date",
+              "disabled": true,
+              "title": "The chat reads two ways for the number of kids: choose one.",
+              "opacity": "0.6"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": null
+        },
+        "measure": {
+          "footer": {
+            "x": 16,
+            "y": 722,
+            "w": 343,
+            "h": 75
+          },
+          "viewportWidth": 375,
+          "waitingLine": {
+            "text": "The chat reads two ways for the number of kids: choose one.",
+            "x": 36,
+            "y": 735,
+            "w": 112,
+            "h": 50,
+            "lineHeight": 16.5,
+            "lines": 3,
+            "charsPerLineAbout": 20
+          },
+          "buttons": [
+            {
+              "text": "Cancel",
+              "x": 156,
+              "y": 735,
+              "w": 69,
+              "h": 50,
+              "wrapsOrCut": true,
+              "lines": 3
+            },
+            {
+              "text": "Book date",
+              "x": 233,
+              "y": 735,
+              "w": 106,
+              "h": 50,
+              "wrapsOrCut": true,
+              "lines": 3
+            }
+          ]
+        },
+        "pictures": [
+          "15-p8-phone-375-from-book-date-two-ways.png",
+          "16-p8-phone-375-from-book-date-footer.png"
+        ],
+        "cancel": {
+          "action": "cancel",
+          "value": "",
+          "afterCancel": {
+            "key": "A",
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "event": null,
+            "buttons": [
+              "Book Date",
+              "Create BEO"
+            ]
+          },
+          "picture": null
+        }
+      },
+      "fromCreateBeo": {
+        "opened": {
+          "conversation": "A",
+          "pressed": "Create BEO",
+          "viewport": {
+            "width": 375,
+            "height": 812
+          },
+          "buttonsBefore": [
+            "Book Date",
+            "Create BEO"
+          ],
+          "readWaitedMs": 6457,
+          "proposalRoute": {
+            "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+            "status": 200
+          },
+          "window": {
+            "kids": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "adults": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "turningAge": {
+              "value": "",
+              "placeholder": "—",
+              "shows": "— (the placeholder)"
+            },
+            "readings": {
+              "kids": [
+                "12 “12 kids” from the family",
+                "10"
+              ]
+            },
+            "lineUnder": {
+              "date": "The chat says “12 December”from the family",
+              "startTime": "The chat says “at 13:00”from the family",
+              "kids": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+              "adults": null,
+              "childAge": "Turning (age)"
+            },
+            "values": {
+              "date": "2026-12-12",
+              "startTime": "13:00",
+              "park": "Central Floresta",
+              "bookingName": "ZZ TEST 955 two ways"
+            },
+            "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+            "saveButton": {
+              "text": "Book date and open the BEO",
+              "disabled": true,
+              "title": "The chat reads two ways for the number of kids: choose one.",
+              "opacity": "0.6"
+            },
+            "refusalLine": null,
+            "header": "Read the whole chat"
+          },
+          "picture": null
+        },
+        "measure": {
+          "footer": {
+            "x": 16,
+            "y": 573,
+            "w": 343,
+            "h": 223
+          },
+          "viewportWidth": 375,
+          "waitingLine": {
+            "text": "The chat reads two ways for the number of kids: choose one.",
+            "x": 36,
+            "y": 586,
+            "w": 0,
+            "h": 198,
+            "lineHeight": 16.5,
+            "lines": 12,
+            "charsPerLineAbout": 5
+          },
+          "buttons": [
+            {
+              "text": "Cancel",
+              "x": 44,
+              "y": 586,
+              "w": 69,
+              "h": 198,
+              "wrapsOrCut": true,
+              "lines": 10
+            },
+            {
+              "text": "Book date and open the BEO",
+              "x": 121,
+              "y": 586,
+              "w": 218,
+              "h": 198,
+              "wrapsOrCut": true,
+              "lines": 10
+            }
+          ]
+        },
+        "pictures": [
+          "17-p8-phone-375-from-create-beo-two-ways.png",
+          "18-p8-phone-375-from-create-beo-footer.png"
+        ],
+        "cancel": {
+          "action": "cancel",
+          "value": "",
+          "afterCancel": {
+            "key": "A",
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "event": null,
+            "buttons": [
+              "Book Date",
+              "Create BEO"
+            ]
+          },
+          "picture": null
+        }
+      }
+    }
+  },
+  "hunt": {
+    "thaiTwoWaysAtPhoneWidth": {
+      "opened": {
+        "conversation": "T",
+        "pressed": "Book Date",
+        "viewport": {
+          "width": 375,
+          "height": 812
+        },
+        "buttonsBefore": [
+          "Book Date",
+          "Create BEO"
+        ],
+        "readWaitedMs": 11591,
+        "proposalRoute": {
+          "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+          "status": 200
+        },
+        "window": {
+          "kids": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "adults": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "turningAge": {
+            "value": "",
+            "placeholder": "—",
+            "shows": "— (the placeholder)"
+          },
+          "readings": {
+            "kids": [
+              "12 “เด็ก 12 คน” from the family",
+              "10"
+            ]
+          },
+          "lineUnder": {
+            "date": "The chat says “วันที่ 12 ธันวาคม”from the family",
+            "startTime": "The chat says “13:00”from the family",
+            "kids": "The chat reads two ways: choose one 12 “เด็ก 12 คน” from the family 10",
+            "adults": null,
+            "childAge": "Turning (age)"
+          },
+          "values": {
+            "date": "2026-12-12",
+            "startTime": "13:00",
+            "park": "Central Floresta",
+            "bookingName": "ZZ TEST 955 Thai two ways"
+          },
+          "footerWaitingLine": "The chat reads two ways for the number of kids: choose one.",
+          "saveButton": {
+            "text": "Book date",
+            "disabled": true,
+            "title": "The chat reads two ways for the number of kids: choose one.",
+            "opacity": "0.6"
+          },
+          "refusalLine": null,
+          "header": "Read the whole chat"
+        },
+        "picture": null
+      },
+      "measure": {
+        "footer": {
+          "x": 16,
+          "y": 722,
+          "w": 343,
+          "h": 75
+        },
+        "viewportWidth": 375,
+        "waitingLine": {
+          "text": "The chat reads two ways for the number of kids: choose one.",
+          "x": 36,
+          "y": 735,
+          "w": 112,
+          "h": 50,
+          "lineHeight": 16.5,
+          "lines": 3,
+          "charsPerLineAbout": 20
+        },
+        "buttons": [
+          {
+            "text": "Cancel",
+            "x": 156,
+            "y": 735,
+            "w": 69,
+            "h": 50,
+            "wrapsOrCut": true,
+            "lines": 3
+          },
+          {
+            "text": "Book date",
+            "x": 233,
+            "y": 735,
+            "w": 106,
+            "h": 50,
+            "wrapsOrCut": true,
+            "lines": 3
+          }
+        ]
+      },
+      "pictures": [
+        "19-hunt-phone-375-thai-two-ways.png",
+        "20-hunt-phone-375-thai-footer.png"
+      ],
+      "cancel": {
+        "action": "cancel",
+        "value": "",
+        "afterCancel": {
+          "key": "T",
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "event": null,
+          "buttons": [
+            "Book Date",
+            "Create BEO"
+          ]
+        },
+        "picture": null
+      }
+    },
+    "heldButtonUnderTheMouse": [
+      {
+        "at": "2026-11-12T18:43:52.730Z",
+        "away": {
+          "disabled": true,
+          "background": "oklch(0.769, 0.188, 70.08)",
+          "opacity": "0.6",
+          "cursor": "default"
+        },
+        "awayPicture": "21-hunt-held-book-date-mouse-away.png",
+        "over": {
+          "disabled": true,
+          "background": "oklch(0.666, 0.179, 58.318)",
+          "opacity": "0.6",
+          "cursor": "default"
+        },
+        "overPicture": "22-hunt-held-book-date-mouse-over-darkens.png",
+        "cancelCursor": "default"
+      }
+    ]
+  },
+  "cleanup": {
+    "at": "2026-11-12T18:47:42.998Z",
+    "events": {
+      "A": {
+        "id": "01a1d113-21ae-7479-bc3d-aae7437699db",
+        "title": "Birthday · ZZ TEST 955 two ways",
+        "archive": {
+          "route": "POST /api/admin/events/:id/archive",
+          "status": 200,
+          "archivedAt": "2026-11-12T18:47:43.987Z",
+          "isArchived": true,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/admin/events/:id",
+          "status": 200,
+          "archivedAt": "2026-11-12T18:47:43.987Z",
+          "isArchived": true
+        }
+      }
+    },
+    "conversations": {
+      "A": {
+        "id": "01a1d0fc-96e1-792f-b2b5-e733a98f18db",
+        "name": "ZZ TEST 955 two ways",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:44.459Z",
+          "event": {
+            "id": "01a1d113-21ae-7479-bc3d-aae7437699db",
+            "archived": true,
+            "statusName": "Tentative"
+          }
+        }
+      },
+      "B": {
+        "id": "01a1d0fc-a26a-7c4b-a098-1f49341d255b",
+        "name": "ZZ TEST 955 no count",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:45.464Z",
+          "event": null
+        }
+      },
+      "C": {
+        "id": "01a1d0fc-ac3d-7f99-97ea-64dfdac8e550",
+        "name": "ZZ TEST 955 zero",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:46.491Z",
+          "event": null
+        }
+      },
+      "D": {
+        "id": "01a1d0fc-b660-77ae-a911-659634e4866a",
+        "name": "ZZ TEST 955 adults",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:47.826Z",
+          "event": null
+        }
+      },
+      "E": {
+        "id": "01a1d0fc-c036-7c79-8114-520b46b074d8",
+        "name": "ZZ TEST 955 time and age",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:48.809Z",
+          "event": null
+        }
+      },
+      "T": {
+        "id": "01a1d0fc-cac1-78de-9ea4-e9d39e832047",
+        "name": "ZZ TEST 955 Thai two ways",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T18:47:50.523Z",
+          "event": null
+        }
+      }
+    },
+    "upcomingLiveList": {
+      "route": "GET /api/admin/events?range=upcoming&branchId=<Central Floresta>",
+      "status": 200,
+      "thisRunsEventsStillListed": [],
+      "zzTest955Listed": []
+    }
+  },
+  "signOut": {
+    "at": "2026-11-12T18:48:48.761Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    },
+    "appContext": {
+      "appLogout": {
+        "route": "POST /api/logout (OTO App)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "01-p1-two-ways-kids-empty-dash-line-and-book-date-held.png",
+      "at": "2026-11-12T18:22:48.584Z",
+      "shows": "Book Date pressed on the ZZ TEST thread: the window as it read the chat, before anything is typed",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "02-p1-after-pressing-the-held-book-date-nothing-saved.png",
+      "at": "2026-11-12T18:24:01.493Z",
+      "shows": "press-save : the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "03-p2-typed-11-line-gone-book-date-live.png",
+      "at": "2026-11-12T18:25:09.868Z",
+      "shows": "type:Kids 11: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "04-p2-11-deleted-readings-line-and-hold-back.png",
+      "at": "2026-11-12T18:26:23.383Z",
+      "shows": "back:Kids 2: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "05-p2-a-space-typed-first-still-two-ways-and-held.png",
+      "at": "2026-11-12T18:27:31.168Z",
+      "shows": "type:Kids ␠: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "06-p3-reading-10-pressed-box-10-book-date-live.png",
+      "at": "2026-11-12T18:29:45.422Z",
+      "shows": "pick:kids 10: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "07-p3-after-cancel-button-still-book-date-no-event.png",
+      "at": "2026-11-12T18:30:02.993Z",
+      "shows": "After Cancel: the conversation, its button still Book Date (no event)",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "08-p4-no-count-both-dashes-no-line-book-date-live.png",
+      "at": "2026-11-12T18:31:19.617Z",
+      "shows": "Book Date pressed on the ZZ TEST thread: the window as it read the chat, before anything is typed",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "09-p4-typed-0-in-adults-shows-0-as-a-value.png",
+      "at": "2026-11-12T18:32:27.366Z",
+      "shows": "type:Adults 0: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "10-p5-stated-zero-kids-shows-0-as-a-value.png",
+      "at": "2026-11-12T18:33:43.566Z",
+      "shows": "Book Date pressed on the ZZ TEST thread: the window as it read the chat, before anything is typed",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "11-p6-lane-step-10-adults-4-then-6.png",
+      "at": "2026-11-12T18:35:02.248Z",
+      "shows": "Book Date pressed on the ZZ TEST thread: the window as it read the chat, before anything is typed",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "12-p6-start-time-and-age-two-ways-held-for-the-start-time.png",
+      "at": "2026-11-12T18:36:20.547Z",
+      "shows": "Book Date pressed on the ZZ TEST thread: the window as it read the chat, before anything is typed",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "13-p6-start-time-picked-line-now-names-the-age.png",
+      "at": "2026-11-12T18:37:29.410Z",
+      "shows": "pick:startTime 15:00: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "14-p6-age-typed-6-nothing-two-ways-book-date-live.png",
+      "at": "2026-11-12T18:38:39.604Z",
+      "shows": "type:Turning age 6: the window after it",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "15-p8-phone-375-from-book-date-two-ways.png",
+      "at": "2026-11-12T18:40:24.467Z",
+      "shows": "Book Date pressed in the conversation at phone width, the kids read two ways (the whole screen at 375 by 812)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "16-p8-phone-375-from-book-date-footer.png",
+      "at": "2026-11-12T18:40:24.757Z",
+      "shows": "Book Date pressed in the conversation at phone width, the kids read two ways (the footer alone)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "17-p8-phone-375-from-create-beo-two-ways.png",
+      "at": "2026-11-12T18:41:49.971Z",
+      "shows": "Create BEO pressed in the conversation at phone width, the kids read two ways (the whole screen at 375 by 812)",
+      "namesMasked": 40,
+      "masks": 0
+    },
+    {
+      "file": "18-p8-phone-375-from-create-beo-footer.png",
+      "at": "2026-11-12T18:41:50.253Z",
+      "shows": "Create BEO pressed in the conversation at phone width, the kids read two ways (the footer alone)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "19-hunt-phone-375-thai-two-ways.png",
+      "at": "2026-11-12T18:43:30.280Z",
+      "shows": "Book Date at phone width on a Thai chat whose kids read two ways (the whole screen at 375 by 812)",
+      "namesMasked": 40,
+      "masks": 0
+    },
+    {
+      "file": "20-hunt-phone-375-thai-footer.png",
+      "at": "2026-11-12T18:43:30.567Z",
+      "shows": "Book Date at phone width on a Thai chat whose kids read two ways (the footer alone)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "21-hunt-held-book-date-mouse-away.png",
+      "at": "2026-11-12T18:43:53.015Z",
+      "shows": "The held Book date with the mouse away",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "22-hunt-held-book-date-mouse-over-darkens.png",
+      "at": "2026-11-12T18:43:53.732Z",
+      "shows": "The held Book date with the mouse over it",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "23-p7-reading-12-chosen-before-booking.png",
+      "at": "2026-11-12T18:46:21.468Z",
+      "shows": "pick:kids 12: the window after it",
+      "namesMasked": 40,
+      "masks": 1
+    },
+    {
+      "file": "24-p7-booked-date-booked-and-the-event-chip.png",
+      "at": "2026-11-12T18:47:32.353Z",
+      "shows": "After Book date: the note \"tentative in the Events calendar\", the button Date Booked and the event chip",
+      "namesMasked": 1,
+      "masks": 1
+    },
+    {
+      "file": "25-p7-after-cleanup-event-archived-conversation-handled.png",
+      "at": "2026-11-12T18:48:36.649Z",
+      "shows": "After the clean-up: the event archived, the conversation handled",
+      "namesMasked": 36,
+      "masks": 1
+    }
+  ],
+  "imagesInTheFolder": [
+    "01-p1-two-ways-kids-empty-dash-line-and-book-date-held.png",
+    "02-p1-after-pressing-the-held-book-date-nothing-saved.png",
+    "03-p2-typed-11-line-gone-book-date-live.png",
+    "04-p2-11-deleted-readings-line-and-hold-back.png",
+    "05-p2-a-space-typed-first-still-two-ways-and-held.png",
+    "06-p3-reading-10-pressed-box-10-book-date-live.png",
+    "07-p3-after-cancel-button-still-book-date-no-event.png",
+    "08-p4-no-count-both-dashes-no-line-book-date-live.png",
+    "09-p4-typed-0-in-adults-shows-0-as-a-value.png",
+    "10-p5-stated-zero-kids-shows-0-as-a-value.png",
+    "11-p6-lane-step-10-adults-4-then-6.png",
+    "12-p6-start-time-and-age-two-ways-held-for-the-start-time.png",
+    "13-p6-start-time-picked-line-now-names-the-age.png",
+    "14-p6-age-typed-6-nothing-two-ways-book-date-live.png",
+    "15-p8-phone-375-from-book-date-two-ways.png",
+    "16-p8-phone-375-from-book-date-footer.png",
+    "17-p8-phone-375-from-create-beo-two-ways.png",
+    "18-p8-phone-375-from-create-beo-footer.png",
+    "19-hunt-phone-375-thai-two-ways.png",
+    "20-hunt-phone-375-thai-footer.png",
+    "21-hunt-held-book-date-mouse-away.png",
+    "22-hunt-held-book-date-mouse-over-darkens.png",
+    "23-p7-reading-12-chosen-before-booking.png",
+    "24-p7-booked-date-booked-and-the-event-chip.png",
+    "25-p7-after-cleanup-event-archived-conversation-handled.png"
+  ]
+}
