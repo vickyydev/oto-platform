@@ -213,6 +213,78 @@ describe('(f) the camera notice on a light display', () => {
     expect(dark).toContain('--cd-camera-note: hsl(var(--foreground) / 0.5);');
     expect(dark).toContain('--cd-camera-veil: transparent;');
   });
+
+  // The notice is the shared camera's, so the staff screens that take a photo
+  // with it draw it too, in the staff theme's inks. In dark it is unchanged
+  // (above); here, in the light staff theme, both lines are measured as they
+  // were (amber-300 and the half-strength note straight on the frame) and as
+  // they are now (the light inks on the veil), with WCAG's contrast ratio.
+  describe('on the staff screens that share the camera, in a light staff theme', () => {
+    type Rgb = [number, number, number];
+    const light = block(':root,\n.light {');
+    const token = (name: string) => light.match(new RegExp(`--${name}: (\\d+) (\\d+)% (\\d+)%;`))!.slice(1).map(Number) as Rgb;
+    const hsl = ([h, s, l]: Rgb): Rgb => {
+      const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+      const f = (n: number) => { const k = (n + h / 30) % 12; return 255 * (l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))); };
+      return [f(0), f(8), f(4)];
+    };
+    const hex = (h: string): Rgb => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb;
+    const over = (ink: Rgb, alpha: number, under: Rgb): Rgb => ink.map((c, i) => c * alpha + under[i]! * (1 - alpha)) as Rgb;
+    const lum = (c: Rgb) => {
+      const [r, g, b] = c.map((x) => { const v = x / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const contrast = (a: Rgb, b: Rgb) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi! + 0.05) / (lo! + 0.05); };
+    // Tailwind's amber-300, oklch(87.9% 0.169 91.605), in sRGB.
+    const AMBER_300 = hex('#ffd230');
+    const ink = hsl(token('foreground'));
+    /** Both lines on a screen of this colour: before, and with the light inks and veil now. */
+    const lines = (screen: Rgb) => {
+      // The frame is black at 40% over the screen; the notice's veil is white at 82% over the frame.
+      const frame = over([0, 0, 0], 0.4, screen);
+      const veiled = over([255, 255, 255], 0.82, frame);
+      return {
+        before: { notice: contrast(AMBER_300, frame), note: contrast(over(ink, 0.5, frame), frame) },
+        after: { notice: contrast(hex('#92400e'), veiled), note: contrast(over(ink, 0.85, veiled), veiled) },
+      };
+    };
+
+    it('every one of them draws the shared camera, whose frame and notice are measured here', () => {
+      for (const file of ['components/dropoff/CheckOutModal.tsx', 'components/dropoff/CheckInBookedModal.tsx',
+        'components/mobile/dropoff/MobileCheckInConsent.tsx', 'components/mobile/dropoff/MobileCheckOutView.tsx',
+        'components/shared/AuthorizedPickupSheet.tsx']) {
+        const screen = src(file);
+        expect(screen).toContain("import { CameraCapture } from '@/components/shared/CameraCapture';");
+        expect(screen).toContain('<CameraCapture');
+      }
+      expect(src('components/shared/CameraCapture.tsx')).toContain('rounded-2xl border border-foreground/10 bg-black/40');
+    });
+
+    it('on the light screens (the check-out and check-in dialogs, the pickup sheet), both lines read better than before', () => {
+      for (const screen of [hsl(token('background')), hsl(token('card')), over(hsl(token('muted')), 0.2, hsl(token('card')))]) {
+        const { before, after } = lines(screen);
+        expect(before.notice).toBeLessThan(3);
+        expect(after.notice).toBeGreaterThanOrEqual(4.5);
+        expect(after.note).toBeGreaterThanOrEqual(4.5);
+        expect(after.note).toBeGreaterThan(before.note);
+      }
+    });
+
+    it('on the parent’s check-in screen on the phone, drawn dark whatever the theme, both lines read now', () => {
+      const parent = src('components/mobile/dropoff/MobileCheckInConsent.tsx');
+      expect(parent).toContain('bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-white');
+      expect(parent).toContain('rounded-3xl border border-white/10 bg-white/5 p-5');
+      // Tailwind's slate-950 and sky-950 in sRGB, under the card's white at 5%.
+      for (const base of [hex('#020618'), hex('#052f4a')]) {
+        const { before, after } = lines(over([255, 255, 255], 0.05, base));
+        // The note under the notice could not be read before (dark ink on a dark frame).
+        expect(before.note).toBeLessThan(1.5);
+        expect(after.note).toBeGreaterThanOrEqual(4.5);
+        // The notice itself reads less brightly than amber on black did, still at the AA ratio.
+        expect(after.notice).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+  });
 });
 
 describe('(g) at phone width', () => {
