@@ -231,6 +231,71 @@ describe('SCRUM-930 — the drop-off bracelet printer card', () => {
   });
 });
 
+describe('SCRUM-930 — a printer whose card the till hides is saved as the station holds it', () => {
+  // Before the drop-off card existed, a till save sent the drop-off band printer
+  // back as the station held it. The card follows the capabilities, so on an
+  // F&B-only or a Parties-only till it is hidden — and a hidden card must not
+  // take the Console's assignment away. Only a card on screen changes its role.
+  const held = (devices: Array<{ role: string; deviceId: string }>, role: string) =>
+    devices.filter((d) => d.role === role).map((d) => d.deviceId);
+
+  for (const capabilities of [['fnb'], ['parties']] as StationCapability[][]) {
+    it(`a till that does only ${capabilities[0]} keeps the drop-off band printer the Console gave it, and the other hidden printers`, async () => {
+      const view = await open({ ...CONSOLE_SAVED, capabilities });
+      expect(cardTitles(view.result.current)).not.toContain('Drop-off bracelet printer');
+      await pressSave(view.result.current);
+      expect(seam.update).toHaveBeenCalledTimes(1);
+      const devices = sent().devices;
+      expect(held(devices, 'dropoff_band')).toEqual(['dropoff']);
+      // The kids and adult cards are hidden here too: their printers stay as held.
+      expect(held(devices, 'kids_band')).toEqual(['kids']);
+      expect(held(devices, 'adult_band')).toEqual(['adult']);
+      expect(held(devices, 'receipt')).toEqual(['receipt']);
+      expect(held(devices, 'card_terminal')).toEqual(['edc']);
+      expect(devices).toHaveLength(5);
+      view.unmount();
+    });
+  }
+
+  it('a choice made on a card that is then hidden is not saved: the station’s own assignment is', async () => {
+    const view = await open(CONSOLE_SAVED);
+    card(view.result.current, 'Drop-off bracelet printer').onClear();
+    card(view.result.current, 'Kids bracelet printer').onSelect('adult');
+    const picker = nodes(view.result.current).find((n) => typeof n.props.onToggle === 'function' && Array.isArray(n.props.selected));
+    if (!picker) throw new Error('no capability picker on the screen');
+    (picker.props.onToggle as (cap: StationCapability) => void)('fnb');
+    await settle();
+    expect(cardTitles(view.result.current)).not.toContain('Drop-off bracelet printer');
+    expect(cardTitles(view.result.current)).not.toContain('Kids bracelet printer');
+    await pressSave(view.result.current);
+    expect(held(sent().devices, 'dropoff_band')).toEqual(['dropoff']);
+    expect(held(sent().devices, 'kids_band')).toEqual(['kids']);
+    view.unmount();
+  });
+
+  it('a card on screen still clears its role, and a change of box still clears the hidden ones', async () => {
+    const view = await open({ ...CONSOLE_SAVED, capabilities: ['dropoff'] });
+    card(view.result.current, 'Drop-off bracelet printer').onClear();
+    await pressSave(view.result.current);
+    expect(held(sent().devices, 'dropoff_band')).toEqual([]);
+    // Hidden on a drop-off-only till: the adult printer and the receipt printer stay.
+    expect(held(sent().devices, 'adult_band')).toEqual(['adult']);
+    expect(held(sent().devices, 'receipt')).toEqual(['receipt']);
+    view.unmount();
+
+    seam.update.mockClear();
+    const moved = await open({ ...CONSOLE_SAVED, capabilities: ['fnb'] });
+    const boxPicker = nodes(moved.result.current).find((n) => typeof n.props.onSelect === 'function' && Array.isArray(n.props.boxes));
+    if (!boxPicker) throw new Error('no box picker on the screen');
+    (boxPicker.props.onSelect as (id: string) => void)('box-2');
+    await settle();
+    await pressSave(moved.result.current);
+    // Those printers are plugged into the old box: nothing of it is sent.
+    expect(sent().devices).toEqual([]);
+    moved.unmount();
+  });
+});
+
 describe('SCRUM-930 — the stale-save refusal of SCRUM-898 holds for the till', () => {
   it('a change made before the record lands keeps what the person chose, and the save names the version it was filled from', async () => {
     seam.record = CONSOLE_SAVED;

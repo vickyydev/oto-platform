@@ -524,15 +524,17 @@ export function StationEditor({ wizard }: { wizard: boolean }) {
    * What the station tells the box to drive, one device per role.
    *
    * The set is sent whole and replaces what was there, so a role that is not in
-   * it is a role with nothing assigned: clearing a printer is leaving it out,
-   * and a role the capabilities hid is left out for the same reason.
+   * it is a role with nothing assigned: clearing a printer on a card is leaving
+   * it out.
    *
-   * A role this screen has no slot for — the terminals, the gate, the drawer —
-   * is sent back as the station holds it (`filledFrom`), on the same box: this
-   * form never showed it, so a save from here must not take it away. A change
-   * of box clears everything, because those devices are the old box's. The
-   * drop-off bracelet printer has its own slot since SCRUM-930, so it is sent
-   * as the slot says, like the other printers.
+   * Only a card on screen can change its role. A role with no card here — one
+   * this screen has no slot for (the terminals, the gate, the drawer), or a
+   * printer whose card the capabilities hide (SCRUM-930: an F&B-only till has
+   * no drop-off bracelet card, yet the Console assigns that printer on every
+   * till) — is sent back as the station holds it (`filledFrom`), on the same
+   * box: this form did not show it, so a save from here must not take it
+   * away. A change of box clears everything, because those devices are the
+   * old box's.
    */
   const deviceAssignments = (): StationInput['devices'] => {
     const chosen: Array<[DeviceRole, string | undefined]> = [
@@ -554,10 +556,10 @@ export function StationEditor({ wizard }: { wizard: boolean }) {
     if (scannerMode === 'box' && scannerId) {
       assignments.push({ role: 'scanner', deviceId: scannerId });
     }
-    const managed = new Set<string>([...Object.values(ROLE_TO_API), 'scanner']);
+    const shown = new Set<string>([...visibleRoles.map((role) => ROLE_TO_API[role]), 'scanner']);
     if (filledFrom && filledFrom.boxId === boxId) {
       for (const held of filledFrom.devices ?? []) {
-        if (!managed.has(held.role)) assignments.push({ role: held.role as StationDeviceRole, deviceId: held.deviceId });
+        if (!shown.has(held.role)) assignments.push({ role: held.role as StationDeviceRole, deviceId: held.deviceId });
       }
     }
     return assignments;
