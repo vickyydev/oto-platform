@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import type { ConsentAction } from '@oto/shared';
+import { consentActionAllowed, type ConsentAction, type ConsentPrompt } from '@oto/shared';
 import { contactConfirmationStands, messagingPhoneProblem, takeConsentAction } from '@/lib/consentForm';
 
 /**
@@ -135,6 +137,57 @@ describe('Done from the family’s screen', () => {
     expect(t.setCompletedSignature).not.toHaveBeenCalled();
     expect(t.contactConfirmationUnsupported).toHaveBeenCalledTimes(1);
     // The family's screen still moves on to a new request, never stuck on the answer.
+    expect(t.answered).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * SCRUM-857 — THROUGH A COUNTER BOX FROM BEFORE THE FIELD (the park's Pi box
+ * until it gets a release built with the number confirmation). The station
+ * keeps only the fields its own schema knows: the tick, the family's step,
+ * the photo marks and the saving lines are dropped from the form it hands the
+ * display, and the tick and the step from every fill it hands the till. So
+ * the family's screen never shows the tick, and their Done cannot move the
+ * sale on: the till stays on the form, staff confirm the number with the
+ * family in Private child details, and press Continue. The owner's "the
+ * customer must explicitly confirm" and "no staff verification" need that
+ * box release; through the platform's virtual box they hold today.
+ */
+describe('through a station that drops the tick (an older box)', () => {
+  const tillSource = readFileSync(resolve(import.meta.dirname, '../src/pages/Till.tsx'), 'utf8');
+  const prompt: ConsentPrompt = {
+    kind: 'consent', requestId: fence.requestId, visitorId: fence.visitorId,
+    slots: [{ id: 'a', name: 'ZZ TEST Mai', ageYears: 6, requirement: 'drop_off' }],
+    guardianName: 'ZZ TEST guardian', guardianPhone: PHONE, contactChannel: 'whatsapp', contactConfirmed: false,
+    consentRequired: true, consentAcknowledged: true, confirmations: [],
+    staffReady: true, canContinue: true, completed: false, familyStep: 'agreements',
+  };
+  /** What an older station keeps of a fill: everything but the fields it does not know. */
+  const throughOlderStation = (action: ConsentAction): ConsentAction => {
+    const { contactConfirmed: _tick, step: _step, ...kept } = action as Extract<ConsentAction, { action: 'fill' }>;
+    return kept;
+  };
+
+  it('a fill arrives without the tick: staff are told to confirm the number on the till', () => {
+    const t = till({ asksContactConfirmation: true, contactConfirmed: false });
+    const fill = throughOlderStation(step({ guardianPhone: PHONE, contactChannel: 'whatsapp', contactConfirmed: true, step: 'agreements' }));
+    expect(consentActionAllowed(prompt, fill)).toBe(true);
+    takeConsentAction(fill, t);
+    expect(t.setContactConfirmed).not.toHaveBeenCalled();
+    expect(t.contactConfirmationUnsupported).toHaveBeenCalledTimes(1);
+  });
+
+  it('their Done is taken as not finished, so the till stays on the form for staff to finish', () => {
+    const done: ConsentAction = { ...fence, action: 'done' };
+    // The till's own check: this Done is the "unconfirmed Done" an older station brings.
+    expect(consentActionAllowed(prompt, done)).toBe(false);
+    expect(consentActionAllowed({ ...prompt, contactConfirmed: true }, done)).toBe(true);
+    expect(tillSource).toMatch(/const familyDone = action\.data\.action === 'done' && !unconfirmedDone;/);
+    const t = till({ asksContactConfirmation: true, contactConfirmed: false });
+    takeConsentAction(done, t);
+    // Never finished: the family's Done never starts the gate, staff press Continue.
+    expect(t.setCompletedSignature).not.toHaveBeenCalled();
+    expect(t.contactConfirmationUnsupported).toHaveBeenCalledTimes(1);
     expect(t.answered).toHaveBeenCalledTimes(1);
   });
 });
