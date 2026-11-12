@@ -21,6 +21,7 @@ import {
   PARTY_PLAN_CHANGED,
   PARTY_KIDS_ONLY,
   PARTY_NO_KIDS_FOOD_TIME,
+  PARTY_NOT_ON_TILL_MENU,
   PartyDetailWithSlipsAnswerSchema,
   PartySlipsPrintAnswerSchema,
   addDaysToIsoDate,
@@ -100,6 +101,30 @@ const FLORESTA_ITEMS = [
   { id: 'i-fruit', type: 'always_included', label: 'Fruit skewers', qty: 2 },
 ];
 
+/**
+ * The set menu's lines as the parent link's submit writes them into the
+ * kitchen plan (the app's resolveSetMenuLines): every fixed item, and the
+ * chosen pizza with the group's portions when one is chosen. SCRUM-906: the
+ * view reads the choice from these lines, the BEO's one record of it (the
+ * owner's decision 3), not from the submission table.
+ */
+function resolvedLines(chosen: string[]) {
+  return [
+    ...chosen.map((opt) => ({
+      id: `set_g-pizza_${opt}`,
+      itemName: opt,
+      quantity: chosen.length === 1 ? 3 : 1,
+      notes: '(Pizza)',
+      included: true,
+      price: 0,
+      source: 'set_menu',
+      groupId: 'g-pizza',
+    })),
+    { id: 'set_i-fries', itemName: 'French fries', quantity: 2, notes: '', included: true, price: 0, source: 'set_menu', groupId: 'i-fries' },
+    { id: 'set_i-fruit', itemName: 'Fruit skewers', quantity: 2, notes: '', included: true, price: 0, source: 'set_menu', groupId: 'i-fruit' },
+  ];
+}
+
 /** Bangkok wall clock on day `date` as an instant (the park is UTC+7). */
 const atBangkok = (date: string, hhmm: string) => new Date(`${date}T${hhmm}:00+07:00`);
 
@@ -137,7 +162,10 @@ async function appParty(p: AppParty): Promise<string> {
     await ctx.db.execute(sql`
       insert into otoapp.beo_kitchen_plans (id, event_id, set_menu_enabled, set_menu_template_id, menus, kitchen_ready_offset_minutes)
       values (${newId()}, ${p.id}, true, ${floresta},
-              ${JSON.stringify(p.kidsFoodTime === null ? {} : { kidsFoodTime: p.kidsFoodTime ?? '14:00' })}::jsonb, 20)`);
+              ${JSON.stringify({
+                ...(p.kidsFoodTime === null ? {} : { kidsFoodTime: p.kidsFoodTime ?? '14:00' }),
+                ...(p.chosen === null ? {} : { kids: resolvedLines(p.chosen ?? ['Margherita']) }),
+              })}::jsonb, 20)`);
     if (p.chosen !== null) {
       await ctx.db.execute(sql`
         insert into otoapp.beo_set_menu_selections (id, event_id, template_id, token, is_submitted, selections)
@@ -282,10 +310,11 @@ describe('the slip, composed from the plan', () => {
       time: '11:00',
       details: ['Room: Party room 1', 'Children: 10'],
       readyBy: '13:40',
+      // SCRUM-906: a chosen dish under its group's name; the uncoded skewers marked not on the till menu.
       lines: [
-        { qty: 3, name: 'Margherita' },
+        { qty: 3, name: 'Pizza: Margherita' },
         { qty: 2, name: 'French fries' },
-        { qty: 2, name: 'Fruit skewers' },
+        { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
       ],
     } satisfies PartySlipDocument);
     expect(slips.bar).toMatchObject({ title: 'Bar', heading: 'Birthday party', readyBy: '13:40', lines: [{ qty: 2, name: 'Juice pitcher' }] });
@@ -302,7 +331,7 @@ describe('the slip, composed from the plan', () => {
         barItems: [],
       }),
     );
-    expect(slips.kitchen?.lines).toEqual([{ qty: 2, name: 'Belgian waffles' }]);
+    expect(slips.kitchen?.lines).toEqual([{ qty: 2, name: 'Belgian waffles', note: PARTY_NOT_ON_TILL_MENU }]);
     expect(slips.bar?.lines).toEqual([{ qty: 10, name: 'Kids juice' }]);
   });
 
@@ -319,8 +348,8 @@ describe('the slip, composed from the plan', () => {
     );
     expect(slips.kitchen?.lines).toEqual([
       { qty: 2, name: 'Hot dish', note: `${PARTY_CHOICE_NOT_MADE} · Fish & Chips may be 2 Chicken Schnitzel` },
-      { name: 'Margherita' },
-      { name: 'Hawaiian' },
+      { name: 'Pizza: Margherita' },
+      { name: 'Pizza: Hawaiian' },
     ]);
     expect(slips.bar).toBeNull();
   });
@@ -374,10 +403,10 @@ describe('the slip, composed from the plan', () => {
       }),
     );
     expect(slips.kitchen?.lines).toEqual([
-      { qty: 3, name: 'Margherita', note: PARTY_KIDS_ONLY },
+      { qty: 3, name: 'Pizza: Margherita', note: PARTY_KIDS_ONLY },
       { qty: 2, name: 'French fries' },
-      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
-      { qty: 4, name: 'Pasta', note: `${PARTY_ADULTS_ONLY} · al dente` },
+      { name: 'Fruit skewers', note: `${PARTY_NOT_ON_TILL_MENU} · ${partyCountsMark(2, 4)}` },
+      { qty: 4, name: 'Pasta', note: `${PARTY_ADULTS_ONLY} · al dente · ${PARTY_NOT_ON_TILL_MENU}` },
     ]);
     expect(partyCountsMark(2, 4)).toBe('kids 2 · adults 4');
     expect(slips.bar?.lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
@@ -400,8 +429,8 @@ describe('the slip, composed from the plan', () => {
       }),
     );
     expect(slips.kitchen?.lines).toEqual([
-      { qty: 3, name: 'Margherita', note: `no cheese · ${PARTY_ADULTS_NO_NOTE}` },
-      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
+      { qty: 3, name: 'Pizza: Margherita', note: `no cheese · ${PARTY_ADULTS_NO_NOTE}` },
+      { name: 'Fruit skewers', note: `${PARTY_NOT_ON_TILL_MENU} · ${partyCountsMark(2, 4)}` },
     ]);
     expect(slips.bar?.lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
     expect(partyAdultsNoteMark(' no ice ')).toBe('adults: no ice');
@@ -422,13 +451,13 @@ describe('the slip, composed from the plan', () => {
         barItems: [],
       }),
     );
-    expect(slips.kitchen?.lines).toEqual([{ name: 'Margherita', note: partyCountsMark(null, 2) }, { name: 'Hawaiian' }]);
+    expect(slips.kitchen?.lines).toEqual([{ name: 'Pizza: Margherita', note: partyCountsMark(null, 2) }, { name: 'Pizza: Hawaiian' }]);
     expect(slips.bar?.lines).toEqual([{ qty: 2, name: 'Kids juice', note: PARTY_ADULTS_ONLY }]);
-    // A plan from before the switch carries no audience and prints as it always did.
+    // A plan from before the switch carries no audience and prints as it always did (SCRUM-906's names and marks aside).
     expect(compose(plan()).kitchen?.lines).toEqual([
-      { qty: 3, name: 'Margherita' },
+      { qty: 3, name: 'Pizza: Margherita' },
       { qty: 2, name: 'French fries' },
-      { qty: 2, name: 'Fruit skewers' },
+      { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
     ]);
   });
 });
@@ -456,11 +485,11 @@ describe('job:parties.slips — at the slip time, once', () => {
     ]);
     // What it would have printed is kept, as composed through the view.
     expect((rows[0]!.document as PartySlipDocument).lines).toEqual([
-      { qty: 3, name: 'Margherita' },
+      { qty: 3, name: 'Pizza: Margherita' },
       { qty: 2, name: 'French fries' },
-      { qty: 2, name: 'Fruit skewers' },
+      { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
     ]);
-    expect((rows[1]!.document as PartySlipDocument).lines).toEqual([{ qty: 2, name: 'Juice pitcher' }]);
+    expect((rows[1]!.document as PartySlipDocument).lines).toEqual([{ qty: 2, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU }]);
     const jobs = await ctx.db.select().from(printJob).where(eq(printJob.subjectType, 'party_slip'));
     expect(jobs.filter((j) => rows.some((r) => r.id === j.subjectId))).toEqual([]);
 
@@ -519,9 +548,9 @@ describe('job:parties.slips — at the slip time, once', () => {
         details: ['Room: Party room 1', 'Children: 10'],
         readyBy: '13:40',
         lines: [
-          { qty: 3, name: 'Margherita' },
+          { qty: 3, name: 'Pizza: Margherita' },
           { qty: 2, name: 'French fries' },
-          { qty: 2, name: 'Fruit skewers' },
+          { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
         ],
       },
     });
@@ -565,16 +594,19 @@ describe('job:parties.slips — at the slip time, once', () => {
     const rows = await slipsOf(id);
     expect((rows[0]!.document as PartySlipDocument).lines).toEqual([
       // The set menu's own lines: the pizza the adults do not get, marked; the fries an unchanged copy.
-      { qty: 3, name: 'Margherita', note: PARTY_KIDS_ONLY },
+      { qty: 3, name: 'Pizza: Margherita', note: PARTY_KIDS_ONLY },
       { qty: 2, name: 'French fries' },
-      // The adults' skewers in another count fold into the set menu's line of that name.
-      { name: 'Fruit skewers', note: partyCountsMark(2, 4) },
-      { qty: 4, name: 'Pasta', note: PARTY_ADULTS_ONLY },
+      // SCRUM-906: the template's skewers, which no BEO line answers here, and the team's own
+      // skewers, typed into the kids' list, are two lines, as the BEO shows them; the adults'
+      // skewers in another count fold into the team's line they copy.
+      { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
+      { name: 'Fruit skewers', note: `${PARTY_NOT_ON_TILL_MENU} · ${partyCountsMark(2, 4)}` },
+      { qty: 4, name: 'Pasta', note: `${PARTY_ADULTS_ONLY} · ${PARTY_NOT_ON_TILL_MENU}` },
     ]);
     // The coded juice copied unchanged for the adults reaches the bar once (and the till charges it once).
     expect((rows[1]!.document as PartySlipDocument).lines).toEqual([
       { qty: 10, name: 'Kids juice' },
-      { qty: 2, name: 'Juice pitcher' },
+      { qty: 2, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU },
     ]);
   });
 
@@ -606,7 +638,9 @@ describe('job:parties.slips — at the slip time, once', () => {
     ]);
     await runPartySlipsJob(ctx.db, atBangkok(T, '11:01'));
     const rows = await slipsOf(id);
-    expect((rows[0]!.document as PartySlipDocument).lines).toEqual([{ name: 'Fruit skewers', note: `no melon · ${partyCountsMark(2, 4)}` }]);
+    expect((rows[0]!.document as PartySlipDocument).lines).toEqual([
+      { name: 'Fruit skewers', note: `no melon · ${PARTY_NOT_ON_TILL_MENU} · ${partyCountsMark(2, 4)}` },
+    ]);
     expect((rows[1]!.document as PartySlipDocument).lines).toEqual([{ qty: 10, name: 'Kids juice', note: 'adults: no ice' }]);
   });
 
@@ -818,11 +852,21 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     );
   const shape = (rows: (typeof prepSlipPrint.$inferSelect)[]) => rows.map((r) => [r.run, r.station, r.variant, r.status]);
   const docOf = (row: typeof prepSlipPrint.$inferSelect) => row.document as PrepSlipDocument;
-  const choose = (id: string, options: string[]) =>
-    ctx.db.execute(sql`
+  /**
+   * The BEO changes the pizza: staff edit the set menu's resolved line (SCRUM-906: the
+   * kitchen plan's lines are the one record of a choice, the owner's decision 3); the
+   * parent's submission is kept in step, as it would read had the parent chosen so.
+   */
+  const choose = async (id: string, options: string[]) => {
+    await ctx.db.execute(sql`
       update otoapp.beo_set_menu_selections
          set selections = ${JSON.stringify([{ groupId: 'g-pizza', chosenOptions: options }])}::jsonb
        where event_id = ${id}`);
+    await ctx.db.execute(sql`
+      update otoapp.beo_kitchen_plans
+         set menus = jsonb_set(menus, '{kids}', ${JSON.stringify(resolvedLines(options))}::jsonb)
+       where event_id = ${id}`);
+  };
   const setBar = (id: string, items: Array<{ itemName: string; quantity: number }>) =>
     ctx.db.execute(sql`update otoapp.beo_bar_plans set items = ${JSON.stringify(items)}::jsonb where event_id = ${id}`);
 
@@ -851,7 +895,7 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
       orderRef: "Nam's 8th",
       time: '11:11',
       details: [PARTY_PLAN_CHANGED],
-      lines: [{ qty: 3, name: 'Margherita' }],
+      lines: [{ qty: 3, name: 'Pizza: Margherita' }],
     });
     expect(docOf(rows[1]!)).toEqual({
       title: 'UPDATED — Kitchen',
@@ -862,9 +906,9 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
       details: [PARTY_PLAN_CHANGED, 'Room: Party room 1', 'Children: 10'],
       readyBy: '13:40',
       lines: [
-        { qty: 3, name: 'Hawaiian' },
+        { qty: 3, name: 'Pizza: Hawaiian' },
         { qty: 2, name: 'French fries' },
-        { qty: 2, name: 'Fruit skewers' },
+        { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
       ],
     });
     // Queued to the kitchen printer of the named station, as the party's own slip was.
@@ -897,8 +941,8 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
       [1, 'bar', 'void', 'printed'],
       [1, 'bar', 'updated', 'printed'],
     ]);
-    expect(docOf(rows[0]!)).toMatchObject({ title: 'VOID — Bar', lines: [{ qty: 1, name: 'Juice pitcher' }] });
-    expect(docOf(rows[1]!)).toMatchObject({ title: 'UPDATED — Bar', lines: [{ qty: 1, name: 'Juice pitcher' }] });
+    expect(docOf(rows[0]!)).toMatchObject({ title: 'VOID — Bar', lines: [{ qty: 1, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU }] });
+    expect(docOf(rows[1]!)).toMatchObject({ title: 'UPDATED — Bar', lines: [{ qty: 1, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU }] });
 
     await setBar(id, [
       { itemName: 'Juice pitcher', quantity: 1 },
@@ -908,8 +952,8 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     rows = await changesOf(id);
     expect(shape(rows).slice(2)).toEqual([[2, 'bar', 'updated', 'printed']]);
     expect(docOf(rows[2]!).lines).toEqual([
-      { qty: 1, name: 'Juice pitcher' },
-      { qty: 4, name: 'Mocktail' },
+      { qty: 1, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU },
+      { qty: 4, name: 'Mocktail', note: PARTY_NOT_ON_TILL_MENU },
     ]);
 
     await setBar(id, [
@@ -938,12 +982,15 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     expect(docOf(rows[0]!)).toMatchObject({
       details: [PARTY_CANCELLED],
       lines: [
-        { qty: 3, name: 'Margherita' },
+        { qty: 3, name: 'Pizza: Margherita' },
         { qty: 2, name: 'French fries' },
-        { qty: 2, name: 'Fruit skewers' },
+        { qty: 2, name: 'Fruit skewers', note: PARTY_NOT_ON_TILL_MENU },
       ],
     });
-    expect(docOf(rows[1]!)).toMatchObject({ details: [PARTY_CANCELLED], lines: [{ qty: 2, name: 'Juice pitcher' }] });
+    expect(docOf(rows[1]!)).toMatchObject({
+      details: [PARTY_CANCELLED],
+      lines: [{ qty: 2, name: 'Juice pitcher', note: PARTY_NOT_ON_TILL_MENU }],
+    });
     const [audited] = await ctx.db
       .select()
       .from(auditLog)
@@ -962,7 +1009,7 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     await runPartySlipsJob(ctx.db, atBangkok(T, '16:00'));
     const printed = await slipsOf(id);
     expect(printed.map((r) => r.status)).toEqual(['printed', 'printed']);
-    expect((printed[0]!.document as PartySlipDocument).lines[0]).toEqual({ qty: 3, name: 'Pepperoni' });
+    expect((printed[0]!.document as PartySlipDocument).lines[0]).toEqual({ qty: 3, name: 'Pizza: Pepperoni' });
     expect(await changesOf(id)).toEqual([]);
   });
 

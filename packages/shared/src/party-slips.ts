@@ -198,6 +198,8 @@ interface SlipLineDraft {
   name: string;
   /** The dish the line is, as an adults' line of the same dish finds it (the chosen option, else the name). */
   dish: string;
+  /** Where the line came from (SCRUM-906), so an adults' copy folds into the line it copies. */
+  origin?: string | undefined;
   notes: string[];
 }
 
@@ -230,7 +232,10 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
     // SCRUM-906: no till product makes it (an open choice is no dish yet).
     const offMenu = place === null && !open ? PARTY_NOT_ON_TILL_MENU : null;
     if (item.audience === 'adults') {
-      const held = drafts[station].find((d) => foldName(d.dish) === foldName(dish) && !d.notes.includes(PARTY_ADULTS_ONLY));
+      // The line of that dish it copies: one from the same list first (a set-menu copy into the set
+      // menu's line, an extra's into the extra), else the first of that dish.
+      const foldable = drafts[station].filter((d) => foldName(d.dish) === foldName(dish) && !d.notes.includes(PARTY_ADULTS_ONLY));
+      const held = foldable.find((d) => d.origin === item.origin) ?? foldable[0];
       if (held) {
         const adultsQty = item.qty ?? 1;
         if (held.qty !== adultsQty) {
@@ -245,6 +250,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
         qty: item.qty,
         name,
         dish,
+        origin: item.origin,
         notes: [PARTY_ADULTS_ONLY, ...(note ? [note] : []), ...(offMenu ? [offMenu] : [])],
       });
       continue;
@@ -257,7 +263,7 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
       item.adultsNote === undefined ? null : partyAdultsNoteMark(item.adultsNote),
       offMenu,
     ].filter((n): n is string => !!n);
-    drafts[station].push({ qty: item.qty, name, dish, notes });
+    drafts[station].push({ qty: item.qty, name, dish, origin: item.origin, notes });
   }
   const lines: Record<PartySlipStation, PartySlipLine[]> = {
     kitchen: drafts.kitchen.map(draftToLine),

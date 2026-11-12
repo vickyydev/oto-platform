@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { account, auditLog, branch, otoappUsers, partySlipPrint, product, productCategory } from '@oto/db';
 import {
   PARTY_MENU_CATEGORY_CODE,
+  PARTY_NOT_ON_TILL_MENU,
   PartyMenuProductAnswerSchema,
   businessDate,
   newId,
@@ -435,6 +436,8 @@ describe('what it makes', () => {
       values (${newId()}, ${eventId}, 'ZZ TEST package', 1690000, '11:00'::time)`);
     // The kitchen plan as the BEO's "New item" writes it: a typed line with no
     // code (the kitchen's by name, and not a till line), and the two new items.
+    // SCRUM-906: the typed line reaches the plan too, marked by where it came from
+    // (the owner's decision 1: printed to the kitchen by name, not on the till menu).
     const menus = {
       kidsFoodTime: '14:00',
       kids: [
@@ -452,8 +455,15 @@ describe('what it makes', () => {
     const read = await readPartyPlan(ctx.db, { branchId: central, eventId });
     expect(read.status).toBe('ready');
     expect(read.plan!.setMenu).toEqual([
-      { productCode: cake.code, name: 'ZZ TEST unicorn cake', qty: 1, choiceGroup: null, chosenOption: null, note: null },
-      { productCode: tea.code, name: 'ZZ TEST bubble tea', qty: 4, choiceGroup: null, chosenOption: null, note: 'no ice' },
+      { productCode: null, name: 'ZZ TEST typed dish', qty: 2, choiceGroup: null, chosenOption: null, note: null, lineId: 'menu_typed', origin: 'extra' },
+      {
+        productCode: cake.code, name: 'ZZ TEST unicorn cake', qty: 1, choiceGroup: null, chosenOption: null, note: null,
+        lineId: menus.kids[1]!.id, origin: 'party_only',
+      },
+      {
+        productCode: tea.code, name: 'ZZ TEST bubble tea', qty: 4, choiceGroup: null, chosenOption: null, note: 'no ice',
+        lineId: menus.adults[0]!.id, origin: 'party_only', unitPriceSatang: 12_500,
+      },
     ]);
 
     const printed = await ctx.app.inject({
@@ -465,7 +475,10 @@ describe('what it makes', () => {
     expect(printed.statusCode, printed.body).toBe(200);
     const slips = await ctx.db.select().from(partySlipPrint).where(eq(partySlipPrint.eventId, eventId));
     const lines = (station: string) => (slips.find((s) => s.station === station)?.document as PartySlipDocument | null)?.lines;
-    expect(lines('kitchen')).toEqual([{ qty: 1, name: 'ZZ TEST unicorn cake' }]);
+    expect(lines('kitchen')).toEqual([
+      { qty: 2, name: 'ZZ TEST typed dish', note: PARTY_NOT_ON_TILL_MENU },
+      { qty: 1, name: 'ZZ TEST unicorn cake' },
+    ]);
     expect(lines('bar')).toEqual([{ qty: 4, name: 'ZZ TEST bubble tea', note: 'no ice' }]);
   });
 });

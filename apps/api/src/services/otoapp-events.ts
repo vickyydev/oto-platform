@@ -604,25 +604,6 @@ export async function otoAppEventPackagesSeam(exec: Exec): Promise<EventPackages
   return readable ? 'ready' : 'not_granted';
 }
 
-/**
- * SCRUM-906 — whether the view publishes the whole kitchen plan (app migration
- * 0050's `kitchen_plan` column). A database whose OTO App is older has the
- * view without it: the plan is then read from `set_menu` and `bar_items` as
- * before, so the api may go out before or after the app.
- */
-async function eventPackagesHaveKitchenPlan(exec: Exec): Promise<boolean> {
-  const res = await exec.execute<{ present: boolean | null }>(sql`
-    select exists (
-      select 1 from pg_attribute
-       where attrelid = to_regclass(${PACKAGES_VIEW}) and attname = 'kitchen_plan' and not attisdropped
-    ) as present`);
-  return res.rows[0]?.present === true;
-}
-
-/** The kitchen plan column when the view has it, else a null under its name. */
-const kitchenPlanColumn = (present: boolean) =>
-  present ? sql.raw('kitchen_plan') : sql.raw('null::jsonb as kitchen_plan');
-
 /** One party's plan row as the view holds it: dates and times as text, the rest the app's jsonb. */
 export interface SeamEventPackage {
   eventId: string;
@@ -673,8 +654,10 @@ export async function getEventPackage(
     select event_id::text as event_id, core_branch_id::text as branch_id, party_date::text as party_date,
            start_time::text as start_time, end_time::text as end_time, package, counts, add_ons,
            entertainment, set_menu, bar_items, kitchen, settlement,
-           ${kitchenPlanColumn(await eventPackagesHaveKitchenPlan(exec))}
-      from otoapp_v.event_packages
+           -- SCRUM-906: the whole kitchen plan of app migration 0050; null on a view of before, so the api
+           -- may go out before or after the app.
+           to_jsonb(ep) -> 'kitchen_plan' as kitchen_plan
+      from otoapp_v.event_packages ep
      where core_branch_id = ${q.branchId}::uuid and lower(event_id::text) = ${q.eventId.toLowerCase()}
      limit 1`);
   const r = res.rows[0];
@@ -734,8 +717,10 @@ export async function listEventPackagesOn(
     select event_id::text as event_id, core_branch_id::text as branch_id, party_date::text as party_date,
            start_time::text as start_time, end_time::text as end_time, package, counts, add_ons,
            entertainment, set_menu, bar_items, kitchen, settlement,
-           ${kitchenPlanColumn(await eventPackagesHaveKitchenPlan(exec))}
-      from otoapp_v.event_packages
+           -- SCRUM-906: the whole kitchen plan of app migration 0050; null on a view of before, so the api
+           -- may go out before or after the app.
+           to_jsonb(ep) -> 'kitchen_plan' as kitchen_plan
+      from otoapp_v.event_packages ep
      where core_branch_id = ${q.branchId}::uuid and party_date = ${q.date}::date
      order by start_time nulls last, event_id`);
   return res.rows.map((r) => ({
