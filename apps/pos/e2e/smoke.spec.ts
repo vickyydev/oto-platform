@@ -931,6 +931,10 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     expect(registrations).toEqual([{ status: 200, replay: false }]);
     page.off('response', countRegistration);
     await captureLocalCheck(fixture.display, 'ticket-display-consent-complete-local.png');
+    // Leave the counter as the next case finds it: the sale is cancelled at the
+    // till, so no sale is left open on this station to be resumed there.
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
   } catch (error) {
     await captureLocalCheck(page, 'consent-failure-staff-local.png').catch(() => undefined);
     throw error;
