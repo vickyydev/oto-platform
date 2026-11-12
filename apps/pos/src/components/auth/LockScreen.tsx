@@ -280,6 +280,18 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
               : 'Reset your password.'}
         </p>
 
+        {/* SCRUM-942 — the family's form on this till's display is kept under
+            an ended session too (SCRUM-878): the same line, in the same place
+            and style as on the locked screen. */}
+        {sessionEnded && familyFormLine && (
+          <p role="status" data-testid="lock-family-form"
+            className={familyForm === 'done'
+              ? '-mt-4 mb-6 w-full rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 text-left'
+              : '-mt-4 mb-6 w-full rounded-2xl border border-dashed border-foreground/20 px-4 py-3 text-sm text-foreground/60 text-left'}>
+            {familyFormLine}
+          </p>
+        )}
+
         {/* SCRUM-878 — the session ended on the platform: why this form is
             here instead of the password, in the offline notice's style. */}
         {sessionEnded && (

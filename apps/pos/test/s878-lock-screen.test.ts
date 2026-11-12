@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * SCRUM-878 — WHAT THE LOCK SCREEN DRAWS WHEN A STAFF SESSION HAS ENDED.
@@ -26,6 +26,7 @@ Object.assign(globalThis, { React });
 import { LockScreen } from '@/components/auth/LockScreen';
 import { KeptSaleOfferScreen } from '@/components/auth/KeptSaleOffer';
 import { keptSaleElsewhere, type KeptSaleOffer } from '@/auth/sessionEnd';
+import { lockedFamilyForm } from '@/lib/lockedFamilyForm';
 
 const ANN = { id: 'zz-test-ann', name: 'ZZ TEST Ann', role: 'staff' };
 const base = {
@@ -153,4 +154,43 @@ describe('SCRUM-878 — the offer to the next person', () => {
     // A deployment with no fleet has no platform station to compare.
     expect(keptSaleElsewhere({ stationId: null }, { stationId: 'local', resolved: true })).toBe(false);
   });
+});
+
+describe('SCRUM-878 — the family form line stays on the sign-in form of an ended session (SCRUM-942)', () => {
+  afterEach(() => lockedFamilyForm.set(null));
+  const ended = { ...base, sessionEnded: { name: 'ZZ TEST Ann', expired: true, afterHours: 12, saleKept: true } };
+  const lineOf = (html: string, testId: string) =>
+    html.slice(html.lastIndexOf('<p', html.indexOf(testId)), html.indexOf('</p>', html.indexOf(testId)));
+
+  it('a family filling the drop-off form on the display: the same line, above the line saying the session ended', () => {
+    lockedFamilyForm.set('filling');
+    const html = draw(ended);
+    expect(html).toContain('data-testid="lock-family-form"');
+    expect(html).toContain('A family is filling in the drop-off form on the display.');
+    expect(html.indexOf('lock-family-form')).toBeLessThan(html.indexOf('lock-session-ended'));
+    // Still the sign-in form, never the password of a session that has gone.
+    expect(html).toContain('Sign in with your phone to start your shift.');
+    expect(html).not.toContain('still signed in');
+    // In the same place and style as on the locked screen: right under the subtitle, the dashed notice.
+    const locked = draw(base);
+    expect(lineOf(html, 'lock-family-form')).toBe(lineOf(locked, 'lock-family-form'));
+    expect(lineOf(html, 'lock-family-form')).toContain('border-dashed border-foreground/20');
+    // The first notice under the subtitle.
+    const subtitle = html.indexOf('Sign in with your phone to start your shift.');
+    expect(html.slice(subtitle, html.lastIndexOf('<p', html.indexOf('lock-family-form')))).not.toContain('<p');
+  }, 60_000);
+
+  it('their Done: the amber line, as on the locked screen', () => {
+    lockedFamilyForm.set('done');
+    const html = draw(ended);
+    expect(html).toContain('The family has pressed Done: unlock to carry on.');
+    expect(lineOf(html, 'lock-family-form')).toBe(lineOf(draw(base), 'lock-family-form'));
+    expect(lineOf(html, 'lock-family-form')).toContain('border-amber-500/30 bg-amber-400/10');
+  }, 60_000);
+
+  it('no form on the display, or no session ended: nothing new', () => {
+    expect(draw(ended)).not.toContain('lock-family-form');
+    lockedFamilyForm.set('filling');
+    expect(draw({ ...base, operator: null, locked: false })).not.toContain('lock-family-form');
+  }, 60_000);
 });
