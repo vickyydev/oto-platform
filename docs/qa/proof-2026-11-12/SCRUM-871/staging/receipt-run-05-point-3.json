@@ -1,0 +1,573 @@
+{
+  "tickets": [
+    "SCRUM-871",
+    "SCRUM-872",
+    "SCRUM-873"
+  ],
+  "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+  "startedAt": "2026-11-12T02:19:41.583Z",
+  "phase": "finished",
+  "only": [
+    "3"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "serving": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "readAt": "2026-11-12T02:06:42.062Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "serving": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "readAt": "2026-11-12T02:06:42.637Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "serving": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "readAt": "2026-11-12T02:06:43.240Z"
+    }
+  },
+  "points": {
+    "3a": {
+      "pass": true,
+      "picture": "03-board-check-in-order-summary-nanny-named.png",
+      "shows": "Board → Check in: the order panel reads \"Nanny · ZZ TEST Nanny 871\" (named, not blank), and again in the Nanny supervision rows at payment (03c)",
+      "seen": {
+        "cardText": "ZZ TEST SCRUM-871 guardian nanny05 +66898710053 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898710053 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST Kai 871-05 3 yrs NANNY ZZ TEST Nanny 871 No arrival time set Check in",
+        "handover": {
+          "section": false,
+          "sectionText": null,
+          "named": 1,
+          "blank": 0,
+          "assignFor": 0,
+          "lineAssignANanny": 0
+        },
+        "atPayment": {
+          "section": true,
+          "sectionText": "ZZ TEST Kai 871-05 ฿690 1 Hour Play ฿690 Nanny · ZZ TEST Nanny 871 Configure NANNY SUPERVISION Nanny · ZZ TEST Nanny 871 ZZ TEST Kai 871-05 · 1h ฿330",
+          "named": 2,
+          "blank": 0,
+          "assignFor": 0,
+          "lineAssignANanny": 0
+        },
+        "trace": [
+          "tier step: Tourist",
+          "config panel: ZZ TEST Kai 871-05 · 3y Back to tickets Play ticket length Choose a length to price this child (also sets nanny hours). 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult ",
+          "config button: Continue",
+          "pressed /^Pay ฿/"
+        ],
+        "cancelled": {
+          "how": "till Cancel",
+          "status": "voided"
+        },
+        "waitingAgain": [
+          {
+            "status": "registered",
+            "nannyKept": true,
+            "saleId": null
+          }
+        ]
+      }
+    },
+    "3b": {
+      "pass": true,
+      "picture": "03f-add-to-sale-order-summary-nanny-named.png",
+      "shows": "Add drop-off child → Add to sale: the line keeps the nanny with her name (\"Nanny · ZZ TEST Nanny 871\"), not \"assign for…\"; paid cash and checked in",
+      "seen": {
+        "added": {
+          "section": false,
+          "sectionText": null,
+          "named": 1,
+          "blank": 0,
+          "assignFor": 0,
+          "lineAssignANanny": 0,
+          "atPayment": {
+            "section": true,
+            "sectionText": "ZZ TEST Kai 871-05 ฿690 1 Hour Play ฿690 Nanny · ZZ TEST Nanny 871 Configure NANNY SUPERVISION Nanny · ZZ TEST Nanny 871 ZZ TEST Kai 871-05 · 1h ฿330",
+            "named": 2,
+            "blank": 0,
+            "assignFor": 0,
+            "lineAssignANanny": 0
+          }
+        },
+        "trace": [
+          "config panel: ZZ TEST Kai 871-05 · 3y Back to tickets Play ticket length Choose a length to price this child (also sets nanny hours). 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult ",
+          "config button: Continue",
+          "pressed /^Pay ฿/"
+        ],
+        "paidStatus": "finalised",
+        "finalStay": [
+          {
+            "status": "in_park",
+            "nannyKept": true
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/nannies/manual",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/branches/:id/nannies/shifts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "nanny-shift",
+      "nanny": "ZZ TEST Nanny 871",
+      "nannyId": "01a1cd88-446c-78e9-88bb-31d17d7d9b33",
+      "shiftId": "01a1cd8d-c8d1-717c-bf5a-15fd7b0d6931",
+      "from": "09:00",
+      "to": "12:00",
+      "onShift": true,
+      "shiftKeys": [
+        "id",
+        "source",
+        "startsAt",
+        "endsAt",
+        "syncedAt",
+        "addedByAccountId"
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cd8d-c955-7b22-aa0b-43cf6c6e181d",
+      "name": "ZZ TEST SCRUM-871 proof till 1794449981699",
+      "prefix": "Z87105"
+    },
+    {
+      "kind": "registration",
+      "tag": "nanny",
+      "id": "01a1cd8e-19fb-7825-9120-416ed3ef8dea"
+    },
+    {
+      "kind": "nanny-handover-sale",
+      "id": "01a1cd8e-e346-7623-b0d4-b1f82714af5e"
+    },
+    {
+      "kind": "nanny-picker-sale",
+      "id": "01a1cd8f-3be6-78b9-9fe4-77419a9ac2c9"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-DVS4mFYc.js"
+      ],
+      "gateMatchMarkers": 2
+    },
+    "afterGate": {
+      "nannyRows": {
+        "section": true,
+        "sectionText": "ZZ TEST Kai 871-05 EDITING ฿690 1 Hour Play ฿690 Nanny Assign a nanny Configure NANNY SUPERVISION Nanny — assign for ZZ TEST Kai 871-05 ฿330",
+        "named": 0,
+        "blank": 0,
+        "assignFor": 1,
+        "lineAssignANanny": 2
+      },
+      "sales": [],
+      "dialog": null
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "childWrites": [
+    {
+      "at": "3: a waiting, unpaid nanny-age booking (Kai, 3)",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd8e-1923-7e22-ad64-bf28b6a39518",
+      "name": "ZZ TEST Kai 871-05",
+      "allergies": null,
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "nanny",
+      "id": "01a1cd8e-19fb-7825-9120-416ed3ef8dea",
+      "children": [
+        {
+          "id": "01a1cd8e-19fc-7cdb-9155-3abea59bd913",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd8f-3be6-78b9-9fe4-77419a9ac2c9",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cd8f-3be6-78b9-9fe4-77419a9ac2c9",
+          "status": "finalised",
+          "grossSatang": 102000
+        },
+        {
+          "id": "01a1cd8e-e346-7623-b0d4-b1f82714af5e",
+          "status": "voided",
+          "grossSatang": 102000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cd8d-c955-7b22-aa0b-43cf6c6e181d",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "nanny-shift",
+      "shiftId": "01a1cd8d-c8d1-717c-bf5a-15fd7b0d6931",
+      "status": 200,
+      "onShiftAfter": false,
+      "note": "the nanny row itself has no archive route and stays on the roster, off shift"
+    },
+    {
+      "kind": "test-number",
+      "key": "g1",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "dad",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "g1b",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "nanny",
+      "id": "01a1cd8e-18b4-7bcb-abae-3217541efb02",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "nannyPicker",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "drop",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898710050",
+    "dad": "0898710051",
+    "g1b": "0898710052",
+    "nanny": "0898710053",
+    "nannyPicker": "0898710054",
+    "ordinary": "0898710055",
+    "drop": "0898710056"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T02:21:52.813Z"
+}

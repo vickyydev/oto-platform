@@ -1,0 +1,1062 @@
+{
+  "tickets": [
+    "SCRUM-871",
+    "SCRUM-872",
+    "SCRUM-873"
+  ],
+  "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+  "startedAt": "2026-11-12T02:11:53.705Z",
+  "phase": "finished",
+  "only": [
+    "1",
+    "1b",
+    "2"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "serving": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "readAt": "2026-11-12T02:06:42.062Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "serving": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "readAt": "2026-11-12T02:06:42.637Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "serving": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "readAt": "2026-11-12T02:06:43.240Z"
+    }
+  },
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01-guardian-children-once-after-retry.png",
+      "shows": "Registration refused once (injected 500) after the children were written; the second Continue wrote no child; the guardian holds exactly one ZZ TEST Bua and one ZZ TEST Nok; paid cash",
+      "seen": {
+        "abortedRegistrationPosts": 1,
+        "toast": "Couldn't register these children ZZ TEST injected failure. Nobody has been checked in or charged — the details are still on screen.",
+        "childrenAfterFirstPress": [
+          "ZZ TEST Bua",
+          "ZZ TEST Nok"
+        ],
+        "firstPressWrites": [
+          {
+            "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+            "method": "POST",
+            "path": "/api/members/:id/children",
+            "childIdSent": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+            "name": "ZZ TEST Bua",
+            "allergies": "ZZ TEST peanuts",
+            "status": 200
+          },
+          {
+            "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+            "method": "POST",
+            "path": "/api/members/:id/children",
+            "childIdSent": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+            "name": "ZZ TEST Nok",
+            "allergies": null,
+            "status": 200
+          }
+        ],
+        "secondPressWrites": [],
+        "sale": {
+          "status": "finalised",
+          "grossSatang": 160500
+        },
+        "memberChildren": [
+          {
+            "id": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+            "name": "ZZ TEST Bua",
+            "dateOfBirth": "2020-01-01",
+            "ageYears": 6,
+            "allergies": "ZZ TEST peanuts",
+            "medicalAlert": true,
+            "lastConfirmedAt": "2026-11-12T02:12:24.784Z"
+          },
+          {
+            "id": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+            "name": "ZZ TEST Nok",
+            "dateOfBirth": "2017-01-01",
+            "ageYears": 9,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:12:24.784Z"
+          }
+        ],
+        "registration": [
+          {
+            "name": "ZZ TEST Bua",
+            "childIdIsTheMembersChild": true,
+            "service": "drop_off",
+            "status": "in_park"
+          },
+          {
+            "name": "ZZ TEST Nok",
+            "childIdIsTheMembersChild": true,
+            "service": "none",
+            "status": "in_park"
+          }
+        ]
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02-guardian1-children-matched-allergy-kept.png",
+      "shows": "The typed children were matched to guardian 1's saved Bua and Nok (no new child, the registration names the saved records); Bua's allergy is still \"ZZ TEST peanuts\"; paid cash",
+      "seen": {
+        "formNumber": "898710020",
+        "childrenBefore": [
+          {
+            "id": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+            "name": "ZZ TEST Bua",
+            "dateOfBirth": "2020-01-01",
+            "ageYears": 6,
+            "allergies": "ZZ TEST peanuts",
+            "medicalAlert": true,
+            "lastConfirmedAt": "2026-11-12T02:12:24.784Z"
+          },
+          {
+            "id": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+            "name": "ZZ TEST Nok",
+            "dateOfBirth": "2017-01-01",
+            "ageYears": 9,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:12:24.784Z"
+          }
+        ],
+        "writes": [],
+        "memberChildren": [
+          {
+            "id": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+            "name": "ZZ TEST Bua",
+            "dateOfBirth": "2020-01-01",
+            "ageYears": 6,
+            "allergies": "ZZ TEST peanuts",
+            "medicalAlert": true,
+            "lastConfirmedAt": "2026-11-12T02:13:08.958Z"
+          },
+          {
+            "id": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+            "name": "ZZ TEST Nok",
+            "dateOfBirth": "2017-01-01",
+            "ageYears": 9,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:13:08.958Z"
+          }
+        ],
+        "dadHasAMember": false,
+        "registration": {
+          "guardianPhone": "+66898710020",
+          "memberIsGuardian1": true,
+          "children": [
+            {
+              "name": "zz test bua",
+              "childId": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+              "linkedToSaved": true,
+              "allergies": null,
+              "status": "in_park"
+            },
+            {
+              "name": "ZZ TEST Nok",
+              "childId": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+              "linkedToSaved": true,
+              "allergies": null,
+              "status": "in_park"
+            }
+          ]
+        },
+        "sale": {
+          "status": "finalised",
+          "grossSatang": 160500
+        }
+      }
+    },
+    "1b": {
+      "pass": true,
+      "picture": "01d-answer-lost-children-once.png",
+      "shows": "Extra: the platform wrote ZZ TEST Ton but the till never saw the answer; the second Continue re-sent the same child id and the guardian holds one Mali and one Ton",
+      "seen": {
+        "lostAnswer": {
+          "status": 200,
+          "childIdSent": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+          "name": "ZZ TEST Ton"
+        },
+        "toast": "Couldn't save these children ZZ TEST: the answer was lost on the way. Nobody has been checked in or charged — the details are still on screen.",
+        "childrenAfterFirstPress": [
+          {
+            "id": "01a1cd87-6931-7b82-9750-d0dcf6b6630c",
+            "name": "ZZ TEST Mali"
+          },
+          {
+            "id": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+            "name": "ZZ TEST Ton"
+          }
+        ],
+        "firstPressWrites": [
+          {
+            "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+            "method": "POST",
+            "path": "/api/members/:id/children",
+            "childIdSent": "01a1cd87-6931-7b82-9750-d0dcf6b6630c",
+            "name": "ZZ TEST Mali",
+            "allergies": null,
+            "status": 200
+          },
+          {
+            "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+            "method": "POST",
+            "path": "/api/members/:id/children",
+            "childIdSent": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+            "name": "ZZ TEST Ton",
+            "allergies": null,
+            "status": 502
+          }
+        ],
+        "secondPressWrites": [
+          {
+            "at": "1b: second Continue",
+            "method": "POST",
+            "path": "/api/members/:id/children",
+            "childIdSent": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+            "name": "ZZ TEST Ton",
+            "allergies": null,
+            "status": 200
+          }
+        ],
+        "tonResentWithTheSameId": true,
+        "sale": {
+          "status": "finalised",
+          "grossSatang": 183000
+        },
+        "memberChildren": [
+          {
+            "id": "01a1cd87-6931-7b82-9750-d0dcf6b6630c",
+            "name": "ZZ TEST Mali",
+            "dateOfBirth": "2021-01-01",
+            "ageYears": 5,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:12:48.965Z"
+          },
+          {
+            "id": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+            "name": "ZZ TEST Ton",
+            "dateOfBirth": "2019-01-01",
+            "ageYears": 7,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:12:48.965Z"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cd86-a375-7fe4-8428-e7989c3212e3",
+      "name": "ZZ TEST SCRUM-871 proof till 1794449513791",
+      "prefix": "Z87102"
+    },
+    {
+      "kind": "registration",
+      "tag": "g1",
+      "id": "01a1cd87-0bb8-7704-bf3b-ba5cfa704b3c"
+    },
+    {
+      "kind": "dropoff-sale-1",
+      "id": "01a1cd87-1cc3-7a71-9f92-8a5a2cd5e814"
+    },
+    {
+      "kind": "registration",
+      "tag": "g1b",
+      "id": "01a1cd87-74ef-7079-810e-9835a1e0fe7d"
+    },
+    {
+      "kind": "dropoff-sale-1b",
+      "id": "01a1cd87-7b0a-7caa-869d-18e60bdcdf41"
+    },
+    {
+      "kind": "registration",
+      "tag": "dad",
+      "id": "01a1cd87-c331-778e-bd9c-b119286e8b02"
+    },
+    {
+      "kind": "dropoff-sale-2",
+      "id": "01a1cd87-ca28-752b-8bba-d9ccf393525a"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-DVS4mFYc.js"
+      ],
+      "gateMatchMarkers": 2
+    },
+    "guardian1": {
+      "memberId": "01a1cd87-09d5-7b8c-ac41-ea30de46f4b3",
+      "bua": {
+        "id": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+        "name": "ZZ TEST Bua",
+        "dateOfBirth": "2020-01-01",
+        "ageYears": 6,
+        "allergies": "ZZ TEST peanuts",
+        "medicalAlert": true,
+        "lastConfirmedAt": "2026-11-12T02:12:24.784Z"
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+      "kind": "http",
+      "text": "POST /api/checkin/registrations 500"
+    },
+    {
+      "page": "till",
+      "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "page": "till",
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "kind": "http",
+      "text": "POST /api/members/:id/children 502"
+    },
+    {
+      "page": "till",
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "childWrites": [
+    {
+      "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd87-0a50-7371-af75-8b7ce41bf2f7",
+      "name": "ZZ TEST Bua",
+      "allergies": "ZZ TEST peanuts",
+      "status": 200
+    },
+    {
+      "at": "1: first Continue — the registration request is refused once (HTTP 500 injected in the browser), after the children are written",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd87-0ac1-77ab-8113-b4ef17403c97",
+      "name": "ZZ TEST Nok",
+      "allergies": null,
+      "status": 200
+    },
+    {
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd87-6931-7b82-9750-d0dcf6b6630c",
+      "name": "ZZ TEST Mali",
+      "allergies": null,
+      "status": 200
+    },
+    {
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+      "name": "ZZ TEST Ton",
+      "allergies": null,
+      "status": 502
+    },
+    {
+      "at": "1b: second Continue",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd87-69c4-7bfc-b61d-8a1d67867c4e",
+      "name": "ZZ TEST Ton",
+      "allergies": null,
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "g1",
+      "id": "01a1cd87-0bb8-7704-bf3b-ba5cfa704b3c",
+      "children": [
+        {
+          "id": "01a1cd87-0bb9-7982-a089-a8bc7ff24612",
+          "status": "out"
+        },
+        {
+          "id": "01a1cd87-0bb9-7982-a089-a8bdcf14d2a3",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "registration",
+      "tag": "g1b",
+      "id": "01a1cd87-74ef-7079-810e-9835a1e0fe7d",
+      "children": [
+        {
+          "id": "01a1cd87-74f0-7aad-9af8-3418faee0a7b",
+          "status": "out"
+        },
+        {
+          "id": "01a1cd87-74f0-7aad-9af8-341997bb9808",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "registration",
+      "tag": "dad",
+      "id": "01a1cd87-c331-778e-bd9c-b119286e8b02",
+      "children": [
+        {
+          "id": "01a1cd87-c332-72ce-b00c-a0053e1b73d3",
+          "status": "out"
+        },
+        {
+          "id": "01a1cd87-c332-72ce-b00c-a006524f2ecc",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd87-ca28-752b-8bba-d9ccf393525a",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd87-7b0a-7caa-869d-18e60bdcdf41",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd87-1cc3-7a71-9f92-8a5a2cd5e814",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cd87-ca28-752b-8bba-d9ccf393525a",
+          "status": "finalised",
+          "grossSatang": 160500
+        },
+        {
+          "id": "01a1cd87-7b0a-7caa-869d-18e60bdcdf41",
+          "status": "finalised",
+          "grossSatang": 183000
+        },
+        {
+          "id": "01a1cd87-1cc3-7a71-9f92-8a5a2cd5e814",
+          "status": "finalised",
+          "grossSatang": 160500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cd86-a375-7fe4-8428-e7989c3212e3",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "g1",
+      "id": "01a1cd87-09d5-7b8c-ac41-ea30de46f4b3",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "dad",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "g1b",
+      "id": "01a1cd87-68b6-7495-bd4a-dde113e9e52d",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "nanny",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "nannyPicker",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "drop",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898710020",
+    "dad": "0898710021",
+    "g1b": "0898710022",
+    "nanny": "0898710023",
+    "nannyPicker": "0898710024",
+    "ordinary": "0898710025",
+    "drop": "0898710026"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T02:13:26.645Z"
+}

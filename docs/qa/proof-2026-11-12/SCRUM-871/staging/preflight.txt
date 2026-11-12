@@ -1,0 +1,30 @@
+https://oto-pos-web-staging.onrender.com entry index-DVS4mFYc.js files 1 markers {"several_saved":1,"several_slots":1}
+https://oto-pos-staging.onrender.com entry index-DVS4mFYc.js files 1 markers {"several_saved":1,"several_slots":1}
+branch 01a0bbdc-8c42-7753-b7e3-5ae19fb66d33 hkt-central
+lookup 0898710010 200 unused
+lookup 0898710011 200 unused
+lookup 0898710012 200 unused
+lookup 0898710013 200 unused
+lookup 0898710014 200 unused
+lookup 0898710015 200 unused
+lookup 0898710016 200 unused
+lookup 0898710017 200 unused
+lookup 0898710018 200 unused
+lookup 0898710019 200 unused
+lookup 0898710020 200 unused
+lookup 0898710021 200 unused
+lookup 0898710022 200 unused
+lookup 0898710023 200 unused
+lookup 0898710024 200 unused
+lookup 0898710025 200 unused
+lookup 0898710026 200 unused
+lookup 0898710027 200 unused
+lookup 0898710028 200 unused
+lookup 0898710029 200 unused
+lookup 0898710030 200 unused
+bands [{"id":"band-0-4","label":"0–4","minAge":0,"maxAge":4,"requirement":"nanny"},{"id":"band-5-8","label":"5–8","minAge":5,"maxAge":8,"requirement":"drop_off"},{"id":"band-9-up","label":"9+","minAge":9,"maxAge":null,"requirement":"none"}]
+nannies 9 on shift 0 nanny keys id,name,onShift,load,coveredNames
+nanny test-like [{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":4},{"onShift":false,"load":0,"testLike":false,"len":4},{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":3},{"onShift":false,"load":0,"testLike":false,"len":3}]
+waiting registrations 0 ZZ TEST 0
+active ZZ tills ["ZZ TEST SCRUM-710 display","ZZ TEST SCRUM-718 path","ZZ TEST SCRUM-859 proof till 1794448102814","ZZ TEST setup traps 20261102"]
+me 401

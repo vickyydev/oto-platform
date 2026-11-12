@@ -1,0 +1,8 @@
+waiting registrations 0 of this proof: []
+till Z87101 archived true sales finalised 1605
+till Z87102 archived true sales finalised 1605 | finalised 1830 | finalised 1605
+till Z87103 archived true sales finalised 915 | finalised 1040
+till Z87104 archived true sales voided 1020
+till Z87105 archived true sales finalised 1020 | voided 1020
+ZZ nannies [{"id":"01a1cd88-446c-78e9-88bb-31d17d7d9b33","name":"ZZ TEST Nanny 871","onShift":false,"load":0,"coveredNames":[]}]
+me 401

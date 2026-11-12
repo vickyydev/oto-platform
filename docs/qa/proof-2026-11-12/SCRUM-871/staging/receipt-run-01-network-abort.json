@@ -1,0 +1,650 @@
+{
+  "tickets": [
+    "SCRUM-871",
+    "SCRUM-872",
+    "SCRUM-873"
+  ],
+  "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+  "startedAt": "2026-11-12T02:07:00.159Z",
+  "phase": "finished",
+  "only": [
+    "1",
+    "1b",
+    "2"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "serving": {
+        "id": "dep-dbqhngbrjlhs738b2kog",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:01.545841Z",
+        "finishedAt": "2026-11-12T01:53:06.270028Z"
+      },
+      "readAt": "2026-11-12T02:06:42.062Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "serving": {
+        "id": "dep-dbqhnhafngtc73fknp00",
+        "status": "live",
+        "sha": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+        "createdAt": "2026-11-12T01:52:05.596232Z",
+        "finishedAt": "2026-11-12T01:55:07.456521Z"
+      },
+      "readAt": "2026-11-12T02:06:42.637Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "serving": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "readAt": "2026-11-12T02:06:43.240Z"
+    }
+  },
+  "points": {
+    "2": {
+      "pass": true,
+      "picture": "02-guardian1-children-matched-allergy-kept.png",
+      "shows": "The typed children were matched to guardian 1's saved Bua and Nok (no new child, the registration names the saved records); Bua's allergy is still \"ZZ TEST peanuts\"; paid cash",
+      "seen": {
+        "formNumber": "898710010",
+        "childrenBefore": [
+          {
+            "id": "01a1cd82-9026-7e7d-977c-999bd81ad65f",
+            "name": "ZZ TEST Bua",
+            "dateOfBirth": "2020-01-01",
+            "ageYears": 6,
+            "allergies": "ZZ TEST peanuts",
+            "medicalAlert": true,
+            "lastConfirmedAt": "2026-11-12T02:07:31.495Z"
+          },
+          {
+            "id": "01a1cd82-90a2-7bfe-9590-c2e7f80707ad",
+            "name": "ZZ TEST Nok",
+            "dateOfBirth": "2017-01-01",
+            "ageYears": 9,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:07:31.495Z"
+          }
+        ],
+        "writes": [],
+        "memberChildren": [
+          {
+            "id": "01a1cd82-9026-7e7d-977c-999bd81ad65f",
+            "name": "ZZ TEST Bua",
+            "dateOfBirth": "2020-01-01",
+            "ageYears": 6,
+            "allergies": "ZZ TEST peanuts",
+            "medicalAlert": true,
+            "lastConfirmedAt": "2026-11-12T02:10:06.367Z"
+          },
+          {
+            "id": "01a1cd82-90a2-7bfe-9590-c2e7f80707ad",
+            "name": "ZZ TEST Nok",
+            "dateOfBirth": "2017-01-01",
+            "ageYears": 9,
+            "allergies": null,
+            "medicalAlert": false,
+            "lastConfirmedAt": "2026-11-12T02:10:06.367Z"
+          }
+        ],
+        "dadHasAMember": false,
+        "registration": {
+          "guardianPhone": "+66898710010",
+          "memberIsGuardian1": true,
+          "children": [
+            {
+              "name": "zz test bua",
+              "childId": "01a1cd82-9026-7e7d-977c-999bd81ad65f",
+              "linkedToSaved": true,
+              "allergies": null,
+              "status": "in_park"
+            },
+            {
+              "name": "ZZ TEST Nok",
+              "childId": "01a1cd82-90a2-7bfe-9590-c2e7f80707ad",
+              "linkedToSaved": true,
+              "allergies": null,
+              "status": "in_park"
+            }
+          ]
+        },
+        "sale": {
+          "status": "finalised",
+          "grossSatang": 160500
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cd82-2a21-7784-89c4-14bf786f4f74",
+      "name": "ZZ TEST SCRUM-871 proof till 1794449220309",
+      "prefix": "Z87101"
+    },
+    {
+      "kind": "registration",
+      "tag": "dad",
+      "id": "01a1cd84-f9ae-792d-9b93-e052e41c7465"
+    },
+    {
+      "kind": "dropoff-sale-2",
+      "id": "01a1cd85-000b-7906-bb19-eddc4c864365"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-DVS4mFYc.js"
+      ],
+      "gateMatchMarkers": 2
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/intents 404"
+    },
+    {
+      "page": "till",
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "till",
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/intents 404"
+    },
+    {
+      "page": "till",
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "till",
+      "at": "1b: second Continue",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/intents 404"
+    },
+    {
+      "page": "till",
+      "at": "1b: second Continue",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
+  "childWrites": [
+    {
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd82-9026-7e7d-977c-999bd81ad65f",
+      "name": "ZZ TEST Bua",
+      "allergies": "ZZ TEST peanuts",
+      "status": 200
+    },
+    {
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd82-90a2-7bfe-9590-c2e7f80707ad",
+      "name": "ZZ TEST Nok",
+      "allergies": null,
+      "status": 200
+    },
+    {
+      "at": "1: first Continue — the registration request is cut once (aborted), after the children are written",
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "childIdSent": "01a1cd82-919c-7138-afef-1e46de959252",
+      "name": null,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd83-c7b6-7d67-a186-59b689a1582f",
+      "name": "ZZ TEST Mali",
+      "allergies": null,
+      "status": 200
+    },
+    {
+      "at": "1b: walk-in, two children no adult; the answer to the second child's create is lost once",
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "childIdSent": "01a1cd83-c821-7e8c-9cf5-905b8a4fa14f",
+      "name": "ZZ TEST Ton",
+      "failed": "net::ERR_FAILED"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "dad",
+      "id": "01a1cd84-f9ae-792d-9b93-e052e41c7465",
+      "children": [
+        {
+          "id": "01a1cd84-f9ae-792d-9b93-e053d9f088d7",
+          "status": "out"
+        },
+        {
+          "id": "01a1cd84-f9ae-792d-9b93-e0549bbc3509",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd85-000b-7906-bb19-eddc4c864365",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cd85-000b-7906-bb19-eddc4c864365",
+          "status": "finalised",
+          "grossSatang": 160500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cd82-2a21-7784-89c4-14bf786f4f74",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "g1",
+      "id": "01a1cd82-8faa-75ed-9fee-79872dff7a2b",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "dad",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "g1b",
+      "id": "01a1cd83-c748-7488-9e58-28c97c7e8448",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "nanny",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "nannyPicker",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "drop",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898710010",
+    "dad": "0898710011",
+    "g1b": "0898710012",
+    "nanny": "0898710013",
+    "nannyPicker": "0898710014",
+    "ordinary": "0898710015",
+    "drop": "0898710016"
+  },
+  "failures": [
+    {
+      "pass": "1",
+      "failedAt": "1: second Continue",
+      "failure": "TimeoutError: page.waitForResponse: Timeout 60000ms exceeded while waiting for event \"response\"",
+      "screenText": "(screen text dropped from the committed copy: it carries the signed-in account's name)"
+    },
+    {
+      "pass": "1b",
+      "failedAt": "1b: second Continue",
+      "failure": "TimeoutError: page.waitForResponse: Timeout 60000ms exceeded while waiting for event \"response\"",
+      "screenText": "(screen text dropped from the committed copy: it carries the signed-in account's name)"
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-12T02:10:21.003Z"
+}

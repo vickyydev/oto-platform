@@ -1,0 +1,19 @@
+{
+  "commitServed": "d72fa7b68e5d5fe417fd8a5a5873436b89a540b3",
+  "bundleMarker": "lib/gateChildren match reasons 'several_saved' / 'several_slots' found in index-DVS4mFYc.js on both till services",
+  "points": {
+    "1": "PASS 01-guardian-children-once-after-retry.png: registration refused once (HTTP 500 injected) after both children were written; second Continue wrote no child; one ZZ TEST Bua (allergy ZZ TEST peanuts) and one ZZ TEST Nok; 1605 THB cash",
+    "1b": "PASS (extra) 01d-answer-lost-children-once.png: the platform wrote ZZ TEST Ton but the till got a 502; the second Continue re-sent the same child id 01a1cd87-69c4-... and got the existing record back; one Mali, one Ton; 1830 THB cash",
+    "2": "PASS 02-guardian1-children-matched-allergy-kept.png: dad's unknown number on the first screen, guardian 1's number on the form; 'zz test bua' (6) and 'ZZ TEST Nok' (9) matched to the saved records (no child write at all); Bua's allergy still 'ZZ TEST peanuts'; 1605 THB cash",
+    "3a": "PASS 03-board-check-in-order-summary-nanny-named.png + 03d: board Check in -> order line 'Nanny · ZZ TEST Nanny 871', and the Nanny supervision row at payment names her; sale then cancelled (voided), the booking waited again with the nanny kept",
+    "3b": "PASS 03f-add-to-sale-order-summary-nanny-named.png + 03g: Add drop-off child -> Add to sale keeps 'Nanny · ZZ TEST Nanny 871', never 'assign for'; 1020 THB cash, checked in, released at cleanup",
+    "4a": "PASS 04a-ordinary-sale-paid-cash.png: one adult + one child, 1040 THB cash",
+    "4b": "PASS 04b-dropoff-one-child-paid-cash.png: one-child drop-off, 915 THB cash, checked in, one child on the new guardian"
+  },
+  "odd": [
+    "05a/05b: a browser-level network abort of POST /api/checkin/registrations (run 01) is a box-lane trigger (apps/pos/src/lib/lane.ts isBoxLaneTrigger): the till moved to the counter box, the box answered 'Member not found' for the member created on the platform seconds earlier, and the retry was rung up on the box; POST /api/box/v1/station/:id/intents also answered 404 on the 1b attempt. Outside these tickets (offline lane); the proof uses HTTP errors instead so the till stays on the platform lane. The run-01 registration it left waiting was cancelled by cancel-leftover.mjs.",
+    "03e: in the Add drop-off child window the family card's 'Cancel booking' button is clipped at the right edge ('Cancel book') at 1680 px wide.",
+    "02b: after point 2 the sale is filed under guardian 1 (the number given on the form), not the dad's first-screen number; this is the gate's existing rule (Till.tsx findOrCreateGateMember + setMember), noted only.",
+    "The 'Before payment' list on the staff side stays low-contrast (already noted in SCRUM-863)."
+  ]
+}
