@@ -13,6 +13,7 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ScreenKeyboard } from './ScreenKeyboard';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, messagingPhoneProblem } from '@/lib/consentForm';
+import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
@@ -109,6 +110,21 @@ function draftOf(prompt: ConsentPrompt): FormDraft {
 }
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+const isText = (value: unknown): value is string => typeof value === 'string';
+/** SCRUM-874 — a draft read back from this tab's storage is checked before it is used. */
+function isFormDraft(value: unknown): value is FormDraft {
+  if (!value || typeof value !== 'object') return false;
+  const form = value as Record<string, unknown>;
+  const slots = form.slots;
+  return !!slots && typeof slots === 'object' && Object.values(slots as Record<string, unknown>).every((entry) => {
+    const child = entry as Record<string, unknown> | null;
+    return !!child && typeof child === 'object' && isText(child.name) && (child.dateOfBirth === null || isText(child.dateOfBirth))
+      && (child.ageYears === null || typeof child.ageYears === 'number') && isText(child.allergiesMedical) && isText(child.foodRestrictions);
+  }) && isText(form.guardianName) && isText(form.guardianPhone)
+    && (form.contactChannel === undefined || form.contactChannel === 'whatsapp' || form.contactChannel === 'telegram' || form.contactChannel === 'line')
+    && (form.contactConfirmed === undefined || typeof form.contactConfirmed === 'boolean')
+    && typeof form.consentAcknowledged === 'boolean' && Array.isArray(form.confirmations) && form.confirmations.every(isText);
+}
 /**
  * The form as it is sent and as the till keeps it (`fillOf` below sends
  * exactly this), so what the family typed and the till's copy of it read as
@@ -259,17 +275,36 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   mirror?: { step: ConsentFormStep | null };
 }) {
   const { t, lang } = useLanguage();
-  const [localDraft, setDraft] = useState<FormDraft>(() => draftOf(prompt));
+  /**
+   * SCRUM-874 — a form opening again for the same visitor (the display was
+   * paused by a dropped connection, reloaded or paired again) lays the draft
+   * it kept over the till's copy, as it would any newer copy, and sends what
+   * the till is missing. A finished form keeps nothing.
+   */
+  const [restored] = useState(() => {
+    if (mirror) return null;
+    if (prompt.completed) { clearConsentDraft(); return null; }
+    const stored = readConsentDraft(prompt.visitorId, isFormDraft);
+    return stored ? { local: mergeConsentDraft(stored.local, stored.base, draftOf(prompt), stored.sent), step: stored.step, sent: stored.sent } : null;
+  });
+  const [localDraft, setDraft] = useState<FormDraft>(() => restored?.local ?? draftOf(prompt));
   const base = useRef<FormDraft>(draftOf(prompt));
   // SCRUM-857 — a display that re-paired mid-form opens where the family was.
-  const [localStep, setStep] = useState<Step>(() => prompt.familyStep ?? 'children');
+  const [localStep, setStep] = useState<Step>(() => restored?.step ?? prompt.familyStep ?? 'children');
+  const stepNow = useRef(localStep);
+  stepNow.current = localStep;
   const draft = mirror ? draftOf(prompt) : localDraft;
   const step: Step = mirror ? mirror.step ?? 'children' : localStep;
   const shows = (name: Step) => (mirror && mirror.step === null) || step === name;
   const [helpAsked, setHelpAsked] = useState(false);
   const lastRequest = useRef(prompt.requestId);
   /** Every form this screen sent on the copy it has, until the till's next copy arrives (`mergeConsentDraft`). */
-  const sent = useRef<FormDraft[]>([]);
+  const sent = useRef<FormDraft[]>(restored?.sent ?? []);
+  /** SCRUM-874 — the draft as it stands, kept for this visitor. */
+  const persist = (local: FormDraft, at: Step) => {
+    if (mirror || prompt.completed) return;
+    keepConsentDraft({ visitorId: prompt.visitorId, base: base.current, local, sent: sent.current, step: at, savedAt: Date.now() });
+  };
   /** Copies in a row in which the till did not keep what was sent (`LIVE_IGNORED`). */
   const ignored = useRef(0);
   useEffect(() => {
@@ -277,13 +312,26 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     lastRequest.current = prompt.requestId;
     const next = draftOf(prompt);
     const gone = sent.current;
+    const was = base.current;
     sent.current = [];
     // The till took a form from here but its copy is the one before, unchanged.
     ignored.current = gone.length > 0 && !gone.some((form) => same(trimmed(next), form))
-      && same(trimmed(next), trimmed(base.current)) ? ignored.current + 1 : 0;
-    setDraft((local) => mergeConsentDraft(local, base.current, next, gone));
+      && same(trimmed(next), trimmed(was)) ? ignored.current + 1 : 0;
     base.current = next;
+    // The copy the merge is laid against is taken now: React may run this
+    // update later, when `base` already holds the newer copy.
+    setDraft((local) => {
+      const merged = mergeConsentDraft(local, was, next, gone);
+      if (!prompt.completed) keepConsentDraft({ visitorId: prompt.visitorId, base: next, local: merged, sent: [], step: stepNow.current, savedAt: Date.now() });
+      return merged;
+    });
   }, [prompt, mirror]);
+  // SCRUM-874 — kept as the family types and moves; cleared once the form is finished.
+  useEffect(() => {
+    if (mirror) return;
+    if (prompt.completed) clearConsentDraft();
+    else persist(localDraft, localStep);
+  }, [localDraft, localStep, prompt.completed, mirror]); // eslint-disable-line react-hooks/exhaustive-deps -- persist reads the refs as they stand
 
   const fence = { requestId: prompt.requestId, visitorId: prompt.visitorId };
   const locked = busy || prompt.completed;
@@ -355,6 +403,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     urgent.current = false;
     dirtySince.current = null;
     sent.current = [...sent.current, trimmed(form)].slice(-20);
+    persist(form, at);
     onAction(fillOf(form, at));
   };
   const flush = useRef<() => void>(() => undefined);

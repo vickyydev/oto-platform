@@ -54,6 +54,7 @@ import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildr
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/merch/PublicMerchCustomerDisplay';
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
+import { clearConsentDraft } from '@/lib/consentDraftStore';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -329,6 +330,18 @@ export default function Display() {
     }
   }, [adopt]);
 
+  /**
+   * SCRUM-874 — a fill the family's form sent while the line was down is
+   * kept (its reply never came) and goes again, as it was, the moment the
+   * box is heard from again: the form sends the rest once the till has it.
+   */
+  useEffect(() => {
+    const intent = pending.current;
+    if (connection !== 'connected' || !intent || intent.type !== 'display.consent'
+      || (intent.payload as { action?: unknown }).action !== 'fill') return;
+    void send(intent.type, intent.payload, true);
+  }, [connection, send]);
+
   const pairedDeviceId = session?.device.id;
   useEffect(() => {
     if (pairedDeviceId && !pending.current && sessionRef.current?.document.language !== lang) void send('display.set_language', { language: lang });
@@ -359,6 +372,12 @@ export default function Display() {
   const tender = tenderCart && tenderPayment?.success && document?.member === null && document.prompt === null && document.totals === null
     ? { cart: tenderCart, payment: tenderPayment.data } : null;
   const view = document && !isFnb && !isMerch && !isTender ? readTicketDisplayView(document) : null;
+  // SCRUM-874 — the family's form draft goes once this screen has moved on to
+  // the first screen, payment or thank-you: the form is over for that family.
+  const viewStage = view?.stage;
+  useEffect(() => {
+    if (viewStage === 'identify' || viewStage === 'payment' || viewStage === 'thankyou') clearConsentDraft();
+  }, [viewStage]);
   const answer = document?.prompt?.answer;
   /**
    * SCRUM-857 — the drop-off form never locks for its own `fill`: the family
