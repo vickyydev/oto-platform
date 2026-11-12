@@ -1,0 +1,3513 @@
+{
+  "ticket": "SCRUM-906",
+  "title": "The whole BEO kitchen plan reaches the till",
+  "sha": "f17359759e3a1afbead09a763aa9eb8560738183",
+  "startedAt": "2026-11-12T13:16:25.371Z",
+  "created": [
+    {
+      "kind": "device",
+      "role": "kids_band",
+      "id": "bc653bc1-77c5-4dca-9159-45f56152635c",
+      "label": "ZZ TEST SCRUM-906 kids band printer"
+    },
+    {
+      "kind": "device",
+      "role": "adult_band",
+      "id": "35c2532d-b34a-435b-a8e8-a56226e6a4ce",
+      "label": "ZZ TEST SCRUM-906 adult band printer"
+    },
+    {
+      "kind": "device",
+      "role": "receipt",
+      "id": "f162366e-88f5-4f6e-b252-d7a210eafda5",
+      "label": "ZZ TEST SCRUM-906 receipt printer"
+    },
+    {
+      "kind": "device",
+      "role": "kitchen",
+      "id": "9009bc42-1efe-41dd-8e48-3613c516f758",
+      "label": "ZZ TEST SCRUM-906 kitchen printer"
+    },
+    {
+      "kind": "device",
+      "role": "bar",
+      "id": "d5dbae38-ad7f-470d-bfc4-e6df87fa7c2b",
+      "label": "ZZ TEST SCRUM-906 bar printer"
+    },
+    {
+      "kind": "station",
+      "id": "01a1cfe8-9be3-7067-a4ed-746696e3e567",
+      "name": "ZZ TEST SCRUM-906 proof till 1794489489747",
+      "prefix": "Z90601"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "da0b78c2-3e46-4b87-92fd-68f210292213",
+      "title": "ZZ TEST 906 party"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "24fa13d8-3810-4caf-982b-05d9cab22223",
+      "title": "ZZ TEST 906 no package"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1d002-c1ff-72f8-b3ff-8a0ff86c8775"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "dd7a859d-79ef-4de1-9489-71d050a4b4c1",
+      "title": "ZZ TEST 906 package only"
+    }
+  ],
+  "points": {
+    "1 the whole plan on the till (party WITH package)": {
+      "verdict": "PASS",
+      "pictures": [
+        "01a",
+        "01b",
+        "01c",
+        "01d",
+        "01e",
+        "01f",
+        "01g",
+        "01h",
+        "01i",
+        "01j"
+      ],
+      "facts": "GET /api/parties/:id (till origin) 200, planStatus ready, kitchenPlan: the 8 set-menu lines named with their group (Pizza: Margherita, Hot dish: Chicken schnitzel, French fries, Waffles or pancakes: Waffles, Fried rice: Veggie, Veggie sticks, Fruit skewers [not on till], Drinks pitcher: Juice [not on till]); Calamari x2 entered 120 (CF-14); Hummus x1 no price (CF-13); ZZ TEST mango sticky rice x2 entered 90 [not on till]; ZZ TEST fruit plate x1 [not on till]; bar: Fresh cold pressed orange juice x4 SET (CF-63-1), Mineral water x2 EXTRA (CF-65-6), ZZ TEST lemonade pitcher x2 [not on till]; bar service 19:15; cake our x1 20:30 \"ZZ TEST unicorn\". Desk and phone pages show every line, the hand-typed ones marked \"not on the till menu\", the cake row \"Our cake x1 · 20:30 / ZZ TEST unicorn\". The page writes a chosen dish \"Pizza · Margherita\" (the slip writes \"Pizza: Margherita\"). The entered prices were written through the BEO save route (PUT /api/events/:id/beo): the editor has no price box on kitchen or bar lines."
+    },
+    "2 a staff choice after the parent's": {
+      "verdict": "PASS",
+      "pictures": [
+        "02a",
+        "02b",
+        "02c",
+        "02d",
+        "02e"
+      ],
+      "facts": "Parent chose Fried rice: Veggie through the link (submit 200). Staff renamed the resolved line in the BEO editor and saved (PUT 200): the till api answered \"Fried rice: Chicken\" 1.3 s later. Open pages left alone: both tills had LOCKED after 2 minutes idle (the till's inactivity lock) and showed nothing; after unlock the desk showed Chicken at once. Second change Chicken -> Shrimp with the tills kept awake (a Shift key every 25 s, no click, no focus): desk showed Shrimp 34 s after the save, phone 52 s. The parent's link page (reloaded) lists \"Fried rice: Shrimp\"; GET public link selections say the same. Later Shrimp -> Chicken again for point 4."
+    },
+    "3 a party with NO package": {
+      "verdict": "PASS",
+      "pictures": [
+        "03a",
+        "03b"
+      ],
+      "facts": "GET /api/parties/:id 200, planStatus no_package, kitchenPlan: ZZ TEST nuggets plate x3 [not on till], French fries x1 (CF-11), bar Mineral water x2, cake own 17:00 \"ZZ TEST family cake\". Desk page: no Package row, cake row \"Customer brings their own · 17:00\", bar plan; the buttons are Edit party, Add tickets, Add F&B to party, Fully paid (no Settle party). POST /api/parties/:id/settle/preview 409 PARTY_NO_PACKAGE \"This party has no package in the OTO App, so it cannot be settled here\"."
+    },
+    "4 slips on the ZZ TEST till": {
+      "verdict": "PASS",
+      "pictures": [
+        "04a",
+        "04b",
+        "04c",
+        "04d",
+        "04e",
+        "04f",
+        "04g",
+        "04h",
+        "04i"
+      ],
+      "facts": "Park named no party slips station at start; the ZZ TEST till named 20:29:30-20:42:15 Bangkok. One full job tick with it named printed nothing. \"Print party slips now\" (POST /api/parties/:id/slips/print 200): 1 kitchen + 1 bar job, printed. Kitchen slip: every kitchen line incl. Fruit skewers, Drinks pitcher: Juice, ZZ TEST mango sticky rice and ZZ TEST fruit plate marked \"not on the till menu\", and \"1x Our Cake / Cake time 20:30 · ZZ TEST unicorn\". Bar slip: 4x Fresh cold pressed orange juice, 2x Mineral water, 2x ZZ TEST lemonade pitcher (not on the till menu). Change A (fruit plate 1 -> 2, kitchen only): one kitchen UPDATED slip 54 s after the save (13:31:45 -> 13:32:39 UTC), no VOID (by the SCRUM-861 rule a VOID lists only what a station lost), nothing at the bar, nothing later. Change B (Fried rice Shrimp -> Chicken and lemonade 2 -> 1, one save): kitchen VOID \"1x Fried rice: Shrimp\" + UPDATED, bar VOID \"1x ZZ TEST lemonade pitcher\" + UPDATED, drawn by the simulated printers 24 s after the save (13:39:15 -> 13:39:39-40 UTC), nothing on two later ticks. Print record at the till: 7 jobs, all printed. Audit: party.slips_print 1 (reprint, our till), party.slips_change 2 (run 1 kitchen updated; run 2 kitchen void+updated, bar void+updated)."
+    },
+    "5 settlement and refund": {
+      "verdict": "PASS",
+      "pictures": [
+        "05a",
+        "05b",
+        "05c",
+        "05d1",
+        "05d2",
+        "05d3",
+        "05e",
+        "05f",
+        "05g",
+        "05h",
+        "05i"
+      ],
+      "facts": "Settle preview and sale Z90601-000001: Birthday package 16,900; Calamari 2 x 120 = 240 (entered price); Hummus 1 x 275 = 275 (till price, no entered price); ZZ TEST mango sticky rice 2 x 90 = 180 (typed, entered price); Mineral water 2 x 60 = 120 (bar EXTRA, till price); ZZ TEST fruit plate and ZZ TEST lemonade pitcher (typed, no price) not charged; cake not charged; set-menu lines not charged. Total 17,715 (VAT incl. 1,158.93; extras taxed fnb). First Confirm refused 409 STOCK_SHORT \"Regular Socks is out of stock. Nothing was saved.\" (the form defaults socks given to the kids; staging has 0 socks) - socks set to 0, then settled; cash 17,715, finalised. Manager refund whole from History (Service recovery): 200, refunded 17,715, sale refunded, settlement state refunded; the party page reads as before settlement (Settle party offered, bill 0)."
+    },
+    "6 the release": {
+      "verdict": "PASS (behaviour) / FAIL (counts on the Health page)",
+      "pictures": [
+        "06a"
+      ],
+      "facts": "GET /api/ops/health job:parties.slips: status ok, last outcome ok, every 60 s - but NO counts (notCaughtUp, changesRebased): the register gives status only, and the Console Health page draws the same; the counts are kept only in the run record, which no api returns for an ok run (not read: no database access). Through the api: audit party.slips_schedule_start 2 rows at 20:13:34-35 (both parks, startedAt 13:13:33Z = the first tick after the api went live 13:11:38Z); party.slips_rebase 1 row 20:13:36 at Central Floresta (a party printed before the release; nothing printed for it); no kitchen or bar job at either park from 13:11Z until this run's own press (20:30); party 2 (no package, 11:00) never printed by the schedule while the ZZ TEST till was named (no slip records, no print audit)."
+    },
+    "7 the BEO PDF": {
+      "verdict": "PASS",
+      "pictures": [
+        "07a",
+        "07b"
+      ],
+      "facts": "GET /api/events/:id/beo/pdf 200 application/pdf, 2 pages: \"2x Calamari EXTRA 120฿ each\", \"2x ZZ TEST mango sticky rice EXTRA 90฿ each\"; Hummus, fruit plate, Mineral water, lemonade show EXTRA with no price; \"Expected total (from the till): ฿17,715\"; no staff name in its text."
+    },
+    "8 a very large quantity": {
+      "verdict": "PASS",
+      "pictures": [
+        "08a",
+        "08b",
+        "08c"
+      ],
+      "facts": "Party 2 (no package): ZZ TEST nuggets plate saved as 250000 (PUT 200): the till api and page show the whole plan with \"x250000\"; party 3 (with package): a typed line of 250000 added - planStatus ready, plan present, every line shown, settle preview 200 (total 16,900, the unpriced typed line not charged)."
+    },
+    "9 nothing else moved": {
+      "verdict": "PASS",
+      "pictures": [
+        "09a",
+        "09b",
+        "09c",
+        "09d"
+      ],
+      "facts": "Party 3, package only: the till shows the package, the eight set-menu groups with no counts and the Included box, as SCRUM-909's 05a showed before this lane; the only difference is \"Fruit skewers · not on the till menu\" (the new mark for an uncoded line). Settle preview: package 16,900 only. SCRUM-916 on party 1 while its settlement was open: desk bill \"Settlement open ฿17715 to take / Outstanding ฿17715\", buttons Resume settlement ฿17715, Cancel settlement, Take balance ฿17715, no Fully paid; phone \"DUE ฿17715\", button \"Settlement open · ฿17715\" disabled, no Fully paid."
+    }
+  },
+  "reads": {
+    "look": {
+      "branch": {
+        "name": "Oto Play Park, Central Floresta",
+        "partySlipsStationIdAtStart": null
+      },
+      "box": {
+        "slot": "virtual-1",
+        "status": "online"
+      },
+      "todaysParties": {
+        "count": 1,
+        "notZz": 1,
+        "list": [
+          {
+            "zz": false,
+            "start": "14:00",
+            "end": "17:00"
+          }
+        ]
+      },
+      "menu": {
+        "kitchen": 76,
+        "bar": 61,
+        "nowhere": 0,
+        "water": [
+          "CF-63-2 Fresh watermelon juice 210/210 bar kind=menu",
+          "CF-65-4 S.Pellegrino sparkling water 155/155 bar kind=menu",
+          "CF-65-5 Acqua Panna mineral water 155/155 bar kind=menu",
+          "CF-65-6 Mineral water 60/60 bar kind=menu"
+        ],
+        "kitchenSample": [
+          "CF-1 Big breakfast 460/460 kitchen",
+          "CF-2 Vegetarian breakfast 400/400 kitchen",
+          "CF-3 Smashed avocado + bruschetta 370/370 kitchen",
+          "CF-4 Waffles 255/255 kitchen",
+          "CF-5 Pancakes 255/255 kitchen",
+          "CF-6 Porridge 230/230 kitchen",
+          "CF-7 Yogurt 230/230 kitchen",
+          "CF-8 Syrniki 230/230 kitchen",
+          "CF-9 Smoked salmon toast 390/390 kitchen",
+          "CF-10-1 Sautéed mushrooms 60/60 kitchen",
+          "CF-10-2 Grilled tomato 50/50 kitchen",
+          "CF-10-3 Baked beans 50/50 kitchen",
+          "CF-10-4 Hashbrown 50/50 kitchen",
+          "CF-10-5 Bread 70/70 kitchen",
+          "CF-10-6 Avocado 110/110 kitchen",
+          "CF-10-7 Plain pasta 115/115 kitchen",
+          "CF-10-8 Bacon 70/70 kitchen",
+          "CF-10-9 Sausages 95/95 kitchen",
+          "CF-10-10 Grilled shrimp 95/95 kitchen",
+          "CF-10-11 Grilled chicken 70/70 kitchen",
+          "CF-10-12 Smoked salmon 115/115 kitchen",
+          "CF-10-13 Pico de gallo 50/50 kitchen",
+          "CF-10-14 Parma ham 175/175 kitchen",
+          "CF-10-15 Yogurt 135/135 kitchen",
+          "CF-10-16 Sour cream 50/50 kitchen",
+          "CF-10-17 Steamed jasmine rice 50/50 kitchen",
+          "CF-10-18 Eggs your way 50/50 kitchen",
+          "CF-11 French fries 175/175 kitchen",
+          "CF-12 Sweet potato fries 175/175 kitchen",
+          "CF-13 Hummus 275/275 kitchen",
+          "CF-14 Calamari 295/295 kitchen",
+          "CF-19 Special soup of the month 240/240 kitchen",
+          "CF-15 Caesar salad 370/370 kitchen",
+          "CF-15-1 Caesar salad — With chicken 415/415 kitchen",
+          "CF-15-2 Caesar salad — With shrimp 425/425 kitchen",
+          "CF-16 Barley & quinoa warm salad 415/415 kitchen",
+          "CF-17 Kale & rocket salad 370/370 kitchen",
+          "CF-18 Burrata salad 560/560 kitchen",
+          "CF-20 Spaghetti Bolognese 400/400 kitchen",
+          "CF-21 Fettuccine gorgonzola & mushroom 445/445 kitchen"
+        ],
+        "barSample": [
+          "CF-58-1 Espresso 115/115 bar",
+          "CF-58-2 Americano 115/115 bar",
+          "CF-58-3 Cappuccino 140/140 bar",
+          "CF-58-4 Latte 145/145 bar",
+          "CF-58-5 Mocha 155/155 bar",
+          "CF-58-6 Vanilla latte 155/155 bar",
+          "CF-58-7 Caramel macchiato 155/155 bar",
+          "CF-59-1 Iced americano 140/140 bar",
+          "CF-59-2 Iced latte 155/155 bar",
+          "CF-59-3 Iced cappuccino 155/155 bar",
+          "CF-59-4 Iced mocha 170/170 bar",
+          "CF-59-5 Iced vanilla latte 170/170 bar",
+          "CF-59-6 Iced caramel macchiato 170/170 bar",
+          "CF-60-1 Hot chocolate 130/130 bar",
+          "CF-60-2 Iced chocolate 150/150 bar",
+          "CF-61-1 Honey lemon 135/135 bar",
+          "CF-61-2 Ginger lime 135/135 bar",
+          "CF-62-1 Banana 225/225 bar",
+          "CF-62-2 Mixed berry 225/225 bar",
+          "CF-62-3 Mango & passion fruit 225/225 bar",
+          "CF-63-1 Fresh cold pressed orange juice 210/210 bar",
+          "CF-63-2 Fresh watermelon juice 210/210 bar",
+          "CF-64-1 English breakfast 115/115 bar",
+          "CF-64-2 Earl grey 115/115 bar",
+          "CF-64-3 Peppermint 115/115 bar"
+        ],
+        "nowhereSample": []
+      }
+    },
+    "health": [
+      {
+        "at": "2026-11-12T13:17:03.915Z",
+        "status": 200,
+        "topKeys": [
+          "status",
+          "checks",
+          "jobs",
+          "boxes",
+          "alerts",
+          "watchdogAgeSeconds",
+          "generatedAt",
+          "reach",
+          "rollups",
+          "evidence"
+        ],
+        "job": {
+          "name": "job:parties.slips",
+          "status": "ok",
+          "lastRunAt": "2026-11-12T13:16:38.727Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 26,
+          "lastError": null,
+          "waitingOn": []
+        }
+      },
+      {
+        "at": "2026-11-12T13:50:44.263Z",
+        "status": 200,
+        "topKeys": [
+          "status",
+          "checks",
+          "jobs",
+          "boxes",
+          "alerts",
+          "watchdogAgeSeconds",
+          "generatedAt",
+          "reach",
+          "rollups",
+          "evidence"
+        ],
+        "job": {
+          "name": "job:parties.slips",
+          "status": "ok",
+          "lastRunAt": "2026-11-12T13:49:54.222Z",
+          "lastOutcome": "ok",
+          "expectedEverySeconds": 60,
+          "ageSeconds": 51,
+          "lastError": null,
+          "waitingOn": []
+        }
+      }
+    ],
+    "release": [
+      {
+        "at": "2026-11-12T13:18:03.325Z",
+        "scheduleStart": {
+          "status": 200,
+          "total": 2,
+          "entries": [
+            {
+              "at": "2026-11-12T13:13:35.428Z",
+              "bangkok": "20:13:35",
+              "branchIsFloresta": true,
+              "entityType": "branch",
+              "after": {
+                "kind": "no_package",
+                "startedAt": "2026-11-12T13:13:33.731Z"
+              }
+            },
+            {
+              "at": "2026-11-12T13:13:34.920Z",
+              "bangkok": "20:13:34",
+              "branchIsFloresta": false,
+              "entityType": "branch",
+              "after": {
+                "kind": "no_package",
+                "startedAt": "2026-11-12T13:13:33.731Z"
+              }
+            }
+          ]
+        },
+        "rebase": {
+          "status": 200,
+          "total": 1,
+          "entries": [
+            {
+              "at": "2026-11-12T13:13:36.032Z",
+              "bangkok": "20:13:36",
+              "branchIsFloresta": true,
+              "entityType": "party",
+              "after": {
+                "composer": "2:kitchen_plan_1",
+                "stations": [
+                  {
+                    "source": "print:1",
+                    "station": "kitchen"
+                  },
+                  {
+                    "source": "print:1",
+                    "station": "bar"
+                  }
+                ],
+                "partyDate": "2026-11-12"
+              }
+            }
+          ]
+        },
+        "change": {
+          "status": 200,
+          "total": 0,
+          "entries": []
+        },
+        "print": {
+          "status": 200,
+          "total": 0,
+          "entries": []
+        },
+        "parkJobsSinceApi": [],
+        "parkKitchenBarJobsSinceApi": [],
+        "otherParks": [
+          {
+            "park": "Oto Play Park, Robinson Chalong",
+            "status": 200,
+            "kitchenBarJobsSinceApi": 0
+          }
+        ]
+      },
+      {
+        "at": "2026-11-12T13:50:45.026Z",
+        "scheduleStart": {
+          "status": 200,
+          "total": 2,
+          "entries": [
+            {
+              "at": "2026-11-12T13:13:35.428Z",
+              "bangkok": "20:13:35",
+              "branchIsFloresta": true,
+              "entityType": "branch",
+              "after": {
+                "kind": "no_package",
+                "startedAt": "2026-11-12T13:13:33.731Z"
+              }
+            },
+            {
+              "at": "2026-11-12T13:13:34.920Z",
+              "bangkok": "20:13:34",
+              "branchIsFloresta": false,
+              "entityType": "branch",
+              "after": {
+                "kind": "no_package",
+                "startedAt": "2026-11-12T13:13:33.731Z"
+              }
+            }
+          ]
+        },
+        "rebase": {
+          "status": 200,
+          "total": 1,
+          "entries": [
+            {
+              "at": "2026-11-12T13:13:36.032Z",
+              "bangkok": "20:13:36",
+              "branchIsFloresta": true,
+              "entityType": "party",
+              "after": {
+                "composer": "2:kitchen_plan_1",
+                "stations": [
+                  {
+                    "source": "print:1",
+                    "station": "kitchen"
+                  },
+                  {
+                    "source": "print:1",
+                    "station": "bar"
+                  }
+                ],
+                "partyDate": "2026-11-12"
+              }
+            }
+          ]
+        },
+        "change": {
+          "status": 200,
+          "total": 2,
+          "entries": [
+            {
+              "at": "2026-11-12T13:39:37.322Z",
+              "bangkok": "20:39:37",
+              "branchIsFloresta": true,
+              "entityType": "party",
+              "after": {
+                "run": 2,
+                "slips": [
+                  {
+                    "id": "01a1cffc-4139-7ae5-9090-48fb09b56216",
+                    "status": "printed",
+                    "station": "kitchen",
+                    "variant": "void",
+                    "printJobId": "01a1cffc-413c-74a5-ad58-81a28bf971e7"
+                  },
+                  {
+                    "id": "01a1cffc-4143-7527-bed8-19cfd5946723",
+                    "status": "printed",
+                    "station": "kitchen",
+                    "variant": "updated",
+                    "printJobId": "01a1cffc-4145-7b86-b644-1f70ee9228e8"
+                  },
+                  {
+                    "id": "01a1cffc-4149-7817-aaa6-d88ee6609ce7",
+                    "status": "printed",
+                    "station": "bar",
+                    "variant": "void",
+                    "printJobId": "01a1cffc-414b-78f4-b6ba-4a57d1cd7d5b"
+                  },
+                  {
+                    "id": "01a1cffc-414f-7ea5-a5ae-a970d698c7d5",
+                    "status": "printed",
+                    "station": "bar",
+                    "variant": "updated",
+                    "printJobId": "01a1cffc-4151-7465-ab0f-a962a90fe6b5"
+                  }
+                ],
+                "cancelled": false,
+                "partyDate": "2026-11-12",
+                "stationId": "01a1cfe8-9be3-7067-a4ed-746696e3e567"
+              }
+            },
+            {
+              "at": "2026-11-12T13:32:37.188Z",
+              "bangkok": "20:32:37",
+              "branchIsFloresta": true,
+              "entityType": "party",
+              "after": {
+                "run": 1,
+                "slips": [
+                  {
+                    "id": "01a1cff5-d877-7a88-b728-730979abcec3",
+                    "status": "printed",
+                    "station": "kitchen",
+                    "variant": "updated",
+                    "printJobId": "01a1cff5-d87a-746a-9769-68fb97b24428"
+                  }
+                ],
+                "cancelled": false,
+                "partyDate": "2026-11-12",
+                "stationId": "01a1cfe8-9be3-7067-a4ed-746696e3e567"
+              }
+            }
+          ]
+        },
+        "print": {
+          "status": 200,
+          "total": 1,
+          "entries": [
+            {
+              "at": "2026-11-12T13:30:50.566Z",
+              "bangkok": "20:30:50",
+              "branchIsFloresta": true,
+              "entityType": "party",
+              "after": {
+                "run": 1,
+                "slips": [
+                  {
+                    "id": "01a1cff4-3801-749a-8ac4-0a889a0264ca",
+                    "status": "printed",
+                    "station": "kitchen",
+                    "printJobId": "01a1cff4-3805-74fa-b8a2-861313efa90d"
+                  },
+                  {
+                    "id": "01a1cff4-380b-7551-a5ce-f3ea5bfbd9b0",
+                    "status": "printed",
+                    "station": "bar",
+                    "printJobId": "01a1cff4-380d-7445-a2ea-d8ffd285d9ea"
+                  }
+                ],
+                "trigger": "reprint",
+                "partyDate": "2026-11-12",
+                "stationId": "01a1cfe8-9be3-7067-a4ed-746696e3e567"
+              }
+            }
+          ]
+        },
+        "parkJobsSinceApi": [
+          {
+            "bangkok": "20:48:42",
+            "kind": "receipt",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:47:20",
+            "kind": "adult_wristband",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:47:20",
+            "kind": "adult_wristband",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:47:20",
+            "kind": "kids_wristband",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:47:20",
+            "kind": "kids_wristband",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:47:20",
+            "kind": "receipt",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:32:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:30:50",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:30:50",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          }
+        ],
+        "parkKitchenBarJobsSinceApi": [
+          {
+            "bangkok": "20:39:33",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:39:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:32:33",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:30:50",
+            "kind": "bar_ticket",
+            "status": "printed"
+          },
+          {
+            "bangkok": "20:30:50",
+            "kind": "kitchen_ticket",
+            "status": "printed"
+          }
+        ],
+        "otherParks": [
+          {
+            "park": "Oto Play Park, Robinson Chalong",
+            "status": 200,
+            "kitchenBarJobsSinceApi": 0
+          }
+        ]
+      }
+    ],
+    "p1Made": {
+      "tillProducts": {
+        "A": "CF-14 Calamari 295 baht weekday, kitchen",
+        "B": "CF-13 Hummus 275 baht weekday, kitchen",
+        "drink": "CF-63-1 Fresh cold pressed orange juice 210 baht weekday, bar",
+        "water": "CF-65-6 Mineral water 60 baht weekday, bar"
+      },
+      "package": {
+        "status": 201,
+        "name": "Birthday package, Central Floresta",
+        "slipsTimeAtApply": "11:00:00",
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4"
+      },
+      "slipsTimeMoved": {
+        "status": 200,
+        "slipsTime": "23:50:00"
+      },
+      "setMenu": {
+        "name": "Birthday set menu, Central Floresta",
+        "items": [
+          "Pizza [Margherita / Hawaiian / Pepperoni] codes {\"Hawaiian\":\"CF-27\",\"Pepperoni\":\"CF-31\",\"Margherita\":\"CF-24\"}",
+          "Hot dish [Chicken schnitzel / Fish fingers] codes {\"Chicken schnitzel\":\"CF-37\"}",
+          "French fries CF-11",
+          "Waffles or pancakes [Waffles / Pancakes] codes {\"Waffles\":\"CF-4\",\"Pancakes\":\"CF-5\"}",
+          "Fried rice [Veggie / Chicken / Shrimp] codes {}",
+          "Veggie sticks CF-53",
+          "Fruit skewers ",
+          "Drinks pitcher [Juice / Mors] codes {}"
+        ]
+      },
+      "kitchenAfterPackage": {
+        "setMenuEnabled": true,
+        "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+        "kids": 0
+      },
+      "put": {
+        "status": 200,
+        "error": null
+      },
+      "beoReadBack": {
+        "kids": [
+          "EXTRA Calamari x2 @120 [CF-14]",
+          "EXTRA Hummus x1 [CF-13]",
+          "EXTRA ZZ TEST mango sticky rice x2 @90",
+          "EXTRA ZZ TEST fruit plate x1"
+        ],
+        "bar": [
+          "SET Fresh cold pressed orange juice x4 [CF-63-1]",
+          "EXTRA Mineral water x2 [CF-65-6]",
+          "EXTRA ZZ TEST lemonade pitcher x2"
+        ],
+        "barTime": "19:15",
+        "cake": {
+          "mode": "INTERNAL",
+          "time": "20:30",
+          "notes": "ZZ TEST unicorn",
+          "qty": 1
+        },
+        "setMenuEnabled": true
+      }
+    },
+    "p1Parent": {
+      "getLink": 201,
+      "publicRead": 200,
+      "submit": {
+        "status": 200,
+        "error": null
+      },
+      "parentChose": [
+        "Pizza: Margherita",
+        "Hot dish: Chicken schnitzel",
+        "Waffles or pancakes: Waffles",
+        "Fried rice: Veggie",
+        "Drinks pitcher: Juice"
+      ],
+      "parentPageNow": {
+        "isSubmitted": true,
+        "selections": [
+          "Pizza: Margherita",
+          "Hot dish: Chicken schnitzel",
+          "Waffles or pancakes: Waffles",
+          "Fried rice: Veggie",
+          "Drinks pitcher: Juice"
+        ]
+      },
+      "beoKids": [
+        "SET Margherita x1 (group Pizza)",
+        "SET Chicken schnitzel x1 (group Hot dish)",
+        "SET French fries x1 (group French fries)",
+        "SET Waffles x1 (group Waffles or pancakes)",
+        "SET Veggie x1 (group Fried rice)",
+        "SET Veggie sticks x1 (group Veggie sticks)",
+        "SET Fruit skewers x1 (group Fruit skewers)",
+        "SET Juice x1 (group Drinks pitcher)",
+        "EXTRA Calamari x2 @120 [CF-14]",
+        "EXTRA Hummus x1 [CF-13]",
+        "EXTRA ZZ TEST mango sticky rice x2 @90",
+        "EXTRA ZZ TEST fruit plate x1"
+      ]
+    },
+    "tillReads": {
+      "p1-after-parent": {
+        "at": "2026-11-12T13:19:24.793Z",
+        "ms": 697,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 party",
+        "planStatus": "ready",
+        "package": "Birthday package, Central Floresta",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | onTillMenu true",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | onTillMenu true",
+            "set_menu | French fries x1 | code CF-11 | onTillMenu true",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | onTillMenu true",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | onTillMenu true",
+            "set_menu | Veggie sticks x1 | code CF-53 | onTillMenu true",
+            "set_menu | Fruit skewers x1 | code - | onTillMenu false",
+            "set_menu | Drinks pitcher: Juice x1 | code - | onTillMenu false",
+            "extra | Calamari x2 | code CF-14 | onTillMenu true | entered 120",
+            "extra | Hummus x1 | code CF-13 | onTillMenu true",
+            "extra | ZZ TEST mango sticky rice x2 | code - | onTillMenu false | entered 90",
+            "extra | ZZ TEST fruit plate x1 | code - | onTillMenu false"
+          ],
+          "bar": [
+            "set_menu | Fresh cold pressed orange juice x4 | code CF-63-1 | onTillMenu true",
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true",
+            "extra | ZZ TEST lemonade pitcher x2 | code - | onTillMenu false"
+          ]
+        },
+        "planSetMenuLines": 12,
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "p1-after-staff-change": {
+        "at": "2026-11-12T13:22:26.090Z",
+        "ms": 972,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 party",
+        "planStatus": "ready",
+        "package": "Birthday package, Central Floresta",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | onTillMenu true",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | onTillMenu true",
+            "set_menu | French fries x1 | code CF-11 | onTillMenu true",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | onTillMenu true",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | onTillMenu true",
+            "set_menu | Veggie sticks x1 | code CF-53 | onTillMenu true",
+            "set_menu | Fruit skewers x1 | code - | onTillMenu false",
+            "set_menu | Drinks pitcher: Juice x1 | code - | onTillMenu false",
+            "extra | Calamari x2 | code CF-14 | onTillMenu true | entered 120",
+            "extra | Hummus x1 | code CF-13 | onTillMenu true",
+            "extra | ZZ TEST mango sticky rice x2 | code - | onTillMenu false | entered 90",
+            "extra | ZZ TEST fruit plate x1 | code - | onTillMenu false"
+          ],
+          "bar": [
+            "set_menu | Fresh cold pressed orange juice x4 | code CF-63-1 | onTillMenu true",
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true",
+            "extra | ZZ TEST lemonade pitcher x2 | code - | onTillMenu false"
+          ]
+        },
+        "planSetMenuLines": 12,
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "p1-after-second-staff-change": {
+        "at": "2026-11-12T13:28:35.928Z",
+        "ms": 1325,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 party",
+        "planStatus": "ready",
+        "package": "Birthday package, Central Floresta",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | onTillMenu true",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | onTillMenu true",
+            "set_menu | French fries x1 | code CF-11 | onTillMenu true",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | onTillMenu true",
+            "set_menu | Fried rice: Shrimp x1 | code CF-43 | onTillMenu true",
+            "set_menu | Veggie sticks x1 | code CF-53 | onTillMenu true",
+            "set_menu | Fruit skewers x1 | code - | onTillMenu false",
+            "set_menu | Drinks pitcher: Juice x1 | code - | onTillMenu false",
+            "extra | Calamari x2 | code CF-14 | onTillMenu true | entered 120",
+            "extra | Hummus x1 | code CF-13 | onTillMenu true",
+            "extra | ZZ TEST mango sticky rice x2 | code - | onTillMenu false | entered 90",
+            "extra | ZZ TEST fruit plate x1 | code - | onTillMenu false"
+          ],
+          "bar": [
+            "set_menu | Fresh cold pressed orange juice x4 | code CF-63-1 | onTillMenu true",
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true",
+            "extra | ZZ TEST lemonade pitcher x2 | code - | onTillMenu false"
+          ]
+        },
+        "planSetMenuLines": 12,
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "p2": {
+        "at": "2026-11-12T13:28:48.947Z",
+        "ms": 619,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 no package",
+        "planStatus": "no_package",
+        "package": null,
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "16:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": "16:15"
+          },
+          "cake": {
+            "type": "own",
+            "qty": 1,
+            "time": "17:00",
+            "note": "ZZ TEST family cake"
+          },
+          "lines": [
+            "extra | ZZ TEST nuggets plate x3 | code - | onTillMenu false",
+            "extra | French fries x1 | code CF-11 | onTillMenu true"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true"
+          ]
+        },
+        "planSetMenuLines": null,
+        "slips": {
+          "slipsTime": "11:00",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "p2-bigqty": {
+        "at": "2026-11-12T13:49:42.187Z",
+        "ms": 590,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 no package",
+        "planStatus": "no_package",
+        "package": null,
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "16:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": "16:15"
+          },
+          "cake": {
+            "type": "own",
+            "qty": 1,
+            "time": "17:00",
+            "note": "ZZ TEST family cake"
+          },
+          "lines": [
+            "extra | ZZ TEST nuggets plate x250000 | code - | onTillMenu false",
+            "extra | French fries x1 | code CF-11 | onTillMenu true"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true"
+          ]
+        },
+        "planSetMenuLines": null,
+        "slips": {
+          "slipsTime": "11:00",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "p3-package-only": {
+        "at": "2026-11-12T13:50:05.634Z",
+        "ms": 664,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 package only",
+        "planStatus": "ready",
+        "package": "Birthday package, Central Floresta",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": null,
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": null
+          },
+          "cake": null,
+          "lines": [
+            "set_menu | Pizza | code - | onTillMenu false",
+            "set_menu | Hot dish | code - | onTillMenu false",
+            "set_menu | French fries | code CF-11 | onTillMenu true",
+            "set_menu | Waffles or pancakes | code - | onTillMenu false",
+            "set_menu | Fried rice | code CF-43 | onTillMenu true",
+            "set_menu | Veggie sticks | code CF-53 | onTillMenu true",
+            "set_menu | Fruit skewers | code - | onTillMenu false",
+            "set_menu | Drinks pitcher | code - | onTillMenu false"
+          ],
+          "bar": []
+        },
+        "planSetMenuLines": 8,
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      }
+    },
+    "p1Desk": {
+      "url": "/parties?party=da0b78c2-3e46-4b87-92fd-68f210292213",
+      "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "bar": "Bar plan Bar service 19:15 Fresh cold pressed orange juice ×4 Mineral water ×2 ZZ TEST lemonade pitcher · not on the till menu ×2"
+    },
+    "p1Beo": {
+      "kidsRows": [
+        "SET 1 Margherita (Pizza)",
+        "SET 1 Chicken schnitzel (Hot dish)",
+        "SET 1 French fries",
+        "SET 1 Waffles (Waffles or pancakes)",
+        "SET 1 Veggie (Fried rice)",
+        "SET 1 Veggie sticks",
+        "SET 1 Fruit skewers",
+        "SET 1 Juice (Drinks pitcher)",
+        "EXTRA 2 Calamari CF-14",
+        "EXTRA 1 Hummus CF-13",
+        "EXTRA 2 ZZ TEST mango sticky rice",
+        "EXTRA 1 ZZ TEST fruit plate"
+      ],
+      "setBlock": "SET MENU Birthday set menu, Central Floresta Selections received INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Margherita Choice Hot dish→ Chicken schnitzel Choice Waffles or pancakes→ Waffles Choice Fried rice→ Veggie Choice Drinks pitcher→ Juice Choice RESOLVED ITEMS (EDITABLE) SET 1 Margherita (Pizza) SET 1 Chicken schnitzel (Hot dish) SET 1 French fries SET 1 Waffles (Waffles or pancakes) SET 1 Veggie (Fried rice) SET 1 Veggie sticks SET 1 Fruit skewers SET 1 Juice (Drinks pitcher) + Add item",
+      "cakeNotes": null,
+      "barRows": [
+        "SET Fresh cold pressed orange juice CF-63-1 4 Notes (optional)…",
+        "EXTRA Mineral water CF-65-6 2 Notes (optional)…",
+        "EXTRA ZZ TEST lemonade pitcher 2 Notes (optional)…"
+      ]
+    },
+    "p1Phone": {
+      "url": "/parties",
+      "hasKitchen": true,
+      "kitchenToBar": "Kitchen plan Food service 19:30 Menu type Set menu Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Bar plan Bar service 19:15 Fresh cold pressed orange juice ×4 Mineral water ×2 ZZ TEST lemonade pitcher · not on the till menu ×2 Add F&B to party tab Fully paid Tickets F&B Shop Check-in Events History Today 7 Messages"
+    },
+    "parentPageBefore": {
+      "list": "Pizza: Margherita Hot dish: Chicken schnitzel Waffles or pancakes: Waffles Fried rice: Veggie Drinks pitcher: Juice"
+    },
+    "staffChange": {
+      "line": "SET 1 Chicken (Fried rice)",
+      "save": {
+        "status": 200,
+        "at": "2026-11-12T13:22:24.817Z"
+      },
+      "toasts": [],
+      "beoKids": [
+        "Margherita (group Pizza)",
+        "Chicken schnitzel (group Hot dish)",
+        "French fries (group French fries)",
+        "Waffles (group Waffles or pancakes)",
+        "Chicken (group Fried rice)",
+        "Veggie sticks (group Veggie sticks)",
+        "Fruit skewers (group Fruit skewers)",
+        "Juice (group Drinks pitcher)"
+      ],
+      "apiRightAfter": {
+        "ms": 1273,
+        "friedRice": "set_menu | Fried rice: Chicken x1 | code CF-43 | onTillMenu true"
+      }
+    },
+    "refresh": {
+      "afterUnlock": {
+        "desk": "Fried rice · Chicken",
+        "phone": null,
+        "phoneUrl": "/parties"
+      },
+      "beforeChange": {
+        "desk": "Fried rice · Chicken",
+        "phone": "Fried rice · Chicken"
+      },
+      "save": {
+        "status": 200,
+        "at": "2026-11-12T13:27:37.072Z"
+      },
+      "desk": {
+        "seconds": 34
+      },
+      "phone": {
+        "seconds": 52
+      },
+      "lockedAtEnd": {
+        "desk": false,
+        "phone": false
+      },
+      "parentList": "Pizza: Margherita Hot dish: Chicken schnitzel Waffles or pancakes: Waffles Fried rice: Shrimp Drinks pitcher: Juice",
+      "parentApi": [
+        "Pizza: Margherita",
+        "Hot dish: Chicken schnitzel",
+        "Waffles or pancakes: Waffles",
+        "Fried rice: Shrimp",
+        "Drinks pitcher: Juice"
+      ],
+      "api": "set_menu | Fried rice: Shrimp x1 | code CF-43 | onTillMenu true"
+    },
+    "p2": {
+      "put": 200,
+      "till": {
+        "at": "2026-11-12T13:28:48.947Z",
+        "ms": 619,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 no package",
+        "planStatus": "no_package",
+        "package": null,
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "16:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": "16:15"
+          },
+          "cake": {
+            "type": "own",
+            "qty": 1,
+            "time": "17:00",
+            "note": "ZZ TEST family cake"
+          },
+          "lines": [
+            "extra | ZZ TEST nuggets plate x3 | code - | onTillMenu false",
+            "extra | French fries x1 | code CF-11 | onTillMenu true"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true"
+          ]
+        },
+        "planSetMenuLines": null,
+        "slips": {
+          "slipsTime": "11:00",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "settlePreview": {
+        "route": "POST /api/parties/:id/settle/preview",
+        "status": 409,
+        "code": "PARTY_NO_PACKAGE",
+        "words": "This party has no package in the OTO App, so it cannot be settled here"
+      },
+      "deskButtons": [
+        "Edit party",
+        "Add tickets",
+        "Add F&B to party",
+        "Fully paid",
+        "Print party slips now"
+      ],
+      "deskKitchen": "Kitchen plan Kids' food 16:30 Ready 20 min before Slips print 11:00 ZZ TEST nuggets plate · not on the till menu ×3 French fries ×1 Customer brings their own · 17:00 ZZ TEST family cake",
+      "deskBar": "Bar plan Bar service 16:15 Mineral water ×2"
+    },
+    "p4print": {
+      "named": {
+        "at": "2026-11-12T13:29:30.824Z",
+        "status": 200
+      },
+      "afterOneTick": {
+        "jobsAtTill": [],
+        "printouts": {
+          "kitchen": 0,
+          "bar": 0
+        }
+      },
+      "press": {
+        "at": "2026-11-12T13:30:49.850Z",
+        "status": 200,
+        "run": null,
+        "slips": [
+          "kitchen run 1 reprint printed",
+          "bar run 1 reprint printed"
+        ]
+      },
+      "printouts": {
+        "kitchen": [
+          {
+            "seq": 1,
+            "at": "2026-11-12T13:30:55.020Z",
+            "heightDots": 546
+          }
+        ],
+        "bar": [
+          {
+            "seq": 1,
+            "at": "2026-11-12T13:30:55.336Z",
+            "heightDots": 238
+          }
+        ]
+      },
+      "jobsAtTill": [
+        {
+          "queuedAt": "2026-11-12T13:30:50.545Z",
+          "bangkok": "20:30:50",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-906 kitchen printer",
+          "status": "printed",
+          "reprintOf": null,
+          "errorCode": null
+        },
+        {
+          "queuedAt": "2026-11-12T13:30:50.546Z",
+          "bangkok": "20:30:50",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "printer": "ZZ TEST SCRUM-906 bar printer",
+          "status": "printed",
+          "reprintOf": null,
+          "errorCode": null
+        }
+      ],
+      "slipsCard": "Kitchen & bar slips Slip time 23:50 Kitchen slip Printed 20:30 Bar slip Printed 20:30 Print party slips now"
+    },
+    "p4change": {
+      "row": "EXTRA 2 ZZ TEST fruit plate",
+      "save": {
+        "status": 200,
+        "at": "2026-11-12T13:31:45.574Z"
+      },
+      "firstSeenSeconds": 151,
+      "change": {
+        "kitchen": [
+          {
+            "seq": 2,
+            "at": "2026-11-12T13:32:39.925Z"
+          }
+        ],
+        "bar": []
+      },
+      "laterLooks": {
+        "kitchen": 0,
+        "bar": 0
+      },
+      "jobsAtTill": [
+        {
+          "queuedAt": "2026-11-12T13:30:50.545Z",
+          "bangkok": "20:30:50",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-906 kitchen printer",
+          "status": "printed",
+          "reprintOf": null,
+          "errorCode": null
+        },
+        {
+          "queuedAt": "2026-11-12T13:30:50.546Z",
+          "bangkok": "20:30:50",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "printer": "ZZ TEST SCRUM-906 bar printer",
+          "status": "printed",
+          "reprintOf": null,
+          "errorCode": null
+        },
+        {
+          "queuedAt": "2026-11-12T13:32:33.758Z",
+          "bangkok": "20:32:33",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-906 kitchen printer",
+          "status": "printed",
+          "reprintOf": null,
+          "errorCode": null
+        }
+      ],
+      "audit": [
+        {
+          "bangkok": "20:32:37",
+          "run": 1,
+          "cancelled": false,
+          "slips": [
+            "kitchen updated printed"
+          ]
+        }
+      ],
+      "printAudit": [
+        {
+          "bangkok": "20:30:50",
+          "run": 1,
+          "trigger": "reprint",
+          "ourTill": true,
+          "slips": [
+            "kitchen printed",
+            "bar printed"
+          ]
+        }
+      ]
+    },
+    "p4changeBoth": {
+      "kitchenRow": "SET 1 Chicken (Fried rice)",
+      "barRow": "EXTRA ZZ TEST lemonade pitcher 1 Notes (optional)…",
+      "barQty": null,
+      "save": {
+        "status": 200,
+        "at": "2026-11-12T13:39:15.801Z"
+      },
+      "beoBar": [
+        "Fresh cold pressed orange juice x4",
+        "Mineral water x2",
+        "ZZ TEST lemonade pitcher x1"
+      ],
+      "secondsToPrint": 32,
+      "change": {
+        "kitchen": [
+          {
+            "seq": 3,
+            "at": "2026-11-12T13:39:39.804Z"
+          },
+          {
+            "seq": 4,
+            "at": "2026-11-12T13:39:40.124Z"
+          }
+        ],
+        "bar": [
+          {
+            "seq": 2,
+            "at": "2026-11-12T13:39:40.236Z"
+          },
+          {
+            "seq": 3,
+            "at": "2026-11-12T13:39:40.348Z"
+          }
+        ]
+      },
+      "laterLooks": {
+        "kitchen": 0,
+        "bar": 0
+      },
+      "jobsAtTill": [
+        "20:30:50 kitchen printed",
+        "20:30:50 bar printed",
+        "20:32:33 kitchen printed",
+        "20:39:33 kitchen printed",
+        "20:39:33 kitchen printed",
+        "20:39:33 bar printed",
+        "20:39:33 bar printed"
+      ],
+      "audit": [
+        {
+          "bangkok": "20:39:37",
+          "run": 2,
+          "cancelled": false,
+          "slips": [
+            "kitchen void printed",
+            "kitchen updated printed",
+            "bar void printed",
+            "bar updated printed"
+          ]
+        },
+        {
+          "bangkok": "20:32:37",
+          "run": 1,
+          "cancelled": false,
+          "slips": [
+            "kitchen updated printed"
+          ]
+        }
+      ]
+    },
+    "stationBack": {
+      "status": 200,
+      "readBack": null,
+      "at": "2026-11-12T13:42:15.711Z",
+      "jobsAtTillWhileNamed": [
+        "20:30:50 kitchen printed",
+        "20:30:50 bar printed",
+        "20:32:33 kitchen printed",
+        "20:39:33 kitchen printed",
+        "20:39:33 kitchen printed",
+        "20:39:33 bar printed",
+        "20:39:33 bar printed"
+      ]
+    },
+    "p5open": {
+      "preview": {
+        "packageName": "Birthday package, Central Floresta",
+        "rateMode": "weekday",
+        "lines": [
+          "package | Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "included | Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "included | Special birthday set menu | 1 x 0 = 0",
+          "included | Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "included | Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "included | Entry for 4 accompanying adults | 1 x 0 = 0",
+          "included | Socks for all children | 1 x 0 = 0",
+          "guests | Children (in the package) | 2 x 0 = 0",
+          "guests | Adults (in the package) | 2 x 0 = 0",
+          "add_on | Calamari | 2 x 120 = 240",
+          "add_on | Hummus | 1 x 275 = 275",
+          "add_on | ZZ TEST mango sticky rice | 2 x 90 = 180",
+          "add_on | Mineral water | 2 x 60 = 120"
+        ],
+        "packageSatang": 16900,
+        "socks": 0,
+        "addOns": 815,
+        "total": 17715,
+        "deposit": 0,
+        "balance": 17715
+      },
+      "formText": "",
+      "settle": {
+        "status": 200,
+        "state": "open",
+        "gross": 17715,
+        "outstanding": 17715,
+        "quoteLines": [
+          "package | Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "included | Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "included | Special birthday set menu | 1 x 0 = 0",
+          "included | Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "included | Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "included | Entry for 4 accompanying adults | 1 x 0 = 0",
+          "included | Socks for all children | 1 x 0 = 0",
+          "guests | Children (in the package) | 2 x 0 = 0",
+          "guests | Adults (in the package) | 2 x 0 = 0",
+          "add_on | Calamari | 2 x 120 = 240",
+          "add_on | Hummus | 1 x 275 = 275",
+          "add_on | ZZ TEST mango sticky rice | 2 x 90 = 180",
+          "add_on | Mineral water | 2 x 60 = 120"
+        ]
+      },
+      "afterBack": {
+        "bill": "Party bill Settlement open ฿17715 to take Total ฿17715 Deposit paid −฿0 Outstanding ฿17715",
+        "buttons": [
+          {
+            "l": "Resume settlement ฿17715",
+            "enabled": true
+          },
+          {
+            "l": "Cancel settlement",
+            "enabled": true
+          },
+          {
+            "l": "Take balance ฿17715",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    "p5paid": {
+      "phone": {
+        "header": "ZZ TEST 906 party UPCOMING ZZ TEST child · 19:00–22:00 · DUE ฿17715 Party bill Settlement open ฿1",
+        "bill": "Party bill Settlement open ฿17715 to take Total ฿17715 Deposit paid −฿0 Outstanding ฿17715",
+        "fullyPaidShown": false,
+        "openRows": [
+          "Settlement open ฿17715 to take ",
+          "Settlement open · ฿17715 "
+        ],
+        "buttons": [
+          {
+            "l": "Settlement open · ฿17715",
+            "enabled": false
+          }
+        ]
+      },
+      "resumeLabel": "Resume settlement ฿17715",
+      "amountDue": "฿17715",
+      "done": "",
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z90601-000001",
+        "gross": 17715,
+        "lines": [
+          "Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "Special birthday set menu | 1 x 0 = 0",
+          "Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "Entry for 4 accompanying adults | 1 x 0 = 0",
+          "Socks for all children | 1 x 0 = 0",
+          "Children (in the package) | 2 x 0 = 0",
+          "Adults (in the package) | 2 x 0 = 0",
+          "Calamari | 2 x 120 = 240",
+          "Hummus | 1 x 275 = 275",
+          "ZZ TEST mango sticky rice | 2 x 90 = 180",
+          "Mineral water | 2 x 60 = 120"
+        ],
+        "payments": [],
+        "printJobs": [
+          "adult_wristband adult_band printed",
+          "adult_wristband adult_band printed",
+          "kids_wristband kids_band printed",
+          "kids_wristband kids_band printed",
+          "receipt receipt printed"
+        ]
+      },
+      "saleKeys": [
+        "timeExtension",
+        "sale",
+        "correctionBandShortCode",
+        "refundStatus",
+        "refundableSatang",
+        "refunds",
+        "printJobs",
+        "bands",
+        "grants",
+        "issuedVouchers",
+        "pickupCode",
+        "attempts",
+        "taxBreakdown",
+        "taxConfig",
+        "lines",
+        "discounts"
+      ],
+      "party": {
+        "id": "01a1d002-c1ff-72f8-b3ff-8a0e19b12f27",
+        "saleId": "01a1d002-c1ff-72f8-b3ff-8a0ff86c8775",
+        "state": "settled",
+        "receiptNumber": "Z90601-000001",
+        "grossSatang": 1771500,
+        "paidSatang": 1771500,
+        "outstandingSatang": 0,
+        "depositSatang": 0,
+        "kids": 2,
+        "adults": 2,
+        "createdAt": "2026-11-12T13:46:44.771Z",
+        "settledAt": "2026-11-12T13:47:20.617Z",
+        "writeBack": "synced"
+      }
+    },
+    "p5refund": {
+      "phoneSignOut": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "receipt": "Z90601-000001",
+      "listed": [
+        "Z90601-000001 · ZZ TEST 906 party 12 Nov, 20:46 [name] Paid ฿17715"
+      ],
+      "detail": "Paid Party settlement Z90601-000001 ZZ TEST 906 party 12 Nov, 20:46 · sold by [name] ZZ TEST SCRUM-906 proof till 1794489489747 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿16900 ฿16900 Kids' table reserved for 3 hours 1× ฿0 ฿0 Special birthday set menu 1× ฿0 ฿0 Interactive birthday animation program, 30 minutes 1× ฿0 ฿0 Ice-cream cake with candles and birthday song 1× ฿0 ฿0 Entry for 4 accompanying adults 1× ฿0 ฿0 Socks for all children 1× ฿0 ฿0 3 Hours · Tourist ฿0 Children (in the package) 2× ฿0 ฿0 Adults (in the package) 2× ฿0 ฿0 Items · Tourist ฿815 Calamari 2× ฿120 ฿240 Hummus 1× ฿275 ฿275 ZZ TEST mango sticky rice 2× ฿90 ฿180 Mineral water 2× ฿60 ฿120 BRACELETS PRINTED 4 2 child 2 adult Z90601-VKS4CC Z90601-GC9KNE Z90601-7WBRQ5 Z90601-4ECD5N Subtotal ฿17715 VAT (included) ฿1158.93 Total paid ฿17715 Party: ZZ TEST 9",
+      "dialog": "Refund By [name] · up to ฿17715 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿17715 Hand the refund back to the customer manually. Choose a reason to refund Close",
+      "press": "Refund ฿17715",
+      "refund": {
+        "status": 200,
+        "amount": 17715,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "saleRefund": "refunded"
+      },
+      "settlementAfter": {
+        "id": "01a1d002-c1ff-72f8-b3ff-8a0e19b12f27",
+        "saleId": "01a1d002-c1ff-72f8-b3ff-8a0ff86c8775",
+        "state": "refunded",
+        "receiptNumber": "Z90601-000001",
+        "grossSatang": 1771500,
+        "paidSatang": 1771500,
+        "outstandingSatang": 0,
+        "depositSatang": 0,
+        "kids": 2,
+        "adults": 2,
+        "createdAt": "2026-11-12T13:46:44.771Z",
+        "settledAt": "2026-11-12T13:47:20.617Z",
+        "writeBack": "synced"
+      },
+      "partyPage": {
+        "buttons": [
+          {
+            "l": "Settle party",
+            "enabled": true
+          },
+          {
+            "l": "Fully paid",
+            "enabled": false
+          }
+        ],
+        "bill": "Party bill Birthday package, Central Floresta ฿0 Total ฿0 Deposit paid −฿0 Outstanding ฿0"
+      },
+      "mgrSignOut": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "p5sale": {
+      "status": "refunded",
+      "refundStatus": "refunded",
+      "refundable": 0,
+      "lines": [
+        {
+          "label": "Birthday package, Central Floresta",
+          "qty": 1,
+          "unit": 16900,
+          "gross": 16900,
+          "tax": null
+        },
+        {
+          "label": "Kids' table reserved for 3 hours",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Special birthday set menu",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Interactive birthday animation program, 30 minutes",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Ice-cream cake with candles and birthday song",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Entry for 4 accompanying adults",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Socks for all children",
+          "qty": 1,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Children (in the package)",
+          "qty": 2,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Adults (in the package)",
+          "qty": 2,
+          "unit": 0,
+          "gross": 0,
+          "tax": null
+        },
+        {
+          "label": "Calamari",
+          "qty": 2,
+          "unit": 120,
+          "gross": 240,
+          "tax": null
+        },
+        {
+          "label": "Hummus",
+          "qty": 1,
+          "unit": 275,
+          "gross": 275,
+          "tax": null
+        },
+        {
+          "label": "ZZ TEST mango sticky rice",
+          "qty": 2,
+          "unit": 90,
+          "gross": 180,
+          "tax": null
+        },
+        {
+          "label": "Mineral water",
+          "qty": 2,
+          "unit": 60,
+          "gross": 120,
+          "tax": null
+        }
+      ],
+      "taxBreakdown": {
+        "taxTotal": 115893,
+        "categories": [
+          {
+            "tax": 110561,
+            "base": 1690000,
+            "gross": 1690000,
+            "taxMode": "inclusive",
+            "taxName": "VAT",
+            "category": "tickets",
+            "taxRateId": "vat",
+            "taxPercent": 7,
+            "secondaryTax": 0,
+            "serviceCharge": 0,
+            "secondaryTaxMode": "none",
+            "secondaryTaxPercent": 0
+          },
+          {
+            "tax": 5332,
+            "base": 81500,
+            "gross": 81500,
+            "taxMode": "inclusive",
+            "taxName": "VAT",
+            "category": "fnb",
+            "taxRateId": "vat",
+            "taxPercent": 7,
+            "secondaryTax": 0,
+            "serviceCharge": 0,
+            "secondaryTaxMode": "none",
+            "secondaryTaxPercent": 0
+          }
+        ],
+        "grandTotal": 1771500,
+        "netSubtotal": 1771500,
+        "discountTotal": 0,
+        "exclusiveTaxTotal": 0,
+        "inclusiveTaxTotal": 115893,
+        "unappliedDiscount": 0,
+        "serviceChargeTotal": 0
+      },
+      "refunds": [
+        {
+          "amount": 17715,
+          "method": null,
+          "reason": "Service recovery"
+        }
+      ]
+    },
+    "pdf": {
+      "route": "GET /api/events/:id/beo/pdf",
+      "status": 200,
+      "type": "application/pdf",
+      "bytes": 91157
+    },
+    "p8": {
+      "put": 200,
+      "beoKids": [
+        "ZZ TEST nuggets plate x250000",
+        "French fries x1"
+      ],
+      "beoBar": [
+        "Mineral water x2"
+      ],
+      "till": {
+        "at": "2026-11-12T13:49:42.187Z",
+        "ms": 590,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 no package",
+        "planStatus": "no_package",
+        "package": null,
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "16:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": "16:15"
+          },
+          "cake": {
+            "type": "own",
+            "qty": 1,
+            "time": "17:00",
+            "note": "ZZ TEST family cake"
+          },
+          "lines": [
+            "extra | ZZ TEST nuggets plate x250000 | code - | onTillMenu false",
+            "extra | French fries x1 | code CF-11 | onTillMenu true"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | onTillMenu true"
+          ]
+        },
+        "planSetMenuLines": null,
+        "slips": {
+          "slipsTime": "11:00",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "deskKitchen": "Kitchen plan Kids' food 16:30 Ready 20 min before Slips print 11:00 ZZ TEST nuggets plate · not on the till menu ×250000 French fries ×1 Customer brings their own · 17:00 ZZ TEST family cake",
+      "deskBar": "Bar plan Bar service 16:15 Mineral water ×2"
+    },
+    "p9": {
+      "package": 201,
+      "slipsTimeMoved": 200,
+      "till": {
+        "at": "2026-11-12T13:50:05.634Z",
+        "ms": 664,
+        "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 906 package only",
+        "planStatus": "ready",
+        "package": "Birthday package, Central Floresta",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": null,
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": null
+          },
+          "cake": null,
+          "lines": [
+            "set_menu | Pizza | code - | onTillMenu false",
+            "set_menu | Hot dish | code - | onTillMenu false",
+            "set_menu | French fries | code CF-11 | onTillMenu true",
+            "set_menu | Waffles or pancakes | code - | onTillMenu false",
+            "set_menu | Fried rice | code CF-43 | onTillMenu true",
+            "set_menu | Veggie sticks | code CF-53 | onTillMenu true",
+            "set_menu | Fruit skewers | code - | onTillMenu false",
+            "set_menu | Drinks pitcher | code - | onTillMenu false"
+          ],
+          "bar": []
+        },
+        "planSetMenuLines": 8,
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "settlement": null
+      },
+      "planSetMenu": [
+        "set_menu | Pizza | -",
+        "set_menu | Hot dish | -",
+        "set_menu | French fries | CF-11",
+        "set_menu | Waffles or pancakes | -",
+        "set_menu | Fried rice | CF-43",
+        "set_menu | Veggie sticks | CF-53",
+        "set_menu | Fruit skewers | -",
+        "set_menu | Drinks pitcher | -"
+      ],
+      "planBar": 0,
+      "cake": null,
+      "settlePreview": {
+        "status": 200,
+        "lines": [
+          "package | Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "included | Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "included | Special birthday set menu | 1 x 0 = 0",
+          "included | Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "included | Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "included | Entry for 4 accompanying adults | 1 x 0 = 0",
+          "included | Socks for all children | 1 x 0 = 0",
+          "guests | Children (in the package) | 2 x 0 = 0",
+          "guests | Adults (in the package) | 2 x 0 = 0"
+        ],
+        "total": 16900
+      },
+      "deskKitchen": "Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 23:50 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers · not on the till menu Drinks pitcher Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "deskHasBar": false
+    },
+    "p8packaged": {
+      "put": 200,
+      "planStatus": "ready",
+      "planPresent": true,
+      "kitchenLines": [
+        "Pizza",
+        "Hot dish",
+        "French fries",
+        "Waffles or pancakes",
+        "Fried rice",
+        "Veggie sticks",
+        "Fruit skewers",
+        "Drinks pitcher",
+        "ZZ TEST typo line x250000"
+      ],
+      "settlePreview": {
+        "status": 200,
+        "total": 16900,
+        "code": null
+      },
+      "desk": "ZZ TEST typo line · not on the till menu ×250000"
+    },
+    "p2SlipsBeforeCleanup": {
+      "at": "2026-11-12T13:51:33.463Z",
+      "slips": {
+        "slipsTime": "11:00",
+        "station": null,
+        "records": []
+      },
+      "printAuditP2": 0
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "1: the till's party page, desk size",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "1: the till's party page, desk size",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "1: the BEO side of party 1 (the OTO App editor), pictures",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "phone",
+      "at": "1: the till's party page, phone size",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "1: the till's party page, phone size",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "parent-link",
+      "at": "1/2: phone pictures retaken (no structural mask on the detail), the parent's link page before the staff change",
+      "kind": "http",
+      "text": "GET /api/user 401"
+    },
+    {
+      "page": "parent-link",
+      "at": "1/2: phone pictures retaken (no structural mask on the detail), the parent's link page before the staff change",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "2: the till pages kept awake (a Shift key every 25 s, no click, no focus), a second staff change Chicken -> Shrimp, timed",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "parent-link",
+      "at": "2: the till pages kept awake (a Shift key every 25 s, no click, no focus), a second staff change Chicken -> Shrimp, timed",
+      "kind": "http",
+      "text": "GET /api/user 401"
+    },
+    {
+      "page": "parent-link",
+      "at": "2: the till pages kept awake (a Shift key every 25 s, no click, no focus), a second staff change Chicken -> Shrimp, timed",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "4: one BEO line changed (ZZ TEST fruit plate 1 -> 2) in the editor; VOID and UPDATED once at the kitchen, nothing at the bar",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "oto-app",
+      "at": "4: a change that takes something away at both stations (Fried rice Shrimp -> Chicken; ZZ TEST lemonade pitcher 2 -> 1), one save in the editor",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "oto-app",
+      "at": "4: a change that takes something away at both stations (Fried rice Shrimp -> Chicken; ZZ TEST lemonade pitcher 2 -> 1), one save in the editor",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "till",
+      "at": "5/9: Settle party 1 on the ZZ TEST till: the form's preview, Confirm, Back with nothing taken (the settlement open)",
+      "kind": "http",
+      "text": "POST /api/parties/:id/settle 409"
+    },
+    {
+      "page": "till",
+      "at": "5/9: Settle party 1 on the ZZ TEST till: the form's preview, Confirm, Back with nothing taken (the settlement open)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "5/9: Settle party 1 on the ZZ TEST till: the form's preview, Confirm, Back with nothing taken (the settlement open)",
+      "kind": "http",
+      "text": "POST /api/parties/:id/settle 409"
+    },
+    {
+      "page": "till",
+      "at": "5/9: Settle party 1 on the ZZ TEST till: the form's preview, Confirm, Back with nothing taken (the settlement open)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the staging manager refunds the settlement whole from History; the party is as before settlement",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the staging manager refunds the settlement whole from History; the party is as before settlement",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "8: a very large quantity (250,000) on one BEO line of party 2 (the editor save route)",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "oto-app",
+      "at": "sign-out: every session of this run, each read back",
+      "kind": "http",
+      "text": "GET /api/events/:id/beo/till-billing 401"
+    },
+    {
+      "page": "oto-app",
+      "at": "sign-out: every session of this run, each read back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/me",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/menu",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/user",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/employees",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PATCH",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-templates",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/set-menu-selections",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-selections/public/<token>",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/set-menu-selections/public/<token>/submit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-selections/public/<token>",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-selections/public/<token>",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 409,
+      "errorCode": "PARTY_NO_PACKAGE"
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/branches/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/branches/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PATCH",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "party slips station": {
+      "partySlipsStationId": null
+    },
+    "the till sales": {
+      "sales": [
+        "Z90601-000001 refunded 17715"
+      ]
+    },
+    "party ZZ TEST 906 party": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "party ZZ TEST 906 no package": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "party ZZ TEST 906 package only": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "no ZZ TEST 906 party left": {
+      "appListStatus": 200,
+      "leftInApp": 0,
+      "leftOnTillToday": 0
+    },
+    "the ZZ TEST till": {
+      "delete": 200,
+      "archived": true,
+      "devices": 0
+    },
+    "the ZZ TEST printers": {
+      "deletes": [
+        "kids_band 200 stillAssigned 0",
+        "adult_band 200 stillAssigned 0",
+        "receipt 200 stillAssigned 0",
+        "kitchen 200 stillAssigned 0",
+        "bar 200 stillAssigned 0"
+      ],
+      "allArchived": true
+    },
+    "signOut": {
+      "at": "2026-11-12T13:51:49.994Z",
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "parentLinkPage": "closed (public page, no session)",
+      "otoApp": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "platformAdmin": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    }
+  },
+  "finishedAt": "2026-11-12T13:51:52.523Z",
+  "deploys": {
+    "file": "deploys.json (before: all four live at f17359759; after: api, pos-web and pos at 963605c97)",
+    "before": {
+      "oto-app-staging": "dep-dbqri2rbc2fs73e7s29g f17359759 live 2026-11-12T13:06:18.296713Z",
+      "oto-api-staging": "dep-dbqrjnbbc2fs73e80610 f17359759 live 2026-11-12T13:11:38.827766Z",
+      "oto-pos-web-staging": "dep-dbqrm8dckfvc73d9upg0 f17359759 live 2026-11-12T13:15:54.694373Z",
+      "oto-pos-staging": "dep-dbqrm8gn74is73d22drg f17359759 live 2026-11-12T13:13:33.019774Z"
+    },
+    "after": {
+      "oto-app-staging": "dep-dbqri2rbc2fs73e7s29g f17359759 live 2026-11-12T13:06:18.296713Z",
+      "oto-api-staging": "dep-dbqs39rm8hqs73endo8g 963605c97 live 2026-11-12T13:44:52.415156Z",
+      "oto-pos-web-staging": "dep-dbqs3adckfvc73dat7fg 963605c97 live 2026-11-12T13:43:22.385102Z",
+      "oto-pos-staging": "dep-dbqs3aifngtc738gs710 963605c97 live 2026-11-12T13:41:05.218787Z"
+    },
+    "note": "Points 1 to 4 and point 6 (13:16-13:42 UTC) ran with all four services at f17359759. During point 5 another deploy went live: oto-pos-staging 13:41:05Z, oto-pos-web-staging 13:43:22Z, oto-api-staging 13:44:52Z, all at 963605c97, which contains f17359759 and adds POS money/party-bill/history changes (PartyDetail, MobilePartyDetail, usePartyPlanRead, partySettlementBill, PartySettleModal) and, in the api, only a sale supervision gate (services/sale.ts). The settlement (13:46), refund (13:48), points 8 and 9 (13:49-13:50) therefore ran on 963605c97 tills and api; whether each open page had loaded the new bundle was not checked. The OTO App stayed at f17359759 throughout."
+  },
+  "findings": [
+    "D1 (prices, BEO vs bill): the BEO editor has no price box on kitchen or bar lines (beo-event-editor.tsx, SCRUM-822 removed it), so an \"entered price\" can only come from the till-menu pick, AI fill or the api; staff cannot type 120 or see it on the editor. The editor shows no price for any line, the PDF shows \"120฿ each\" only where a price was entered, and EXTRA lines with no entered price (Hummus, Mineral water) are charged at the till price (275, 2 x 60) with no figure anywhere on the BEO but its expected total.",
+    "D2 (settle form): the Settle party form lumps every BEO EXTRA into one \"Add-ons ฿815\" row (PartySettleModal.tsx QuoteSummary): Calamari, Hummus, mango sticky rice and water are named only on the sale in History and on the receipt.",
+    "D3 (bar slip time): the bar slip prints READY BY 19:10 (kids' food 19:30 less 20 min, partyReadyBy in packages/shared/src/party-slips.ts, from SCRUM-805) while the till page and the BEO now show \"Bar service 19:15\".",
+    "D4 (kitchen slip): the set menu's uncoded \"Drinks pitcher: Juice\" prints on the KITCHEN slip (by design until coded; open owner question 9).",
+    "D5 (refresh): a till left idle locks after 2 minutes (auth/timings.ts INACTIVITY_TIMEOUT_MS 120000); a BEO change is not seen behind the lock; an awake till showed it within 34 s (desk) and 52 s (phone).",
+    "D6 (pre-existing): before settlement the desk shows a disabled \"Fully paid\" button and the phone header \"Fully paid\" for a party whose package is unpaid (bill reads ฿0); also on the package-only party at 13:50 on the 963605c97 tills.",
+    "D7 (pre-existing): the BEO PDF prints a set-menu dish as \"Margherita ((Pizza))\" - doubled brackets (apps/oto-app/server/pdf.ts:722 wraps the \"(Pizza)\" note in brackets again).",
+    "D8 (staging data): Settle party defaults \"Socks given\" to the children, and Central Floresta has 0 Regular Socks on staging, so Confirm is refused STOCK_SHORT until socks are set to 0.",
+    "D9 (cosmetic): in the BEO editor a quantity of 250000 overlaps the + button.",
+    "D10 (claim vs product): the plan (State 20:04) and the brief say the Health page shows notCaughtUp and changesRebased; it does not (see point 6)."
+  ],
+  "notCovered": [
+    "The counts notCaughtUp and changesRebased themselves (not exposed by any api for an ok run; the database was not read).",
+    "A party's change while NOT named: the cancellation VOID slips at deletion (the station was set back to none before the parties were deleted).",
+    "The phone page during change B and the settlement on the phone (the phone only reads the bill).",
+    "Whether the open till pages in points 5, 8 and 9 ran the f17359759 or the 963605c97 bundle (the tills redeployed mid-run)."
+  ],
+  "images": [
+    "01a-till-desk-party-page-top.png",
+    "01b-till-desk-kitchen-plan-card.png",
+    "01c-till-desk-bar-plan-card.png",
+    "01d-beo-kitchen-plan-set-menu.png",
+    "01e-beo-kitchen-plan-extra-lines.png",
+    "01f-beo-cake.png",
+    "01g-beo-bar-plan.png",
+    "01h-till-phone-party-page-top.png",
+    "01i-till-phone-kitchen-plan.png",
+    "01j-till-phone-kitchen-plan-cake-and-bar.png",
+    "02a-parent-link-page-before-staff-change.png",
+    "02b-beo-staff-change-fried-rice-chicken-before-save.png",
+    "02c-till-desk-staff-choice-fried-rice-shrimp.png",
+    "02d-till-phone-staff-choice-fried-rice-shrimp.png",
+    "02e-parent-link-page-after-staff-change.png",
+    "03a-till-desk-no-package-party.png",
+    "03b-till-desk-no-package-kitchen-plan.png",
+    "04a-till-desk-slips-card-after-print-now.png",
+    "04b-kitchen-slip-print-now.png",
+    "04c-bar-slip-print-now.png",
+    "04d-kitchen-updated-slip-fruit-plate-up.png",
+    "04e-beo-change-both-stations-before-save.png",
+    "04f-kitchen-void-slip.png",
+    "04g-kitchen-updated-slip.png",
+    "04h-bar-void-slip.png",
+    "04i-bar-updated-slip.png",
+    "05a-settle-party-form-preview.png",
+    "05b-settle-refused-socks-out-of-stock-on-staging.png",
+    "05c-settle-party-form-socks-0.png",
+    "05d1-settle-payment-step-then-back.png",
+    "05d2-settle-resumed-cash-chosen.png",
+    "05d3-settled-receipt.png",
+    "05e-history-list-settlement.png",
+    "05f-history-detail-settlement-lines.png",
+    "05g-manager-refund-whole.png",
+    "05h-history-detail-after-refund.png",
+    "05i-party-page-after-refund-as-before.png",
+    "06a-release-readback.png",
+    "07a-beo-pdf-page1-extra-each.png",
+    "07b-beo-pdf-page2-bar-plan.png",
+    "08a-till-desk-quantity-250000.png",
+    "08b-beo-quantity-250000.png",
+    "08c-till-desk-packaged-party-quantity-250000.png",
+    "09a-till-desk-settlement-open-party-bill.png",
+    "09b-till-phone-settlement-open-header-and-bill.png",
+    "09c-till-phone-settlement-open-bottom.png",
+    "09d-till-desk-package-only-party.png"
+  ]
+}
