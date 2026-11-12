@@ -590,7 +590,8 @@ try {
       adults: [line("a1", "Fruit skewers", 2)],
       adultsDiffer: true,
     }, true);
-    assert.ok(set.includes(`Margherita ((Pizza)) <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`), "a set-menu row the adults do not get");
+    // SCRUM-958 (SCRUM-940 point 3): the set-menu choice in one pair of brackets, no longer "((Pizza))".
+    assert.ok(set.includes(`Margherita (Pizza) <span class="item-note" style="color:#92400e;font-weight:600;">— ${KIDS_ONLY_MARK}</span>`), "a set-menu row the adults do not get");
     assert.equal(set.split("Fruit skewers").length, 2, "the additional item the adults share, once and unmarked");
     // A BEO saved before the switch with two different lists: their list as saved, as the adults' changes.
     const before = await pdf({ kids: KIDS, adults: [line("a1", "Steak", 4)] });
