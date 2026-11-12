@@ -1,0 +1,533 @@
+{
+  "tickets": [
+    "SCRUM-869",
+    "SCRUM-870"
+  ],
+  "run": "2026-11-12 11:19-11:24 Bangkok, till page served 63f51a2d (carries dc5f5513)",
+  "deploys": {
+    "api": {
+      "id": "dep-dbqjk7brjlhs738gdf9g",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:05:29Z"
+    },
+    "pos": {
+      "id": "dep-dbqjk83rjlhs738gdhhg",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:02:48Z",
+      "laterDeploy": {
+        "commit": "63f51a2d",
+        "live": "2026-11-12T04:12:10Z"
+      }
+    },
+    "posWeb": {
+      "id": "dep-dbqjk8jrjlhs738gdj2g",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:05:14Z",
+      "laterDeploy": {
+        "commit": "63f51a2d",
+        "live": "2026-11-12T04:14:29Z"
+      }
+    }
+  },
+  "display": {
+    "kind": "display",
+    "id": "01a1cdfa-d57a-79c0-8258-9b9c0b6ee73d"
+  },
+  "c869": {
+    "clicks": [
+      {
+        "label": "Kids",
+        "ms": 277
+      },
+      {
+        "label": "Adults",
+        "ms": 916
+      },
+      {
+        "label": "Kids",
+        "ms": 1740
+      }
+    ],
+    "frames": [
+      {
+        "ms": 1453,
+        "stage": "order",
+        "supported": true
+      },
+      {
+        "ms": 2295,
+        "stage": "order",
+        "supported": true
+      }
+    ],
+    "reads": 72,
+    "welcomeReads": 0,
+    "noOrderReads": 0,
+    "idleFlashes": 0,
+    "splitFlips": 0,
+    "totals": [
+      "฿1040",
+      "฿2080",
+      "฿2770"
+    ],
+    "samples": [
+      {
+        "ms": 99,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 197,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 294,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 401,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 495,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 596,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 693,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 793,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 899,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 990,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 1100,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 1192,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 1293,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 1401,
+        "idle": false,
+        "order": true,
+        "total": "฿1040"
+      },
+      {
+        "ms": 1491,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 1593,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 1694,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 1802,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 1895,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 2004,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 2097,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 2190,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 2293,
+        "idle": false,
+        "order": true,
+        "total": "฿2080"
+      },
+      {
+        "ms": 2394,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2495,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2591,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2699,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2791,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2892,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 2992,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3100,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3191,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3303,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3395,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3503,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3597,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3692,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3803,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3896,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 3991,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4096,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4192,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4300,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4393,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4500,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4594,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4703,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4797,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4890,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 4997,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5095,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5194,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5290,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5408,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5497,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5592,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5693,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5799,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 5893,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6001,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6094,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6205,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6298,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6391,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6499,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6589,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6696,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6790,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6904,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 6995,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 7096,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      },
+      {
+        "ms": 7205,
+        "idle": false,
+        "order": true,
+        "total": "฿2770"
+      }
+    ]
+  },
+  "d870": {
+    "first": {
+      "leaseRelease": 200,
+      "welcomeAfterMs": 273,
+      "orderOnDisplay": 0,
+      "continueOnDisplay": 0,
+      "ticketsAgain": {
+        "framesPublished": [
+          "identify"
+        ],
+        "display": "language choice",
+        "till": "Membership Check, empty order"
+      }
+    },
+    "second": {
+      "from": "phone prompt half typed (08987)",
+      "leaseRelease": 200,
+      "welcome": true,
+      "ticketsAgain": "language choice, keypad empty"
+    }
+  },
+  "cleanup": {
+    "displayRevoke": 200,
+    "displaysLeft": []
+  }
+}

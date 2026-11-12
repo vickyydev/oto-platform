@@ -1,0 +1,569 @@
+{
+  "ticket": "SCRUM-859",
+  "startedAt": "2026-11-12T04:07:58.779Z",
+  "phase": "finished",
+  "passes": [
+    "t",
+    "p"
+  ],
+  "numbers": {
+    "ticket": "0898760020",
+    "long": "0898760021",
+    "display": "0898760022",
+    "phone": "0898760023"
+  },
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "picture": "01-ticket-cash-split-1440x900.png",
+      "shows": "Ticket sale, Cash, split view 1440 x 900: the customer half carries the package line, Kids 2 x ฿690, Adults 1 x ฿350, the Total and \"Please pay\" with the staff half's Amount Due",
+      "seen": {
+        "staff": {
+          "payButton": "Pay ฿1730",
+          "amountDue": "฿1730"
+        },
+        "figure": {
+          "text": "฿1730.00",
+          "top": 602,
+          "bottom": 650,
+          "left": 1169,
+          "right": 1392,
+          "height": 48,
+          "visible": true
+        },
+        "linesInTheDom": true,
+        "words": true,
+        "figureMatchesAmountDue": true,
+        "nothingCut": true,
+        "cards": [
+          {
+            "height": 186,
+            "shownPx": 186,
+            "whole": true
+          }
+        ],
+        "linesList": {
+          "visibleHeight": 460,
+          "contentHeight": 460,
+          "scrollsInItself": false,
+          "paddingTop": 32
+        },
+        "summaryOverlapsAmountPx": 0,
+        "at1920": {
+          "nothingCut": true,
+          "cards": [
+            {
+              "height": 186,
+              "shownPx": 186,
+              "whole": true
+            }
+          ],
+          "linesList": {
+            "visibleHeight": 640,
+            "contentHeight": 640,
+            "scrollsInItself": false,
+            "paddingTop": 32
+          }
+        }
+      }
+    },
+    "2": {
+      "verdict": "PASS",
+      "picture": "02-ticket-qr-split-1440x900.png",
+      "shows": "Same sale, PromptPay → Show payment QR: the QR and the amount are drawn whole beside the order's lines; the QR cancelled and the sale paid in cash (02b)",
+      "seen": {
+        "qr": {
+          "top": 439,
+          "bottom": 643,
+          "left": 1178,
+          "right": 1383,
+          "height": 205
+        },
+        "qrWhole": true,
+        "figure": {
+          "text": "฿1730.00",
+          "top": 688,
+          "bottom": 736,
+          "left": 1169,
+          "right": 1392,
+          "height": 48,
+          "visible": true
+        },
+        "cards": [
+          {
+            "height": 186,
+            "shownPx": 186,
+            "whole": true
+          }
+        ],
+        "linesList": {
+          "visibleHeight": 460,
+          "contentHeight": 460,
+          "scrollsInItself": false,
+          "paddingTop": 32
+        },
+        "summaryOverlapsAmountPx": 0,
+        "sale": {
+          "receipt": "Z85904-000001",
+          "status": "finalised",
+          "baht": 1730
+        }
+      }
+    },
+    "7": {
+      "verdict": "FAIL",
+      "picture": "07-phone-customer-payment-390x844.png",
+      "shows": "Phone-width till, the QR handed to the customer: the order's lines with the amount pinned beside the QR",
+      "seen": {
+        "payButton": "Pay ฿1730",
+        "cards": [
+          {
+            "height": 186,
+            "shownPx": 80,
+            "whole": false
+          }
+        ],
+        "linesList": {
+          "visibleHeight": 96,
+          "contentHeight": 218,
+          "scrollsInItself": true,
+          "paddingTop": 16
+        },
+        "figure": {
+          "text": "฿1730.00",
+          "top": 676,
+          "bottom": 724,
+          "left": 84,
+          "right": 306,
+          "height": 48,
+          "visible": true
+        },
+        "qrWhole": true,
+        "summaryOverlapsAmountPx": 0,
+        "amountScrollsInItself": true,
+        "figureUnderTheHandBackBar": false
+      }
+    }
+  },
+  "measures": {
+    "ticketCash": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "frame": {
+        "top": 206,
+        "bottom": 900,
+        "left": 720,
+        "right": 1440,
+        "height": 694
+      },
+      "lines": {
+        "top": 315,
+        "bottom": 775,
+        "left": 720,
+        "right": 1120,
+        "height": 460
+      },
+      "summary": {
+        "top": 775,
+        "bottom": 900,
+        "left": 720,
+        "right": 1120,
+        "height": 125
+      },
+      "amount": {
+        "top": 315,
+        "bottom": 900,
+        "left": 1120,
+        "right": 1440,
+        "height": 585
+      },
+      "qr": null,
+      "linesList": {
+        "visibleHeight": 460,
+        "contentHeight": 460,
+        "scrollsInItself": false,
+        "paddingTop": 32
+      },
+      "cards": [
+        {
+          "height": 186,
+          "shownPx": 186,
+          "whole": true
+        }
+      ],
+      "everyCardWhole": true,
+      "summaryOverlapsAmountPx": 0,
+      "figure": {
+        "text": "฿1730.00",
+        "top": 602,
+        "bottom": 650,
+        "left": 1169,
+        "right": 1392,
+        "height": 48,
+        "visible": true
+      },
+      "qrWhole": null,
+      "amountScrollsInItself": false,
+      "pageScrolls": false,
+      "text": {
+        "lines": "1 Hour Play ฿1730 Kids2 × ฿690 ฿1380 Adults1 × ฿350 ฿350",
+        "summary": "VAT included ฿113.18 Total ฿1730",
+        "amount": "Please pay ฿1730.00 to our staff Paying by Cash"
+      }
+    },
+    "ticketCash1920": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "frame": {
+        "top": 206,
+        "bottom": 1080,
+        "left": 960,
+        "right": 1920,
+        "height": 874
+      },
+      "lines": {
+        "top": 315,
+        "bottom": 955,
+        "left": 960,
+        "right": 1504,
+        "height": 640
+      },
+      "summary": {
+        "top": 955,
+        "bottom": 1080,
+        "left": 960,
+        "right": 1504,
+        "height": 125
+      },
+      "amount": {
+        "top": 315,
+        "bottom": 1080,
+        "left": 1504,
+        "right": 1920,
+        "height": 765
+      },
+      "qr": null,
+      "linesList": {
+        "visibleHeight": 640,
+        "contentHeight": 640,
+        "scrollsInItself": false,
+        "paddingTop": 32
+      },
+      "cards": [
+        {
+          "height": 186,
+          "shownPx": 186,
+          "whole": true
+        }
+      ],
+      "everyCardWhole": true,
+      "summaryOverlapsAmountPx": 0,
+      "figure": {
+        "text": "฿1730.00",
+        "top": 687,
+        "bottom": 759,
+        "left": 1546,
+        "right": 1879,
+        "height": 72,
+        "visible": true
+      },
+      "qrWhole": null,
+      "amountScrollsInItself": false,
+      "pageScrolls": false,
+      "text": {
+        "lines": "1 Hour Play ฿1730 Kids2 × ฿690 ฿1380 Adults1 × ฿350 ฿350",
+        "summary": "VAT included ฿113.18 Total ฿1730",
+        "amount": "Please pay ฿1730.00 to our staff Paying by Cash"
+      }
+    },
+    "ticketQr": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "frame": {
+        "top": 206,
+        "bottom": 900,
+        "left": 720,
+        "right": 1440,
+        "height": 694
+      },
+      "lines": {
+        "top": 315,
+        "bottom": 775,
+        "left": 720,
+        "right": 1120,
+        "height": 460
+      },
+      "summary": {
+        "top": 775,
+        "bottom": 900,
+        "left": 720,
+        "right": 1120,
+        "height": 125
+      },
+      "amount": {
+        "top": 315,
+        "bottom": 900,
+        "left": 1120,
+        "right": 1440,
+        "height": 585
+      },
+      "qr": {
+        "top": 439,
+        "bottom": 643,
+        "left": 1178,
+        "right": 1383,
+        "height": 205
+      },
+      "linesList": {
+        "visibleHeight": 460,
+        "contentHeight": 460,
+        "scrollsInItself": false,
+        "paddingTop": 32
+      },
+      "cards": [
+        {
+          "height": 186,
+          "shownPx": 186,
+          "whole": true
+        }
+      ],
+      "everyCardWhole": true,
+      "summaryOverlapsAmountPx": 0,
+      "figure": {
+        "text": "฿1730.00",
+        "top": 688,
+        "bottom": 736,
+        "left": 1169,
+        "right": 1392,
+        "height": 48,
+        "visible": true
+      },
+      "qrWhole": true,
+      "amountScrollsInItself": true,
+      "pageScrolls": false,
+      "text": {
+        "lines": "1 Hour Play ฿1730 Kids2 × ฿690 ฿1380 Adults1 × ฿350 ฿350",
+        "summary": "VAT included ฿113.18 Total ฿1730",
+        "amount": "SCAN TO PAY Scan to Pay ฿1730.00 QR time remaining 19:59 Open your banking app and scan to complete the payment. Waiting for payment confirmation…"
+      }
+    },
+    "phoneQr": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "frame": {
+        "top": 0,
+        "bottom": 755,
+        "left": 0,
+        "right": 390,
+        "height": 755
+      },
+      "lines": {
+        "top": 97,
+        "bottom": 193,
+        "left": 0,
+        "right": 390,
+        "height": 96
+      },
+      "summary": {
+        "top": 193,
+        "bottom": 302,
+        "left": 0,
+        "right": 390,
+        "height": 109
+      },
+      "amount": {
+        "top": 302,
+        "bottom": 755,
+        "left": 0,
+        "right": 390,
+        "height": 453
+      },
+      "qr": {
+        "top": 427,
+        "bottom": 631,
+        "left": 93,
+        "right": 297,
+        "height": 205
+      },
+      "linesList": {
+        "visibleHeight": 96,
+        "contentHeight": 218,
+        "scrollsInItself": true,
+        "paddingTop": 16
+      },
+      "cards": [
+        {
+          "height": 186,
+          "shownPx": 80,
+          "whole": false
+        }
+      ],
+      "everyCardWhole": false,
+      "summaryOverlapsAmountPx": 0,
+      "figure": {
+        "text": "฿1730.00",
+        "top": 676,
+        "bottom": 724,
+        "left": 84,
+        "right": 306,
+        "height": 48,
+        "visible": true
+      },
+      "qrWhole": true,
+      "amountScrollsInItself": true,
+      "pageScrolls": false,
+      "text": {
+        "lines": "1 Hour Play ฿1730 Kids2 × ฿690 ฿1380 Adults1 × ฿350 ฿350",
+        "summary": "VAT included ฿113.18 Total ฿1730",
+        "amount": "SCAN TO PAY Scan to Pay ฿1730.00 QR time remaining 19:59 Open your banking app and scan to complete the payment. Waiting for payment confirmation…"
+      }
+    }
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cdf0-e95b-7c70-9601-0382f1f9bd05",
+      "name": "ZZ TEST SCRUM-859 proof till 1794456478823",
+      "prefix": "Z85904"
+    },
+    {
+      "kind": "qr-attempt",
+      "id": "01a1cdf1-37e1-7f97-acd0-90c074851e49",
+      "route": "gateway",
+      "status": 200
+    },
+    {
+      "kind": "qr-cancelled",
+      "id": "01a1cdf1-37e1-7f97-acd0-90c074851e49",
+      "attemptStatus": "cancelled"
+    },
+    {
+      "kind": "qr-attempt",
+      "id": "01a1cdf1-6ece-7c43-a5e2-8357253b062d",
+      "route": "gateway",
+      "status": 200
+    },
+    {
+      "kind": "qr-cancelled",
+      "id": "01a1cdf1-6ece-7c43-a5e2-8357253b062d",
+      "attemptStatus": "cancelled"
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdf1-688d-7037-9c1d-77a05fb9663d",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cdf1-1e39-7d18-8623-39b085935748",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "receipt": "Z85904-000002",
+          "status": "finalised",
+          "baht": 1730
+        },
+        {
+          "receipt": "Z85904-000001",
+          "status": "finalised",
+          "baht": 1730
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cdf0-e95b-7c70-9601-0382f1f9bd05",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "ticket",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "long",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "display",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "phone",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true
+    }
+  ],
+  "checks": {
+    "bundle": {
+      "files": [
+        "index-3vlZ2MR7.js"
+      ],
+      "customerPaymentMarkers": 2
+    }
+  },
+  "finishedAt": "2026-11-12T04:08:48.689Z"
+}

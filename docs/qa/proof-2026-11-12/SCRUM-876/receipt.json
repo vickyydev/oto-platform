@@ -1,0 +1,212 @@
+{
+  "tickets": [
+    "SCRUM-877",
+    "SCRUM-876"
+  ],
+  "run": "2026-11-12 11:08-11:25 Bangkok, interactive driver (the steps of proof.mjs)",
+  "deploys": {
+    "api": {
+      "id": "dep-dbqjk7brjlhs738gdf9g",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:05:29Z"
+    },
+    "pos": {
+      "id": "dep-dbqjk83rjlhs738gdhhg",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:02:48Z",
+      "laterDeploy": {
+        "commit": "63f51a2d",
+        "live": "2026-11-12T04:12:10Z"
+      }
+    },
+    "posWeb": {
+      "id": "dep-dbqjk8jrjlhs738gdj2g",
+      "commit": "dc5f5513",
+      "live": "2026-11-12T04:05:14Z",
+      "laterDeploy": {
+        "commit": "63f51a2d",
+        "live": "2026-11-12T04:14:29Z"
+      }
+    }
+  },
+  "station": {
+    "id": "01a1cdf2-72b5-71af-86b1-c6ecd9ca0e0d",
+    "prefix": "Z87601"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cdf2-72b5-71af-86b1-c6ecd9ca0e0d",
+      "name": "ZZ TEST SCRUM-876 proof till 1794456579918",
+      "prefix": "Z87601",
+      "at": "2026-11-12T04:09:40.716Z"
+    },
+    {
+      "kind": "sale-877",
+      "id": "01a1cdf2-a354-79a8-8666-651defaee3ec"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "f215fd3a-82f4-4abc-81b7-2e033aa28a70",
+      "title": "ZZ TEST SCRUM-876 party",
+      "at": "2026-11-12T04:14:08.331Z"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1cdf7-4b0c-71be-b3b2-6e5b35078190",
+      "settlement": "01a1cdf7-4b0b-765e-b61c-97b5226009cd"
+    }
+  ],
+  "reads": {
+    "a877": {
+      "sale": "01a1cdf2-a354-79a8-8666-651defaee3ec",
+      "partPaymentFinalise": {
+        "status": 200,
+        "finalised": false,
+        "outstandingSatang": 12500
+      },
+      "eodBefore": {
+        "partPaid": 1,
+        "row": {
+          "kind": "part_paid",
+          "grossSatang": 17500,
+          "paidSatang": 5000,
+          "balanceSatang": 12500
+        }
+      },
+      "historyBefore": {
+        "refundButton": "Refund (฿50 left)",
+        "partPaidNote": true,
+        "voidButton": false
+      },
+      "dialog": {
+        "wholeOnly": true,
+        "byItemDisabled": true,
+        "amountDisabled": true
+      },
+      "receptionPress": {
+        "status": 403,
+        "code": "REFUND_APPROVAL_REQUIRED"
+      },
+      "managerPress": {
+        "status": 200,
+        "mode": "whole",
+        "refundSatang": 5000,
+        "tender": [
+          {
+            "route": "cash",
+            "method": "cash",
+            "amountSatang": 5000
+          }
+        ],
+        "sale": "voided",
+        "refundStatus": "refunded",
+        "refundNo": "Z87601-R-000001"
+      },
+      "saleReadAfter": {
+        "status": "voided",
+        "refundStatus": "partially_refunded"
+      },
+      "eodAfter": {
+        "partPaid": 0,
+        "rows": 0
+      }
+    },
+    "b876": {
+      "party": "ZZ TEST SCRUM-876 party (OTO App, deleted after)",
+      "deposit": {
+        "beoBilling": {
+          "status": 201,
+          "depositPaidAmount": 1000
+        },
+        "appPrepayment": 1000,
+        "tillDepositSatang": 100000
+      },
+      "packageApply": 201,
+      "settle": {
+        "status": 200,
+        "sale": "01a1cdf7-4b0c-71be-b3b2-6e5b35078190",
+        "saleStatus": "tendering",
+        "outstandingSatang": 1590000,
+        "settlement": {
+          "state": "open",
+          "depositSatang": 100000,
+          "paidSatang": 100000
+        }
+      },
+      "eodWithOpenSettlement": {
+        "partPaid": 0,
+        "held": 0,
+        "rows": 0
+      },
+      "history": {
+        "voidUnpaidSale": true,
+        "refund": false,
+        "depositAttempt": {
+          "status": "approved",
+          "amountSatang": 100000,
+          "partyDeposit": true
+        }
+      },
+      "cancel": {
+        "voidStatus": 200,
+        "replay": false,
+        "sale": "voided",
+        "reason": "ZZ TEST SCRUM-876 proof: parent pays the balance later"
+      },
+      "after": {
+        "partyDepositSatang": 100000,
+        "settlement": "voided",
+        "payments": 0,
+        "saleRefunds": 0,
+        "depositAttempt": "cancelled",
+        "appPrepayment": 1000,
+        "appBillingDepositPaid": true,
+        "settleAgainForm": "Total ฿16,900 · Deposit paid −฿1,000 · Balance ฿15,900 (preview only, cancelled)"
+      }
+    }
+  },
+  "cleanup": {
+    "displayRevoke": 200,
+    "displaysLeft": [],
+    "mgrSignOut": 200,
+    "mgrMe": 401,
+    "partyDelete": 204,
+    "partyReadBack": {
+      "app": 404,
+      "till": 404
+    },
+    "sales": [
+      {
+        "id": "01a1cdf7-4b0c-71be-b3b2-6e5b35078190",
+        "status": "voided",
+        "gross": 1690000
+      },
+      {
+        "id": "01a1cdf2-a354-79a8-8666-651defaee3ec",
+        "status": "voided",
+        "gross": 17500
+      }
+    ],
+    "tillSignOut": 200,
+    "tillMe": 401,
+    "unassign": 200,
+    "archive": 200,
+    "station": {
+      "archived": true,
+      "devices": 0
+    },
+    "members": {
+      "0898760020": null,
+      "0898760021": null,
+      "0898760022": null,
+      "0898760023": null,
+      "0898760040": null
+    },
+    "eod": {
+      "held": 0,
+      "partPaid": 0,
+      "rows": []
+    }
+  }
+}
