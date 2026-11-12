@@ -12249,6 +12249,8 @@ export interface paths {
                                     [key: string]: unknown;
                                 } | null;
                                 language: string;
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -12352,6 +12354,8 @@ export interface paths {
                                     [key: string]: unknown;
                                 } | null;
                                 language: string;
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -12450,6 +12454,8 @@ export interface paths {
                                     [key: string]: unknown;
                                 } | null;
                                 language: string;
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -12651,6 +12657,8 @@ export interface paths {
                                     [key: string]: unknown;
                                 } | null;
                                 language: string;
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;

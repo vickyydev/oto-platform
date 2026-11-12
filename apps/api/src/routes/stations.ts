@@ -3,6 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { deviceCredential, station, stationEvent } from '@oto/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
+  STATION_DISPLAY_THEMES,
   STATION_LEASE_HEARTBEAT_S,
   STATION_LEASE_TTL_S,
   STATION_INTENT_REFUSALS,
@@ -152,6 +153,8 @@ const DocumentSchema = z.object({
   payment: z.record(z.string(), z.unknown()).nullable().optional(),
   prompt: z.record(z.string(), z.unknown()).nullable().optional(),
   language: z.string(),
+  /** SCRUM-929 — the paired display's look; null until a till tells one. */
+  theme: z.enum(STATION_DISPLAY_THEMES).nullable().optional(),
   lease: LeaseSchema.nullable(),
   takeoverCount: z.number().int(),
   updatedAt: z.string(),
