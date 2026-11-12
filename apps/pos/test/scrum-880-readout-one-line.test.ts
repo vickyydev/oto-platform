@@ -70,7 +70,8 @@ if (!markup) console.warn(`SCRUM-880 readout measurement skipped: no browser to 
 describe.skipIf(!markup)('SCRUM-880 — measured: one line, inside the box', () => {
   let page: MarkupPage;
   beforeAll(() => { page = markup!; });
-  afterAll(async () => { await markup?.close(); });
+  // Closing the browser and the dev server can take a while on a loaded machine.
+  afterAll(async () => { await markup?.close(); }, 60_000);
 
   // One country per dial-code length the list carries, the longest first found.
   const dials = [...new Set(COUNTRIES.map((c) => c.dialCode.length))].sort().map(
