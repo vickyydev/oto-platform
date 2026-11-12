@@ -49,6 +49,8 @@ export * from './supervision';
 export * from './release';
 export * from './checkin-offline';
 export * from './wallet';
+// SCRUM-883: the grant law read from a cart, as the platform reads the ledger.
+export * from './wallet-cart';
 export * from './band-food';
 export * from './voucher-promo';
 export * from './stock';

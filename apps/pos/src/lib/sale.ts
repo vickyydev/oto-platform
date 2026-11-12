@@ -5,13 +5,11 @@ import {
   ManualDiscount,
   Sale,
   SaleQuotedPricing,
-  TicketCreditRule,
   CreditGrant,
 } from '@/types';
-import { giftTicketAdultOrdinal } from '@oto/shared';
-import { priceForTier, resolveAdultLine } from '@/lib/pricing';
+import { grantLinesOfCart, personGrantsOf } from '@oto/shared';
 import { resolveFreeItem } from '@/lib/promoVoucher';
-import { ticketTotals } from '@/lib/cartWire';
+import { engineCartLine, pricingContext, ticketTotals } from '@/lib/cartWire';
 
 /*
  * SCRUM-271 — THE TILL'S OLDER CALCULATOR USED TO START HERE: `tillTaxInputs`
@@ -24,31 +22,6 @@ import { ticketTotals } from '@/lib/cartWire';
  * sale record itself — the credit grants and the bands a sale issues.
  */
 
-/**
- * The F&B/merch credit (฿) one person earns from a ticket's give-back rule,
- * given the ฿ they actually paid. full_price → the price paid; fixed → value ฿;
- * percent → value% × price paid. Never negative.
- */
-function unitCredit(pricePaid: number, rule: TicketCreditRule): number {
-  switch (rule.basis) {
-    case 'full_price':
-      return Math.max(0, pricePaid);
-    case 'fixed':
-      return Math.max(0, rule.value ?? 0);
-    case 'percent':
-      return Math.max(0, pricePaid * ((rule.value ?? 0) / 100));
-    default:
-      return 0;
-  }
-}
-
-/** Whether a ticket's credit rule pays out to a person of the given role. */
-function creditApplies(rule: TicketCreditRule | undefined, role: 'adult' | 'kid'): boolean {
-  if (!rule || rule.appliesTo === 'none') return false;
-  if (rule.appliesTo === 'both') return true;
-  return role === 'adult' ? rule.appliesTo === 'adults' : rule.appliesTo === 'kids';
-}
-
 export interface PersonGrant {
   role: 'adult' | 'kid';
   creditTHB: number; // 0 when this person earns no credit
@@ -58,44 +31,48 @@ export interface PersonGrant {
 /**
  * One entry per PERSON (adults then kids, per line) across the sale's regular
  * play lines — promo and drop-off lines are skipped (drop-off children get their
- * band at door check-in). Each person's credit and gate access are read purely
- * from that line's own ticket package, so this is the single source that drives
- * BOTH the credit grants and the wristband minting. Adults are ordered paid-first
- * then free (mirrors computeLineBreakdown) so wallet indices stay stable.
+ * band at door check-in). This is the single source that drives BOTH the credit
+ * grants and the wristband minting. Adults are ordered paid-first then free
+ * (mirrors computeLineBreakdown) so wallet indices stay stable.
+ *
+ * SCRUM-883 — WHO EARNS WHAT IS THE PLATFORM'S GRANT LAW, NOT A SECOND COPY OF
+ * IT. The prototype read each person's credit from the adult rule alone
+ * (`unitCredit` / `creditApplies` here), which knew nothing of the free items
+ * a rate bundles (SCRUM-768): on staging a Thai adult the rate let in free was
+ * counted as paying ฿350 and earning ฿350, and the customer's thank-you showed
+ * a credit the platform never granted. Each person's credit is now read from
+ * the rows the platform files for this cart (`grantLinesOfCart` in
+ * `@oto/shared`, the same `cartUnits` and `grantLinesOfLedger` that
+ * `grantSaleCredit` reads), so the till promises what the platform grants:
+ * a free adult (by the adult rule or the free items) earns nothing under
+ * `full_price` or `percent` and the rule's value under `fixed`; a child the
+ * free items let in earns nothing; SCRUM-798's Golden Ticket child and parent
+ * earn nothing. Every person still has an entry, for their band.
  */
 export function buildPersonGrants(lines: CartLine[]): PersonGrant[] {
+  const play = lines.filter((line) => !line.promoItem && !line.dropOff);
+  if (play.length === 0) return [];
+  const packages = new Map(
+    play.map((line) => [
+      line.ticketType.id,
+      { creditRule: line.ticketType.creditRule ?? null, gateAccess: line.ticketType.gateAccess ?? false },
+    ]),
+  );
+  const gifts = new Set(play.filter((line) => line.voucherGift).map((line) => line.id));
+  const earned = new Map<string, number>();
+  for (const person of personGrantsOf(grantLinesOfCart(play.map(engineCartLine), pricingContext(), packages, new Set(), gifts))) {
+    earned.set(`${person.cartLineId}:${person.role}:${person.ordinal}`, person.creditSatang);
+  }
+  const creditOf = (lineId: string, role: 'adult' | 'kid', ordinal: number): number =>
+    (earned.get(`${lineId}:${role}:${ordinal}`) ?? 0) / 100;
   const out: PersonGrant[] = [];
-  for (const line of lines) {
-    if (line.promoItem || line.dropOff) continue;
-    const rule = line.ticketType.creditRule;
+  for (const line of play) {
     const gate = line.ticketType.gateAccess ?? false;
-    const kidPrice = priceForTier(line.ticketType, line.tier);
-    const adultLine = resolveAdultLine(line.ticketType, line.tier, line.adults);
-    const adultPrices = [
-      ...Array(adultLine.paidCount).fill(adultLine.paidUnit),
-      ...Array(adultLine.freeCount).fill(0),
-    ];
-    // SCRUM-798 — "free entry with no food voucher": a Golden Ticket's child
-    // (the line's first kid) and the parent who stays (its first free adult,
-    // else its first paid adult) get their bands and earn nothing; anyone else
-    // on the line pays and earns as usual (the platform's `grantSaleCredit` too).
-    const giftAdult = line.voucherGift
-      ? giftTicketAdultOrdinal({ paidAdults: adultLine.paidCount, freeAdults: adultLine.freeCount })
-      : null;
-    adultPrices.forEach((paid, ordinal) => {
-      out.push({
-        role: 'adult',
-        gateAccess: gate,
-        creditTHB: ordinal !== giftAdult && creditApplies(rule, 'adult') ? unitCredit(paid, rule!) : 0,
-      });
-    });
-    for (let i = 0; i < line.kids; i++) {
-      out.push({
-        role: 'kid',
-        gateAccess: false,
-        creditTHB:
-          !(line.voucherGift && i === 0) && creditApplies(rule, 'kid') ? unitCredit(kidPrice, rule!) : 0,
-      });
+    for (let ordinal = 0; ordinal < line.adults; ordinal++) {
+      out.push({ role: 'adult', gateAccess: gate, creditTHB: creditOf(line.id, 'adult', ordinal) });
+    }
+    for (let ordinal = 0; ordinal < line.kids; ordinal++) {
+      out.push({ role: 'kid', gateAccess: false, creditTHB: creditOf(line.id, 'kid', ordinal) });
     }
   }
   return out;
