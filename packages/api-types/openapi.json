@@ -16286,6 +16286,96 @@
         }
       }
     },
+    "/otoapp/party-menu/catalogue": {
+      "get": {
+        "description": "OTO App server only (provisioning key): the till's live food and drink at one of the key operator's branches, for the BEO's kitchen and bar plan pickers. Each menu item of the branch (or operator-wide) that is not archived, is on sale, carries a code and is made at the kitchen or the bar: its code, name, category, station, weekday and weekend price in satang, and whether the BEO made it (BEO-only). Another operator's branch, or an archived one, is 404. Writes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "parentCategory": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "station": {
+                            "type": "string",
+                            "enum": [
+                              "kitchen",
+                              "bar"
+                            ]
+                          },
+                          "priceSatang": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "priceWeekendSatang": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "beoOnly": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "name",
+                          "category",
+                          "parentCategory",
+                          "station",
+                          "priceSatang",
+                          "priceWeekendSatang",
+                          "beoOnly"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/otoapp/party-menu/products": {
       "post": {
         "description": "OTO App server only (provisioning key): a new menu item added from the BEO, made a till product of the party's branch in the operator's Party menu category and marked BEO-only — never on the till's selling grids or its F&B menu, found by its code by the party's plan and its kitchen and bar slips. Idempotent on the Idempotency-Key the app sends: the same key and body answer the same product, a different body is refused 409.",

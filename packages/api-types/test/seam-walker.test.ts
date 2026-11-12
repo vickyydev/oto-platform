@@ -127,6 +127,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App's server (server/lib/partyMenuItem.ts, SCRUM-828), when staff add a new item from the BEO's food lines, with the operator-bound provision key and the press's Idempotency-Key",
   },
   {
+    prefix: '/otoapp/party-menu/catalogue',
+    exact: true,
+    caller:
+      "the OTO App's server (server/lib/tillMenu.ts, SCRUM-905), reading the till's food and drink for the BEO's kitchen and bar plan pickers and the set menu templates' codes, with the operator-bound provision key",
+  },
+  {
     prefix: '/otoapp/parties/{eventId}/billing',
     exact: true,
     caller:

@@ -93,6 +93,7 @@ export * from './station-readiness';
 export * from './screen-presence';
 export * from './party-slips';
 export * from './party-menu';
+export * from './party-menu-catalogue';
 // SCRUM-861: the void and updated-items slips a refund or a party's plan change sends.
 export * from './prep-slips';
 

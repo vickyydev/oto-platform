@@ -7986,6 +7986,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/otoapp/party-menu/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description OTO App server only (provisioning key): the till's live food and drink at one of the key operator's branches, for the BEO's kitchen and bar plan pickers. Each menu item of the branch (or operator-wide) that is not archived, is on sale, carries a code and is made at the kitchen or the bar: its code, name, category, station, weekday and weekend price in satang, and whether the BEO made it (BEO-only). Another operator's branch, or an archived one, is 404. Writes nothing. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            items: {
+                                code: string;
+                                name: string;
+                                category: string | null;
+                                parentCategory: string | null;
+                                /** @enum {string} */
+                                station: "kitchen" | "bar";
+                                priceSatang: number;
+                                priceWeekendSatang: number;
+                                beoOnly: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/otoapp/party-menu/products": {
         parameters: {
             query?: never;
