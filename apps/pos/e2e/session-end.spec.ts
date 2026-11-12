@@ -248,6 +248,69 @@ test('SCRUM-878: a different person who may sell is offered the cart, and it is 
   }
 });
 
+test.describe('the phone till', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test('SCRUM-878: on the phone till the cart is kept the same way, and comes back for the same person', async ({ page, baseURL }) => {
+    requireLocalFixture(baseURL);
+    const admin = await request.newContext({ baseURL });
+    try {
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible({ timeout: 30_000 });
+      await signInOnTheForm(page, PHONE, PASSWORD);
+      const picker = page.getByRole('heading', { name: PICKER });
+      const tourist = page.getByRole('heading', { name: 'Tourist', exact: true });
+      await expect.poll(async () => (await picker.isVisible()) || (await tourist.isVisible()), { timeout: 30_000 }).toBe(true);
+      if (await picker.isVisible()) await page.getByRole('button', { name: STATION }).first().click();
+      await expect(tourist).toBeVisible({ timeout: 30_000 });
+      const me = await page.request.get('/api/me');
+      const accountId = ((await me.json()) as { account: { id: string } }).account.id;
+
+      // The phone's ticket cart: a package and more children on it.
+      await tourist.click();
+      await page.getByText('1 Hour Play', { exact: true }).click();
+      const configure = page.getByRole('heading', { name: 'Configure: 1 Hour Play' });
+      await expect(configure).toBeVisible({ timeout: 15_000 });
+      const addKid = page.getByRole('button', { name: 'Add one Kids', exact: true });
+      await addKid.click();
+      await addKid.click();
+      const kids = page.getByRole('button', { name: 'Remove one Kids', exact: true }).locator('xpath=following-sibling::span[1]');
+      const counted = (await kids.textContent())?.trim() ?? '';
+      expect(Number(counted)).toBeGreaterThanOrEqual(2);
+      // The cart button names its items and its amount.
+      const cart = page.getByRole('button', { name: /^Open cart/ });
+      await expect(cart).toContainText('฿', { timeout: 20_000 });
+      const cartSaid = (await cart.textContent())?.trim() ?? '';
+      await capture(page, '7-phone-cart.png');
+
+      await endSessionsOf(admin, accountId);
+      await heartbeatNow(page);
+      await expect(page.getByTestId('lock-session-ended')).toHaveText(
+        /^The session of .+ has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/,
+        { timeout: 15_000 });
+      // Nothing of the cart on the page while nobody is signed in.
+      await expect(configure).toHaveCount(0);
+      await expect(cart).toHaveCount(0);
+      await expect(addKid).toHaveCount(0);
+      expect((await page.content()).includes('1 Hour Play')).toBe(false);
+      await capture(page, '8-phone-session-ended.png');
+
+      await signInOnTheForm(page, PHONE, PASSWORD);
+      // The same cart, the same children, the same amount, at the same station with no picker.
+      await expect(configure).toBeVisible({ timeout: 30_000 });
+      await expect(kids).toHaveText(counted);
+      await expect(cart).toHaveText(cartSaid);
+      await expect(page.getByRole('heading', { name: PICKER })).toHaveCount(0);
+      await expect(page.getByTestId('lock-session-ended')).toHaveCount(0);
+      await capture(page, '9-phone-same-cart-back.png');
+    } finally {
+      await page.request.post('/api/auth/sign-out').catch(() => undefined);
+      await admin.post('/api/auth/sign-out').catch(() => undefined);
+      await admin.dispose();
+    }
+  });
+});
+
 test('SCRUM-878: the next person may discard it and start a new sale', async ({ page, baseURL }) => {
   requireLocalFixture(baseURL);
   const admin = await request.newContext({ baseURL });
