@@ -174,6 +174,29 @@ export function adultsCopiesOf<T extends KitchenLineLike>(lines: T[]): T[] {
   return lines.map((line) => ({ ...line, id: `${typeof line.id === "string" && line.id ? line.id : "line"}_adults` }));
 }
 
+/**
+ * SCRUM-970: the adults' set-menu lines as the till reads them. An adults' SET
+ * line of a dish of their own (an AI fill's "chicken fried rice for the
+ * adults") carries the till code the set menu gives its option, as the till
+ * reads the kids' line of that dish (server/lib/beoAiApprove.ts). Once the
+ * kids' list holds the same dish in the same group (the family's link, the
+ * till or staff chose it for the kids too), that line is the copy of the kids'
+ * line and carries no code of its own, as the kids' line carries none: the
+ * till's plan view (app migration 0050) then reads the two as one dish, as
+ * before. Every other line is returned as it is.
+ */
+export function adultsSetCopiesUncoded<T extends KitchenLineLike>(kids: readonly KitchenLineLike[], adults: T[]): T[] {
+  const groupOf = (line: KitchenLineLike) => (typeof line.groupId === "string" ? line.groupId.trim() : "");
+  const kidsSet = kids.filter((k) => k.source === "set_menu" && groupOf(k) !== "");
+  return adults.map((line) => {
+    if (line.source !== "set_menu" || !codeOf(line) || !groupOf(line)) return line;
+    const copy = kidsSet.some((k) => groupOf(k) === groupOf(line) && foldDishName(k.itemName) === foldDishName(line.itemName) && codeOf(k) === "");
+    if (!copy) return line;
+    const { productCode: _code, ...rest } = line;
+    return rest as T;
+  });
+}
+
 /** The list the adults eat: their own while the switch is on, else the kids'. */
 export function adultsListOf(menus: unknown): KitchenLineLike[] {
   const m = menus && typeof menus === "object" && !Array.isArray(menus) ? (menus as Record<string, unknown>) : {};

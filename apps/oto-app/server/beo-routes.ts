@@ -55,7 +55,7 @@ import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
-import { adultsCopiesOf, adultsDifferOf, foldDishName } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, adultsSetCopiesUncoded, foldDishName } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
 
 type KitchenMenuBucket = "kids" | "adults";
@@ -140,7 +140,9 @@ function writeResolvedSetMenu(
   const ownGroups = adultsOwnSetMenuGroups(menus);
   const ownLines = asMenuItems(menus.adults).filter((item) => item.source === "set_menu" && ownGroups.has(setMenuGroupIdOf(item)));
   const copies = adultsCopiesOf(resolvedItems.filter((item) => !ownGroups.has(setMenuGroupIdOf(item))));
-  return replaceSetMenuItems(next, "adults", [...copies, ...ownLines]);
+  // SCRUM-970: the adults' own dish keeps its till code; one the parent now chooses for the kids too
+  // is the kids' dish, uncoded as the kids' line is, so the till reads the two as one.
+  return replaceSetMenuItems(next, "adults", adultsSetCopiesUncoded(resolvedItems, [...copies, ...ownLines]));
 }
 
 function preserveServerSetMenuItems(
@@ -182,7 +184,10 @@ function preserveServerSetMenuItems(
  */
 function withAdultsDiffer(value: unknown): KitchenMenuCollection {
   const menus = asMenuCollection(value);
-  return { ...menus, adultsDiffer: typeof menus.adultsDiffer === "boolean" ? menus.adultsDiffer : adultsDifferOf(menus) };
+  // SCRUM-970: an adults' set-menu line that is now the kids' dish in its group (the BEO's Save, the
+  // till's kitchen edit) carries no till code of its own, as the kids' line does not.
+  const adults = Array.isArray(menus.adults) ? { adults: adultsSetCopiesUncoded(asMenuItems(menus.kids), asMenuItems(menus.adults)) } : {};
+  return { ...menus, ...adults, adultsDiffer: typeof menus.adultsDiffer === "boolean" ? menus.adultsDiffer : adultsDifferOf(menus) };
 }
 
 function isStaleSetMenuSubmission(

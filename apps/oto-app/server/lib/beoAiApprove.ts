@@ -206,6 +206,17 @@ function setMenuGroupOf(body: BeoAiApproveBody, catalogue: BeoCatalogue, itemId:
  * its group's id, "(Fried rice)" as its mark, no price), as the adults' copy
  * (`adultsCopiesOf`'s id). The chat's note on the dish rides on it. Null when
  * the line names no group of the set menu written, or no option of it.
+ *
+ * SCRUM-970 (the staging proof, threads A and B: the till's party page and
+ * Edit form said "Chicken · adults · not on the till menu" while the review
+ * showed "Fried rice (Chicken) (CF-43)"): the line carries the till code the
+ * set menu gives that option — the option's own, else its group's — which is
+ * the code the till reads for the kids' line of the same dish (app migration
+ * 0050 takes it from the set menu, the kids' line holding none; the adults'
+ * own list is read by the line's own code alone). The till then names it as
+ * it names the kids' line and the slip prints it; it stays a SET line, never
+ * charged. A copy of the kids' line carries none, as the kids' line carries
+ * none (`adultsSetCopiesUncoded`).
  */
 function adultsSetLineOf(body: BeoAiApproveBody, catalogue: BeoCatalogue, l: BeoAiApproveBody["menuLines"][number]): KitchenLine | null {
   if (!l.setMenuItemId || l.menu !== "adults" || !body.setMenu) return null;
@@ -215,8 +226,9 @@ function adultsSetLineOf(body: BeoAiApproveBody, catalogue: BeoCatalogue, l: Beo
   const menu = catalogue.setMenus.find((m) => m.id === body.setMenu!.templateId)!;
   const [line] = adultsCopiesOf(resolveSetMenuLines(menu.items, [{ groupId: group.id, chosenOptions: [option] }]).filter((r) => r.groupId === group.id));
   if (!line) return null;
+  const code = group.optionProductCodes[option]?.trim() || group.productCode?.trim() || null;
   const notes = l.notes?.trim();
-  return notes ? { ...line, notes: [line.notes, notes].filter(Boolean).join(" · ") } : { ...line };
+  return { ...line, ...(notes ? { notes: [line.notes, notes].filter(Boolean).join(" · ") } : {}), ...(code ? { productCode: code } : {}) };
 }
 
 /** Why the reviewed BEO cannot be written as it is, in one line; null when it can. */
