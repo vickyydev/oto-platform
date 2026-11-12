@@ -24,6 +24,7 @@ import {
   type PartyPlan,
   type PartySettleAnswer,
   type PartySettleBody,
+  type PartySettleExtra,
   type PartySettleLine,
   type PartySettlePreviewAnswer,
   type PartySettlePreviewBody,
@@ -221,13 +222,16 @@ async function partyMenuChargesOf(
  * the menu's food (`fnb`) for a food line and the bar's (`bar`) for a bar line.
  * One charge per code and price, or per BEO line for a line with no code, in
  * the order the plan names them.
+ *
+ * SCRUM-950: and the lines it does not charge (no price, no till code), so
+ * Settle party lists them as not charged and staff can tell the parent.
  */
 async function partyExtraChargesOf(
   db: Exec,
   operatorId: string,
   plan: Pick<PartyPlan, 'setMenu' | 'barItems'>,
   rateMode: RateMode,
-): Promise<PartyMenuCharge[]> {
+): Promise<{ charges: PartyMenuCharge[]; notCharged: PartySettleExtra[] }> {
   type Extra = { productCode: string | null; name: string; qty: number; unitPriceSatang?: number | undefined; lineId?: string | undefined };
   const extras: { line: Extra; area: 'fnb' | 'bar'; place: number }[] = [
     ...plan.setMenu.flatMap((m, i) =>
@@ -235,7 +239,7 @@ async function partyExtraChargesOf(
     ),
     ...plan.barItems.flatMap((b, i) => (b.origin === 'extra' ? [{ line: b, area: 'bar' as const, place: i }] : [])),
   ];
-  if (extras.length === 0) return [];
+  if (extras.length === 0) return { charges: [], notCharged: [] };
   const codes = [...new Set(extras.map((e) => e.line.productCode).filter((c): c is string => !!c))];
   const rows = codes.length
     ? await db
@@ -246,13 +250,18 @@ async function partyExtraChargesOf(
   const areas = await resolveItemTaxCategories(db, rows);
   const byCode = new Map(rows.flatMap((row) => (row.code ? [[row.code, row] as const] : [])));
   const charges = new Map<string, PartyMenuCharge>();
+  const notCharged: PartySettleExtra[] = [];
   for (const { line, area, place } of extras) {
     const qty = line.qty;
     if (qty <= 0) continue;
     const row = line.productCode ? byCode.get(line.productCode) : undefined;
     const tillPrice = row ? (rateMode === 'weekend' ? (row.priceWeekendSatang ?? row.priceSatang) : row.priceSatang) : null;
     const unit = line.unitPriceSatang ?? tillPrice;
-    if (unit === null || unit === undefined) continue;
+    if (unit === null || unit === undefined) {
+      const name = line.name.trim();
+      if (name) notCharged.push({ name, productCode: line.productCode, qty, unitSatang: null, totalSatang: 0, charged: false });
+      continue;
+    }
     const key = row?.code ? `code:${row.code}:${unit}` : `line:${area}:${line.lineId ?? place}`;
     const held = charges.get(key);
     if (held) {
@@ -268,7 +277,7 @@ async function partyExtraChargesOf(
       taxCategory: row ? itemTaxCategory(row.kind === 'merch' ? 'merch' : 'menu', areas.get(row.id)) : area,
     });
   }
-  return [...charges.values()];
+  return { charges: [...charges.values()], notCharged };
 }
 
 interface BuiltSettlement {
@@ -276,6 +285,8 @@ interface BuiltSettlement {
   composition: PartyComposition;
   cart: PartySettlementCart;
   socksProductId: string | null;
+  /** SCRUM-950: the kitchen plan's extras, each named, as Settle party lists them. */
+  extras: PartySettleExtra[];
 }
 
 function refuse(result: { code: string; message: string; details?: Record<string, unknown> }): never {
@@ -315,9 +326,19 @@ async function buildSettlement(
   if (socksGiven > 0 && !socksProductId) {
     throw errors.conflict('PARTY_NO_SOCKS', 'This park sells no Regular Socks, so socks cannot be handed out on this party');
   }
-  const partyMenu = [
-    ...(await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode)),
-    ...(await partyExtraChargesOf(db, actor.operatorId, plan, c.rateMode)),
+  const extraCharges = await partyExtraChargesOf(db, actor.operatorId, plan, c.rateMode);
+  const partyMenu = [...(await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode)), ...extraCharges.charges];
+  // SCRUM-950: each extra by name, as the sale charges it (the price of one times the count), then those it does not charge.
+  const namedExtras: PartySettleExtra[] = [
+    ...partyMenu.map((m) => ({
+      name: m.name,
+      productCode: m.code,
+      qty: m.qty,
+      unitSatang: m.unitSatang,
+      totalSatang: m.qty * m.unitSatang,
+      charged: true,
+    })),
+    ...extraCharges.notCharged,
   ];
 
   const lineId = (name: string) => deriveId(settlementId, `party-settlement:${name}`);
@@ -432,6 +453,7 @@ async function buildSettlement(
     composition: c,
     cart: { eventId: event.id, settlementId, hours: pkg.hours, lines },
     socksProductId,
+    extras: namedExtras,
   };
 }
 
@@ -514,6 +536,7 @@ function quoteOf(
     balanceSatang: grossSatang - depositSatang,
     walkUps: walkUps.count,
     walkUpsSatang: walkUps.satang,
+    ...(built.extras.length > 0 ? { extras: built.extras } : {}),
   };
 }
 

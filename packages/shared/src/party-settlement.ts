@@ -376,6 +376,23 @@ export const PartySettleLineSchema = z.object({
 });
 export type PartySettleLine = z.infer<typeof PartySettleLineSchema>;
 
+/**
+ * SCRUM-950 — one extra the BEO's kitchen plan adds to the party, as Settle
+ * party names it before Confirm: what it is, how many, the price of one and
+ * what it comes to. `charged` false for an extra with no entered price and no
+ * till code: it is listed so staff can tell the parent, and costs nothing.
+ */
+export const PartySettleExtraSchema = z.object({
+  name: z.string(),
+  productCode: z.string().nullable(),
+  qty: z.number().int(),
+  /** The price of one, in satang; null for an extra that is not charged. */
+  unitSatang: z.number().int().nullable(),
+  totalSatang: z.number().int(),
+  charged: z.boolean(),
+});
+export type PartySettleExtra = z.infer<typeof PartySettleExtraSchema>;
+
 /** The settlement's figures, every one of them the engine's. */
 export const PartySettleQuoteSchema = z.object({
   partyDate: IsoDate,
@@ -408,6 +425,13 @@ export const PartySettleQuoteSchema = z.object({
    */
   walkUps: z.number().int(),
   walkUpsSatang: z.number().int(),
+  /**
+   * SCRUM-950 — the kitchen plan's extras one by one: each charged one, in the
+   * order the sale lists them (inside `addOnsSatang`, or at ฿0 as an included
+   * line), then each one not charged. Absent when the plan adds none, and from
+   * a platform before.
+   */
+  extras: z.array(PartySettleExtraSchema).optional(),
 });
 export type PartySettleQuote = z.infer<typeof PartySettleQuoteSchema>;
 
