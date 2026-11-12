@@ -529,7 +529,8 @@ export interface BeoPdfData {
   };
   barPlan?: {
     serviceTime?: string;
-    items?: { quantity: number; itemName: string; notes?: string; source?: string }[];
+    // SCRUM-949: an EXTRA drink's price for each item, as the kitchen's lines carry theirs.
+    items?: { quantity: number; itemName: string; notes?: string; source?: string; price?: number }[];
   };
   partyDetails?: {
     packageName?: string;
@@ -797,7 +798,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
         ${data.barPlan.items.map(item => `<tr>
           <td class="qty">${item.quantity}x</td>
           <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}</td>
-          <td class="price-col"><span class="${item.source === 'set_menu' ? 'incl-badge' : 'extra-badge'}" style="${item.source === 'set_menu' ? 'background:#dbeafe;color:#1e40af;border-color:#93c5fd;' : ''}">${item.source === 'set_menu' ? 'SET' : 'EXTRA'}</span></td>
+          <td class="price-col"><span class="${item.source === 'set_menu' ? 'incl-badge' : 'extra-badge'}" style="${item.source === 'set_menu' ? 'background:#dbeafe;color:#1e40af;border-color:#93c5fd;' : ''}">${item.source === 'set_menu' ? 'SET' : 'EXTRA'}</span>${item.source !== 'set_menu' && item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}</td>
         </tr>`).join('')}
       </table>
     </div>

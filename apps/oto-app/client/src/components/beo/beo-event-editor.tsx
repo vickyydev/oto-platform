@@ -102,6 +102,8 @@ import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@s
 import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex } from "./till-menu-picker";
 import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
+import { beoExtraChargeOf, beoKitchenChargesOf, type BeoExtraCharge } from "@shared/beoExtras";
+import { BeoExtrasTotal, BeoPartyDateContext, ExtraPriceBox } from "./beo-extra-price";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import { aiFillDateLine, dayLabel } from "@/lib/beo-ai-date";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
@@ -412,8 +414,10 @@ function PackageLineItemRow({ item, idx, packageItems, setPackageItems }: {
   );
 }
 
-function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
+function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab, charge }: {
   item: MenuLine; idx: number; menuItems: MenuLine[]; setMenuItems: React.Dispatch<React.SetStateAction<MenuLine[]>>; menuTab: string;
+  /** SCRUM-949: the line's charge as its list decides it (the adults' copy of a kids' line). */
+  charge?: BeoExtraCharge;
 }) {
   const tillMenu = useTillMenuIndex();
   return (
@@ -470,6 +474,16 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
         >
           <Plus className="h-3 w-3" />
         </Button>
+        {/* SCRUM-949: an EXTRA line's price for each item, beside its count; never on a SET line. */}
+        {item.source !== "set_menu" && (
+          <ExtraPriceBox
+            line={item}
+            area="food"
+            charge={charge}
+            onPrice={(price) => setMenuItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+            testId={`${menuTab}-${idx}`}
+          />
+        )}
         <div className="flex-1 flex items-center gap-1 min-w-0">
         <EditableText
           className="text-xs min-w-0"
@@ -1287,6 +1301,13 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       notes: "",
     }]);
   };
+
+  // SCRUM-949: what the till will charge for the plan's EXTRA lines, line by line (shared/beoExtras.ts
+  // mirrors the party settlement): the price boxes' hints and each plan's extras total.
+  const extraCharges = useMemo(() => {
+    const ctx = { till: tillMenu.index, partyDate: eventData.eventDate ?? null };
+    return { kitchen: beoKitchenChargesOf(kidsMenu, adultsMenu, adultsDiffer, ctx), bar: barItems.map((line) => beoExtraChargeOf(line, "bar", ctx)) };
+  }, [tillMenu.index, eventData.eventDate, kidsMenu, adultsMenu, adultsDiffer, barItems]);
 
   const kitchenTotal = useMemo(() => {
     // SCRUM-829: the adults' list counts only while it is the adults' own.
@@ -2128,6 +2149,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         </div>
 
         <TillMenuContext.Provider value={tillMenu}>
+        {/* SCRUM-949: the party's date, for the till's weekend price an EXTRA line's hint and the totals read. */}
+        <BeoPartyDateContext.Provider value={eventData.eventDate ?? null}>
         <Accordion 
           type="multiple" 
           value={expandedSections}
@@ -3531,6 +3554,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                         menuItems={currentMenu}
                                         setMenuItems={setCurrentMenu}
                                         menuTab="adults"
+                                        charge={extraCharges.kitchen.adults[index]}
                                       />
                                     ))}
                                   </>
@@ -3572,6 +3596,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           </div>
                         );
                       })()}
+                      {/* SCRUM-949: the kitchen's EXTRA lines as the till will charge them (the kids', and the adults' own). */}
+                      <BeoExtrasTotal charges={[...extraCharges.kitchen.kids, ...extraCharges.kitchen.adults]} testId="text-kitchen-extras-total" />
                     </div>
 
                     <Separator />
@@ -3850,6 +3876,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                           disabled={readOnly}
                           data-testid={`bar-item-qty-${idx}`}
                         />
+                        {/* SCRUM-949: an EXTRA drink's price for each item, beside its count; never on a SET line. */}
+                        {item.source !== "set_menu" && (
+                          <ExtraPriceBox
+                            line={item}
+                            area="bar"
+                            charge={extraCharges.bar[idx]}
+                            onPrice={(price) => setBarItems(prev => prev.map((line, i) => (i === idx ? { ...line, price } : line)))}
+                            testId={`bar-${idx}`}
+                          />
+                        )}
                         <Button
                           type="button"
                           variant="ghost"
@@ -3905,6 +3941,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                       + EXTRA
                     </button>
                   </div>
+                  {/* SCRUM-949: the bar's EXTRA lines as the till will charge them. */}
+                  <BeoExtrasTotal charges={extraCharges.bar} testId="text-bar-extras-total" />
                 </div>
               </div>
             </AccordionContent>
@@ -3949,6 +3987,7 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+        </BeoPartyDateContext.Provider>
         </TillMenuContext.Provider>
       </div>
 
