@@ -10,6 +10,13 @@ const allergiesMedical = z.string().max(500);
 const foodRestrictions = z.string().max(200);
 /** SCRUM-863 — where the check-in confirmation goes: the family chooses it on the form, beside the number. */
 const contactChannel = z.enum(['whatsapp', 'telegram', 'line']);
+/**
+ * SCRUM-857 — the three steps of the form on the family's screen, in order:
+ * the children, their care, the agreements.
+ */
+export const CONSENT_FORM_STEPS = ['children', 'care', 'agreements'] as const;
+export type ConsentFormStep = (typeof CONSENT_FORM_STEPS)[number];
+const formStep = z.enum(CONSENT_FORM_STEPS);
 
 const promptObject = z.object({
   kind: z.literal('consent'), requestId, visitorId: id,
@@ -57,6 +64,17 @@ const promptObject = z.object({
    * waited on it. The tick gates `done` instead (`consentActionAllowed`).
    */
   contactConfirmed: z.boolean().optional(),
+  /**
+   * SCRUM-857 — the step the family is on, as the till last heard it from
+   * their screen (the owner's ruling of 12 November: staff watch the form as
+   * it is filled). Sent by a till that follows the family's step: a form that
+   * sees it opens on that step (a display that re-paired mid-form comes back
+   * where the family was) and sends its step with every `fill`. Absent from an
+   * older till's form, and dropped by a station from before this field, so a
+   * form without it sends no step and an older station's strict reading of
+   * the `fill` is never tripped.
+   */
+  familyStep: formStep.optional(),
   /** What the drop-off service and a nanny cost, from the till's own drop-off pricing, for the requirement notes. */
   fees: z.object({ nannyHourlyTHB: z.number().nonnegative(), dropOffFeeTHB: z.number().nonnegative() }).optional(),
   staffReady: z.boolean(), canContinue: z.boolean(), completed: z.boolean(),
@@ -131,6 +149,13 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
     .refine(value => new Set(value.map(slot => slot.id)).size === value.length),
   guardianName, guardianPhone: z.string().trim().max(32).optional(), contactChannel: contactChannel.optional(),
   contactConfirmed: z.boolean().optional(),
+  /**
+   * SCRUM-857 — the step the family is on, from a form whose prompt carried
+   * `familyStep`; optional for the same reason as the fields above. A `fill`
+   * now travels as the family types (debounced), not only when a step is
+   * finished, so staff watch the form live; a step change alone sends one.
+   */
+  step: formStep.optional(),
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),
