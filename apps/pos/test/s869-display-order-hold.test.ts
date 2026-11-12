@@ -9,6 +9,7 @@ vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'),
 vi.mock('@/lib/lane', () => ({ currentLane: () => 'platform', isBoxLaneTrigger: () => false }));
 import { readTicketDisplayView, ticketDisplayCovers, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
 import type { DisplayPayment } from '@oto/shared';
+import { phoneTillInlineDisplay } from '@/lib/phoneTillDisplay';
 import type { Sale } from '@/types';
 import { renderHook } from './support/hooks';
 import { cartQuote, settle } from './support/fixtures';
@@ -127,9 +128,12 @@ describe('SCRUM-869: the order stage while the platform quote is refreshing', ()
     hook.unmount();
   });
 
-  it('a connected display covers the order stage through a refresh, and only a refresh', () => {
+  it('the stateless rule is the one on main: a refresh is held by the hook, not by ticketDisplayCovers', () => {
     expect(ticketDisplayCovers(order(1, 690))).toBe(true);
-    expect(ticketDisplayCovers(refreshing(2, 1380))).toBe(true);
+    // The hook holds the last settled answer through a refresh (see the
+    // tests below); the stateless rule reads a refresh as the till's own
+    // estimate, as it did before SCRUM-869.
+    expect(ticketDisplayCovers(refreshing(2, 1380))).toBe(false);
     // The platform refused, failed or did not answer: the till draws the customer half, as before.
     expect(ticketDisplayCovers(order(1, 690, { online: false, quoteRefreshing: false }))).toBe(false);
     // Offline for real: `quoteRefreshing` is never set, and the till draws it, as before.
@@ -138,6 +142,58 @@ describe('SCRUM-869: the order stage while the platform quote is refreshing', ()
     expect(ticketDisplayCovers(order(1, 690, { stage: 'payment', step: 5, online: false, quoteRefreshing: true, payment: payment(69_000) }))).toBe(false);
     const page = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'lib', 'displaySession.ts'), 'utf8');
     expect(page).toContain('supported: ticketDisplayCovers(state),');
+  });
+
+  it('a refused order stays on the split view through every refresh: the hold keeps the last settled answer', async () => {
+    const refused = order(1, 690, { online: false, quoteRefreshing: false });
+    const hook = renderHook((value: TicketDisplayState) => useTicketDisplay('station', value, vi.fn()), refused);
+    await settle();
+    const seen: boolean[] = [hook.result.current.supported];
+    for (const kids of [2, 3, 2]) {
+      hook.rerender(refreshing(kids, kids * 690));
+      await vi.advanceTimersByTimeAsync(300);
+      seen.push(hook.result.current.supported);
+      hook.rerender(order(kids, kids * 690, { online: false, quoteRefreshing: false }));
+      await vi.advanceTimersByTimeAsync(100);
+      seen.push(hook.result.current.supported);
+    }
+    expect(seen).toEqual([false, false, false, false, false, false, false]);
+    // Nothing priced ever reached the box: the display drew no amount.
+    for (const frame of publishedPayloads()) expect(frame.cart?.supported).not.toBe(true);
+    hook.unmount();
+  });
+
+  it('the hold follows the latest settled answer: priced, then refused, then priced again', async () => {
+    const hook = renderHook((value: TicketDisplayState) => useTicketDisplay('station', value, vi.fn()), order(1, 690));
+    await settle();
+    const seen: boolean[] = [hook.result.current.supported];
+    hook.rerender(refreshing(2, 1380)); await vi.advanceTimersByTimeAsync(300); seen.push(hook.result.current.supported);
+    hook.rerender(order(2, 1380, { online: false })); await vi.advanceTimersByTimeAsync(100); seen.push(hook.result.current.supported);
+    hook.rerender(refreshing(3, 2070)); await vi.advanceTimersByTimeAsync(300); seen.push(hook.result.current.supported);
+    hook.rerender(order(3, 2070)); await vi.advanceTimersByTimeAsync(100); seen.push(hook.result.current.supported);
+    hook.rerender(refreshing(2, 1380)); await vi.advanceTimersByTimeAsync(300); seen.push(hook.result.current.supported);
+    expect(seen).toEqual([true, true, false, false, true, true]);
+    hook.unmount();
+  });
+
+  it('the phone till selling offline: a refresh never hides the hand-to-customer overlay and brings it back', async () => {
+    // `MobileTill` passes `quoteRefreshing: cart.pending` with no offline
+    // gate; offline the platform never prices, so the display never covers.
+    const offline = order(1, 690, { step: 2, online: false, quoteRefreshing: false });
+    const hook = renderHook((value: TicketDisplayState) => useTicketDisplay('station', value, vi.fn()), offline);
+    await settle();
+    const overlay: boolean[] = [phoneTillInlineDisplay(hook.result.current)];
+    for (const kids of [2, 3]) {
+      hook.rerender(order(kids, kids * 690, { step: 2, online: false, quoteRefreshing: true }));
+      await vi.advanceTimersByTimeAsync(300);
+      overlay.push(phoneTillInlineDisplay(hook.result.current));
+      hook.rerender(order(kids, kids * 690, { step: 2, online: false, quoteRefreshing: false }));
+      await vi.advanceTimersByTimeAsync(100);
+      overlay.push(phoneTillInlineDisplay(hook.result.current));
+    }
+    expect(hook.result.current.connected.length).toBe(1);
+    expect(overlay).toEqual([true, true, true, true, true]);
+    hook.unmount();
   });
 });
 

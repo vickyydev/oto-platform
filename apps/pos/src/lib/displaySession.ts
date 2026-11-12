@@ -534,13 +534,11 @@ const clearedHandoff: StationDisplayState = { key: 'tender:finished', supported:
  * layout does not jump to the split view and back for the length of a quote.
  * What is published for that wait is still marked unsupported.
  *
- * SCRUM-869 — a quote refreshing at the order stage is covered too: the box
- * keeps the last priced order for it (`useTicketDisplay` publishes nothing
- * while it refreshes), so the till's layout stays as it was for every edit.
+ * SCRUM-869 — a quote refreshing at the order stage is held by
+ * `useTicketDisplay`, which keeps the last settled answer for it.
  */
 export function ticketDisplayCovers(state: TicketDisplayState): boolean {
-  const settled = state.quoteRefreshing === true && state.stage === 'order' ? { ...state, online: true } : state;
-  return ticketDisplayPresentation(settled.pricePending ? { ...settled, pricePending: false } : settled, '').cart.supported;
+  return ticketDisplayPresentation(state.pricePending ? { ...state, pricePending: false } : state, '').cart.supported;
 }
 
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
@@ -548,11 +546,19 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
   // steps are: the last priced order stays on the display until the new one
   // arrives, never the idle screen between the two.
   const refreshingInput = state.quoteRefreshing === true && (state.step === 7 || state.step === 8 || state.stage === 'order');
-  return useStationDisplay(stationId, {
+  // The staff layout keeps the last settled answer through that refresh:
+  // full width after a priced order, the split view after a refusal or an
+  // offline cart. Never a jump to the other and back for one edit.
+  const holdingOrder = state.quoteRefreshing === true && state.stage === 'order';
+  const settledCover = useRef<boolean | null>(null);
+  const base: StationDisplayState = {
     key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}:${state.answerRevision ?? 0}`,
     supported: ticketDisplayCovers(state),
     presentation: requestId => ticketDisplayPresentation(state, requestId),
-  }, active, onAnswer, refreshingInput);
+  };
+  if (!holdingOrder) settledCover.current = base.supported;
+  const held = holdingOrder && settledCover.current !== null ? { ...base, supported: settledCover.current } : base;
+  return useStationDisplay(stationId, held, active, onAnswer, refreshingInput);
 }
 
 /** The ticket and guest order surfaces share one leased presentation publisher. */
