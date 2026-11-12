@@ -231,6 +231,16 @@ export async function createTestDatabase(
       await setupStep('connect to the test Postgres server', () => admin.connect());
       try {
         await setupStep(`CREATE DATABASE ${name}`, () => admin.query(`CREATE DATABASE ${name}`));
+        // A test database is new and never analysed, so the planner prices a
+        // wide view (the OTO App's event packages) high enough for the JIT
+        // compiler, which then spends seconds compiling a query that runs in
+        // milliseconds. CI's Postgres image has the compiler; the embedded
+        // Windows server does not, which is why only CI was slow: about six
+        // seconds a slip-job tick, twelve after app migration 0050, and the
+        // party slip tests ran out of their thirty seconds there.
+        await setupStep(`turn the JIT compiler off in ${name}`, () =>
+          admin.query(`ALTER DATABASE ${name} SET jit = off`),
+        );
       } finally {
         await admin.end().catch(() => undefined);
       }
