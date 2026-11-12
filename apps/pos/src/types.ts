@@ -1694,6 +1694,8 @@ export interface StationProfile {
   receiptPrinterId?: string;
   kidsBraceletPrinterId?: string;
   adultBraceletPrinterId?: string;
+  /** SCRUM-930 — the drop-off bracelet printer (SCRUM-861); unset prints them on the kids one. */
+  dropoffBraceletPrinterId?: string;
   kitchenPrinterId?: string; // where F&B food/snack (kitchen) tickets print
   barPrinterId?: string; // where F&B bar/drink (bar) tickets print
   scannerId?: string;

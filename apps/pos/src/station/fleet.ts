@@ -8,13 +8,19 @@
 import type { ApiDevice, ApiStation, StationDeviceAssignment, StationDeviceRole } from '@/api/platform';
 import type { Device, DeviceType, ScannerMode, StationCapability, StationProfile } from '@/types';
 
-/** The device slots a station has, in the order the wizard asks about them. */
-export type DeviceRole = 'receipt' | 'kids' | 'adult' | 'kitchen' | 'bar';
+/**
+ * The device slots a station has, in the order the wizard asks about them.
+ * `dropoff` is the printer loaded with drop-off bracelet stock (SCRUM-861),
+ * beside the adult one since SCRUM-930, so the till reads and saves the same
+ * assignment the Console's station form does.
+ */
+export type DeviceRole = 'receipt' | 'kids' | 'adult' | 'dropoff' | 'kitchen' | 'bar';
 
 export const ROLE_TO_API: Record<DeviceRole, StationDeviceRole> = {
   receipt: 'receipt',
   kids: 'kids_band',
   adult: 'adult_band',
+  dropoff: 'dropoff_band',
   kitchen: 'kitchen',
   bar: 'bar',
 };
@@ -130,6 +136,7 @@ export function toStationProfile(
     receiptPrinterId: deviceFor('receipt'),
     kidsBraceletPrinterId: deviceFor('kids_band'),
     adultBraceletPrinterId: deviceFor('adult_band'),
+    dropoffBraceletPrinterId: deviceFor('dropoff_band'),
     kitchenPrinterId: deviceFor('kitchen'),
     barPrinterId: deviceFor('bar'),
     scannerId: boxScanner,

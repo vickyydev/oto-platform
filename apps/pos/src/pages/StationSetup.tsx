@@ -29,6 +29,7 @@ import {
   stationsApi,
   type ApiBox,
   type ApiDevice,
+  type ApiStation,
   type StaffCandidate,
   type StationAccessScope,
   type StationDeviceRole,
@@ -40,7 +41,7 @@ import { isMissingRoute } from '@/api/client';
 import { useStation } from '@/station/StationContext';
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
-import { ROLE_TO_API, toPrototypeDevices, type DeviceRole } from '@/station/fleet';
+import { ROLE_TO_API, toPrototypeDevices, toStationProfile, type DeviceRole } from '@/station/fleet';
 import { deviceById, testPrint, testScan } from '@/lib/printRouting';
 import { DevicePicker } from '@/components/station/DevicePicker';
 import { BoxPicker } from '@/components/station/BoxPicker';
@@ -62,11 +63,13 @@ const CAP_META: Record<
   StationCapability,
   { label: string; description: string; icon: ReactNode; roles: DeviceRole[] }
 > = {
+  // SCRUM-930 — a ticket till sells drop-off and checks the children in, so
+  // the drop-off bracelet printer is one of its devices, as the kids one is.
   tickets: {
     label: 'Sell tickets',
     description: 'Entry tickets, bracelets, add-ons',
     icon: <Ticket className="w-5 h-5" />,
-    roles: ['receipt', 'kids', 'adult'],
+    roles: ['receipt', 'kids', 'adult', 'dropoff'],
   },
   fnb: {
     label: 'F&B orders',
@@ -78,7 +81,7 @@ const CAP_META: Record<
     label: 'Drop-off',
     description: 'Unaccompanied child check-in',
     icon: <Home className="w-5 h-5" />,
-    roles: ['kids'],
+    roles: ['kids', 'dropoff'],
   },
   parties: {
     label: 'Parties',
@@ -88,13 +91,18 @@ const CAP_META: Record<
   },
 };
 
-const ROLE_ORDER: DeviceRole[] = ['receipt', 'kids', 'adult', 'kitchen', 'bar'];
+const ROLE_ORDER: DeviceRole[] = ['receipt', 'kids', 'adult', 'dropoff', 'kitchen', 'bar'];
 
-/** Which devices can fill each slot, in the prototype's own vocabulary. */
+/**
+ * Which devices can fill each slot, in the prototype's own vocabulary. The
+ * drop-off bracelet printer takes a band printer, as the Console's station
+ * form offers it (`ROLE_ACCEPTS.dropoff_band`, SCRUM-861).
+ */
 const ROLE_DEVICE_TYPE: Record<DeviceRole, DeviceType> = {
   receipt: 'receipt_printer',
   kids: 'bracelet_printer',
   adult: 'bracelet_printer',
+  dropoff: 'bracelet_printer',
   kitchen: 'kitchen_printer',
   bar: 'bar_printer',
 };
@@ -215,7 +223,8 @@ function SetupRefused({ action }: { action: string }) {
 
 // ─── The editor: the prototype's wizard and settings ─────────────────────────
 
-function StationEditor({ wizard }: { wizard: boolean }) {
+/** Exported for its runtime test (SCRUM-930); the routes reach it through `StationSetup`. */
+export function StationEditor({ wizard }: { wizard: boolean }) {
   const { station, active, fleetAvailable, pick, setStation, reload } = useStation();
   const { branch } = useBranch();
   const [, navigate] = useLocation();
@@ -262,6 +271,22 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     wizard ? 'known' : 'pending',
   );
 
+  /**
+   * SCRUM-930 — THE STATION THE SETTINGS ON SCREEN WERE FILLED FROM.
+   *
+   * They open on the record this till took the station with (`active`), which
+   * is as old as the pick: a printer assigned in the Console since — the
+   * drop-off bracelet printer showed it — was not on screen, and a save wrote
+   * the older settings back over it. The record read below for "who may use
+   * it" fills them again while nobody has touched them (`settingsEdited`, as
+   * the Console's `refillsFrom`), and the save names the config version they
+   * came from, so a form that fell behind is refused 409 `STATION_CHANGED`
+   * (SCRUM-898) instead of writing over a newer save.
+   */
+  const [filledFrom, setFilledFrom] = useState<ApiStation | null>(seedStation);
+  const [record, setRecord] = useState<ApiStation | null>(null);
+  const settingsEdited = useRef(false);
+
   const [saving, setSaving] = useState(false);
 
   const apiFail = (title: string) => (err: unknown) =>
@@ -303,10 +328,12 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     let cancelled = false;
     stationsApi
       .get(editingId)
-      .then(({ station: record }) => {
-        if (cancelled || accessEdited.current) return;
-        setAccessScope(record.accessScope === 'selected_staff' ? 'selected_staff' : 'all_staff');
-        setStaffIds((record.staff ?? []).map((s) => s.accountId));
+      .then(({ station: read }) => {
+        if (cancelled) return;
+        setRecord(read);
+        if (accessEdited.current) return;
+        setAccessScope(read.accessScope === 'selected_staff' ? 'selected_staff' : 'all_staff');
+        setStaffIds((read.staff ?? []).map((s) => s.accountId));
         setAccessSource('known');
       })
       .catch((err: unknown) => {
@@ -408,6 +435,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   const [receiptId, setReceiptId] = useState<string | undefined>(seed?.receiptPrinterId);
   const [kidsId, setKidsId] = useState<string | undefined>(seed?.kidsBraceletPrinterId);
   const [adultId, setAdultId] = useState<string | undefined>(seed?.adultBraceletPrinterId);
+  const [dropoffId, setDropoffId] = useState<string | undefined>(seed?.dropoffBraceletPrinterId);
   const [kitchenId, setKitchenId] = useState<string | undefined>(seed?.kitchenPrinterId);
   const [barId, setBarId] = useState<string | undefined>(seed?.barPrinterId);
 
@@ -426,14 +454,52 @@ function StationEditor({ wizard }: { wizard: boolean }) {
    */
   const chooseBox = (id: string) => {
     if (id === boxId) return;
+    settingsEdited.current = true;
     setBoxId(id);
     setReceiptId(undefined);
     setKidsId(undefined);
     setAdultId(undefined);
+    setDropoffId(undefined);
     setKitchenId(undefined);
     setBarId(undefined);
     if (scannerMode === 'box') setScannerId(undefined);
   };
+
+  const editName = (value: string) => {
+    settingsEdited.current = true;
+    setName(value);
+  };
+
+  /**
+   * SCRUM-930 — the station's own settings as the record read just now holds
+   * them, while nobody has touched them: its name, what it does, its box and
+   * one device per job. Where this iPad scans is its own (the camera, a
+   * scanner paired to it) unless the station has a scanner on the box, which
+   * serves every screen of it and so wins, as `toStationProfile` has it.
+   */
+  useEffect(() => {
+    if (!record || settingsEdited.current) return;
+    const profile = toStationProfile(record, branch.id);
+    setName(record.name);
+    setCapabilities(profile.capabilities ?? []);
+    setBoxId(record.boxId ?? undefined);
+    setReceiptId(profile.receiptPrinterId);
+    setKidsId(profile.kidsBraceletPrinterId);
+    setAdultId(profile.adultBraceletPrinterId);
+    setDropoffId(profile.dropoffBraceletPrinterId);
+    setKitchenId(profile.kitchenPrinterId);
+    setBarId(profile.barPrinterId);
+    if (profile.scannerMode === 'box') {
+      setScannerMode('box');
+      setScannerId(profile.scannerId);
+    } else if (scannerMode === 'box') {
+      // The box scanner it was given has been taken off the station.
+      setScannerMode('camera');
+      setScannerId(undefined);
+    }
+    setFilledFrom(record);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new reading refills; the person's own changes stop it (`settingsEdited`)
+  }, [record]);
 
   const deviceLabel = (id?: string): string =>
     (id ? devices.find((d) => d.id === id)?.label : undefined) ?? 'Not set';
@@ -447,6 +513,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     receiptPrinterId: receiptId,
     kidsBraceletPrinterId: kidsId,
     adultBraceletPrinterId: adultId,
+    dropoffBraceletPrinterId: dropoffId,
     kitchenPrinterId: kitchenId,
     barPrinterId: barId,
     scannerId: scannerMode === 'device' ? scannerId : undefined,
@@ -460,17 +527,19 @@ function StationEditor({ wizard }: { wizard: boolean }) {
    * it is a role with nothing assigned: clearing a printer is leaving it out,
    * and a role the capabilities hid is left out for the same reason.
    *
-   * A role this screen has no slot for — the drop-off band printer the Console
-   * assigns (SCRUM-861), the terminals, the gate, the drawer — is sent back as
-   * the station holds it, on the same box: this form never showed it, so a
-   * save from here must not take it away. A change of box clears everything,
-   * because those devices are the old box's.
+   * A role this screen has no slot for — the terminals, the gate, the drawer —
+   * is sent back as the station holds it (`filledFrom`), on the same box: this
+   * form never showed it, so a save from here must not take it away. A change
+   * of box clears everything, because those devices are the old box's. The
+   * drop-off bracelet printer has its own slot since SCRUM-930, so it is sent
+   * as the slot says, like the other printers.
    */
   const deviceAssignments = (): StationInput['devices'] => {
     const chosen: Array<[DeviceRole, string | undefined]> = [
       ['receipt', receiptId],
       ['kids', kidsId],
       ['adult', adultId],
+      ['dropoff', dropoffId],
       ['kitchen', kitchenId],
       ['bar', barId],
     ];
@@ -486,8 +555,8 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       assignments.push({ role: 'scanner', deviceId: scannerId });
     }
     const managed = new Set<string>([...Object.values(ROLE_TO_API), 'scanner']);
-    if (seedStation && seedStation.boxId === boxId) {
-      for (const held of seedStation.devices ?? []) {
+    if (filledFrom && filledFrom.boxId === boxId) {
+      for (const held of filledFrom.devices ?? []) {
         if (!managed.has(held.role)) assignments.push({ role: held.role as StationDeviceRole, deviceId: held.deviceId });
       }
     }
@@ -521,7 +590,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       const core = {
         boxId,
         name: stationName,
-        kind: stationKind(seedStation?.kind),
+        kind: stationKind(filledFrom?.kind ?? seedStation?.kind),
         capabilities,
         devices: deviceAssignments(),
       };
@@ -536,10 +605,12 @@ function StationEditor({ wizard }: { wizard: boolean }) {
         // Both lists are written whole, so leaving the access pair out of the
         // patch is how the station keeps the people it already has when this
         // screen never managed to read them.
-        await stationsApi.update(
-          seedStation.id,
-          accessSource === 'known' ? { ...core, ...access } : core,
-        );
+        const version = filledVersion(filledFrom);
+        await stationsApi.update(seedStation.id, {
+          ...(accessSource === 'known' ? { ...core, ...access } : core),
+          // SCRUM-930 — the version these settings were read at (SCRUM-898).
+          ...(version !== null ? { expectedConfigVersion: version } : {}),
+        });
         savedId = seedStation.id;
       }
       await reload();
@@ -570,6 +641,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   };
 
   const toggleCapability = (cap: StationCapability) => {
+    settingsEdited.current = true;
     setCapabilities((prev) =>
       prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap],
     );
@@ -604,12 +676,14 @@ function StationEditor({ wizard }: { wizard: boolean }) {
    * and role, never by a device id — so a choice not saved yet is said rather
    * than printed somewhere else.
    */
+  const saved = filledFrom ? toStationProfile(filledFrom, branch.id) : seed;
   const savedDeviceFor: Record<DeviceRole, string | undefined> = {
-    receipt: seed?.receiptPrinterId,
-    kids: seed?.kidsBraceletPrinterId,
-    adult: seed?.adultBraceletPrinterId,
-    kitchen: seed?.kitchenPrinterId,
-    bar: seed?.barPrinterId,
+    receipt: saved?.receiptPrinterId,
+    kids: saved?.kidsBraceletPrinterId,
+    adult: saved?.adultBraceletPrinterId,
+    dropoff: saved?.dropoffBraceletPrinterId,
+    kitchen: saved?.kitchenPrinterId,
+    bar: saved?.barPrinterId,
   };
   const runTestPrint = (role: DeviceRole, deviceId?: string) => {
     if (!fleet) {
@@ -628,7 +702,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       });
       return;
     }
-    if (boxId !== seedStation?.boxId || savedDeviceFor[role] !== deviceId) {
+    if (boxId !== (filledFrom ?? seedStation)?.boxId || savedDeviceFor[role] !== deviceId) {
       toast({
         title: 'Save the change first',
         description: `${boxName} prints a test on the printer saved for this job, and this choice is not saved yet.`,
@@ -656,8 +730,14 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   const deviceStepProps = (role: DeviceRole, id: string | undefined, set: (v?: string) => void) => ({
     devices: devicesFor(role),
     selectedId: id,
-    onSelect: (value: string) => set(value),
-    onClear: () => set(undefined),
+    onSelect: (value: string) => {
+      settingsEdited.current = true;
+      set(value);
+    },
+    onClear: () => {
+      settingsEdited.current = true;
+      set(undefined);
+    },
     onTest: () => runTestPrint(role, id),
     testLabel: 'Test print',
     empty: fleet ? emptyDeviceNote(boxId, boxDevices) : undefined,
@@ -670,12 +750,16 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       boxName={boxName}
       mode={scannerMode}
       onModeChange={(m) => {
+        settingsEdited.current = true;
         setScannerMode(m);
         if (m !== 'box' && m !== 'device') setScannerId(undefined);
       }}
       scanners={scanners}
       scannerId={scannerId}
-      onScannerSelect={setScannerId}
+      onScannerSelect={(id) => {
+        settingsEdited.current = true;
+        setScannerId(id);
+      }}
       compact={compact}
     />
   );
@@ -738,7 +822,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
                 <Input
                   autoFocus
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => editName(e.target.value)}
                   placeholder="Station name"
                   className="h-14 text-lg"
                 />
@@ -794,6 +878,15 @@ function StationEditor({ wizard }: { wizard: boolean }) {
               />
             )}
 
+            {step === 'dropoff' && (
+              <DeviceStep
+                icon={<Home className="w-6 h-6" />}
+                title="Drop-off bracelet printer"
+                subtitle="Optional — skip to print drop-off bracelets on the kids bracelet printer."
+                {...deviceStepProps('dropoff', dropoffId, setDropoffId)}
+              />
+            )}
+
             {step === 'kitchen' && (
               <DeviceStep
                 icon={<ChefHat className="w-6 h-6" />}
@@ -846,6 +939,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
                   receiptId={receiptId}
                   kidsId={kidsId}
                   adultId={adultId}
+                  dropoffId={dropoffId}
                   kitchenId={kitchenId}
                   barId={barId}
                   scannerMode={scannerMode}
@@ -919,7 +1013,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
             <SectionTitle icon={<Settings className="w-5 h-5" />} title="Station name" />
             <Input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => editName(e.target.value)}
               placeholder="Station name"
               className="h-14 text-lg mt-3"
             />
@@ -970,6 +1064,15 @@ function StationEditor({ wizard }: { wizard: boolean }) {
               title="Adult bracelet printer"
               note="Optional — leave unset to skip adult bracelet printing."
               {...deviceStepProps('adult', adultId, setAdultId)}
+            />
+          )}
+          {/* SCRUM-930 — the Console's drop-off band printer (SCRUM-861), read and saved here too. */}
+          {visibleRoles.includes('dropoff') && (
+            <DeviceCard
+              icon={<Home className="w-5 h-5" />}
+              title="Drop-off bracelet printer"
+              note="Optional — leave unset to print drop-off bracelets on the kids bracelet printer."
+              {...deviceStepProps('dropoff', dropoffId, setDropoffId)}
             />
           )}
           {visibleRoles.includes('kitchen') && (
@@ -1054,6 +1157,15 @@ function emptyDeviceNote(boxId: string | undefined, reported: ApiDevice[] | null
   if (!boxId) return 'Choose the box first — its devices are the ones on offer.';
   if (reported === null) return 'Reading what the box has…';
   return 'The box has not reported a device of this kind.';
+}
+
+/**
+ * SCRUM-930 — the config version a station's settings were filled from, for
+ * the save to name (SCRUM-898); none from an api older than the field.
+ */
+export function filledVersion(from: Pick<ApiStation, 'configVersion'> | null): number | null {
+  const version = from?.configVersion;
+  return typeof version === 'number' && Number.isInteger(version) && version >= 1 ? version : null;
 }
 
 function accessLine(scope: StationAccessScope, named: number): string {
@@ -1212,6 +1324,7 @@ function ReadySummary({
   receiptId,
   kidsId,
   adultId,
+  dropoffId,
   kitchenId,
   barId,
   scannerMode,
@@ -1226,6 +1339,7 @@ function ReadySummary({
   receiptId?: string;
   kidsId?: string;
   adultId?: string;
+  dropoffId?: string;
   kitchenId?: string;
   barId?: string;
   scannerMode: ScannerMode;
@@ -1256,6 +1370,9 @@ function ReadySummary({
       : []),
     ...(roles.includes('adult')
       ? [['Adult bracelet', deviceLabel(adultId)] as [string, string]]
+      : []),
+    ...(roles.includes('dropoff')
+      ? [['Drop-off bracelet', deviceLabel(dropoffId)] as [string, string]]
       : []),
     ...(roles.includes('kitchen')
       ? [['Kitchen printer', deviceLabel(kitchenId)] as [string, string]]

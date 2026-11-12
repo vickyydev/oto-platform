@@ -915,7 +915,12 @@ export const stationsApi = {
       body,
       { idempotencyKey: idemKey() },
     ),
-  update: (id: string, body: Partial<StationInput>) =>
+  /**
+   * `expectedConfigVersion` (SCRUM-898, sent by the till since SCRUM-930) is
+   * the config version the settings on screen were read at: a station saved
+   * elsewhere since is refused 409 `STATION_CHANGED` and nothing is written.
+   */
+  update: (id: string, body: Partial<StationInput> & { expectedConfigVersion?: number }) =>
     api.patch<{ station: ApiStation }>(`/stations/${encodeURIComponent(id)}`, body),
   /** The boxes standing at a branch, whether or not a station uses them yet. */
   boxes: (branchId: string) =>
