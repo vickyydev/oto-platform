@@ -867,6 +867,13 @@ export interface SaleRefundAnswer {
   refundableSatang: number;
   requestedSatang: number;
   clamped: boolean;
+  /**
+   * SCRUM-900 — the void and updated slips the kitchen and the bar were not
+   * sent ("Void slip for the bar not printed — no bar printer at …"), in the
+   * shape of a sale's printing notes. Empty when all is well; absent from an
+   * api older than SCRUM-900.
+   */
+  printing?: { notes: string[] };
 }
 
 /** A short stable digest of a request body, for an idempotency key. FNV-1a, hex. */

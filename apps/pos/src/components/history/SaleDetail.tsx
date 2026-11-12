@@ -1038,6 +1038,9 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
       clearRefundRequests(sale.id);
       setRequests([]);
       setJustRefunded(answer.refund);
+      // SCRUM-900 — what the kitchen and the bar were not sent, said the way
+      // a sale's printing notes are: "Some items not printed".
+      if (answer.printing?.notes.length) dispatchPlatformPrinting([], answer.printing.notes);
       setRefundOpen(false);
       refresh();
       onRefunded?.(sale.id, answer.sale);
