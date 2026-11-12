@@ -326,8 +326,16 @@ export function mediaKindOf(contentType: string | null): MediaKind {
 /**
  * The sandbox's own chatter — `join <code>` and `stop` — on the sandbox
  * number: read before anything else, and never a customer conversation.
+ *
+ * THE CODE'S FORM. The sandbox page names it only as `join <your sandbox
+ * code>`; Twilio's own guide says the code begins with "join", "followed by a
+ * randomly generated two-word phrase"
+ * (https://www.twilio.com/en-us/blog/how-to-send-a-message-on-whatsapp-with-curl),
+ * which the Console shows as two words joined by a hyphen. So only `join`
+ * followed by exactly `<word>-<word>` is the sandbox's: "join us", "join the
+ * party" and "Join us at 3" are a customer's words and reach the conversation.
  */
-const SANDBOX_CONTROL = /^\s*(?:join\s+[a-z0-9]+(?:-[a-z0-9]+)*|stop)\s*$/i;
+const SANDBOX_CONTROL = /^\s*(?:join\s+[a-z0-9]+-[a-z0-9]+|stop)\s*$/i;
 
 export interface TwilioParseOptions {
   /** `TwilioConfig.accountSid`: a delivery for another account is never filed. */

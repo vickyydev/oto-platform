@@ -219,6 +219,18 @@ describe('an incoming WhatsApp message', () => {
       .toEqual([expect.objectContaining({ kind: 'message' })]);
   });
 
+  it('takes only "join <word>-<word>" as the join code: "join us" and the like reach the conversation', () => {
+    for (const body of ['join us', 'join the party', 'Join us at 3', 'JOIN US', 'join', 'join a-b-c', 'join -words']) {
+      const [e] = channel().parseWebhook(delivery(inbound({ Body: body })));
+      expect(e).toMatchObject({ kind: 'message', type: 'text', text: body });
+    }
+    for (const body of ['join fictional-words', 'Join Fictional-Words', 'join fictional-2words']) {
+      expect(channel().parseWebhook(delivery(inbound({ Body: body })))).toEqual([
+        expect.objectContaining({ kind: 'unknown', field: 'sandbox.control' }),
+      ]);
+    }
+  });
+
   it('carries its media by URL with the content type; an OGG audio is a voice note', () => {
     const media = `https://api.twilio.com/2010-04-01/Accounts/${SID}/Messages/MM${'0'.repeat(32)}/Media/ME${'0'.repeat(31)}1`;
     const [voice] = channel().parseWebhook(
