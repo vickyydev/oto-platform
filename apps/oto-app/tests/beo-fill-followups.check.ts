@@ -17,7 +17,10 @@
 //      option for staff to choose before Approve (SCRUM-926's hold); a
 //      charged EXTRA only when the family asks for more, names a price or a
 //      count of its own — thread D's "3 more Margherita pizzas for the
-//      adults" is written exactly as SCRUM-946 proved it.
+//      adults" is written exactly as SCRUM-946 proved it. The family's
+//      set-menu link submitted after the approval keeps the adults' own
+//      SET line, even where it changes the kids' choice of that group (a
+//      choice made on the till first); the adults' copies follow it.
 //   3. thread G, "The adults will eat the same as the kids, the Margherita
 //      pizza for them too.": the fold is said, in the review (with the chat's
 //      words) and in the toast after Approve.
@@ -54,7 +57,9 @@ process.env.SESSION_SECRET ??= randomUUID() + randomUUID();
 process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
-const { registerBeoRoutes } = await import("../server/beo-routes");
+const { registerBeoRoutes, lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow } = await import("../server/beo-routes");
+const { applyTillKitchenEdit } = await import("../server/lib/tillKitchenEdit");
+const tillWriters = { lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow };
 const { loadBeoCatalogue, resolveCatalogueAnswer, saidForTheAdults } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
@@ -81,7 +86,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 8;
+const CHECKS = 9;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -89,7 +94,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID() };
-const KEYS = ["A", "B", "D", "G", "Gown", "I", "both"] as const;
+const KEYS = ["A", "B", "B2", "D", "G", "Gown", "I", "both"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -204,7 +209,7 @@ const ai = {
   },
 };
 const at = (i: number) => new Date(Date.UTC(2026, 10, 12, 15, 30 + i)).toISOString();
-const threadOf = (key: Key): keyof typeof THREADS => (key === "Gown" ? "G" : key === "both" ? "A" : key) as keyof typeof THREADS;
+const threadOf = (key: Key): keyof typeof THREADS => (key === "Gown" ? "G" : key === "both" ? "A" : key === "B2" ? "B" : key) as keyof typeof THREADS;
 const inboxOf = (key: Key): InboxRead => {
   const texts = THREADS[threadOf(key)];
   return {
@@ -454,6 +459,58 @@ try {
     assert.equal((plan.menus.adults as any[]).some((l) => l.source === "additional"), false, "no EXTRA");
     const lines = await viewLinesOf(ev.B);
     assert.deepEqual(lines.filter((l) => l.source === "extra"), [], `nothing charged: ${JSON.stringify(lines)}`);
+  });
+
+  // --- 1 and 2 after the approval: the family's set-menu link (the lane's reviews) ---------------
+  await check("theFamilysLinkKeepsTheAdultsOwnSetLine", async () => {
+    const submit = async (eventId: string, chosen: Record<string, string>) => {
+      const token = `zz-958-${randomUUID()}`;
+      await q("insert into beo_set_menu_selections (id, event_id, template_id, token, is_submitted, selections) values ($1, $2, $3, $4, false, null)", [
+        randomUUID(), eventId, cat.setMenu, token,
+      ]);
+      const res = await fetch(`${base}/api/beo/set-menu-selections/public/${token}/submit`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ selections: Object.entries(chosen).map(([groupId, option]) => ({ groupId, chosenOptions: [option] })) }),
+      });
+      assert.equal(res.status, 200, await res.text());
+    };
+    const setLines = (lines: any[]) => lines.filter((l) => l.source === "set_menu").map((l) => [l.itemName, l.groupId]);
+    // Thread B approved with Shrimp for the adults and nothing chosen for the kids: the family's link
+    // stays open. The family then chooses through it, Veggie for the kids' Fried rice.
+    await submit(ev.B, { [PIZZA]: "Margherita", [HOT]: "Fish fingers", [RICE]: "Veggie" });
+    let plan = await kitchenOf(ev.B);
+    assert.deepEqual(
+      setLines(plan.menus.kids),
+      [["Margherita", PIZZA], ["Fish fingers", HOT], ["French fries", FRIES], ["Veggie", RICE], ["Veggie sticks", STICKS]],
+      "the family's choices for the kids",
+    );
+    assert.deepEqual(
+      setLines(plan.menus.adults),
+      [["Margherita", PIZZA], ["Fish fingers", HOT], ["French fries", FRIES], ["Veggie sticks", STICKS], ["Shrimp", RICE]],
+      "the adults' copies follow the family's choices; their own Fried rice: Shrimp stays",
+    );
+    assert.equal(plan.menus.adultsDiffer, true);
+    assert.deepEqual((await viewLinesOf(ev.B)).filter((l) => l.source === "extra"), [], "nothing charged");
+    // The kids' choice of the very group the adults have their own dish in, changed by the link: an
+    // approval as thread B's, the kids' Fried rice chosen on the till (Veggie), then the family's Chicken.
+    const approved = await approve(ev.B2, {
+      conversationId: null, messageId: null, package: null, setMenu: { templateId: cat.setMenu, choices: [] }, entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [],
+      menuLines: [{ menu: "adults", itemName: "fried rice for the adults", quantity: 1, productCode: "CF-43", notes: null, setMenuItemId: RICE, option: "Fried rice (Shrimp)" }],
+    });
+    assert.equal(approved.status, 200, JSON.stringify(approved.body));
+    const till = await applyTillKitchenEdit(db, tillWriters, { id: ev.B2, tenantId: tenant }, {
+      id: randomUUID(), editedAt: new Date().toISOString(), by: { name: "ZZ Noi", role: "Manager" },
+      changes: [{ op: "choose", choiceGroup: "Fried rice", lineId: null, option: "Veggie" }],
+    });
+    assert.equal(till.ok, true, JSON.stringify(till));
+    const riceOf = (lines: any[]) => lines.filter((l) => l.groupId === RICE).map((l) => l.itemName);
+    plan = await kitchenOf(ev.B2);
+    assert.deepEqual([riceOf(plan.menus.kids), riceOf(plan.menus.adults)], [["Veggie"], ["Shrimp"]], "the till's choice is the kids'");
+    await submit(ev.B2, { [PIZZA]: "Hawaiian", [HOT]: "Chicken schnitzel", [RICE]: "Chicken" });
+    plan = await kitchenOf(ev.B2);
+    assert.deepEqual([riceOf(plan.menus.kids), riceOf(plan.menus.adults)], [["Chicken"], ["Shrimp"]], "the kids' Fried rice is the family's Chicken; the adults' own Shrimp stays");
+    assert.deepEqual(setLines(plan.menus.adults).map(([name]) => name), ["Hawaiian", "Chicken schnitzel", "French fries", "Veggie sticks", "Shrimp"]);
   });
 
   await check("anExtraOnlyWhenMoreIsAskedOrPricedOrCounted", async () => {

@@ -534,7 +534,10 @@ describe('A. fences and seams', () => {
       // SCRUM-907: the BEO's Save writes the kitchen and bar plans through four exported writers moved out
       // of its handler unchanged (kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow),
       // which the till's kitchen-plan door writes through too; where the BEO's documents live is unchanged.
-      'beo-routes.ts': 'f30f1b11e6f3af70fb88b7a59e627f733042ca8b3941dd9df56b6373eca5a799',
+      // SCRUM-958: the parent link's submit keeps a dish of the adults' own in a set-menu group (an AI
+      // fill's "chicken fried rice for the adults") and refreshes only the adults' copies of the kids'
+      // lines (writeResolvedSetMenu); where the BEO's documents live is unchanged.
+      'beo-routes.ts': '55ff3132dd571323d164d115a210539007a63147c9570ba9d75bec88d3c3609a',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

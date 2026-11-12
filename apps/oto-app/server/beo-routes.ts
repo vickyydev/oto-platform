@@ -55,7 +55,7 @@ import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
 import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
-import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, foldDishName } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
 
 type KitchenMenuBucket = "kids" | "adults";
@@ -95,13 +95,38 @@ function replaceSetMenuItems(
   };
 }
 
+/** A set-menu line's group, as lines written since groupId carry it; "" on a line of before. */
+const setMenuGroupIdOf = (line: KitchenMenuLine): string => (typeof line.groupId === "string" ? line.groupId.trim() : "");
+
+/**
+ * SCRUM-958: the set menu's groups the adults' own list holds a dish of THEIR
+ * own in: an adults' set-menu line whose option the kids' list does not hold
+ * for that group — "chicken fried rice for the adults" written by an AI fill's
+ * approval (server/lib/beoAiApprove.ts), or staff changing the adults' dish
+ * with "Different for adults" on. An adults' set-menu line the kids' list
+ * holds too is the copy of the kids' line.
+ */
+function adultsOwnSetMenuGroups(menus: KitchenMenuCollection): Set<string> {
+  const kids = asMenuItems(menus.kids).filter((item) => item.source === "set_menu");
+  const own = new Set<string>();
+  for (const line of asMenuItems(menus.adults)) {
+    const groupId = setMenuGroupIdOf(line);
+    if (line.source !== "set_menu" || !groupId) continue;
+    const copied = kids.some((kid) => setMenuGroupIdOf(kid) === groupId && foldDishName(kid.itemName) === foldDishName(line.itemName));
+    if (!copied) own.add(groupId);
+  }
+  return own;
+}
+
 /**
  * The parent's resolved set-menu lines written into the plan: the kids'
  * bucket (or the adults', on a plan of before that holds only an adults'
  * list), and — SCRUM-829 — when the adults' list is their own ("Different
  * for adults" on, shared/kitchenAdults.ts) copies of the same lines in place
  * of the adults' set-menu lines, so a choice made or changed after the switch
- * never leaves the adults' set menu stale or missing.
+ * never leaves the adults' set menu stale or missing. SCRUM-958: but a group
+ * the adults hold a dish of their own in keeps it, whatever the parent now
+ * chooses for the kids in it; only the copies follow the parent's choice.
  */
 function writeResolvedSetMenu(
   value: unknown,
@@ -110,7 +135,12 @@ function writeResolvedSetMenu(
   adultsOwn: boolean,
 ): KitchenMenuCollection {
   const next = replaceSetMenuItems(value, bucket, resolvedItems);
-  return bucket === "kids" && adultsOwn ? replaceSetMenuItems(next, "adults", adultsCopiesOf(resolvedItems)) : next;
+  if (bucket !== "kids" || !adultsOwn) return next;
+  const menus = asMenuCollection(value);
+  const ownGroups = adultsOwnSetMenuGroups(menus);
+  const ownLines = asMenuItems(menus.adults).filter((item) => item.source === "set_menu" && ownGroups.has(setMenuGroupIdOf(item)));
+  const copies = adultsCopiesOf(resolvedItems.filter((item) => !ownGroups.has(setMenuGroupIdOf(item))));
+  return replaceSetMenuItems(next, "adults", [...copies, ...ownLines]);
 }
 
 function preserveServerSetMenuItems(
