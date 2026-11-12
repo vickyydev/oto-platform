@@ -28363,6 +28363,14 @@
                             "fr"
                           ]
                         },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
+                        },
                         "lease": {
                           "type": "object",
                           "properties": {
@@ -28572,6 +28580,14 @@
                             "ru",
                             "fr"
                           ]
+                        },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
                         },
                         "lease": {
                           "type": "object",
@@ -103393,6 +103409,14 @@
                             "fr"
                           ]
                         },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
+                        },
                         "lease": {
                           "type": "object",
                           "properties": {
@@ -103639,6 +103663,14 @@
                             "fr"
                           ]
                         },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
+                        },
                         "lease": {
                           "type": "object",
                           "properties": {
@@ -103846,6 +103878,14 @@
                             "ru",
                             "fr"
                           ]
+                        },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
                         },
                         "lease": {
                           "type": "object",
@@ -104173,6 +104213,14 @@
                             "fr"
                           ]
                         },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
+                        },
                         "lease": {
                           "type": "object",
                           "properties": {
@@ -104415,6 +104463,14 @@
                             "fr"
                           ]
                         },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
+                        },
                         "lease": {
                           "type": "object",
                           "properties": {
@@ -104635,6 +104691,14 @@
                             "ru",
                             "fr"
                           ]
+                        },
+                        "theme": {
+                          "type": "string",
+                          "enum": [
+                            "light",
+                            "dark"
+                          ],
+                          "nullable": true
                         },
                         "lease": {
                           "type": "object",

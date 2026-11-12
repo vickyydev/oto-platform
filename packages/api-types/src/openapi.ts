@@ -13060,6 +13060,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -13161,6 +13163,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41029,6 +41033,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41167,6 +41173,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41265,6 +41273,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41457,6 +41467,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41592,6 +41604,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
@@ -41695,6 +41709,8 @@ export interface paths {
                                 } | null;
                                 /** @enum {string} */
                                 language: "en" | "zh" | "th" | "ru" | "fr";
+                                /** @enum {string|null} */
+                                theme?: "light" | "dark" | null;
                                 lease: {
                                     /** Format: uuid */
                                     leaseId: string;
