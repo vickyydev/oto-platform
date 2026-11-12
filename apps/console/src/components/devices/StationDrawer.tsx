@@ -258,7 +258,11 @@ export function StationDrawer({
 
   return (
     <Drawer
-      title={station ? station.name : 'New station'}
+      // SCRUM-932 — the name and the version the form was filled from, together:
+      // after a save is refused as made from an older version the list is read
+      // again, and the title took the newer name while the subtitle kept the
+      // older version. One state on screen, and the refusal says to reopen.
+      title={station ? (filled ?? station).name : 'New station'}
       subtitle={
         <span className="flex flex-wrap items-center gap-2">
           <Chip>{stationKindWord(kind)}</Chip>

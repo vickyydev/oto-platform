@@ -294,3 +294,41 @@ describe('SCRUM-898 — the station drawer and the version it was filled from', 
     expect(onSaved).toHaveBeenCalledWith(v1);
   });
 });
+
+// --- SCRUM-932 ----------------------------------------------------------------
+
+describe('SCRUM-932 — the drawer shows one station, the one its form was filled from', () => {
+  const title = () => (tree.props as { title?: unknown }).title;
+
+  it('after a save is refused as made from an older version, the title keeps the form’s name beside the form’s version, and the refusal says to reopen', async () => {
+    (nameField().onChange as (value: string) => void)('ZZ TEST typed here');
+    vi.spyOn(fleetApi, 'updateStation').mockRejectedValue(
+      new ApiError(409, 'STATION_CHANGED', 'This station was changed since you opened it. Close it and open it again.'),
+    );
+    await pressSave();
+    // The page reads the list again and hands the drawer the station as it now stands.
+    show(v3);
+    expect(title()).toBe(v1.name);
+    expect(title()).not.toBe(v3.name);
+    expect(version()).toBe('config v1');
+    expect(refusal()).toBe('This till was changed since you opened it. Close it and open it again.');
+  });
+
+  it('an untouched form that takes a newer reading shows that reading’s name and version together', () => {
+    expect(title()).toBe(v1.name);
+    show(v3);
+    expect(title()).toBe(v3.name);
+    expect(version()).toBe('config v3');
+  });
+
+  it('a new station is still called "New station"', () => {
+    station = null;
+    runner.mount(() => {
+      tree = StationDrawer({
+        station, branchId: 'branch', branchLabel: 'Park', boxes, deviceList, onRetryDevices: noop,
+        canEdit: true, onClose: noop, onSaved, onStale,
+      }) as ReactElement;
+    });
+    expect(title()).toBe('New station');
+  });
+});
