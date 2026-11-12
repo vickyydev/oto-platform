@@ -308,7 +308,9 @@ function getHandoffCfg(
     consent: {
       title: t('handToCustomer.consentTitle'),
       subtitle: t('handToCustomer.consentSubtitle'),
-      handBackLabel: t('handToCustomer.handBackDefault'),
+      // SCRUM-915 — the form has its own Done, which registers the children;
+      // this button only hands the phone back, so it does not say Done.
+      handBackLabel: t('handToCustomer.returnPhone'),
     },
     qr: {
       title: t('handToCustomer.qrTitle'),

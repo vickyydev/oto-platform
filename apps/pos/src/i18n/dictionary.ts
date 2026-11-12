@@ -217,6 +217,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
 
   // --- Hand-to-customer overlay (mobile) --------------------------------
   'handToCustomer.handBackDefault': { en: 'Done — return phone to staff', zh: '完成——请将手机交还给工作人员', th: 'เสร็จแล้ว — คืนโทรศัพท์ให้พนักงาน', ru: 'Готово — верните телефон сотруднику', fr: 'Terminé — rendez le téléphone au personnel' },
+  // SCRUM-915 — the hand-back alone, under a form that has its own Done.
+  'handToCustomer.returnPhone': { en: 'Return phone to staff', zh: '请将手机交还给工作人员', th: 'คืนโทรศัพท์ให้พนักงาน', ru: 'Верните телефон сотруднику', fr: 'Rendez le téléphone au personnel' },
   'handToCustomer.inputTitle': { en: 'Hand the phone to the customer', zh: '将手机交给顾客', th: 'ส่งโทรศัพท์ให้ลูกค้า', ru: 'Передайте телефон клиенту', fr: 'Remettez le téléphone au client' },
   'handToCustomer.inputSubtitle': { en: "They'll enter their phone number and nickname.", zh: '他们将输入电话号码和昵称。', th: 'พวกเขาจะกรอกหมายเลขโทรศัพท์และชื่อเล่น', ru: 'Они введут номер телефона и имя.', fr: 'Ils saisiront leur numéro de téléphone et leur surnom.' },
   'handToCustomer.consentTitle': { en: 'Hand the phone to the customer', zh: '将手机交给顾客', th: 'ส่งโทรศัพท์ให้ลูกค้า', ru: 'Передайте телефон клиенту', fr: 'Remettez le téléphone au client' },

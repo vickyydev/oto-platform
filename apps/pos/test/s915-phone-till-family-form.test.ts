@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SupervisionGate, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { consentMissing } from '@/lib/consentFinish';
 import { renderHook } from './support/hooks';
+import { DICTIONARY } from '@/i18n/dictionary';
 import type { SupervisionPolicy } from '@/types';
 
 /**
@@ -138,5 +139,20 @@ describe('the phone till’s wiring', () => {
 
   it('a paired display keeps what it showed: the form stays on the phone, as before', () => {
     expect(phone).toContain("{handoffMode !== null && (inlineDisplay || handoffMode === 'consent') && (() => {");
+  });
+
+  it('under the form, the overlay’s own button only hands the phone back and does not say Done', () => {
+    const cfg = phone.slice(phone.indexOf('function getHandoffCfg('), phone.indexOf('// ─── MobileTill'));
+    const consent = cfg.slice(cfg.indexOf('consent: {'), cfg.indexOf('qr: {'));
+    expect(consent).toContain("handBackLabel: t('handToCustomer.returnPhone'),");
+    // The other hand-over moments keep their wording.
+    expect(cfg.match(/handBackLabel: t\('handToCustomer\.handBackDefault'\)/g)).toHaveLength(2);
+    // The overlay's wording for handing the phone back, without the Done before it, in every language.
+    for (const lang of ['en', 'zh', 'th', 'ru', 'fr'] as const) {
+      const handBack = DICTIONARY['handToCustomer.returnPhone']![lang];
+      expect(DICTIONARY['handToCustomer.handBackDefault']![lang].toLowerCase().endsWith(handBack.toLowerCase())).toBe(true);
+      expect(handBack).not.toContain(DICTIONARY['common.done']![lang]);
+    }
+    expect(DICTIONARY['handToCustomer.returnPhone']!.en).toBe('Return phone to staff');
   });
 });
