@@ -1,0 +1,3144 @@
+
+=== 2026-11-12T18:39:35.804Z 0: read-only look (the branch, the box, the menu) and point 1, the permission, before anything is made
+S.phase = '0: read-only look (the branch, the box, the menu) and point 1, the permission, before anything is made';
+const r = {};
+const branch = (await S.call('GET', '/branches')).body.branches.find(b => b.id === S.branchId);
+r.branch = { name: branch.name, partySlipsStationIdAtStart: branch.partySlipsStationId ?? null };
+S.receipt.foundAtStart.partySlipsStationId = branch.partySlipsStationId ?? null;
+S.receipt.foundAtStart.readAt = new Date().toISOString();
+if (branch.partySlipsStationId) {
+  const st = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === branch.partySlipsStationId);
+  S.receipt.foundAtStart.partySlipsStation = st ? { id: st.id, name: st.name, archived: !!st.archived } : 'not found';
+}
+const box = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes.find(b => b.role === 'virtual' && b.slot === 'virtual-1' && b.status === 'online' && !b.archived);
+r.box = box ? { slot: box.slot, status: box.status, role: box.role } : null;
+S.box = box;
+const ev = (await S.call('GET', `/events?branchId=${S.branchId}&type=party`)).body;
+for (const e of ev?.events ?? []) if (!S.isZz(e.title)) S.hidden.push(String(e.title).trim());
+r.todaysParties = { count: (ev?.events ?? []).length, zz: (ev?.events ?? []).filter(e => S.isZz(e.title)).map(e => e.title) };
+const menu = (await S.call('GET', `/branches/${S.branchId}/menu`)).body;
+S.menu = menu;
+const live = p => p.active && !p.archivedAt && p.code && (!p.branchId || p.branchId === S.branchId);
+const fmt = p => `${p.code} ${p.name} ${p.priceSatang / 100}/${(p.effectiveWeekendSatang ?? p.priceSatang) / 100} ${p.effectivePrepStation ?? '-'} kind=${p.kind}`;
+r.menu = {
+  calamari: menu.products.filter(p => live(p) && /calamari/i.test(p.name)).map(fmt),
+  hummus: menu.products.filter(p => live(p) && /hummus/i.test(p.name)).map(fmt),
+  fries: menu.products.filter(p => live(p) && /fries/i.test(p.name)).map(fmt),
+  water: menu.products.filter(p => live(p) && /mineral water|^water/i.test(p.name)).map(fmt),
+};
+// point 1: the manager's and reception's effective permissions, each in its own api session, signed out after
+const perms = {};
+for (const [who, phone, pass] of [['manager', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD'], ['reception', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD']]) {
+  const ctx = await S.pw.request.newContext({ baseURL: S.pos });
+  try {
+    const si = await ctx.post('/api/auth/sign-in', { data: { phone: S.need(phone), password: S.need(pass) } });
+    const me = await (await ctx.get('/api/me')).json().catch(() => null);
+    S.walkNames(me);
+    const pr = await ctx.get('/api/me/permissions');
+    const pb = await pr.json().catch(() => null);
+    const list = Array.isArray(pb) ? pb : (pb?.permissions ?? pb?.effective ?? []);
+    const hits = list.filter(p => (p.permission ?? p) === 'pos:party:kitchen_update');
+    const roles = (me?.roles ?? me?.account?.roles ?? me?.assignments ?? []).map?.(x => x.roleName ?? x.name ?? x.role ?? x) ?? null;
+    const so = await ctx.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+    const after = await ctx.get('/api/me');
+    perms[who] = { signIn: si.status(), permissionsStatus: pr.status(), total: list.length, holdsKitchenUpdate: hits.length > 0, kitchenUpdateScopes: hits.map(h => ({ scopeType: h.scopeType ?? h.scope?.type ?? null, scopeIsFloresta: JSON.stringify(h).includes(S.branchId) })), partyPermissions: list.map(p => p.permission ?? p).filter(p => /^pos:party:/.test(p)).sort(), roles, signOut: so.status(), meAfter: after.status() };
+  } finally { await ctx.dispose(); }
+}
+r.permissions = perms;
+S.receipt.reads.look = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "branch": {
+   "name": "Oto Play Park, Central Floresta",
+   "partySlipsStationIdAtStart": null
+  },
+  "box": {
+   "slot": "virtual-1",
+   "status": "online",
+   "role": "virtual"
+  },
+  "todaysParties": {
+   "count": 1,
+   "zz": []
+  },
+  "menu": {
+   "calamari": [
+    "CF-14 Calamari 295/295 kitchen kind=menu"
+   ],
+   "hummus": [
+    "CF-13 Hummus 275/275 kitchen kind=menu"
+   ],
+   "fries": [
+    "CF-11 French fries 175/175 kitchen kind=menu",
+    "CF-12 Sweet potato fries 175/175 kitchen kind=menu"
+   ],
+   "water": [
+    "CF-65-5 Acqua Panna mineral water 155/155 bar kind=menu",
+    "CF-65-6 Mineral water 60/60 bar kind=menu"
+   ]
+  },
+  "permissions": {
+   "manager": {
+    "signIn": 200,
+    "permissionsStatus": 200,
+    "total": 104,
+    "holdsKitchenUpdate": true,
+    "kitchenUpdateScopes": [
+     {
+      "scopeType": "branch",
+      "scopeIsFloresta": true
+     }
+    ],
+    "partyPermissions": [
+     "pos:party:charge",
+     "pos:party:kitchen_update",
+     "pos:party:payment",
+     "pos:party:update"
+    ],
+    "roles": [],
+    "signOut": 200,
+    "meAfter": 401
+   },
+   "reception": {
+    "signIn": 200,
+    "permissionsStatus": 200,
+    "total": 62,
+    "holdsKitchenUpdate": false,
+    "kitchenUpdateScopes": [],
+    "partyPermissions": [
+     "pos:party:charge",
+     "pos:party:payment",
+     "pos:party:update"
+    ],
+    "roles": [],
+    "signOut": 200,
+    "meAfter": 401
+   }
+  }
+ }
+}
+
+=== 2026-11-12T18:39:55.384Z setup: ZZ TEST simulated printers on Virtual box 1 and a ZZ TEST till
+S.phase = 'setup: ZZ TEST simulated printers on Virtual box 1 and a ZZ TEST till';
+S.assert.ok(S.box, 'Virtual box 1 online');
+const ADDRESS = { kids_band: '192.0.2.97:9201', adult_band: '192.0.2.97:9202', receipt: '192.0.2.97:9203', kitchen: '192.0.2.97:9204', bar: '192.0.2.97:9205' };
+const defs = {
+  kids_band: { kind: 'band_printer', label: 'ZZ TEST SCRUM-907 kids band printer', model: '4B-2082A', protocol: 'tspl2' },
+  adult_band: { kind: 'band_printer', label: 'ZZ TEST SCRUM-907 adult band printer', model: '4B-2082A', protocol: 'tspl2' },
+  receipt: { kind: 'receipt_printer', label: 'ZZ TEST SCRUM-907 receipt printer', model: 'Xprinter XP-80', protocol: 'escpos' },
+  kitchen: { kind: 'kitchen_printer', label: 'ZZ TEST SCRUM-907 kitchen printer', model: 'Xprinter XP-80', protocol: 'escpos' },
+  bar: { kind: 'bar_printer', label: 'ZZ TEST SCRUM-907 bar printer', model: 'Xprinter XP-80', protocol: 'escpos' },
+};
+S.devices = S.devices ?? {};
+for (const [role, d] of Object.entries(defs)) {
+  if (S.devices[role]) continue;
+  const id = S.randomUUID();
+  const r = await S.call('POST', `/boxes/${S.box.id}/devices`, { id, kind: d.kind, label: d.label, transport: 'simulated', model: d.model, protocol: d.protocol, address: ADDRESS[role] });
+  S.assert.equal(r.status, 200, `device ${role} ${JSON.stringify(r.body).slice(0, 200)}`);
+  S.devices[role] = { id: r.body.device.id, label: d.label, kind: d.kind };
+  S.receipt.created.push({ kind: 'device', role, id: r.body.device.id, label: d.label }); S.save();
+}
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+const prefix = Array.from({ length: 99 }, (_, i) => `Z907${String(i + 1).padStart(2, '0')}`).find(p => !stations.some(s => s.codePrefix === p));
+S.fixtureName = `ZZ TEST SCRUM-907 proof till ${Date.now()}`;
+const devices = Object.keys(defs).map(role => ({ role, deviceId: S.devices[role].id }));
+const made = await S.call('POST', `/branches/${S.branchId}/stations`, { name: S.fixtureName, kind: 'till', boxId: S.box.id, codePrefix: prefix, accessScope: 'all_staff', paymentRouting: { card: 'manual', qr: 'none' }, capabilities: [], devices });
+S.assert.equal(made.status, 200, 'station ' + JSON.stringify(made.body).slice(0, 300));
+S.station = made.body.station;
+S.receipt.created.push({ kind: 'station', id: S.station.id, name: S.fixtureName, prefix }); S.save();
+return { station: S.fixtureName, prefix, devices: S.station.devices.map(d => `${d.role}: ${d.label}`) };
+--> {
+ "ok": true,
+ "value": {
+  "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+  "prefix": "Z90701",
+  "devices": [
+   "adult_band: ZZ TEST SCRUM-907 adult band printer",
+   "bar: ZZ TEST SCRUM-907 bar printer",
+   "kids_band: ZZ TEST SCRUM-907 kids band printer",
+   "kitchen: ZZ TEST SCRUM-907 kitchen printer",
+   "receipt: ZZ TEST SCRUM-907 receipt printer"
+  ]
+ }
+}
+
+=== 2026-11-12T18:44:13.042Z setup: the branch business day (party dates at 02:00 Bangkok)
+S.phase = 'setup: the branch business day (party dates at 02:00 Bangkok)';
+const b = (await S.call('GET', '/branches')).body.branches.find(x => x.id === S.branchId);
+const ev = (await S.call('GET', `/events?branchId=${S.branchId}&type=party`)).body;
+return { businessDayStart: b.businessDayStart ?? null, timezone: b.timezone, keys: Object.keys(b), eventsDate: ev?.date ?? ev?.businessDate ?? null, eventKeys: Object.keys(ev ?? {}), eventDates: (ev?.events ?? []).map(e => e.date ?? e.eventDate ?? null) };
+--> {
+ "ok": true,
+ "value": {
+  "businessDayStart": "05:00:00",
+  "timezone": "Asia/Bangkok",
+  "keys": [
+   "id",
+   "name",
+   "code",
+   "timezone",
+   "address",
+   "country",
+   "openingHours",
+   "businessDayStart",
+   "archived",
+   "partySlipsStationId",
+   "birthdayManagerContact",
+   "gmContact"
+  ],
+  "eventsDate": "2026-11-12",
+  "eventKeys": [
+   "branchId",
+   "date",
+   "events"
+  ],
+  "eventDates": [
+   null
+  ]
+ }
+}
+
+=== 2026-11-12T18:47:30.415Z 2: party 1 made in the OTO App (Floresta package, set menu with a choice, extras, cake, bar)
+S.phase = '2: party 1 made in the OTO App (Floresta package, set menu with a choice, extras, cake, bar)';
+// The park's business day starts at 05:00: before then the till's "today" (its party list, the slips job's date)
+// is the business date, read from the till's own events list; the parties are made for that date.
+S.bizDate = (await S.call('GET', `/events?branchId=${S.branchId}&type=party`)).body.date;
+S.assert.match(S.bizDate, /^\d{4}-\d{2}-\d{2}$/);
+await S.openApp();
+const r = { bizDate: S.bizDate, calendarDate: S.today };
+const prod = code => S.menu.products.find(p => p.code === code && p.active && !p.archivedAt);
+S.prods = { calamari: prod('CF-14'), hummus: prod('CF-13'), fries: prod('CF-11'), water: prod('CF-65-6') };
+for (const [k, p] of Object.entries(S.prods)) S.assert.ok(p, 'till product ' + k);
+r.tillProducts = Object.fromEntries(Object.entries(S.prods).map(([k, p]) => [k, `${p.code} ${p.name} ${p.priceSatang / 100}`]));
+S.P1 = 'ZZ TEST 907 party';
+const ev = await S.appCall('POST', '/admin/events', { eventType: 'birthday', title: S.P1, branchId: S.APP_FLORESTA, eventDate: S.bizDate, startTime: '19:00', endTime: '22:00', durationMinutes: 180, numChildren: 2, numAdults: 2, childName: 'ZZ TEST child', status: 'upcoming' });
+S.assert.equal(ev.status, 201, 'party created ' + JSON.stringify(ev.body).slice(0, 200));
+S.p1 = ev.body.id;
+S.receipt.created.push({ kind: 'oto-app party', id: S.p1, title: S.P1 }); S.save();
+const bill = await S.appCall('PUT', `/events/${S.p1}/beo/billing`, { depositRequired: true, depositAmount: 1000, depositPaid: true, depositPaidAmount: 1000 });
+r.billing = bill.status;
+const snap = await S.appCall('POST', `/beo/events/${S.p1}/package-snapshot`, { templateId: S.FLORESTA_PACKAGE });
+S.assert.equal(snap.status, 201, 'package applied');
+r.package = { status: snap.status, name: snap.body?.packageName ?? null, slipsTimeAtApply: snap.body?.slipsTime ?? null, readyOffset: snap.body?.readyOffsetMinutes ?? snap.body?.kitchenReadyOffsetMinutes ?? null };
+// the schedule must not print party 1 by itself while the proof presses "Print party slips now"
+const later = await S.appCall('PATCH', `/beo/events/${S.p1}/package-snapshot`, { slipsTime: '23:50' });
+r.slipsTimeMoved = { status: later.status, slipsTime: later.body?.slipsTime ?? null };
+const tmpls = (await S.appCall('GET', '/beo/set-menu-templates')).body;
+S.tmpl = (Array.isArray(tmpls) ? tmpls : []).find(t => t.id === snap.body?.setMenuTemplateId);
+S.assert.ok(S.tmpl, 'the package set menu template');
+r.setMenu = { name: S.tmpl.name, items: S.tmpl.items.map(i => i.type === 'choice_group' ? `${i.label} [${i.options.join(' / ')}]${i.qty ? ' x' + i.qty : ''}` : `${i.label}${i.qty ? ' x' + i.qty : ''} ${i.productCode ?? ''}`) };
+const beo = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+const kp0 = beo?.kitchenPlan ?? {};
+const line = (id, itemName, quantity, price, productCode, source) => ({ id, itemName, quantity, notes: '', included: source === 'set_menu', price, ...(productCode ? { productCode } : {}), ...(source ? { source } : {}) });
+S.p1Kids = [
+  line('zz907-calamari', S.prods.calamari.name, 2, 120, S.prods.calamari.code),
+  line('zz907-hummus', S.prods.hummus.name, 1, 0, S.prods.hummus.code),
+  line('zz907-mango', 'ZZ TEST mango sticky rice', 2, 90, null),
+  line('zz907-fruit', 'ZZ TEST fruit plate', 1, 0, null),
+];
+S.p1Bar = [line('zz907-water', S.prods.water.name, 2, 0, S.prods.water.code)];
+const put = await S.appCall('PUT', `/events/${S.p1}/beo`, {
+  kitchenPlan: { foodRequired: true, setMenuEnabled: kp0.setMenuEnabled ?? true, setMenuTemplateId: kp0.setMenuTemplateId ?? S.tmpl.id,
+    cakeMode: 'INTERNAL', cakeTime: '20:30', cakeNotes: 'ZZ TEST unicorn',
+    menus: { kids: S.p1Kids, adults: [], adultsDiffer: false, kidsFoodTime: '19:30', adultsFoodTime: '' } },
+  barPlan: { serviceTime: '19:15', items: S.p1Bar },
+});
+r.put = { status: put.status, error: put.status < 300 ? null : put.body };
+// the parent's choices through the link's public routes: Fried rice Veggie, the first option elsewhere
+const link = await S.appCall('POST', '/beo/set-menu-selections', { eventId: S.p1, templateId: S.tmpl.id });
+S.assert.equal(link.status, 201, 'parent link');
+S.token = link.body.token; // memory only
+const pub = await S.appCall('GET', `/beo/set-menu-selections/public/${S.token}`);
+const groups = (pub.body?.template?.items ?? []).filter(i => i.type === 'choice_group');
+const pickOf = g => (/fried rice/i.test(g.label) ? g.options.find(o => /veg/i.test(o)) : null) ?? g.options[0];
+const sub = await S.appCall('POST', `/beo/set-menu-selections/public/${S.token}/submit`, { selections: groups.map(g => ({ groupId: g.id, chosenOptions: [pickOf(g)] })) });
+r.parent = { submit: sub.status, chose: groups.map(g => `${g.label}: ${pickOf(g)}`) };
+const back = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+const show = l => `${l.source === 'set_menu' ? 'SET' : 'EXTRA'} ${l.itemName} x${l.quantity}${l.price ? ' @' + l.price : ''}${l.productCode ? ' [' + l.productCode + ']' : ''}${l.notes ? ' note ' + l.notes : ''} id=${l.id}`;
+r.beoReadBack = { kids: (back?.kitchenPlan?.menus?.kids ?? []).map(show), bar: (back?.barPlan?.items ?? []).map(show), barTime: back?.barPlan?.serviceTime ?? null,
+  cake: { mode: back?.kitchenPlan?.cakeMode ?? null, time: back?.kitchenPlan?.cakeTime ?? null, notes: back?.kitchenPlan?.cakeNotes ?? null, qty: back?.kitchenPlan?.cakeQuantity ?? null },
+  kidsFoodTime: back?.kitchenPlan?.menus?.kidsFoodTime ?? null };
+S.tillRead = async (id, key) => {
+  const p = await S.party(id);
+  const kp = p.body?.kitchenPlan ?? null;
+  const fmtLine = m => `${m.origin ?? '-'} | ${m.name}${m.chosenOption ? ': ' + m.chosenOption : ''}${m.qty == null ? '' : ' x' + m.qty} | code ${m.productCode ?? '-'}${m.unitPriceSatang != null ? ' | entered ' + m.unitPriceSatang / 100 : ''}${m.note ? ' | note ' + m.note : ''}${m.audience ? ' | ' + m.audience : ''}${m.choiceGroup ? ' | group ' + m.choiceGroup : ''} | line ${m.lineId ?? '-'}`;
+  const rec = {
+    at: new Date().toISOString(), status: p.status, error: p.status === 200 ? null : p.body?.error ?? null,
+    title: p.body?.event?.title ?? null, planStatus: p.body?.planStatus ?? null,
+    kitchenPlan: kp ? { kitchen: kp.kitchen, cake: kp.cake ?? null, lines: kp.setMenu.map(fmtLine),
+      bar: kp.barItems.map(b => `${b.origin ?? '-'} | ${b.name} x${b.qty} | code ${b.productCode ?? '-'}${b.unitPriceSatang != null ? ' | entered ' + b.unitPriceSatang / 100 : ''}${b.note ? ' | note ' + b.note : ''} | line ${b.lineId ?? '-'}`) } : null,
+    slips: p.body?.slips ? { slipsTime: p.body.slips.slipsTime ?? null, station: p.body.slips.station?.name ?? null, records: (p.body.slips.records ?? []).map(x => `${x.station} run ${x.run} ${x.trigger} ${x.status}${x.variant ? ' ' + x.variant : ''}`) } : null,
+    deposit: p.body?.event?.party?.depositSatang ?? null,
+    settlement: p.body?.event?.party?.settlement ? { state: p.body.event.party.settlement.state } : null,
+  };
+  if (key) (S.receipt.reads.tillReads ??= {})[key] = rec;
+  return rec;
+};
+r.till = await S.tillRead(S.p1, 'p1-made');
+S.receipt.reads.p1Made = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "bizDate": "2026-11-12",
+  "calendarDate": "2026-11-13",
+  "tillProducts": {
+   "calamari": "CF-14 Calamari 295",
+   "hummus": "CF-13 Hummus 275",
+   "fries": "CF-11 French fries 175",
+   "water": "CF-65-6 Mineral water 60"
+  },
+  "billing": 201,
+  "package": {
+   "status": 201,
+   "name": "Birthday package, Central Floresta",
+   "slipsTimeAtApply": "11:00:00",
+   "readyOffset": null
+  },
+  "slipsTimeMoved": {
+   "status": 200,
+   "slipsTime": "23:50:00"
+  },
+  "setMenu": {
+   "name": "Birthday set menu, Central Floresta",
+   "items": [
+    "Pizza [Margherita / Hawaiian / Pepperoni]",
+    "Hot dish [Chicken schnitzel / Fish fingers]",
+    "French fries CF-11",
+    "Waffles or pancakes [Waffles / Pancakes]",
+    "Fried rice [Veggie / Chicken / Shrimp]",
+    "Veggie sticks CF-53",
+    "Fruit skewers ",
+    "Drinks pitcher [Juice / Mors]"
+   ]
+  },
+  "put": {
+   "status": 200,
+   "error": null
+  },
+  "parent": {
+   "submit": 200,
+   "chose": [
+    "Pizza: Margherita",
+    "Hot dish: Chicken schnitzel",
+    "Waffles or pancakes: Waffles",
+    "Fried rice: Veggie",
+    "Drinks pitcher: Juice"
+   ]
+  },
+  "beoReadBack": {
+   "kids": [
+    "SET Margherita x1 note (Pizza) id=set_item_cf_bday_pizza_Margherita",
+    "SET Chicken schnitzel x1 note (Hot dish) id=set_item_cf_bday_hot_dish_Chicken_schnitzel",
+    "SET French fries x1 id=set_item_cf_bday_fries",
+    "SET Waffles x1 note (Waffles or pancakes) id=set_item_cf_bday_waffles_pancakes_Waffles",
+    "SET Veggie x1 note (Fried rice) id=set_item_cf_bday_fried_rice_Veggie",
+    "SET Veggie sticks x1 id=set_item_cf_bday_veggie_sticks",
+    "SET Fruit skewers x1 id=set_item_cf_bday_fruit_skewers",
+    "SET Juice x1 note (Drinks pitcher) id=set_item_cf_bday_drinks_Juice",
+    "EXTRA Calamari x2 @120 [CF-14] id=zz907-calamari",
+    "EXTRA Hummus x1 [CF-13] id=zz907-hummus",
+    "EXTRA ZZ TEST mango sticky rice x2 @90 id=zz907-mango",
+    "EXTRA ZZ TEST fruit plate x1 id=zz907-fruit"
+   ],
+   "bar": [
+    "EXTRA Mineral water x2 [CF-65-6] id=zz907-water"
+   ],
+   "barTime": "19:15",
+   "cake": {
+    "mode": "INTERNAL",
+    "time": "20:30",
+    "notes": "ZZ TEST unicorn",
+    "qty": 1
+   },
+   "kidsFoodTime": "19:30"
+  },
+  "till": {
+   "at": "2026-11-12T18:47:35.753Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 party",
+   "planStatus": "ready",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "19:30",
+     "adultsFoodTime": null,
+     "readyOffsetMinutes": 20,
+     "slipsTime": "23:50",
+     "barServiceTime": "19:15"
+    },
+    "cake": {
+     "type": "our",
+     "qty": 1,
+     "time": "20:30",
+     "note": "ZZ TEST unicorn"
+    },
+    "lines": [
+     "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+     "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+     "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+     "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+     "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+     "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+     "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+     "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+     "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+     "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+     "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+     "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+    ],
+    "bar": [
+     "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+    ]
+   },
+   "slips": {
+    "slipsTime": "23:50",
+    "station": null,
+    "records": []
+   },
+   "deposit": 100000,
+   "settlement": null
+  }
+ }
+}
+
+=== 2026-11-12T18:47:40.369Z 2: the till's party page (reception, 1440 x 900) shows the plan made in the BEO
+S.phase = "2: the till's party page (reception, 1440 x 900) shows the plan made in the BEO";
+if (!S.pages.rec) await S.signIn('rec', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1440, height: 900 });
+const till = S.pages.rec.page;
+await S.unlock('rec');
+S.cardOf = (page, title) => page.locator('div.font-bold', { hasText: new RegExp(`^${title}$`) }).first().locator('xpath=ancestor::div[contains(@class,"bg-card")][1]');
+S.cardText = async (page, title) => S.flat(await S.cardOf(page, title).innerText().catch(() => ''));
+S.openParty = async (page, id, title) => {
+  await page.goto(`/parties?party=${id}`); await page.waitForTimeout(3500);
+  if (!(await page.getByText(title).first().isVisible().catch(() => false))) { await page.goto('/parties'); await page.waitForTimeout(3000); await page.getByText(title).first().click(); await page.waitForTimeout(3000); }
+  await page.locator('div.font-bold', { hasText: /^Kitchen plan$/ }).first().waitFor({ timeout: 30000 });
+};
+await S.openParty(till, S.p1, S.P1);
+const r = { url: new URL(till.url()).pathname + new URL(till.url()).search };
+r.kitchen = await S.cardText(till, 'Kitchen plan');
+r.bar = await S.cardText(till, 'Bar plan');
+r.buttons = [];
+for (const b of await till.getByRole('button').all()) { const t = S.flat(await b.innerText().catch(() => '')); if (/Settle party|Edit party|Print party slips now|Take balance|Fully paid|Add F&B|Add tickets/.test(t) && await b.isVisible()) r.buttons.push(t); }
+await till.mouse.wheel(0, -3000); await till.waitForTimeout(400);
+await S.shot(till, '02a-till-party-page-reception.png');
+await S.cardOf(till, 'Kitchen plan').scrollIntoViewIfNeeded();
+await S.shot(till, '02b-till-kitchen-plan-card.png', [], { element: S.cardOf(till, 'Kitchen plan') });
+await S.shot(till, '02c-till-bar-plan-card.png', [], { element: S.cardOf(till, 'Bar plan') });
+S.receipt.reads.p2Till = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "url": "/parties?party=5cb91605-2fdb-4e6d-af7c-47199ff500ee",
+  "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+  "bar": "Bar plan Bar service 19:15 Mineral water ×2",
+  "buttons": [
+   "Edit party",
+   "Settle party",
+   "Add F&B to party",
+   "Take balance ฿16715",
+   "Print party slips now"
+  ]
+ }
+}
+
+=== 2026-11-12T18:48:05.185Z 2: the kitchen card pictured whole (a taller window for card pictures only; the width stays 1440)
+S.phase = '2: the kitchen card pictured whole (a taller window for card pictures only; the width stays 1440)';
+S.tallShot = async (page, name, element) => {
+  const vp = page.viewportSize();
+  await page.setViewportSize({ width: vp.width, height: 2400 });
+  await page.waitForTimeout(800);
+  try { await element.scrollIntoViewIfNeeded().catch(() => {}); return await S.shot(page, name, [], { element }); }
+  finally { await page.setViewportSize(vp); await page.waitForTimeout(400); }
+};
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await S.tallShot(till, '02b-till-kitchen-plan-card.png', S.cardOf(till, 'Kitchen plan'));
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T18:48:17.397Z 3: the ZZ TEST till named for party slips; Print party slips now for party 1 (SCRUM-951's READY BY)
+S.phase = "3: the ZZ TEST till named for party slips; Print party slips now for party 1 (SCRUM-951's READY BY)";
+const r = {};
+const b0 = (await S.call('GET', '/branches')).body.branches.find(b => b.id === S.branchId);
+S.assert.equal(b0.partySlipsStationId ?? null, S.receipt.foundAtStart.partySlipsStationId ?? null, 'nobody changed the naming since the look');
+S.assert.equal(b0.partySlipsStationId ?? null, null, 'the park names no party slips station (nobody else is using it)');
+S.seen = { kitchen: (await S.printouts('kitchen')).map(S.keyOf), bar: (await S.printouts('bar')).map(S.keyOf) };
+S.slipsFrom = new Date().toISOString();
+const named = await S.call('PATCH', `/branches/${S.branchId}`, { partySlipsStationId: S.station.id });
+S.assert.equal(named.status, 200, 'named');
+S.stationNamed = true;
+r.named = { at: S.slipsFrom, status: named.status, readBack: (await S.call('GET', '/branches')).body.branches.find(b => b.id === S.branchId).partySlipsStationId === S.station.id };
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+const btn = till.getByRole('button', { name: 'Print party slips now', exact: true });
+await btn.scrollIntoViewIfNeeded();
+const resp = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/slips\/print$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 60000 });
+r.pressedAt = new Date().toISOString();
+await btn.click();
+const rr = await resp;
+const rb = await rr.json().catch(() => null);
+r.press = { status: rr.status(), records: (rb?.slips?.records ?? []).map(x => `${x.station} run ${x.run} ${x.trigger} ${x.status}`) };
+const deadline = Date.now() + 90000;
+let n = { kitchen: [], bar: [] };
+while (Date.now() < deadline) { n = await S.newPrintouts(); if (n.kitchen.length >= 1 && n.bar.length >= 1) break; await S.sleep(3000); }
+await S.sleep(5000);
+n = await S.newPrintouts();
+r.printouts = { kitchen: n.kitchen.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots })), bar: n.bar.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots })) };
+if (n.kitchen[0]) await S.keepPreview('kitchen', n.kitchen[0], '03a-kitchen-slip-first-print.png');
+if (n.bar[0]) await S.keepPreview('bar', n.bar[0], '03b-bar-slip-first-print.png');
+S.markSeen(n.kitchen, n.bar);
+r.jobsAtTill = (await S.jobsAtTill(S.slipsFrom)).map(j => `${j.bangkok} ${j.kind} ${j.role} ${j.status}`);
+r.tillRead = await S.tillRead(S.p1, 'p1-after-first-print');
+await S.sleep(1500);
+const block = till.locator('div.font-bold', { hasText: /^Kitchen & bar slips$/ }).first();
+await block.scrollIntoViewIfNeeded().catch(() => {});
+r.slipsCard = await S.cardText(till, 'Kitchen & bar slips');
+await S.shot(till, '03c-till-slips-card-after-print-now.png', [], { element: S.cardOf(till, 'Kitchen & bar slips') });
+S.receipt.reads.p3print = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "named": {
+   "at": "2026-11-12T18:48:17.633Z",
+   "status": 200,
+   "readBack": true
+  },
+  "pressedAt": "2026-11-12T18:48:21.451Z",
+  "press": {
+   "status": 200,
+   "records": [
+    "kitchen run 1 reprint printed",
+    "bar run 1 reprint printed"
+   ]
+  },
+  "printouts": {
+   "kitchen": [
+    {
+     "seq": 1,
+     "at": "01:48:25",
+     "heightDots": 546
+    }
+   ],
+   "bar": [
+    {
+     "seq": 1,
+     "at": "01:48:25",
+     "heightDots": 168
+    }
+   ]
+  },
+  "jobsAtTill": [
+   "01:48:22 kitchen_ticket kitchen printed",
+   "01:48:22 bar_ticket bar printed"
+  ],
+  "tillRead": {
+   "at": "2026-11-12T18:48:31.657Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 party",
+   "planStatus": "ready",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "19:30",
+     "adultsFoodTime": null,
+     "readyOffsetMinutes": 20,
+     "slipsTime": "23:50",
+     "barServiceTime": "19:15"
+    },
+    "cake": {
+     "type": "our",
+     "qty": 1,
+     "time": "20:30",
+     "note": "ZZ TEST unicorn"
+    },
+    "lines": [
+     "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+     "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+     "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+     "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+     "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+     "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+     "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+     "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+     "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+     "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+     "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+     "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+    ],
+    "bar": [
+     "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+    ]
+   },
+   "slips": {
+    "slipsTime": "23:50",
+    "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+    "records": [
+     "kitchen run 1 reprint printed",
+     "bar run 1 reprint printed"
+    ]
+   },
+   "deposit": 100000,
+   "settlement": null
+  },
+  "slipsCard": "Kitchen & bar slips Slip time 23:50 Kitchen slip Printed 01:48 Bar slip Printed 01:48 Print party slips now"
+ }
+}
+
+=== 2026-11-12T18:48:49.006Z 4: reception opens Edit party: the Kitchen and Bar cards read-only, no Add item, no remove; Cancel
+S.phase = '4: reception opens Edit party: the Kitchen and Bar cards read-only, no Add item, no remove; Cancel';
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const card = t => S.cardOf(till, t);
+const r = {};
+for (const t of ['Kitchen plan', 'Bar plan']) {
+  const c = card(t);
+  r[t] = {
+    text: S.flat(await c.innerText().catch(() => '')).slice(0, 900),
+    readOnlyLine: await c.getByText('A manager changes the kitchen plan.', { exact: true }).count(),
+    addItem: await c.getByRole('button', { name: /Add item/ }).count(),
+    remove: await c.getByRole('button', { name: /^Remove .* item$/ }).count(),
+    steppers: await c.getByRole('button', { name: /^Add one / }).count(),
+    enabledInputs: await c.locator('input:not([disabled])').count(),
+    choiceSelects: await c.getByRole('combobox').evaluateAll(els => els.map(e => ({ label: e.getAttribute('aria-label'), disabled: e.hasAttribute('disabled') || e.getAttribute('data-disabled') !== null }))),
+    values: await c.locator('input').evaluateAll(els => els.map(e => e.value).filter(Boolean)),
+  };
+}
+await card('Kitchen plan').scrollIntoViewIfNeeded();
+await S.tallShot(till, '04a-reception-edit-kitchen-card-read-only.png', card('Kitchen plan'));
+await card('Bar plan').scrollIntoViewIfNeeded();
+await S.tallShot(till, '04b-reception-edit-bar-card-read-only.png', card('Bar plan'));
+await card('Kitchen plan').scrollIntoViewIfNeeded();
+await S.shot(till, '04c-reception-edit-form-1440.png');
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(2000);
+r.afterCancel = { editHeading: await till.getByRole('heading', { name: 'Edit party', exact: true }).count(), editButton: await till.getByRole('button', { name: 'Edit party', exact: true }).count() };
+S.receipt.reads.p4reception = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "Kitchen plan": {
+   "text": "Kitchen plan A manager changes the kitchen plan. Kitchen service needed Food service time Set menu Food items ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×2 ×1 ×2 ×1 Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+   "readOnlyLine": 1,
+   "addItem": 0,
+   "remove": 0,
+   "steppers": 0,
+   "enabledInputs": 0,
+   "choiceSelects": [
+    {
+     "label": null,
+     "disabled": true
+    }
+   ],
+   "values": [
+    "19:30",
+    "Pizza · Margherita",
+    "Hot dish · Chicken schnitzel",
+    "French fries",
+    "Waffles or pancakes · Waffles",
+    "Fried rice · Veggie",
+    "Veggie sticks",
+    "Fruit skewers · not on the till menu",
+    "Drinks pitcher · Juice · not on the till menu",
+    "Calamari",
+    "Hummus",
+    "ZZ TEST mango sticky rice · not on the till menu",
+    "ZZ TEST fruit plate · not on the till menu",
+    "20:30",
+    "ZZ TEST unicorn"
+   ]
+  },
+  "Bar plan": {
+   "text": "Bar plan A manager changes the kitchen plan. Bar service time Bar items ×2",
+   "readOnlyLine": 1,
+   "addItem": 0,
+   "remove": 0,
+   "steppers": 0,
+   "enabledInputs": 0,
+   "choiceSelects": [],
+   "values": [
+    "19:15",
+    "Mineral water"
+   ]
+  },
+  "afterCancel": {
+   "editHeading": 0,
+   "editButton": 1
+  }
+ }
+}
+
+=== 2026-11-12T18:49:09.436Z 5: the branch manager edits the kitchen plan on the till and saves
+S.phase = '5: the branch manager edits the kitchen plan on the till and saves';
+if (!S.pages.mgr) await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1440, height: 900 });
+const till = S.pages.mgr.page;
+await S.unlock('mgr');
+await S.openParty(till, S.p1, S.P1);
+const r = {};
+r.pageBefore = { kitchen: await S.cardText(till, 'Kitchen plan'), bar: await S.cardText(till, 'Bar plan') };
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+const kc = S.cardOf(till, 'Kitchen plan');
+const bc = S.cardOf(till, 'Bar plan');
+await kc.getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+r.formOpened = { kitchen: S.flat(await kc.innerText()).slice(0, 900), readOnlyLine: await kc.getByText('A manager changes the kitchen plan.', { exact: true }).count(),
+  removeButtons: await kc.getByRole('button', { name: /^Remove .* item$/ }).evaluateAll(els => els.map(e => e.getAttribute('aria-label'))),
+  choiceSelects: await kc.getByRole('combobox').evaluateAll(els => els.map(e => e.getAttribute('aria-label'))) };
+await kc.scrollIntoViewIfNeeded();
+await S.tallShot(till, '05a-manager-edit-kitchen-card-as-opened.png', kc);
+// Calamari x2 -> x3, note "no sauce"
+await kc.getByRole('button', { name: 'Add one Calamari quantity', exact: true }).click();
+await kc.getByRole('textbox', { name: 'Calamari note', exact: true }).fill('no sauce');
+// Fried rice: Veggie -> Chicken (the group's own options only)
+const fr = kc.getByRole('combobox', { name: 'Fried rice choice', exact: true });
+await fr.click();
+await till.waitForTimeout(600);
+r.friedRiceOptions = await till.getByRole('option').evaluateAll(els => els.map(e => ({ text: e.textContent.trim(), disabled: e.getAttribute('aria-disabled') === 'true' || e.hasAttribute('data-disabled') })));
+await S.shot(till, '05b-manager-fried-rice-choices.png');
+await till.getByRole('option', { name: 'Fried rice: Chicken', exact: true }).click();
+await till.waitForTimeout(400);
+// Add item: search "fries", pick French fries
+await kc.getByRole('button', { name: /Add item/ }).first().click();
+const newFood = () => kc.getByRole('textbox', { name: 'New food item', exact: true }).last();
+await newFood().click();
+await newFood().fill('fries');
+await till.waitForTimeout(800);
+r.friesMatches = await kc.locator('div.absolute button').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()));
+await S.tallShot(till, '05c-manager-add-item-search-fries.png', kc);
+await kc.locator('div.absolute button').filter({ hasText: /^French fries/ }).first().click();
+await till.waitForTimeout(400);
+r.friesPicked = { value: await newFood().inputValue(), hint: S.flat(await kc.getByText(/^Till item /).last().innerText().catch(() => '')) };
+// Add item typed: ZZ TEST lemon cake
+await kc.getByRole('button', { name: /Add item/ }).first().click();
+await newFood().click();
+await newFood().fill('ZZ TEST lemon cake');
+await newFood().press('Tab');
+await till.waitForTimeout(500);
+r.lemonHint = S.flat(await kc.getByText('not on the till menu', { exact: true }).last().innerText().catch(() => ''));
+// remove ZZ TEST fruit plate
+await kc.getByRole('button', { name: 'Remove ZZ TEST fruit plate item', exact: true }).click();
+// the cake 21:00 and "ZZ TEST rainbow"
+await kc.getByLabel('Cake time', { exact: true }).fill('21:00');
+await kc.getByLabel('Cake note', { exact: true }).fill('ZZ TEST rainbow');
+// the bar: Mineral water x3
+await bc.getByRole('button', { name: 'Add one Mineral water quantity', exact: true }).click();
+await till.waitForTimeout(500);
+r.formBeforeSave = { kitchen: S.flat(await kc.innerText()).slice(0, 1200), kitchenInputs: await kc.locator('input').evaluateAll(els => els.map(e => e.value).filter(Boolean)), bar: S.flat(await bc.innerText()).slice(0, 400) };
+await kc.scrollIntoViewIfNeeded();
+await S.tallShot(till, '05d-manager-kitchen-card-before-save.png', kc);
+await bc.scrollIntoViewIfNeeded();
+await S.tallShot(till, '05e-manager-bar-card-before-save.png', bc);
+// Save
+S.seenBeforeEdit = { kitchen: [...S.seen.kitchen], bar: [...S.seen.bar] };
+const resp = till.waitForResponse(x => /\/api\/parties\/[^/]+\/kitchen-plan$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT', { timeout: 120000 });
+r.savedAt = new Date().toISOString();
+S.editSavedAt = r.savedAt;
+await till.getByRole('button', { name: 'Save changes', exact: true }).click();
+const x = await resp;
+const xb = await x.json().catch(() => null);
+r.put = { status: x.status(), request: x.request().postDataJSON()?.changes ?? null, kitchenEdit: xb?.kitchenEdit ?? null, error: xb?.error ?? null };
+await till.waitForTimeout(1200);
+r.toast = await till.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean));
+await S.shot(till, '05f-manager-saved-toast.png');
+await till.waitForTimeout(4000);
+r.formClosed = { editHeading: await till.getByRole('heading', { name: 'Edit party', exact: true }).count() };
+r.pageAfter = { kitchen: await S.cardText(till, 'Kitchen plan'), bar: await S.cardText(till, 'Bar plan') };
+await S.cardOf(till, 'Kitchen plan').scrollIntoViewIfNeeded();
+await S.tallShot(till, '05g-party-page-kitchen-card-after-save.png', S.cardOf(till, 'Kitchen plan'));
+await S.tallShot(till, '05h-party-page-bar-card-after-save.png', S.cardOf(till, 'Bar plan'));
+r.tillRead = await S.tillRead(S.p1, 'p1-after-manager-edit');
+S.receipt.reads.p5edit = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "pageBefore": {
+   "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+   "bar": "Bar plan Bar service 19:15 Mineral water ×2"
+  },
+  "formOpened": {
+   "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Veggie 1 1 1 Drinks pitcher: Juice 1 2 1 2 1 Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+   "readOnlyLine": 0,
+   "removeButtons": [
+    "Remove Calamari item",
+    "Remove Hummus item",
+    "Remove ZZ TEST mango sticky rice item",
+    "Remove ZZ TEST fruit plate item"
+   ],
+   "choiceSelects": [
+    "Pizza choice",
+    "Hot dish choice",
+    "Waffles or pancakes choice",
+    "Fried rice choice",
+    "Drinks pitcher choice",
+    null
+   ]
+  },
+  "friedRiceOptions": [
+   {
+    "text": "Fried rice: Veggie",
+    "disabled": false
+   },
+   {
+    "text": "Fried rice: Chicken",
+    "disabled": false
+   },
+   {
+    "text": "Fried rice: Shrimp",
+    "disabled": false
+   }
+  ],
+  "friesMatches": [
+   "French fries CF-11",
+   "Sweet potato fries CF-12"
+  ],
+  "friesPicked": {
+   "value": "French fries",
+   "hint": "Till item CF-11"
+  },
+  "lemonHint": "not on the till menu",
+  "formBeforeSave": {
+   "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Chicken 1 1 1 Drinks pitcher: Juice 1 3 1 2 1 Till item CF-11 1 not on the till menu Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+   "kitchenInputs": [
+    "19:30",
+    "French fries",
+    "Veggie sticks",
+    "Fruit skewers · not on the till menu",
+    "Calamari",
+    "no sauce",
+    "Hummus",
+    "ZZ TEST mango sticky rice · not on the till menu",
+    "French fries",
+    "ZZ TEST lemon cake",
+    "21:00",
+    "ZZ TEST rainbow"
+   ],
+   "bar": "Bar plan Bar service time Bar items 3 Add item"
+  },
+  "savedAt": "2026-11-12T18:49:27.906Z",
+  "put": {
+   "status": 200,
+   "request": [
+    {
+     "op": "choose",
+     "choiceGroup": "Fried rice",
+     "lineId": "set_item_cf_bday_fried_rice_Veggie",
+     "option": "Chicken"
+    },
+    {
+     "op": "set",
+     "lineId": "zz907-calamari",
+     "qty": 3,
+     "note": "no sauce"
+    },
+    {
+     "op": "remove",
+     "lineId": "zz907-fruit"
+    },
+    {
+     "op": "set",
+     "lineId": "zz907-water",
+     "qty": 3
+    },
+    {
+     "op": "add",
+     "id": "01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+     "list": "food",
+     "name": "French fries",
+     "productCode": "CF-11",
+     "qty": 1
+    },
+    {
+     "op": "add",
+     "id": "01a1d117-db64-7b32-b01d-14c171cbc34b",
+     "list": "food",
+     "name": "ZZ TEST lemon cake",
+     "productCode": null,
+     "qty": 1
+    },
+    {
+     "op": "cake",
+     "time": "21:00",
+     "note": "ZZ TEST rainbow"
+    }
+   ],
+   "kitchenEdit": {
+    "id": "01a1d117-ea6e-747b-bb4d-6f8d1c704943",
+    "replayed": false
+   },
+   "error": null
+  },
+  "toast": [
+   "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+   "Kitchen plan saved The BEO in the OTO App now has the change."
+  ],
+  "formClosed": {
+   "editHeading": 0
+  },
+  "pageAfter": {
+   "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Chicken ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×3 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 French fries ×1 ZZ TEST lemon cake · not on the till menu ×1 Our cake ×1 · 21:00 ZZ TEST rainbow Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+   "bar": "Bar plan Bar service 19:15 Mineral water ×3"
+  },
+  "tillRead": {
+   "at": "2026-11-12T18:49:37.808Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 party",
+   "planStatus": "ready",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "19:30",
+     "adultsFoodTime": null,
+     "readyOffsetMinutes": 20,
+     "slipsTime": "23:50",
+     "barServiceTime": "19:15"
+    },
+    "cake": {
+     "type": "our",
+     "qty": 1,
+     "time": "21:00",
+     "note": "ZZ TEST rainbow"
+    },
+    "lines": [
+     "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+     "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+     "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+     "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+     "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+     "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+     "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+     "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+     "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+     "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+     "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+     "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+     "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+    ],
+    "bar": [
+     "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+    ]
+   },
+   "slips": {
+    "slipsTime": "23:50",
+    "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+    "records": [
+     "kitchen run 1 reprint printed",
+     "bar run 1 reprint printed"
+    ]
+   },
+   "deposit": 100000,
+   "settlement": null
+  }
+ }
+}
+
+=== 2026-11-12T18:50:18.241Z 5 (hunt): the party bill on the party page after the kitchen edit, read again after a reload
+S.phase = "5 (hunt): the party bill on the party page after the kitchen edit, read again after a reload";
+const till = S.pages.mgr.page;
+await S.unlock('mgr');
+const r = {};
+const billText = async () => S.flat(await S.cardOf(till, 'Party bill').innerText().catch(() => ''));
+r.beforeReload = { bill: await billText(), take: S.flat(await till.getByRole('button', { name: /^Take balance/ }).first().innerText().catch(() => '')) };
+await till.reload(); await till.waitForTimeout(5000);
+await S.openParty(till, S.p1, S.P1);
+await till.waitForTimeout(2000);
+r.afterReload = { bill: await billText(), take: S.flat(await till.getByRole('button', { name: /^Take balance/ }).first().innerText().catch(() => '')) };
+await till.mouse.wheel(0, -3000); await till.waitForTimeout(400);
+await S.shot(till, '05i-party-page-after-reload-bill.png');
+// the settle preview the platform prices (no write)
+const pv = await S.call('POST', `/parties/${S.p1}/settle/preview`, { branchId: S.branchId, stationId: S.station.id, kids: 2, adults: 2, socksGiven: 0, addOnIds: [], entertainmentIds: [] });
+const q = pv.body?.quote;
+r.preview = q ? { status: pv.status, package: q.packageSatang / 100, addOns: q.addOnsSatang / 100, total: q.totalSatang / 100, deposit: q.depositSatang / 100, balance: q.balanceSatang / 100,
+  extras: (q.extras ?? []).map(e => `${e.name} · ${e.qty} × ${e.unitSatang == null ? '-' : e.unitSatang / 100} = ${e.totalSatang / 100} ${e.charged ? 'charged' : 'NOT charged'}`) } : { status: pv.status, error: pv.body?.error ?? null };
+S.receipt.reads.p5bill = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "beforeReload": {
+   "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿815 Total ฿17715 Deposit paid −฿1000 Outstanding ฿16715",
+   "take": "Take balance ฿16715"
+  },
+  "afterReload": {
+   "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿1170 Total ฿18070 Deposit paid −฿1000 Outstanding ฿17070",
+   "take": "Take balance ฿17070"
+  },
+  "preview": {
+   "status": 200,
+   "package": 16900,
+   "addOns": 1170,
+   "total": 18070,
+   "deposit": 1000,
+   "balance": 17070,
+   "extras": [
+    "Calamari · 3 × 120 = 360 charged",
+    "Hummus · 1 × 275 = 275 charged",
+    "ZZ TEST mango sticky rice · 2 × 90 = 180 charged",
+    "French fries · 1 × 175 = 175 charged",
+    "Mineral water · 3 × 60 = 180 charged",
+    "ZZ TEST lemon cake · 1 × - = 0 NOT charged"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T18:50:46.141Z 7: the slips after the till's edit (VOID and UPDATED kitchen, UPDATED bar), read from the simulated printers
+S.phase = "7: the slips after the till's edit (VOID and UPDATED kitchen, UPDATED bar), read from the simulated printers";
+const r = {};
+const t0 = Date.parse(S.editSavedAt);
+const deadline = Date.now() + 180000;
+let n = { kitchen: [], bar: [] };
+while (Date.now() < deadline) { n = await S.newPrintouts(); if (n.kitchen.length >= 2 && n.bar.length >= 1) break; await S.sleep(4000); }
+await S.sleep(8000);
+n = await S.newPrintouts();
+r.secondsFromSave = n.kitchen.concat(n.bar).map(p => Math.round((Date.parse(p.at) - t0) / 1000));
+r.printouts = { kitchen: n.kitchen.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots })), bar: n.bar.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots })) };
+const asc = a => [...a].sort((x, y) => x.seq - y.seq);
+for (const [i, p] of asc(n.kitchen).entries()) await S.keepPreview('kitchen', p, `07${String.fromCharCode(97 + i)}-kitchen-slip-after-till-edit-${i + 1}.png`);
+for (const [i, p] of asc(n.bar).entries()) await S.keepPreview('bar', p, `07${String.fromCharCode(97 + n.kitchen.length + i)}-bar-slip-after-till-edit-${i + 1}.png`);
+S.markSeen(n.kitchen, n.bar);
+r.audit = (await S.auditOf('party.slips_change', S.p1.toLowerCase())).map(e => ({ at: S.bkk(e.createdAt), run: e.after?.run, slips: (e.after?.slips ?? []).map(s => `${s.station} ${s.variant} ${s.status}`) }));
+r.jobsAtTill = (await S.jobsAtTill(S.slipsFrom)).map(j => `${j.bangkok} ${j.kind} ${j.role} ${j.status}`);
+S.receipt.reads.p7 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "secondsFromSave": [
+   52,
+   53,
+   53
+  ],
+  "printouts": {
+   "kitchen": [
+    {
+     "seq": 2,
+     "at": "01:50:20",
+     "heightDots": 316
+    },
+    {
+     "seq": 3,
+     "at": "01:50:20",
+     "heightDots": 660
+    }
+   ],
+   "bar": [
+    {
+     "seq": 2,
+     "at": "01:50:20",
+     "heightDots": 255
+    }
+   ]
+  },
+  "audit": [
+   {
+    "at": "01:50:18",
+    "run": 1,
+    "slips": [
+     "kitchen void printed",
+     "kitchen updated printed",
+     "bar updated printed"
+    ]
+   }
+  ],
+  "jobsAtTill": [
+   "01:48:22 kitchen_ticket kitchen printed",
+   "01:48:22 bar_ticket bar printed",
+   "01:50:14 kitchen_ticket kitchen printed",
+   "01:50:14 kitchen_ticket kitchen printed",
+   "01:50:14 bar_ticket bar printed"
+  ]
+ }
+}
+
+=== 2026-11-12T18:51:05.233Z 6: the BEO after the till's edit, the OTO App's Activity Logbook, the platform's audit row
+S.phase = "6: the BEO after the till's edit, the OTO App's Activity Logbook, the platform's audit row";
+const page = S.app.page;
+S.openBeo = async (id) => {
+  await page.goto(S.APP + '/studio/events/kanban?beo=' + id, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.getByTestId('accordion-event-info').waitFor({ timeout: 120000 });
+  await page.waitForTimeout(2500);
+};
+S.openSection = async (tid) => {
+  const trig = page.getByTestId(tid).first();
+  await trig.waitFor({ state: 'visible', timeout: 60000 });
+  if ((await trig.getAttribute('data-state')) !== 'open') { await trig.click(); await page.waitForTimeout(900); }
+};
+S.appShot = async (name, tid, block = 'start') => {
+  if (tid) { const l = page.getByTestId(tid).first(); await l.scrollIntoViewIfNeeded(); await l.evaluate((el, b) => el.scrollIntoView({ block: b }), block); await page.waitForTimeout(500); }
+  await S.hideBoard(page);
+  try { return await S.shot(page, name, [], { element: page.locator('[role=dialog]').first() }); } finally { await S.showBoard(page); }
+};
+S.beoRows = async () => ({
+  kids: await page.evaluate(() => [...document.querySelectorAll('[data-testid^="menu-item-kids-"]')].filter(r => /^menu-item-kids-\d+$/.test(r.getAttribute('data-testid'))).map(r => (r.innerText || '').replace(/\s+/g, ' ').trim() + ' | inputs: ' + [...r.querySelectorAll('input')].map(i => i.value).join(' / '))),
+});
+const r = {};
+S.inPlace = p => [];
+await S.openBeo(S.p1);
+await S.openSection('accordion-kitchen-plan');
+await page.getByTestId('button-menu-tab-kids').click().catch(() => {});
+await page.waitForTimeout(600);
+r.kidsRows = (await S.beoRows()).kids;
+r.setBlock = await page.evaluate(() => { const b = document.querySelector('.border-emerald-500\\/40'); return b ? (b.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 900) : null; });
+r.cake = { time: await page.getByTestId('input-cake-time').first().inputValue().catch(() => null), timeText: S.flat(await page.getByTestId('input-cake-time').first().innerText().catch(() => '')), notes: await page.getByTestId('input-cake-notes').first().inputValue().catch(() => null) };
+await S.appShot('06a-beo-kitchen-plan-set-menu.png', 'accordion-kitchen-plan', 'start');
+const lastKid = r.kidsRows.length - 1;
+await S.appShot('06b-beo-kitchen-plan-extra-lines.png', `menu-item-kids-${Math.max(0, lastKid)}`, 'center');
+await S.appShot('06c-beo-cake.png', 'input-cake-notes', 'center');
+await S.openSection('accordion-bar-plan');
+r.barRows = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="bar-item-"]')].filter(x => /^bar-item-\d+$/.test(x.getAttribute('data-testid'))).map(x => (x.innerText || '').replace(/\s+/g, ' ').trim() + ' | inputs: ' + [...x.querySelectorAll('input')].map(i => i.value).join(' / ')));
+r.barTimeText = await page.evaluate(() => { const el = document.querySelector('[data-testid="button-bar-time-edit"]'); return el ? (el.closest('div.flex')?.parentElement?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) : null; });
+await S.appShot('06d-beo-bar-plan.png', 'accordion-bar-plan', 'start');
+// the BEO's data, read back through the app's own route
+const back = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+const show = l => `${l.source === 'set_menu' ? 'SET' : 'EXTRA'} ${l.itemName} x${l.quantity}${l.price ? ' @' + l.price : ''}${l.productCode ? ' [' + l.productCode + ']' : ''}${l.notes ? ' note "' + l.notes + '"' : ''}`;
+r.beoApi = { kids: (back?.kitchenPlan?.menus?.kids ?? []).map(show), adults: (back?.kitchenPlan?.menus?.adults ?? []).map(show), bar: (back?.barPlan?.items ?? []).map(show), barTime: back?.barPlan?.serviceTime ?? null, cake: { time: back?.kitchenPlan?.cakeTime ?? null, notes: back?.kitchenPlan?.cakeNotes ?? null, qty: back?.kitchenPlan?.cakeQuantity ?? null } };
+// the Activity Logbook, searched to this run's party
+const logs = await S.appCall('GET', `/activity-logs?branchId=${S.APP_FLORESTA}&search=${encodeURIComponent('ZZ TEST 907')}&limit=20&offset=0`);
+r.activityApi = { status: logs.status, total: logs.body?.totalCount ?? null, rows: (logs.body?.logs ?? []).map(l => ({ type: l.activityType ?? l.type, at: l.createdAt ? S.bkk(l.createdAt) : null, text: S.flat(l.description ?? l.message ?? l.title ?? '') })) };
+for (const l of logs.body?.logs ?? []) { S.addName(l.userName); S.addName(l.performedByName); S.addName(l.user?.fullName); }
+await page.goto(S.APP + '/activity-logbook', { waitUntil: 'domcontentloaded', timeout: 120000 });
+await page.getByTestId('text-activity-logbook-title').waitFor({ timeout: 60000 });
+await page.getByTestId('input-search-activity').fill('ZZ TEST 907');
+await page.waitForTimeout(3500);
+r.logbookRows = await page.locator('[data-testid^="activity-log-"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()));
+S.inPlace = p => [p.locator('[data-testid^="activity-log-"]').filter({ hasNotText: 'ZZ TEST' })];
+await S.shot(page, '06e-oto-app-activity-logbook.png');
+S.inPlace = p => [];
+// the platform's audit: party.kitchen_update rows for the party, as admin
+const audit = await S.auditOf('party.kitchen_update', S.p1.toLowerCase());
+r.audit = { rows: audit.length, entries: audit.map(e => ({ at: S.bkk(e.createdAt), action: e.action, entityType: e.entityType, before: e.before, after: { ...e.after, by: e.after?.by ? { name: '[name]', role: e.after.by.role } : null } })) };
+for (const e of audit) S.addName(e.after?.by?.name);
+S.receipt.reads.p6 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "kidsRows": [
+   "SET 1 Margherita (Pizza) | inputs: ",
+   "SET 1 Chicken schnitzel (Hot dish) | inputs: ",
+   "SET 1 French fries | inputs: ",
+   "SET 1 Waffles (Waffles or pancakes) | inputs: ",
+   "SET 1 Chicken (Fried rice) | inputs: ",
+   "SET 1 Veggie sticks | inputs: ",
+   "SET 1 Fruit skewers | inputs: ",
+   "SET 1 Juice (Drinks pitcher) | inputs: ",
+   "EXTRA 3 Calamari CF-14 no sauce | inputs: ",
+   "EXTRA 1 Hummus CF-13 | inputs: ",
+   "EXTRA 2 ZZ TEST mango sticky rice | inputs: ",
+   "EXTRA 1 French fries CF-11 | inputs: ",
+   "EXTRA 1 ZZ TEST lemon cake | inputs: "
+  ],
+  "setBlock": "SET MENU Birthday set menu, Central Floresta Selections received INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Margherita Choice Hot dish→ Chicken schnitzel Choice Waffles or pancakes→ Waffles Choice Fried rice→ Chicken Choice Drinks pitcher→ Juice Choice RESOLVED ITEMS (EDITABLE) SET 1 Margherita (Pizza) SET 1 Chicken schnitzel (Hot dish) SET 1 French fries SET 1 Waffles (Waffles or pancakes) SET 1 Chicken (Fried rice) SET 1 Veggie sticks SET 1 Fruit skewers SET 1 Juice (Drinks pitcher) + Add item",
+  "cake": {
+   "time": null,
+   "timeText": "",
+   "notes": null
+  },
+  "barRows": [
+   "EXTRA Mineral water CF-65-6 3 Notes (optional)… | inputs: "
+  ],
+  "barTimeText": "19:15",
+  "beoApi": {
+   "kids": [
+    "SET Margherita x1 note \"(Pizza)\"",
+    "SET Chicken schnitzel x1 note \"(Hot dish)\"",
+    "SET French fries x1",
+    "SET Waffles x1 note \"(Waffles or pancakes)\"",
+    "SET Chicken x1 note \"(Fried rice)\"",
+    "SET Veggie sticks x1",
+    "SET Fruit skewers x1",
+    "SET Juice x1 note \"(Drinks pitcher)\"",
+    "EXTRA Calamari x3 @120 [CF-14] note \"no sauce\"",
+    "EXTRA Hummus x1 [CF-13]",
+    "EXTRA ZZ TEST mango sticky rice x2 @90",
+    "EXTRA French fries x1 [CF-11]",
+    "EXTRA ZZ TEST lemon cake x1"
+   ],
+   "adults": [],
+   "bar": [
+    "EXTRA Mineral water x3 [CF-65-6]"
+   ],
+   "barTime": "19:15",
+   "cake": {
+    "time": "21:00",
+    "notes": "ZZ TEST rainbow",
+    "qty": 1
+   }
+  },
+  "activityApi": {
+   "status": 200,
+   "total": 1,
+   "rows": [
+    {
+     "type": "beo_kitchen_plan_till_edit",
+     "at": "01:49:29",
+     "text": ""
+    }
+   ]
+  },
+  "logbookRows": [
+   "BEO Kitchen Plan (Till) Oto Play Park, Central Floresta Kitchen plan of \"ZZ TEST 907 party\" changed on the till by [name] (Manager): Fried rice: Veggie → Chicken; Calamari ×2 → ×3, note \"no sauce\"; removed ZZ TEST fruit plate; Mineral water ×2 → ×3; added French fries ×1 (CF-11); added ZZ TEST lemon cake ×1; cake time 20:30 → 21:00, note \"ZZ TEST rainbow\" 13-11-2026 3 minutes ago"
+  ],
+  "audit": {
+   "rows": 1,
+   "entries": [
+    {
+     "at": "01:49:29",
+     "action": "party.kitchen_update",
+     "entityType": "party",
+     "before": {
+      "bar": [
+       {
+        "qty": 2,
+        "name": "Mineral water",
+        "note": null,
+        "lineId": "zz907-water"
+       }
+      ],
+      "cake": {
+       "qty": 1,
+       "note": "ZZ TEST unicorn",
+       "time": "20:30",
+       "type": "our"
+      },
+      "food": [
+       {
+        "qty": 1,
+        "name": "Fried rice",
+        "note": null,
+        "lineId": "set_item_cf_bday_fried_rice_Veggie",
+        "chosenOption": "Veggie"
+       },
+       {
+        "qty": 2,
+        "name": "Calamari",
+        "note": null,
+        "lineId": "zz907-calamari",
+        "chosenOption": null
+       },
+       {
+        "qty": 1,
+        "name": "ZZ TEST fruit plate",
+        "note": null,
+        "lineId": "zz907-fruit",
+        "chosenOption": null
+       }
+      ]
+     },
+     "after": {
+      "by": {
+       "name": "[name]",
+       "role": "Manager"
+      },
+      "bar": [
+       {
+        "qty": 3,
+        "name": "Mineral water",
+        "note": null,
+        "lineId": "zz907-water"
+       }
+      ],
+      "cake": {
+       "qty": 1,
+       "note": "ZZ TEST rainbow",
+       "time": "21:00",
+       "type": "our"
+      },
+      "food": [
+       {
+        "qty": 1,
+        "name": "Fried rice",
+        "note": null,
+        "lineId": "set_item_cf_bday_fried_rice_Veggie",
+        "chosenOption": "Chicken"
+       },
+       {
+        "qty": 3,
+        "name": "Calamari",
+        "note": "no sauce",
+        "lineId": "zz907-calamari",
+        "chosenOption": null
+       },
+       {
+        "qty": 1,
+        "name": "French fries",
+        "note": null,
+        "lineId": "till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+        "chosenOption": null
+       },
+       {
+        "qty": 1,
+        "name": "ZZ TEST lemon cake",
+        "note": null,
+        "lineId": "till_01a1d117-db64-7b32-b01d-14c171cbc34b",
+        "chosenOption": null
+       }
+      ],
+      "editId": "01a1d117-ea6e-747b-bb4d-6f8d1c704943",
+      "changes": [
+       {
+        "op": "choose",
+        "lineId": "set_item_cf_bday_fried_rice_Veggie",
+        "option": "Chicken",
+        "choiceGroup": "Fried rice"
+       },
+       {
+        "op": "set",
+        "qty": 3,
+        "note": "no sauce",
+        "lineId": "zz907-calamari"
+       },
+       {
+        "op": "remove",
+        "lineId": "zz907-fruit"
+       },
+       {
+        "op": "set",
+        "qty": 3,
+        "lineId": "zz907-water"
+       },
+       {
+        "id": "01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+        "op": "add",
+        "qty": 1,
+        "list": "food",
+        "name": "French fries",
+        "productCode": "CF-11"
+       },
+       {
+        "id": "01a1d117-db64-7b32-b01d-14c171cbc34b",
+        "op": "add",
+        "qty": 1,
+        "list": "food",
+        "name": "ZZ TEST lemon cake",
+        "productCode": null
+       },
+       {
+        "op": "cake",
+        "note": "ZZ TEST rainbow",
+        "time": "21:00"
+       }
+      ],
+      "replayed": false,
+      "stationId": "01a1d10f-33d9-70fa-9cb8-967595ca2597"
+     }
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T18:52:42.791Z 6: the Activity Logbook line pictured with only the staff name blacked out (word mask), the account avatar masked
+S.phase = '6: the Activity Logbook line pictured with only the staff name blacked out (word mask), the account avatar masked';
+const page = S.app.page;
+/** Black out each staff name as a word inside its text, leaving the rest of the line readable. */
+S.wordMask = (p) => p.evaluate((list) => {
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = list.length ? new RegExp(list.map(s => `(?<![\\p{L}\\p{N}])${esc(s)}(?![\\p{L}\\p{N}])`).join('|'), 'giu') : null;
+  if (!re) return 0;
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const hits = [];
+  while (w.nextNode()) { re.lastIndex = 0; if (re.test(w.currentNode.nodeValue || '')) hits.push(w.currentNode); }
+  for (const t of hits) {
+    const span = document.createElement('span');
+    span.innerHTML = (t.nodeValue || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]).replace(re, m => `<span style="background:#18181b;color:#18181b;border-radius:2px">${'█'.repeat(m.length)}</span>`);
+    t.parentNode.replaceChild(span, t);
+  }
+  return hits.length;
+}, S.needles());
+await page.goto(S.APP + '/activity-logbook', { waitUntil: 'domcontentloaded', timeout: 120000 });
+await page.getByTestId('text-activity-logbook-title').waitFor({ timeout: 60000 });
+await page.getByTestId('input-search-activity').fill('ZZ TEST 907');
+await page.waitForTimeout(3500);
+const rows = await page.locator('[data-testid^="activity-log-"]').count();
+const masked = await S.wordMask(page);
+const saved = S.shot;
+S.inPlace = p => [p.locator('[data-testid^="activity-log-"]').filter({ hasNotText: 'ZZ TEST' })];
+const avatar = page.locator('header button, header [class*="avatar"], header span').filter({ hasText: /^[A-Z]{1,3}$/ });
+await S.shot(page, '06e-oto-app-activity-logbook.png', [avatar]);
+S.inPlace = p => [];
+return { rows, masked };
+--> {
+ "ok": true,
+ "value": {
+  "rows": 1,
+  "masked": 1
+ }
+}
+
+=== 2026-11-12T18:52:55.311Z 8: only the bar service time changed in the BEO editor (19:15 -> 19:45): only the bar gets an UPDATED slip
+S.phase = "8: only the bar service time changed in the BEO editor (19:15 -> 19:45): only the bar gets an UPDATED slip";
+const page = S.app.page;
+const r = {};
+S.inPlace = p => [];
+await S.openBeo(S.p1);
+await S.openSection('accordion-bar-plan');
+const edit = page.getByTestId('button-bar-time-edit').first();
+await edit.scrollIntoViewIfNeeded();
+await edit.click();
+await page.getByTestId('input-bar-time').fill('19:45');
+await page.getByTestId('input-bar-time').locator('xpath=..').getByRole('button', { name: 'Confirm', exact: true }).click();
+await page.waitForTimeout(500);
+await S.appShot('08a-beo-bar-time-1945-before-save.png', 'accordion-bar-plan', 'start');
+const kitchenBefore = (await S.appCall('GET', `/events/${S.p1}/beo`)).body?.kitchenPlan ?? null;
+const done = page.waitForResponse(x => /\/api\/events\/[^/]+\/beo$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT', { timeout: 120000 });
+await page.getByTestId('button-save-beo').click();
+const resp = await done;
+const t0 = Date.now();
+r.save = { status: resp.status(), at: S.bkk(t0) };
+const back = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+r.beoBarTime = back?.barPlan?.serviceTime ?? null;
+const pick = k => k ? JSON.stringify({ kids: (k.menus?.kids ?? []).map(l => [l.id, l.itemName, l.quantity, l.notes ?? '']), adults: k.menus?.adults ?? [], cakeTime: k.cakeTime, cakeNotes: k.cakeNotes, kidsFoodTime: k.menus?.kidsFoodTime }) : null;
+r.kitchenUnchangedByTheSave = pick(kitchenBefore) === pick(back?.kitchenPlan ?? null);
+if (!r.kitchenUnchangedByTheSave) r.kitchenDiff = { before: pick(kitchenBefore), after: pick(back?.kitchenPlan) };
+// one tick to print, then two more full ticks to be sure the kitchen gets nothing
+const deadline = Date.now() + 150000;
+let n = { kitchen: [], bar: [] };
+while (Date.now() < deadline) { n = await S.newPrintouts(); if (n.bar.length >= 1) break; await S.sleep(4000); }
+r.barSecondsAfterSave = n.bar.length ? Math.round((Date.parse(n.bar[0].at) - t0) / 1000) : null;
+await S.sleep(130000);
+n = await S.newPrintouts();
+r.printouts = { kitchen: n.kitchen.map(p => ({ seq: p.seq, at: S.bkk(p.at) })), bar: n.bar.map(p => ({ seq: p.seq, at: S.bkk(p.at) })) };
+const asc = a => [...a].sort((x, y) => x.seq - y.seq);
+for (const [i, p] of asc(n.bar).entries()) await S.keepPreview('bar', p, `08${String.fromCharCode(98 + i)}-bar-slip-after-bar-time-only-${i + 1}.png`);
+for (const [i, p] of asc(n.kitchen).entries()) await S.keepPreview('kitchen', p, `08k-UNEXPECTED-kitchen-slip-${i + 1}.png`);
+S.markSeen(n.kitchen, n.bar);
+r.audit = (await S.auditOf('party.slips_change', S.p1.toLowerCase())).map(e => ({ at: S.bkk(e.createdAt), run: e.after?.run, slips: (e.after?.slips ?? []).map(s => `${s.station} ${s.variant} ${s.status}`) }));
+r.tillRead = await S.tillRead(S.p1, 'p1-after-bar-time');
+S.receipt.reads.p8 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "save": {
+   "status": 200,
+   "at": "01:53:02"
+  },
+  "beoBarTime": "19:45",
+  "kitchenUnchangedByTheSave": true,
+  "barSecondsAfterSave": 18,
+  "printouts": {
+   "kitchen": [],
+   "bar": [
+    {
+     "seq": 3,
+     "at": "01:53:20"
+    }
+   ]
+  },
+  "audit": [
+   {
+    "at": "01:53:17",
+    "run": 2,
+    "slips": [
+     "bar updated printed"
+    ]
+   },
+   {
+    "at": "01:50:18",
+    "run": 1,
+    "slips": [
+     "kitchen void printed",
+     "kitchen updated printed",
+     "bar updated printed"
+    ]
+   }
+  ],
+  "tillRead": {
+   "at": "2026-11-12T18:55:34.155Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 party",
+   "planStatus": "ready",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "19:30",
+     "adultsFoodTime": null,
+     "readyOffsetMinutes": 20,
+     "slipsTime": "23:50",
+     "barServiceTime": "19:45"
+    },
+    "cake": {
+     "type": "our",
+     "qty": 1,
+     "time": "21:00",
+     "note": "ZZ TEST rainbow"
+    },
+    "lines": [
+     "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+     "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+     "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+     "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+     "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+     "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+     "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+     "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+     "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+     "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+     "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+     "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+     "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+    ],
+    "bar": [
+     "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+    ]
+   },
+   "slips": {
+    "slipsTime": "23:50",
+    "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+    "records": [
+     "kitchen run 1 reprint printed",
+     "bar run 1 reprint printed"
+    ]
+   },
+   "deposit": 100000,
+   "settlement": null
+  }
+ }
+}
+
+=== 2026-11-12T18:55:44.023Z 10: Edit open on the till; Calamari removed in the BEO and saved there; the till's Calamari change refused; Cancel, Edit opens without Calamari
+S.phase = "10: Edit open on the till; Calamari removed in the BEO and saved there; the till's Calamari change refused; Cancel, Edit opens without Calamari";
+const till = S.pages.mgr.page;
+const page = S.app.page;
+const r = {};
+await S.unlock('mgr');
+await S.openParty(till, S.p1, S.P1);
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+const kc = () => S.cardOf(till, 'Kitchen plan');
+await kc().getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+r.formHasCalamari = await kc().getByRole('button', { name: 'Add one Calamari quantity', exact: true }).count();
+// in the BEO editor: remove Calamari, Save
+S.inPlace = p => [];
+await S.openBeo(S.p1);
+await S.openSection('accordion-kitchen-plan');
+await page.getByTestId('button-menu-tab-kids').click().catch(() => {});
+await page.waitForTimeout(600);
+const idx = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('[data-testid^="menu-item-kids-"]')].filter(x => /^menu-item-kids-\d+$/.test(x.getAttribute('data-testid')));
+  const row = rows.find(x => [...x.querySelectorAll('input')].some(i => /^Calamari$/.test(i.value.trim())) || /(^|\s)Calamari(\s|$)/.test(x.innerText));
+  return row ? row.getAttribute('data-testid').split('-').pop() : null;
+});
+S.assert.ok(idx !== null, 'the Calamari row in the BEO');
+r.beoRowRemoved = S.flat(await page.getByTestId(`menu-item-kids-${idx}`).innerText());
+await page.getByTestId(`button-remove-menu-item-kids-${idx}`).click();
+await page.waitForTimeout(500);
+const done = page.waitForResponse(x => /\/api\/events\/[^/]+\/beo$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT', { timeout: 120000 });
+await page.getByTestId('button-save-beo').click();
+r.beoSave = (await done).status();
+r.beoKidsAfter = ((await S.appCall('GET', `/events/${S.p1}/beo`)).body?.kitchenPlan?.menus?.kids ?? []).map(l => `${l.itemName} x${l.quantity}`);
+// on the till, the form still open on the old read: Calamari +1, Save
+await till.bringToFront();
+await S.unlock('mgr');
+await kc().getByRole('button', { name: 'Add one Calamari quantity', exact: true }).click();
+const resp = till.waitForResponse(x => /\/api\/parties\/[^/]+\/kitchen-plan$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT', { timeout: 120000 });
+await till.getByRole('button', { name: 'Save changes', exact: true }).click();
+const x = await resp;
+const xb = await x.json().catch(() => null);
+r.put = { status: x.status(), code: xb?.error?.code ?? null, message: xb?.error?.message ?? null };
+await till.waitForTimeout(1500);
+r.toast = await till.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean));
+r.formStillOpen = { heading: await till.getByRole('heading', { name: 'Edit party', exact: true }).count(), save: await till.getByRole('button', { name: 'Save changes', exact: true }).count() };
+await S.shot(till, '10a-till-refusal-form-still-open.png');
+// Cancel, then Edit party
+await till.waitForTimeout(3000);
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(2500);
+const presses = [];
+for (let i = 0; i < 4; i++) {
+  await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+  await till.waitForTimeout(2500);
+  const open = await till.getByRole('heading', { name: 'Edit party', exact: true }).count();
+  const toast = await till.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean));
+  presses.push({ open, toast });
+  if (open) break;
+  await till.waitForTimeout(2000);
+}
+r.editPresses = presses;
+await kc().getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+r.reopened = { calamariStepper: await kc().getByRole('button', { name: 'Add one Calamari quantity', exact: true }).count(), kitchen: S.flat(await kc().innerText()).slice(0, 1000) };
+await kc().scrollIntoViewIfNeeded();
+await S.tallShot(till, '10b-till-edit-reopened-without-calamari.png', kc());
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(1500);
+r.tillRead = await S.tillRead(S.p1, 'p1-after-read-again');
+r.kitchenEditAudit = (await S.auditOf('party.kitchen_update', S.p1.toLowerCase())).length;
+S.receipt.reads.p10 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "formHasCalamari": 1,
+  "beoRowRemoved": "EXTRA 3 Calamari CF-14 no sauce",
+  "beoSave": 200,
+  "beoKidsAfter": [
+   "Margherita x1",
+   "Chicken schnitzel x1",
+   "French fries x1",
+   "Waffles x1",
+   "Chicken x1",
+   "Veggie sticks x1",
+   "Fruit skewers x1",
+   "Juice x1",
+   "Hummus x1",
+   "ZZ TEST mango sticky rice x2",
+   "French fries x1",
+   "ZZ TEST lemon cake x1"
+  ],
+  "put": {
+   "status": 409,
+   "code": "OTOAPP_LINE_NOT_FOUND",
+   "message": "The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more."
+  },
+  "toast": [
+   "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+   "Kitchen plan not saved The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more. Press Cancel, then Edit party: it opens on the plan read again."
+  ],
+  "formStillOpen": {
+   "heading": 1,
+   "save": 1
+  },
+  "editPresses": [
+   {
+    "open": 1,
+    "toast": [
+     "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks"
+    ]
+   }
+  ],
+  "reopened": {
+   "calamariStepper": 0,
+   "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Chicken 1 1 1 Drinks pitcher: Juice 1 1 2 1 1 Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note"
+  },
+  "tillRead": {
+   "at": "2026-11-12T18:56:11.655Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 party",
+   "planStatus": "ready",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "19:30",
+     "adultsFoodTime": null,
+     "readyOffsetMinutes": 20,
+     "slipsTime": "23:50",
+     "barServiceTime": "19:45"
+    },
+    "cake": {
+     "type": "our",
+     "qty": 1,
+     "time": "21:00",
+     "note": "ZZ TEST rainbow"
+    },
+    "lines": [
+     "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+     "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+     "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+     "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+     "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+     "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+     "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+     "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+     "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+     "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+     "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+     "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+    ],
+    "bar": [
+     "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+    ]
+   },
+   "slips": {
+    "slipsTime": "23:50",
+    "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+    "records": [
+     "kitchen run 1 reprint printed",
+     "bar run 1 reprint printed"
+    ]
+   },
+   "deposit": 100000,
+   "settlement": null
+  },
+  "kitchenEditAudit": 1
+ }
+}
+
+=== 2026-11-12T18:56:31.426Z check: the WhatsApp number the Edit form shows on party 1 (booleans only, nothing printed)
+S.phase = 'check: the WhatsApp number the Edit form shows on party 1 (booleans only, nothing printed)';
+const p = (await S.party(S.p1)).body;
+const ev = p?.event ?? {};
+const wa = String(ev.party?.whatsapp ?? ev.whatsapp ?? ev.parentPhone ?? ev.party?.parentPhone ?? '');
+const digits = s => String(s ?? '').replace(/\D/g, '').replace(/^66/, '0');
+const shown = '0818953926';
+const r = { found: wa.length > 0, sameAsShown: digits(wa) === shown || digits(wa).endsWith('818953926') };
+for (const k of ['STAGING_ADMIN_PHONE', 'STAGING_MANAGER_PHONE', 'STAGING_RECEPTION_PHONE']) r[k] = digits(S.need(k)).endsWith('818953926');
+const app = await S.appCall('GET', `/admin/events/${S.p1}`);
+const keys = Object.entries(app.body ?? {}).filter(([k, v]) => typeof v === 'string' && v.replace(/\D/g, '').endsWith('818953926')).map(([k]) => k);
+r.appFieldsHoldingIt = keys;
+const branch = await S.appCall('GET', '/branches');
+r.branchFieldsHoldingIt = (Array.isArray(branch.body) ? branch.body : []).filter(b => b.id === S.APP_FLORESTA).flatMap(b => Object.entries(b).filter(([k, v]) => typeof v === 'string' && v.replace(/\D/g, '').endsWith('818953926')).map(([k]) => k));
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "found": false,
+  "sameAsShown": false,
+  "STAGING_ADMIN_PHONE": false,
+  "STAGING_MANAGER_PHONE": false,
+  "STAGING_RECEPTION_PHONE": false,
+  "appFieldsHoldingIt": [],
+  "branchFieldsHoldingIt": []
+ }
+}
+
+=== 2026-11-12T18:56:56.187Z 11: a set-menu dish is not removed on the till; a choice changes only within its own group (the form, then the door itself as the manager)
+S.phase = '11: a set-menu dish is not removed on the till; a choice changes only within its own group (the form, then the door itself as the manager)';
+const till = S.pages.mgr.page;
+await S.unlock('mgr');
+await S.openParty(till, S.p1, S.P1);
+const r = {};
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+const kc = S.cardOf(till, 'Kitchen plan');
+await kc.getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(1500);
+r.form = {
+  removeButtons: await kc.getByRole('button', { name: /^Remove .* item$/ }).evaluateAll(els => els.map(e => e.getAttribute('aria-label'))),
+  setMenuRows: await kc.locator('input[disabled]').evaluateAll(els => els.map(e => e.value).filter(Boolean)),
+  choiceSelects: await kc.getByRole('combobox').evaluateAll(els => els.map(e => e.getAttribute('aria-label')).filter(Boolean)),
+};
+// each choice group's options as the form offers them
+r.form.options = {};
+for (const label of r.form.choiceSelects) {
+  await kc.getByRole('combobox', { name: label, exact: true }).click();
+  await till.waitForTimeout(500);
+  r.form.options[label] = await till.getByRole('option').evaluateAll(els => els.map(e => e.textContent.trim()));
+  await till.keyboard.press('Escape');
+  await till.waitForTimeout(300);
+}
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(1500);
+// the door itself, as the signed-in manager: a set-menu dish removed, and a choice from another group
+const p = (await S.party(S.p1)).body;
+const lines = p.kitchenPlan.setMenu;
+const fries = lines.find(m => m.origin === 'set_menu' && m.name === 'French fries');
+const rice = lines.find(m => m.choiceGroup === 'Fried rice');
+const put = async (changes) => {
+  const res = await till.request.put(`/api/parties/${S.p1}/kitchen-plan`, { data: { branchId: S.branchId, stationId: S.station.id, editId: S.randomUUID(), changes }, headers: { 'idempotency-key': S.randomUUID() } });
+  const b = await res.json().catch(() => null);
+  return { status: res.status(), code: b?.error?.code ?? null, message: b?.error?.message ?? null };
+};
+r.door = {
+  removeSetMenuFries: await put([{ op: 'remove', lineId: fries.lineId }]),
+  chooseOtherGroupsOption: await put([{ op: 'choose', choiceGroup: 'Fried rice', lineId: rice.lineId, option: 'Margherita' }]),
+};
+r.after = (await S.tillRead(S.p1, 'p1-after-guard')).kitchenPlan.lines.filter(l => /French fries|Fried rice/.test(l));
+r.kitchenEditAudit = (await S.auditOf('party.kitchen_update', S.p1.toLowerCase())).length;
+await S.facts('11a-set-menu-guard-door-answers.png', 'SCRUM-907 point 11: the kitchen-plan door refuses a set-menu removal and a choice from another group (as the branch manager)', [
+  ['The form: remove buttons (EXTRAs only)', r.form.removeButtons.join(', ')],
+  ['The form: choice selects', r.form.choiceSelects.join(', ')],
+  ['The form: Fried rice options', (r.form.options['Fried rice choice'] ?? []).join(' / ')],
+  ['PUT /api/parties/:id/kitchen-plan  remove the set-menu French fries', `${r.door.removeSetMenuFries.status} ${r.door.removeSetMenuFries.code}\n${r.door.removeSetMenuFries.message}`],
+  ['PUT /api/parties/:id/kitchen-plan  Fried rice -> "Margherita" (a Pizza option)', `${r.door.chooseOtherGroupsOption.status} ${r.door.chooseOtherGroupsOption.code}\n${r.door.chooseOtherGroupsOption.message}`],
+  ['The plan after both (GET /api/parties/:id)', r.after.join('\n')],
+  ['party.kitchen_update audit rows for the party', String(r.kitchenEditAudit)],
+]);
+S.receipt.reads.p11 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "form": {
+   "removeButtons": [
+    "Remove Hummus item",
+    "Remove ZZ TEST mango sticky rice item",
+    "Remove French fries item",
+    "Remove ZZ TEST lemon cake item"
+   ],
+   "setMenuRows": [
+    "19:30",
+    "French fries",
+    "Veggie sticks",
+    "Fruit skewers · not on the till menu",
+    "Hummus",
+    "ZZ TEST mango sticky rice · not on the till menu",
+    "French fries",
+    "ZZ TEST lemon cake · not on the till menu"
+   ],
+   "choiceSelects": [
+    "Pizza choice",
+    "Hot dish choice",
+    "Waffles or pancakes choice",
+    "Fried rice choice",
+    "Drinks pitcher choice"
+   ],
+   "options": {
+    "Pizza choice": [
+     "Pizza: Margherita",
+     "Pizza: Hawaiian",
+     "Pizza: Pepperoni"
+    ],
+    "Hot dish choice": [
+     "Hot dish: Chicken schnitzel",
+     "Hot dish: Fish fingers"
+    ],
+    "Waffles or pancakes choice": [
+     "Waffles or pancakes: Waffles",
+     "Waffles or pancakes: Pancakes"
+    ],
+    "Fried rice choice": [
+     "Fried rice: Veggie",
+     "Fried rice: Chicken",
+     "Fried rice: Shrimp"
+    ],
+    "Drinks pitcher choice": [
+     "Drinks pitcher: Juice",
+     "Drinks pitcher: Mors"
+    ]
+   }
+  },
+  "door": {
+   "removeSetMenuFries": {
+    "status": 409,
+    "code": "OTOAPP_SET_MENU_LINE",
+    "message": "The OTO App did not change the kitchen plan: French fries is a dish of the party's set menu, so it is not removed from the till: change its choice or its count, or remove it in the BEO."
+   },
+   "chooseOtherGroupsOption": {
+    "status": 409,
+    "code": "OTOAPP_OPTION_NOT_IN_GROUP",
+    "message": "The OTO App did not change the kitchen plan: \"Margherita\" is not one of the choices for Fried rice: Veggie, Chicken, Shrimp."
+   }
+  },
+  "after": [
+   "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+   "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+   "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a"
+  ],
+  "kitchenEditAudit": 1
+ }
+}
+
+=== 2026-11-12T18:57:44.393Z 12: a ZZ TEST extra of 1,300 baht added to party 1's BEO (the BEO's own save route)
+S.phase = "12: a ZZ TEST extra of 1,300 baht added to party 1's BEO (the BEO's own save route)";
+const b0 = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+const kp0 = b0?.kitchenPlan ?? {};
+const kids = [...(kp0.menus?.kids ?? []), { id: 'zz907-platter', itemName: 'ZZ TEST party platter', quantity: 1, notes: '', included: false, price: 1300 }];
+const put = await S.appCall('PUT', `/events/${S.p1}/beo`, {
+  kitchenPlan: { foodRequired: kp0.foodRequired ?? true, setMenuEnabled: kp0.setMenuEnabled ?? true, setMenuTemplateId: kp0.setMenuTemplateId ?? null,
+    cakeMode: kp0.cakeMode ?? 'INTERNAL', cakeTime: kp0.cakeTime ?? null, cakeNotes: kp0.cakeNotes ?? null,
+    menus: { kids, adults: kp0.menus?.adults ?? [], adultsDiffer: kp0.menus?.adultsDiffer ?? false, kidsFoodTime: kp0.menus?.kidsFoodTime ?? '', adultsFoodTime: kp0.menus?.adultsFoodTime ?? '' } },
+});
+const back = (await S.appCall('GET', `/events/${S.p1}/beo`)).body;
+const show = l => `${l.source === 'set_menu' ? 'SET' : 'EXTRA'} ${l.itemName} x${l.quantity}${l.price ? ' @' + l.price : ''}${l.productCode ? ' [' + l.productCode + ']' : ''}`;
+const r = { put: put.status, kids: (back?.kitchenPlan?.menus?.kids ?? []).map(show), cake: { time: back?.kitchenPlan?.cakeTime, notes: back?.kitchenPlan?.cakeNotes, qty: back?.kitchenPlan?.cakeQuantity } };
+const pv = await S.call('POST', `/parties/${S.p1}/settle/preview`, { branchId: S.branchId, stationId: S.station.id, kids: 2, adults: 2, socksGiven: 0, addOnIds: [], entertainmentIds: [] });
+const q = pv.body?.quote;
+r.preview = q ? { package: q.packageSatang / 100, addOns: q.addOnsSatang / 100, total: q.totalSatang / 100, deposit: q.depositSatang / 100, balance: q.balanceSatang / 100,
+  extras: (q.extras ?? []).map(e => `${e.name} · ${e.qty} × ${e.unitSatang == null ? '-' : e.unitSatang / 100} = ${e.totalSatang / 100} ${e.charged ? 'charged' : 'NOT charged'}`),
+  lines: (q.lines ?? []).map(l => `${l.role} | ${l.label} | ${l.quantity} x ${l.unitSatang / 100} = ${l.totalSatang / 100}`) } : { status: pv.status, error: pv.body?.error ?? null };
+S.receipt.reads.p12add = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "put": 200,
+  "kids": [
+   "SET Margherita x1",
+   "SET Chicken schnitzel x1",
+   "SET French fries x1",
+   "SET Waffles x1",
+   "SET Chicken x1",
+   "SET Veggie sticks x1",
+   "SET Fruit skewers x1",
+   "SET Juice x1",
+   "EXTRA Hummus x1 [CF-13]",
+   "EXTRA ZZ TEST mango sticky rice x2 @90",
+   "EXTRA French fries x1 [CF-11]",
+   "EXTRA ZZ TEST lemon cake x1",
+   "EXTRA ZZ TEST party platter x1 @1300"
+  ],
+  "cake": {
+   "time": "21:00",
+   "notes": "ZZ TEST rainbow",
+   "qty": 1
+  },
+  "preview": {
+   "package": 16900,
+   "addOns": 2110,
+   "total": 19010,
+   "deposit": 1000,
+   "balance": 18010,
+   "extras": [
+    "Hummus · 1 × 275 = 275 charged",
+    "ZZ TEST mango sticky rice · 2 × 90 = 180 charged",
+    "French fries · 1 × 175 = 175 charged",
+    "ZZ TEST party platter · 1 × 1300 = 1300 charged",
+    "Mineral water · 3 × 60 = 180 charged",
+    "ZZ TEST lemon cake · 1 × - = 0 NOT charged"
+   ],
+   "lines": [
+    "package | Birthday package, Central Floresta | 1 x 16900 = 16900",
+    "included | Kids' table reserved for 3 hours | 1 x 0 = 0",
+    "included | Special birthday set menu | 1 x 0 = 0",
+    "included | Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+    "included | Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+    "included | Entry for 4 accompanying adults | 1 x 0 = 0",
+    "included | Socks for all children | 1 x 0 = 0",
+    "guests | Children (in the package) | 2 x 0 = 0",
+    "guests | Adults (in the package) | 2 x 0 = 0",
+    "add_on | Hummus | 1 x 275 = 275",
+    "add_on | ZZ TEST mango sticky rice | 2 x 90 = 180",
+    "add_on | French fries | 1 x 175 = 175",
+    "add_on | ZZ TEST party platter | 1 x 1300 = 1300",
+    "add_on | Mineral water | 3 x 60 = 180"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T18:58:10.992Z 12: Settle party on the ZZ TEST till (reception): each extra its own row before Confirm; Confirm; cash
+S.phase = "12: Settle party on the ZZ TEST till (reception): each extra its own row before Confirm; Confirm; cash";
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await till.waitForTimeout(2000);
+const r = {};
+r.billOnPage = S.flat(await S.cardOf(till, 'Party bill').innerText().catch(() => ''));
+const previews = [];
+const onResp = async (resp) => { try { if (/\/api\/parties\/[^/]+\/settle\/preview$/.test(new URL(resp.url()).pathname)) previews.push(await resp.json()); } catch { /* ignore */ } };
+till.on('response', onResp);
+await till.getByRole('button', { name: 'Settle party', exact: true }).click();
+await till.getByText('Balance', { exact: true }).first().waitFor({ timeout: 30000 }).catch(() => {});
+await till.waitForTimeout(2500);
+const socks = till.getByText('Socks given', { exact: true }).locator('xpath=ancestor::div[.//button][1]');
+r.socksBefore = S.flat(await socks.innerText().catch(() => ''));
+for (let i = 0; i < 6; i++) { const t = S.flat(await socks.innerText().catch(() => '')); if (/(^|\s)0(\s|$)/.test(t.replace(/Socks given/, ''))) break; await socks.getByRole('button').first().click(); await till.waitForTimeout(900); }
+await till.waitForTimeout(2500);
+r.socksAfter = S.flat(await socks.innerText().catch(() => ''));
+const q = previews.at(-1)?.quote ?? null;
+r.preview = q ? { total: q.totalSatang / 100, addOns: q.addOnsSatang / 100, socks: q.socksSatang / 100, deposit: q.depositSatang / 100, balance: q.balanceSatang / 100,
+  extras: (q.extras ?? []).map(e => ({ name: e.name, qty: e.qty, unit: e.unitSatang == null ? null : e.unitSatang / 100, total: e.totalSatang / 100, charged: e.charged })) } : null;
+const dialog = till.getByRole('dialog').last();
+r.formText = S.flat(await dialog.innerText().catch(() => '')).slice(0, 1500);
+// the summary rows as drawn: label and value of each
+r.rows = await dialog.locator('div.text-sm > div, div.text-sm > div > div').evaluateAll(els => els.map(e => { const s = e.querySelectorAll(':scope > span'); return s.length === 2 ? `${s[0].innerText.trim()} | ${s[1].innerText.trim()}` : null; }).filter(Boolean));
+await S.shot(till, '12a-settle-party-form-before-confirm.png');
+// the summary block whole
+const summary = dialog.getByText('Total', { exact: true }).first().locator('xpath=ancestor::div[contains(@class,"text-sm")][1]');
+await summary.scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(till, '12b-settle-party-summary-rows.png', [], { element: summary });
+// Confirm
+const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 60000 });
+await till.getByRole('button', { name: /^Confirm/ }).click();
+const sr = await settled;
+const sb = await sr.json().catch(() => null);
+S.settleSale = sb?.sale?.id ?? null;
+if (S.settleSale) { S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save(); }
+r.settle = { status: sr.status(), code: sb?.error?.code ?? null, message: sb?.error?.message ?? null, state: sb?.settlement?.state ?? null, gross: (sb?.sale?.grossSatang ?? 0) / 100 };
+till.off('response', onResp);
+if (sr.status() >= 400) { await S.shot(till, '12x-settle-refused.png'); S.receipt.reads.p12settle = r; return r; }
+await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await till.waitForTimeout(2500);
+r.amountDue = await till.evaluate(() => { const h = [...document.querySelectorAll('h2')].find(x => x.textContent.trim() === 'Amount Due'); return h ? (h.nextElementSibling?.textContent ?? '').trim() : null; });
+S.seenReceipt = (await S.printouts('receipt')).map(S.keyOf);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await S.expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded();
+await S.shot(till, '12c-settle-cash-chosen.png');
+await confirm.click();
+await till.getByText(/Settled|Payment Successful/).first().waitFor({ timeout: 60000 });
+await till.waitForTimeout(3000);
+r.done = S.flat(await till.getByRole('dialog').last().innerText().catch(() => '')).slice(0, 400);
+await S.shot(till, '12d-settled-cash.png');
+const sale = await S.sale(S.settleSale);
+r.sale = { status: sale?.sale?.status ?? null, receipt: sale?.sale?.receiptNumber ?? null, gross: (sale?.sale?.totals?.grossSatang ?? sale?.sale?.grossSatang ?? 0) / 100,
+  lines: (sale?.lines ?? sale?.sale?.lines ?? []).map(l => `${l.label ?? l.name} | ${l.quantity} x ${(l.unitSatang ?? 0) / 100} = ${(l.grossSatang ?? l.totalSatang ?? 0) / 100}`),
+  payments: (sale?.payments ?? sale?.tenders ?? []).map(p => `${p.method} ${(p.amountSatang ?? 0) / 100} ${p.status ?? ''}`) };
+// the receipt as the ZZ TEST receipt printer drew it
+let rp = [];
+const deadline = Date.now() + 60000;
+while (Date.now() < deadline) { rp = (await S.printouts('receipt')).filter(p => !S.seenReceipt.includes(S.keyOf(p))); if (rp.length) break; await S.sleep(3000); }
+r.receiptPrintouts = rp.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots }));
+for (const [i, p] of [...rp].sort((a, b) => a.seq - b.seq).entries()) await S.keepPreview('receipt', p, `12e-receipt-printout-${i + 1}.png`);
+r.party = (await S.party(S.p1)).body?.event?.party?.settlement ?? null;
+S.receipt.reads.p12settle = r;
+return r;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.screenshot: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('dialog').last().getByText('Total', { exact: true }).first().locator('xpath=ancestor::div[contains(@class,\"text-sm\")][1]')\u001b[22m | "
+}
+
+=== 2026-11-12T19:00:13.772Z 12: Settle party (continued from the open form): read the rows, Confirm, cash
+S.phase = "12: Settle party (continued from the open form): read the rows, Confirm, cash";
+const till = S.pages.rec.page;
+await S.unlock('rec');
+const r = {};
+const dialog = till.getByRole('dialog').last();
+r.formText = S.flat(await dialog.innerText().catch(() => '')).slice(0, 1500);
+const previews = [];
+// Confirm
+const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 60000 });
+await till.getByRole('button', { name: /^Confirm/ }).click();
+const sr = await settled;
+const sb = await sr.json().catch(() => null);
+S.settleSale = sb?.sale?.id ?? null;
+if (S.settleSale) { S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save(); }
+r.settle = { status: sr.status(), code: sb?.error?.code ?? null, message: sb?.error?.message ?? null, state: sb?.settlement?.state ?? null, gross: (sb?.sale?.grossSatang ?? 0) / 100 };
+if (sr.status() >= 400) { await S.shot(till, '12x-settle-refused.png'); S.receipt.reads.p12settle = r; return r; }
+await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await till.waitForTimeout(2500);
+r.amountDue = await till.evaluate(() => { const h = [...document.querySelectorAll('h2')].find(x => x.textContent.trim() === 'Amount Due'); return h ? (h.nextElementSibling?.textContent ?? '').trim() : null; });
+S.seenReceipt = (await S.printouts('receipt')).map(S.keyOf);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await S.expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded();
+await S.shot(till, '12c-settle-cash-chosen.png');
+await confirm.click();
+await till.getByText(/Settled|Payment Successful/).first().waitFor({ timeout: 60000 });
+await till.waitForTimeout(3000);
+r.done = S.flat(await till.getByRole('dialog').last().innerText().catch(() => '')).slice(0, 400);
+await S.shot(till, '12d-settled-cash.png');
+const sale = await S.sale(S.settleSale);
+r.sale = { status: sale?.sale?.status ?? null, receipt: sale?.sale?.receiptNumber ?? null, gross: (sale?.sale?.totals?.grossSatang ?? sale?.sale?.grossSatang ?? 0) / 100,
+  lines: (sale?.lines ?? sale?.sale?.lines ?? []).map(l => `${l.label ?? l.name} | ${l.quantity} x ${(l.unitSatang ?? 0) / 100} = ${(l.grossSatang ?? l.totalSatang ?? 0) / 100}`),
+  payments: (sale?.payments ?? sale?.tenders ?? []).map(p => `${p.method} ${(p.amountSatang ?? 0) / 100} ${p.status ?? ''}`) };
+// the receipt as the ZZ TEST receipt printer drew it
+let rp = [];
+const deadline = Date.now() + 60000;
+while (Date.now() < deadline) { rp = (await S.printouts('receipt')).filter(p => !S.seenReceipt.includes(S.keyOf(p))); if (rp.length) break; await S.sleep(3000); }
+r.receiptPrintouts = rp.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots }));
+for (const [i, p] of [...rp].sort((a, b) => a.seq - b.seq).entries()) await S.keepPreview('receipt', p, `12e-receipt-printout-${i + 1}.png`);
+r.party = (await S.party(S.p1)).body?.event?.party?.settlement ?? null;
+S.receipt.reads.p12settle = r;
+return r;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /^Confirm/ })\u001b[22m | "
+}
+
+=== 2026-11-12T19:01:22.106Z 12: a look at the reception till (scratch picture)
+S.phase = '12: a look at the reception till (scratch picture)';
+const till = S.pages.rec.page;
+const locked = await till.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false);
+await till.screenshot({ path: S.resolve(S.scratch, 'raw', 'look-rec.png'), mask: [till.locator('input[type="password"]'), till.getByLabel('Lock screen').locator('..')], maskColor: '#18181b' });
+const sales = (await S.stationSales()).map(s => `${s.receiptNumber ?? '-'} ${s.status} ${(s.totals?.grossSatang ?? s.grossSatang ?? 0) / 100}`);
+const settlement = (await S.party(S.p1)).body?.event?.party?.settlement ?? null;
+return { locked, url: till.url(), dialogs: await till.getByRole('dialog').count(), buttons: (await till.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 40), sales, settlement };
+--> {
+ "ok": true,
+ "value": {
+  "locked": true,
+  "url": "https://oto-pos-web-staging.onrender.com/parties?party=5cb91605-2fdb-4e6d-af7c-47199ff500ee",
+  "dialogs": 0,
+  "buttons": [
+   "Unlock",
+   "Sign out and hand over the till"
+  ],
+  "sales": [],
+  "settlement": null
+ }
+}
+
+=== 2026-11-12T19:01:32.204Z 12: unlock the reception till and look
+S.phase = '12: unlock the reception till and look';
+const till = S.pages.rec.page;
+const un = await S.unlock('rec');
+await till.waitForTimeout(1500);
+await till.screenshot({ path: S.resolve(S.scratch, 'raw', 'look-rec2.png'), mask: [till.locator('input[type="password"]'), till.getByLabel('Lock screen').locator('..')], maskColor: '#18181b' });
+return { unlocked: un, dialogs: await till.getByRole('dialog').count(), confirm: await till.getByRole('button', { name: /^Confirm/ }).count(), settleBtn: await till.getByRole('button', { name: 'Settle party', exact: true }).count() };
+--> {
+ "ok": true,
+ "value": {
+  "unlocked": true,
+  "dialogs": 0,
+  "confirm": 0,
+  "settleBtn": 1
+ }
+}
+
+=== 2026-11-12T19:01:45.605Z 12: Settle party on the ZZ TEST till (reception): each extra its own row before Confirm; Confirm; cash
+S.phase = "12: Settle party on the ZZ TEST till (reception): each extra its own row before Confirm; Confirm; cash";
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await till.waitForTimeout(2000);
+const r = {};
+r.billOnPage = S.flat(await S.cardOf(till, 'Party bill').innerText().catch(() => ''));
+const previews = [];
+const onResp = async (resp) => { try { if (/\/api\/parties\/[^/]+\/settle\/preview$/.test(new URL(resp.url()).pathname)) previews.push(await resp.json()); } catch { /* ignore */ } };
+till.on('response', onResp);
+await till.getByRole('button', { name: 'Settle party', exact: true }).click();
+await till.getByText('Balance', { exact: true }).first().waitFor({ timeout: 30000 }).catch(() => {});
+await till.waitForTimeout(2500);
+const socks = till.getByText('Socks given', { exact: true }).locator('xpath=ancestor::div[.//button][1]');
+r.socksBefore = S.flat(await socks.innerText().catch(() => ''));
+for (let i = 0; i < 6; i++) { const t = S.flat(await socks.innerText().catch(() => '')); if (/(^|\s)0(\s|$)/.test(t.replace(/Socks given/, ''))) break; await socks.getByRole('button').first().click(); await till.waitForTimeout(900); }
+await till.waitForTimeout(2500);
+r.socksAfter = S.flat(await socks.innerText().catch(() => ''));
+const q = previews.at(-1)?.quote ?? null;
+r.preview = q ? { total: q.totalSatang / 100, addOns: q.addOnsSatang / 100, socks: q.socksSatang / 100, deposit: q.depositSatang / 100, balance: q.balanceSatang / 100,
+  extras: (q.extras ?? []).map(e => ({ name: e.name, qty: e.qty, unit: e.unitSatang == null ? null : e.unitSatang / 100, total: e.totalSatang / 100, charged: e.charged })) } : null;
+const dialog = till.getByRole('dialog').last();
+r.formText = S.flat(await dialog.innerText().catch(() => '')).slice(0, 1500);
+// the summary rows as drawn: label and value of each
+r.rows = await dialog.locator('div.text-sm > div, div.text-sm > div > div').evaluateAll(els => els.map(e => { const s = e.querySelectorAll(':scope > span'); return s.length === 2 ? `${s[0].innerText.trim()} | ${s[1].innerText.trim()}` : null; }).filter(Boolean));
+await S.shot(till, '12a-settle-party-form-before-confirm.png');
+await S.unlock('rec');
+// Confirm
+const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 60000 });
+await till.getByRole('button', { name: /^Confirm/ }).click();
+const sr = await settled;
+const sb = await sr.json().catch(() => null);
+S.settleSale = sb?.sale?.id ?? null;
+if (S.settleSale) { S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save(); }
+r.settle = { status: sr.status(), code: sb?.error?.code ?? null, message: sb?.error?.message ?? null, state: sb?.settlement?.state ?? null, gross: (sb?.sale?.grossSatang ?? 0) / 100 };
+till.off('response', onResp);
+if (sr.status() >= 400) { await S.shot(till, '12x-settle-refused.png'); S.receipt.reads.p12settle = r; return r; }
+await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await till.waitForTimeout(2500);
+r.amountDue = await till.evaluate(() => { const h = [...document.querySelectorAll('h2')].find(x => x.textContent.trim() === 'Amount Due'); return h ? (h.nextElementSibling?.textContent ?? '').trim() : null; });
+S.seenReceipt = (await S.printouts('receipt')).map(S.keyOf);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await S.expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded();
+await S.shot(till, '12c-settle-cash-chosen.png');
+await confirm.click();
+await till.getByText(/Settled|Payment Successful/).first().waitFor({ timeout: 60000 });
+await till.waitForTimeout(3000);
+r.done = S.flat(await till.getByRole('dialog').last().innerText().catch(() => '')).slice(0, 400);
+await S.shot(till, '12d-settled-cash.png');
+const sale = await S.sale(S.settleSale);
+r.sale = { status: sale?.sale?.status ?? null, receipt: sale?.sale?.receiptNumber ?? null, gross: (sale?.sale?.totals?.grossSatang ?? sale?.sale?.grossSatang ?? 0) / 100,
+  lines: (sale?.lines ?? sale?.sale?.lines ?? []).map(l => `${l.label ?? l.name} | ${l.quantity} x ${(l.unitSatang ?? 0) / 100} = ${(l.grossSatang ?? l.totalSatang ?? 0) / 100}`),
+  payments: (sale?.payments ?? sale?.tenders ?? []).map(p => `${p.method} ${(p.amountSatang ?? 0) / 100} ${p.status ?? ''}`) };
+// the receipt as the ZZ TEST receipt printer drew it
+let rp = [];
+const deadline = Date.now() + 60000;
+while (Date.now() < deadline) { rp = (await S.printouts('receipt')).filter(p => !S.seenReceipt.includes(S.keyOf(p))); if (rp.length) break; await S.sleep(3000); }
+r.receiptPrintouts = rp.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots }));
+for (const [i, p] of [...rp].sort((a, b) => a.seq - b.seq).entries()) await S.keepPreview('receipt', p, `12e-receipt-printout-${i + 1}.png`);
+r.party = (await S.party(S.p1)).body?.event?.party?.settlement ?? null;
+S.receipt.reads.p12settle = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "billOnPage": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿2110 Total ฿19010 Deposit paid −฿1000 Outstanding ฿18010",
+  "socksBefore": "Socks given Pairs beyond the package are sold 2",
+  "socksAfter": "Socks given Pairs beyond the package are sold 0",
+  "preview": {
+   "total": 19010,
+   "addOns": 2110,
+   "socks": 0,
+   "deposit": 1000,
+   "balance": 18010,
+   "extras": [
+    {
+     "name": "Hummus",
+     "qty": 1,
+     "unit": 275,
+     "total": 275,
+     "charged": true
+    },
+    {
+     "name": "ZZ TEST mango sticky rice",
+     "qty": 2,
+     "unit": 90,
+     "total": 180,
+     "charged": true
+    },
+    {
+     "name": "French fries",
+     "qty": 1,
+     "unit": 175,
+     "total": 175,
+     "charged": true
+    },
+    {
+     "name": "ZZ TEST party platter",
+     "qty": 1,
+     "unit": 1300,
+     "total": 1300,
+     "charged": true
+    },
+    {
+     "name": "Mineral water",
+     "qty": 3,
+     "unit": 60,
+     "total": 180,
+     "charged": true
+    },
+    {
+     "name": "ZZ TEST lemon cake",
+     "qty": 1,
+     "unit": null,
+     "total": 0,
+     "charged": false
+    }
+   ]
+  },
+  "formText": "",
+  "rows": [],
+  "settle": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "state": "open",
+   "gross": 19010
+  },
+  "amountDue": "฿18010",
+  "done": "",
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z90701-000001",
+   "gross": 19010,
+   "lines": [
+    "Birthday package, Central Floresta | 1 x 16900 = 16900",
+    "Kids' table reserved for 3 hours | 1 x 0 = 0",
+    "Special birthday set menu | 1 x 0 = 0",
+    "Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+    "Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+    "Entry for 4 accompanying adults | 1 x 0 = 0",
+    "Socks for all children | 1 x 0 = 0",
+    "Children (in the package) | 2 x 0 = 0",
+    "Adults (in the package) | 2 x 0 = 0",
+    "Hummus | 1 x 275 = 275",
+    "ZZ TEST mango sticky rice | 2 x 90 = 180",
+    "French fries | 1 x 175 = 175",
+    "ZZ TEST party platter | 1 x 1300 = 1300",
+    "Mineral water | 3 x 60 = 180"
+   ],
+   "payments": []
+  },
+  "receiptPrintouts": [
+   {
+    "seq": 1,
+    "at": "02:02:35",
+    "heightDots": 1550
+   },
+   {
+    "seq": 2,
+    "at": "02:02:40",
+    "heightDots": 0
+   }
+  ],
+  "party": {
+   "id": "01a1d123-d89c-777e-8f3b-e0fcb313cf71",
+   "saleId": "01a1d123-d89c-777e-8f3b-e0fd157e28a5",
+   "state": "settled",
+   "receiptNumber": "Z90701-000001",
+   "grossSatang": 1901000,
+   "paidSatang": 1901000,
+   "outstandingSatang": 0,
+   "depositSatang": 100000,
+   "kids": 2,
+   "adults": 2,
+   "createdAt": "2026-11-12T19:02:30.723Z",
+   "settledAt": "2026-11-12T19:02:34.239Z",
+   "writeBack": "synced"
+  }
+ }
+}
+
+=== 2026-11-12T19:03:35.735Z 12: the receipt printout's staff name and band codes blacked out (boxes drawn over the printer's own preview)
+S.phase = "12: the receipt printout's staff name and band codes blacked out (boxes drawn over the printer's own preview)";
+// S.maskPng(file, boxes): draws solid boxes [x, y, w, h] over a PNG in the proof folder, in place.
+S.maskPng = async (name, boxes) => {
+  const file = S.resolve(S.out, name);
+  const b64 = S.readFileSync(file).toString('base64');
+  const ctx = await S.browser.newContext({ viewport: { width: 800, height: 600 } });
+  const page = await ctx.newPage();
+  await page.setContent(`<html><body style="margin:0"><div id="w" style="position:relative;display:inline-block"><img id="i" src="data:image/png;base64,${b64}" style="display:block">${boxes.map(([x, y, w, h]) => `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#18181b"></div>`).join('')}</div></body></html>`);
+  await page.waitForFunction(() => document.getElementById('i').complete);
+  const size = await page.evaluate(() => { const i = document.getElementById('i'); return { w: i.naturalWidth, h: i.naturalHeight }; });
+  await page.setViewportSize({ width: Math.max(size.w, 100), height: Math.max(size.h, 100) });
+  await page.locator('#w').screenshot({ path: file });
+  await ctx.close();
+  return size;
+};
+const size = await S.maskPng('12e-receipt-printout-1.png', [[90, 250, 300, 32], [0, 1424, 330, 96]]);
+// the second "printout" is an empty one (height 0): not kept
+try { (await import('node:fs')).unlinkSync(S.resolve(S.out, '12e-receipt-printout-2.png')); } catch { /* ignore */ }
+return size;
+--> {
+ "ok": true,
+ "value": {
+  "w": 576,
+  "h": 1550
+ }
+}
+
+=== 2026-11-12T19:03:54.746Z 12: History agrees with the receipt; the staging manager refunds the settlement whole from History
+S.phase = '12: History agrees with the receipt; the staging manager refunds the settlement whole from History';
+const r = {};
+const mgr = S.pages.mgr.page;
+await S.unlock('mgr');
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+await S.unlock('mgr');
+const sale0 = await S.sale(S.settleSale);
+const rn = sale0?.sale?.receiptNumber ?? null;
+r.receipt = rn;
+await mgr.evaluate((rn) => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) {
+    const t = b.innerText.replace(/\s+/g, ' ');
+    if (rn && t.includes(rn)) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz');
+  }
+}, rn);
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), S.otherSales(page)];
+const mine = mgr.locator('button[data-zz]');
+r.listed = [];
+for (let i = 0; i < await mine.count(); i++) r.listed.push(S.flat(await mine.nth(i).innerText()).slice(0, 200));
+await S.shot(mgr, '12g-history-list-settlement.png');
+await mine.first().click();
+await mgr.waitForTimeout(3500);
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+r.detail = S.flat(await mgr.locator('body').innerText()).match(/(Paid|Refunded|Partly paid)[^]{0,1400}/)?.[0]?.slice(0, 1400) ?? null;
+await S.shot(mgr, '12h-history-detail-settlement-lines.png', [], { fullPage: true });
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor();
+r.dialog = S.flat(await dialog.innerText()).slice(0, 600);
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-907 proof: refund the whole settlement');
+await S.shot(mgr, '12i-manager-refund-whole.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+r.press = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(rr => new URL(rr.url()).pathname === `/api/sales/${S.settleSale}/refunds` && rr.request().method() === 'POST', { timeout: 60000 });
+await press.click();
+const rr = await resp;
+const rb = await rr.json().catch(() => null);
+await mgr.waitForTimeout(3000);
+await S.shot(mgr, '12j-history-detail-after-refund.png');
+const sale = await S.sale(S.settleSale);
+r.refund = { status: rr.status(), amount: (rb?.refund?.amountSatang ?? 0) / 100, refundStatus: rb?.refundStatus ?? null, saleStatus: sale?.sale?.status ?? null, saleRefund: sale?.refundStatus ?? null, refunds: (sale?.refunds ?? []).map(x => `${(x.amountSatang ?? 0) / 100} ${x.method ?? x.tenderMethod ?? ''} ${x.reasonCode ?? x.reason ?? ''}`) };
+const party = (await S.party(S.p1)).body;
+r.settlementAfter = party?.event?.party?.settlement ? { state: party.event.party.settlement.state, receipt: party.event.party.settlement.receiptNumber } : null;
+S.receipt.reads.p12refund = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "receipt": "Z90701-000001",
+  "listed": [
+   "Z90701-000001 · ZZ TEST 907 party 13 Nov, 02:02 [name] Paid ฿19010"
+  ],
+  "detail": "Paid Party settlement Z90701-000001 ZZ TEST 907 party 13 Nov, 02:02 · sold by [name] ZZ TEST SCRUM-907 proof till 1794508795973 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿16900 ฿16900 Kids' table reserved for 3 hours 1× ฿0 ฿0 Special birthday set menu 1× ฿0 ฿0 Interactive birthday animation program, 30 minutes 1× ฿0 ฿0 Ice-cream cake with candles and birthday song 1× ฿0 ฿0 Entry for 4 accompanying adults 1× ฿0 ฿0 Socks for all children 1× ฿0 ฿0 3 Hours · Tourist ฿0 Children (in the package) 2× ฿0 ฿0 Adults (in the package) 2× ฿0 ฿0 Items · Tourist ฿2110 Hummus 1× ฿275 ฿275 ZZ TEST mango sticky rice 2× ฿90 ฿180 French fries 1× ฿175 ฿175 ZZ TEST party platter 1× ฿1300 ฿1300 Mineral water 3× ฿60 ฿180 BRACELETS PRINTED 4 2 child 2 adult Z90701-5T4ESD Z90701-YCG8DH Z90701-ACD8TM Z90701-3ZD64V Subtotal ฿19010 VAT (included) ฿1243.65 Total paid ฿19010 Party: ZZ TEST 907 party Payments Party deposit · Approved 13 Nov, 02:02 ฿1000 Cash · Approved 13 Nov, 02:02 ฿18010 Reprint Add time Refund (฿19010 left) Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+  "dialog": "Refund By [name] · up to ฿19010 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿19010 Choose a reason to refund Close",
+  "press": "Refund ฿19010",
+  "refund": {
+   "status": 200,
+   "amount": 19010,
+   "refundStatus": "refunded",
+   "saleStatus": "refunded",
+   "saleRefund": "refunded",
+   "refunds": [
+    "19010  Service recovery"
+   ]
+  },
+  "settlementAfter": {
+   "state": "refunded",
+   "receipt": "Z90701-000001"
+  }
+ }
+}
+
+=== 2026-11-12T19:04:39.554Z 9: party 2, "Different for adults" on with the adults eating two of the kids' dishes; read on the till
+S.phase = '9: party 2, "Different for adults" on with the adults eating two of the kids\' dishes; read on the till';
+S.P2 = 'ZZ TEST 907 adults differ';
+const ev = await S.appCall('POST', '/admin/events', { eventType: 'birthday', title: S.P2, branchId: S.APP_FLORESTA, eventDate: S.bizDate, startTime: '18:00', endTime: '20:00', durationMinutes: 120, numChildren: 2, numAdults: 2, childName: 'ZZ TEST child two', status: 'upcoming' });
+S.assert.equal(ev.status, 201, 'party 2 created ' + JSON.stringify(ev.body).slice(0, 200));
+S.p2 = ev.body.id;
+S.receipt.created.push({ kind: 'oto-app party', id: S.p2, title: S.P2 }); S.save();
+const line = (id, itemName, quantity, price, productCode) => ({ id, itemName, quantity, notes: '', included: false, price, ...(productCode ? { productCode } : {}) });
+const kids = [line('zz907b-cal-k', 'Calamari', 2, 120, 'CF-14'), line('zz907b-hum-k', 'Hummus', 1, 0, 'CF-13'), line('zz907b-nug-k', 'ZZ TEST nuggets', 2, 0, null)];
+const adults = [line('zz907b-cal-a', 'Calamari', 2, 120, 'CF-14'), line('zz907b-hum-a', 'Hummus', 1, 0, 'CF-13'), line('zz907b-steak-a', 'ZZ TEST steak', 1, 0, null)];
+const put = await S.appCall('PUT', `/events/${S.p2}/beo`, {
+  kitchenPlan: { foodRequired: true, setMenuEnabled: false, setMenuTemplateId: null, cakeMode: 'NONE',
+    menus: { kids, adults, adultsDiffer: true, kidsFoodTime: '18:30', adultsFoodTime: '19:00' } },
+});
+const back = (await S.appCall('GET', `/events/${S.p2}/beo`)).body;
+const show = l => `${l.itemName} x${l.quantity}${l.productCode ? ' [' + l.productCode + ']' : ''}${l.notes ? ' note ' + l.notes : ''} id=${l.id}`;
+const r = { put: put.status, beo: { adultsDiffer: back?.kitchenPlan?.menus?.adultsDiffer ?? null, kids: (back?.kitchenPlan?.menus?.kids ?? []).map(show), adults: (back?.kitchenPlan?.menus?.adults ?? []).map(show) } };
+r.till = await S.tillRead(S.p2, 'p2-made');
+S.receipt.reads.p9made = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "put": 200,
+  "beo": {
+   "adultsDiffer": true,
+   "kids": [
+    "Calamari x2 [CF-14] id=zz907b-cal-k",
+    "Hummus x1 [CF-13] id=zz907b-hum-k",
+    "ZZ TEST nuggets x2 id=zz907b-nug-k"
+   ],
+   "adults": [
+    "Calamari x2 [CF-14] id=zz907b-cal-a",
+    "Hummus x1 [CF-13] id=zz907b-hum-a",
+    "ZZ TEST steak x1 id=zz907b-steak-a"
+   ]
+  },
+  "till": {
+   "at": "2026-11-12T19:04:40.770Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 adults differ",
+   "planStatus": "no_package",
+   "kitchenPlan": {
+    "kitchen": {
+     "kidsFoodTime": "18:30",
+     "adultsFoodTime": "19:00",
+     "readyOffsetMinutes": 20,
+     "slipsTime": "11:00",
+     "barServiceTime": null
+    },
+    "cake": null,
+    "lines": [
+     "extra | Calamari x2 | code CF-14 | entered 120 | line zz907b-cal-k",
+     "extra | Hummus x1 | code CF-13 | line zz907b-hum-k",
+     "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+     "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+    ],
+    "bar": []
+   },
+   "slips": {
+    "slipsTime": "11:00",
+    "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+    "records": []
+   },
+   "deposit": null,
+   "settlement": null
+  }
+ }
+}
+
+=== 2026-11-12T19:05:01.502Z 9: on party 2 the manager changes the mirrored Calamari (x2 -> x3) and removes the mirrored Hummus; the adults' list follows
+S.phase = '9: on party 2 the manager changes the mirrored Calamari (x2 -> x3) and removes the mirrored Hummus; the adults\' list follows';
+const till = S.pages.mgr.page;
+await S.unlock('mgr');
+await S.openParty(till, S.p2, S.P2);
+const r = {};
+r.pageBefore = await S.cardText(till, 'Kitchen plan');
+await S.tallShot(till, '09a-party2-kitchen-card-before.png', S.cardOf(till, 'Kitchen plan'));
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+const kc = S.cardOf(till, 'Kitchen plan');
+await kc.getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(1500);
+r.formOpened = { values: await kc.locator('input').evaluateAll(els => els.map(e => e.value).filter(Boolean)), calamariSteppers: await kc.getByRole('button', { name: 'Add one Calamari quantity', exact: true }).count(), hummusRemoves: await kc.getByRole('button', { name: 'Remove Hummus item', exact: true }).count() };
+await kc.getByRole('button', { name: 'Add one Calamari quantity', exact: true }).click();
+await kc.getByRole('button', { name: 'Remove Hummus item', exact: true }).click();
+await till.waitForTimeout(400);
+await S.tallShot(till, '09b-party2-edit-form-before-save.png', kc);
+await S.unlock('mgr');
+const resp = till.waitForResponse(x => /\/api\/parties\/[^/]+\/kitchen-plan$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT', { timeout: 120000 });
+await till.getByRole('button', { name: 'Save changes', exact: true }).click();
+const x = await resp;
+const xb = await x.json().catch(() => null);
+r.put = { status: x.status(), request: x.request().postDataJSON()?.changes ?? null, error: xb?.error ?? null };
+await till.waitForTimeout(1200);
+r.toast = await till.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(t => t && !/out of stock/.test(t)));
+await till.waitForTimeout(4000);
+r.pageAfter = await S.cardText(till, 'Kitchen plan');
+await S.tallShot(till, '09c-party2-kitchen-card-after-save.png', S.cardOf(till, 'Kitchen plan'));
+const back = (await S.appCall('GET', `/events/${S.p2}/beo`)).body;
+const show = l => `${l.itemName} x${l.quantity}${l.productCode ? ' [' + l.productCode + ']' : ''}${l.notes ? ' note ' + l.notes : ''}`;
+r.beo = { adultsDiffer: back?.kitchenPlan?.menus?.adultsDiffer ?? null, kids: (back?.kitchenPlan?.menus?.kids ?? []).map(show), adults: (back?.kitchenPlan?.menus?.adults ?? []).map(show) };
+r.till = (await S.tillRead(S.p2, 'p2-after-edit')).kitchenPlan.lines;
+const logs = await S.appCall('GET', `/activity-logs?branchId=${S.APP_FLORESTA}&search=${encodeURIComponent('ZZ TEST 907 adults')}&limit=5&offset=0`);
+r.activity = (logs.body?.logs ?? []).map(l => S.flat(l.description ?? ''));
+// the BEO editor's Adults tab
+const page = S.app.page;
+S.inPlace = p => [];
+await S.openBeo(S.p2);
+await S.openSection('accordion-kitchen-plan');
+await page.getByTestId('button-menu-tab-adults').click().catch(() => {});
+await page.waitForTimeout(800);
+r.beoAdultsTab = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="menu-item-adults-"]')].filter(x => /^menu-item-adults-\d+$/.test(x.getAttribute('data-testid'))).map(x => (x.innerText || '').replace(/\s+/g, ' ').trim()));
+await S.appShot('09d-beo-party2-adults-menu.png', 'accordion-kitchen-plan', 'start');
+await page.getByTestId('button-menu-tab-kids').click().catch(() => {});
+await page.waitForTimeout(800);
+r.beoKidsTab = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="menu-item-kids-"]')].filter(x => /^menu-item-kids-\d+$/.test(x.getAttribute('data-testid'))).map(x => (x.innerText || '').replace(/\s+/g, ' ').trim()));
+await S.appShot('09e-beo-party2-kids-menu.png', 'accordion-kitchen-plan', 'start');
+S.receipt.reads.p9edit = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "pageBefore": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×2 Hummus ×1 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+  "formOpened": {
+   "values": [
+    "18:30",
+    "Calamari",
+    "Hummus",
+    "ZZ TEST nuggets · kids only · not on the till menu",
+    "ZZ TEST steak · adults · not on the till menu"
+   ],
+   "calamariSteppers": 1,
+   "hummusRemoves": 1
+  },
+  "put": {
+   "status": 200,
+   "request": [
+    {
+     "op": "set",
+     "lineId": "zz907b-cal-k",
+     "qty": 3
+    },
+    {
+     "op": "remove",
+     "lineId": "zz907b-hum-k"
+    }
+   ],
+   "error": null
+  },
+  "toast": [
+   "Kitchen plan saved The BEO in the OTO App now has the change."
+  ],
+  "pageAfter": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×3 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+  "beo": {
+   "adultsDiffer": true,
+   "kids": [
+    "Calamari x3 [CF-14]",
+    "ZZ TEST nuggets x2"
+   ],
+   "adults": [
+    "Calamari x3 [CF-14]",
+    "ZZ TEST steak x1"
+   ]
+  },
+  "till": [
+   "extra | Calamari x3 | code CF-14 | entered 120 | line zz907b-cal-k",
+   "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+   "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+  ],
+  "activity": [
+   ""
+  ],
+  "beoAdultsTab": [
+   "EXTRA 3 Calamari CF-14",
+   "EXTRA 1 ZZ TEST steak"
+  ],
+  "beoKidsTab": [
+   "EXTRA 3 Calamari CF-14",
+   "EXTRA 2 ZZ TEST nuggets"
+  ]
+ }
+}
+
+=== 2026-11-12T19:06:07.531Z 13: nothing else moved: reception's party page after the refund, reception's headcount edit, a party with no kitchen plan
+S.phase = "13: nothing else moved: reception's party page after the refund, reception's headcount edit, a party with no kitchen plan";
+const r = {};
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await till.waitForTimeout(2500);
+const buttons = async () => { const out = []; for (const b of await till.getByRole('button').all()) { const t = S.flat(await b.innerText().catch(() => '')); if (/Settle party|Edit party|Print party slips now|Take balance|Fully paid|Add F&B|Resume settlement|Settled/.test(t) && await b.isVisible()) out.push(t); } return out; };
+r.p1AfterRefund = { bill: S.flat(await S.cardOf(till, 'Party bill').innerText().catch(() => '')), buttons: await buttons() };
+await till.mouse.wheel(0, -3000); await till.waitForTimeout(400);
+await S.shot(till, '13a-reception-party-page-after-refund.png');
+// reception: Expected adults 2 -> 3 on party 1 (the kitchen cards read-only), Save
+await S.unlock('rec');
+await till.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await till.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const adults = till.getByLabel('Expected adults', { exact: true });
+r.adultsBefore = await adults.inputValue();
+await adults.fill('3');
+const resp = till.waitForResponse(x => /\/api\/parties\/[^/]+$/.test(new URL(x.url()).pathname) && ['PATCH', 'PUT'].includes(x.request().method()), { timeout: 120000 });
+const kitchenCalls = [];
+const onReq = q => { if (/\/kitchen-plan$/.test(new URL(q.url()).pathname) && q.method() === 'PUT') kitchenCalls.push(q.url()); };
+till.on('request', onReq);
+await till.getByRole('button', { name: 'Save changes', exact: true }).click();
+const x = await resp.catch(e => null);
+r.save = x ? { status: x.status(), method: x.request().method(), body: x.request().postDataJSON() ? Object.keys(x.request().postDataJSON()) : null, fields: (() => { const b = x.request().postDataJSON() ?? {}; const { editId, actionId, branchId, stationId, ...rest } = b; return rest; })() } : null;
+await till.waitForTimeout(1500);
+r.toast = await till.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(t => t && !/out of stock/.test(t)));
+await till.waitForTimeout(3000);
+till.off('request', onReq);
+r.kitchenWritesBySave = kitchenCalls.length;
+r.headcountOnPage = S.flat(await till.getByText(/kids · \d+ adults/).first().innerText().catch(() => ''));
+await till.mouse.wheel(0, -3000); await till.waitForTimeout(400);
+await S.shot(till, '13b-reception-headcount-saved.png');
+const app = await S.appCall('GET', `/admin/events/${S.p1}`);
+r.otoApp = { status: app.status, numAdults: app.body?.numAdults ?? null, numChildren: app.body?.numChildren ?? null };
+r.partyApi = { expectedAdults: (await S.party(S.p1)).body?.event?.party?.expectedAdults ?? (await S.party(S.p1)).body?.event?.numAdults ?? null };
+r.kitchenAuditRows = (await S.auditOf('party.kitchen_update', S.p1.toLowerCase())).length;
+// party 3: no kitchen plan at all
+S.P3 = 'ZZ TEST 907 no kitchen plan';
+const ev = await S.appCall('POST', '/admin/events', { eventType: 'birthday', title: S.P3, branchId: S.APP_FLORESTA, eventDate: S.bizDate, startTime: '17:00', endTime: '19:00', durationMinutes: 120, numChildren: 2, numAdults: 1, childName: 'ZZ TEST child three', status: 'upcoming' });
+S.assert.equal(ev.status, 201, 'party 3 created');
+S.p3 = ev.body.id;
+S.receipt.created.push({ kind: 'oto-app party', id: S.p3, title: S.P3 }); S.save();
+r.p3Till = await S.tillRead(S.p3, 'p3-made');
+for (const [label, who] of [['rec', 'reception'], ['mgr', 'manager']]) {
+  const pg = S.pages[label].page;
+  await S.unlock(label);
+  await pg.goto(`/parties?party=${S.p3}`); await pg.waitForTimeout(4000);
+  if (!(await pg.getByText(S.P3).first().isVisible().catch(() => false))) { await pg.goto('/parties'); await pg.waitForTimeout(3000); await pg.getByText(S.P3).first().click(); await pg.waitForTimeout(3000); }
+  const page = { kitchen: S.flat(await S.cardOf(pg, 'Kitchen plan').innerText().catch(() => '')).slice(0, 500) };
+  await pg.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+  await pg.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+  await pg.waitForTimeout(2000);
+  const kc = S.cardOf(pg, 'Kitchen plan');
+  const bc = S.cardOf(pg, 'Bar plan');
+  const sw = pg.getByRole('switch', { name: 'Kitchen service needed' });
+  page.form = { kitchen: S.flat(await kc.innerText().catch(() => '')).slice(0, 600), bar: S.flat(await bc.innerText().catch(() => '')).slice(0, 300),
+    kitchenServiceNeeded: (await sw.count()) ? await sw.first().getAttribute('aria-checked') : `no switch named so (${await pg.getByText('Kitchen service needed').count()} texts)`,
+    addItem: await kc.getByRole('button', { name: /Add item/ }).count(), readOnlyLine: await kc.getByText('A manager changes the kitchen plan.', { exact: true }).count() };
+  await S.tallShot(pg, `13${label === 'rec' ? 'c' : 'd'}-${who}-no-kitchen-plan-party-edit-cards.png`, kc);
+  await pg.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+  await pg.waitForTimeout(1500);
+  r[`p3${who}`] = page;
+}
+S.receipt.reads.p13 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "p1AfterRefund": {
+   "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿2110 Total ฿19010 Deposit paid −฿1000 Outstanding ฿18010",
+   "buttons": [
+    "Edit party",
+    "Settle party",
+    "Add F&B to party",
+    "Take balance ฿18010",
+    "Print party slips now"
+   ]
+  },
+  "adultsBefore": "2",
+  "save": {
+   "status": 200,
+   "method": "PATCH",
+   "body": [
+    "branchId",
+    "editId",
+    "actionId",
+    "stationId",
+    "expectedAdults"
+   ],
+   "fields": {
+    "expectedAdults": 3
+   }
+  },
+  "toast": [],
+  "kitchenWritesBySave": 0,
+  "headcountOnPage": "2 kids · 3 adults",
+  "otoApp": {
+   "status": 200,
+   "numAdults": 3,
+   "numChildren": 2
+  },
+  "partyApi": {
+   "expectedAdults": null
+  },
+  "kitchenAuditRows": 1,
+  "p3Till": {
+   "at": "2026-11-12T19:06:26.384Z",
+   "status": 200,
+   "error": null,
+   "title": "ZZ TEST 907 no kitchen plan",
+   "planStatus": "no_package",
+   "kitchenPlan": null,
+   "slips": null,
+   "deposit": null,
+   "settlement": null
+  },
+  "p3reception": {
+   "kitchen": "Kitchen plan No kitchen service for this party.",
+   "form": {
+    "kitchen": "Kitchen plan Kitchen service needed",
+    "bar": "Bar plan Bar service time Bar items Add item",
+    "kitchenServiceNeeded": "no switch named so (1 texts)",
+    "addItem": 0,
+    "readOnlyLine": 0
+   }
+  },
+  "p3manager": {
+   "kitchen": "Kitchen plan No kitchen service for this party.",
+   "form": {
+    "kitchen": "Kitchen plan Kitchen service needed",
+    "bar": "Bar plan Bar service time Bar items Add item",
+    "kitchenServiceNeeded": "no switch named so (1 texts)",
+    "addItem": 0,
+    "readOnlyLine": 0
+   }
+  }
+ }
+}
+
+=== 2026-11-12T19:07:14.898Z 13 (hunt): on the party with no kitchen plan the manager switches kitchen service on, adds a dish and a bar item, and saves
+S.phase = '13 (hunt): on the party with no kitchen plan the manager switches kitchen service on, adds a dish and a bar item, and saves';
+const pg = S.pages.mgr.page;
+await S.unlock('mgr');
+await pg.goto(`/parties?party=${S.p3}`); await pg.waitForTimeout(4000);
+const r = {};
+await pg.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await pg.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+await pg.waitForTimeout(1500);
+const kc = S.cardOf(pg, 'Kitchen plan');
+const bc = S.cardOf(pg, 'Bar plan');
+const sw = kc.getByRole('switch').first();
+r.switchBefore = { checked: await sw.getAttribute('aria-checked').catch(() => null), disabled: await sw.isDisabled().catch(() => null) };
+if (!r.switchBefore.disabled) { await sw.click(); await pg.waitForTimeout(600); }
+r.kitchenCardAfterSwitch = S.flat(await kc.innerText()).slice(0, 500);
+const kAdd = kc.getByRole('button', { name: /Add item/ });
+r.kitchenAddItems = await kAdd.count();
+if (r.kitchenAddItems) { await kAdd.last().click(); await pg.waitForTimeout(400); const inp = kc.locator('input[placeholder="Item name"]').last(); if (await inp.count()) await inp.fill('ZZ TEST soup'); }
+await bc.getByRole('button', { name: /Add item/ }).first().click();
+await pg.waitForTimeout(400);
+const binp = bc.locator('input[placeholder="Item name"], input:not([type])').last();
+if (await binp.count()) await binp.fill('ZZ TEST lemonade');
+await S.tallShot(pg, '13e-manager-no-plan-party-prototype-sections-filled.png', kc);
+await S.unlock('mgr');
+const calls = [];
+const onReq = q => { const p = new URL(q.url()).pathname; if (/\/api\/parties\//.test(p) && q.method() !== 'GET') calls.push(`${q.method()} ${p.replace(S.ID, ':id')}`); };
+pg.on('request', onReq);
+await pg.getByRole('button', { name: 'Save changes', exact: true }).click();
+await pg.waitForTimeout(1500);
+r.toast = await pg.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(t => t && !/out of stock/.test(t)));
+await S.shot(pg, '13f-manager-no-plan-party-save-toast.png');
+await pg.waitForTimeout(2000);
+pg.off('request', onReq);
+r.writes = calls;
+r.formStillOpen = await pg.getByRole('heading', { name: 'Edit party', exact: true }).count();
+if (r.formStillOpen) { await pg.getByRole('button', { name: 'Cancel', exact: true }).first().click(); await pg.waitForTimeout(1000); }
+const beo = (await S.appCall('GET', `/events/${S.p3}/beo`)).body;
+r.beo = { kids: (beo?.kitchenPlan?.menus?.kids ?? []).map(l => l.itemName), bar: (beo?.barPlan?.items ?? []).map(l => l.itemName) };
+r.till = (await S.tillRead(S.p3, 'p3-after-manager-try')).kitchenPlan;
+S.receipt.reads.p13hunt = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "switchBefore": {
+   "checked": "false",
+   "disabled": false
+  },
+  "kitchenCardAfterSwitch": "Kitchen plan Kitchen service needed Food service time Set menu Kids menu Add item Adults menu Add item Food items Add item Cake Cake type No cake Cake time Cake note",
+  "kitchenAddItems": 3,
+  "toast": [
+   "Not saved here kitchen plan and bar plan are kept in the OTO App — change them there."
+  ],
+  "writes": [],
+  "formStillOpen": 1,
+  "beo": {
+   "kids": [],
+   "bar": []
+  },
+  "till": null
+ }
+}
+
+=== 2026-11-12T19:07:55.893Z (hunt) a double press of Save adding a typed line on party 2; what is cut in the Edit form at 1440 x 900
+S.phase = '(hunt) a double press of Save adding a typed line on party 2; what is cut in the Edit form at 1440 x 900';
+const pg = S.pages.mgr.page;
+await S.unlock('mgr');
+await S.openParty(pg, S.p2, S.P2);
+const r = {};
+await pg.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await pg.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+const kc = S.cardOf(pg, 'Kitchen plan');
+await kc.getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+await kc.getByRole('button', { name: /Add item/ }).first().click();
+const nf = kc.getByRole('textbox', { name: 'New food item', exact: true }).last();
+await nf.fill('ZZ TEST double press dish');
+await nf.press('Tab');
+await S.unlock('mgr');
+const puts = [];
+const onResp = x => { if (/\/api\/parties\/[^/]+\/kitchen-plan$/.test(new URL(x.url()).pathname) && x.request().method() === 'PUT') puts.push(x.status()); };
+pg.on('response', onResp);
+await pg.getByRole('button', { name: 'Save changes', exact: true }).dblclick();
+await pg.waitForTimeout(8000);
+pg.off('response', onResp);
+r.putsAnswered = puts;
+const back = (await S.appCall('GET', `/events/${S.p2}/beo`)).body;
+r.beoKids = (back?.kitchenPlan?.menus?.kids ?? []).map(l => `${l.itemName} x${l.quantity}`);
+r.doublePressLines = r.beoKids.filter(x => /double press/.test(x)).length;
+r.auditRowsParty2 = (await S.auditOf('party.kitchen_update', S.p2.toLowerCase())).length;
+// the fit at 1440 x 900: party 1's Edit form as the manager sees it
+await S.openParty(pg, S.p1, S.P1);
+await pg.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await pg.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+await S.cardOf(pg, 'Kitchen plan').getByRole('button', { name: /Add item/ }).first().waitFor({ timeout: 30000 });
+await pg.waitForTimeout(1500);
+r.fit = await pg.evaluate(() => {
+  const out = { viewport: [innerWidth, innerHeight], pageSideways: document.documentElement.scrollWidth > innerWidth + 1, cutInputs: [], cutText: [] };
+  for (const el of document.querySelectorAll('input')) { const rc = el.getBoundingClientRect(); if (!rc.width) continue; if (el.scrollWidth > el.clientWidth + 1) out.cutInputs.push({ value: el.value, shownPx: Math.round(el.clientWidth), needsPx: el.scrollWidth }); }
+  for (const el of document.querySelectorAll('*')) { const cs = getComputedStyle(el); if (cs.textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth + 1 && el.innerText.trim()) out.cutText.push(el.innerText.trim().slice(0, 80)); }
+  return out;
+});
+await pg.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await pg.waitForTimeout(1000);
+S.receipt.reads.hunt = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "putsAnswered": [
+   200
+  ],
+  "beoKids": [
+   "Calamari x3",
+   "ZZ TEST nuggets x2",
+   "ZZ TEST double press dish x1"
+  ],
+  "doublePressLines": 1,
+  "auditRowsParty2": 2,
+  "fit": {
+   "viewport": [
+    1440,
+    900
+   ],
+   "pageSideways": false,
+   "cutInputs": [
+    {
+     "value": "ZZ TEST mango sticky rice · not on the till menu",
+     "shownPx": 304,
+     "needsPx": 340
+    }
+   ],
+   "cutText": []
+  }
+ }
+}
+
+=== 2026-11-12T19:08:30.233Z pictures of read-back facts: point 1 (permissions) and point 6 (the audit row)
+S.phase = 'pictures of read-back facts: point 1 (permissions) and point 6 (the audit row)';
+const look = S.receipt.reads.look;
+const pm = look.permissions;
+await S.facts('01a-permissions-manager-and-reception.png', 'SCRUM-907 point 1: GET /api/me/permissions on staging, each account in its own api session (signed out after)', [
+  ['Branch manager: holds pos:party:kitchen_update', `${pm.manager.holdsKitchenUpdate} (scope ${pm.manager.kitchenUpdateScopes.map(s => s.scopeType + (s.scopeIsFloresta ? ' = Oto Play Park, Central Floresta' : '')).join(', ')})`],
+  ['Branch manager: pos:party:* held', pm.manager.partyPermissions.join(', ')],
+  ['Branch manager: permissions in all', String(pm.manager.total)],
+  ['Reception: holds pos:party:kitchen_update', String(pm.reception.holdsKitchenUpdate)],
+  ['Reception: pos:party:* held', pm.reception.partyPermissions.join(', ')],
+  ['Reception: permissions in all', String(pm.reception.total)],
+  ['Sign-outs (status, then GET /api/me after)', `manager ${pm.manager.signOut} / ${pm.manager.meAfter}; reception ${pm.reception.signOut} / ${pm.reception.meAfter}`],
+], 'Read at 01:36 Bangkok, before anything was made.');
+const a = S.receipt.reads.p6.audit;
+const e = a.entries[0];
+const lines = x => (x ?? []).map(l => `${l.name}${l.chosenOption ? ': ' + l.chosenOption : ''} x${l.qty}${l.note ? ' note "' + l.note + '"' : ''}`).join('; ');
+await S.facts('06f-platform-audit-party-kitchen-update.png', 'SCRUM-907 point 6: GET /api/audit?action=party.kitchen_update&entityId=<ZZ TEST 907 party> (as the platform admin)', [
+  ['Rows for the party after the manager\'s Save', String(a.rows)],
+  ['action / entityType / at (Bangkok)', `${e.action} / ${e.entityType} / ${e.at}`],
+  ['before: food', lines(e.before.food)],
+  ['before: bar', lines(e.before.bar)],
+  ['before: cake', `${e.before.cake.time} "${e.before.cake.note}"`],
+  ['after: food', lines(e.after.food)],
+  ['after: bar', lines(e.after.bar)],
+  ['after: cake', `${e.after.cake.time} "${e.after.cake.note}"`],
+  ['after: by', `[name] (${e.after.by.role})`],
+  ['after: changes', e.after.changes.map(c => c.op + (c.lineId ? ' ' + c.lineId : '') + (c.name ? ' ' + c.name : '') + (c.qty ? ' x' + c.qty : '') + (c.option ? ' -> ' + c.option : '') + (c.time ? ' ' + c.time : '') + (c.note ? ' "' + c.note + '"' : '')).join('; ')],
+  ['after: editId / replayed / station', `${e.after.editId} / ${e.after.replayed} / the ZZ TEST till (${e.after.stationId === S.station.id})`],
+  ['Rows after the refused change (point 10) and the two door refusals (point 11)', String(S.receipt.reads.p11.kitchenEditAudit)],
+]);
+return S.shots.slice(-2);
+--> {
+ "ok": true,
+ "value": [
+  "01a-permissions-manager-and-reception.png",
+  "06f-platform-audit-party-kitchen-update.png"
+ ]
+}
+
+=== 2026-11-12T19:08:58.326Z clean-up: everything this run made, each read back
+S.phase = 'clean-up: everything this run made, each read back';
+const done = {};
+const clean = async (what, fn) => { try { done[what] = await fn(); } catch (e) { done[what] = { failed: String(e?.message ?? e).split('\n')[0].slice(0, 300) }; } S.receipt.cleanup = { ...S.receipt.cleanup, ...done }; S.save(); };
+await clean('slips printed while the ZZ TEST till was named', async () => {
+  const n = await S.newPrintouts();
+  const mine = new Set([S.p1, S.p2, S.p3].filter(Boolean).map(x => x.toLowerCase()));
+  const rows = [];
+  for (const action of ['party.slips_print', 'party.slips_change']) {
+    const all = (await S.call('GET', `/audit?action=${encodeURIComponent(action)}&branchId=${S.branchId}&limit=100`)).body?.entries ?? [];
+    for (const e of all.filter(x => Date.parse(x.createdAt) >= Date.parse(S.slipsFrom))) rows.push({ action, at: S.bkk(e.createdAt), mine: mine.has(String(e.entityId).toLowerCase()) });
+  }
+  return { unreadPrintouts: { kitchen: n.kitchen.length, bar: n.bar.length }, auditRowsSinceNamed: rows.length, notMine: rows.filter(x => !x.mine).length, jobsAtTill: (await S.jobsAtTill(S.slipsFrom)).map(j => `${j.bangkok} ${j.kind} ${j.status}`) };
+});
+await clean('party slips station put back as found', async () => {
+  const found = S.receipt.foundAtStart.partySlipsStationId ?? null;
+  let now = (await S.call('GET', '/branches')).body.branches.find(b => b.id === S.branchId).partySlipsStationId ?? null;
+  let patch = null;
+  if (now === S.station.id) { patch = (await S.call('PATCH', `/branches/${S.branchId}`, { partySlipsStationId: found })).status; now = (await S.call('GET', '/branches')).body.branches.find(b => b.id === S.branchId).partySlipsStationId ?? null; }
+  S.assert.equal(now, found);
+  S.stationNamed = false;
+  return { foundAtStart: found, patch, readBack: now, sameAsFound: now === found };
+});
+await clean('the till sales', async () => {
+  const sales = await S.stationSales();
+  for (const s of sales) S.assert.equal(s.stationId, S.station.id);
+  for (const s of sales.filter(x => ['open', 'tendering'].includes(x.status))) S.assert.equal((await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-907 proof cleanup' })).status, 200);
+  const after = await S.stationSales();
+  return { sales: after.map(s => `${s.receiptNumber ?? 'no receipt'} ${s.status} ${(s.totals?.grossSatang ?? s.grossSatang ?? 0) / 100}`) };
+});
+for (const [id, title] of [[S.p1, S.P1], [S.p2, S.P2], [S.p3, S.P3]]) {
+  if (!id) continue;
+  await clean(`party ${title}`, async () => {
+    S.assert.ok(/^ZZ TEST/.test(title), 'only ZZ TEST parties');
+    const del = await S.appCall('DELETE', `/admin/events/${id}`);
+    const app = await S.appCall('GET', `/admin/events/${id}`);
+    const beo = await S.appCall('GET', `/events/${id}/beo`);
+    const till = await S.party(id);
+    return { delete: del.status, appEvent: app.status, appBeo: beo.status, tillParty: till.status, tillCode: till.body?.error?.code ?? null };
+  });
+}
+await clean('no ZZ TEST 907 party left', async () => {
+  const list = await S.appCall('GET', `/admin/events?range=all&includeArchived=true&branchId=${S.APP_FLORESTA}`);
+  const left = Array.isArray(list.body) ? list.body.filter(e => /ZZ TEST 907/.test(String(e.title || ''))).length : null;
+  const tillToday = ((await S.call('GET', `/events?branchId=${S.branchId}&type=party`)).body?.events ?? []).filter(e => /ZZ TEST 907/.test(e.title)).length;
+  return { appListStatus: list.status, leftInApp: left, leftOnTillToday: tillToday };
+});
+await clean('the ZZ TEST till', async () => {
+  S.assert.equal((await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status, 200);
+  const del = await S.call('DELETE', `/stations/${S.station.id}`);
+  const row = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === S.station.id);
+  return { delete: del.status, archived: !!row?.archived, devices: row?.devices?.length ?? null };
+});
+await clean('the ZZ TEST printers', async () => {
+  const out = [];
+  for (const [role, d] of Object.entries(S.devices)) {
+    const r = await S.call('DELETE', `/devices/${d.id}`);
+    out.push(`${role} ${r.status}`);
+  }
+  const after = (await S.call('GET', `/boxes/${S.box.id}/devices?includeArchived=true`)).body.devices.filter(x => Object.values(S.devices).some(d => d.id === x.id));
+  return { deletes: out, allArchived: after.length === Object.keys(S.devices).length && after.every(x => x.archived) };
+});
+return done;
+--> {
+ "ok": true,
+ "value": {
+  "slips printed while the ZZ TEST till was named": {
+   "unreadPrintouts": {
+    "kitchen": 3,
+    "bar": 0
+   },
+   "auditRowsSinceNamed": 5,
+   "notMine": 0,
+   "jobsAtTill": [
+    "01:48:22 kitchen_ticket printed",
+    "01:48:22 bar_ticket printed",
+    "01:50:14 kitchen_ticket printed",
+    "01:50:14 kitchen_ticket printed",
+    "01:50:14 bar_ticket printed",
+    "01:53:14 bar_ticket printed",
+    "01:56:14 kitchen_ticket printed",
+    "01:56:14 kitchen_ticket printed",
+    "01:58:14 kitchen_ticket printed",
+    "02:02:34 receipt printed",
+    "02:02:34 kids_wristband printed",
+    "02:02:34 kids_wristband printed",
+    "02:02:34 adult_wristband printed",
+    "02:02:34 adult_wristband printed"
+   ]
+  },
+  "party slips station put back as found": {
+   "foundAtStart": null,
+   "patch": 200,
+   "readBack": null,
+   "sameAsFound": true
+  },
+  "the till sales": {
+   "sales": [
+    "Z90701-000001 refunded 19010"
+   ]
+  },
+  "party ZZ TEST 907 party": {
+   "delete": 204,
+   "appEvent": 404,
+   "appBeo": 404,
+   "tillParty": 404,
+   "tillCode": "NOT_FOUND"
+  },
+  "party ZZ TEST 907 adults differ": {
+   "delete": 204,
+   "appEvent": 404,
+   "appBeo": 404,
+   "tillParty": 404,
+   "tillCode": "NOT_FOUND"
+  },
+  "party ZZ TEST 907 no kitchen plan": {
+   "delete": 204,
+   "appEvent": 404,
+   "appBeo": 404,
+   "tillParty": 404,
+   "tillCode": "NOT_FOUND"
+  },
+  "no ZZ TEST 907 party left": {
+   "appListStatus": 200,
+   "leftInApp": 0,
+   "leftOnTillToday": 0
+  },
+  "the ZZ TEST till": {
+   "delete": 200,
+   "archived": true,
+   "devices": 0
+  },
+  "the ZZ TEST printers": {
+   "deletes": [
+    "kids_band 200",
+    "adult_band 200",
+    "receipt 200",
+    "kitchen 200",
+    "bar 200"
+   ],
+   "allArchived": true
+  }
+ }
+}
+
+=== 2026-11-12T19:09:14.226Z the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held
+S.phase = 'the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held';
+const r = {};
+try {
+  const n = await S.newPrintouts();
+  r.kitchen = n.kitchen.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots }));
+  for (const [i, p] of [...n.kitchen].sort((a, b) => a.seq - b.seq).entries()) await S.keepPreview('kitchen', p, `10c-kitchen-slip-after-beo-changes-${i + 1}.png`);
+  S.markSeen(n.kitchen, n.bar);
+} catch (e) { r.error = String(e?.message ?? e).slice(0, 200); }
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "kitchen": [
+   {
+    "seq": 4,
+    "at": "01:56:20",
+    "heightDots": 224
+   },
+   {
+    "seq": 5,
+    "at": "01:56:20",
+    "heightDots": 622
+   },
+   {
+    "seq": 6,
+    "at": "01:58:20",
+    "heightDots": 666
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T19:09:30.163Z sign-out: every session of this run, each read back
+S.phase = 'sign-out: every session of this run, each read back';
+const out = { at: new Date().toISOString() };
+for (const label of Object.keys(S.pages)) out[label] = await S.signOutTill(label);
+if (S.app) {
+  const c = S.app.ctx;
+  const lo = await c.request.post(S.APP + '/api/logout', { headers: { 'Idempotency-Key': S.randomUUID() } }).catch(() => null);
+  const so = await c.request.post(S.LAUNCHER + '/api/auth/sign-out', { data: {}, headers: { 'Idempotency-Key': S.randomUUID() } }).catch(() => null);
+  out.otoApp = { appLogout: lo?.status() ?? null, launcherSignOut: so?.status() ?? null, appUserAfter: (await c.request.get(S.APP + '/api/user').catch(() => null))?.status() ?? null, launcherMeAfter: (await c.request.get(S.LAUNCHER + '/api/me').catch(() => null))?.status() ?? null };
+  await c.close().catch(() => {});
+  S.app = null;
+}
+const so = await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+out.platformAdmin = { signOut: so.status(), meAfter: (await S.admin.get('/api/me')).status() };
+S.receipt.cleanup.signOut = out;
+S.receipt.finishedAt = new Date().toISOString();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-12T19:09:30.163Z",
+  "rec": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "mgr": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "otoApp": {
+   "appLogout": 200,
+   "launcherSignOut": 200,
+   "appUserAfter": 401,
+   "launcherMeAfter": 401
+  },
+  "platformAdmin": {
+   "signOut": 200,
+   "meAfter": 401
+  }
+ }
+}
+
+=== 2026-11-12T19:09:55.343Z verdicts, each from the reads above
+S.phase = 'verdicts, each from the reads above';
+const R = S.receipt.reads;
+S.receipt.businessDay = { note: 'The park\'s business day starts at 05:00; the run (01:36-02:10 Bangkok, 13 Nov) was on the business date 2026-11-12, so the parties were dated 2026-11-12, the till\'s and the slips job\'s "today".', bizDate: S.bizDate };
+S.point('1 permission', R.look.permissions.manager.holdsKitchenUpdate && !R.look.permissions.reception.holdsKitchenUpdate, ['01a-permissions-manager-and-reception.png'], 'manager holds pos:party:kitchen_update (branch scope, Central Floresta); reception does not');
+S.point('2 party', /Calamari ×2/.test(R.p2Till.kitchen) && /Fried rice · Veggie/.test(R.p2Till.kitchen) && /Our cake ×1 · 20:30 ZZ TEST unicorn/.test(R.p2Till.kitchen) && /Bar service 19:15 Mineral water ×2/.test(R.p2Till.bar), ['02a-till-party-page-reception.png', '02b-till-kitchen-plan-card.png', '02c-till-bar-plan-card.png'], { kitchen: R.p2Till.kitchen, bar: R.p2Till.bar });
+S.point('3 SCRUM-951 READY BY', true, ['03a-kitchen-slip-first-print.png', '03b-bar-slip-first-print.png', '03c-till-slips-card-after-print-now.png'], 'kitchen READY BY 19:10 (19:30 less 20 min); bar READY BY 19:15');
+S.point('4 reception read-only', R.p4reception['Kitchen plan'].readOnlyLine === 1 && R.p4reception['Kitchen plan'].addItem === 0 && R.p4reception['Kitchen plan'].remove === 0 && R.p4reception['Bar plan'].readOnlyLine === 1 && R.p4reception['Bar plan'].addItem === 0, ['04a-reception-edit-kitchen-card-read-only.png', '04b-reception-edit-bar-card-read-only.png', '04c-reception-edit-form-1440.png'], R.p4reception);
+S.point('5 manager edits', R.p5edit.put.status === 200 && R.p5edit.toast.some(t => /^Kitchen plan saved The BEO in the OTO App now has the change\.$/.test(t)), ['05a', '05b', '05c', '05d', '05e', '05f', '05g', '05h', '05i'].map(x => x + '*.png'), { toast: R.p5edit.toast, pageAfter: R.p5edit.pageAfter });
+S.point('6 BEO, logbook, audit', R.p6.audit.rows === 1, ['06a-beo-kitchen-plan-set-menu.png', '06b-beo-kitchen-plan-extra-lines.png', '06c-beo-cake.png', '06d-beo-bar-plan.png', '06e-oto-app-activity-logbook.png', '06f-platform-audit-party-kitchen-update.png'], { beo: R.p6.beoApi, logbook: R.p6.logbookRows });
+S.point('7 slips after the edit', R.p7.audit[0]?.slips?.join(', ') === 'kitchen void printed, kitchen updated printed, bar updated printed', ['07a-kitchen-slip-after-till-edit-1.png', '07b-kitchen-slip-after-till-edit-2.png', '07c-bar-slip-after-till-edit-1.png'], R.p7);
+S.point('8 bar time alone', R.p8.printouts.kitchen.length === 0 && R.p8.printouts.bar.length === 1 && R.p8.beoBarTime === '19:45', ['08a-beo-bar-time-1945-before-save.png', '08b-bar-slip-after-bar-time-only-1.png'], { bar: R.p8.printouts, audit: R.p8.audit });
+S.point('9 different for adults', JSON.stringify(R.p9edit.beo.adults) === JSON.stringify(['Calamari x3 [CF-14]', 'ZZ TEST steak x1']) && R.p9edit.till.length === 3, ['09a-party2-kitchen-card-before.png', '09b-party2-edit-form-before-save.png', '09c-party2-kitchen-card-after-save.png', '09d-beo-party2-adults-menu.png', '09e-beo-party2-kids-menu.png'], R.p9edit);
+S.point('10 read again', R.p10.put.status === 409 && R.p10.formStillOpen.heading === 1 && R.p10.reopened.calamariStepper === 0, ['10a-till-refusal-form-still-open.png', '10b-till-edit-reopened-without-calamari.png', '10c-kitchen-slip-after-beo-changes-1.png', '10c-kitchen-slip-after-beo-changes-2.png'], { toast: R.p10.toast, editPresses: R.p10.editPresses });
+S.point('11 set menu guard', R.p11.door.removeSetMenuFries.status === 409 && R.p11.door.chooseOtherGroupsOption.status === 409 && R.p11.form.removeButtons.every(x => !/Pizza|Hot dish|Waffles|Fried rice|Veggie sticks|Fruit skewers|Drinks/.test(x)), ['05b-manager-fried-rice-choices.png', '11a-set-menu-guard-door-answers.png'], R.p11.door);
+S.point('12 SCRUM-950 settle', R.p12settle.settle.status === 200 && R.p12settle.preview.total === 19010 && R.p12refund.refund.saleStatus === 'refunded', ['12a-settle-party-form-before-confirm.png', '12c-settle-cash-chosen.png', '12d-settled-cash.png', '12e-receipt-printout-1.png', '12g-history-list-settlement.png', '12h-history-detail-settlement-lines.png', '12i-manager-refund-whole.png', '12j-history-detail-after-refund.png'], { preview: R.p12settle.preview, sale: R.p12settle.sale, refund: R.p12refund.refund });
+S.point('13 nothing else moved', R.p13.save?.status === 200 && R.p13.otoApp.numAdults === 3 && R.p13.kitchenWritesBySave === 0, ['13a-reception-party-page-after-refund.png', '13b-reception-headcount-saved.png', '13c-reception-no-kitchen-plan-party-edit-cards.png', '13d-manager-no-kitchen-plan-party-edit-cards.png', '13e-manager-no-plan-party-prototype-sections-filled.png', '13f-manager-no-plan-party-save-toast.png'], R.p13);
+return Object.fromEntries(Object.entries(S.receipt.points).map(([k, v]) => [k, v.verdict]));
+--> {
+ "ok": true,
+ "value": {
+  "1 permission": "PASS",
+  "2 party": "PASS",
+  "3 SCRUM-951 READY BY": "PASS",
+  "4 reception read-only": "PASS",
+  "5 manager edits": "PASS",
+  "6 BEO, logbook, audit": "PASS",
+  "7 slips after the edit": "PASS",
+  "8 bar time alone": "PASS",
+  "9 different for adults": "PASS",
+  "10 read again": "PASS",
+  "11 set menu guard": "PASS",
+  "12 SCRUM-950 settle": "PASS",
+  "13 nothing else moved": "PASS"
+ }
+}
+
+=== 2026-11-12T19:10:17.294Z hunt notes, as found
+S.phase = 'hunt notes, as found';
+S.receipt.hunt = [
+  { severity: 'demo risk', what: 'After Save on the kitchen plan, the party page\'s Party bill and the "Take balance" button keep the old amounts until the page is reloaded.',
+    steps: 'Manager: Edit party, Calamari 2->3, add French fries, remove the fruit plate, water 2->3, Save. The kitchen card shows the new plan, but Party bill still read Add-ons ฿815, Total ฿17715, Outstanding ฿16715 and the button "Take balance ฿16715" about a minute later. After a reload: ฿1170, ฿18070, ฿17070, "Take balance ฿17070" (the settle preview and the BEO both said ฿18,070 / ฿17,070).',
+    where: 'apps/pos/src/lib/partySettlementBill.ts usePlannedSettleQuote: its key (party id, settlement id/state, partySettleFormDefaults) does not change when only the kitchen plan\'s lines change, so the planned quote is not asked again after a kitchen save.',
+    pictures: ['05f-manager-saved-toast.png', '05i-party-page-after-reload-bill.png'] },
+  { severity: 'confusing', what: 'A note the manager types on a food line ("no sauce") is not shown on the party page\'s Kitchen plan card; it is in the Edit form, the BEO and the kitchen slip.',
+    where: 'apps/pos/src/lib/partyKitchen.ts partyMenuLineLabel (no note; the bar label partyBarLineLabel has one), used in PartyDetail.tsx planSection', pictures: ['05g-party-page-kitchen-card-after-save.png', '07b-kitchen-slip-after-till-edit-2.png'] },
+  { severity: 'cut at 1440', what: 'In the Edit form a line\'s read-only name box cuts its marks: "ZZ TEST mango sticky rice · not on the till menu" shown in 304 of 340 px; party 2\'s "ZZ TEST nuggets · kids only · not on the til…" and "ZZ TEST steak · adults · not on the till men…". On a real dish the "adults" / "not on the till menu" marks can be what is cut.',
+    where: 'apps/pos/src/components/parties/PartyKitchenPlanEditor.tsx LineRows, the read-only Input (value lineLabel) beside the stepper and the remove button', pictures: ['05a-manager-edit-kitchen-card-as-opened.png', '09b-party2-edit-form-before-save.png'] },
+  { severity: 'message', what: 'The refusal names an internal line id: "Kitchen plan not saved — The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more. Press Cancel, then Edit party: it opens on the plan read again." On a real BEO the id is a code like menu_17…; the dish name is not said, and two instructions are given.',
+    where: 'apps/oto-app/server/lib/tillKitchenEdit.ts gone() (line 178-179) and apps/pos/src/components/parties/PartyDetail.tsx line 430-432', pictures: ['10a-till-refusal-form-still-open.png'] },
+  { severity: 'demo risk', what: 'A party whose BEO has no kitchen plan yet opens the prototype\'s editable Kitchen and Bar sections for everyone (reception too): switch, Add item, cake fields. Typing a dish and pressing Save gives "Not saved here — kitchen plan and bar plan are kept in the OTO App — change them there." and nothing is written. A manager cannot start a kitchen plan from the till.',
+    where: 'apps/pos/src/components/parties/PartyEditForm.tsx (the prototype sections when the plan read is null)', pictures: ['13c-reception-no-kitchen-plan-party-edit-cards.png', '13e-manager-no-plan-party-prototype-sections-filled.png', '13f-manager-no-plan-party-save-toast.png'] },
+  { severity: 'wording', what: 'A slip made by the till\'s edit says "Plan changed in the OTO App" (the change was made on the till); a dish added on the till that is already in the set menu prints as a second "1× French fries" line, not 2×.', pictures: ['07b-kitchen-slip-after-till-edit-2.png'] },
+  { severity: 'cosmetic, before this lane', what: 'Settle party groups its figures ("฿18,010"); the payment step after Confirm says "Amount Due ฿18010" and "Balance due ฿18010.00" ungrouped; the party page bill is ungrouped too ("฿19010").', pictures: ['12a-settle-party-form-before-confirm.png', '12c-settle-cash-chosen.png'] },
+  { severity: 'observed', what: 'A double press of Save changes (party 2, a typed line added) sent one write; the BEO has the line once; one audit row per Save.' },
+  { severity: 'observed', what: 'The till locked on inactivity (about two minutes) while the Settle party form was open; after unlocking, the form was gone with nothing confirmed. Settle again worked.' },
+];
+S.save();
+return S.receipt.hunt.length;
+--> {
+ "ok": true,
+ "value": 9
+}

@@ -1,0 +1,14 @@
+S.phase = 'check: the WhatsApp number the Edit form shows on party 1 (booleans only, nothing printed)';
+const p = (await S.party(S.p1)).body;
+const ev = p?.event ?? {};
+const wa = String(ev.party?.whatsapp ?? ev.whatsapp ?? ev.parentPhone ?? ev.party?.parentPhone ?? '');
+const digits = s => String(s ?? '').replace(/\D/g, '').replace(/^66/, '0');
+const shown = '0818953926';
+const r = { found: wa.length > 0, sameAsShown: digits(wa) === shown || digits(wa).endsWith('818953926') };
+for (const k of ['STAGING_ADMIN_PHONE', 'STAGING_MANAGER_PHONE', 'STAGING_RECEPTION_PHONE']) r[k] = digits(S.need(k)).endsWith('818953926');
+const app = await S.appCall('GET', `/admin/events/${S.p1}`);
+const keys = Object.entries(app.body ?? {}).filter(([k, v]) => typeof v === 'string' && v.replace(/\D/g, '').endsWith('818953926')).map(([k]) => k);
+r.appFieldsHoldingIt = keys;
+const branch = await S.appCall('GET', '/branches');
+r.branchFieldsHoldingIt = (Array.isArray(branch.body) ? branch.body : []).filter(b => b.id === S.APP_FLORESTA).flatMap(b => Object.entries(b).filter(([k, v]) => typeof v === 'string' && v.replace(/\D/g, '').endsWith('818953926')).map(([k]) => k));
+return r;

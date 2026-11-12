@@ -1,0 +1,63 @@
+S.phase = "12: Settle party on the ZZ TEST till (reception): each extra its own row before Confirm; Confirm; cash";
+const till = S.pages.rec.page;
+await S.unlock('rec');
+await S.openParty(till, S.p1, S.P1);
+await till.waitForTimeout(2000);
+const r = {};
+r.billOnPage = S.flat(await S.cardOf(till, 'Party bill').innerText().catch(() => ''));
+const previews = [];
+const onResp = async (resp) => { try { if (/\/api\/parties\/[^/]+\/settle\/preview$/.test(new URL(resp.url()).pathname)) previews.push(await resp.json()); } catch { /* ignore */ } };
+till.on('response', onResp);
+await till.getByRole('button', { name: 'Settle party', exact: true }).click();
+await till.getByText('Balance', { exact: true }).first().waitFor({ timeout: 30000 }).catch(() => {});
+await till.waitForTimeout(2500);
+const socks = till.getByText('Socks given', { exact: true }).locator('xpath=ancestor::div[.//button][1]');
+r.socksBefore = S.flat(await socks.innerText().catch(() => ''));
+for (let i = 0; i < 6; i++) { const t = S.flat(await socks.innerText().catch(() => '')); if (/(^|\s)0(\s|$)/.test(t.replace(/Socks given/, ''))) break; await socks.getByRole('button').first().click(); await till.waitForTimeout(900); }
+await till.waitForTimeout(2500);
+r.socksAfter = S.flat(await socks.innerText().catch(() => ''));
+const q = previews.at(-1)?.quote ?? null;
+r.preview = q ? { total: q.totalSatang / 100, addOns: q.addOnsSatang / 100, socks: q.socksSatang / 100, deposit: q.depositSatang / 100, balance: q.balanceSatang / 100,
+  extras: (q.extras ?? []).map(e => ({ name: e.name, qty: e.qty, unit: e.unitSatang == null ? null : e.unitSatang / 100, total: e.totalSatang / 100, charged: e.charged })) } : null;
+const dialog = till.getByRole('dialog').last();
+r.formText = S.flat(await dialog.innerText().catch(() => '')).slice(0, 1500);
+// the summary rows as drawn: label and value of each
+r.rows = await dialog.locator('div.text-sm > div, div.text-sm > div > div').evaluateAll(els => els.map(e => { const s = e.querySelectorAll(':scope > span'); return s.length === 2 ? `${s[0].innerText.trim()} | ${s[1].innerText.trim()}` : null; }).filter(Boolean));
+await S.shot(till, '12a-settle-party-form-before-confirm.png');
+await S.unlock('rec');
+// Confirm
+const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 60000 });
+await till.getByRole('button', { name: /^Confirm/ }).click();
+const sr = await settled;
+const sb = await sr.json().catch(() => null);
+S.settleSale = sb?.sale?.id ?? null;
+if (S.settleSale) { S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save(); }
+r.settle = { status: sr.status(), code: sb?.error?.code ?? null, message: sb?.error?.message ?? null, state: sb?.settlement?.state ?? null, gross: (sb?.sale?.grossSatang ?? 0) / 100 };
+till.off('response', onResp);
+if (sr.status() >= 400) { await S.shot(till, '12x-settle-refused.png'); S.receipt.reads.p12settle = r; return r; }
+await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await till.waitForTimeout(2500);
+r.amountDue = await till.evaluate(() => { const h = [...document.querySelectorAll('h2')].find(x => x.textContent.trim() === 'Amount Due'); return h ? (h.nextElementSibling?.textContent ?? '').trim() : null; });
+S.seenReceipt = (await S.printouts('receipt')).map(S.keyOf);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await S.expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded();
+await S.shot(till, '12c-settle-cash-chosen.png');
+await confirm.click();
+await till.getByText(/Settled|Payment Successful/).first().waitFor({ timeout: 60000 });
+await till.waitForTimeout(3000);
+r.done = S.flat(await till.getByRole('dialog').last().innerText().catch(() => '')).slice(0, 400);
+await S.shot(till, '12d-settled-cash.png');
+const sale = await S.sale(S.settleSale);
+r.sale = { status: sale?.sale?.status ?? null, receipt: sale?.sale?.receiptNumber ?? null, gross: (sale?.sale?.totals?.grossSatang ?? sale?.sale?.grossSatang ?? 0) / 100,
+  lines: (sale?.lines ?? sale?.sale?.lines ?? []).map(l => `${l.label ?? l.name} | ${l.quantity} x ${(l.unitSatang ?? 0) / 100} = ${(l.grossSatang ?? l.totalSatang ?? 0) / 100}`),
+  payments: (sale?.payments ?? sale?.tenders ?? []).map(p => `${p.method} ${(p.amountSatang ?? 0) / 100} ${p.status ?? ''}`) };
+// the receipt as the ZZ TEST receipt printer drew it
+let rp = [];
+const deadline = Date.now() + 60000;
+while (Date.now() < deadline) { rp = (await S.printouts('receipt')).filter(p => !S.seenReceipt.includes(S.keyOf(p))); if (rp.length) break; await S.sleep(3000); }
+r.receiptPrintouts = rp.map(p => ({ seq: p.seq, at: S.bkk(p.at), heightDots: p.heightDots }));
+for (const [i, p] of [...rp].sort((a, b) => a.seq - b.seq).entries()) await S.keepPreview('receipt', p, `12e-receipt-printout-${i + 1}.png`);
+r.party = (await S.party(S.p1)).body?.event?.party?.settlement ?? null;
+S.receipt.reads.p12settle = r;
+return r;

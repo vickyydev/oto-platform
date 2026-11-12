@@ -1,0 +1,150 @@
+{
+  "before": {
+    "readAt": "2026-11-12T18:35:25.417Z",
+    "lane": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+    "services": {
+      "oto-app-staging": {
+        "expectedDeploy": "dep-dbr05sh5efls73e0fc20",
+        "live": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:21:49.118016Z",
+          "finishedBangkok": "13 Nov 2026, 01:21:49",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-api-staging": {
+        "expectedDeploy": "dep-dbr07guk1f9s73atllu0",
+        "live": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:27:21.018394Z",
+          "finishedBangkok": "13 Nov 2026, 01:27:21",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-pos-web-staging": {
+        "expectedDeploy": "dep-dbr0a756e07s738o2kh0",
+        "live": {
+          "id": "dep-dbr0a756e07s738o2kh0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:31:37.137805Z",
+          "finishedBangkok": "13 Nov 2026, 01:31:37",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr0a756e07s738o2kh0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-pos-staging": {
+        "expectedDeploy": "dep-dbr0a7l6e07s738o2ld0",
+        "live": {
+          "id": "dep-dbr0a7l6e07s738o2ld0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:29:22.716517Z",
+          "finishedBangkok": "13 Nov 2026, 01:29:22",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr0a7l6e07s738o2ld0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      }
+    }
+  },
+  "after": {
+    "readAt": "2026-11-12T19:10:25.401Z",
+    "lane": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+    "services": {
+      "oto-app-staging": {
+        "expectedDeploy": "dep-dbr05sh5efls73e0fc20",
+        "live": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:21:49.118016Z",
+          "finishedBangkok": "13 Nov 2026, 01:21:49",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr05sh5efls73e0fc20",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-api-staging": {
+        "expectedDeploy": "dep-dbr07guk1f9s73atllu0",
+        "live": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:27:21.018394Z",
+          "finishedBangkok": "13 Nov 2026, 01:27:21",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr07guk1f9s73atllu0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-pos-web-staging": {
+        "expectedDeploy": "dep-dbr0a756e07s738o2kh0",
+        "live": {
+          "id": "dep-dbr0a756e07s738o2kh0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:31:37.137805Z",
+          "finishedBangkok": "13 Nov 2026, 01:31:37",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr0a756e07s738o2kh0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      },
+      "oto-pos-staging": {
+        "expectedDeploy": "dep-dbr0a7l6e07s738o2ld0",
+        "live": {
+          "id": "dep-dbr0a7l6e07s738o2ld0",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+          "finishedAt": "2026-11-12T18:29:22.716517Z",
+          "finishedBangkok": "13 Nov 2026, 01:29:22",
+          "trigger": "api"
+        },
+        "liveIsExpected": true,
+        "liveIsLaneSha": true,
+        "latest": {
+          "id": "dep-dbr0a7l6e07s738o2ld0",
+          "status": "live",
+          "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+        }
+      }
+    }
+  }
+}

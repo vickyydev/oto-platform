@@ -1,0 +1,46 @@
+S.phase = '12: History agrees with the receipt; the staging manager refunds the settlement whole from History';
+const r = {};
+const mgr = S.pages.mgr.page;
+await S.unlock('mgr');
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+await S.unlock('mgr');
+const sale0 = await S.sale(S.settleSale);
+const rn = sale0?.sale?.receiptNumber ?? null;
+r.receipt = rn;
+await mgr.evaluate((rn) => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) {
+    const t = b.innerText.replace(/\s+/g, ' ');
+    if (rn && t.includes(rn)) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz');
+  }
+}, rn);
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), S.otherSales(page)];
+const mine = mgr.locator('button[data-zz]');
+r.listed = [];
+for (let i = 0; i < await mine.count(); i++) r.listed.push(S.flat(await mine.nth(i).innerText()).slice(0, 200));
+await S.shot(mgr, '12g-history-list-settlement.png');
+await mine.first().click();
+await mgr.waitForTimeout(3500);
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+r.detail = S.flat(await mgr.locator('body').innerText()).match(/(Paid|Refunded|Partly paid)[^]{0,1400}/)?.[0]?.slice(0, 1400) ?? null;
+await S.shot(mgr, '12h-history-detail-settlement-lines.png', [], { fullPage: true });
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor();
+r.dialog = S.flat(await dialog.innerText()).slice(0, 600);
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-907 proof: refund the whole settlement');
+await S.shot(mgr, '12i-manager-refund-whole.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+r.press = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(rr => new URL(rr.url()).pathname === `/api/sales/${S.settleSale}/refunds` && rr.request().method() === 'POST', { timeout: 60000 });
+await press.click();
+const rr = await resp;
+const rb = await rr.json().catch(() => null);
+await mgr.waitForTimeout(3000);
+await S.shot(mgr, '12j-history-detail-after-refund.png');
+const sale = await S.sale(S.settleSale);
+r.refund = { status: rr.status(), amount: (rb?.refund?.amountSatang ?? 0) / 100, refundStatus: rb?.refundStatus ?? null, saleStatus: sale?.sale?.status ?? null, saleRefund: sale?.refundStatus ?? null, refunds: (sale?.refunds ?? []).map(x => `${(x.amountSatang ?? 0) / 100} ${x.method ?? x.tenderMethod ?? ''} ${x.reasonCode ?? x.reason ?? ''}`) };
+const party = (await S.party(S.p1)).body;
+r.settlementAfter = party?.event?.party?.settlement ? { state: party.event.party.settlement.state, receipt: party.event.party.settlement.receiptNumber } : null;
+S.receipt.reads.p12refund = r;
+return r;

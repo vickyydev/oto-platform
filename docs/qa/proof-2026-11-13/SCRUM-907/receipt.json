@@ -1,0 +1,3710 @@
+{
+  "tickets": [
+    "SCRUM-907",
+    "SCRUM-950",
+    "SCRUM-951"
+  ],
+  "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+  "startedAt": "2026-11-12T18:39:22.788Z",
+  "deploys": {
+    "before": {
+      "readAt": "2026-11-12T18:35:25.417Z",
+      "lane": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+      "services": {
+        "oto-app-staging": {
+          "expectedDeploy": "dep-dbr05sh5efls73e0fc20",
+          "live": {
+            "id": "dep-dbr05sh5efls73e0fc20",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:21:49.118016Z",
+            "finishedBangkok": "13 Nov 2026, 01:21:49",
+            "trigger": "api"
+          },
+          "liveIsExpected": true,
+          "liveIsLaneSha": true,
+          "latest": {
+            "id": "dep-dbr05sh5efls73e0fc20",
+            "status": "live",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+          }
+        },
+        "oto-api-staging": {
+          "expectedDeploy": "dep-dbr07guk1f9s73atllu0",
+          "live": {
+            "id": "dep-dbr07guk1f9s73atllu0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:27:21.018394Z",
+            "finishedBangkok": "13 Nov 2026, 01:27:21",
+            "trigger": "api"
+          },
+          "liveIsExpected": true,
+          "liveIsLaneSha": true,
+          "latest": {
+            "id": "dep-dbr07guk1f9s73atllu0",
+            "status": "live",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+          }
+        },
+        "oto-pos-web-staging": {
+          "expectedDeploy": "dep-dbr0a756e07s738o2kh0",
+          "live": {
+            "id": "dep-dbr0a756e07s738o2kh0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:31:37.137805Z",
+            "finishedBangkok": "13 Nov 2026, 01:31:37",
+            "trigger": "api"
+          },
+          "liveIsExpected": true,
+          "liveIsLaneSha": true,
+          "latest": {
+            "id": "dep-dbr0a756e07s738o2kh0",
+            "status": "live",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+          }
+        },
+        "oto-pos-staging": {
+          "expectedDeploy": "dep-dbr0a7l6e07s738o2ld0",
+          "live": {
+            "id": "dep-dbr0a7l6e07s738o2ld0",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2",
+            "finishedAt": "2026-11-12T18:29:22.716517Z",
+            "finishedBangkok": "13 Nov 2026, 01:29:22",
+            "trigger": "api"
+          },
+          "liveIsExpected": true,
+          "liveIsLaneSha": true,
+          "latest": {
+            "id": "dep-dbr0a7l6e07s738o2ld0",
+            "status": "live",
+            "sha": "b229f96e2771e2100a1075766d479edaa9f48bd2"
+          }
+        }
+      }
+    }
+  },
+  "foundAtStart": {
+    "partySlipsStationId": null,
+    "readAt": "2026-11-12T18:39:35.882Z"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "role": "kids_band",
+      "id": "20bf193b-b558-4f9b-ab3c-0a46c35ca7cf",
+      "label": "ZZ TEST SCRUM-907 kids band printer"
+    },
+    {
+      "kind": "device",
+      "role": "adult_band",
+      "id": "08494b05-1d42-4757-b943-be2b015b4195",
+      "label": "ZZ TEST SCRUM-907 adult band printer"
+    },
+    {
+      "kind": "device",
+      "role": "receipt",
+      "id": "451aedcc-577e-436e-862d-549f59234be9",
+      "label": "ZZ TEST SCRUM-907 receipt printer"
+    },
+    {
+      "kind": "device",
+      "role": "kitchen",
+      "id": "01c82260-aaef-4801-8924-0ffd25261e14",
+      "label": "ZZ TEST SCRUM-907 kitchen printer"
+    },
+    {
+      "kind": "device",
+      "role": "bar",
+      "id": "25eac684-d933-43f4-9afe-80fc5f086b8c",
+      "label": "ZZ TEST SCRUM-907 bar printer"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d10f-33d9-70fa-9cb8-967595ca2597",
+      "name": "ZZ TEST SCRUM-907 proof till 1794508795973",
+      "prefix": "Z90701"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "5cb91605-2fdb-4e6d-af7c-47199ff500ee",
+      "title": "ZZ TEST 907 party"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1d123-d89c-777e-8f3b-e0fd157e28a5"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "376a2a05-a810-40bf-882a-139d7f520d5a",
+      "title": "ZZ TEST 907 adults differ"
+    },
+    {
+      "kind": "oto-app party",
+      "id": "619e67d0-4330-420f-8571-5a24acb334ac",
+      "title": "ZZ TEST 907 no kitchen plan"
+    }
+  ],
+  "points": {
+    "1 permission": {
+      "verdict": "PASS",
+      "pictures": [
+        "01a-permissions-manager-and-reception.png"
+      ],
+      "seen": "manager holds pos:party:kitchen_update (branch scope, Central Floresta); reception does not"
+    },
+    "2 party": {
+      "verdict": "PASS",
+      "pictures": [
+        "02a-till-party-page-reception.png",
+        "02b-till-kitchen-plan-card.png",
+        "02c-till-bar-plan-card.png"
+      ],
+      "seen": {
+        "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+        "bar": "Bar plan Bar service 19:15 Mineral water ×2"
+      }
+    },
+    "3 SCRUM-951 READY BY": {
+      "verdict": "PASS",
+      "pictures": [
+        "03a-kitchen-slip-first-print.png",
+        "03b-bar-slip-first-print.png",
+        "03c-till-slips-card-after-print-now.png"
+      ],
+      "seen": "kitchen READY BY 19:10 (19:30 less 20 min); bar READY BY 19:15"
+    },
+    "4 reception read-only": {
+      "verdict": "PASS",
+      "pictures": [
+        "04a-reception-edit-kitchen-card-read-only.png",
+        "04b-reception-edit-bar-card-read-only.png",
+        "04c-reception-edit-form-1440.png"
+      ],
+      "seen": {
+        "Kitchen plan": {
+          "text": "Kitchen plan A manager changes the kitchen plan. Kitchen service needed Food service time Set menu Food items ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×2 ×1 ×2 ×1 Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+          "readOnlyLine": 1,
+          "addItem": 0,
+          "remove": 0,
+          "steppers": 0,
+          "enabledInputs": 0,
+          "choiceSelects": [
+            {
+              "label": null,
+              "disabled": true
+            }
+          ],
+          "values": [
+            "19:30",
+            "Pizza · Margherita",
+            "Hot dish · Chicken schnitzel",
+            "French fries",
+            "Waffles or pancakes · Waffles",
+            "Fried rice · Veggie",
+            "Veggie sticks",
+            "Fruit skewers · not on the till menu",
+            "Drinks pitcher · Juice · not on the till menu",
+            "Calamari",
+            "Hummus",
+            "ZZ TEST mango sticky rice · not on the till menu",
+            "ZZ TEST fruit plate · not on the till menu",
+            "20:30",
+            "ZZ TEST unicorn"
+          ]
+        },
+        "Bar plan": {
+          "text": "Bar plan A manager changes the kitchen plan. Bar service time Bar items ×2",
+          "readOnlyLine": 1,
+          "addItem": 0,
+          "remove": 0,
+          "steppers": 0,
+          "enabledInputs": 0,
+          "choiceSelects": [],
+          "values": [
+            "19:15",
+            "Mineral water"
+          ]
+        },
+        "afterCancel": {
+          "editHeading": 0,
+          "editButton": 1
+        }
+      }
+    },
+    "5 manager edits": {
+      "verdict": "PASS",
+      "pictures": [
+        "05a*.png",
+        "05b*.png",
+        "05c*.png",
+        "05d*.png",
+        "05e*.png",
+        "05f*.png",
+        "05g*.png",
+        "05h*.png",
+        "05i*.png"
+      ],
+      "seen": {
+        "toast": [
+          "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+          "Kitchen plan saved The BEO in the OTO App now has the change."
+        ],
+        "pageAfter": {
+          "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Chicken ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×3 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 French fries ×1 ZZ TEST lemon cake · not on the till menu ×1 Our cake ×1 · 21:00 ZZ TEST rainbow Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+          "bar": "Bar plan Bar service 19:15 Mineral water ×3"
+        }
+      }
+    },
+    "6 BEO, logbook, audit": {
+      "verdict": "PASS",
+      "pictures": [
+        "06a-beo-kitchen-plan-set-menu.png",
+        "06b-beo-kitchen-plan-extra-lines.png",
+        "06c-beo-cake.png",
+        "06d-beo-bar-plan.png",
+        "06e-oto-app-activity-logbook.png",
+        "06f-platform-audit-party-kitchen-update.png"
+      ],
+      "seen": {
+        "beo": {
+          "kids": [
+            "SET Margherita x1 note \"(Pizza)\"",
+            "SET Chicken schnitzel x1 note \"(Hot dish)\"",
+            "SET French fries x1",
+            "SET Waffles x1 note \"(Waffles or pancakes)\"",
+            "SET Chicken x1 note \"(Fried rice)\"",
+            "SET Veggie sticks x1",
+            "SET Fruit skewers x1",
+            "SET Juice x1 note \"(Drinks pitcher)\"",
+            "EXTRA Calamari x3 @120 [CF-14] note \"no sauce\"",
+            "EXTRA Hummus x1 [CF-13]",
+            "EXTRA ZZ TEST mango sticky rice x2 @90",
+            "EXTRA French fries x1 [CF-11]",
+            "EXTRA ZZ TEST lemon cake x1"
+          ],
+          "adults": [],
+          "bar": [
+            "EXTRA Mineral water x3 [CF-65-6]"
+          ],
+          "barTime": "19:15",
+          "cake": {
+            "time": "21:00",
+            "notes": "ZZ TEST rainbow",
+            "qty": 1
+          }
+        },
+        "logbook": [
+          "BEO Kitchen Plan (Till) Oto Play Park, Central Floresta Kitchen plan of \"ZZ TEST 907 party\" changed on the till by [name] (Manager): Fried rice: Veggie → Chicken; Calamari ×2 → ×3, note \"no sauce\"; removed ZZ TEST fruit plate; Mineral water ×2 → ×3; added French fries ×1 (CF-11); added ZZ TEST lemon cake ×1; cake time 20:30 → 21:00, note \"ZZ TEST rainbow\" 13-11-2026 3 minutes ago"
+        ]
+      }
+    },
+    "7 slips after the edit": {
+      "verdict": "PASS",
+      "pictures": [
+        "07a-kitchen-slip-after-till-edit-1.png",
+        "07b-kitchen-slip-after-till-edit-2.png",
+        "07c-bar-slip-after-till-edit-1.png"
+      ],
+      "seen": {
+        "secondsFromSave": [
+          52,
+          53,
+          53
+        ],
+        "printouts": {
+          "kitchen": [
+            {
+              "seq": 2,
+              "at": "01:50:20",
+              "heightDots": 316
+            },
+            {
+              "seq": 3,
+              "at": "01:50:20",
+              "heightDots": 660
+            }
+          ],
+          "bar": [
+            {
+              "seq": 2,
+              "at": "01:50:20",
+              "heightDots": 255
+            }
+          ]
+        },
+        "audit": [
+          {
+            "at": "01:50:18",
+            "run": 1,
+            "slips": [
+              "kitchen void printed",
+              "kitchen updated printed",
+              "bar updated printed"
+            ]
+          }
+        ],
+        "jobsAtTill": [
+          "01:48:22 kitchen_ticket kitchen printed",
+          "01:48:22 bar_ticket bar printed",
+          "01:50:14 kitchen_ticket kitchen printed",
+          "01:50:14 kitchen_ticket kitchen printed",
+          "01:50:14 bar_ticket bar printed"
+        ]
+      }
+    },
+    "8 bar time alone": {
+      "verdict": "PASS",
+      "pictures": [
+        "08a-beo-bar-time-1945-before-save.png",
+        "08b-bar-slip-after-bar-time-only-1.png"
+      ],
+      "seen": {
+        "bar": {
+          "kitchen": [],
+          "bar": [
+            {
+              "seq": 3,
+              "at": "01:53:20"
+            }
+          ]
+        },
+        "audit": [
+          {
+            "at": "01:53:17",
+            "run": 2,
+            "slips": [
+              "bar updated printed"
+            ]
+          },
+          {
+            "at": "01:50:18",
+            "run": 1,
+            "slips": [
+              "kitchen void printed",
+              "kitchen updated printed",
+              "bar updated printed"
+            ]
+          }
+        ]
+      }
+    },
+    "9 different for adults": {
+      "verdict": "PASS",
+      "pictures": [
+        "09a-party2-kitchen-card-before.png",
+        "09b-party2-edit-form-before-save.png",
+        "09c-party2-kitchen-card-after-save.png",
+        "09d-beo-party2-adults-menu.png",
+        "09e-beo-party2-kids-menu.png"
+      ],
+      "seen": {
+        "pageBefore": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×2 Hummus ×1 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+        "formOpened": {
+          "values": [
+            "18:30",
+            "Calamari",
+            "Hummus",
+            "ZZ TEST nuggets · kids only · not on the till menu",
+            "ZZ TEST steak · adults · not on the till menu"
+          ],
+          "calamariSteppers": 1,
+          "hummusRemoves": 1
+        },
+        "put": {
+          "status": 200,
+          "request": [
+            {
+              "op": "set",
+              "lineId": "zz907b-cal-k",
+              "qty": 3
+            },
+            {
+              "op": "remove",
+              "lineId": "zz907b-hum-k"
+            }
+          ],
+          "error": null
+        },
+        "toast": [
+          "Kitchen plan saved The BEO in the OTO App now has the change."
+        ],
+        "pageAfter": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×3 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+        "beo": {
+          "adultsDiffer": true,
+          "kids": [
+            "Calamari x3 [CF-14]",
+            "ZZ TEST nuggets x2"
+          ],
+          "adults": [
+            "Calamari x3 [CF-14]",
+            "ZZ TEST steak x1"
+          ]
+        },
+        "till": [
+          "extra | Calamari x3 | code CF-14 | entered 120 | line zz907b-cal-k",
+          "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+          "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+        ],
+        "activity": [
+          ""
+        ],
+        "beoAdultsTab": [
+          "EXTRA 3 Calamari CF-14",
+          "EXTRA 1 ZZ TEST steak"
+        ],
+        "beoKidsTab": [
+          "EXTRA 3 Calamari CF-14",
+          "EXTRA 2 ZZ TEST nuggets"
+        ]
+      }
+    },
+    "10 read again": {
+      "verdict": "PASS",
+      "pictures": [
+        "10a-till-refusal-form-still-open.png",
+        "10b-till-edit-reopened-without-calamari.png",
+        "10c-kitchen-slip-after-beo-changes-1.png",
+        "10c-kitchen-slip-after-beo-changes-2.png"
+      ],
+      "seen": {
+        "toast": [
+          "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+          "Kitchen plan not saved The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more. Press Cancel, then Edit party: it opens on the plan read again."
+        ],
+        "editPresses": [
+          {
+            "open": 1,
+            "toast": [
+              "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks"
+            ]
+          }
+        ]
+      }
+    },
+    "11 set menu guard": {
+      "verdict": "PASS",
+      "pictures": [
+        "05b-manager-fried-rice-choices.png",
+        "11a-set-menu-guard-door-answers.png"
+      ],
+      "seen": {
+        "removeSetMenuFries": {
+          "status": 409,
+          "code": "OTOAPP_SET_MENU_LINE",
+          "message": "The OTO App did not change the kitchen plan: French fries is a dish of the party's set menu, so it is not removed from the till: change its choice or its count, or remove it in the BEO."
+        },
+        "chooseOtherGroupsOption": {
+          "status": 409,
+          "code": "OTOAPP_OPTION_NOT_IN_GROUP",
+          "message": "The OTO App did not change the kitchen plan: \"Margherita\" is not one of the choices for Fried rice: Veggie, Chicken, Shrimp."
+        }
+      }
+    },
+    "12 SCRUM-950 settle": {
+      "verdict": "PASS",
+      "pictures": [
+        "12a-settle-party-form-before-confirm.png",
+        "12c-settle-cash-chosen.png",
+        "12d-settled-cash.png",
+        "12e-receipt-printout-1.png",
+        "12g-history-list-settlement.png",
+        "12h-history-detail-settlement-lines.png",
+        "12i-manager-refund-whole.png",
+        "12j-history-detail-after-refund.png"
+      ],
+      "seen": {
+        "preview": {
+          "total": 19010,
+          "addOns": 2110,
+          "socks": 0,
+          "deposit": 1000,
+          "balance": 18010,
+          "extras": [
+            {
+              "name": "Hummus",
+              "qty": 1,
+              "unit": 275,
+              "total": 275,
+              "charged": true
+            },
+            {
+              "name": "ZZ TEST mango sticky rice",
+              "qty": 2,
+              "unit": 90,
+              "total": 180,
+              "charged": true
+            },
+            {
+              "name": "French fries",
+              "qty": 1,
+              "unit": 175,
+              "total": 175,
+              "charged": true
+            },
+            {
+              "name": "ZZ TEST party platter",
+              "qty": 1,
+              "unit": 1300,
+              "total": 1300,
+              "charged": true
+            },
+            {
+              "name": "Mineral water",
+              "qty": 3,
+              "unit": 60,
+              "total": 180,
+              "charged": true
+            },
+            {
+              "name": "ZZ TEST lemon cake",
+              "qty": 1,
+              "unit": null,
+              "total": 0,
+              "charged": false
+            }
+          ]
+        },
+        "sale": {
+          "status": "finalised",
+          "receipt": "Z90701-000001",
+          "gross": 19010,
+          "lines": [
+            "Birthday package, Central Floresta | 1 x 16900 = 16900",
+            "Kids' table reserved for 3 hours | 1 x 0 = 0",
+            "Special birthday set menu | 1 x 0 = 0",
+            "Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+            "Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+            "Entry for 4 accompanying adults | 1 x 0 = 0",
+            "Socks for all children | 1 x 0 = 0",
+            "Children (in the package) | 2 x 0 = 0",
+            "Adults (in the package) | 2 x 0 = 0",
+            "Hummus | 1 x 275 = 275",
+            "ZZ TEST mango sticky rice | 2 x 90 = 180",
+            "French fries | 1 x 175 = 175",
+            "ZZ TEST party platter | 1 x 1300 = 1300",
+            "Mineral water | 3 x 60 = 180"
+          ],
+          "payments": []
+        },
+        "refund": {
+          "status": 200,
+          "amount": 19010,
+          "refundStatus": "refunded",
+          "saleStatus": "refunded",
+          "saleRefund": "refunded",
+          "refunds": [
+            "19010  Service recovery"
+          ]
+        }
+      }
+    },
+    "13 nothing else moved": {
+      "verdict": "PASS",
+      "pictures": [
+        "13a-reception-party-page-after-refund.png",
+        "13b-reception-headcount-saved.png",
+        "13c-reception-no-kitchen-plan-party-edit-cards.png",
+        "13d-manager-no-kitchen-plan-party-edit-cards.png",
+        "13e-manager-no-plan-party-prototype-sections-filled.png",
+        "13f-manager-no-plan-party-save-toast.png"
+      ],
+      "seen": {
+        "p1AfterRefund": {
+          "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿2110 Total ฿19010 Deposit paid −฿1000 Outstanding ฿18010",
+          "buttons": [
+            "Edit party",
+            "Settle party",
+            "Add F&B to party",
+            "Take balance ฿18010",
+            "Print party slips now"
+          ]
+        },
+        "adultsBefore": "2",
+        "save": {
+          "status": 200,
+          "method": "PATCH",
+          "body": [
+            "branchId",
+            "editId",
+            "actionId",
+            "stationId",
+            "expectedAdults"
+          ],
+          "fields": {
+            "expectedAdults": 3
+          }
+        },
+        "toast": [],
+        "kitchenWritesBySave": 0,
+        "headcountOnPage": "2 kids · 3 adults",
+        "otoApp": {
+          "status": 200,
+          "numAdults": 3,
+          "numChildren": 2
+        },
+        "partyApi": {
+          "expectedAdults": null
+        },
+        "kitchenAuditRows": 1,
+        "p3Till": {
+          "at": "2026-11-12T19:06:26.384Z",
+          "status": 200,
+          "error": null,
+          "title": "ZZ TEST 907 no kitchen plan",
+          "planStatus": "no_package",
+          "kitchenPlan": null,
+          "slips": null,
+          "deposit": null,
+          "settlement": null
+        },
+        "p3reception": {
+          "kitchen": "Kitchen plan No kitchen service for this party.",
+          "form": {
+            "kitchen": "Kitchen plan Kitchen service needed",
+            "bar": "Bar plan Bar service time Bar items Add item",
+            "kitchenServiceNeeded": "no switch named so (1 texts)",
+            "addItem": 0,
+            "readOnlyLine": 0
+          }
+        },
+        "p3manager": {
+          "kitchen": "Kitchen plan No kitchen service for this party.",
+          "form": {
+            "kitchen": "Kitchen plan Kitchen service needed",
+            "bar": "Bar plan Bar service time Bar items Add item",
+            "kitchenServiceNeeded": "no switch named so (1 texts)",
+            "addItem": 0,
+            "readOnlyLine": 0
+          }
+        }
+      }
+    }
+  },
+  "reads": {
+    "look": {
+      "branch": {
+        "name": "Oto Play Park, Central Floresta",
+        "partySlipsStationIdAtStart": null
+      },
+      "box": {
+        "slot": "virtual-1",
+        "status": "online",
+        "role": "virtual"
+      },
+      "todaysParties": {
+        "count": 1,
+        "zz": []
+      },
+      "menu": {
+        "calamari": [
+          "CF-14 Calamari 295/295 kitchen kind=menu"
+        ],
+        "hummus": [
+          "CF-13 Hummus 275/275 kitchen kind=menu"
+        ],
+        "fries": [
+          "CF-11 French fries 175/175 kitchen kind=menu",
+          "CF-12 Sweet potato fries 175/175 kitchen kind=menu"
+        ],
+        "water": [
+          "CF-65-5 Acqua Panna mineral water 155/155 bar kind=menu",
+          "CF-65-6 Mineral water 60/60 bar kind=menu"
+        ]
+      },
+      "permissions": {
+        "manager": {
+          "signIn": 200,
+          "permissionsStatus": 200,
+          "total": 104,
+          "holdsKitchenUpdate": true,
+          "kitchenUpdateScopes": [
+            {
+              "scopeType": "branch",
+              "scopeIsFloresta": true
+            }
+          ],
+          "partyPermissions": [
+            "pos:party:charge",
+            "pos:party:kitchen_update",
+            "pos:party:payment",
+            "pos:party:update"
+          ],
+          "roles": [],
+          "signOut": 200,
+          "meAfter": 401
+        },
+        "reception": {
+          "signIn": 200,
+          "permissionsStatus": 200,
+          "total": 62,
+          "holdsKitchenUpdate": false,
+          "kitchenUpdateScopes": [],
+          "partyPermissions": [
+            "pos:party:charge",
+            "pos:party:payment",
+            "pos:party:update"
+          ],
+          "roles": [],
+          "signOut": 200,
+          "meAfter": 401
+        }
+      }
+    },
+    "tillReads": {
+      "p1-made": {
+        "at": "2026-11-12T18:47:35.753Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p1-after-first-print": {
+        "at": "2026-11-12T18:48:31.657Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p1-after-manager-edit": {
+        "at": "2026-11-12T18:49:37.808Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p1-after-bar-time": {
+        "at": "2026-11-12T18:55:34.155Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:45"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p1-after-read-again": {
+        "at": "2026-11-12T18:56:11.655Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:45"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p1-after-guard": {
+        "at": "2026-11-12T18:57:10.116Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:45"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "p2-made": {
+        "at": "2026-11-12T19:04:40.770Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 adults differ",
+        "planStatus": "no_package",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "18:30",
+            "adultsFoodTime": "19:00",
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": null
+          },
+          "cake": null,
+          "lines": [
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907b-cal-k",
+            "extra | Hummus x1 | code CF-13 | line zz907b-hum-k",
+            "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+            "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+          ],
+          "bar": []
+        },
+        "slips": {
+          "slipsTime": "11:00",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": []
+        },
+        "deposit": null,
+        "settlement": null
+      },
+      "p2-after-edit": {
+        "at": "2026-11-12T19:05:19.049Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 adults differ",
+        "planStatus": "no_package",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "18:30",
+            "adultsFoodTime": "19:00",
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": null
+          },
+          "cake": null,
+          "lines": [
+            "extra | Calamari x3 | code CF-14 | entered 120 | line zz907b-cal-k",
+            "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+            "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+          ],
+          "bar": []
+        },
+        "slips": {
+          "slipsTime": "11:00",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": []
+        },
+        "deposit": null,
+        "settlement": null
+      },
+      "p3-made": {
+        "at": "2026-11-12T19:06:26.384Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 no kitchen plan",
+        "planStatus": "no_package",
+        "kitchenPlan": null,
+        "slips": null,
+        "deposit": null,
+        "settlement": null
+      },
+      "p3-after-manager-try": {
+        "at": "2026-11-12T19:07:29.120Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 no kitchen plan",
+        "planStatus": "no_package",
+        "kitchenPlan": null,
+        "slips": null,
+        "deposit": null,
+        "settlement": null
+      }
+    },
+    "p1Made": {
+      "bizDate": "2026-11-12",
+      "calendarDate": "2026-11-13",
+      "tillProducts": {
+        "calamari": "CF-14 Calamari 295",
+        "hummus": "CF-13 Hummus 275",
+        "fries": "CF-11 French fries 175",
+        "water": "CF-65-6 Mineral water 60"
+      },
+      "billing": 201,
+      "package": {
+        "status": 201,
+        "name": "Birthday package, Central Floresta",
+        "slipsTimeAtApply": "11:00:00",
+        "readyOffset": null
+      },
+      "slipsTimeMoved": {
+        "status": 200,
+        "slipsTime": "23:50:00"
+      },
+      "setMenu": {
+        "name": "Birthday set menu, Central Floresta",
+        "items": [
+          "Pizza [Margherita / Hawaiian / Pepperoni]",
+          "Hot dish [Chicken schnitzel / Fish fingers]",
+          "French fries CF-11",
+          "Waffles or pancakes [Waffles / Pancakes]",
+          "Fried rice [Veggie / Chicken / Shrimp]",
+          "Veggie sticks CF-53",
+          "Fruit skewers ",
+          "Drinks pitcher [Juice / Mors]"
+        ]
+      },
+      "put": {
+        "status": 200,
+        "error": null
+      },
+      "parent": {
+        "submit": 200,
+        "chose": [
+          "Pizza: Margherita",
+          "Hot dish: Chicken schnitzel",
+          "Waffles or pancakes: Waffles",
+          "Fried rice: Veggie",
+          "Drinks pitcher: Juice"
+        ]
+      },
+      "beoReadBack": {
+        "kids": [
+          "SET Margherita x1 note (Pizza) id=set_item_cf_bday_pizza_Margherita",
+          "SET Chicken schnitzel x1 note (Hot dish) id=set_item_cf_bday_hot_dish_Chicken_schnitzel",
+          "SET French fries x1 id=set_item_cf_bday_fries",
+          "SET Waffles x1 note (Waffles or pancakes) id=set_item_cf_bday_waffles_pancakes_Waffles",
+          "SET Veggie x1 note (Fried rice) id=set_item_cf_bday_fried_rice_Veggie",
+          "SET Veggie sticks x1 id=set_item_cf_bday_veggie_sticks",
+          "SET Fruit skewers x1 id=set_item_cf_bday_fruit_skewers",
+          "SET Juice x1 note (Drinks pitcher) id=set_item_cf_bday_drinks_Juice",
+          "EXTRA Calamari x2 @120 [CF-14] id=zz907-calamari",
+          "EXTRA Hummus x1 [CF-13] id=zz907-hummus",
+          "EXTRA ZZ TEST mango sticky rice x2 @90 id=zz907-mango",
+          "EXTRA ZZ TEST fruit plate x1 id=zz907-fruit"
+        ],
+        "bar": [
+          "EXTRA Mineral water x2 [CF-65-6] id=zz907-water"
+        ],
+        "barTime": "19:15",
+        "cake": {
+          "mode": "INTERNAL",
+          "time": "20:30",
+          "notes": "ZZ TEST unicorn",
+          "qty": 1
+        },
+        "kidsFoodTime": "19:30"
+      },
+      "till": {
+        "at": "2026-11-12T18:47:35.753Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": null,
+          "records": []
+        },
+        "deposit": 100000,
+        "settlement": null
+      }
+    },
+    "p2Till": {
+      "url": "/parties?party=5cb91605-2fdb-4e6d-af7c-47199ff500ee",
+      "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+      "bar": "Bar plan Bar service 19:15 Mineral water ×2",
+      "buttons": [
+        "Edit party",
+        "Settle party",
+        "Add F&B to party",
+        "Take balance ฿16715",
+        "Print party slips now"
+      ]
+    },
+    "p3print": {
+      "named": {
+        "at": "2026-11-12T18:48:17.633Z",
+        "status": 200,
+        "readBack": true
+      },
+      "pressedAt": "2026-11-12T18:48:21.451Z",
+      "press": {
+        "status": 200,
+        "records": [
+          "kitchen run 1 reprint printed",
+          "bar run 1 reprint printed"
+        ]
+      },
+      "printouts": {
+        "kitchen": [
+          {
+            "seq": 1,
+            "at": "01:48:25",
+            "heightDots": 546
+          }
+        ],
+        "bar": [
+          {
+            "seq": 1,
+            "at": "01:48:25",
+            "heightDots": 168
+          }
+        ]
+      },
+      "jobsAtTill": [
+        "01:48:22 kitchen_ticket kitchen printed",
+        "01:48:22 bar_ticket bar printed"
+      ],
+      "tillRead": {
+        "at": "2026-11-12T18:48:31.657Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "20:30",
+            "note": "ZZ TEST unicorn"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Veggie x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | ZZ TEST fruit plate x1 | code - | line zz907-fruit"
+          ],
+          "bar": [
+            "extra | Mineral water x2 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "slipsCard": "Kitchen & bar slips Slip time 23:50 Kitchen slip Printed 01:48 Bar slip Printed 01:48 Print party slips now"
+    },
+    "p4reception": {
+      "Kitchen plan": {
+        "text": "Kitchen plan A manager changes the kitchen plan. Kitchen service needed Food service time Set menu Food items ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×1 ×2 ×1 ×2 ×1 Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+        "readOnlyLine": 1,
+        "addItem": 0,
+        "remove": 0,
+        "steppers": 0,
+        "enabledInputs": 0,
+        "choiceSelects": [
+          {
+            "label": null,
+            "disabled": true
+          }
+        ],
+        "values": [
+          "19:30",
+          "Pizza · Margherita",
+          "Hot dish · Chicken schnitzel",
+          "French fries",
+          "Waffles or pancakes · Waffles",
+          "Fried rice · Veggie",
+          "Veggie sticks",
+          "Fruit skewers · not on the till menu",
+          "Drinks pitcher · Juice · not on the till menu",
+          "Calamari",
+          "Hummus",
+          "ZZ TEST mango sticky rice · not on the till menu",
+          "ZZ TEST fruit plate · not on the till menu",
+          "20:30",
+          "ZZ TEST unicorn"
+        ]
+      },
+      "Bar plan": {
+        "text": "Bar plan A manager changes the kitchen plan. Bar service time Bar items ×2",
+        "readOnlyLine": 1,
+        "addItem": 0,
+        "remove": 0,
+        "steppers": 0,
+        "enabledInputs": 0,
+        "choiceSelects": [],
+        "values": [
+          "19:15",
+          "Mineral water"
+        ]
+      },
+      "afterCancel": {
+        "editHeading": 0,
+        "editButton": 1
+      }
+    },
+    "p5edit": {
+      "pageBefore": {
+        "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Veggie ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×2 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 ZZ TEST fruit plate · not on the till menu ×1 Our cake ×1 · 20:30 ZZ TEST unicorn Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+        "bar": "Bar plan Bar service 19:15 Mineral water ×2"
+      },
+      "formOpened": {
+        "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Veggie 1 1 1 Drinks pitcher: Juice 1 2 1 2 1 Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+        "readOnlyLine": 0,
+        "removeButtons": [
+          "Remove Calamari item",
+          "Remove Hummus item",
+          "Remove ZZ TEST mango sticky rice item",
+          "Remove ZZ TEST fruit plate item"
+        ],
+        "choiceSelects": [
+          "Pizza choice",
+          "Hot dish choice",
+          "Waffles or pancakes choice",
+          "Fried rice choice",
+          "Drinks pitcher choice",
+          null
+        ]
+      },
+      "friedRiceOptions": [
+        {
+          "text": "Fried rice: Veggie",
+          "disabled": false
+        },
+        {
+          "text": "Fried rice: Chicken",
+          "disabled": false
+        },
+        {
+          "text": "Fried rice: Shrimp",
+          "disabled": false
+        }
+      ],
+      "friesMatches": [
+        "French fries CF-11",
+        "Sweet potato fries CF-12"
+      ],
+      "friesPicked": {
+        "value": "French fries",
+        "hint": "Till item CF-11"
+      },
+      "lemonHint": "not on the till menu",
+      "formBeforeSave": {
+        "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Chicken 1 1 1 Drinks pitcher: Juice 1 3 1 2 1 Till item CF-11 1 not on the till menu Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note",
+        "kitchenInputs": [
+          "19:30",
+          "French fries",
+          "Veggie sticks",
+          "Fruit skewers · not on the till menu",
+          "Calamari",
+          "no sauce",
+          "Hummus",
+          "ZZ TEST mango sticky rice · not on the till menu",
+          "French fries",
+          "ZZ TEST lemon cake",
+          "21:00",
+          "ZZ TEST rainbow"
+        ],
+        "bar": "Bar plan Bar service time Bar items 3 Add item"
+      },
+      "savedAt": "2026-11-12T18:49:27.906Z",
+      "put": {
+        "status": 200,
+        "request": [
+          {
+            "op": "choose",
+            "choiceGroup": "Fried rice",
+            "lineId": "set_item_cf_bday_fried_rice_Veggie",
+            "option": "Chicken"
+          },
+          {
+            "op": "set",
+            "lineId": "zz907-calamari",
+            "qty": 3,
+            "note": "no sauce"
+          },
+          {
+            "op": "remove",
+            "lineId": "zz907-fruit"
+          },
+          {
+            "op": "set",
+            "lineId": "zz907-water",
+            "qty": 3
+          },
+          {
+            "op": "add",
+            "id": "01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "list": "food",
+            "name": "French fries",
+            "productCode": "CF-11",
+            "qty": 1
+          },
+          {
+            "op": "add",
+            "id": "01a1d117-db64-7b32-b01d-14c171cbc34b",
+            "list": "food",
+            "name": "ZZ TEST lemon cake",
+            "productCode": null,
+            "qty": 1
+          },
+          {
+            "op": "cake",
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          }
+        ],
+        "kitchenEdit": {
+          "id": "01a1d117-ea6e-747b-bb4d-6f8d1c704943",
+          "replayed": false
+        },
+        "error": null
+      },
+      "toast": [
+        "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+        "Kitchen plan saved The BEO in the OTO App now has the change."
+      ],
+      "formClosed": {
+        "editHeading": 0
+      },
+      "pageAfter": {
+        "kitchen": "Kitchen plan Package Birthday package, Central Floresta Kids' food 19:30 Ready 20 min before Slips print 23:50 Pizza · Margherita ×1 Hot dish · Chicken schnitzel ×1 French fries ×1 Waffles or pancakes · Waffles ×1 Fried rice · Chicken ×1 Veggie sticks ×1 Fruit skewers · not on the till menu ×1 Drinks pitcher · Juice · not on the till menu ×1 Calamari ×3 Hummus ×1 ZZ TEST mango sticky rice · not on the till menu ×2 French fries ×1 ZZ TEST lemon cake · not on the till menu ×1 Our cake ×1 · 21:00 ZZ TEST rainbow Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children",
+        "bar": "Bar plan Bar service 19:15 Mineral water ×3"
+      },
+      "tillRead": {
+        "at": "2026-11-12T18:49:37.808Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:15"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      }
+    },
+    "p5bill": {
+      "beforeReload": {
+        "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿815 Total ฿17715 Deposit paid −฿1000 Outstanding ฿16715",
+        "take": "Take balance ฿16715"
+      },
+      "afterReload": {
+        "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿1170 Total ฿18070 Deposit paid −฿1000 Outstanding ฿17070",
+        "take": "Take balance ฿17070"
+      },
+      "preview": {
+        "status": 200,
+        "package": 16900,
+        "addOns": 1170,
+        "total": 18070,
+        "deposit": 1000,
+        "balance": 17070,
+        "extras": [
+          "Calamari · 3 × 120 = 360 charged",
+          "Hummus · 1 × 275 = 275 charged",
+          "ZZ TEST mango sticky rice · 2 × 90 = 180 charged",
+          "French fries · 1 × 175 = 175 charged",
+          "Mineral water · 3 × 60 = 180 charged",
+          "ZZ TEST lemon cake · 1 × - = 0 NOT charged"
+        ]
+      }
+    },
+    "p7": {
+      "secondsFromSave": [
+        52,
+        53,
+        53
+      ],
+      "printouts": {
+        "kitchen": [
+          {
+            "seq": 2,
+            "at": "01:50:20",
+            "heightDots": 316
+          },
+          {
+            "seq": 3,
+            "at": "01:50:20",
+            "heightDots": 660
+          }
+        ],
+        "bar": [
+          {
+            "seq": 2,
+            "at": "01:50:20",
+            "heightDots": 255
+          }
+        ]
+      },
+      "audit": [
+        {
+          "at": "01:50:18",
+          "run": 1,
+          "slips": [
+            "kitchen void printed",
+            "kitchen updated printed",
+            "bar updated printed"
+          ]
+        }
+      ],
+      "jobsAtTill": [
+        "01:48:22 kitchen_ticket kitchen printed",
+        "01:48:22 bar_ticket bar printed",
+        "01:50:14 kitchen_ticket kitchen printed",
+        "01:50:14 kitchen_ticket kitchen printed",
+        "01:50:14 bar_ticket bar printed"
+      ]
+    },
+    "p6": {
+      "kidsRows": [
+        "SET 1 Margherita (Pizza) | inputs: ",
+        "SET 1 Chicken schnitzel (Hot dish) | inputs: ",
+        "SET 1 French fries | inputs: ",
+        "SET 1 Waffles (Waffles or pancakes) | inputs: ",
+        "SET 1 Chicken (Fried rice) | inputs: ",
+        "SET 1 Veggie sticks | inputs: ",
+        "SET 1 Fruit skewers | inputs: ",
+        "SET 1 Juice (Drinks pitcher) | inputs: ",
+        "EXTRA 3 Calamari CF-14 no sauce | inputs: ",
+        "EXTRA 1 Hummus CF-13 | inputs: ",
+        "EXTRA 2 ZZ TEST mango sticky rice | inputs: ",
+        "EXTRA 1 French fries CF-11 | inputs: ",
+        "EXTRA 1 ZZ TEST lemon cake | inputs: "
+      ],
+      "setBlock": "SET MENU Birthday set menu, Central Floresta Selections received INCLUDED ITEMS French fries Always Veggie sticks Always Fruit skewers Always Pizza→ Margherita Choice Hot dish→ Chicken schnitzel Choice Waffles or pancakes→ Waffles Choice Fried rice→ Chicken Choice Drinks pitcher→ Juice Choice RESOLVED ITEMS (EDITABLE) SET 1 Margherita (Pizza) SET 1 Chicken schnitzel (Hot dish) SET 1 French fries SET 1 Waffles (Waffles or pancakes) SET 1 Chicken (Fried rice) SET 1 Veggie sticks SET 1 Fruit skewers SET 1 Juice (Drinks pitcher) + Add item",
+      "cake": {
+        "time": null,
+        "timeText": "",
+        "notes": null
+      },
+      "barRows": [
+        "EXTRA Mineral water CF-65-6 3 Notes (optional)… | inputs: "
+      ],
+      "barTimeText": "19:15",
+      "beoApi": {
+        "kids": [
+          "SET Margherita x1 note \"(Pizza)\"",
+          "SET Chicken schnitzel x1 note \"(Hot dish)\"",
+          "SET French fries x1",
+          "SET Waffles x1 note \"(Waffles or pancakes)\"",
+          "SET Chicken x1 note \"(Fried rice)\"",
+          "SET Veggie sticks x1",
+          "SET Fruit skewers x1",
+          "SET Juice x1 note \"(Drinks pitcher)\"",
+          "EXTRA Calamari x3 @120 [CF-14] note \"no sauce\"",
+          "EXTRA Hummus x1 [CF-13]",
+          "EXTRA ZZ TEST mango sticky rice x2 @90",
+          "EXTRA French fries x1 [CF-11]",
+          "EXTRA ZZ TEST lemon cake x1"
+        ],
+        "adults": [],
+        "bar": [
+          "EXTRA Mineral water x3 [CF-65-6]"
+        ],
+        "barTime": "19:15",
+        "cake": {
+          "time": "21:00",
+          "notes": "ZZ TEST rainbow",
+          "qty": 1
+        }
+      },
+      "activityApi": {
+        "status": 200,
+        "total": 1,
+        "rows": [
+          {
+            "type": "beo_kitchen_plan_till_edit",
+            "at": "01:49:29",
+            "text": ""
+          }
+        ]
+      },
+      "logbookRows": [
+        "BEO Kitchen Plan (Till) Oto Play Park, Central Floresta Kitchen plan of \"ZZ TEST 907 party\" changed on the till by [name] (Manager): Fried rice: Veggie → Chicken; Calamari ×2 → ×3, note \"no sauce\"; removed ZZ TEST fruit plate; Mineral water ×2 → ×3; added French fries ×1 (CF-11); added ZZ TEST lemon cake ×1; cake time 20:30 → 21:00, note \"ZZ TEST rainbow\" 13-11-2026 3 minutes ago"
+      ],
+      "audit": {
+        "rows": 1,
+        "entries": [
+          {
+            "at": "01:49:29",
+            "action": "party.kitchen_update",
+            "entityType": "party",
+            "before": {
+              "bar": [
+                {
+                  "qty": 2,
+                  "name": "Mineral water",
+                  "note": null,
+                  "lineId": "zz907-water"
+                }
+              ],
+              "cake": {
+                "qty": 1,
+                "note": "ZZ TEST unicorn",
+                "time": "20:30",
+                "type": "our"
+              },
+              "food": [
+                {
+                  "qty": 1,
+                  "name": "Fried rice",
+                  "note": null,
+                  "lineId": "set_item_cf_bday_fried_rice_Veggie",
+                  "chosenOption": "Veggie"
+                },
+                {
+                  "qty": 2,
+                  "name": "Calamari",
+                  "note": null,
+                  "lineId": "zz907-calamari",
+                  "chosenOption": null
+                },
+                {
+                  "qty": 1,
+                  "name": "ZZ TEST fruit plate",
+                  "note": null,
+                  "lineId": "zz907-fruit",
+                  "chosenOption": null
+                }
+              ]
+            },
+            "after": {
+              "by": {
+                "name": "[name]",
+                "role": "Manager"
+              },
+              "bar": [
+                {
+                  "qty": 3,
+                  "name": "Mineral water",
+                  "note": null,
+                  "lineId": "zz907-water"
+                }
+              ],
+              "cake": {
+                "qty": 1,
+                "note": "ZZ TEST rainbow",
+                "time": "21:00",
+                "type": "our"
+              },
+              "food": [
+                {
+                  "qty": 1,
+                  "name": "Fried rice",
+                  "note": null,
+                  "lineId": "set_item_cf_bday_fried_rice_Veggie",
+                  "chosenOption": "Chicken"
+                },
+                {
+                  "qty": 3,
+                  "name": "Calamari",
+                  "note": "no sauce",
+                  "lineId": "zz907-calamari",
+                  "chosenOption": null
+                },
+                {
+                  "qty": 1,
+                  "name": "French fries",
+                  "note": null,
+                  "lineId": "till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+                  "chosenOption": null
+                },
+                {
+                  "qty": 1,
+                  "name": "ZZ TEST lemon cake",
+                  "note": null,
+                  "lineId": "till_01a1d117-db64-7b32-b01d-14c171cbc34b",
+                  "chosenOption": null
+                }
+              ],
+              "editId": "01a1d117-ea6e-747b-bb4d-6f8d1c704943",
+              "changes": [
+                {
+                  "op": "choose",
+                  "lineId": "set_item_cf_bday_fried_rice_Veggie",
+                  "option": "Chicken",
+                  "choiceGroup": "Fried rice"
+                },
+                {
+                  "op": "set",
+                  "qty": 3,
+                  "note": "no sauce",
+                  "lineId": "zz907-calamari"
+                },
+                {
+                  "op": "remove",
+                  "lineId": "zz907-fruit"
+                },
+                {
+                  "op": "set",
+                  "qty": 3,
+                  "lineId": "zz907-water"
+                },
+                {
+                  "id": "01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+                  "op": "add",
+                  "qty": 1,
+                  "list": "food",
+                  "name": "French fries",
+                  "productCode": "CF-11"
+                },
+                {
+                  "id": "01a1d117-db64-7b32-b01d-14c171cbc34b",
+                  "op": "add",
+                  "qty": 1,
+                  "list": "food",
+                  "name": "ZZ TEST lemon cake",
+                  "productCode": null
+                },
+                {
+                  "op": "cake",
+                  "note": "ZZ TEST rainbow",
+                  "time": "21:00"
+                }
+              ],
+              "replayed": false,
+              "stationId": "01a1d10f-33d9-70fa-9cb8-967595ca2597"
+            }
+          }
+        ]
+      }
+    },
+    "p8": {
+      "save": {
+        "status": 200,
+        "at": "01:53:02"
+      },
+      "beoBarTime": "19:45",
+      "kitchenUnchangedByTheSave": true,
+      "barSecondsAfterSave": 18,
+      "printouts": {
+        "kitchen": [],
+        "bar": [
+          {
+            "seq": 3,
+            "at": "01:53:20"
+          }
+        ]
+      },
+      "audit": [
+        {
+          "at": "01:53:17",
+          "run": 2,
+          "slips": [
+            "bar updated printed"
+          ]
+        },
+        {
+          "at": "01:50:18",
+          "run": 1,
+          "slips": [
+            "kitchen void printed",
+            "kitchen updated printed",
+            "bar updated printed"
+          ]
+        }
+      ],
+      "tillRead": {
+        "at": "2026-11-12T18:55:34.155Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:45"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Calamari x3 | code CF-14 | entered 120 | note no sauce | line zz907-calamari",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      }
+    },
+    "p10": {
+      "formHasCalamari": 1,
+      "beoRowRemoved": "EXTRA 3 Calamari CF-14 no sauce",
+      "beoSave": 200,
+      "beoKidsAfter": [
+        "Margherita x1",
+        "Chicken schnitzel x1",
+        "French fries x1",
+        "Waffles x1",
+        "Chicken x1",
+        "Veggie sticks x1",
+        "Fruit skewers x1",
+        "Juice x1",
+        "Hummus x1",
+        "ZZ TEST mango sticky rice x2",
+        "French fries x1",
+        "ZZ TEST lemon cake x1"
+      ],
+      "put": {
+        "status": 409,
+        "code": "OTOAPP_LINE_NOT_FOUND",
+        "message": "The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more."
+      },
+      "toast": [
+        "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+        "Kitchen plan not saved The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more. Press Cancel, then Edit party: it opens on the plan read again."
+      ],
+      "formStillOpen": {
+        "heading": 1,
+        "save": 1
+      },
+      "editPresses": [
+        {
+          "open": 1,
+          "toast": [
+            "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks"
+          ]
+        }
+      ],
+      "reopened": {
+        "calamariStepper": 0,
+        "kitchen": "Kitchen plan Kitchen service needed Food service time Set menu Food items Pizza: Margherita 1 Hot dish: Chicken schnitzel 1 1 Waffles or pancakes: Waffles 1 Fried rice: Chicken 1 1 1 Drinks pitcher: Juice 1 1 2 1 1 Add item Cake Cake type Our cake Cake time Cake quantity ×1 Cake note"
+      },
+      "tillRead": {
+        "at": "2026-11-12T18:56:11.655Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 party",
+        "planStatus": "ready",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "19:30",
+            "adultsFoodTime": null,
+            "readyOffsetMinutes": 20,
+            "slipsTime": "23:50",
+            "barServiceTime": "19:45"
+          },
+          "cake": {
+            "type": "our",
+            "qty": 1,
+            "time": "21:00",
+            "note": "ZZ TEST rainbow"
+          },
+          "lines": [
+            "set_menu | Pizza: Margherita x1 | code CF-24 | group Pizza | line set_item_cf_bday_pizza_Margherita",
+            "set_menu | Hot dish: Chicken schnitzel x1 | code CF-37 | group Hot dish | line set_item_cf_bday_hot_dish_Chicken_schnitzel",
+            "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+            "set_menu | Waffles or pancakes: Waffles x1 | code CF-4 | group Waffles or pancakes | line set_item_cf_bday_waffles_pancakes_Waffles",
+            "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+            "set_menu | Veggie sticks x1 | code CF-53 | line set_item_cf_bday_veggie_sticks",
+            "set_menu | Fruit skewers x1 | code - | line set_item_cf_bday_fruit_skewers",
+            "set_menu | Drinks pitcher: Juice x1 | code - | group Drinks pitcher | line set_item_cf_bday_drinks_Juice",
+            "extra | Hummus x1 | code CF-13 | line zz907-hummus",
+            "extra | ZZ TEST mango sticky rice x2 | code - | entered 90 | line zz907-mango",
+            "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a",
+            "extra | ZZ TEST lemon cake x1 | code - | line till_01a1d117-db64-7b32-b01d-14c171cbc34b"
+          ],
+          "bar": [
+            "extra | Mineral water x3 | code CF-65-6 | line zz907-water"
+          ]
+        },
+        "slips": {
+          "slipsTime": "23:50",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": [
+            "kitchen run 1 reprint printed",
+            "bar run 1 reprint printed"
+          ]
+        },
+        "deposit": 100000,
+        "settlement": null
+      },
+      "kitchenEditAudit": 1
+    },
+    "p11": {
+      "form": {
+        "removeButtons": [
+          "Remove Hummus item",
+          "Remove ZZ TEST mango sticky rice item",
+          "Remove French fries item",
+          "Remove ZZ TEST lemon cake item"
+        ],
+        "setMenuRows": [
+          "19:30",
+          "French fries",
+          "Veggie sticks",
+          "Fruit skewers · not on the till menu",
+          "Hummus",
+          "ZZ TEST mango sticky rice · not on the till menu",
+          "French fries",
+          "ZZ TEST lemon cake · not on the till menu"
+        ],
+        "choiceSelects": [
+          "Pizza choice",
+          "Hot dish choice",
+          "Waffles or pancakes choice",
+          "Fried rice choice",
+          "Drinks pitcher choice"
+        ],
+        "options": {
+          "Pizza choice": [
+            "Pizza: Margherita",
+            "Pizza: Hawaiian",
+            "Pizza: Pepperoni"
+          ],
+          "Hot dish choice": [
+            "Hot dish: Chicken schnitzel",
+            "Hot dish: Fish fingers"
+          ],
+          "Waffles or pancakes choice": [
+            "Waffles or pancakes: Waffles",
+            "Waffles or pancakes: Pancakes"
+          ],
+          "Fried rice choice": [
+            "Fried rice: Veggie",
+            "Fried rice: Chicken",
+            "Fried rice: Shrimp"
+          ],
+          "Drinks pitcher choice": [
+            "Drinks pitcher: Juice",
+            "Drinks pitcher: Mors"
+          ]
+        }
+      },
+      "door": {
+        "removeSetMenuFries": {
+          "status": 409,
+          "code": "OTOAPP_SET_MENU_LINE",
+          "message": "The OTO App did not change the kitchen plan: French fries is a dish of the party's set menu, so it is not removed from the till: change its choice or its count, or remove it in the BEO."
+        },
+        "chooseOtherGroupsOption": {
+          "status": 409,
+          "code": "OTOAPP_OPTION_NOT_IN_GROUP",
+          "message": "The OTO App did not change the kitchen plan: \"Margherita\" is not one of the choices for Fried rice: Veggie, Chicken, Shrimp."
+        }
+      },
+      "after": [
+        "set_menu | French fries x1 | code CF-11 | line set_item_cf_bday_fries",
+        "set_menu | Fried rice: Chicken x1 | code CF-43 | group Fried rice | line set_item_cf_bday_fried_rice_Veggie",
+        "extra | French fries x1 | code CF-11 | line till_01a1d117-d10a-7df8-9d3f-128ab97cf77a"
+      ],
+      "kitchenEditAudit": 1
+    },
+    "p12add": {
+      "put": 200,
+      "kids": [
+        "SET Margherita x1",
+        "SET Chicken schnitzel x1",
+        "SET French fries x1",
+        "SET Waffles x1",
+        "SET Chicken x1",
+        "SET Veggie sticks x1",
+        "SET Fruit skewers x1",
+        "SET Juice x1",
+        "EXTRA Hummus x1 [CF-13]",
+        "EXTRA ZZ TEST mango sticky rice x2 @90",
+        "EXTRA French fries x1 [CF-11]",
+        "EXTRA ZZ TEST lemon cake x1",
+        "EXTRA ZZ TEST party platter x1 @1300"
+      ],
+      "cake": {
+        "time": "21:00",
+        "notes": "ZZ TEST rainbow",
+        "qty": 1
+      },
+      "preview": {
+        "package": 16900,
+        "addOns": 2110,
+        "total": 19010,
+        "deposit": 1000,
+        "balance": 18010,
+        "extras": [
+          "Hummus · 1 × 275 = 275 charged",
+          "ZZ TEST mango sticky rice · 2 × 90 = 180 charged",
+          "French fries · 1 × 175 = 175 charged",
+          "ZZ TEST party platter · 1 × 1300 = 1300 charged",
+          "Mineral water · 3 × 60 = 180 charged",
+          "ZZ TEST lemon cake · 1 × - = 0 NOT charged"
+        ],
+        "lines": [
+          "package | Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "included | Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "included | Special birthday set menu | 1 x 0 = 0",
+          "included | Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "included | Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "included | Entry for 4 accompanying adults | 1 x 0 = 0",
+          "included | Socks for all children | 1 x 0 = 0",
+          "guests | Children (in the package) | 2 x 0 = 0",
+          "guests | Adults (in the package) | 2 x 0 = 0",
+          "add_on | Hummus | 1 x 275 = 275",
+          "add_on | ZZ TEST mango sticky rice | 2 x 90 = 180",
+          "add_on | French fries | 1 x 175 = 175",
+          "add_on | ZZ TEST party platter | 1 x 1300 = 1300",
+          "add_on | Mineral water | 3 x 60 = 180"
+        ]
+      }
+    },
+    "p12settle": {
+      "billOnPage": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿2110 Total ฿19010 Deposit paid −฿1000 Outstanding ฿18010",
+      "socksBefore": "Socks given Pairs beyond the package are sold 2",
+      "socksAfter": "Socks given Pairs beyond the package are sold 0",
+      "preview": {
+        "total": 19010,
+        "addOns": 2110,
+        "socks": 0,
+        "deposit": 1000,
+        "balance": 18010,
+        "extras": [
+          {
+            "name": "Hummus",
+            "qty": 1,
+            "unit": 275,
+            "total": 275,
+            "charged": true
+          },
+          {
+            "name": "ZZ TEST mango sticky rice",
+            "qty": 2,
+            "unit": 90,
+            "total": 180,
+            "charged": true
+          },
+          {
+            "name": "French fries",
+            "qty": 1,
+            "unit": 175,
+            "total": 175,
+            "charged": true
+          },
+          {
+            "name": "ZZ TEST party platter",
+            "qty": 1,
+            "unit": 1300,
+            "total": 1300,
+            "charged": true
+          },
+          {
+            "name": "Mineral water",
+            "qty": 3,
+            "unit": 60,
+            "total": 180,
+            "charged": true
+          },
+          {
+            "name": "ZZ TEST lemon cake",
+            "qty": 1,
+            "unit": null,
+            "total": 0,
+            "charged": false
+          }
+        ]
+      },
+      "formText": "",
+      "rows": [],
+      "settle": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "state": "open",
+        "gross": 19010
+      },
+      "amountDue": "฿18010",
+      "done": "",
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z90701-000001",
+        "gross": 19010,
+        "lines": [
+          "Birthday package, Central Floresta | 1 x 16900 = 16900",
+          "Kids' table reserved for 3 hours | 1 x 0 = 0",
+          "Special birthday set menu | 1 x 0 = 0",
+          "Interactive birthday animation program, 30 minutes | 1 x 0 = 0",
+          "Ice-cream cake with candles and birthday song | 1 x 0 = 0",
+          "Entry for 4 accompanying adults | 1 x 0 = 0",
+          "Socks for all children | 1 x 0 = 0",
+          "Children (in the package) | 2 x 0 = 0",
+          "Adults (in the package) | 2 x 0 = 0",
+          "Hummus | 1 x 275 = 275",
+          "ZZ TEST mango sticky rice | 2 x 90 = 180",
+          "French fries | 1 x 175 = 175",
+          "ZZ TEST party platter | 1 x 1300 = 1300",
+          "Mineral water | 3 x 60 = 180"
+        ],
+        "payments": []
+      },
+      "receiptPrintouts": [
+        {
+          "seq": 1,
+          "at": "02:02:35",
+          "heightDots": 1550
+        },
+        {
+          "seq": 2,
+          "at": "02:02:40",
+          "heightDots": 0
+        }
+      ],
+      "party": {
+        "id": "01a1d123-d89c-777e-8f3b-e0fcb313cf71",
+        "saleId": "01a1d123-d89c-777e-8f3b-e0fd157e28a5",
+        "state": "settled",
+        "receiptNumber": "Z90701-000001",
+        "grossSatang": 1901000,
+        "paidSatang": 1901000,
+        "outstandingSatang": 0,
+        "depositSatang": 100000,
+        "kids": 2,
+        "adults": 2,
+        "createdAt": "2026-11-12T19:02:30.723Z",
+        "settledAt": "2026-11-12T19:02:34.239Z",
+        "writeBack": "synced"
+      }
+    },
+    "p12refund": {
+      "receipt": "Z90701-000001",
+      "listed": [
+        "Z90701-000001 · ZZ TEST 907 party 13 Nov, 02:02 [name] Paid ฿19010"
+      ],
+      "detail": "Paid Party settlement Z90701-000001 ZZ TEST 907 party 13 Nov, 02:02 · sold by [name] ZZ TEST SCRUM-907 proof till 1794508795973 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿16900 ฿16900 Kids' table reserved for 3 hours 1× ฿0 ฿0 Special birthday set menu 1× ฿0 ฿0 Interactive birthday animation program, 30 minutes 1× ฿0 ฿0 Ice-cream cake with candles and birthday song 1× ฿0 ฿0 Entry for 4 accompanying adults 1× ฿0 ฿0 Socks for all children 1× ฿0 ฿0 3 Hours · Tourist ฿0 Children (in the package) 2× ฿0 ฿0 Adults (in the package) 2× ฿0 ฿0 Items · Tourist ฿2110 Hummus 1× ฿275 ฿275 ZZ TEST mango sticky rice 2× ฿90 ฿180 French fries 1× ฿175 ฿175 ZZ TEST party platter 1× ฿1300 ฿1300 Mineral water 3× ฿60 ฿180 BRACELETS PRINTED 4 2 child 2 adult Z90701-5T4ESD Z90701-YCG8DH Z90701-ACD8TM Z90701-3ZD64V Subtotal ฿19010 VAT (included) ฿1243.65 Total paid ฿19010 Party: ZZ TEST 907 party Payments Party deposit · Approved 13 Nov, 02:02 ฿1000 Cash · Approved 13 Nov, 02:02 ฿18010 Reprint Add time Refund (฿19010 left) Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online.",
+      "dialog": "Refund By [name] · up to ฿19010 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿19010 Choose a reason to refund Close",
+      "press": "Refund ฿19010",
+      "refund": {
+        "status": 200,
+        "amount": 19010,
+        "refundStatus": "refunded",
+        "saleStatus": "refunded",
+        "saleRefund": "refunded",
+        "refunds": [
+          "19010  Service recovery"
+        ]
+      },
+      "settlementAfter": {
+        "state": "refunded",
+        "receipt": "Z90701-000001"
+      }
+    },
+    "p9made": {
+      "put": 200,
+      "beo": {
+        "adultsDiffer": true,
+        "kids": [
+          "Calamari x2 [CF-14] id=zz907b-cal-k",
+          "Hummus x1 [CF-13] id=zz907b-hum-k",
+          "ZZ TEST nuggets x2 id=zz907b-nug-k"
+        ],
+        "adults": [
+          "Calamari x2 [CF-14] id=zz907b-cal-a",
+          "Hummus x1 [CF-13] id=zz907b-hum-a",
+          "ZZ TEST steak x1 id=zz907b-steak-a"
+        ]
+      },
+      "till": {
+        "at": "2026-11-12T19:04:40.770Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 adults differ",
+        "planStatus": "no_package",
+        "kitchenPlan": {
+          "kitchen": {
+            "kidsFoodTime": "18:30",
+            "adultsFoodTime": "19:00",
+            "readyOffsetMinutes": 20,
+            "slipsTime": "11:00",
+            "barServiceTime": null
+          },
+          "cake": null,
+          "lines": [
+            "extra | Calamari x2 | code CF-14 | entered 120 | line zz907b-cal-k",
+            "extra | Hummus x1 | code CF-13 | line zz907b-hum-k",
+            "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+            "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+          ],
+          "bar": []
+        },
+        "slips": {
+          "slipsTime": "11:00",
+          "station": "ZZ TEST SCRUM-907 proof till 1794508795973",
+          "records": []
+        },
+        "deposit": null,
+        "settlement": null
+      }
+    },
+    "p9edit": {
+      "pageBefore": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×2 Hummus ×1 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+      "formOpened": {
+        "values": [
+          "18:30",
+          "Calamari",
+          "Hummus",
+          "ZZ TEST nuggets · kids only · not on the till menu",
+          "ZZ TEST steak · adults · not on the till menu"
+        ],
+        "calamariSteppers": 1,
+        "hummusRemoves": 1
+      },
+      "put": {
+        "status": 200,
+        "request": [
+          {
+            "op": "set",
+            "lineId": "zz907b-cal-k",
+            "qty": 3
+          },
+          {
+            "op": "remove",
+            "lineId": "zz907b-hum-k"
+          }
+        ],
+        "error": null
+      },
+      "toast": [
+        "Kitchen plan saved The BEO in the OTO App now has the change."
+      ],
+      "pageAfter": "Kitchen plan Kids' food 18:30 Adults' food 19:00 Ready 20 min before Slips print 11:00 Calamari ×3 ZZ TEST nuggets · kids only · not on the till menu ×2 ZZ TEST steak · adults · not on the till menu ×1",
+      "beo": {
+        "adultsDiffer": true,
+        "kids": [
+          "Calamari x3 [CF-14]",
+          "ZZ TEST nuggets x2"
+        ],
+        "adults": [
+          "Calamari x3 [CF-14]",
+          "ZZ TEST steak x1"
+        ]
+      },
+      "till": [
+        "extra | Calamari x3 | code CF-14 | entered 120 | line zz907b-cal-k",
+        "extra | ZZ TEST nuggets x2 | code - | kids | line zz907b-nug-k",
+        "extra | ZZ TEST steak x1 | code - | adults | line zz907b-steak-a"
+      ],
+      "activity": [
+        ""
+      ],
+      "beoAdultsTab": [
+        "EXTRA 3 Calamari CF-14",
+        "EXTRA 1 ZZ TEST steak"
+      ],
+      "beoKidsTab": [
+        "EXTRA 3 Calamari CF-14",
+        "EXTRA 2 ZZ TEST nuggets"
+      ]
+    },
+    "p13": {
+      "p1AfterRefund": {
+        "bill": "Party bill Birthday package, Central Floresta ฿16900 Add-ons and extras ฿2110 Total ฿19010 Deposit paid −฿1000 Outstanding ฿18010",
+        "buttons": [
+          "Edit party",
+          "Settle party",
+          "Add F&B to party",
+          "Take balance ฿18010",
+          "Print party slips now"
+        ]
+      },
+      "adultsBefore": "2",
+      "save": {
+        "status": 200,
+        "method": "PATCH",
+        "body": [
+          "branchId",
+          "editId",
+          "actionId",
+          "stationId",
+          "expectedAdults"
+        ],
+        "fields": {
+          "expectedAdults": 3
+        }
+      },
+      "toast": [],
+      "kitchenWritesBySave": 0,
+      "headcountOnPage": "2 kids · 3 adults",
+      "otoApp": {
+        "status": 200,
+        "numAdults": 3,
+        "numChildren": 2
+      },
+      "partyApi": {
+        "expectedAdults": null
+      },
+      "kitchenAuditRows": 1,
+      "p3Till": {
+        "at": "2026-11-12T19:06:26.384Z",
+        "status": 200,
+        "error": null,
+        "title": "ZZ TEST 907 no kitchen plan",
+        "planStatus": "no_package",
+        "kitchenPlan": null,
+        "slips": null,
+        "deposit": null,
+        "settlement": null
+      },
+      "p3reception": {
+        "kitchen": "Kitchen plan No kitchen service for this party.",
+        "form": {
+          "kitchen": "Kitchen plan Kitchen service needed",
+          "bar": "Bar plan Bar service time Bar items Add item",
+          "kitchenServiceNeeded": "no switch named so (1 texts)",
+          "addItem": 0,
+          "readOnlyLine": 0
+        }
+      },
+      "p3manager": {
+        "kitchen": "Kitchen plan No kitchen service for this party.",
+        "form": {
+          "kitchen": "Kitchen plan Kitchen service needed",
+          "bar": "Bar plan Bar service time Bar items Add item",
+          "kitchenServiceNeeded": "no switch named so (1 texts)",
+          "addItem": 0,
+          "readOnlyLine": 0
+        }
+      }
+    },
+    "p13hunt": {
+      "switchBefore": {
+        "checked": "false",
+        "disabled": false
+      },
+      "kitchenCardAfterSwitch": "Kitchen plan Kitchen service needed Food service time Set menu Kids menu Add item Adults menu Add item Food items Add item Cake Cake type No cake Cake time Cake note",
+      "kitchenAddItems": 3,
+      "toast": [
+        "Not saved here kitchen plan and bar plan are kept in the OTO App — change them there."
+      ],
+      "writes": [],
+      "formStillOpen": 1,
+      "beo": {
+        "kids": [],
+        "bar": []
+      },
+      "till": null
+    },
+    "hunt": {
+      "putsAnswered": [
+        200
+      ],
+      "beoKids": [
+        "Calamari x3",
+        "ZZ TEST nuggets x2",
+        "ZZ TEST double press dish x1"
+      ],
+      "doublePressLines": 1,
+      "auditRowsParty2": 2,
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "cutInputs": [
+          {
+            "value": "ZZ TEST mango sticky rice · not on the till menu",
+            "shownPx": 304,
+            "needsPx": 340
+          }
+        ],
+        "cutText": []
+      }
+    }
+  },
+  "odd": [
+    {
+      "what": "unhandled rejection in a step (logged, driver kept)",
+      "text": "page.waitForResponse: Timeout 60000ms exceeded while waiting for event \"response\""
+    }
+  ],
+  "hunt": [
+    {
+      "severity": "demo risk",
+      "what": "After Save on the kitchen plan, the party page's Party bill and the \"Take balance\" button keep the old amounts until the page is reloaded.",
+      "steps": "Manager: Edit party, Calamari 2->3, add French fries, remove the fruit plate, water 2->3, Save. The kitchen card shows the new plan, but Party bill still read Add-ons ฿815, Total ฿17715, Outstanding ฿16715 and the button \"Take balance ฿16715\" about a minute later. After a reload: ฿1170, ฿18070, ฿17070, \"Take balance ฿17070\" (the settle preview and the BEO both said ฿18,070 / ฿17,070).",
+      "where": "apps/pos/src/lib/partySettlementBill.ts usePlannedSettleQuote: its key (party id, settlement id/state, partySettleFormDefaults) does not change when only the kitchen plan's lines change, so the planned quote is not asked again after a kitchen save.",
+      "pictures": [
+        "05f-manager-saved-toast.png",
+        "05i-party-page-after-reload-bill.png"
+      ]
+    },
+    {
+      "severity": "confusing",
+      "what": "A note the manager types on a food line (\"no sauce\") is not shown on the party page's Kitchen plan card; it is in the Edit form, the BEO and the kitchen slip.",
+      "where": "apps/pos/src/lib/partyKitchen.ts partyMenuLineLabel (no note; the bar label partyBarLineLabel has one), used in PartyDetail.tsx planSection",
+      "pictures": [
+        "05g-party-page-kitchen-card-after-save.png",
+        "07b-kitchen-slip-after-till-edit-2.png"
+      ]
+    },
+    {
+      "severity": "cut at 1440",
+      "what": "In the Edit form a line's read-only name box cuts its marks: \"ZZ TEST mango sticky rice · not on the till menu\" shown in 304 of 340 px; party 2's \"ZZ TEST nuggets · kids only · not on the til…\" and \"ZZ TEST steak · adults · not on the till men…\". On a real dish the \"adults\" / \"not on the till menu\" marks can be what is cut.",
+      "where": "apps/pos/src/components/parties/PartyKitchenPlanEditor.tsx LineRows, the read-only Input (value lineLabel) beside the stepper and the remove button",
+      "pictures": [
+        "05a-manager-edit-kitchen-card-as-opened.png",
+        "09b-party2-edit-form-before-save.png"
+      ]
+    },
+    {
+      "severity": "message",
+      "what": "The refusal names an internal line id: \"Kitchen plan not saved — The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (zz907-calamari). Read the party again and make the change once more. Press Cancel, then Edit party: it opens on the plan read again.\" On a real BEO the id is a code like menu_17…; the dish name is not said, and two instructions are given.",
+      "where": "apps/oto-app/server/lib/tillKitchenEdit.ts gone() (line 178-179) and apps/pos/src/components/parties/PartyDetail.tsx line 430-432",
+      "pictures": [
+        "10a-till-refusal-form-still-open.png"
+      ]
+    },
+    {
+      "severity": "demo risk",
+      "what": "A party whose BEO has no kitchen plan yet opens the prototype's editable Kitchen and Bar sections for everyone (reception too): switch, Add item, cake fields. Typing a dish and pressing Save gives \"Not saved here — kitchen plan and bar plan are kept in the OTO App — change them there.\" and nothing is written. A manager cannot start a kitchen plan from the till.",
+      "where": "apps/pos/src/components/parties/PartyEditForm.tsx (the prototype sections when the plan read is null)",
+      "pictures": [
+        "13c-reception-no-kitchen-plan-party-edit-cards.png",
+        "13e-manager-no-plan-party-prototype-sections-filled.png",
+        "13f-manager-no-plan-party-save-toast.png"
+      ]
+    },
+    {
+      "severity": "wording",
+      "what": "A slip made by the till's edit says \"Plan changed in the OTO App\" (the change was made on the till); a dish added on the till that is already in the set menu prints as a second \"1× French fries\" line, not 2×.",
+      "pictures": [
+        "07b-kitchen-slip-after-till-edit-2.png"
+      ]
+    },
+    {
+      "severity": "cosmetic, before this lane",
+      "what": "Settle party groups its figures (\"฿18,010\"); the payment step after Confirm says \"Amount Due ฿18010\" and \"Balance due ฿18010.00\" ungrouped; the party page bill is ungrouped too (\"฿19010\").",
+      "pictures": [
+        "12a-settle-party-form-before-confirm.png",
+        "12c-settle-cash-chosen.png"
+      ]
+    },
+    {
+      "severity": "observed",
+      "what": "A double press of Save changes (party 2, a typed line added) sent one write; the BEO has the line once; one audit row per Save."
+    },
+    {
+      "severity": "observed",
+      "what": "The till locked on inactivity (about two minutes) while the Settle party form was open; after unlocking, the form was gone with nothing confirmed. Settle again worked."
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "rec",
+      "at": "2: the till's party page (reception, 1440 x 900) shows the plan made in the BEO",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec",
+      "at": "2: the till's party page (reception, 1440 x 900) shows the plan made in the BEO",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the branch manager edits the kitchen plan on the till and saves",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the branch manager edits the kitchen plan on the till and saves",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "6: the BEO after the till's edit, the OTO App's Activity Logbook, the platform's audit row",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "oto-app",
+      "at": "8: only the bar service time changed in the BEO editor (19:15 -> 19:45): only the bar gets an UPDATED slip",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "oto-app",
+      "at": "10: Edit open on the till; Calamari removed in the BEO and saved there; the till's Calamari change refused; Cancel, Edit opens without Calamari",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "mgr",
+      "at": "10: Edit open on the till; Calamari removed in the BEO and saved there; the till's Calamari change refused; Cancel, Edit opens without Calamari",
+      "kind": "http",
+      "text": "PUT /api/parties/:id/kitchen-plan 409"
+    },
+    {
+      "page": "mgr",
+      "at": "10: Edit open on the till; Calamari removed in the BEO and saved there; the till's Calamari change refused; Cancel, Edit opens without Calamari",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "9: on party 2 the manager changes the mirrored Calamari (x2 -> x3) and removes the mirrored Hummus; the adults' list follows",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "mgr",
+      "at": "clean-up: everything this run made, each read back",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 404"
+    },
+    {
+      "page": "mgr",
+      "at": "clean-up: everything this run made, each read back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean-up: everything this run made, each read back",
+      "kind": "http",
+      "text": "GET /api/parties/:id 404"
+    },
+    {
+      "page": "mgr",
+      "at": "clean-up: everything this run made, each read back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "oto-app",
+      "at": "the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held",
+      "kind": "http",
+      "text": "GET /api/events/:id/beo/till-billing 404"
+    },
+    {
+      "page": "oto-app",
+      "at": "the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "rec",
+      "at": "the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held",
+      "kind": "http",
+      "text": "POST /api/me/station/heartbeat 404"
+    },
+    {
+      "page": "rec",
+      "at": "the kitchen slips of points 10 and 12 (the BEO removal of Calamari, the 1,300 extra), read after the clean-up if still held",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
+  "requests": [
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/me",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/menu",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/user",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/employees",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo/billing",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PATCH",
+      "path": "/beo/events/:id/package-snapshot",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-templates",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/set-menu-selections",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/beo/set-menu-selections/public/<token>",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/beo/set-menu-selections/public/<token>/submit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/branches/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/activity-logs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "oto app",
+      "method": "PUT",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/activity-logs",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "POST",
+      "path": "/admin/events",
+      "status": 201
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/branches/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "DELETE",
+      "path": "/admin/events/:id",
+      "status": 204
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events/:id",
+      "status": 404
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/events/:id/beo",
+      "status": 404
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "oto app",
+      "method": "GET",
+      "path": "/admin/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/events",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "platform admin",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "slips printed while the ZZ TEST till was named": {
+      "unreadPrintouts": {
+        "kitchen": 3,
+        "bar": 0
+      },
+      "auditRowsSinceNamed": 5,
+      "notMine": 0,
+      "jobsAtTill": [
+        "01:48:22 kitchen_ticket printed",
+        "01:48:22 bar_ticket printed",
+        "01:50:14 kitchen_ticket printed",
+        "01:50:14 kitchen_ticket printed",
+        "01:50:14 bar_ticket printed",
+        "01:53:14 bar_ticket printed",
+        "01:56:14 kitchen_ticket printed",
+        "01:56:14 kitchen_ticket printed",
+        "01:58:14 kitchen_ticket printed",
+        "02:02:34 receipt printed",
+        "02:02:34 kids_wristband printed",
+        "02:02:34 kids_wristband printed",
+        "02:02:34 adult_wristband printed",
+        "02:02:34 adult_wristband printed"
+      ]
+    },
+    "party slips station put back as found": {
+      "foundAtStart": null,
+      "patch": 200,
+      "readBack": null,
+      "sameAsFound": true
+    },
+    "the till sales": {
+      "sales": [
+        "Z90701-000001 refunded 19010"
+      ]
+    },
+    "party ZZ TEST 907 party": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "party ZZ TEST 907 adults differ": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "party ZZ TEST 907 no kitchen plan": {
+      "delete": 204,
+      "appEvent": 404,
+      "appBeo": 404,
+      "tillParty": 404,
+      "tillCode": "NOT_FOUND"
+    },
+    "no ZZ TEST 907 party left": {
+      "appListStatus": 200,
+      "leftInApp": 0,
+      "leftOnTillToday": 0
+    },
+    "the ZZ TEST till": {
+      "delete": 200,
+      "archived": true,
+      "devices": 0
+    },
+    "the ZZ TEST printers": {
+      "deletes": [
+        "kids_band 200",
+        "adult_band 200",
+        "receipt 200",
+        "kitchen 200",
+        "bar 200"
+      ],
+      "allArchived": true
+    },
+    "signOuts": {
+      "rec": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "signOut": {
+      "at": "2026-11-12T19:09:30.163Z",
+      "rec": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "otoApp": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "platformAdmin": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    }
+  },
+  "finishedAt": "2026-11-12T19:09:32.725Z",
+  "businessDay": {
+    "note": "The park's business day starts at 05:00; the run (01:36-02:10 Bangkok, 13 Nov) was on the business date 2026-11-12, so the parties were dated 2026-11-12, the till's and the slips job's \"today\".",
+    "bizDate": "2026-11-12"
+  }
+}

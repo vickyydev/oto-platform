@@ -1,0 +1,40 @@
+S.phase = '13 (hunt): on the party with no kitchen plan the manager switches kitchen service on, adds a dish and a bar item, and saves';
+const pg = S.pages.mgr.page;
+await S.unlock('mgr');
+await pg.goto(`/parties?party=${S.p3}`); await pg.waitForTimeout(4000);
+const r = {};
+await pg.getByRole('button', { name: 'Edit party', exact: true }).first().click();
+await pg.getByRole('heading', { name: 'Edit party', exact: true }).waitFor({ timeout: 30000 });
+await pg.waitForTimeout(1500);
+const kc = S.cardOf(pg, 'Kitchen plan');
+const bc = S.cardOf(pg, 'Bar plan');
+const sw = kc.getByRole('switch').first();
+r.switchBefore = { checked: await sw.getAttribute('aria-checked').catch(() => null), disabled: await sw.isDisabled().catch(() => null) };
+if (!r.switchBefore.disabled) { await sw.click(); await pg.waitForTimeout(600); }
+r.kitchenCardAfterSwitch = S.flat(await kc.innerText()).slice(0, 500);
+const kAdd = kc.getByRole('button', { name: /Add item/ });
+r.kitchenAddItems = await kAdd.count();
+if (r.kitchenAddItems) { await kAdd.last().click(); await pg.waitForTimeout(400); const inp = kc.locator('input[placeholder="Item name"]').last(); if (await inp.count()) await inp.fill('ZZ TEST soup'); }
+await bc.getByRole('button', { name: /Add item/ }).first().click();
+await pg.waitForTimeout(400);
+const binp = bc.locator('input[placeholder="Item name"], input:not([type])').last();
+if (await binp.count()) await binp.fill('ZZ TEST lemonade');
+await S.tallShot(pg, '13e-manager-no-plan-party-prototype-sections-filled.png', kc);
+await S.unlock('mgr');
+const calls = [];
+const onReq = q => { const p = new URL(q.url()).pathname; if (/\/api\/parties\//.test(p) && q.method() !== 'GET') calls.push(`${q.method()} ${p.replace(S.ID, ':id')}`); };
+pg.on('request', onReq);
+await pg.getByRole('button', { name: 'Save changes', exact: true }).click();
+await pg.waitForTimeout(1500);
+r.toast = await pg.locator('li[data-state="open"], [role="status"]').evaluateAll(els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()).filter(t => t && !/out of stock/.test(t)));
+await S.shot(pg, '13f-manager-no-plan-party-save-toast.png');
+await pg.waitForTimeout(2000);
+pg.off('request', onReq);
+r.writes = calls;
+r.formStillOpen = await pg.getByRole('heading', { name: 'Edit party', exact: true }).count();
+if (r.formStillOpen) { await pg.getByRole('button', { name: 'Cancel', exact: true }).first().click(); await pg.waitForTimeout(1000); }
+const beo = (await S.appCall('GET', `/events/${S.p3}/beo`)).body;
+r.beo = { kids: (beo?.kitchenPlan?.menus?.kids ?? []).map(l => l.itemName), bar: (beo?.barPlan?.items ?? []).map(l => l.itemName) };
+r.till = (await S.tillRead(S.p3, 'p3-after-manager-try')).kitchenPlan;
+S.receipt.reads.p13hunt = r;
+return r;
