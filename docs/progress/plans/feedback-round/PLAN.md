@@ -188,3 +188,11 @@ Left and ticketed: the phone family screen cuts lines at the right edge with lon
 12. The button that cancels one child on their own (desk and phone) also wraps its label inside the button; before, a long name ran past the card. Keep?
 13. The party page's payment step (Take the balance, the door-fee pass) keeps the prototype's footer; in a window under about 560 pixels high Confirm sits below the window there, as it always did. Should those dialogs get the till's pinned footer too?
 14. Menu, shop and modifier prices now go through the same formatter: whole-baht prices are unchanged, a catalogue price with satang would show two places. Keep?
+
+## The split-view lane is proved (12 November 23:45); its follow-up lane started
+Proof: docs/qa/proof-2026-11-12/SCRUM-884, eleven points, all passed, at 013e97348. DEPLOYED: SCRUM-884, 918, 901, 948, 917, 938.
+Filed from the proof and building now in lane splitfix959 (run wf_7190756c-7a9, the till only): SCRUM-959 (the header tabs stay in view at 1440; a two-line member name still leaves the three rate cards in view; the cut labels on the first screen, the order panel, the paid screen, the F&B and Shop grids, History's search box) and SCRUM-960 (a part-paid food order no longer holds the till on F&B; one overdue rule for the desk and phone boards; the phone's End of Day keeps its width; the discount line on the F&B customer display if the prototype shows one). For each point the prototype is read first; a prototype rule is left alone and reported.
+
+### Further questions for the owner from this proof
+1. At full width (customer display hidden) at 1440 by 900 with Cash chosen, "Confirm Payment Received" sits half below the window and needs a scroll; the lane left full width exactly as the prototype has it. Should the full-width payment panel get the pinned Back and Confirm row the split view now has?
+2. On the phone, a Check In button names the children only beside a child paid online; a family paid at the till shows "Mark Arrived" and a plain "Check In". Is that what you want on the phone?
