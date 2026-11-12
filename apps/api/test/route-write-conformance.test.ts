@@ -844,6 +844,10 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /display/pairing [secretResponse,credential:display-pairing]',
   'POST /display/pairing/expire [credential:display-pairing]',
   'POST /display/intents [credential:display]',
+  // SCRUM-857 — the family's photo from the paired display: the display mints
+  // the file id per picture, and the same id again is the same file, stored
+  // once (`storeDisplayConsentPhoto`), as a box's photo id is.
+  'POST /display/consent-photos [credential:display]',
   /**
    * S2-20 E5 (review E5R-1) — an event check-in. The till retries a press
    * under one key with one check-in id, and the route answers that id again

@@ -13192,6 +13192,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/display/consent-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Store the photo the family took of a child on the drop-off or nanny form, for the till to collect. Refused unless the form on this display's station asks for that photo. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        visitorId: string;
+                        slotId: string;
+                        /** @enum {string} */
+                        contentType: "image/jpeg" | "image/png" | "image/webp";
+                        data: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            fileId: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stations/{id}/consent-photos/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The photo the family took on this station's paired display, for the till standing here to keep with the form. Access-logged. */
+        get: {
+            parameters: {
+                query: {
+                    visitorId: string;
+                    slotId: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            dataUrl: string;
+                            contentType: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/credentials/{id}/display-snapshot": {
         parameters: {
             query?: never;

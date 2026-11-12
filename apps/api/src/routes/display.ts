@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { DisplaySnapshotResponseSchema, StationIntentSchema, StationSessionDocumentSchema } from '@oto/shared';
+import {
+  DisplayConsentPhotoUploadSchema, DisplaySnapshotResponseSchema, StationIntentSchema, StationSessionDocumentSchema,
+} from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { displayDeviceOf, displayPairingHashOf } from '../plugins/credential';
@@ -8,7 +10,9 @@ import {
   claimDisplay, displayIntent, displayPairingStatus, displaySession, expireDisplayPairing,
   readDisplaySnapshot, requestDisplayPairing, stationDisplays,
 } from '../services/display';
+import { readDisplayConsentPhoto, storeDisplayConsentPhoto } from '../services/display-consent-photo';
 import { loadCredential, loadStation } from '../services/fleet';
+import { REPLAY_HEADER } from '../services/client-id';
 import { opCtx } from '../services/tx';
 
 const IdParams = z.object({ id: z.string().uuid() });
@@ -103,6 +107,49 @@ export async function displayRoutes(app: App): Promise<void> {
       response: { 200: DocumentSchema },
     },
   }, (req) => displayIntent(app.db, displayDeviceOf(req), req.body, req.log));
+
+  /**
+   * SCRUM-857 — the family's photo of a child, taken on the paired display.
+   * The display's own credential, for its own station's form only, while
+   * that form asks for this child's photo (`services/display-consent-photo`).
+   * Idempotent by the display's own file id, as a box's photo is: a staff
+   * replay key has no account to belong to.
+   */
+  app.post('/display/consent-photos', {
+    bodyLimit: 1024 * 1024,
+    config: { credential: 'display', displayScope: 'display:intents', rateLimit: { max: 60, timeWindow: 60_000 } },
+    schema: {
+      description: 'Store the photo the family took of a child on the drop-off or nanny form, for the till to collect. Refused unless the form on this display\'s station asks for that photo.',
+      body: DisplayConsentPhotoUploadSchema,
+      response: { 200: z.object({ fileId: z.string().uuid() }) },
+    },
+  }, async (req, reply) => {
+    const stored = await storeDisplayConsentPhoto(app.db, app.fileStorage, opCtx(req), displayDeviceOf(req), req.body);
+    if (stored.replay) reply.header(REPLAY_HEADER, 'true');
+    return { fileId: stored.fileId };
+  });
+
+  app.get('/stations/:id/consent-photos/:fileId', {
+    config: { dynamicPermission: true },
+    schema: {
+      description: 'The photo the family took on this station\'s paired display, for the till standing here to keep with the form. Access-logged.',
+      params: IdParams.extend({ fileId: z.string().uuid() }),
+      querystring: z.object({ visitorId: z.string().min(1).max(200), slotId: z.string().min(1).max(200) }),
+      response: { 200: z.object({ dataUrl: z.string(), contentType: z.string() }) },
+    },
+  }, async (req, reply) => {
+    const auth = req.requireAuth();
+    const target = await loadStation(app.db, auth.operatorId, req.params.id);
+    if (target.archivedAt) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+    if (auth.stationId !== target.id) {
+      throw new AppError(403, 'STATION_NOT_HELD', 'Collect the photo from the till at this station');
+    }
+    await req.requirePermission('pos:checkin:update', { branchId: target.branchId });
+    reply.header('cache-control', 'private, no-store');
+    return readDisplayConsentPhoto(app.db, app.fileStorage, opCtx(req),
+      { accountId: auth.accountId, operatorId: auth.operatorId, stationId: auth.stationId ?? null },
+      target, { fileId: req.params.fileId, ...req.query });
+  });
 
   app.get('/credentials/:id/display-snapshot', {
     config: { dynamicPermission: true },
