@@ -22,7 +22,7 @@ import { StepPayment } from '@/components/till/StepPayment';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import type { PartyBooking } from '@/types';
 import { Baby, Check, CheckCircle2, Minus, PartyPopper, Plus, Sparkles, Users, Wallet, X } from 'lucide-react';
-import { bahtText } from '@/lib/bahtText';
+import { bahtText, satangText } from '@/lib/bahtText';
 
 /**
  * SCRUM-804 — "SETTLE PARTY": the party's package rung up as ONE sale from the
@@ -119,6 +119,11 @@ function QuoteSummary({ quote }: { quote: PartySettleQuote }) {
     </div>
   );
   const extras = quote.extraChildrenSatang + quote.extraAdultsSatang;
+  // SCRUM-950 — the kitchen plan's extras, each by name with its count, the price of one and its
+  // amount, before Confirm; the add-ons row keeps the plan's own add-ons. The total is the platform's.
+  const named = quote.extras ?? [];
+  const charged = named.filter((e) => e.charged);
+  const planAddOns = quote.addOnsSatang - charged.reduce((sum, e) => sum + e.totalSatang, 0);
   return (
     <div className="text-sm">
       {row(`${quote.packageName} · ${quote.rateMode === 'weekend' ? 'weekend' : 'weekday'}`, money(quote.packageSatang))}
@@ -129,7 +134,13 @@ function QuoteSummary({ quote }: { quote: PartySettleQuote }) {
         )}
       {(quote.freeSocks > 0 || quote.paidSocks > 0) &&
         row(`Socks · ${quote.freeSocks} free${quote.paidSocks ? `, ${quote.paidSocks} sold` : ''}`, money(quote.socksSatang))}
-      {quote.addOnsSatang > 0 && row('Add-ons', money(quote.addOnsSatang))}
+      {planAddOns > 0 && row('Add-ons', money(planAddOns))}
+      {charged.map((e, i) =>
+        <div key={`extra-${i}`}>{row(`${e.name} · ${e.qty} × ฿${satangText(e.unitSatang ?? 0)}`, `฿${satangText(e.totalSatang)}`)}</div>,
+      )}
+      {named
+        .filter((e) => !e.charged)
+        .map((e, i) => <div key={`not-charged-${i}`}>{row(`${e.name}${e.qty > 1 ? ` ×${e.qty}` : ''}`, 'Not charged')}</div>)}
       {quote.entertainmentSatang > 0 && row('Entertainment', money(quote.entertainmentSatang))}
       <div className="border-t mt-1 pt-1">{row('Total', money(quote.totalSatang), true)}</div>
       {quote.creditSatang > 0 && row('F&B credit (voucher on the receipt)', money(quote.creditSatang))}
