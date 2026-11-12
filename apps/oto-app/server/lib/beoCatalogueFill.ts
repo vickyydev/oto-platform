@@ -27,6 +27,7 @@ import {
   type BeoAiFood,
   type BeoAiFrom,
   type BeoAiMenu,
+  type BeoAiMenuLine,
   type BeoAiProposal,
   type BeoAiRequestKind,
   type BeoAiSetMenuItem,
@@ -1039,7 +1040,21 @@ export function resolveCatalogueAnswer(
     // SCRUM-946 (the lane's reviews): the chat's price is written as the price for each item, so a
     // total the chat gives for several ("2 pizzas for 900") is not one. SCRUM-958: the total is
     // kept beside the line, for its reason in the review; never a price each.
-    const total = m.chatPrice !== undefined && chatPriceIsTotal(lineTextOf(m), m.chatPrice, m.quantity ?? 1);
+    // SCRUM-970 (the staging proof, thread I: the read gave "2 Margherita pizzas for 900" no price
+    // at all, and the 900 was never said): the total is read from the chat's own words for the
+    // dish, whatever the read returned (`chatTotalOf`). A price the read gives that the words show
+    // to be that total, or one the chat never writes beside a total it does give (a figure the
+    // read worked out), is the total; nothing is computed from it.
+    const text = lineTextOf(m);
+    const saidTotal = chatTotalOf(text, [m.itemName, matchedName, ...names, till?.name], m.quantity ?? 1);
+    const total: { amount: number; quantity: number } | null =
+      m.chatPrice === undefined
+        ? saidTotal
+        : chatPriceIsTotal(text, m.chatPrice, m.quantity ?? 1)
+          ? { amount: m.chatPrice, quantity: m.quantity ?? 1 }
+          : saidTotal && (saidTotal.amount === m.chatPrice || !figureInLine(text, m.chatPrice))
+            ? saidTotal
+            : null;
     const line: BeoAiProposal["menuLines"][number] = {
       menu,
       itemName,
@@ -1048,7 +1063,7 @@ export function resolveCatalogueAnswer(
       matchedName,
       notInMenu: !code,
       chatPrice: m.chatPrice !== undefined && !total ? m.chatPrice : null,
-      ...(total ? { chatTotal: { amount: m.chatPrice!, quantity: m.quantity ?? 1 } } : {}),
+      ...(total ? { chatTotal: total } : {}),
       // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
       ...(m.notes ? { notes: m.notes } : {}),
       from: fromOf(m, m.itemName),
@@ -1251,6 +1266,16 @@ export function resolveCatalogueAnswer(
       }
       return kept(l, !sameOrder);
     });
+    // SCRUM-970 (the staging proof, thread G: the read gave "The adults will eat the same as the
+    // kids, the Margherita pizza for them too." as the kids' set-menu choice, or dropped it, so no
+    // fold was said): the chat's OWN words decide, whatever shape the read returned. Each sentence
+    // of the conversation saying the adults eat the same as the kids is a fold of the dish it
+    // names (the kids' choice, or a dish the set menu always gives), said once; one naming no dish
+    // is said once, when nothing else is.
+    const sentences = refs.length > 0
+      ? refs.flatMap((r) => (r.text ? [{ text: r.text, from: { source: r.source, at: r.at, line: r.line } satisfies BeoAiFrom }] : []))
+      : fallback && fallbackText ? [{ text: fallbackText, from: { source: fallback.source, at: fallback.at, line: fallback.line } satisfies BeoAiFrom }] : [];
+    folded.push(...adultsSameAsKidsFolds(sentences, menu, choices, proposal.menuLines, folded));
     if (folded.length > 0) proposal.adultsFolded = folded;
     // SCRUM-958 (the lane's reviews: "For the adults chicken fried rice and shrimp fried rice"
     // wrote both uncharged): the set menu gives the adults one dish of a group of one choice, as
@@ -1578,6 +1603,157 @@ export function saidForTheAdults(said: string | null | undefined, lineText: stri
   const label = audienceOf(lead.slice(0, colon));
   return label.adults && !label.kids;
 }
+/**
+ * SCRUM-970: words saying the adults eat what the kids eat, whatever else the sentence names —
+ * "the same as the kids", "same food as the children", "the same for the adults", "the adults
+ * will have the same", "ผู้ใหญ่ทานเหมือนเด็ก", "взрослым то же самое, что и детям".
+ */
+const SAME_AS_KIDS = [
+  /(?<!\p{L})same\s+(?:\p{L}+\s+){0,2}as\s+(?:the\s+|our\s+|their\s+)?(?:kids?|children|child|kiddies|little ones)(?!\p{L})/iu,
+  /(?<!\p{L})same\s+for\s+(?:the\s+|all\s+)?(?:adults?|grown[- ]?ups?|parents)(?!\p{L})/iu,
+  /(?<!\p{L})(?:adults?|grown[- ]?ups?)\s+(?:\p{L}+\s+){0,2}(?:the\s+)?same(?!\p{L})/iu,
+  /เหมือน(?:กับ)?(?:ของ)?\s*(?:ที่)?\s*เด็ก/u,
+  /ผู้ใหญ่[^.!?\n]{0,20}?เหมือนกัน/u,
+  /(?<!\p{L})(?:то\s+же(?:\s+самое)?|так\s+же,?\s+как|как\s+(?:и\s+)?(?:у\s+)?дет\p{L}*)(?!\p{L})/iu,
+];
+/**
+ * SCRUM-970: words giving the adults a dish too — "for the adults too", "the adults as well",
+ * "for them too", "ผู้ใหญ่ด้วย", "взрослым тоже" — a fold only of a dish the sentence names.
+ */
+const FOR_ADULTS_TOO = [
+  /(?<!\p{L})(?:for\s+)?(?:the\s+|all\s+)?(?:adults?|grown[- ]?ups?|parents)\s+(?:too|as well|also)(?!\p{L})/iu,
+  /(?<!\p{L})for\s+them\s+(?:too|as well|also)(?!\p{L})/iu,
+  /ผู้ใหญ่[^.!?\n]{0,40}?ด้วย/u,
+  /(?<!\p{L})(?:(?:для\s+)?взросл\p{L}*|для\s+них|им)\s+(?:тоже|также)(?!\p{L})/iu,
+];
+/** SCRUM-970: words that give the adults something else, or deny the same: no fold is said. */
+const NOT_THE_SAME =
+  /(?<!\p{L})(?:but|except|instead|rather|apart|besides|plus|other than|different|differently|own|not|never|no longer)(?!\p{L})|n['’]t(?!\p{L})|(?<!\p{L})(?:кроме|вместо|но|не|плюс|отдельно)(?!\p{L})|แต่|ยกเว้น|แทน|ไม่|นอกจาก/iu;
+
+/** SCRUM-970: the sentences of a line, in the line's own words. */
+function sentencesOf(text: string): string[] {
+  const out: string[] = [];
+  let from = 0;
+  for (const m of text.matchAll(/[.!?]+(?=\s|$)|\n+/g)) {
+    const end = (m.index ?? 0) + m[0].length;
+    out.push(text.slice(from, end));
+    from = end;
+  }
+  if (from < text.length) out.push(text.slice(from));
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
+type SentenceDish = { dish: string; itemId?: string; option?: string; start: number; end: number };
+
+/**
+ * SCRUM-970: the dishes of the party's set menu a sentence names — a choice group's option
+ * ("Margherita"), or its label alone ("the pizza": the kids' choice of it), or a dish the set menu
+ * always gives — the longest name where one holds another ("Chicken schnitzel", not "Chicken").
+ */
+function setMenuDishesIn(sentence: string, menu: { items: BeoAiSetMenuItem[] }, choices: ReadonlyArray<{ itemId: string; option: string }>): SentenceDish[] {
+  const named = (name: string) => {
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(name.normalize("NFC").trim()).replace(/\s+/g, "\\s+")}(?:e?s)?(?![\\p{L}\\p{N}])`, "iu");
+    const m = name.trim() ? re.exec(sentence) : null;
+    return m ? { start: m.index, end: m.index + m[0].length } : null;
+  };
+  const found: SentenceDish[] = [];
+  for (const item of menu.items) {
+    if (item.type === "always_included") {
+      const hit = named(item.label);
+      if (hit) found.push({ dish: item.label, ...hit });
+      continue;
+    }
+    const options = item.options.flatMap((option) => {
+      const hit = named(option);
+      return hit ? [{ dish: option, itemId: item.id, option, ...hit }] : [];
+    });
+    if (options.length > 0) {
+      found.push(...options);
+      continue;
+    }
+    const label = named(item.label);
+    const kids = choices.filter((c) => c.itemId === item.id);
+    if (label && kids.length === 1) found.push({ dish: kids[0]!.option, itemId: item.id, option: kids[0]!.option, ...label });
+  }
+  // A name inside a longer one is the longer one's ("chicken" of "chicken schnitzel").
+  return found.filter((f) => !found.some((g) => g !== f && g.start <= f.start && g.end >= f.end && g.end - g.start > f.end - f.start));
+}
+
+/** SCRUM-970: the clause of a sentence (between its commas and semicolons) holding [start, end); the sentence when it is short. */
+function clauseAround(sentence: string, start: number, end: number): string {
+  let from = 0;
+  for (const m of sentence.slice(0, start).matchAll(/[,;]\s*/g)) from = (m.index ?? 0) + m[0].length;
+  const stop = /[,;]/.exec(sentence.slice(end));
+  const clause = sentence.slice(from, stop ? end + stop.index : sentence.length).trim().replace(/[.!?]+$/, "");
+  return clause.length >= 12 ? clause : sentence;
+}
+
+/**
+ * SCRUM-970 (the staging proof, thread G) — THE ADULTS EAT THE SAME AS THE KIDS, READ FROM THE
+ * CHAT'S OWN WORDS. The fold of an adults' line was said only when the read returned one as an
+ * adults' menu line; on staging the read gave the very words as the kids' set-menu choice (or
+ * not at all), and nothing was said. Here every sentence of the conversation (`lines`, each
+ * with its line) is read itself:
+ *   - a sentence saying the adults eat the same as the kids ("the same as the kids", "for them
+ *     too" when it names the adults, "for the adults too", and the Thai and Russian forms) and
+ *     naming a dish of the set menu — the kids' choice of its group, or a dish it always gives —
+ *     is a fold of that dish, the clause naming it its reason; it carries the kids' choice it
+ *     repeats (`itemId`, `option`), so the review brings the adults' own SET line back when staff
+ *     change that choice (SCRUM-958);
+ *   - one naming no dish ("The adults will eat the same as the kids.") is said once, when no
+ *     other fold is (`dish` is then the set menu's name);
+ *   - no fold when the sentence gives the adults something else: another option of the group, a
+ *     line of their own the read gave from it, "but", "instead", "except", a denial; nor for a
+ *     group the proposal holds an adults' line of their own in; nor a fold already said for the
+ *     same dish from the same line (`existing`, the read's own adults' line folded).
+ */
+export function adultsSameAsKidsFolds(
+  lines: ReadonlyArray<{ text: string; from: BeoAiFrom }>,
+  menu: { name: string; items: BeoAiSetMenuItem[] },
+  choices: ReadonlyArray<{ itemId: string; option: string }>,
+  menuLines: ReadonlyArray<Pick<BeoAiMenuLine, "menu" | "setMenuItemId" | "from">>,
+  existing: NonNullable<BeoAiProposal["adultsFolded"]>,
+): NonNullable<BeoAiProposal["adultsFolded"]> {
+  const out: NonNullable<BeoAiProposal["adultsFolded"]> = [];
+  const adultsOwnGroups = new Set(menuLines.flatMap((l) => (l.menu === "adults" && l.setMenuItemId ? [l.setMenuItemId] : [])));
+  let plain: (typeof out)[number] | null = null;
+  for (const { text, from } of lines) {
+    for (const sentence of sentencesOf(text)) {
+      const adultsNamed = audienceOf(sentence).adults;
+      const same = adultsNamed && SAME_AS_KIDS.some((re) => re.test(sentence));
+      const too = FOR_ADULTS_TOO.some((re) => re.test(sentence)) && (adultsNamed || /(?<!\p{L})(?:adults?|grown[- ]?ups?|parents)(?!\p{L})|ผู้ใหญ่|взросл/iu.test(sentence));
+      if ((!same && !too) || NOT_THE_SAME.test(sentence)) continue;
+      // A line of the adults' own the read gave from this very sentence: the sentence gives them that.
+      const own = menuLines.some(
+        (l) => l.menu === "adults" && !l.setMenuItemId && l.from.line === from.line && !!l.from.quote && fold(sentence).includes(fold(l.from.quote)),
+      );
+      if (own) continue;
+      const dishes = setMenuDishesIn(sentence, menu, choices);
+      if (dishes.length === 0) {
+        // "The adults will eat the same as the kids." — or "The adults too.", words naming only them.
+        const onlyThem = onlyAudience(fold(sentence).replace(/[^\p{L}\p{M}\p{N}\s]/gu, " "));
+        if ((same || onlyThem) && !plain) {
+          const words = SAME_AS_KIDS.map((re) => re.exec(sentence)).find((m) => !!m);
+          plain = { dish: menu.name, from: withQuote(from, words ? clauseAround(sentence, words.index, words.index + words[0].length) : sentence, text) };
+        }
+        continue;
+      }
+      // Another option than the kids' choice, or a group the adults have a dish of their own in: not the same.
+      const kids = (d: SentenceDish) => !d.itemId || choices.some((c) => c.itemId === d.itemId && c.option === d.option);
+      if (dishes.some((d) => !kids(d) || (!!d.itemId && adultsOwnGroups.has(d.itemId)))) continue;
+      for (const d of dishes) {
+        const dup = [...existing, ...out].some(
+          (f) => f.from.line === from.line && (d.itemId ? f.itemId === d.itemId && f.option === d.option : !f.itemId && fold(f.dish) === fold(d.dish)),
+        );
+        if (dup) continue;
+        out.push({ dish: d.dish, from: withQuote(from, clauseAround(sentence, d.start, d.end), text), ...(d.itemId ? { itemId: d.itemId, option: d.option } : {}) });
+      }
+    }
+  }
+  if (plain && existing.length === 0 && out.length === 0 && adultsOwnGroups.size === 0) out.push(plain);
+  return out;
+}
+
 /** SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450"). */
 const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;
 /** SCRUM-946: words saying a price is the total for several ("for 900", "900 in total", "всего 900"). */
@@ -1608,6 +1784,134 @@ export function chatPriceIsTotal(text: string | null, price: number, quantity: n
   }
   return false;
 }
+/** SCRUM-970: an amount's money word, before or after it: baht as the park's chats write it. */
+const MONEY = String.raw`(?:฿|thb\.?|baht|บาท|бат\p{L}*|руб\p{L}*)`;
+/** SCRUM-970: words saying a figure is the total for several ("900 total", "all for 900", "รวม 900", "всего 900"). */
+const TOTAL_PHRASE = String.raw`(?:in\s+total|total(?:\s+of)?|altogether|all\s+together|together|in\s+all|all\s+for|for\s+(?:all|everything|both|them)|รวม(?:ทั้งหมด)?|ทั้งหมด|всего|итого|вместе|за\s+вс[её]|за\s+(?:обе|оба))`;
+/** SCRUM-970: a count after the dish ("Margherita x2", "มาการิต้า 2 ถาด", "маргарита 2 шт"). */
+const COUNT_AFTER = /^\s*(?:(?:x|×)\s*(\d{1,3})(?!\d)|(\d{1,3})\s*(?:x|×|pcs|pieces|portions|trays|ถาด|ชิ้น|จาน|ที่|แก้ว|กล่อง|шт\p{L}*|порци\p{L}*)(?!\p{L}))/iu;
+/** SCRUM-970: a count word's number, 2 to 10, or "both". */
+const countWordOf = (word: string): number | null => {
+  const w = word.toLowerCase();
+  if (w === "both" || w === "обе" || w === "оба") return 2;
+  for (const [n, words] of Object.entries(COUNT_WORDS)) if (words.split("|").includes(w)) return Number(n);
+  return null;
+};
+/** SCRUM-970: a figure the line writes, however its thousands are written ("1,800", "1 800"). */
+export function figureInLine(text: string | null, amount: number): boolean {
+  if (!text || !(amount > 0)) return false;
+  const line = text.normalize("NFC").replace(/(\d)[,\s.](?=\d{3}(?!\d))/g, "$1");
+  const figure = String(amount).replace(/\.0+$/, "").replace(".", "[.,]");
+  return new RegExp(`(^|[^0-9])${figure}(?![0-9])`).test(line);
+}
+/**
+ * SCRUM-970 (the staging proof, thread I: "2 Margherita pizzas for 900" came back with no price,
+ * and the review never said the 900) — the total the chat gives for several of a dish, read from
+ * the chat's own words for it, whatever the read returned: a clause of the line that names the
+ * dish (`names`: the chat's words, the set menu's or the till's name) says "N <dish> for 900",
+ * "900 for N", "900 total", "total 900", "all for 900", with baht, THB, ฿ or no unit, in English,
+ * Thai or Russian ("2 пиццы маргарита за 900", "มาการิต้า 2 ถาด รวม 900 บาท"). Only for more than
+ * one: a price said for one item ("a Pepperoni pizza at 300", "300 each", "по 300") is a price, and
+ * "an extra pizza for 450" is the price of one. The count is the chat's ("2"), else the line's.
+ * Null when the words give no such total. Nothing is computed from it.
+ */
+export function chatTotalOf(
+  text: string | null,
+  names: ReadonlyArray<string | null | undefined>,
+  quantity: number,
+): { amount: number; quantity: number } | null {
+  if (!text) return null;
+  const line = fold(text).replace(/(\d)[,\s.](?=\d{3}(?!\d))/g, "$1");
+  // The dish's names the line holds: words with no figure in them first (the read's words may hold
+  // the figure itself, "2 Margherita pizzas for 900"), the longest first; every place each is written.
+  const held = [...new Set(names.map((n) => (n ? fold(n) : "")).filter((n) => n.length >= 3 && line.includes(n)))].sort(
+    (a, b) => Number(/\d/.test(a)) - Number(/\d/.test(b)) || b.length - a.length,
+  );
+  const breaks = [...line.matchAll(TOTAL_CLAUSE_BREAK)].map((m) => ({ start: m.index ?? 0, end: (m.index ?? 0) + m[0].length }));
+  for (const name of held) {
+    for (let at = line.indexOf(name); at >= 0; at = line.indexOf(name, at + 1)) {
+      const hit = totalInClause(line, breaks, at, at + name.length, quantity);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+/** SCRUM-970: what ends the clause a dish's total is read in: a stop, a comma, a joining word. */
+const TOTAL_CLAUSE_BREAK = /[,.;!?\n]|(?<!\p{L})(?:and|plus|also|и|а|плюс)(?!\p{L})|และ/giu;
+/** SCRUM-970: the words that may follow a figure of money: a money word, a total, "for", "please", a stop. */
+const AFTER_MONEY = new RegExp(String.raw`^\s*(?:$|[^\p{L}\s]|${MONEY}|${TOTAL_PHRASE}|(?:for|за|please|pls|thanks?|each|per|apiece|ea)(?!\p{L})|ค่ะ|ครับ|นะ|ละ|пожалуйста)`, "iu");
+/** SCRUM-970: the total in the clause of a line holding a dish's name at [dishStart, dishEnd), or null. */
+function totalInClause(line: string, breaks: Array<{ start: number; end: number }>, dishStart: number, dishEnd: number, quantity: number) {
+  const from = breaks.filter((b) => b.end <= dishStart).at(-1)?.end ?? 0;
+  const stops = breaks.filter((b) => b.start >= dishEnd);
+  let to = stops[0]?.start ?? line.length;
+  // The next clause too when it names nothing but a figure ("2 Margherita pizzas, 900 for both").
+  if (stops[0] && /[,;]/.test(line.slice(stops[0].start, stops[0].end))) {
+    const next = line.slice(stops[0].end, stops[1]?.start ?? line.length);
+    const words = next
+      .replace(new RegExp(TOTAL_PHRASE, "giu"), " ")
+      .replace(new RegExp(MONEY, "giu"), " ")
+      .split(/[^\p{L}]+/u)
+      .filter((w) => w && !["for", "the", "please", "pls", "is", "it", "that", "makes", "за", "пожалуйста", "ค่ะ", "ครับ", "นะ"].includes(w) && countWordOf(w) === null);
+    if (/\d/.test(next) && words.length === 0) to = stops[1]?.start ?? line.length;
+  }
+  const clause = line.slice(from, to);
+  const start = dishStart - from;
+  const end = dishEnd - from;
+  // The count the chat gives: one of the three words just before the dish ("2 large Margherita
+  // pizzas", "two pizzas"), else after it ("x2", "2 ถาด", "2 шт").
+  let said: number | null = null;
+  for (const t of clause.slice(0, start).trim().split(/\s+/).filter(Boolean).slice(-3).reverse()) {
+    const n = /^\d{1,3}$/.test(t) ? Number(t) : countWordOf(t);
+    if (n !== null) {
+      said = n;
+      break;
+    }
+  }
+  const afterCount = COUNT_AFTER.exec(clause.slice(end));
+  if (said === null && afterCount) said = Number(afterCount[1] ?? afterCount[2]);
+  // The figures of money in the clause: never a count ("2 pizzas", "x2", "12 kids"), a time or a
+  // price for one ("300 each", "по 300"); under 20 only with a money word beside it.
+  const figures = [...clause.matchAll(/(?<![\d.,])(\d+(?:[.,]\d{1,2})?)(?![\d:])/g)].flatMap((m) => {
+    const at = m.index ?? 0;
+    const value = Number(m[1]!.replace(",", "."));
+    const lead = clause.slice(Math.max(0, at - 14), at);
+    const rest = clause.slice(at + m[1]!.length);
+    const money = new RegExp(String.raw`${MONEY}\s*$`, "iu").test(lead) || new RegExp(String.raw`^\s*${MONEY}`, "iu").test(rest);
+    if (/[x×]\s*$/i.test(lead) || !AFTER_MONEY.test(rest) || !(value > 0) || (value < 20 && !money)) return [];
+    const perItem =
+      PER_ITEM_WORDS.test(lead) ||
+      new RegExp(String.raw`^\s*${MONEY}?\s*(?:each|per|apiece|ea|a piece|/\s*(?:pc|pcs|piece)|за\s*шт|кажд|ละ)(?!\p{L})`, "iu").test(rest) ||
+      /(?<!\p{L})по\s*$/u.test(lead);
+    return perItem ? [] : [{ value, at, end: at + m[1]!.length, lead, rest }];
+  });
+  const total = (amount: number, count: number | null) => (count !== null && count > 1 && count <= 100 && amount > count ? { amount, quantity: count } : null);
+  for (const f of figures) {
+    // "N <dish> for 900", "2 пиццы маргарита за 900".
+    const between = f.at >= end ? clause.slice(end, f.at) : null;
+    if (said !== null && between !== null && !/\d/.test(between) && new RegExp(String.raw`(?<!\p{L})(?:for|за)\s*(?:${MONEY}\s*)?$`, "iu").test(between)) {
+      const hit = total(f.value, said);
+      if (hit) return hit;
+    }
+    // "900 for 2", "900 baht for both", "900 за две", "900 baht for 2 Margherita".
+    const forCount = new RegExp(String.raw`^\s*(?:${MONEY}\s*)?(?:for|за)\s+(?:the\s+|all\s+)?(\d{1,3}|\p{L}+)(?!\p{L})`, "iu").exec(f.rest);
+    if (forCount) {
+      const hit = total(f.value, /^\d+$/.test(forCount[1]!) ? Number(forCount[1]) : countWordOf(forCount[1]!));
+      if (hit) return hit;
+    }
+  }
+  // "900 total", "total 900", "all for 900", "รวม 900 บาท", "всего 900": anywhere in the clause.
+  for (const f of figures) {
+    const named =
+      new RegExp(String.raw`${TOTAL_PHRASE}\s*(?:of\s*)?(?:${MONEY}\s*)?$`, "iu").test(f.lead) ||
+      new RegExp(String.raw`^\s*(?:${MONEY}\s*)?${TOTAL_PHRASE}(?!\p{L})`, "iu").test(f.rest);
+    if (!named) continue;
+    const hit = total(f.value, said ?? quantity);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 /** SCRUM-946: a count written out, 2 to 10, in the languages the park's chats are written in. */
 const COUNT_WORDS: Record<number, string> = {
   2: "two|both|два|две|สอง", 3: "three|три|สาม", 4: "four|четыре|สี่", 5: "five|пять|ห้า", 6: "six|шесть|หก",
