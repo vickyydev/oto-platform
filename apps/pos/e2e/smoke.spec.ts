@@ -78,6 +78,23 @@ async function clearStaffPage(page: Page): Promise<void> {
   }
 }
 
+/**
+ * SCRUM-857 — the drop-off and nanny form cases end by handing the till over
+ * the way staff do: the lease is released and the till signs out through its own screen,
+ * which lets go of any lease it claimed again after the release. Leaving the
+ * page instead can keep the station leased to a closed page for the lease's
+ * minute, and the next case's till then cannot publish to its display.
+ */
+async function handOverTill(page: Page, fixture: { releaseLease: () => Promise<void> }): Promise<void> {
+  if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+  if (await page.getByLabel('Lock screen').isVisible()) {
+    await fixture.releaseLease();
+    await signOut(page);
+  } else {
+    await fixture.releaseLease();
+  }
+}
+
 async function displayPrompt(page: Page, expectedId?: string): Promise<string> {
   const response = await page.waitForResponse(async candidate => {
     if (!candidate.url().endsWith('/display/session') || candidate.request().method() !== 'GET'
@@ -942,7 +959,7 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     blockRead = false;
     page.off('request', observe); fixture.display.off('request', observe);
     try {
-      await fixture.releaseLease();
+      await handOverTill(page, fixture);
     } finally {
       try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
@@ -1049,7 +1066,7 @@ test('separate display drop-off form is mirrored live on the till and survives a
     throw error;
   } finally {
     try {
-      await fixture.releaseLease();
+      await handOverTill(page, fixture);
     } finally {
       try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
@@ -1294,7 +1311,7 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     page.off('request', watchFiles);
     page.off('response', countRegistration);
     try {
-      await fixture.releaseLease();
+      await handOverTill(page, fixture);
     } finally {
       try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
