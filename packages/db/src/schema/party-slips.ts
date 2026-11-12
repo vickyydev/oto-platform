@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, date, index, integer, jsonb, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, date, index, integer, jsonb, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 
@@ -97,5 +97,63 @@ export const partySlipPrint = pos.table(
       'party_slip_print_document_check',
       sql`(${t.status} = 'nothing_to_print') = (${t.document} is null)`,
     ),
+  ],
+);
+
+// --- What a station is taken to hold, and under which composer (SCRUM-906) ---
+
+/**
+ * SCRUM-906 — A RELEASE IS NOT A CHANGE. A party's slips are compared, once a
+ * minute, with what its plan would print now (SCRUM-861): a station holding
+ * something else is sent a VOID and an UPDATED slip. When a release changes
+ * what an unchanged plan prints — the whole kitchen plan reaching the till,
+ * "Fried rice: Veggie" where "Veggie" printed, the cake on the kitchen slip —
+ * every party whose slips already printed that day would otherwise be sent a
+ * correction it never had.
+ *
+ * ONE ROW PER PARTY, DAY AND STATION: the composer the station's slip is read
+ * under (`PARTY_SLIP_COMPOSER` and the shape the OTO App published the plan
+ * in, e.g. "2:kp1"), and which slip it was last given ("print:<run>",
+ * "change:<run>", or "none"). Every slip this release puts on paper writes its
+ * row. A look that finds the station's newest slip with no row of the
+ * composer it now reads under — a slip printed before the release — takes the
+ * plan as composed now as what the station holds and prints nothing
+ * (`rebased`, with `held` the lines it takes the station to hold); the next
+ * real change of the plan is compared with that and printed as before.
+ *
+ * `held` carries the slip's lines and the party's name (no child's allergy,
+ * no parent's number), as `party_slip_print.document` does.
+ */
+export const partySlipBaseline = pos.table(
+  'party_slip_baseline',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The OTO App's party. No foreign key: the app's tables are its own (C10). */
+    eventId: uuid('event_id').notNull(),
+    partyDate: date('party_date', { mode: 'string' }).notNull(),
+    station: text('station').$type<PartySlipStationValue>().notNull(),
+    /** The composer generation and the plan's published shape the station's slip is read under. */
+    composer: text('composer').notNull(),
+    /** The newest slip the station was given when the row was written: "print:<run>", "change:<run>" or "none". */
+    source: text('source').notNull(),
+    /** A look took the plan as composed now without printing it. */
+    rebased: boolean('rebased').notNull().default(false),
+    /** The fingerprint of what the station is taken to hold (`partySlipFingerprint`). */
+    fingerprint: text('fingerprint').notNull(),
+    /** What it is taken to hold: `{ lines, orderRef }`; null for nothing. */
+    held: jsonb('held'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('party_slip_baseline_station_unique').on(t.eventId, t.partyDate, t.station),
+    index('party_slip_baseline_operator_idx').on(t.operatorId),
+    index('party_slip_baseline_branch_idx').on(t.branchId),
+    check('party_slip_baseline_station_check', sql`${t.station} in ('kitchen','bar')`),
   ],
 );
