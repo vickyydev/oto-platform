@@ -1,4 +1,4 @@
-import { readChatPartyDate, readPartyDate, type PartyChatLine } from '@oto/shared/chat-dates';
+import { readChatNumbers, readChatPartyDate, readPartyDate, type PartyChatLine } from '@oto/shared/chat-dates';
 import { bahtOf } from '@/lib/view';
 import { INBOX_DAY_TIMEZONE } from '@oto/shared/inbox';
 import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
@@ -29,6 +29,15 @@ import type { BookDateProposal, ConversationRow, Message } from '@/api/inbox';
  * What the platform adds is only what the Events module needs that the
  * prototype's free text could not give it: the phrase becomes a calendar date
  * (`resolveEventDate`).
+ *
+ * THE KIDS ARE READ ONCE (SCRUM-947). The prototype's "<n> kids" pattern took
+ * any digits before its words, so "11:00-13:00 เด็ก 8 คน" read as "00" kids
+ * (the minutes of 13:00) and Book Date offered "8 or 00". The rule is the
+ * prototype's — the first number its words follow — over the numbers that can
+ * count guests (`@oto/shared` chat-dates `readChatNumbers`): never a clock
+ * time's, a date's, a price's, a phone number's or an age's digits; and a Thai
+ * "<n> คน" after the adults', the guests' or the total's word ("ผู้ใหญ่ 4 คน")
+ * counts them, not the kids.
  */
 
 export interface BeoData {
@@ -60,7 +69,27 @@ export interface BeoData {
   age: string;
 }
 
-const KIDS = /(\d{1,3})\s*(детей|ребен|kids|children|kid|child|เด็ก|คน)/i;
+/** The prototype's words after the kids' number ("15 kids", "12 детей", "20 เด็ก", "8 คน"). */
+const KIDS_AFTER = /^\s*(детей|ребен|kids|children|kid|child|เด็ก|คน)/i;
+/** A Thai "<n> คน" counts the noun before it: the adults, the parents, the guests, the total — not the kids. */
+const OTHERS_COUNTED = /(?:ผู้?ใหญ่|ผู้ปกครอง|พ่อแม่|แขก|รวม|ทั้งหมด)\s*$/u;
+
+/**
+ * The prototype's kids: the first number of one to three digits its words
+ * follow, of the numbers that can count guests (SCRUM-947); empty when none.
+ */
+export function kidsCountOf(customerText: string): string {
+  const { text, numbers } = readChatNumbers(customerText);
+  for (const n of numbers) {
+    if (!n.count || n.digits.length > 3) continue;
+    const words = KIDS_AFTER.exec(text.slice(n.end));
+    if (!words) continue;
+    if (words[1] === 'คน' && OTHERS_COUNTED.test(text.slice(Math.max(0, n.start - 24), n.start))) continue;
+    return n.digits;
+  }
+  return '';
+}
+
 const ANIMATOR = /(animator|аниматор|นักแสดง|นัก)/i;
 const CAKE = /(cake|торт|เค้ก|🎂)/i;
 const AGE = /(\d{1,2})\s*(лет|years|year|ปี|ขวบ)/i;
@@ -126,8 +155,7 @@ export function parseBeoFromConversation(
 ): BeoData {
   const customerText = customerTextOf(messages);
 
-  const numKidsMatch = customerText.match(KIDS);
-  const numKids = numKidsMatch ? numKidsMatch[1]! : '';
+  const numKids = kidsCountOf(customerText);
 
   const when = readChatPartyDate(chatLinesOf(messages), today, INBOX_DAY_TIMEZONE);
 
