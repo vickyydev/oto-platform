@@ -1,0 +1,17 @@
+GitHub Actions, workflow CI, run 43254646482, commit 32e4adb57 (main), 12 November 2026: SUCCESS
+
+  success | ci
+  success | pos-tests
+  success | oto-app
+  success | api-tests (1)    Test Files  173 passed | 2 skipped (175)    Tests  2452 passed | 106 skipped (2558)
+  success | api-tests (2)    Test Files  171 passed | 4 skipped (175)    Tests  2392 passed | 174 skipped | 3 todo (2569)
+  success | api-tests (3)    Test Files  171 passed | 2 skipped (173)    Tests  2338 passed | 121 skipped | 1 todo (2460)
+
+The party kitchen-slip tests in api-tests (3):
+
+  before (run 43239803423, commit 03fc3f75f):   x test/party-slips.test.ts (45 tests | 16 failed) 655613ms
+                                                 each failure: Test timed out in 30000ms
+  after  (run 43254646482, commit 32e4adb57):   ok test/party-slips.test.ts (45 tests) 32639ms
+
+The change: packages/db/src/testing.ts turns the database's JIT compiler off in every test database it creates
+(ALTER DATABASE <name> SET jit = off). Nothing outside the tests changes.
