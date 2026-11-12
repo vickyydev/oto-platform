@@ -161,7 +161,7 @@ describe('SCRUM-898 — callers that do not say a version save as before', () =>
     const seed = await read();
     expect(roleOf(seed, 'dropoff_band')).toBe(dropoffPrinterId);
 
-    // Exactly what StationSetup sends (`apps/pos/src/pages/StationSetup.tsx`,
+    // What StationSetup sent before SCRUM-930 (`apps/pos/src/pages/StationSetup.tsx`,
     // `save` and `deviceAssignments`): the roles its wizard manages, as its
     // form holds them, then each role it does not manage carried over from
     // the station it read — no access pair when it never read one, and never

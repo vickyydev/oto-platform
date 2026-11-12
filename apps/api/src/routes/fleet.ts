@@ -530,7 +530,7 @@ export async function fleetRoutes(app: App): Promise<void> {
           /**
            * SCRUM-898 — the `configVersion` the form was filled from. Optional,
            * so every caller that does not send it (the till's own station
-           * setup, scripts, the booth) saves exactly as it did.
+           * setup until SCRUM-930, scripts, the booth) saves exactly as it did.
            */
           expectedConfigVersion: z.number().int().min(1).optional(),
         }),
