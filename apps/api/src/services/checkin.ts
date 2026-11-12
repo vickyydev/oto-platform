@@ -52,7 +52,7 @@ import {
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { paidOnlineRefusal, paidOnlineStaysOf, type PaidOnlineBooking } from './booking-supervision';
-import { paidAtTillStaysOf, type PaidAtTill } from './checkin-paid-at-till';
+import { openTillSalesOfStays, paidAtTillStaysOf, type PaidAtTill } from './checkin-paid-at-till';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { mirrorNotice } from './inbox/mirror';
@@ -750,6 +750,7 @@ export async function addRegistrationChildren(
 
 export const CHECKIN_CANCEL_CHECKED_IN = 'CHECKIN_CANCEL_CHECKED_IN';
 export const CHECKIN_CANCEL_PAID = 'CHECKIN_CANCEL_PAID';
+export const CHECKIN_CANCEL_ON_SALE = 'CHECKIN_CANCEL_ON_SALE';
 
 /**
  * CANCEL A WAITING BOOKING — the till's "Cancel booking" on the Add drop-off
@@ -765,7 +766,11 @@ export const CHECKIN_CANCEL_PAID = 'CHECKIN_CANCEL_PAID';
  * the sale's refund or void path, and this press is never a way around it. A
  * stay linked to a sale since voided or refunded IS cancellable: nothing can
  * ever sell it again (`loadChoice` refuses any other sale), so cancelling is
- * the only way off the list.
+ * the only way off the list. Refused too while a child is on a held sale or
+ * on one a payment was taken or asked for on (`openTillSalesOfStays`): the
+ * counter voids or finishes that sale first. A sale rung up and left with
+ * nothing asked of it does not block; its money press refuses the cancelled
+ * child (`refuseTenderOnStaysPaidAtTill`).
  *
  * Idempotent on state, beside the request's Idempotency-Key: a booking whose
  * children are all cancelled already answers the same view and writes no
@@ -806,6 +811,26 @@ export async function cancelWaitingRegistration(
       `${nameList(paid.map((s) => s.childName))} ${paid.length === 1 ? 'is' : 'are'} already paid for ${how} — ` +
         "refund or void that sale instead; a paid booking can't be cancelled here. Nothing was changed.",
       online ? { ...online } : { saleId: paidAtTill.get(first.id)!.saleId },
+    );
+  }
+  // A child on a held sale, or on one a payment was taken or asked for on, is
+  // not pulled from under it: the counter is sent to that sale first.
+  const open = await openTillSalesOfStays(
+    tx,
+    actor.operatorId,
+    waiting.map((s) => s.id),
+  );
+  const onSale = waiting.filter((s) => open.has(s.id));
+  if (onSale.length > 0) {
+    const first = open.get(onSale[0]!.id)!;
+    const names = nameList(onSale.map((s) => s.childName));
+    const isAre = onSale.length === 1 ? 'is' : 'are';
+    throw errors.conflict(
+      CHECKIN_CANCEL_ON_SALE,
+      first.heldAs !== null
+        ? `${names} ${isAre} on the held sale "${first.heldAs}" — void it from Held sales first, then cancel the booking. Nothing was changed.`
+        : `${names} ${isAre} on a sale being paid at a till — finish or void that sale first, then cancel the booking. Nothing was changed.`,
+      { saleId: first.saleId },
     );
   }
   if (waiting.length === 0) {

@@ -1,5 +1,5 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
-import { checkin, sale, saleLine } from '@oto/db';
+import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { checkin, paymentAttempt, sale, saleHold, saleLine } from '@oto/db';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Exec } from './tx';
@@ -106,6 +106,8 @@ export async function paidAtTillStaysOf(
 }
 
 export const CHECKIN_PAID_AT_TILL = 'CHECKIN_PAID_AT_TILL';
+/** SCRUM-862 — a line under a stay staff cancelled: refused when written and at the money press. */
+export const CHECKIN_CANCELLED = 'CHECKIN_CANCELLED';
 
 /** The sale a money press was refused on, named on the refusal so its trail can name it. */
 interface TenderedSale {
@@ -166,7 +168,11 @@ export async function refusePaidAtTillStays(
  * (`openQrAttempt`) — and only while no money has been taken on this sale, the
  * same rule SCRUM-514 keeps for a promo code's last use: a part payment
  * already in is not left on a sale that cannot close. A box's replay, a paid
- * QR's settlement and a booking's redemption are not asked.
+ * QR's settlement and a booking's redemption are not asked. SCRUM-862 — the
+ * same presses refuse a child whose booking was cancelled since
+ * (CHECKIN_CANCELLED); a sale that already took or asked for money is never
+ * met here, as the cancel itself is refused while one carries the child
+ * (`openTillSalesOfStays`).
  */
 export async function refuseTenderOnStaysPaidAtTill(
   db: Exec,
@@ -189,6 +195,18 @@ export async function refuseTenderOnStaysPaidAtTill(
         eq(checkin.operatorId, tendered.operatorId),
       ),
     );
+  // SCRUM-862 — nor is money taken for a child whose booking staff cancelled
+  // since this sale was rung up (a sale held and resumed, or rung up at a
+  // second till): the stay can never be checked in, so the family would pay
+  // for nothing.
+  const cancelled = stays.find((s) => s.status === 'cancelled');
+  if (cancelled) {
+    throw errors.conflict(
+      CHECKIN_CANCELLED,
+      `${cancelled.childName}'s drop-off booking was cancelled, so it can't be sold — cancel this sale and ring it up again without them, or register them again if they are staying. Nothing was charged.`,
+      { checkinId: cancelled.id, saleId: tendered.id },
+    );
+  }
   await refusePaidAtTillStays(
     db,
     tendered.operatorId,
@@ -236,4 +254,71 @@ export async function recordPaidAtTillRefusal(
       ...(refused ? { at: 'tender' } : {}),
     },
   });
+}
+
+/**
+ * SCRUM-862 — AN OPEN TILL SALE A CANCEL MUST NOT PULL A STAY FROM UNDER.
+ *
+ * A waiting child rung up on a sale still `tendering` is cancellable as long
+ * as nothing on that sale can go on without the counter seeing the refusal:
+ * the money presses refuse a cancelled stay (`refuseTenderOnStaysPaidAtTill`).
+ * Two such sales are not like that, and a cancel is refused while a child is
+ * on one:
+ *
+ *   - HELD: parked in Held sales (SCRUM-774). It comes back to Pay exactly as
+ *     it was rung up, so the child cannot be taken off it; it is voided from
+ *     the Held sales list.
+ *   - MONEY TAKEN OR ASKED FOR: a payment approved, a card at the terminal, a
+ *     QR shown. A part payment closes the sale without the money presses
+ *     asking again, and a QR or a card may settle on its own.
+ *
+ * Any other open sale — rung up and left, superseded by an edited cart — is
+ * not counted: refusing over it would leave a booking nobody can clear.
+ */
+export interface OpenSaleOfStay {
+  saleId: string;
+  /** The name the sale is parked under in Held sales, when it is held. */
+  heldAs: string | null;
+}
+
+const ATTEMPT_STATUSES_NOTHING_ASKED = ['declined', 'cancelled', 'not_found'] as const;
+
+export async function openTillSalesOfStays(
+  db: Exec,
+  operatorId: string,
+  stayIds: readonly string[],
+): Promise<Map<string, OpenSaleOfStay>> {
+  const out = new Map<string, OpenSaleOfStay>();
+  if (stayIds.length === 0) return out;
+  const lines = await db
+    .selectDistinct({ stayId: saleLine.cartLineId, saleId: sale.id })
+    .from(saleLine)
+    .innerJoin(sale, eq(sale.id, saleLine.saleId))
+    .where(
+      and(
+        inArray(saleLine.cartLineId, [...stayIds]),
+        eq(saleLine.kind, 'kids'),
+        eq(sale.operatorId, operatorId),
+        eq(sale.status, 'tendering'),
+      ),
+    );
+  if (lines.length === 0) return out;
+  const saleIds = [...new Set(lines.map((l) => l.saleId))];
+  const holds = await db
+    .select({ saleId: saleHold.saleId, label: saleHold.label })
+    .from(saleHold)
+    .where(and(inArray(saleHold.saleId, saleIds), isNull(saleHold.releasedAt)));
+  const asked = await db
+    .selectDistinct({ saleId: paymentAttempt.saleId })
+    .from(paymentAttempt)
+    .where(and(inArray(paymentAttempt.saleId, saleIds), notInArray(paymentAttempt.status, [...ATTEMPT_STATUSES_NOTHING_ASKED])));
+  const heldAs = new Map(holds.map((h) => [h.saleId, h.label]));
+  const moneyAsked = new Set(asked.map((a) => a.saleId));
+  for (const l of lines) {
+    if (out.has(l.stayId)) continue;
+    const label = heldAs.get(l.saleId);
+    if (label === undefined && !moneyAsked.has(l.saleId)) continue;
+    out.set(l.stayId, { saleId: l.saleId, heldAs: label ?? null });
+  }
+  return out;
 }

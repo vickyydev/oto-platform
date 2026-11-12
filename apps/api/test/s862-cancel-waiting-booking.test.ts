@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, booking, branch, checkin, registration, station, ticketPackage } from '@oto/db';
+import { auditLog, booking, branch, checkin, paymentAttempt, registration, sale, station, ticketPackage } from '@oto/db';
 import { businessDate, newId, parseDayStart } from '@oto/shared';
 import { registrationsAwaitingCheckIn } from '../src/services/checkin';
-import { CHALONG_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { CHALONG_MANAGER, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
 
 /**
  * SCRUM-862 — A WAITING DROP-OFF OR NANNY BOOKING CAN BE CANCELLED, AND
@@ -170,6 +170,22 @@ async function saleFor(stayId: string, finalise: boolean): Promise<string> {
   return saleId;
 }
 
+const post = (cookie: string, url: string, payload: Record<string, unknown> = {}) =>
+  ctx.app.inject({ method: 'POST', url, headers: { cookie, 'idempotency-key': newId() }, payload });
+
+function finalise(saleId: string, cookie = reception) {
+  return post(cookie, `/sales/${saleId}/finalise`);
+}
+
+async function attemptsOn(saleId: string) {
+  return ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+}
+
+async function saleStatus(saleId: string) {
+  const [row] = await ctx.db.select({ status: sale.status }).from(sale).where(eq(sale.id, saleId));
+  return row?.status;
+}
+
 /** Asia/Bangkok has no DST: the branch's trading-day start today, as an instant. */
 function todayTradingDayStart(now = new Date()): Date {
   expect(timezone).toBe('Asia/Bangkok');
@@ -293,31 +309,135 @@ describe('cancelling a waiting booking', () => {
     expect(sale.json().error.code).toBe('CHECKIN_CANCELLED');
     expect(sale.json().error.message).toContain("ZZ TEST Mint's drop-off booking was cancelled");
 
-    // Begun before the cancel (Pay pressed, not yet paid): the money press goes
-    // through, the check-in after it does not.
+    // Begun before the cancel (Pay pressed, nothing asked yet): the money press
+    // is refused too, so no family pays for a stay that can never be checked
+    // in; and the check-in after it is refused as well.
     const other = await register([childBody('ZZ TEST Bua')]);
     const otherStay = other.children[0]!.id;
     const saleId = await saleFor(otherStay, false);
     expect((await cancel(other.id, 'Changed their mind')).statusCode).toBe(200);
-    const fin = await ctx.app.inject({
-      method: 'POST',
-      url: `/sales/${saleId}/finalise`,
-      headers: { cookie: reception, 'idempotency-key': newId() },
-      payload: {},
-    });
-    expect(fin.statusCode, fin.body).toBe(200);
+    const fin = await finalise(saleId);
+    expect(fin.statusCode, fin.body).toBe(409);
+    expect(fin.json().error.code).toBe('CHECKIN_CANCELLED');
+    expect(fin.json().error.message).toContain("ZZ TEST Bua's drop-off booking was cancelled");
+    expect(fin.json().error.message).toContain('Nothing was charged.');
+    expect(await attemptsOn(saleId)).toHaveLength(0);
+    expect(await saleStatus(saleId)).toBe('tendering');
+    expect((await stay(otherStay)).status).toBe('cancelled');
+
+    // A sale whose money came in without a press to refuse it (a box's replay,
+    // a QR settling on its own) for a stay cancelled meanwhile: the check-in
+    // after it is still refused. The stay is cancelled in place here, as the
+    // cancel route itself refuses a paid stay.
+    const late = await register([childBody('ZZ TEST Late')]);
+    const lateStay = late.children[0]!.id;
+    const lateSale = await saleFor(lateStay, true);
+    await ctx.db
+      .update(checkin)
+      .set({ status: 'cancelled', cancelledAt: new Date(), cancelReason: 'ZZ TEST late' })
+      .where(eq(checkin.id, lateStay));
     for (const url of ['/checkin/check-in-now', '/checkin/leave-as-booked']) {
       const res = await ctx.app.inject({
         method: 'POST',
         url,
         headers: { cookie: reception, 'idempotency-key': newId() },
-        payload: { saleId, entries: [{ checkinId: otherStay }] },
+        payload: { saleId: lateSale, entries: [{ checkinId: lateStay }] },
       });
       expect(res.statusCode, res.body).toBe(409);
       expect(res.json().error.code).toBe('CHECKIN_NOT_REGISTERED');
       expect(res.json().error.message).toContain('booking was cancelled');
     }
-    expect((await stay(otherStay)).status).toBe('cancelled');
+    expect((await stay(lateStay)).status).toBe('cancelled');
+  });
+
+  it('a card is not asked for on a sale whose child was cancelled since it was rung up', async () => {
+    const reg = await register([childBody('ZZ TEST Card')]);
+    const saleId = await saleFor(reg.children[0]!.id, false);
+    expect((await cancel(reg.id, 'Family left')).statusCode).toBe(200);
+    const card = await ctx.app.inject({
+      method: 'POST',
+      url: '/payments/attempts',
+      headers: { cookie: reception },
+      payload: { saleId, tender: 'card' },
+    });
+    expect(card.statusCode, card.body).toBe(409);
+    expect(card.json().error.code).toBe('CHECKIN_CANCELLED');
+    expect(await attemptsOn(saleId)).toHaveLength(0);
+  });
+
+  it('is refused while the child is on a held sale, and goes through once that sale is voided', async () => {
+    const till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, till, stationId);
+    const reg = await register([childBody('ZZ TEST Held')]);
+    const stayId = reg.children[0]!.id;
+    const saleId = await saleFor(stayId, false);
+    const held = await post(till, `/sales/${saleId}/hold`, { kind: 'held', label: 'ZZ TEST Khun Ploy' });
+    expect(held.statusCode, held.body).toBe(200);
+
+    const refused = await cancel(reg.id, 'Family left');
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json().error.code).toBe('CHECKIN_CANCEL_ON_SALE');
+    expect(refused.json().error.message).toContain('ZZ TEST Held is on the held sale "ZZ TEST Khun Ploy"');
+    expect(refused.json().error.message).toContain('void it from Held sales first');
+    expect((await stay(stayId)).status).toBe('registered');
+    expect(await cancelAuditRows(stayId)).toHaveLength(0);
+
+    const voided = await post(till, `/sales/${saleId}/void`, { reason: 'ZZ TEST family left' });
+    expect(voided.statusCode, voided.body).toBe(200);
+    const res = await cancel(reg.id, 'Family left');
+    expect(res.statusCode, res.body).toBe(200);
+    expect((await stay(stayId)).status).toBe('cancelled');
+  });
+
+  it('a held sale resumed after a cancel cannot take the money (hold, resume, cancel, pay)', async () => {
+    const till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, till, stationId);
+    const reg = await register([childBody('ZZ TEST Resumed')]);
+    const stayId = reg.children[0]!.id;
+    const saleId = await saleFor(stayId, false);
+    const held = await post(till, `/sales/${saleId}/hold`, { kind: 'held', label: 'ZZ TEST Resumed' });
+    expect(held.statusCode, held.body).toBe(200);
+    // Taken back to a till: no longer held and nothing asked yet, so the cancel
+    // goes through ...
+    const resumed = await post(till, `/sales/${saleId}/resume`);
+    expect(resumed.statusCode, resumed.body).toBe(200);
+    expect((await cancel(reg.id, 'Family left')).statusCode).toBe(200);
+    // ... and the money press on the resumed sale is refused, nothing taken.
+    const fin = await finalise(saleId, till);
+    expect(fin.statusCode, fin.body).toBe(409);
+    expect(fin.json().error.code).toBe('CHECKIN_CANCELLED');
+    expect(await attemptsOn(saleId)).toHaveLength(0);
+  });
+
+  it('is refused while a payment is taken or asked for on the sale the child is on', async () => {
+    const reg = await register([childBody('ZZ TEST Paying')]);
+    const stayId = reg.children[0]!.id;
+    const saleId = await saleFor(stayId, false);
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    await ctx.db.insert(paymentAttempt).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      saleId,
+      stationId: row!.stationId,
+      businessDate: row!.businessDate,
+      method: 'card',
+      status: 'sent_to_terminal',
+      amountSatang: 1_000,
+    });
+    const res = await cancel(reg.id, 'Family left');
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('CHECKIN_CANCEL_ON_SALE');
+    expect(res.json().error.message).toContain('ZZ TEST Paying is on a sale being paid at a till');
+    expect((await stay(stayId)).status).toBe('registered');
+  });
+
+  it('a sale rung up and left with nothing asked of it does not block the cancel', async () => {
+    const reg = await register([childBody('ZZ TEST Left')]);
+    await saleFor(reg.children[0]!.id, false);
+    const res = await cancel(reg.id, 'Family left');
+    expect(res.statusCode, res.body).toBe(200);
+    expect((await stay(reg.children[0]!.id)).status).toBe('cancelled');
   });
 });
 
