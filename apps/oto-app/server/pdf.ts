@@ -4,9 +4,10 @@ import fs from "fs";
 import DOMPurify from "isomorphic-dompurify";
 import { Readable } from "stream";
 import { getFileFromObjectStorage } from "./file-storage";
-import { formatParkSignedDate } from "./timezone-utils";
+import { formatParkSignedDate, getLocalDateString } from "./timezone-utils";
 import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
 import { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenAdultsMarks } from "@shared/kitchenAdults";
+import { beoExtraChargeOf, beoExtraPrintWordsOf, type BeoExtraContext } from "@shared/beoExtras";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
@@ -530,8 +531,16 @@ export interface BeoPdfData {
   barPlan?: {
     serviceTime?: string;
     // SCRUM-949: an EXTRA drink's price for each item, as the kitchen's lines carry theirs.
-    items?: { quantity: number; itemName: string; notes?: string; source?: string; price?: number }[];
+    items?: { quantity: number; itemName: string; notes?: string; source?: string; price?: number; productCode?: string }[];
   };
+  /**
+   * SCRUM-970: the till's menu as read for the party's park (the BEO editor's own reading), for
+   * what the till charges an EXTRA line with no price entered; absent or not read: such a coded
+   * line prints its badge alone, as before.
+   */
+  extrasTill?: BeoExtraContext["till"];
+  /** SCRUM-970: the park's time zone, for every date the PDF prints; the park group's default when absent. */
+  parkTimeZone?: string;
   partyDetails?: {
     packageName?: string;
     packageBasePrice?: number;
@@ -551,10 +560,52 @@ export interface BeoPdfData {
   branchLogoUrl?: string;
 }
 
+/** SCRUM-970: the park's time zone when it names one the clock knows; else the park group's default (Bangkok). */
+function parkZoneOf(timeZone: string | null | undefined): string {
+  const zone = timeZone?.trim();
+  if (!zone) return "Asia/Bangkok";
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone });
+    return zone;
+  } catch {
+    return "Asia/Bangkok";
+  }
+}
+
+/** SCRUM-970: a moment's day and month on the park's clock ("13 Nov"); empty when it is no moment. */
+export function parkDayMonthOf(at: string | Date, timeZone: string | null | undefined): string {
+  const when = at instanceof Date ? at : new Date(at);
+  if (Number.isNaN(when.getTime())) return "";
+  return when.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: parkZoneOf(timeZone) });
+}
+
+/** SCRUM-970: a moment's date on the park's clock, dd/mm/yyyy (`formatParkSignedDate`'s form, at the party's park). */
+export function parkDateOf(at: Date, timeZone: string | null | undefined): string {
+  const [year, month, day] = getLocalDateString(at, parkZoneOf(timeZone)).split("-");
+  return `${day}/${month}/${year}`;
+}
+
 /** The BEO PDF as HTML, before Chromium prints it: what the page says, for a check to read. */
 export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const formatCurrency = (amount: number) => `${amount.toLocaleString()}฿`;
   const s = (str: string) => DOMPurify.sanitize(str);
+  // SCRUM-970: every date the PDF prints is the park's (the server's clock is UTC: "Received 12 Nov"
+  // for a choice made on the 13th between midnight and 07:00 at the park).
+  const parkZone = parkZoneOf(data.parkTimeZone);
+  // SCRUM-970: an EXTRA line prints what the editor's hint says for it (shared/beoExtras.ts): the price
+  // entered for each item, the till's price for the party's day, or "not charged"; the badge alone for
+  // a coded line the till's menu could not price.
+  const extrasCtx: BeoExtraContext = { till: data.extrasTill ?? { known: false, byCode: new Map() }, partyDate: data.eventDate || null };
+  const extraBadge = (item: { quantity?: number; itemName?: string; price?: number; source?: string; productCode?: string }, area: "food" | "bar") => {
+    const words = beoExtraPrintWordsOf(
+      beoExtraChargeOf(
+        { itemName: item.itemName ?? "", quantity: item.quantity ?? 1, price: item.price ?? null, source: item.source ?? null, productCode: item.productCode ?? null },
+        area,
+        extrasCtx,
+      ),
+    );
+    return `<span class="extra-badge">EXTRA</span>${words ? ` <span class="price">${s(words)}</span>` : ''}`;
+  };
 
   const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   function formatEventDate(dateStr: string): string {
@@ -661,11 +712,11 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
 
   // SCRUM-906: a price entered on an EXTRA line is the price of one (the owner, 12 November):
   // the till charges it times the line's count, so the BEO prints it "120฿ each".
-  const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }, mark: string | null = null) => {
+  const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string; productCode?: string }, mark: string | null = null) => {
     const isSet = item.source === 'set_menu';
     const badge = isSet
       ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-      : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
+      : extraBadge(item, 'food');
     return `<tr>
       <td class="qty">${item.quantity}x</td>
       <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(mark)}</td>
@@ -688,7 +739,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   };
   const adultsOnlyRows = pdfAdults.adultsOnly.length > 0
     ? `<table class="menu-table">
-        ${pdfAdults.adultsOnly.map((item: any) => menuItemRow({ quantity: item.quantity ?? 1, itemName: item.itemName ?? '', notes: item.notes, price: item.price, included: item.included, source: item.source }, ADULTS_ONLY_MARK)).join('')}
+        ${pdfAdults.adultsOnly.map((item: any) => menuItemRow({ quantity: item.quantity ?? 1, itemName: item.itemName ?? '', notes: item.notes, price: item.price, included: item.included, source: item.source, productCode: item.productCode }, ADULTS_ONLY_MARK)).join('')}
        </table>`
     : '';
   const adultsLineHtml = kp && kp.required !== false && (pdfKids.length > 0 || kp.setMenuEnabled || pdfAdultsDiffer)
@@ -711,9 +762,8 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
       const isSubmitted = selStatus != null ? selStatus.isSubmitted : setMenuItems.length > 0;
 
       const templateName = kp.setMenuTemplateName || 'Set Menu';
-      const submittedLabel = selStatus?.submittedAt
-        ? ` &mdash; Received ${new Date(selStatus.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-        : '';
+      const received = selStatus?.submittedAt ? parkDayMonthOf(selStatus.submittedAt, parkZone) : '';
+      const submittedLabel = received ? ` &mdash; Received ${received}` : '';
 
       const setMenuBlock = `
         <div style="border:2px solid #6ee7b7;border-radius:6px;overflow:hidden;margin-bottom:8px;">
@@ -743,7 +793,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
                const isSet = item.source === 'set_menu';
                const badge = isSet
                  ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-                 : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
+                 : extraBadge(item, 'food');
                return `<tr>
                  <td class="qty">${item.quantity}x</td>
                  <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>
@@ -806,7 +856,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
         ${data.barPlan.items.map(item => `<tr>
           <td class="qty">${item.quantity}x</td>
           <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">${s(noteInBrackets(item.notes))}</span>` : ''}</td>
-          <td class="price-col"><span class="${item.source === 'set_menu' ? 'incl-badge' : 'extra-badge'}" style="${item.source === 'set_menu' ? 'background:#dbeafe;color:#1e40af;border-color:#93c5fd;' : ''}">${item.source === 'set_menu' ? 'SET' : 'EXTRA'}</span>${item.source !== 'set_menu' && item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}</td>
+          <td class="price-col">${item.source === 'set_menu' ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>' : extraBadge(item, 'bar')}</td>
         </tr>`).join('')}
       </table>
     </div>
@@ -963,7 +1013,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   ${notesHtml}
 
   <div class="footer">
-    Generated ${formatParkSignedDate(new Date())} &bull; Banquet Event Order
+    Generated ${parkDateOf(new Date(), parkZone)} &bull; Banquet Event Order
   </div>
 </body>
 </html>`;

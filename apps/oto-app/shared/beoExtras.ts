@@ -167,5 +167,18 @@ export function beoExtraHintOf(charge: BeoExtraCharge): string | null {
   }
 }
 
+/**
+ * SCRUM-970: the words the BEO PDF prints beside an EXTRA line's badge — the
+ * editor's own hint for it (`beoExtraHintOf`), so the two cannot disagree: the
+ * price entered, written out for each item ("120฿ each"); "till price 420",
+ * "(weekend)" as the editor shows it; "not charged". Nothing for a coded line
+ * the till's menu could not price (the PDF then prints the badge alone, as
+ * before), a SET line or a line with no name.
+ */
+export function beoExtraPrintWordsOf(charge: BeoExtraCharge): string | null {
+  if (charge.kind === "charged" && charge.from === "entered") return `${baht(charge.unitSatang)}฿ each`;
+  return beoExtraHintOf(charge);
+}
+
 /** The plan's extras total, as the till will charge them: "Extras charged at the till: ฿1,180". */
 export const beoExtrasTotalWords = (satang: number): string => `Extras charged at the till: ฿${baht(satang)}`;

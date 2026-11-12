@@ -37,6 +37,8 @@ import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { generateBeoPdf, type BeoPdfData } from "./pdf";
 import { readingFor } from "./party-billing-routes";
+import { readFillTillMenu } from "./lib/beoFillTillMenu";
+import { tillMenuIndexOf } from "@shared/tillMenu";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
@@ -2872,8 +2874,9 @@ export function registerBeoRoutes(app: Express) {
           menus: kitchenPlan.menus as any || undefined,
           setMenuEnabled: kitchenPlan.setMenuEnabled,
           setMenuTemplateName: pdfSetMenuTemplateName,
+          // SCRUM-970: the moment as such (ISO), printed on the park's clock.
           setMenuSelectionStatus: pdfSetMenuSel
-            ? { isSubmitted: pdfSetMenuSel.isSubmitted, submittedAt: pdfSetMenuSel.submittedAt ? String(pdfSetMenuSel.submittedAt) : null }
+            ? { isSubmitted: pdfSetMenuSel.isSubmitted, submittedAt: pdfSetMenuSel.submittedAt ? new Date(pdfSetMenuSel.submittedAt).toISOString() : null }
             : null,
           cakeMode: kitchenPlan.cakeMode || undefined,
           cakeQuantity: kitchenPlan.cakeQuantity,
@@ -2904,6 +2907,11 @@ export function registerBeoRoutes(app: Express) {
         branchName: branch?.name || undefined,
         branchAddress: branch?.address || undefined,
         branchLogoUrl: branch?.logoUrl || undefined,
+        // SCRUM-970: the party's park's clock, for the dates the PDF prints.
+        parkTimeZone: branch?.timezone || undefined,
+        // SCRUM-970: what the till charges each EXTRA line, read as the BEO editor reads it (the party's
+        // park's till menu, held a minute); not read: a coded line with no price prints its badge alone.
+        extrasTill: tillMenuIndexOf([{ ...(await readFillTillMenu(db, { tenantId: event.tenantId, branchId: event.branchId }, req.requestId)), parkId: event.branchId ?? "", parkName: "", readAt: null }]),
       };
 
       const pdfBuffer = await generateBeoPdf(pdfData);
