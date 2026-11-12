@@ -22105,7 +22105,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press. */
+        /** @description Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press. With checkinIds, only those children are cancelled (each must be waiting and unpaid); their siblings stay as they are. */
         post: {
             parameters: {
                 query?: never;
@@ -22119,6 +22119,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         reason: string;
+                        checkinIds?: string[];
                     };
                 };
             };

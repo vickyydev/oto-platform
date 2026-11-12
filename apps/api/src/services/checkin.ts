@@ -836,32 +836,51 @@ export const CHECKIN_CANCEL_ON_SALE = 'CHECKIN_CANCEL_ON_SALE';
  * Idempotent on state, beside the request's Idempotency-Key: a booking whose
  * children are all cancelled already answers the same view and writes no
  * second audit row.
+ *
+ * SCRUM-909 — `checkinIds` cancels only the children named, never the whole
+ * booking: one of two siblings went home (their line refunded by item, or
+ * never paid for) while the other, paid for or already in the park, stays.
+ * Only the named children are weighed, with the same refusals — each must be
+ * waiting, unpaid and on no open sale — and the siblings are left exactly as
+ * they are. The whole press, refused over a paid or checked-in sibling, then
+ * names the children that can be cancelled on their own.
  */
 export async function cancelWaitingRegistration(
   tx: Tx,
   actor: Actor,
   reg: RegistrationRow,
-  input: { reason: string },
+  input: { reason: string; checkinIds?: readonly string[] },
   now: Date = new Date(),
 ): Promise<RegistrationView> {
-  const stays = await tx
+  const all = await tx
     .select()
     .from(checkin)
     .where(eq(checkin.registrationId, reg.id))
     .orderBy(asc(checkin.createdAt), asc(checkin.id))
     .for('update');
+  const named = input.checkinIds ? new Set(input.checkinIds) : null;
+  if (named && [...named].some((id) => !all.some((s) => s.id === id))) {
+    throw errors.notFound('One or more children are not on this booking');
+  }
+  const stays = named ? all.filter((s) => named.has(s.id)) : all;
+  const waiting = stays.filter((s) => s.status === 'registered');
+  const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, waiting);
+  const paidAtTill = await paidAtTillStaysOf(tx, actor.operatorId, waiting);
+  const paid = waiting.filter((s) => paidOnline.has(s.id) || paidAtTill.has(s.id));
+  // SCRUM-909 — on the whole press, the waiting children a named cancel could take alone.
+  const alone = named ? [] : waiting.filter((s) => !paidOnline.has(s.id) && !paidAtTill.has(s.id));
+  const wayOut =
+    alone.length > 0
+      ? `cancel ${nameList(alone.map((s) => s.childName))} on their own instead; the booking can't be cancelled as a whole. Nothing was changed.`
+      : null;
   const inOrOut = stays.filter((s) => s.status === 'in_park' || s.status === 'out');
   if (inOrOut.length > 0) {
     throw errors.conflict(
       CHECKIN_CANCEL_CHECKED_IN,
       `${nameList(inOrOut.map((s) => s.childName))} ${inOrOut.length === 1 ? 'was' : 'were'} already checked in — ` +
-        'a paid or checked-in booking is handled through its sale (refund or void), not cancelled here. Nothing was changed.',
+        (wayOut ?? 'a paid or checked-in booking is handled through its sale (refund or void), not cancelled here. Nothing was changed.'),
     );
   }
-  const waiting = stays.filter((s) => s.status === 'registered');
-  const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, waiting);
-  const paidAtTill = await paidAtTillStaysOf(tx, actor.operatorId, waiting);
-  const paid = waiting.filter((s) => paidOnline.has(s.id) || paidAtTill.has(s.id));
   if (paid.length > 0) {
     const first = paid[0]!;
     const online = paidOnline.get(first.id);
@@ -870,7 +889,7 @@ export async function cancelWaitingRegistration(
     throw errors.conflict(
       CHECKIN_CANCEL_PAID,
       `${nameList(paid.map((s) => s.childName))} ${paid.length === 1 ? 'is' : 'are'} already paid for ${how} — ` +
-        "refund or void that sale instead; a paid booking can't be cancelled here. Nothing was changed.",
+        (wayOut ?? "refund or void that sale instead; a paid booking can't be cancelled here. Nothing was changed."),
       online ? { ...online } : { saleId: paidAtTill.get(first.id)!.saleId },
     );
   }
@@ -914,7 +933,14 @@ export async function cancelWaitingRegistration(
       requestId: actor.requestId,
       actionId: actor.actionId ?? null,
       before: { status: s.status, saleId: s.saleId, cancelledAt: null, cancelReason: null },
-      after: { status: 'cancelled', saleId: s.saleId, cancelledAt: now.toISOString(), cancelReason: input.reason, event: 'cancel' },
+      after: {
+        status: 'cancelled',
+        saleId: s.saleId,
+        cancelledAt: now.toISOString(),
+        cancelReason: input.reason,
+        event: 'cancel',
+        ...(named ? { named: true } : {}),
+      },
     });
   }
   return registrationViewOf(tx, reg);

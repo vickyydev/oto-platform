@@ -567,6 +567,12 @@ export const CANCEL_REASON_MAX_LENGTH = 120;
 export const CancelRegistrationSchema = z
   .object({
     reason: z.string().trim().min(1, 'A reason is required.').max(CANCEL_REASON_MAX_LENGTH),
+    /**
+     * SCRUM-909 — cancel only these waiting children, not the whole booking:
+     * a sibling paid for or already checked in stays as they are. Each one
+     * named must be waiting, unpaid and on no open sale.
+     */
+    checkinIds: z.array(uuid).min(1).max(20).optional(),
   })
   .strict();
 export type CancelRegistrationInput = z.infer<typeof CancelRegistrationSchema>;

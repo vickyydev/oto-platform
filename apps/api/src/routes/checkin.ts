@@ -191,7 +191,8 @@ export async function checkinRoutes(app: App): Promise<void> {
       schema: {
         description:
           'Cancel a booking still waiting to be checked in: every registered, unpaid child moves to cancelled with the ' +
-          'reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press.',
+          'reason given; the registration and its signed consent stay. A paid or checked-in child refuses the whole press. ' +
+          'With checkinIds, only those children are cancelled (each must be waiting and unpaid); their siblings stay as they are.',
         params: z.object({ id: z.string().uuid() }),
         body: CancelRegistrationSchema,
       },

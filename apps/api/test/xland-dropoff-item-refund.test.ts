@@ -409,3 +409,141 @@ describe('SCRUM-909 — a child left as booked, then refunded by item', () => {
     }
   });
 });
+
+describe('SCRUM-909 — siblings on one booking: the refunded one is cancelled on their own', () => {
+  async function registerFamily(names: readonly string[]) {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/registrations',
+      headers: { cookie: reception },
+      payload: {
+        id: newId(),
+        branchId,
+        stationId,
+        guardianName: 'ZZ TEST Guardian',
+        guardianPhone: '0812345691',
+        contactChannel: 'whatsapp',
+        consentAcknowledged: true,
+        acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
+        children: names.map((name) => ({
+          checkinId: newId(),
+          name,
+          ageYears: 6,
+          service: 'drop_off',
+          allergies: null,
+          foodRestrictions: null,
+          foodProvision: { mode: 'none', paidSatang: 0 },
+        })),
+      },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json() as { id: string; children: Array<{ id: string; childName: string }> };
+  }
+
+  /** Two siblings on ONE booking, both on one paid sale; the second one's lines refunded by item. */
+  async function siblingsOneRefunded(names: [string, string]) {
+    const reg = await registerFamily(names);
+    const [stays, goes] = reg.children.map((c) => c.id) as [string, string];
+    const saleId = await paidSale([stays, goes]);
+    await refundChildLines(saleId, goes);
+    return { reg, stays, goes, saleId };
+  }
+
+  const cancelNamed = (registrationId: string, checkinIds: string[], key = newId()) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/checkin/registrations/${registrationId}/cancel`,
+      headers: { cookie: reception, 'idempotency-key': key },
+      payload: { reason: 'ZZ TEST child went home', checkinIds },
+    });
+
+  const cancelRows = (stayId: string) =>
+    ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityType, 'checkin'), eq(auditLog.entityId, stayId), eq(auditLog.action, 'checkin.update')))
+      .then((rows) => rows.filter((r) => (r.after as { event?: string } | null)?.event === 'cancel'));
+
+  it('the whole press is refused over the paid sibling and names the refunded child, never "refund that sale"', async () => {
+    const { reg, stays, goes } = await siblingsOneRefunded(['ZZ TEST Sib Eleven Stays', 'ZZ TEST Sib Eleven Goes']);
+    const whole = await cancelBooking(reg.id);
+    expect(whole.statusCode, whole.body).toBe(409);
+    expect(whole.json().error.code).toBe('CHECKIN_CANCEL_PAID');
+    expect(whole.json().error.message).toContain('ZZ TEST Sib Eleven Stays is already paid for at the till');
+    expect(whole.json().error.message).toContain('cancel ZZ TEST Sib Eleven Goes on their own instead');
+    expect(whole.json().error.message).not.toContain('refund or void that sale');
+    expect((await stayRow(stays)).status).toBe('registered');
+    expect((await stayRow(goes)).status).toBe('registered');
+  });
+
+  it('the refunded child is cancelled on their own; the paid sibling stays and checks in on the sale', async () => {
+    const { reg, stays, goes, saleId } = await siblingsOneRefunded(['ZZ TEST Sib Twelve Stays', 'ZZ TEST Sib Twelve Goes']);
+    const key = newId();
+    const res = await cancelNamed(reg.id, [goes], key);
+    expect(res.statusCode, res.body).toBe(200);
+    const view = res.json() as { children: Array<{ id: string; status: string }> };
+    expect(view.children.find((c) => c.id === goes)?.status).toBe('cancelled');
+    expect(view.children.find((c) => c.id === stays)?.status).toBe('registered');
+    expect(await stayRow(goes)).toMatchObject({ status: 'cancelled', cancelReason: 'ZZ TEST child went home' });
+    expect((await stayRow(stays)).status).toBe('registered');
+    const rows = await cancelRows(goes);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.after).toMatchObject({ status: 'cancelled', event: 'cancel', named: true });
+    expect(await cancelRows(stays)).toHaveLength(0);
+
+    // Pressed again, with the same key or a new one: the same answer, one audit row.
+    const replay = await cancelNamed(reg.id, [goes], key);
+    expect(replay.statusCode, replay.body).toBe(200);
+    const again = await cancelNamed(reg.id, [goes]);
+    expect(again.statusCode, again.body).toBe(200);
+    expect(await cancelRows(goes)).toHaveLength(1);
+
+    expect(await pickerPaidAtTill(reg.id, stays)).toMatchObject({ saleId });
+    const checkIn = await boardCheckIn(stays);
+    expect(checkIn.statusCode, checkIn.body).toBe(200);
+    expect(await stayRow(stays)).toMatchObject({ status: 'in_park', saleId });
+  });
+
+  it('with the paid sibling already in the park, the refunded child is still cancelled on their own', async () => {
+    const { reg, stays, goes } = await siblingsOneRefunded(['ZZ TEST Sib Thirteen In', 'ZZ TEST Sib Thirteen Goes']);
+    const checkIn = await boardCheckIn(stays);
+    expect(checkIn.statusCode, checkIn.body).toBe(200);
+    const whole = await cancelBooking(reg.id);
+    expect(whole.statusCode, whole.body).toBe(409);
+    expect(whole.json().error.code).toBe('CHECKIN_CANCEL_CHECKED_IN');
+    expect(whole.json().error.message).toContain('ZZ TEST Sib Thirteen In was already checked in');
+    expect(whole.json().error.message).toContain('cancel ZZ TEST Sib Thirteen Goes on their own instead');
+    const res = await cancelNamed(reg.id, [goes]);
+    expect(res.statusCode, res.body).toBe(200);
+    expect((await stayRow(goes)).status).toBe('cancelled');
+    expect((await stayRow(stays)).status).toBe('in_park');
+  });
+
+  it('a named child who is paid for, or checked in, is refused and nothing changes', async () => {
+    const { reg, stays, goes } = await siblingsOneRefunded(['ZZ TEST Sib Fourteen Stays', 'ZZ TEST Sib Fourteen Goes']);
+    const paid = await cancelNamed(reg.id, [stays]);
+    expect(paid.statusCode, paid.body).toBe(409);
+    expect(paid.json().error.code).toBe('CHECKIN_CANCEL_PAID');
+    const both = await cancelNamed(reg.id, [goes, stays]);
+    expect(both.statusCode, both.body).toBe(409);
+    expect(both.json().error.code).toBe('CHECKIN_CANCEL_PAID');
+    expect((await stayRow(stays)).status).toBe('registered');
+    expect((await stayRow(goes)).status).toBe('registered');
+
+    const checkIn = await boardCheckIn(stays);
+    expect(checkIn.statusCode, checkIn.body).toBe(200);
+    const inPark = await cancelNamed(reg.id, [stays]);
+    expect(inPark.statusCode, inPark.body).toBe(409);
+    expect(inPark.json().error.code).toBe('CHECKIN_CANCEL_CHECKED_IN');
+    expect((await stayRow(stays)).status).toBe('in_park');
+  });
+
+  it('a child named who is not on this booking is refused as not found', async () => {
+    const { reg, goes } = await siblingsOneRefunded(['ZZ TEST Sib Fifteen Stays', 'ZZ TEST Sib Fifteen Goes']);
+    const other = await register('ZZ TEST Sib Fifteen Stranger');
+    const res = await cancelNamed(reg.id, [goes, other.children[0]!.id]);
+    expect(res.statusCode, res.body).toBe(404);
+    expect((await stayRow(goes)).status).toBe('registered');
+    expect((await stayRow(other.children[0]!.id)).status).toBe('registered');
+  });
+});
