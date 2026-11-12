@@ -1100,6 +1100,8 @@ export function resolveCatalogueAnswer(
   // SCRUM-904: an allergy is its own kind (kept in Special Requests, shown first).
   for (const r of readMany(RequestAnswer, answer.requests, 60)) {
     if (!r.text) continue;
+    // SCRUM-946: a show the entertainment carries (approved, an Entertainment Act) is not Activities' text too.
+    if ((r.kind ?? "special_request") === "activity" && namesOnlyShows(r.text, proposal.entertainment)) continue;
     const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r, r.text) };
     merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
   }
@@ -1196,6 +1198,32 @@ export function timedElsewhere(
   const setup = proposal.details?.setup;
   if (setup?.tasks.some((t) => { const task = fold(t.itemLabel); return !!task && (label.includes(task) || task.includes(label)); })) return true;
   return setup?.readyBy?.value === step.time && SETUP_WORDS.test(step.label);
+}
+
+/** SCRUM-946: the words that only join a show's name to its time ("Bubble show at 14:00"). */
+const SHOW_FILLER = new Set(["at", "the", "a", "an", "show", "shows", "and", "with", "please", "also", "for", "from", "time", "h", "pm", "am", "ตอน", "เวลา", "โชว์", "в", "шоу"]);
+/**
+ * SCRUM-946 (the 12 November proof: "Bubble show at 14:00" was written into
+ * Activities beside the Bubble show's Entertainment Act): whether an
+ * activity's words name a show the proposal's entertainment carries and
+ * nothing else of their own — its name or the chat's words for it, its time
+ * and joining words aside. An activity with words of its own ("a treasure
+ * hunt", or a show beside one) stays.
+ */
+export function namesOnlyShows(text: string, entertainment: BeoAiProposal["entertainment"]): boolean {
+  let rest = ` ${fold(text)} `;
+  let named = false;
+  for (const e of entertainment) {
+    for (const n of [e.name, e.said]) {
+      const show = n ? fold(n) : "";
+      if (show && rest.includes(show)) {
+        rest = rest.split(show).join(" ");
+        named = true;
+      }
+    }
+  }
+  if (!named) return false;
+  return rest.split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean).every((w) => /^\d+$/.test(w) || SHOW_FILLER.has(w));
 }
 
 /** SCRUM-941: words for the cake, in the languages the park's chats are written in. */
@@ -1334,6 +1362,8 @@ export function detailsFromFill(
     ["activity", fill.event?.activities, formEvent.activities],
   ] as const) {
     if (!value || sameText(value, heldText(held)) || covered(value)) continue;
+    // SCRUM-946: the ruling's activities that only name a show the review carries are that show's act.
+    if (kind === "activity" && namesOnlyShows(value, proposal.entertainment)) continue;
     details.requests.push({ kind, text: value, from: fromFor(value) });
   }
   details.timeline = [...proposal.details.timeline];

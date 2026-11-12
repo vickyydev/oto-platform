@@ -25,6 +25,8 @@
 //   6. the Timeline holds each moment once: no "party starts" or "party ends"
 //      step beside the automatic Guests arrive, no setup task again as a step,
 //      and one cake line at the cake's time (SCRUM-941).
+//   7. a show that becomes an Entertainment Act is not written into
+//      Activities as text too.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -53,7 +55,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
@@ -80,7 +82,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 6;
+const CHECKS = 7;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -89,7 +91,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -474,6 +476,40 @@ try {
     const refs: TranscriptRef[] = texts.map((text, i) => ({ line: i + 1, id: `t${i}`, source: "family", at: at(i), ruling: false, text }));
     const read = resolveCatalogueAnswer(answers.get("TIMELINE-946") ? (answers.get("TIMELINE-946") as any).catalogue : {}, review.catalogue, refs);
     assert.deepEqual(read.details.timeline.map((t) => t.label), ["welcome drinks", "Games"]);
+  });
+
+  // --- 7. A show is an Entertainment Act, not Activities' text too ----------------------------
+  await check("aShowIsItsActNotActivitiesText", async () => {
+    chats.set("show", [
+      { id: `${conv.show}-1`, author: "customer", at: at(0), text: "A party for ZZ Test Toby, 15:00 to 17:30. SHOW-946" },
+      { id: `${conv.show}-2`, author: "staff", at: at(1), text: "Noted: the Bubble show at 16:00, and a treasure hunt for the kids. SHOW-946" },
+    ]);
+    answers.set("SHOW-946", {
+      catalogue: {
+        entertainment: [{ templateId: cat.bubble, said: "the Bubble show", quantity: 1, time: "16:00", line: 2 }],
+        requests: [
+          { kind: "activity", text: "Bubble show at 16:00", line: 2 },
+          { kind: "activity", text: "a treasure hunt for the kids", line: 2 },
+        ],
+      },
+    });
+    const res = await fill(ev.show);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(review.proposal.details.requests.map((r) => [r.kind, r.text]), [["activity", "a treasure hunt for the kids"]], "the show is not an activity too");
+    const ok = await approve(ev.show, approveBodyOf(review, initialReviewState(review, { fill: res.body.fill }), { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const [event] = await q("select activities from core_events where id = $1", [ev.show]);
+    assert.equal(event!.activities, "a treasure hunt for the kids");
+    const acts = await q("select custom_name, start_time from beo_entertainment_items where event_id = $1", [ev.show]);
+    assert.deepEqual(acts.map((a) => [a.custom_name, a.start_time]), [["Bubble show", "16:00"]], "the show is its act");
+    // The ruling message's own read is held to the same rule.
+    const details = detailsFromFill(review.proposal, { event: { activities: "Bubble show at 16:00" } } as any, { existingData: {}, from: { source: "team", at: null, line: null }, event: null });
+    assert.equal(details.requests.some((r) => r.text === "Bubble show at 16:00"), false);
+    const shows = review.proposal.entertainment;
+    assert.equal(namesOnlyShows("The bubble show, at 4 pm", shows), true);
+    assert.equal(namesOnlyShows("Bubble show and face painting", shows), false, "words of its own: kept");
+    assert.equal(namesOnlyShows("games", shows), false, "no show named: kept");
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

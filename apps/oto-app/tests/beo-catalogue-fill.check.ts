@@ -664,7 +664,10 @@ try {
         [
           ["decoration", WORDS[lang].deco, { source: "family", at: at(2), line: 3 }],
           ["special_request", "ZZ no nuts", ruling],
-          ["activity", WORDS[lang].activities, ruling],
+          // SCRUM-946 (the owner's rule of 12 November): an activity that only names a show the
+          // review carries is that show's Entertainment Act, not Activities' text too — the Thai
+          // ruling's "บับเบิ้ลโชว์" is the bubble show alone; "and games" keeps the others.
+          ...(lang === "th" ? [] : [["activity", WORDS[lang].activities, ruling]]),
         ],
         `${lang}: the family's wish is the family's whatever the model says; the ruling's request once; its activities the team's`,
       );
@@ -708,7 +711,8 @@ try {
       assert.equal(meta.transcriptLines, 4);
       assert.equal(meta.catalogueRead.outcome, "filled");
       // SCRUM-827: the rest, as counts too — the requests, the steps, and the details the ruling gave (the title, the ready-by, the POS name).
-      assert.deepEqual(meta.catalogue, { package: true, addOns: lang === "ru" ? 1 : 0, setMenu: true, choices: 1, menuLines: 1, notInMenu: 1, entertainment: 2, notInCatalogue: 0, requests: 3, timeline: 1, details: 3 });
+      // SCRUM-946: the Thai activity is the bubble show's act (above), so one request fewer.
+      assert.deepEqual(meta.catalogue, { package: true, addOns: lang === "ru" ? 1 : 0, setMenu: true, choices: 1, menuLines: 1, notInMenu: 1, entertainment: 2, notInCatalogue: 0, requests: lang === "th" ? 2 : 3, timeline: 1, details: 3 });
       assert.equal(rows.activity[0]!.summary_text, `AI Fill read the inbox conversation for the BEO of "ZZ TEST 815 ${lang}"`);
       for (const word of Object.values(WORDS[lang])) assert.ok(!rows.activity[0]!.metadata_json.includes(word), `${lang}: no "${word}" in the activity row`);
     }
@@ -1100,8 +1104,10 @@ try {
       [cat.zombie, "Zombie game", "Зомби-игра", 4000, false, team],
     ], "the Zombie game, the chat's price beside the catalogue's");
     assert.deepEqual(p.event.numChildren, { value: 10, from: team });
-    // SCRUM-827: the rest from the one line — the activities the team's, the title the park's default.
-    assert.deepEqual(p.details.requests, [{ kind: "activity", text: "Зомби-игра", from: team }]);
+    // SCRUM-827: the rest from the one line — the title the park's default. SCRUM-946 (the owner's
+    // rule of 12 November): the activities "Зомби-игра" are the Zombie game alone, which is its
+    // Entertainment Act, so they are not Activities' text too.
+    assert.deepEqual(p.details.requests, []);
     assert.deepEqual(p.details.title, { value: "Петя's Birthday", from: { source: "default", at: null, line: null } });
     const froms = [p.package!.from, p.setMenu!.from, ...p.setMenu!.choices.map((c) => c.from), ...p.entertainment.map((e) => e.from), ...Object.values(p.event).map((f) => f!.from)];
     assert.ok(froms.every((f) => f.source === "team"), "every value of a pasted message is the team's");
@@ -1114,7 +1120,8 @@ try {
     assert.equal(row?.summary_text, `AI Fill read a pasted message for the BEO of "ZZ TEST 815 paste"`);
     const meta = JSON.parse(row!.metadata_json);
     assert.equal(meta.source, "pasted");
-    assert.deepEqual(meta.catalogue, { package: true, addOns: 0, setMenu: true, choices: 1, menuLines: 0, notInMenu: 0, entertainment: 1, notInCatalogue: 0, requests: 1, timeline: 0, details: 1 });
+    // SCRUM-946: the Zombie game is its act, not a request (above).
+    assert.deepEqual(meta.catalogue, { package: true, addOns: 0, setMenu: true, choices: 1, menuLines: 0, notInMenu: 0, entertainment: 1, notInCatalogue: 0, requests: 0, timeline: 0, details: 1 });
     assert.ok(!row!.metadata_json.includes("Петя") && !row!.metadata_json.includes("Зомби"), "none of the pasted words in the activity row");
 
     // The review in edit mode: the team's marks, the matches, the chat's price beside the catalogue's.
@@ -1139,7 +1146,8 @@ try {
     assert.equal(rows.event.num_children, 10);
     assert.equal(rows.event.internal_staff_notes, null, "Final Message to Parent is not written from a pasted text");
     assert.equal(rows.event.title, "Петя's Birthday", "SCRUM-827: the pasted message fills the rest in the same pass too");
-    assert.equal(rows.event.activities, "Зомби-игра");
+    // SCRUM-946: the Zombie game is its act, not Activities' text too.
+    assert.equal(rows.event.activities, null);
     const approvedMeta = rows.activity.map((r) => JSON.parse(r.metadata_json)).find((m) => m.step === "approved");
     assert.equal(approvedMeta?.source, "pasted");
 
