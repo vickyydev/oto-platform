@@ -49,6 +49,10 @@ describe('SCRUM-882 — the classes', () => {
     expect(markup).toContain('p-3 @xl:p-6');
     expect(markup).toContain('text-lg @xl:text-2xl');
     expect(markup).not.toMatch(/sm:(grid-cols|p-6|h-20|text-2xl)/);
+    // Below @xl the amount, Back and Confirm tighten so Confirm stays on screen.
+    expect(markup).toContain('mb-4 @xl:mb-8 text-center');
+    expect(markup).toContain('sm:w-24 @xl:w-32');
+    expect(markup).toContain('px-4 @xl:px-8 whitespace-normal text-lg @xl:text-xl');
   });
 
   it('a method name has no mid-word break opportunity', () => {
@@ -96,6 +100,18 @@ describe.skipIf(!markup)('SCRUM-882 — measured: every name whole, every langua
       expect(broken).toEqual([]);
     }, 120_000);
   }
+
+  it('Confirm Payment Received reads on two lines beside Back in the split view panel', async () => {
+    await page.place(html(), 310);
+    const confirm = await page.page.evaluate(() => {
+      const button = Array.from(document.querySelectorAll('#markup button')).find((b) => /Confirm Payment Received/.test(b.textContent ?? '')) as HTMLElement;
+      const back = Array.from(document.querySelectorAll('#markup button')).find((b) => b.textContent?.trim() === 'Back') as HTMLElement;
+      const style = getComputedStyle(button);
+      const text = button.getBoundingClientRect().height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      return { lines: Math.round(text / parseFloat(style.lineHeight)), sameRow: button.getBoundingClientRect().left >= back.getBoundingClientRect().right };
+    });
+    expect(confirm).toEqual({ lines: 2, sameRow: true });
+  });
 
   it('the defect: with the old window-keyed classes, the split view broke the names mid-word', async () => {
     const old = html()

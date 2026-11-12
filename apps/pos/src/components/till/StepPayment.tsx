@@ -124,7 +124,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
 
   return (
     <div data-testid="payment-step" className="@container flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
-      <div className="mb-8 text-center">
+      <div className="mb-4 @xl:mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
         <div className="text-5xl sm:text-6xl break-words font-black text-primary">{amountUnavailable ? '—' : `฿${total}`}</div>
       </div>
@@ -153,7 +153,10 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
               and pushed Confirm below the window. Below `@xl` they are the
               phone's two columns and sizes; from `@xl` (576px, where three
               prototype tiles hold "PromptPay" and "Наличные" whole) the
-              prototype's row. Labels wrap only between words. */}
+              prototype's row. Labels wrap only between words. Below `@xl`
+              the amount's margin, Back's width and Confirm's padding and type
+              tighten too, so Confirm reads on two lines and stays on screen
+              at 1440x900. */}
           <div
             className={cn('grid gap-3 @xl:gap-4', methods.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
               methods.length >= 4 ? '@3xl:grid-cols-4' : methods.length === 3 ? '@xl:grid-cols-3' : '')}
@@ -205,14 +208,14 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       <div className="mt-auto pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         {/* While a gateway QR is pending, Back is the way out of it: the QR is
             cancelled and this step stays, back at "Select Payment Method". */}
-        <Button variant="outline" size="lg" className="w-full sm:w-32 shrink-0 h-16"
+        <Button variant="outline" size="lg" className="w-full sm:w-24 @xl:w-32 shrink-0 h-16"
           onClick={paymentStage?.canCancel ? () => { void paymentStage.cancel(); } : onBack}
           disabled={busy || (paymentStage && !paymentStage.canBack && !paymentStage.canCancel)}>
           Back
         </Button>
         <Button
           size="lg"
-          className="min-w-0 sm:flex-1 min-h-16 h-auto py-3 whitespace-normal text-lg sm:text-xl font-bold"
+          className="min-w-0 sm:flex-1 min-h-16 h-auto py-3 px-4 @xl:px-8 whitespace-normal text-lg @xl:text-xl font-bold"
           disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || amountUnavailable}
           onClick={paymentStage ? () => { void paymentStage.submit(); } : onComplete}
         >
