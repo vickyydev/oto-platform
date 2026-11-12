@@ -994,6 +994,16 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-fill-till-menu.check.ts
+      # SCRUM-958: the follow-ups of the fill's staging proof, with its own
+      # threads — words said for the adults never choose for the kids (the
+      # adults' SET line of a set-menu dish, never a charged extra unless
+      # more is asked or priced), a fold said in the review and the toast, a
+      # chat total named in the line's reason, the BEO sheets' hidden title.
+      - name: The app's AI fill follow-ups checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-followups.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept
@@ -1088,6 +1098,19 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/till-menu-ui.check.ts
+      # SCRUM-949: an EXTRA line of the kitchen and bar plan shows its price
+      # and what the till will charge for it (the settlement's arithmetic:
+      # the entered price each, else the till's for the party's day), the
+      # plan's extras total, the PDF's prices and single brackets; then the
+      # editor under jsdom: the box on EXTRA lines only, typed and saved.
+      - name: The app's EXTRA price checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/beo-extra-price.check.ts
+      - name: The app's EXTRA price screen check
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-extra-price-ui.check.ts
       # SCRUM-829: the kids' menu is the main selection; the adults mirror it —
       # the stored shape (no adults' list with the switch off, their own list
       # and adultsDiffer with it on, a BEO saved before opening on only when
