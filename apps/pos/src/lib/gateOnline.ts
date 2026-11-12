@@ -29,6 +29,14 @@ import type { SaleWriteState } from './saleWriter';
  * at the cash press is tried again online under the sale's own ids. The hold
  * ends when the sale is written or the cart cleared (`endSale`), or when a
  * held sale call runs out of retries: what follows is the lane's own rule.
+ *
+ * A sale written while that hold was still carried was written online, and
+ * the door choice that follows it — check the children in now, or leave them
+ * booked — names that sale and that registration, neither of which the box
+ * has pulled yet. So each door press is held the same way (`beginDoor`): a
+ * long outage that moved the lane to the box does not send the check-in
+ * there. A door press whose held retries run out ends it: the next press
+ * follows the lane's own rule.
  */
 export interface GateOnlineHold {
   /** Whether this gate has written the guardian or a child on the platform. */
@@ -41,8 +49,15 @@ export interface GateOnlineHold {
   carryToSale(): void;
   /** The press ended, however it ended: the hold is released unless carried to the sale. */
   endPress(): void;
-  /** The family's sale was written, or the cart cleared: the hold is released. */
+  /**
+   * The family's sale was written: the hold is released. Written while it was
+   * still carried, it was written online, and its door choice is held too.
+   */
   endSale(): void;
+  /** A door choice for this family is pressed: held for the press when its sale was written online. */
+  beginDoor(): void;
+  /** The door press ended, however it ended: the hold is released. */
+  endDoor(): void;
   /** A new gate (the form opened again, or a new sale): nothing written yet, nothing held. */
   reset(): void;
 }
@@ -53,18 +68,22 @@ export interface GateRetryWords {
   readonly description: string;
 }
 
-/** `onRetrying` is called once per press (once per sale), the first time a held call is retried. */
+/** `onRetrying` is called once per press (once per sale, once per door press), the first time a held call is retried. */
 export function gateOnlineHold(onRetrying: (words: GateRetryWords) => void): GateOnlineHold {
   let startedOnline = false;
   let release: (() => void) | null = null;
   let said = false;
   let carried = false;
   let sale = false;
+  /** The family's sale was written online: its door choice is held. */
+  let door = false;
+  let doorPress = false;
   const drop = () => {
     release?.();
     release = null;
     carried = false;
     sale = false;
+    doorPress = false;
   };
   const take = () => {
     if (release) return;
@@ -73,11 +92,13 @@ export function gateOnlineHold(onRetrying: (words: GateRetryWords) => void): Gat
       () => {
         if (said) return;
         said = true;
-        onRetrying(sale ? GATE_SALE_RETRYING : GATE_RETRYING);
+        onRetrying(sale ? GATE_SALE_RETRYING : doorPress ? GATE_DOOR_RETRYING : GATE_RETRYING);
       },
       () => {
         // The sale's held retries ran out: the lane's own rule from here.
         if (sale) drop();
+        // So did a door press's: its next press follows the lane.
+        if (doorPress) door = false;
       },
     );
   };
@@ -106,11 +127,21 @@ export function gateOnlineHold(onRetrying: (words: GateRetryWords) => void): Gat
       drop();
     },
     endSale() {
+      if (sale && release) door = true;
       drop();
+    },
+    beginDoor() {
+      if (!door) return;
+      take();
+      doorPress = true;
+    },
+    endDoor() {
+      if (doorPress) drop();
     },
     reset() {
       drop();
       startedOnline = false;
+      door = false;
     },
   };
 }
@@ -123,6 +154,13 @@ export const GATE_RETRYING: GateRetryWords = {
   title: 'Connection dropped — retrying',
   description:
     'These children are already saved online. The till is finishing their registration online — please wait, there is nothing to type again.',
+};
+
+/** Shown once per door press, the first time its held check-in call is retried. */
+export const GATE_DOOR_RETRYING: GateRetryWords = {
+  title: 'Connection dropped — retrying',
+  description:
+    'This family is already registered and paid online. The till is finishing their check-in online — please wait, there is nothing to press again.',
 };
 
 /** Shown once per sale, the first time a held sale call (Pay, the cash press) is retried. */

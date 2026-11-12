@@ -3,10 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from './support/hooks';
 import { apiSale } from './support/fixtures';
+import { BOX_CHECKIN_REFUSALS } from '@oto/shared';
 import { setBridgeOrigin, setBridgeStaffName } from '@/api/bridge';
+import { checkinApi } from '@/api/checkin';
 import { NetworkError } from '@/api/client';
 import type { SaleCartPayload, SaleTenderPayload } from '@/api/sales';
 import {
+  GATE_DOOR_RETRYING,
   GATE_RETRYING,
   GATE_SALE_BOX_NOT_SYNCED,
   GATE_SALE_RETRYING,
@@ -98,6 +101,8 @@ class World {
     if (url === intentsUrl) {
       const payload = (body.payload ?? {}) as Record<string, unknown>;
       this.box.push({ type: String(body.type), payload });
+      // Nor the registration and its stays (`checkin-desk.ts`).
+      if (body.type === 'checkin.update') return reply({ error: BOX_CHECKIN_REFUSALS.noCopy }, 404);
       // The box has not pulled the guardian the gate wrote seconds ago.
       return reply({ error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
     }
@@ -126,6 +131,12 @@ class World {
         finalised: true,
         outstandingSatang: 0,
       });
+    }
+    if (method === 'POST' && path === '/checkin/check-in-now') {
+      return reply({ saleId: body.saleId, children: [], bands: [], printJobs: [], notes: [] });
+    }
+    if (method === 'POST' && path === '/checkin/leave-as-booked') {
+      return reply({ saleId: body.saleId, children: [] });
     }
     const voided = /^\/sales\/([^/]+)\/void$/.exec(path);
     if (method === 'POST' && voided) {
@@ -211,6 +222,19 @@ const corrected = (): SaleWriteInput => {
 
 /** What the box was asked to sell (a receipt the till saw is only a notice to it). */
 const boxSales = () => world.box.filter((c) => c.type !== 'receipt.observed');
+/** What the box was asked to do at the door (check in now, leave as booked). */
+const boxDoor = () => world.box.filter((c) => c.type === 'checkin.update');
+const doorPosts = () => world.platform.filter((c) => c.path === '/checkin/check-in-now' || c.path === '/checkin/leave-as-booked');
+const stays = [{ checkinId: '018f0000-0000-7000-8000-0000000887e1' }, { checkinId: '018f0000-0000-7000-8000-0000000887e2' }];
+
+/** Pay and the cash press, as the payment step makes them: the sale is written. */
+async function soldInCash(): Promise<{ saleId: string; unmount: () => void }> {
+  const { result, unmount } = renderHook(() => useSaleWriter());
+  const rung = await result.current.commit(order());
+  const paid = await result.current.finalise(cash, 'cash-press');
+  expect(paid).toMatchObject({ ok: true, written: true, finalised: true });
+  return { saleId: rung.saleId, unmount };
+}
 const salePosts = () => world.platform.filter((c) => c.path === '/sales');
 const finalisePosts = () => world.platform.filter((c) => c.path.endsWith('/finalise'));
 
@@ -482,6 +506,120 @@ describe('SCRUM-887: the link stayed down past the retries and the lane moved to
   });
 });
 
+describe('SCRUM-887: the door choice after the family\'s sale', () => {
+  it('the sale written online while the lane says box: Check in now and Leave as booked go online too, and the box is never asked', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { saleId, unmount } = await soldInCash();
+    try {
+      hold.endSale(); // Till's effect on a written sale
+      expect(platformLaneHeld()).toBe(false);
+      expect(currentLane()).toBe('box');
+
+      hold.beginDoor();
+      expect(platformLaneHeld()).toBe(true);
+      await checkinApi.checkInNow({ saleId, entries: [stays[0]!] });
+      hold.endDoor();
+      expect(platformLaneHeld()).toBe(false);
+
+      hold.beginDoor(); // a second registration's group, left as booked
+      await checkinApi.leaveAsBooked({ saleId, entries: [stays[1]!] });
+      hold.endDoor();
+
+      expect(doorPosts().map((c) => [c.path, c.body.saleId])).toEqual([
+        ['/checkin/check-in-now', saleId],
+        ['/checkin/leave-as-booked', saleId],
+      ]);
+      expect(boxDoor()).toEqual([]);
+      expect(boxSales()).toEqual([]);
+      expect(platformLaneHeld()).toBe(false);
+    } finally {
+      unmount();
+      hold.reset();
+    }
+  });
+
+  it('a dropped link at the door press is retried online, in the door\'s own words', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { saleId, unmount } = await soldInCash();
+    world.drops.push({ path: /^POST \/checkin\/check-in-now$/, at: [1] });
+    try {
+      hold.endSale();
+      hold.beginDoor();
+      await checkinApi.checkInNow({ saleId, entries: stays });
+      hold.endDoor();
+      expect(world.drops[0]!.seen).toBe(2);
+      expect(doorPosts()).toHaveLength(1);
+      expect(said).toEqual([GATE_DOOR_RETRYING]);
+      expect(boxDoor()).toEqual([]);
+    } finally {
+      unmount();
+      hold.reset();
+    }
+  });
+
+  it('the link still down at the door press: its held retries run out, and the next press follows the lane — the box', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { saleId, unmount } = await soldInCash();
+    world.drops.push({ path: /^POST \/checkin\/check-in-now$/, at: [1, 2, 3, 4, 5] });
+    try {
+      hold.endSale();
+      hold.beginDoor();
+      await expect(checkinApi.checkInNow({ saleId, entries: stays })).rejects.toBeInstanceOf(NetworkError);
+      hold.endDoor();
+      expect(world.drops[0]!.seen).toBe(4);
+      expect(boxDoor()).toEqual([]);
+
+      hold.beginDoor(); // pressed again: no hold now
+      expect(platformLaneHeld()).toBe(false);
+      await expect(checkinApi.checkInNow({ saleId, entries: stays })).rejects.toMatchObject({ code: BOX_CHECKIN_REFUSALS.noCopy.code });
+      hold.endDoor();
+      expect(boxDoor()).toHaveLength(1);
+    } finally {
+      unmount();
+      hold.reset();
+    }
+  });
+
+  it('a sale whose held retries ran out takes no door hold, and neither does a gate that never wrote online', async () => {
+    const hold = gateFinishedOnline();
+    world.drops.push({ path: /^POST \/sales$/, at: [1, 2, 3, 4] });
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      await result.current.commit(order()); // the retries ran out: the box refused
+      expect(platformLaneHeld()).toBe(false);
+      hold.endSale();
+      hold.beginDoor();
+      expect(platformLaneHeld()).toBe(false);
+      hold.endDoor();
+    } finally {
+      unmount();
+      hold.reset();
+    }
+    const offline = gateOnlineHold((words) => said.push(words));
+    offline.beginPress();
+    offline.carryToSale();
+    offline.endPress();
+    offline.endSale();
+    offline.beginDoor();
+    expect(platformLaneHeld()).toBe(false);
+    offline.endDoor();
+  });
+
+  it('a new sale (reset) ends the door hold', async () => {
+    const hold = gateFinishedOnline();
+    const { unmount } = await soldInCash();
+    try {
+      hold.endSale();
+      hold.reset();
+      hold.beginDoor();
+      expect(platformLaneHeld()).toBe(false);
+      hold.endDoor();
+    } finally {
+      unmount();
+    }
+  });
+});
+
 describe('SCRUM-887: the general rule is unchanged', () => {
   it('a gate press that did not reach payment releases its hold: a dropped Pay goes to the box', async () => {
     const hold = gateOnlineHold((words) => said.push(words));
@@ -583,6 +721,17 @@ describe('SCRUM-887: the till carries its gate to the sale', () => {
     expect(voids).toBeGreaterThan(atBox);
     expect(commits).toBeGreaterThan(voids);
     expect(writer).toMatch(/onTheBox\.lane === 'box' \|\| \(cashOrNothing && station && currentLane\(\) === 'box' && !platformLaneHeld\(\)\)/);
+  });
+
+  it('both door presses are held by the gate, and released however they end', () => {
+    for (const [from, to] of [
+      ['const handleCheckInGroupNow', 'const handleLeaveGroupBooked'],
+      ['const handleLeaveGroupBooked', 'const resolveCheckInGroup'],
+    ] as const) {
+      const press = src.slice(src.indexOf(from), src.indexOf(to));
+      expect(press).toMatch(/checkInChoiceBusy\.current = true;\s*(\/\/[^\n]*\n\s*)?gateOnline\.beginDoor\(\);\s*void checkinApi/);
+      expect(press).toMatch(/\.finally\(\(\) => \{\s*gateOnline\.endDoor\(\);\s*checkInChoiceBusy\.current = false;/);
+    }
   });
 
   it('the words differ for the gate and the sale', () => {

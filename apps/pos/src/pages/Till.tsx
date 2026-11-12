@@ -3258,6 +3258,8 @@ export default function Till() {
   const handleCheckInGroupNow = (group: DoorCheckInGroup) => {
     if (!operator || !station || !saleResult || checkInChoiceBusy.current) return;
     checkInChoiceBusy.current = true;
+    // SCRUM-887 — a family the gate wrote and sold online is checked in online.
+    gateOnline.beginDoor();
     void checkinApi
       .checkInNow({
         saleId: saleResult.id,
@@ -3293,6 +3295,7 @@ export default function Till() {
         });
       })
       .finally(() => {
+        gateOnline.endDoor();
         checkInChoiceBusy.current = false;
       });
   };
@@ -3305,6 +3308,7 @@ export default function Till() {
   const handleLeaveGroupBooked = (group: DoorCheckInGroup) => {
     if (!operator || !saleResult || checkInChoiceBusy.current) return;
     checkInChoiceBusy.current = true;
+    gateOnline.beginDoor();
     void checkinApi
       .leaveAsBooked({
         saleId: saleResult.id,
@@ -3326,6 +3330,7 @@ export default function Till() {
         });
       })
       .finally(() => {
+        gateOnline.endDoor();
         checkInChoiceBusy.current = false;
       });
   };
