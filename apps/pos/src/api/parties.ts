@@ -494,7 +494,15 @@ export type PartyKitchenEditOutcome =
       message: string;
       /** Nothing answered (or the OTO App did not): the same press may go again under the same ids. */
       retryable: boolean;
+      /**
+       * The OTO App refused because the BEO changed since the till read it (a line gone, a choice
+       * made there): the party is read again before the form opens on it once more.
+       */
+      readAgain?: true;
     };
+
+/** The OTO App's refusals that ask the till to read the party again (the app's `line_not_found`, `choice_already_made`). */
+const KITCHEN_READ_AGAIN = new Set(['OTOAPP_LINE_NOT_FOUND', 'OTOAPP_CHOICE_ALREADY_MADE']);
 
 /**
  * The kitchen section's changes, under the edit's id: the platform writes them
@@ -520,7 +528,8 @@ export async function editPartyKitchenOnPlatform(args: {
     })) as PartyKitchenEditAnswer;
     return { ok: true, party: toOtoEvent(answer.event, args.party.branchId) as unknown as PartyBooking, answer };
   } catch (err) {
-    return failureOf(err);
+    const failure = failureOf(err);
+    return err instanceof ApiError && KITCHEN_READ_AGAIN.has(err.code) ? { ...failure, readAgain: true } : failure;
   }
 }
 

@@ -161,7 +161,11 @@ function QtyItemListEditor({
   );
 }
 
-export function PartyEditForm({ party, onSave, onCancel, kitchenPlan = null, mayEditKitchen = false, kitchenChoices = null }: PartyEditFormProps) {
+export function PartyEditForm({ party, onSave, onCancel, kitchenPlan: planRead = null, mayEditKitchen = false, kitchenChoices = null }: PartyEditFormProps) {
+  // SCRUM-907 — the kitchen plan as the form opened on it: its draft, its sections and what Save
+  // sends all stand on this one read, so a read of the page landing while the form is open never
+  // turns into a change the manager did not make.
+  const [kitchenPlan] = useState(() => planRead);
   // A deep-ish working draft. Edits are immutable on nested objects so Cancel
   // (which simply discards this component's state) never leaks into the party.
   const [draft, setDraft] = useState<PartyBooking>(() => ({

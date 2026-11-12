@@ -336,6 +336,17 @@ describe('the platform calls', () => {
     expect(silent).toMatchObject({ ok: false, retryable: true });
   });
 
+  it('the refusals asking to read the party again say so; no other does', async () => {
+    for (const code of ['OTOAPP_LINE_NOT_FOUND', 'OTOAPP_CHOICE_ALREADY_MADE']) {
+      putMock.mockRejectedValueOnce(new ApiError(409, code, 'The OTO App did not change the kitchen plan: read the party again.'));
+      const refused = await editPartyKitchenOnPlatform({ party: { id: PARTY, branchId: 'hkt-central' }, changes: [{ op: 'set', lineId: 'm1', qty: 3 }], ids: { id: 'x', actionId: 'y' } });
+      expect(refused).toEqual({ ok: false, message: 'The OTO App did not change the kitchen plan: read the party again.', retryable: false, readAgain: true });
+    }
+    putMock.mockRejectedValueOnce(new ApiError(409, 'OTOAPP_NOT_A_PARTY', 'Only a party.'));
+    const other = await editPartyKitchenOnPlatform({ party: { id: PARTY, branchId: 'hkt-central' }, changes: [{ op: 'set', lineId: 'm1', qty: 3 }], ids: { id: 'x', actionId: 'y' } });
+    expect(other).not.toHaveProperty('readAgain');
+  });
+
   it('the choices are read for the form; a till not linked reads none', async () => {
     expect(await readPartyKitchenChoicesOnPlatform({ id: PARTY, branchId: 'hkt-central' })).toMatchObject({ status: 'ok' });
     expect(getMock).toHaveBeenCalledWith(`/parties/${PARTY}/kitchen-plan/choices?branchId=${HKT_CENTRAL}`);
@@ -397,6 +408,22 @@ describe('the Edit form', () => {
     expect(values).toContain('ZZ unicorn');
   });
 
+  it('a read of the page landing while the form is open changes neither its sections nor what Save sends', () => {
+    const { onSave, host } = form(true);
+    const draft = elementOf(host.result.current, PartyKitchenPlanSection)!.props.draft as KitchenDraft;
+    // The BEO moved meanwhile: Calamari now ×4 there. The form stays on the plan it opened on.
+    const moved: PartyKitchenPlan = { ...KITCHEN, setMenu: KITCHEN.setMenu.map((m) => (m.lineId === 'm1' ? { ...m, qty: 4 } : m)) };
+    host.rerender({ party: partyOf(), onSave, onCancel: vi.fn(), kitchenPlan: moved, mayEditKitchen: true, kitchenChoices: null });
+    expect(elementOf(host.result.current, PartyKitchenPlanSection)!.props.plan).toBe(KITCHEN);
+    (elementOf(host.result.current, PartyKitchenPlanSection)!.props.onChange as (d: KitchenDraft) => void)({
+      ...draft,
+      lines: draft.lines.map((l) => (l.key === 'food:m2' ? { ...l, note: 'cut very small' } : l)),
+    });
+    (buttonIn(host.result.current, 'Save changes')!.props.onClick as () => void)();
+    // Only the note: never Calamari set back to ×2 under the BEO's ×4.
+    expect(onSave.mock.calls[0]![1]).toEqual([{ op: 'set', lineId: 'm2', note: 'cut very small' }]);
+  });
+
   it('without a plan read, the sections are the prototype\'s own, as before', () => {
     const props = { party: partyOf(), onSave: vi.fn(), onCancel: vi.fn() };
     const host = renderHook((p: typeof props) => PartyEditForm(p), props);
@@ -452,6 +479,102 @@ describe('the party page saves the kitchen plan to the BEO', () => {
       description: 'The OTO App did not change the kitchen plan: French fries is a dish of the set menu.',
       variant: 'destructive',
     });
+  });
+
+  // --- The OTO App says "read the party again": the BEO moved since the form opened ------------
+  const LINE_GONE =
+    'The OTO App did not change the kitchen plan: A line of the kitchen plan was changed in the BEO since the till read it (m1). Read the party again and make the change once more.';
+  /** The BEO as the OTO App holds it after another hand changed it there: Calamari gone. */
+  const MOVED: PartyKitchenPlan = { ...KITCHEN, setMenu: KITCHEN.setMenu.filter((m) => m.lineId !== 'm1') };
+  const planReads = () => getMock.mock.calls.filter((c) => c[0] === `/parties/${PARTY}?branchId=${HKT_CENTRAL}`).length;
+  /** The party's reads answer the BEO as `beo.now` holds it; while `beo.hold`, they wait until released. */
+  function beoReads(beo: { now: PartyKitchenPlan; hold: boolean; waiting: Array<() => void> }) {
+    getMock.mockImplementation((async (path: string) => {
+      if (path.startsWith(`/parties/${PARTY}/kitchen-plan/choices`)) return { status: 'ok', message: null, groups: [] };
+      if (path.startsWith(`/parties/${PARTY}`)) {
+        if (beo.hold) await new Promise<void>((resolve) => beo.waiting.push(resolve));
+        return detailAnswer(beo.now);
+      }
+      return { member: null };
+    }) as unknown as typeof api.get);
+  }
+  const saveOn = (form: El, changes: unknown[]) =>
+    (form.props.onSave as (p: unknown, c: unknown) => Promise<void>)({ ...partyOf() }, changes);
+
+  it('a refusal asking to read the party again reads it now; Cancel reads it again and Edit opens on the BEO as it is', async () => {
+    const beo = { now: KITCHEN, hold: false, waiting: [] as Array<() => void> };
+    beoReads(beo);
+    const { host, onChanged } = page();
+    const editForm = await openEdit(host);
+    expect(editForm.props.kitchenPlan).toEqual(KITCHEN);
+    beo.now = MOVED;
+    putMock.mockRejectedValueOnce(new ApiError(409, 'OTOAPP_LINE_NOT_FOUND', LINE_GONE));
+    const readsBefore = planReads();
+    const changedBefore = onChanged.mock.calls.length;
+    await saveOn(editForm, [{ op: 'set', lineId: 'm1', qty: 3 }]);
+    await settle();
+    // The form stays open; the party and its plan are read again at once.
+    expect(elementOf(host.result.current, PartyEditForm)).not.toBeNull();
+    expect(planReads()).toBeGreaterThan(readsBefore);
+    expect(onChanged.mock.calls.length).toBeGreaterThan(changedBefore);
+    expect(toastMock).toHaveBeenCalledWith({
+      title: 'Kitchen plan not saved',
+      description: `${LINE_GONE} Press Cancel, then Edit party: it opens on the plan read again.`,
+      variant: 'destructive',
+    });
+    const readsAtCancel = planReads();
+    (elementOf(host.result.current, PartyEditForm)!.props.onCancel as () => void)();
+    await settle();
+    expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
+    expect(planReads()).toBeGreaterThan(readsAtCancel);
+    const reopened = await openEdit(host);
+    expect(reopened.props.kitchenPlan).toEqual(MOVED);
+  });
+
+  it('Edit pressed before that read has answered is asked again, and never opens on the plan the BEO moved past', async () => {
+    const beo = { now: KITCHEN, hold: false, waiting: [] as Array<() => void> };
+    beoReads(beo);
+    const { host } = page();
+    const editForm = await openEdit(host);
+    beo.now = MOVED;
+    beo.hold = true;
+    putMock.mockRejectedValueOnce(
+      new ApiError(
+        409,
+        'OTOAPP_CHOICE_ALREADY_MADE',
+        'The OTO App did not change the kitchen plan: Fried rice was chosen in the BEO since the till read it. Read the party again and change the choice once more.',
+      ),
+    );
+    await saveOn(editForm, [{ op: 'choose', choiceGroup: 'Fried rice', lineId: 'set_rice', option: 'Chicken' }]);
+    await settle();
+    (elementOf(host.result.current, PartyEditForm)!.props.onCancel as () => void)();
+    await settle();
+    toastMock.mockClear();
+    (buttonIn(host.result.current, 'Edit party')!.props.onClick as () => void)();
+    await settle();
+    expect(elementOf(host.result.current, PartyEditForm)).toBeNull();
+    expect(toastMock).toHaveBeenCalledWith({
+      title: 'Reading the party again',
+      description: 'The kitchen plan is being read from the BEO. Press Edit party again in a moment.',
+    });
+    beo.hold = false;
+    for (const go of beo.waiting.splice(0)) go();
+    await settle();
+    const reopened = await openEdit(host);
+    expect(reopened.props.kitchenPlan).toEqual(MOVED);
+  });
+
+  it('another refusal keeps the plan the form opened on and reads nothing again', async () => {
+    const { host } = page();
+    const editForm = await openEdit(host);
+    putMock.mockRejectedValueOnce(new ApiError(409, 'OTOAPP_SET_MENU_LINE', 'The OTO App did not change the kitchen plan: French fries is a dish of the set menu.'));
+    await saveOn(editForm, [{ op: 'remove', lineId: 'set_fries' }]);
+    await settle();
+    const reads = planReads();
+    (elementOf(host.result.current, PartyEditForm)!.props.onCancel as () => void)();
+    await settle();
+    expect(planReads()).toBe(reads);
+    expect((await openEdit(host)).props.kitchenPlan).toEqual(KITCHEN);
   });
 
   it('reception open the form read-only and the choices are not asked for', async () => {

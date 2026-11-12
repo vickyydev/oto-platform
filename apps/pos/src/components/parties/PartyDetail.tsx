@@ -344,10 +344,39 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     // eslint-disable-next-line react-hooks/exhaustive-deps -- asked once each time the form opens
   }, [editing]);
 
-  /** The form closed after a save: the party page reads the plan again, so it shows what the BEO now holds. */
+  /**
+   * The plan read the Edit form may not open on again: the one it was open on when the BEO changed
+   * under it (a kitchen write landed, or the OTO App answered "read the party again"). The plan is
+   * read again, and Edit opens once a newer read has answered.
+   */
+  const stalePlan = useRef<{ read: typeof planRead } | null>(null);
+  const markPlanStale = () => {
+    if (!stalePlan.current) stalePlan.current = { read: planRead };
+  };
+
+  /** The form closed after the BEO changed: the party page reads the plan again, so it shows what the BEO now holds. */
   const closeEdit = () => {
+    markPlanStale();
+    ids.current.kitchen = undefined;
     setEditing(false);
     setPlanNonce((n) => n + 1);
+  };
+
+  /** Cancel: after the BEO changed under the form, the plan is read again as it closes. */
+  const cancelEdit = () => {
+    if (stalePlan.current) closeEdit();
+    else setEditing(false);
+  };
+
+  /** Edit party: never on a plan the BEO has moved past; while that read is on its way, it is asked again. */
+  const openEdit = () => {
+    if (stalePlan.current && stalePlan.current.read === planRead) {
+      setPlanNonce((n) => n + 1);
+      toast({ title: 'Reading the party again', description: 'The kitchen plan is being read from the BEO. Press Edit party again in a moment.' });
+      return;
+    }
+    stalePlan.current = null;
+    setEditing(true);
   };
 
   const saving = useRef(false);
@@ -384,9 +413,18 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         });
         if (!kitchen.ok) {
           if (!kitchen.retryable) ids.current.kitchen = undefined;
+          if (kitchen.readAgain) {
+            // The BEO moved since the form opened: read the party and its plan again now. The open
+            // form keeps the plan it opened on; Cancel closes it, and Edit opens on the new read.
+            markPlanStale();
+            setPlanNonce((n) => n + 1);
+            onChanged();
+          }
           toast({
             title: kitchen.retryable ? 'Kitchen plan not confirmed' : 'Kitchen plan not saved',
-            description: kitchen.message,
+            description: kitchen.readAgain
+              ? `${kitchen.message} Press Cancel, then Edit party: it opens on the plan read again.`
+              : kitchen.message,
             variant: 'destructive',
           });
           return;
@@ -775,7 +813,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       <PartyEditForm
         party={party}
         onSave={handleSaveEdit}
-        onCancel={() => setEditing(false)}
+        onCancel={cancelEdit}
         kitchenPlan={kitchenPlan}
         mayEditKitchen={mayEditKitchen}
         kitchenChoices={kitchenChoices}
@@ -854,7 +892,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => openUnlessBlocked(() => setEditing(true))}
+              onClick={() => openUnlessBlocked(openEdit)}
             >
               <Pencil className="w-5 h-5" />
               Edit party
