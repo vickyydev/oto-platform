@@ -1056,6 +1056,188 @@ test('separate display drop-off form is mirrored live on the till and survives a
   }
 });
 
+/**
+ * SCRUM-857 — THE DROP-OFF FORM ON THE FAMILY'S SCREEN, ALL OF IT TOGETHER.
+ * The family takes the child's photo on the paired display (a painted canvas
+ * stands in for the webcam the park will mount), staff watch the form on the
+ * till as it is filled, the photo included, and a form left half-done writes
+ * nothing. On the next sale the family's own Done, once every check passes,
+ * registers the child with that photo and moves the sale on with no staff
+ * press (the owner's rulings of 8 and 12 November).
+ *
+ * The local harness has no object storage (nor has CI), so the two photo
+ * routes are answered here: the display's upload (POST
+ * /api/display/consent-photos) and the till's collection of it (GET
+ * /api/stations/:id/consent-photos/:fileId). Everything between them is the
+ * real one: the photo answer through the station, the till keeping the
+ * picture on the child, the mark coming back to the display, the family's
+ * Done and the registration. The two routes have their own api test
+ * (apps/api/test/s857-display-photo.test.ts).
+ */
+test('separate display drop-off: the family takes the photo, a half-done form writes nothing, and their Done moves the sale on', async ({ page, browser, baseURL }) => {
+  test.setTimeout(240_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  const uploads: { id: string; visitorId: string; slotId: string; dataUrl: string }[] = [];
+  const registrations: { id: string | null; status: number; replay: boolean }[] = [];
+  const registrationFiles: { ownerEntityId: string; contentType: string }[] = [];
+  const watchFiles = (request: Request) => {
+    if (request.method() !== 'POST' || new URL(request.url()).pathname !== '/api/files') return;
+    const body = request.postDataJSON();
+    if (body?.ownerEntityType === 'registration') registrationFiles.push({ ownerEntityId: body.ownerEntityId, contentType: body.contentType });
+  };
+  const countRegistration = async (response: Response) => {
+    if (response.request().method() !== 'POST' || new URL(response.url()).pathname !== '/api/checkin/registrations') return;
+    const entry = { id: null as string | null, status: response.status(), replay: response.headers()['x-oto-replay'] === 'true' };
+    registrations.push(entry);
+    entry.id = (await response.json().catch(() => null))?.id ?? null;
+  };
+  try {
+    // The display's webcam, before any form opens (the form asks once whether there is one).
+    await fixture.display.evaluate(() => {
+      const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480;
+      const context = canvas.getContext('2d')!; context.fillStyle = '#3a6f8f'; context.fillRect(0, 0, 640, 480);
+      Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', { configurable: true,
+        value: async () => [{ kind: 'videoinput', deviceId: 'zz-test-camera', groupId: 'zz-test', label: '' }] });
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
+        const stream = canvas.captureStream(5);
+        window.setInterval(() => context.fillRect(0, 0, 640, 480), 100);
+        return stream;
+      } });
+    });
+    await fixture.display.route(url => url.pathname === '/api/display/consent-photos', async route => {
+      const request = route.request();
+      const body = request.postDataJSON();
+      expect(/^Bearer /.test(request.headers().authorization ?? '') && body.contentType === 'image/jpeg').toBe(true);
+      uploads.push({ id: body.id, visitorId: body.visitorId, slotId: body.slotId, dataUrl: `data:${body.contentType};base64,${body.data}` });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ fileId: body.id }) });
+    });
+    await page.route(url => /^\/api\/stations\/[^/]+\/consent-photos\/[^/]+$/.test(url.pathname), async route => {
+      const url = new URL(route.request().url());
+      const upload = uploads.find(item => url.pathname.endsWith(`/consent-photos/${item.id}`));
+      expect(!!upload && url.searchParams.get('visitorId') === upload.visitorId && url.searchParams.get('slotId') === upload.slotId).toBe(true);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ dataUrl: upload!.dataUrl, contentType: 'image/jpeg' }) });
+    });
+    page.on('request', watchFiles);
+    page.on('response', countRegistration);
+
+    const consent = fixture.display.getByTestId('display-consent');
+    const mirror = page.getByTestId('consent-mirror');
+    const openForm = async (): Promise<{ needsNanny: boolean }> => {
+      const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+      await typePhone(fixture.display, MEMBER_PHONE);
+      await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
+      await lookup;
+      await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+      for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
+        if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+      }
+      await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+      await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+      await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+      await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      const review = fixture.display.getByTestId('display-child-review');
+      await expect(review).toBeVisible({ timeout: 20_000 });
+      await review.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+      const opened = fixture.display.waitForResponse(async response => response.url().endsWith('/display/session')
+        && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'consent');
+      await review.getByRole('button', { name: 'Done', exact: true }).click();
+      const prompt = (await (await opened).json()).document.prompt;
+      // The till asks this display for the photo of each child who needs the consent.
+      expect(prompt.slots.length === 1 && prompt.slots[0].photo === 'needed').toBe(true);
+      await expect(consent).toBeVisible({ timeout: 20_000 });
+      await expect(mirror).toBeVisible({ timeout: 20_000 });
+      return { needsNanny: prompt.slots[0].requirement === 'nanny' };
+    };
+    /** On the care step: the family's own camera, as the till's customer half has it. */
+    const takePhoto = async () => {
+      const photo = consent.getByTestId('consent-photo');
+      await expect(photo.getByTestId('consent-photo-fallback')).toHaveCount(0);
+      await photo.getByRole('button', { name: 'Start camera', exact: true }).click();
+      await photo.getByRole('button', { name: 'Take photo', exact: true }).click();
+      await expect(photo.getByTestId('consent-photo-received')).toHaveText('The team has this photo.', { timeout: 20_000 });
+      // Staff see it where the family took it, on the till's copy of their screen.
+      await expect(mirror.getByTestId('consent-mirror-photo').locator('img'))
+        .toHaveAttribute('src', /^data:image\/jpeg;base64,/, { timeout: 20_000 });
+      await expect(page.getByText(/needs a photo taken/)).toHaveCount(0);
+    };
+
+    // 1. A form left half-done writes nothing: staff go back and cancel the sale.
+    await openForm();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await takePhoto();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await consent.locator('#public-consent-guardian').fill('ZZ TEST Half-done guardian');
+    await expect(mirror.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('ZZ TEST Half-done guardian', { timeout: 5_000 });
+    expect(uploads.length).toBe(1);
+    await page.getByRole('button', { name: 'Back', exact: true }).first().click();
+    await expect(consent).toBeHidden({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await chooseLanguageFirst(fixture.display, 'en');
+    expect(registrations).toEqual([]);
+    expect(await fixture.display.evaluate(() => sessionStorage.getItem('oto.display.consentDraft.v1'))).toBeNull();
+
+    // 2. The next family: back and forward through the form, then their own Done.
+    const { needsNanny } = await openForm();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await takePhoto();
+    expect(uploads.length).toBe(2);
+    expect(uploads[1]!.visitorId === uploads[0]!.visitorId || uploads[1]!.id === uploads[0]!.id).toBe(false);
+    await consent.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(consent.getByTestId('consent-child')).toHaveCount(1);
+    await expect(mirror.getByTestId('consent-child')).toHaveCount(1, { timeout: 5_000 });
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(consent.getByTestId('consent-photo-received')).toBeVisible();
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await consent.locator('#public-consent-guardian').fill('ZZ TEST Photo guardian');
+    await consent.locator('input[type="tel"]').fill(FORM_PHONE.slice(1));
+    await expect(consent.getByTestId('consent-missing')).toContainText('Still needed before Done:');
+    for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    const done = consent.getByRole('button', { name: 'Done', exact: true });
+    await expect(done).toBeEnabled({ timeout: 20_000 });
+    await expect(consent.getByTestId('consent-missing')).toHaveCount(0);
+    await expect(mirror.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('ZZ TEST Photo guardian');
+    await captureLocalCheck(page, 's857-joined-before-done-local.png');
+    expect(registrations).toEqual([]);
+    const movedOn = fixture.display.waitForResponse(async response => {
+      if (!response.url().endsWith('/display/session') || response.status() !== 200) return false;
+      const document = (await response.json().catch(() => null))?.document;
+      return document?.stage === (needsNanny ? 'order' : 'payment');
+    }, { timeout: 45_000 });
+    await done.click();
+    await movedOn;
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeHidden({ timeout: 30_000 });
+    if (!needsNanny) await expect(page.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(consent).toBeHidden({ timeout: 30_000 });
+    await expect(mirror).toBeHidden();
+    // One registration, written by the family's Done, and the photo they took went with it.
+    expect(registrations.map(({ status, replay }) => ({ status, replay }))).toEqual([{ status: 200, replay: false }]);
+    await expect.poll(() => registrationFiles.length, { timeout: 20_000 }).toBe(1);
+    expect(registrationFiles[0]).toEqual({ ownerEntityId: registrations[0]!.id, contentType: 'image/jpeg' });
+    await captureLocalCheck(fixture.display, 's857-joined-after-done-local.png');
+    // Leave the counter as the next case finds it.
+    await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
+  } catch (error) {
+    await captureLocalCheck(page, 's857-joined-failure-staff-local.png').catch(() => undefined);
+    await captureLocalCheck(fixture.display, 's857-joined-failure-display-local.png').catch(() => undefined);
+    throw error;
+  } finally {
+    page.off('request', watchFiles);
+    page.off('response', countRegistration);
+    try {
+      await fixture.releaseLease();
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
+    }
+  }
+});
+
 test('separate display guest shop uses captured sizes, lock retention, disconnect fallback and settled cash split', async ({ page, browser, baseURL }) => {
   test.setTimeout(120_000);
   requireLocalFixture(baseURL);
