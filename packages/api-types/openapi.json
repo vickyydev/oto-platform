@@ -3310,6 +3310,7 @@
                 "pos:party:charge",
                 "pos:party:payment",
                 "pos:party:update",
+                "pos:party:kitchen_update",
                 "pos:event:checkin",
                 "admin:event_pricing:manage",
                 "pos:wallet:read",
@@ -16714,6 +16715,43 @@
                         },
                         "walkUpsSatang": {
                           "type": "integer"
+                        },
+                        "extras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "qty": {
+                                "type": "integer"
+                              },
+                              "unitSatang": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              },
+                              "charged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "productCode",
+                              "qty",
+                              "unitSatang",
+                              "totalSatang",
+                              "charged"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -64921,6 +64959,2065 @@
         }
       }
     },
+    "/parties/{id}/kitchen-plan/choices": {
+      "get": {
+        "description": "SCRUM-907 — the set menu's choice groups of a party's BEO and the options of each, as the OTO App's template names them, for a manager changing a choice on the till's party Edit form. Asked of the OTO App through its directory each time; `status` \"unavailable\" with why (the app not answering, this deployment not configured) and no groups otherwise, so the form offers no choice it cannot check. Writes nothing. 404 for anything that is not one of the branch's parties. Needs pos:party:kitchen_update at the branch.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "unavailable"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "allowMultiple": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "options",
+                          "allowMultiple"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message",
+                    "groups"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parties/{id}/kitchen-plan": {
+      "put": {
+        "description": "SCRUM-907 — a branch manager or an administrator changes a party's kitchen and bar plan on the till, and the BEO is changed: a line's count and note, an extra added (picked from the till's menu with its code, or typed) or removed, a set-menu choice within its group, the cake's time and note. Never a price. The OTO App owns the plan: the changes are written there through its directory under the edit's own id (the same id again writes nothing), by the BEO's own Save, and recorded in the BEO's activity as changed on the till by this account; then the party is read again from the app and answered as the BEO now holds it (the slips follow by their change detection). Nothing of the plan is kept on the platform; an audit row keeps the lines before and after. A refusal from the app is answered 409 in its words (404 for a party it no longer knows); no answer is a 502, and Save may be pressed again. Needs pos:party:kitchen_update at the branch: a branch manager's or an administrator's, not reception's.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "editId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "stationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "actionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "set"
+                              ]
+                            },
+                            "lineId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "qty": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 999999
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "lineId"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "remove"
+                              ]
+                            },
+                            "lineId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "lineId"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "add"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "list": {
+                              "type": "string",
+                              "enum": [
+                                "food",
+                                "bar"
+                              ]
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "productCode": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64,
+                              "nullable": true
+                            },
+                            "qty": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 999999
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "id",
+                            "list",
+                            "name",
+                            "productCode",
+                            "qty"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "choose"
+                              ]
+                            },
+                            "choiceGroup": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "lineId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "nullable": true
+                            },
+                            "option": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "choiceGroup",
+                            "lineId",
+                            "option"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "cake"
+                              ]
+                            },
+                            "time": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                              "nullable": true
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "op"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "editId",
+                  "changes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "party",
+                            "camp",
+                            "event"
+                          ]
+                        },
+                        "appEventType": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "upcoming",
+                            "in_progress",
+                            "completed",
+                            "cancelled"
+                          ]
+                        },
+                        "appStatus": {
+                          "type": "string"
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "endDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "nullable": true
+                        },
+                        "cancelledDays": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "startTime": {
+                          "type": "string"
+                        },
+                        "endTime": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "location": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "expectedKids": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "expectedAdults": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "entryPrice": {
+                          "type": "object",
+                          "properties": {
+                            "weekdaySatang": {
+                              "type": "integer"
+                            },
+                            "weekendSatang": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "weekdaySatang",
+                            "weekendSatang"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "party": {
+                          "type": "object",
+                          "properties": {
+                            "childName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "kidTurningAge": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "bookingName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "parentName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "parentPhone": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "activities": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "decoration": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "totalValueSatang": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "depositSatang": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "depositDate": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "walkUpCharges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "amountSatang": {
+                                    "type": "integer"
+                                  },
+                                  "chargedBy": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "chargedById": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "chargedAt": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "amountSatang",
+                                  "chargedBy",
+                                  "chargedById",
+                                  "chargedAt"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "charges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "ticket",
+                                      "fnb"
+                                    ]
+                                  },
+                                  "items": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300
+                                        },
+                                        "qty": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 10000
+                                        },
+                                        "lineTotalSatang": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 10000000000
+                                        }
+                                      },
+                                      "required": [
+                                        "name",
+                                        "qty",
+                                        "lineTotalSatang"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "totalSatang": {
+                                    "type": "integer"
+                                  },
+                                  "chargedBy": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "chargedById": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "chargedAt": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "kind",
+                                  "items",
+                                  "totalSatang",
+                                  "chargedBy",
+                                  "chargedById",
+                                  "chargedAt"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "payments": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "amountSatang": {
+                                    "type": "integer"
+                                  },
+                                  "method": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  },
+                                  "takenBy": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "takenById": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "takenAt": {
+                                    "type": "string"
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "attemptId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "amountSatang",
+                                  "method",
+                                  "kind",
+                                  "takenBy",
+                                  "takenById",
+                                  "takenAt",
+                                  "businessDate",
+                                  "attemptId"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "lastEdited": {
+                              "type": "object",
+                              "properties": {
+                                "by": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "byId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "at": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "by",
+                                "byId",
+                                "at"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "editSync": {
+                              "type": "object",
+                              "properties": {
+                                "editId": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pending",
+                                    "failed"
+                                  ]
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "at": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "editId",
+                                "state",
+                                "error",
+                                "at"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "bill": {
+                              "type": "object",
+                              "properties": {
+                                "baseSatang": {
+                                  "type": "integer"
+                                },
+                                "chargesSatang": {
+                                  "type": "integer"
+                                },
+                                "totalSatang": {
+                                  "type": "integer"
+                                },
+                                "depositSatang": {
+                                  "type": "integer"
+                                },
+                                "paidSatang": {
+                                  "type": "integer"
+                                },
+                                "outstandingSatang": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "baseSatang",
+                                "chargesSatang",
+                                "totalSatang",
+                                "depositSatang",
+                                "paidSatang",
+                                "outstandingSatang"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "settlement": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "saleId": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "open",
+                                    "settled",
+                                    "voided",
+                                    "refunded"
+                                  ]
+                                },
+                                "receiptNumber": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "grossSatang": {
+                                  "type": "integer"
+                                },
+                                "paidSatang": {
+                                  "type": "integer"
+                                },
+                                "outstandingSatang": {
+                                  "type": "integer"
+                                },
+                                "depositSatang": {
+                                  "type": "integer"
+                                },
+                                "kids": {
+                                  "type": "integer"
+                                },
+                                "adults": {
+                                  "type": "integer"
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                },
+                                "settledAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "writeBack": {
+                                  "type": "string",
+                                  "enum": [
+                                    "synced",
+                                    "pending",
+                                    "failed"
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "saleId",
+                                "state",
+                                "receiptNumber",
+                                "grossSatang",
+                                "paidSatang",
+                                "outstandingSatang",
+                                "depositSatang",
+                                "kids",
+                                "adults",
+                                "createdAt",
+                                "settledAt",
+                                "writeBack"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "childName",
+                            "kidTurningAge",
+                            "bookingName",
+                            "parentName",
+                            "parentPhone",
+                            "activities",
+                            "decoration",
+                            "totalValueSatang",
+                            "depositSatang",
+                            "depositDate",
+                            "walkUpCharges"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "attendeeCount": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "attendees": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "childId": {
+                                "type": "string"
+                              },
+                              "recordKind": {
+                                "type": "string",
+                                "enum": [
+                                  "camp_registration",
+                                  "event_attendee"
+                                ]
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "age": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "dateOfBirth": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "language": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "allergy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "dietary": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "parentName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "parentPhone": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "parentAttending": {
+                                "type": "boolean"
+                              },
+                              "attendanceDays": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                }
+                              },
+                              "attendsAllDays": {
+                                "type": "boolean"
+                              },
+                              "attendsOnDate": {
+                                "type": "boolean"
+                              },
+                              "notes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "isOneTime": {
+                                "type": "boolean"
+                              },
+                              "source": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "checkins": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "date": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "checked_in",
+                                        "checked_out"
+                                      ]
+                                    },
+                                    "checkedInAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "checkedInBy": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "checkedOutAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "checkedOutBy": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "checkinRef": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "posCheckinId": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "kidBandShortCode": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "parentBandShortCode": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "syncState": {
+                                      "type": "string",
+                                      "enum": [
+                                        "synced",
+                                        "pending",
+                                        "failed"
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "date",
+                                    "status",
+                                    "checkedInAt",
+                                    "checkedInBy",
+                                    "checkedOutAt",
+                                    "checkedOutBy",
+                                    "checkinRef"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "bucket": {
+                                "type": "string",
+                                "enum": [
+                                  "in",
+                                  "out",
+                                  "outstanding",
+                                  "notToday"
+                                ]
+                              },
+                              "syncState": {
+                                "type": "string",
+                                "enum": [
+                                  "synced",
+                                  "pending",
+                                  "failed"
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "childId",
+                              "recordKind",
+                              "name",
+                              "age",
+                              "dateOfBirth",
+                              "language",
+                              "allergy",
+                              "dietary",
+                              "parentName",
+                              "parentPhone",
+                              "parentAttending",
+                              "attendanceDays",
+                              "attendsAllDays",
+                              "attendsOnDate",
+                              "notes",
+                              "isOneTime",
+                              "source",
+                              "checkins",
+                              "bucket",
+                              "syncState"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "roster": {
+                          "type": "object",
+                          "properties": {
+                            "arrived": {
+                              "type": "integer"
+                            },
+                            "expected": {
+                              "type": "integer"
+                            },
+                            "currentlyIn": {
+                              "type": "integer"
+                            },
+                            "outstanding": {
+                              "type": "integer"
+                            },
+                            "all": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "arrived",
+                            "expected",
+                            "currentlyIn",
+                            "outstanding",
+                            "all"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "branchId",
+                        "type",
+                        "appEventType",
+                        "status",
+                        "appStatus",
+                        "archived",
+                        "title",
+                        "startDate",
+                        "endDate",
+                        "cancelledDays",
+                        "startTime",
+                        "endTime",
+                        "location",
+                        "expectedKids",
+                        "expectedAdults",
+                        "entryPrice",
+                        "party",
+                        "attendeeCount",
+                        "roster"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "plan": {
+                      "type": "object",
+                      "properties": {
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "partyDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "endTime": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "package": {
+                          "type": "object",
+                          "properties": {
+                            "templateId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "hours": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 24,
+                              "nullable": true
+                            },
+                            "kidsIncluded": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "adultsIncluded": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "socksIncluded": {
+                              "type": "integer",
+                              "minimum": -1,
+                              "maximum": 10000
+                            },
+                            "priceWeekdaySatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000
+                            },
+                            "priceWeekendSatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000
+                            },
+                            "extraChildWeekdaySatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000,
+                              "nullable": true
+                            },
+                            "extraChildWeekendSatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000,
+                              "nullable": true
+                            },
+                            "extraAdultWeekdaySatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000,
+                              "nullable": true
+                            },
+                            "extraAdultWeekendSatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000,
+                              "nullable": true
+                            },
+                            "includedLines": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "label"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "templateId",
+                            "name",
+                            "hours",
+                            "kidsIncluded",
+                            "adultsIncluded",
+                            "socksIncluded",
+                            "priceWeekdaySatang",
+                            "priceWeekendSatang",
+                            "extraChildWeekdaySatang",
+                            "extraChildWeekendSatang",
+                            "extraAdultWeekdaySatang",
+                            "extraAdultWeekendSatang",
+                            "includedLines"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "counts": {
+                          "type": "object",
+                          "properties": {
+                            "kidsExpected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000,
+                              "nullable": true
+                            },
+                            "adultsExpected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kidsExpected",
+                            "adultsExpected"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "addOns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "templateId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "qty": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000
+                              },
+                              "unitPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "fnbCreditSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "printsVoucher": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "templateId",
+                              "name",
+                              "qty",
+                              "unitPriceSatang",
+                              "fnbCreditSatang",
+                              "printsVoucher"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "entertainment": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "templateId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "category": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "durationMinutes": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "ageRange": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "maxKids": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "nullable": true
+                              },
+                              "priceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "extraChildren": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000
+                              },
+                              "extraChildPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "templateId",
+                              "name",
+                              "category",
+                              "durationMinutes",
+                              "ageRange",
+                              "maxKids",
+                              "priceSatang",
+                              "extraChildren",
+                              "extraChildPriceSatang"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "setMenu": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "qty": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 999999,
+                                "nullable": true
+                              },
+                              "choiceGroup": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "chosenOption": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "note": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "audience": {
+                                "type": "string",
+                                "enum": [
+                                  "kids",
+                                  "adults"
+                                ]
+                              },
+                              "adultsNote": {
+                                "type": "string"
+                              },
+                              "lineId": {
+                                "type": "string"
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "set_menu",
+                                  "extra",
+                                  "party_only"
+                                ]
+                              },
+                              "unitPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "onTillMenu": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "productCode",
+                              "name",
+                              "qty",
+                              "choiceGroup",
+                              "chosenOption",
+                              "note"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "barItems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "qty": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 999999
+                              },
+                              "note": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "lineId": {
+                                "type": "string"
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "set_menu",
+                                  "extra",
+                                  "party_only"
+                                ]
+                              },
+                              "unitPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "onTillMenu": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "productCode",
+                              "name",
+                              "qty"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "kitchen": {
+                          "type": "object",
+                          "properties": {
+                            "kidsFoodTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "adultsFoodTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "readyOffsetMinutes": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "slipsTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "barServiceTime": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kidsFoodTime",
+                            "adultsFoodTime",
+                            "readyOffsetMinutes",
+                            "slipsTime"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "settlement": {
+                          "type": "object",
+                          "properties": {
+                            "depositSatang": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000000000
+                            },
+                            "posSaleId": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "depositSatang",
+                            "posSaleId"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cake": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "our",
+                                "own"
+                              ]
+                            },
+                            "qty": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 999999
+                            },
+                            "time": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "qty",
+                            "time",
+                            "note"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "eventId",
+                        "partyDate",
+                        "startTime",
+                        "endTime",
+                        "package",
+                        "counts",
+                        "addOns",
+                        "entertainment",
+                        "setMenu",
+                        "barItems",
+                        "kitchen",
+                        "settlement"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "planStatus": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "no_package",
+                        "seam_missing",
+                        "seam_not_granted"
+                      ]
+                    },
+                    "kitchenPlan": {
+                      "type": "object",
+                      "properties": {
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "partyDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "endTime": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "counts": {
+                          "type": "object",
+                          "properties": {
+                            "kidsExpected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000,
+                              "nullable": true
+                            },
+                            "adultsExpected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kidsExpected",
+                            "adultsExpected"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "setMenu": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "qty": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 999999,
+                                "nullable": true
+                              },
+                              "choiceGroup": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "chosenOption": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "note": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "audience": {
+                                "type": "string",
+                                "enum": [
+                                  "kids",
+                                  "adults"
+                                ]
+                              },
+                              "adultsNote": {
+                                "type": "string"
+                              },
+                              "lineId": {
+                                "type": "string"
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "set_menu",
+                                  "extra",
+                                  "party_only"
+                                ]
+                              },
+                              "unitPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "onTillMenu": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "productCode",
+                              "name",
+                              "qty",
+                              "choiceGroup",
+                              "chosenOption",
+                              "note"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "barItems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "qty": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 999999
+                              },
+                              "note": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "lineId": {
+                                "type": "string"
+                              },
+                              "origin": {
+                                "type": "string",
+                                "enum": [
+                                  "set_menu",
+                                  "extra",
+                                  "party_only"
+                                ]
+                              },
+                              "unitPriceSatang": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10000000000
+                              },
+                              "onTillMenu": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "productCode",
+                              "name",
+                              "qty"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "kitchen": {
+                          "type": "object",
+                          "properties": {
+                            "kidsFoodTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "adultsFoodTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "readyOffsetMinutes": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "slipsTime": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "barServiceTime": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kidsFoodTime",
+                            "adultsFoodTime",
+                            "readyOffsetMinutes",
+                            "slipsTime"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "cake": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "our",
+                                "own"
+                              ]
+                            },
+                            "qty": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 999999
+                            },
+                            "time": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "qty",
+                            "time",
+                            "note"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "eventId",
+                        "partyDate",
+                        "startTime",
+                        "endTime",
+                        "counts",
+                        "setMenu",
+                        "barItems",
+                        "kitchen"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "slips": {
+                      "type": "object",
+                      "properties": {
+                        "partyDate": {
+                          "type": "string"
+                        },
+                        "slipsTime": {
+                          "type": "string"
+                        },
+                        "station": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "latest": {
+                          "type": "object",
+                          "properties": {
+                            "kitchen": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            },
+                            "bar": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "station": {
+                                  "type": "string",
+                                  "enum": [
+                                    "kitchen",
+                                    "bar"
+                                  ]
+                                },
+                                "run": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "trigger": {
+                                  "type": "string",
+                                  "enum": [
+                                    "schedule",
+                                    "reprint"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "printed",
+                                    "no_printer",
+                                    "nothing_to_print"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string"
+                                },
+                                "printJobId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "jobStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "printed",
+                                    "failed",
+                                    "skipped"
+                                  ],
+                                  "nullable": true
+                                },
+                                "requestedByName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "createdAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "station",
+                                "run",
+                                "trigger",
+                                "status",
+                                "at",
+                                "printJobId",
+                                "jobStatus",
+                                "requestedByName",
+                                "createdAt"
+                              ],
+                              "additionalProperties": false,
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "kitchen",
+                            "bar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "records": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "station": {
+                                "type": "string",
+                                "enum": [
+                                  "kitchen",
+                                  "bar"
+                                ]
+                              },
+                              "run": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "trigger": {
+                                "type": "string",
+                                "enum": [
+                                  "schedule",
+                                  "reprint"
+                                ]
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "printed",
+                                  "no_printer",
+                                  "nothing_to_print"
+                                ]
+                              },
+                              "at": {
+                                "type": "string"
+                              },
+                              "printJobId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "jobStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "queued",
+                                  "printed",
+                                  "failed",
+                                  "skipped"
+                                ],
+                                "nullable": true
+                              },
+                              "requestedByName": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "station",
+                              "run",
+                              "trigger",
+                              "status",
+                              "at",
+                              "printJobId",
+                              "jobStatus",
+                              "requestedByName",
+                              "createdAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "partyDate",
+                        "slipsTime",
+                        "station",
+                        "latest",
+                        "records"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "kitchenEdit": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "replayed"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "date",
+                    "event",
+                    "kitchenEdit"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/parties/{id}/settle/preview": {
       "post": {
         "description": "SCRUM-804 — what settling a party as one sale comes to with these counts: the package at its own price for the party's date, the children and adults beyond its included counts at its own extra prices, the socks beyond its free pairs, and the plan's add-ons and entertainment kept, priced by the sale engine exactly as the settlement will be, with the F&B credit the add-ons grant, the deposit recorded as paid in advance and the balance, and the walk-up guests the check-in board already put on the tab (which the settlement refuses). Writes nothing. 409 PARTY_NO_PACKAGE for a party the OTO App has no package for, and the refusals a settlement makes for counts it cannot price.",
@@ -65125,6 +67222,43 @@
                         },
                         "walkUpsSatang": {
                           "type": "integer"
+                        },
+                        "extras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "qty": {
+                                "type": "integer"
+                              },
+                              "unitSatang": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              },
+                              "charged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "productCode",
+                              "qty",
+                              "unitSatang",
+                              "totalSatang",
+                              "charged"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -65390,6 +67524,43 @@
                         },
                         "walkUpsSatang": {
                           "type": "integer"
+                        },
+                        "extras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "productCode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "qty": {
+                                "type": "integer"
+                              },
+                              "unitSatang": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "totalSatang": {
+                                "type": "integer"
+                              },
+                              "charged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "productCode",
+                              "qty",
+                              "unitSatang",
+                              "totalSatang",
+                              "charged"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [

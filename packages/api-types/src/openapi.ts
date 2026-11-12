@@ -1853,7 +1853,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:party:kitchen_update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -8176,6 +8176,14 @@ export interface paths {
                                 balanceSatang: number;
                                 walkUps: number;
                                 walkUpsSatang: number;
+                                extras?: {
+                                    name: string;
+                                    productCode: string | null;
+                                    qty: number;
+                                    unitSatang: number | null;
+                                    totalSatang: number;
+                                    charged: boolean;
+                                }[];
                             } | null;
                             sale: {
                                 saleId: string;
@@ -26432,6 +26440,511 @@ export interface paths {
         };
         trace?: never;
     };
+    "/parties/{id}/kitchen-plan/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description SCRUM-907 — the set menu's choice groups of a party's BEO and the options of each, as the OTO App's template names them, for a manager changing a choice on the till's party Edit form. Asked of the OTO App through its directory each time; `status` "unavailable" with why (the app not answering, this deployment not configured) and no groups otherwise, so the form offers no choice it cannot check. Writes nothing. 404 for anything that is not one of the branch's parties. Needs pos:party:kitchen_update at the branch. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "ok" | "unavailable";
+                            message: string | null;
+                            groups: {
+                                label: string;
+                                options: string[];
+                                allowMultiple: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/kitchen-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description SCRUM-907 — a branch manager or an administrator changes a party's kitchen and bar plan on the till, and the BEO is changed: a line's count and note, an extra added (picked from the till's menu with its code, or typed) or removed, a set-menu choice within its group, the cake's time and note. Never a price. The OTO App owns the plan: the changes are written there through its directory under the edit's own id (the same id again writes nothing), by the BEO's own Save, and recorded in the BEO's activity as changed on the till by this account; then the party is read again from the app and answered as the BEO now holds it (the slips follow by their change detection). Nothing of the plan is kept on the platform; an audit row keeps the lines before and after. A refusal from the app is answered 409 in its words (404 for a party it no longer knows); no answer is a 502, and Save may be pressed again. Needs pos:party:kitchen_update at the branch: a branch manager's or an administrator's, not reception's. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        /** Format: uuid */
+                        editId: string;
+                        /** Format: uuid */
+                        stationId?: string;
+                        actionId?: string;
+                        changes: ({
+                            /** @enum {string} */
+                            op: "set";
+                            lineId: string;
+                            qty?: number;
+                            note?: string | null;
+                        } | {
+                            /** @enum {string} */
+                            op: "remove";
+                            lineId: string;
+                        } | {
+                            /** @enum {string} */
+                            op: "add";
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            list: "food" | "bar";
+                            name: string;
+                            productCode: string | null;
+                            qty: number;
+                            note?: string | null;
+                        } | {
+                            /** @enum {string} */
+                            op: "choose";
+                            choiceGroup: string;
+                            lineId: string | null;
+                            option: string;
+                        } | {
+                            /** @enum {string} */
+                            op: "cake";
+                            time?: string | null;
+                            note?: string | null;
+                        })[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            branchId: string;
+                            date: string;
+                            event: {
+                                id: string;
+                                branchId: string;
+                                /** @enum {string} */
+                                type: "party" | "camp" | "event";
+                                appEventType: string;
+                                /** @enum {string} */
+                                status: "upcoming" | "in_progress" | "completed" | "cancelled";
+                                appStatus: string;
+                                archived: boolean;
+                                title: string;
+                                startDate: string;
+                                endDate: string | null;
+                                cancelledDays: string[];
+                                startTime: string;
+                                endTime: string | null;
+                                location: string | null;
+                                expectedKids: number | null;
+                                expectedAdults: number | null;
+                                entryPrice: {
+                                    weekdaySatang: number;
+                                    weekendSatang: number;
+                                } | null;
+                                party: {
+                                    childName: string | null;
+                                    kidTurningAge: number | null;
+                                    bookingName: string | null;
+                                    parentName: string | null;
+                                    parentPhone: string | null;
+                                    activities: string | null;
+                                    decoration: string | null;
+                                    totalValueSatang: number | null;
+                                    depositSatang: number | null;
+                                    depositDate: string | null;
+                                    walkUpCharges: {
+                                        id: string;
+                                        name: string;
+                                        amountSatang: number;
+                                        chargedBy: string | null;
+                                        chargedById: string | null;
+                                        chargedAt: string;
+                                    }[];
+                                    charges?: {
+                                        id: string;
+                                        /** @enum {string} */
+                                        kind: "ticket" | "fnb";
+                                        items: {
+                                            name: string;
+                                            qty: number;
+                                            lineTotalSatang: number;
+                                        }[];
+                                        totalSatang: number;
+                                        chargedBy: string | null;
+                                        chargedById: string | null;
+                                        chargedAt: string;
+                                    }[];
+                                    payments?: {
+                                        id: string;
+                                        amountSatang: number;
+                                        method: string;
+                                        kind: string;
+                                        takenBy: string | null;
+                                        takenById: string | null;
+                                        takenAt: string;
+                                        businessDate: string;
+                                        attemptId: string;
+                                    }[];
+                                    lastEdited?: {
+                                        by: string | null;
+                                        byId: string | null;
+                                        at: string;
+                                    } | null;
+                                    editSync?: {
+                                        editId: string;
+                                        /** @enum {string} */
+                                        state: "pending" | "failed";
+                                        error: string | null;
+                                        at: string;
+                                    } | null;
+                                    bill?: {
+                                        baseSatang: number;
+                                        chargesSatang: number;
+                                        totalSatang: number;
+                                        depositSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                    };
+                                    settlement?: {
+                                        id: string;
+                                        saleId: string;
+                                        /** @enum {string} */
+                                        state: "open" | "settled" | "voided" | "refunded";
+                                        receiptNumber: string | null;
+                                        grossSatang: number;
+                                        paidSatang: number;
+                                        outstandingSatang: number;
+                                        depositSatang: number;
+                                        kids: number;
+                                        adults: number;
+                                        createdAt: string;
+                                        settledAt: string | null;
+                                        /** @enum {string|null} */
+                                        writeBack: "synced" | "pending" | "failed" | null;
+                                    } | null;
+                                } | null;
+                                attendeeCount: number | null;
+                                attendees?: {
+                                    id: string;
+                                    childId: string;
+                                    /** @enum {string} */
+                                    recordKind: "camp_registration" | "event_attendee";
+                                    name: string;
+                                    age: number | null;
+                                    dateOfBirth: string | null;
+                                    language: string | null;
+                                    allergy: string | null;
+                                    dietary: string | null;
+                                    parentName: string | null;
+                                    parentPhone: string | null;
+                                    parentAttending: boolean;
+                                    attendanceDays: string[];
+                                    attendsAllDays: boolean;
+                                    attendsOnDate: boolean;
+                                    notes: string | null;
+                                    isOneTime: boolean;
+                                    source: string | null;
+                                    checkins: {
+                                        date: string;
+                                        /** @enum {string} */
+                                        status: "checked_in" | "checked_out";
+                                        checkedInAt: string | null;
+                                        checkedInBy: string | null;
+                                        checkedOutAt: string | null;
+                                        checkedOutBy: string | null;
+                                        checkinRef: string | null;
+                                        posCheckinId?: string | null;
+                                        kidBandShortCode?: string | null;
+                                        parentBandShortCode?: string | null;
+                                        /** @enum {string|null} */
+                                        syncState?: "synced" | "pending" | "failed" | null;
+                                    }[];
+                                    /** @enum {string} */
+                                    bucket: "in" | "out" | "outstanding" | "notToday";
+                                    /** @enum {string|null} */
+                                    syncState: "synced" | "pending" | "failed" | null;
+                                }[];
+                                roster: {
+                                    arrived: number;
+                                    expected: number;
+                                    currentlyIn: number;
+                                    outstanding: number;
+                                    all: number;
+                                } | null;
+                            };
+                            plan?: {
+                                eventId: string;
+                                partyDate: string;
+                                startTime: string | null;
+                                endTime: string | null;
+                                package: {
+                                    templateId: string | null;
+                                    name: string;
+                                    hours: number | null;
+                                    kidsIncluded: number;
+                                    adultsIncluded: number;
+                                    socksIncluded: number;
+                                    priceWeekdaySatang: number;
+                                    priceWeekendSatang: number;
+                                    extraChildWeekdaySatang: number | null;
+                                    extraChildWeekendSatang: number | null;
+                                    extraAdultWeekdaySatang: number | null;
+                                    extraAdultWeekendSatang: number | null;
+                                    includedLines: {
+                                        label: string;
+                                    }[];
+                                };
+                                counts: {
+                                    kidsExpected: number | null;
+                                    adultsExpected: number | null;
+                                };
+                                addOns: {
+                                    id: string;
+                                    templateId: string | null;
+                                    name: string;
+                                    qty: number;
+                                    unitPriceSatang: number;
+                                    fnbCreditSatang: number;
+                                    printsVoucher: boolean;
+                                }[];
+                                entertainment: {
+                                    id: string;
+                                    templateId: string | null;
+                                    name: string;
+                                    category: string | null;
+                                    durationMinutes: number | null;
+                                    ageRange: string | null;
+                                    maxKids: number | null;
+                                    priceSatang: number;
+                                    extraChildren: number;
+                                    extraChildPriceSatang: number | null;
+                                }[];
+                                setMenu: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number | null;
+                                    choiceGroup: string | null;
+                                    chosenOption: string | null;
+                                    note: string | null;
+                                    /** @enum {string} */
+                                    audience?: "kids" | "adults";
+                                    adultsNote?: string;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                barItems: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number;
+                                    note?: string | null;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                kitchen: {
+                                    kidsFoodTime: string | null;
+                                    adultsFoodTime: string | null;
+                                    readyOffsetMinutes: number | null;
+                                    slipsTime: string | null;
+                                    barServiceTime?: string | null;
+                                } | null;
+                                settlement: {
+                                    depositSatang: number;
+                                    posSaleId: string | null;
+                                };
+                                cake?: {
+                                    /** @enum {string} */
+                                    type: "our" | "own";
+                                    qty: number;
+                                    time: string | null;
+                                    note: string | null;
+                                } | null;
+                            } | null;
+                            /** @enum {string} */
+                            planStatus?: "ready" | "no_package" | "seam_missing" | "seam_not_granted";
+                            kitchenPlan?: {
+                                eventId: string;
+                                partyDate: string;
+                                startTime: string | null;
+                                endTime: string | null;
+                                counts: {
+                                    kidsExpected: number | null;
+                                    adultsExpected: number | null;
+                                };
+                                setMenu: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number | null;
+                                    choiceGroup: string | null;
+                                    chosenOption: string | null;
+                                    note: string | null;
+                                    /** @enum {string} */
+                                    audience?: "kids" | "adults";
+                                    adultsNote?: string;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                barItems: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number;
+                                    note?: string | null;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                kitchen: {
+                                    kidsFoodTime: string | null;
+                                    adultsFoodTime: string | null;
+                                    readyOffsetMinutes: number | null;
+                                    slipsTime: string | null;
+                                    barServiceTime?: string | null;
+                                } | null;
+                                cake?: {
+                                    /** @enum {string} */
+                                    type: "our" | "own";
+                                    qty: number;
+                                    time: string | null;
+                                    note: string | null;
+                                } | null;
+                            } | null;
+                            slips?: {
+                                partyDate: string;
+                                slipsTime: string;
+                                station: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                                latest: {
+                                    kitchen: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                    bar: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        station: "kitchen" | "bar";
+                                        run: number;
+                                        /** @enum {string} */
+                                        trigger: "schedule" | "reprint";
+                                        /** @enum {string} */
+                                        status: "printed" | "no_printer" | "nothing_to_print";
+                                        at: string;
+                                        /** Format: uuid */
+                                        printJobId: string | null;
+                                        /** @enum {string|null} */
+                                        jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                        requestedByName: string | null;
+                                        createdAt: string;
+                                    } | null;
+                                };
+                                records: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    station: "kitchen" | "bar";
+                                    run: number;
+                                    /** @enum {string} */
+                                    trigger: "schedule" | "reprint";
+                                    /** @enum {string} */
+                                    status: "printed" | "no_printer" | "nothing_to_print";
+                                    at: string;
+                                    /** Format: uuid */
+                                    printJobId: string | null;
+                                    /** @enum {string|null} */
+                                    jobStatus: "queued" | "printed" | "failed" | "skipped" | null;
+                                    requestedByName: string | null;
+                                    createdAt: string;
+                                }[];
+                            } | null;
+                            kitchenEdit: {
+                                /** Format: uuid */
+                                id: string;
+                                replayed: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/parties/{id}/settle/preview": {
         parameters: {
             query?: never;
@@ -26506,6 +27019,14 @@ export interface paths {
                                 balanceSatang: number;
                                 walkUps: number;
                                 walkUpsSatang: number;
+                                extras?: {
+                                    name: string;
+                                    productCode: string | null;
+                                    qty: number;
+                                    unitSatang: number | null;
+                                    totalSatang: number;
+                                    charged: boolean;
+                                }[];
                             };
                         };
                     };
@@ -26599,6 +27120,14 @@ export interface paths {
                                 balanceSatang: number;
                                 walkUps: number;
                                 walkUpsSatang: number;
+                                extras?: {
+                                    name: string;
+                                    productCode: string | null;
+                                    qty: number;
+                                    unitSatang: number | null;
+                                    totalSatang: number;
+                                    charged: boolean;
+                                }[];
                             };
                             settlement: {
                                 id: string;
