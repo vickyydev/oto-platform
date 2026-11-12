@@ -767,6 +767,12 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(review).toBeVisible({ timeout: 20_000 });
     await review.getByRole('button', { name: 'Confirm', exact: true }).click();
     await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+    // SCRUM-857 — the park's display has no webcam yet: this screen reports
+    // none, so the care details say reception takes the photo, and staff take
+    // it on the till below, as the demo will.
+    await fixture.display.evaluate(() => {
+      Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', { configurable: true, value: async () => [] });
+    });
     const opened = readConsent(false);
     await review.getByRole('button', { name: 'Done', exact: true }).click();
     const document = (await (await opened).json()).document;
@@ -774,8 +780,11 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     const consent = fixture.display.getByTestId('display-consent');
     await expect(consent).toBeVisible({ timeout: 20_000 });
     // SCRUM-764 — a saved child's care notes stay off the public form: the profile holds them.
+    // SCRUM-857 — `photo` (needed or taken, never the picture) marks the child
+    // whose photo the family may take on this screen.
     expect(document.prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
-      ['id', 'name', 'ageYears', 'requirement', 'dateOfBirth', 'saved'].includes(key)))).toBe(true);
+      ['id', 'name', 'ageYears', 'requirement', 'dateOfBirth', 'saved', 'photo'].includes(key)))).toBe(true);
+    expect(document.prompt.slots.every((slot: Record<string, unknown>) => slot.photo === undefined || slot.photo === 'needed')).toBe(true);
     expect(/allergies|medical|foodRestrictions|childPhotoUrl|waived|savedChildId|policy/.test(JSON.stringify(document))).toBe(false);
     await expect(consent.locator('video, canvas, input[type="file"]')).toHaveCount(0);
     for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
@@ -789,6 +798,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(consent.getByTestId('consent-child')).toHaveCount(1);
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(consent.getByText('Saved on your profile — tell the team if anything has changed.', { exact: true })).toBeVisible();
+    await expect(consent.getByTestId('consent-photo-fallback')).toHaveText(
+      'No camera available · Reception will take the photo of you both at the counter instead.');
+    await expect(consent.locator('video')).toHaveCount(0);
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     // SCRUM-857 — the last letter goes in after the staff lock below, so one
     // live fill is sent then: the one whose reply is lost and retried.
