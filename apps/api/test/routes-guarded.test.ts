@@ -578,6 +578,13 @@ describe('route guards (S2-01b)', () => {
        * refuses — a refused delivery is a receipt with `signature_ok=false`.
        */
       'POST /webhooks/inbox/:channelAccountId',
+      /**
+       * SCRUM-908 — Twilio's form posts for the WhatsApp test line. The same
+       * contract: `X-Twilio-Signature` over the CONFIGURED public origin, the
+       * route's path and every field IS the authentication, checked before a
+       * field is read; it answers 200 with empty TwiML even when it refuses.
+       */
+      'POST /webhooks/inbox/twilio/:channelAccountId',
     ]);
   });
 
