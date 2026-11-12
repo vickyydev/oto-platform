@@ -21,7 +21,17 @@ import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffTo
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, platformNeedsUnlock, platformUnlocked, refreshLane } from '@/lib/lane';
 import { loadCatalogFromApi, restorePreparedCatalog } from '@/api/catalogBridge';
 import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
+import { branchTradingDate } from '@/lib/pricingMode';
+import { saleOpenSince } from '@/pwa/openSale';
 import { forgetOfflinePreparation, prepareOfflineOperator, readOfflinePreparation, type OfflinePreparation } from './offlinePreparation';
+import {
+  afterSignIn,
+  endedByExpiry,
+  sessionDeadline,
+  type KeptSaleOffer,
+  type KeptTill,
+  type SessionEnded,
+} from './sessionEnd';
 
 /**
  * Operator session — the "operator" (prototype term for the signed-in STAFF
@@ -93,6 +103,25 @@ interface OperatorContextValue {
   sessionResolved: boolean;
   /** A prepared device resumed locked during an outage; the box must still authenticate it. */
   offlinePreparation: OfflinePreparation | null;
+  /**
+   * SCRUM-878 — the session ended on the platform (its twelve hours ran out,
+   * or it was ended from elsewhere), not by Sign out here. The till stays
+   * locked over the screen it was on, and the lock screen is the sign-in form
+   * with one line saying what happened (`auth/sessionEnd.ts`).
+   */
+  sessionEnded: SessionEnded | null;
+  /** SCRUM-878 — a different person signed in over a kept sale: continue it or discard it. */
+  keptOffer: KeptSaleOffer | null;
+  continueKept: () => void;
+  discardKept: () => void;
+  /**
+   * SCRUM-878 — which selling screen this is (`App.tsx` keys the till by it).
+   * A new session that carries on the screen under the lock keeps it; any
+   * other sign-in starts a fresh one.
+   */
+  tillSeat: string | null;
+  /** SCRUM-878 — counts new sessions that carry on the screen: the station is taken again for each. */
+  reseat: number;
 }
 
 const OperatorContext = createContext<OperatorContextValue | null>(null);
@@ -190,6 +219,14 @@ const handoffArrival = acceptHandoffOnArrival();
 const refusedWhileLocked = (err: unknown): boolean =>
   err instanceof ApiError && err.status === 423 && err.code === 'SESSION_LOCKED';
 
+/**
+ * SCRUM-878 — the platform's "there is no session here" (401 UNAUTHORIZED,
+ * "Not signed in"), as distinct from a wrong password (401
+ * INVALID_CREDENTIALS) on a session that is still there.
+ */
+const sessionGone = (err: unknown): boolean =>
+  err instanceof ApiError && err.status === 401 && err.code === 'UNAUTHORIZED';
+
 /** Map the API session to the prototype's Operator shape the whole UI reads. */
 function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boolean): Operator {
   return {
@@ -218,6 +255,35 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [viewAs, setViewAs] = useState<PosImpersonation | null>(null);
   const [offlinePreparation, setOfflinePreparation] = useState<OfflinePreparation | null>(null);
+  // SCRUM-878 — a session ended on the platform, and the screen it left (`auth/sessionEnd.ts`).
+  const [sessionEnded, setSessionEnded] = useState<SessionEnded | null>(null);
+  const [keptOffer, setKeptOffer] = useState<KeptSaleOffer | null>(null);
+  const [tillSeat, setTillSeatState] = useState<string | null>(null);
+  const [reseat, setReseat] = useState(0);
+  const operatorRef = useRef(operator);
+  operatorRef.current = operator;
+  const viewAsRef = useRef(viewAs);
+  viewAsRef.current = viewAs;
+  const preparedRef = useRef(offlinePreparation);
+  preparedRef.current = offlinePreparation;
+  const mustChangeRef = useRef(mustChangePassword);
+  mustChangeRef.current = mustChangePassword;
+  /** When this session ends on this device's clock, and its whole life in hours (`GET /me`). */
+  const sessionEnds = useRef<{ deadline: number | null; afterHours: number | null }>({ deadline: null, afterHours: null });
+  /** The operator and park this session sits at (`GET /me`). */
+  const sessionPlace = useRef<{ operatorId: string | null; branchId: string | null }>({ operatorId: null, branchId: null });
+  /** The screen an ended session left under the lock: memory only, nothing that signs anybody in. */
+  const keptTill = useRef<KeptTill | null>(null);
+  const seatSerial = useRef(0);
+  const tillSeatRef = useRef<string | null>(null);
+  const setTillSeat = useCallback((seat: string | null) => {
+    tillSeatRef.current = seat;
+    setTillSeatState(seat);
+  }, []);
+  const freshSeat = useCallback((accountId: string) => {
+    seatSerial.current += 1;
+    setTillSeat(`${accountId}#${seatSerial.current}`);
+  }, [setTillSeat]);
 
   const [, setCustomerTheme] = useCustomerTheme();
   const { setLang } = useLanguage();
@@ -259,6 +325,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setOfflineUnlock(null);
     setOfflinePreparation(null);
     forgetOfflinePreparation();
+    // SCRUM-878 — signing out on purpose keeps no sale for anybody: the next
+    // person starts a fresh till, and nothing of this one is offered to them.
+    keptTill.current = null;
+    setSessionEnded(null);
+    setKeptOffer(null);
+    setTillSeat(null);
     // The next person's theme arrives with their sign-in; nothing is written
     // to this one's account after the shift ends.
     staffThemeController.release();
@@ -281,7 +353,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         if (pendingSignOut.current === ending) pendingSignOut.current = null;
       });
     }
-  }, [clearTimers]);
+  }, [clearTimers, setTillSeat]);
 
   /**
    * Inactivity reached, or the operator locked deliberately. The screen locks
@@ -301,6 +373,62 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // unlock below re-verifies against the server when it answers again.
     });
   }, [clearTimers]);
+
+  /**
+   * SCRUM-878 — the platform says this session is gone: its twelve hours ran
+   * out (the moment `GET /me` gave), or it was ended from elsewhere.
+   *
+   * Not a sign-out. The person is no longer signed in — nothing they may do is
+   * kept (`held`), and the lock screen becomes the sign-in form with one line
+   * saying what happened — but the screen they were on stays under the lock,
+   * rendering nothing, exactly as a staff lock keeps it, so the next sign-in
+   * on this till can carry on with it (`signIn`, `auth/sessionEnd.ts`).
+   *
+   * A support administrator's view-as window, an account still owing a
+   * password change and a device resumed offline had no selling screen to
+   * keep: those go back to the sign-in form as before.
+   */
+  const endSession = useCallback(() => {
+    const op = operatorRef.current;
+    // Said once: the minute's heartbeat keeps being refused while nobody is signed in.
+    if (!op || keptTill.current) return;
+    clearTimers();
+    setOfflineUnlock(null);
+    setOfflinePreparation(null);
+    forgetOfflinePreparation();
+    setWarningActive(false);
+    setHeld(new Set());
+    setMustChangePassword(false);
+    setViewAs(null);
+    setKeptOffer(null);
+    if (viewAsRef.current || mustChangeRef.current || preparedRef.current) {
+      keptTill.current = null;
+      setSessionEnded(null);
+      setTillSeat(null);
+      setLocked(false);
+      setOperator(null);
+      return;
+    }
+    const now = Date.now();
+    const saleSince = saleOpenSince();
+    keptTill.current = {
+      accountId: op.id,
+      name: op.name,
+      operatorId: sessionPlace.current.operatorId,
+      branchId: sessionPlace.current.branchId,
+      stationId: laneStation(),
+      tradingDate: branchTradingDate(new Date(now)),
+      saleSince,
+      endedAt: now,
+    };
+    setSessionEnded({
+      name: op.name,
+      expired: endedByExpiry(sessionEnds.current.deadline, now),
+      afterHours: sessionEnds.current.afterHours,
+      saleKept: saleSince !== null,
+    });
+    setLocked(true);
+  }, [clearTimers, setTillSeat]);
 
   const applyThemePrefs = useCallback(
     (operatorId: string, me: Awaited<ReturnType<typeof authApi.me>>) => {
@@ -325,8 +453,14 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
    * MUST_CHANGE_PASSWORD refusal, so they answer for such an account; the
    * catalog load does not, which is why its failure has never been fatal here.
    */
-  const hydrate = useCallback(async (): Promise<{ operator: Operator; sessionLocked: boolean }> => {
+  const hydrate = useCallback(async (): Promise<{ operator: Operator; sessionLocked: boolean; held: ReadonlySet<string> }> => {
     const me = await authApi.me();
+    // SCRUM-878 — when this session ends, counted from this answer, and where it sits.
+    sessionEnds.current = {
+      deadline: sessionDeadline(me.sessionEnd, Date.now()),
+      afterHours: me.sessionEnd?.afterHours ?? null,
+    };
+    sessionPlace.current = { operatorId: me.account.operatorId, branchId: me.branch?.id ?? null };
     const { permissions } = await authApi.permissions();
     // Manager gating mirrors the prototype's role flag: any admin-side
     // permission beyond branch reads marks the operator as manager.
@@ -345,16 +479,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       catalogNotYet = refusedWhileLocked(err);
     });
     readAgainAtUnlock.current = catalogNotYet;
-    setHeld(new Set(permissions.map((p) => p.permission)));
+    const held = new Set(permissions.map((p) => p.permission));
+    setHeld(held);
     setMustChangePassword(me.account.mustChangePassword);
     setViewAs(me.impersonation ?? null);
     setOfflineUnlock(null);
     setOfflinePreparation(null);
     prepareOfflineOperator(op, catalogReady && !me.account.mustChangePassword && !me.impersonation);
     setOperator(op);
+    // SCRUM-878 — the same session keeps its screen; a sign-in decides for itself.
+    if (tillSeatRef.current === null) freshSeat(op.id);
     applyThemePrefs(op.id, me);
-    return { operator: op, sessionLocked: me.sessionLocked };
-  }, [applyThemePrefs]);
+    return { operator: op, sessionLocked: me.sessionLocked, held };
+  }, [applyThemePrefs, freshSeat]);
 
   const signIn = useCallback(
     async (phone: string, password: string): Promise<Operator> => {
@@ -364,12 +501,53 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // Signing in by hand answers the hand-off notice, whatever it said.
       setHandoffError(null);
       await authApi.signIn(phone, password);
-      const { operator: op } = await hydrate();
+      const { operator: op, held } = await hydrate();
+      /**
+       * SCRUM-878 — the screen an ended session left under the lock. The same
+       * person carries on with it; a different person who may sell is asked
+       * first, and the till stays locked over it until they answer; anyone
+       * else, or another park, operator or trading day, starts fresh.
+       */
+      const ended = keptTill.current;
+      keptTill.current = null;
+      // A screen left since (another page opened from the sign-in form) holds no sale any more.
+      const kept = ended && ended.saleSince !== null && saleOpenSince() === null ? { ...ended, saleSince: null } : ended;
+      setSessionEnded(null);
+      const outcome = afterSignIn(kept, {
+        accountId: op.id,
+        operatorId: sessionPlace.current.operatorId,
+        branchId: sessionPlace.current.branchId,
+        tradingDate: branchTradingDate(),
+        maySell: held.has('pos:sale:create'),
+      });
+      if (outcome === 'offer' && kept && kept.saleSince !== null) {
+        setKeptOffer({ startedBy: kept.name, startedAt: kept.saleSince, endedAt: kept.endedAt, stationId: kept.stationId });
+        setReseat((n) => n + 1);
+        return op;
+      }
+      setKeptOffer(null);
+      if (outcome === 'continue') setReseat((n) => n + 1);
+      else freshSeat(op.id);
       setLocked(false);
       return op;
     },
-    [hydrate],
+    [hydrate, freshSeat],
   );
+
+  /** SCRUM-878 — the person now signed in carries on the kept sale: it is theirs from the next press. */
+  const continueKept = useCallback(() => {
+    setKeptOffer(null);
+    setLocked(false);
+  }, []);
+
+  /** SCRUM-878 — the kept sale is dropped from this till: a fresh screen for the person signed in. */
+  const discardKept = useCallback(() => {
+    const op = operatorRef.current;
+    setKeptOffer(null);
+    if (op) freshSeat(op.id);
+    else setTillSeat(null);
+    setLocked(false);
+  }, [freshSeat, setTillSeat]);
 
   /**
    * Replace a temporary password from inside the till (SCRUM-235).
@@ -462,11 +640,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setLocked(false);
       return;
     } catch (err) {
+      // SCRUM-878 — no session behind this lock any more (its twelve hours ran
+      // out before the heartbeat said so): not "Not signed in" under a line
+      // saying the person still is, but the sign-in form saying it has ended.
+      // A wrong password is INVALID_CREDENTIALS and is still said as before.
+      if (sessionGone(err)) {
+        endSession();
+        return;
+      }
       if (!isBoxLaneTrigger(err) || !station) throw err;
       noteLaneFailure(err);
     }
     return throughBox(station!);
-  }, [operator?.id, offlinePreparation, hydrate]);
+  }, [operator?.id, offlinePreparation, hydrate, endSession]);
 
   // (Re)arm the inactivity countdown. Called on login and on every interaction.
   const armTimers = useCallback(() => {
@@ -522,6 +708,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
             setHeld(new Set());
             setLocked(true);
             setOperator(saved.operator);
+            freshSeat(saved.operator.id);
           }
         } else {
           // An authoritative refusal cannot be turned into an offline session.
@@ -534,7 +721,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hydrate]);
+  }, [hydrate, freshSeat]);
 
   // While signed in and unlocked, listen for activity and reset the timer.
   // A locked till must NOT re-arm on touch: tapping the lock screen is not a
@@ -558,23 +745,13 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   // Session died server-side (expiry, deactivation, force sign-out, password
   // reset elsewhere): any API 401 returns the POS to the SIGN-IN screen —
   // not the lock screen, because there is no session left to unlock.
+  // SCRUM-878 — with the screen it was on kept under it (`endSession`).
   useEffect(() => {
     if (!operator) return;
-    const onUnauthorized = () => {
-      clearTimers();
-      setOfflineUnlock(null);
-      setOfflinePreparation(null);
-      forgetOfflinePreparation();
-      setWarningActive(false);
-      setLocked(false);
-      setOperator(null);
-      setHeld(new Set());
-      setMustChangePassword(false);
-      setViewAs(null);
-    };
+    const onUnauthorized = () => endSession();
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
-  }, [operator, clearTimers]);
+  }, [operator, endSession]);
 
   // A request refused with 423 means the server considers this session
   // locked (another tab locked it, or the box did). Follow it.
@@ -605,6 +782,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         stayActive,
         sessionResolved,
         offlinePreparation,
+        sessionEnded,
+        keptOffer,
+        continueKept,
+        discardKept,
+        tillSeat,
+        reseat,
       }}
     >
       {children}

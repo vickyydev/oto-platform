@@ -157,7 +157,7 @@ const refusedWhileLocked = (err: unknown): boolean =>
 
 export function StationProvider({ children }: { children: ReactNode }) {
   const { branch, switching } = useBranch();
-  const { operator, mustChangePassword, offlinePreparation, locked } = useOperator();
+  const { operator, mustChangePassword, offlinePreparation, locked, tillSeat, reseat } = useOperator();
   const scopeKey = `${branch.id}:${operator?.id ?? ''}:${mustChangePassword}:${switching}`;
   const scope = useRef({ key: scopeKey, generation: 0 });
   if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, generation: scope.current.generation + 1 };
@@ -262,13 +262,22 @@ export function StationProvider({ children }: { children: ReactNode }) {
   // (SCRUM-744, `resumeAfterUnlock`): a reload at the lock screen comes back
   // signed in but locked, and the API answers nothing about stations until
   // the password is entered again.
+  //
+  // SCRUM-878 — keyed on the selling screen (`tillSeat`) rather than on the
+  // account: a new session that carries on the screen its ended session left
+  // under the lock keeps the station, which is taken again for it below
+  // (`reseat`), instead of starting the whole question over and unmounting
+  // the till while it is asked.
   const accountId = operator?.id ?? null;
+  const accountRef = useRef(accountId);
+  accountRef.current = accountId;
+  const seat = tillSeat ?? accountId;
   useEffect(() => {
     setBridgeOrigin(null);
     holdBoxSession(null);
     setLaneStation(null);
     setAskAfterUnlock(null);
-    if (!accountId || mustChangePassword || switching) {
+    if (!seat || mustChangePassword || switching) {
       setStations(null);
       setActive(null);
       setPicked(null);
@@ -285,7 +294,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
     setResolved(false);
     forgetStationDevices();
 
-    if (offlinePreparation?.operator.id === accountId && offlinePreparation.catalog.branch.code === branch.id) {
+    if (offlinePreparation?.operator.id === accountRef.current && offlinePreparation.catalog.branch.code === branch.id) {
       adopt(offlinePreparation.station, offlinePreparation.scannerMode, false);
       noteLaneFailure(new NetworkError());
       setFleetAvailable(true);
@@ -379,7 +388,56 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, mustChangePassword, branch.id, adopt, switching, offlinePreparation, resumeAfterUnlock]);
+  }, [seat, mustChangePassword, branch.id, adopt, switching, offlinePreparation, resumeAfterUnlock]);
+
+  /**
+   * SCRUM-878 — a new session carries on the screen under the lock (the same
+   * person signing in again after their session ended, or the next person
+   * continuing the sale they were offered). The platform knows this session
+   * at no station yet, so the station the till stands at is taken again for
+   * it — the same one, never another. Refused (it is not this account's to
+   * work, or no longer ready), the station is let go and the picker asks: the
+   * kept screen never moves to another station. No answer at all keeps it, as
+   * the first question does.
+   */
+  const pickedRef = useRef(picked);
+  pickedRef.current = picked;
+  const fleetRef = useRef(fleetAvailable);
+  fleetRef.current = fleetAvailable;
+  useEffect(() => {
+    const held = pickedRef.current;
+    if (!reseat || !held || !fleetRef.current) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const again = await stationsApi.pick(held.stationId);
+        if (cancelled) return;
+        keepStaffToken(again);
+        adopt(again.station, held.scannerMode);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof NetworkError || (err instanceof ApiError
+          && ((err.status === 502 && err.code === 'UPSTREAM_UNAVAILABLE')
+            || (err.status === 503 && err.code === 'STATION_FORCED_OFFLINE')))) return;
+        if (err instanceof ApiError && (err.status === 403 || err.status === 404
+          || ['STATION_NOT_READY', 'STATION_HAS_NO_BOX'].includes(err.code))) {
+          forgetRemembered(branch.id);
+          setNotice(`${held.stationName} is no longer yours to work. Pick another station.`);
+        } else {
+          setNotice(failure(err));
+        }
+        forgetStationDevices();
+        setLaneStation(null);
+        setActive(null);
+        setPicked(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only a new session that carries the screen on asks; the station is read from refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reseat]);
 
   // The unlock itself (SCRUM-744): ask again whatever the lock refused.
   useEffect(() => {

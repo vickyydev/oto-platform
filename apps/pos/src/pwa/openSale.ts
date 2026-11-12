@@ -18,6 +18,15 @@ import { useSyncExternalStore } from 'react';
 const openSurfaces = new Set<string>();
 const listeners = new Set<() => void>();
 let snapshot = false;
+/**
+ * SCRUM-878 — when each surface's sale was started: the moment it first said
+ * it was holding one. Read when a staff session ends with a sale on screen,
+ * so the next person to sign in at that till is told who started it and when.
+ * Memory only, like the rest of this file.
+ */
+const openedAt = new Map<string, number>();
+/** A customer display in use is not a sale started at the till. */
+const DISPLAY_SURFACE = /-display$/;
 
 function publish(): void {
   const next = openSurfaces.size > 0;
@@ -31,13 +40,31 @@ function publish(): void {
  * driven straight from a render effect.
  */
 export function setSaleOpen(surface: string, isOpen: boolean): void {
-  if (isOpen) openSurfaces.add(surface);
-  else openSurfaces.delete(surface);
+  if (isOpen) {
+    openSurfaces.add(surface);
+    if (!openedAt.has(surface)) openedAt.set(surface, Date.now());
+  } else {
+    openSurfaces.delete(surface);
+    openedAt.delete(surface);
+  }
   publish();
 }
 
 export function getSaleOpen(): boolean {
   return snapshot;
+}
+
+/**
+ * SCRUM-878 — when the oldest sale a selling surface holds was started, or
+ * null when none holds one. A customer display alone does not count.
+ */
+export function saleOpenSince(): number | null {
+  let since: number | null = null;
+  for (const [surface, at] of openedAt) {
+    if (DISPLAY_SURFACE.test(surface)) continue;
+    if (since === null || at < since) since = at;
+  }
+  return since;
 }
 
 export function subscribeSaleOpen(listener: () => void): () => void {

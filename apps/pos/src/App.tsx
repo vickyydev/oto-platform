@@ -68,7 +68,7 @@ function Router() {
 // On narrow phone viewports (< 768 px) the MobileShell is rendered in place of
 // the standard iPad Router — same provider tree, additive only.
 function AuthGate() {
-  const { operator, locked, sessionResolved, mustChangePassword } = useOperator();
+  const { operator, locked, sessionResolved, mustChangePassword, tillSeat } = useOperator();
   const { station, fleetAvailable, resolved: stationResolved } = useStation();
   const [location] = useLocation();
   const isMobile = useIsMobile();
@@ -118,13 +118,18 @@ function AuthGate() {
   if (fleetAvailable && !station && !location.startsWith('/station-setup')) {
     return <StationPicker />;
   }
+  // SCRUM-878 — the selling screen is keyed by its seat, not by who is signed
+  // in: a session that ended keeps it under the lock, and the next sign-in that
+  // carries it on (the same person, or one who chose to continue the sale)
+  // finds it as it was. Any other sign-in has a new seat, so a fresh screen.
+  const seat = tillSeat ?? operator.id;
   if (retainedStation) {
     return <>
       <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
         style={locked ? { display: 'none' } : undefined}>
-        {ticketTill ? <Till key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
-          : guestOrderStation ? <OrderStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
-            : <MerchStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />}
+        {ticketTill ? <Till key={`${seat}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+          : guestOrderStation ? <OrderStation key={`${seat}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+            : <MerchStation key={`${seat}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />}
       </div>
       {locked ? <LockScreen /> : <InactivityWarning />}
     </>;
@@ -134,7 +139,7 @@ function AuthGate() {
     // sale inside it. Only the ticket tab gets here while locked (above).
     return (
       <>
-        <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
+        <div key={seat} className="contents" hidden={locked} inert={locked} aria-hidden={locked}
           style={locked ? { display: 'none' } : undefined}>
           <MobileShell />
         </div>

@@ -61,6 +61,13 @@ const operatorValue: OperatorValue = {
   secondsLeft: 0,
   stayActive: noop,
   sessionResolved: true,
+  // SCRUM-878 — no session has ended in the header harness.
+  sessionEnded: null,
+  keptOffer: null,
+  continueKept: noop,
+  discardKept: noop,
+  tillSeat: null,
+  reseat: 0,
 };
 
 const branchValue: BranchValue = {

@@ -6,6 +6,8 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ApiError } from '@/api/client';
 import { authApi } from '@/api/platform';
 import { lockedFamilyFormLine, useLockedFamilyForm } from '@/lib/lockedFamilyForm';
+import { sessionEndedLine } from '@/auth/sessionEnd';
+import { KeptSaleOfferScreen } from '@/components/auth/KeptSaleOffer';
 import {
   Lock,
   Loader2,
@@ -62,7 +64,13 @@ const LAUNCHER_URL = launcherOrigin();
  * temp module links.
  */
 export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
-  const { signIn, locked, operator, unlock, logout, handoffError, offlineUnlock } = useOperator();
+  const { signIn, locked: sessionLocked, operator, unlock, logout, handoffError, offlineUnlock, sessionEnded, keptOffer } = useOperator();
+  /**
+   * SCRUM-878 — a session that ended on the platform is not "still signed in":
+   * there is nothing left to unlock, so the sign-in form is drawn in the
+   * password's place, with one line saying what happened (`sessionEndedLine`).
+   */
+  const locked = sessionLocked && !sessionEnded;
   // SCRUM-942 — a family filling the form on this till's display, or done with it.
   const familyForm = useLockedFamilyForm();
   const familyFormLine = lockedFamilyFormLine(familyForm);
@@ -166,6 +174,10 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     }
   };
 
+  // SCRUM-878 — a different person signed in over a sale kept from an ended
+  // session: who started it and when, and continue or discard, before the till.
+  if (keptOffer && operator) return <KeptSaleOfferScreen offer={keptOffer} />;
+
   if (locked && operator) {
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">
@@ -267,6 +279,15 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
               ? 'First shift? Set up your account.'
               : 'Reset your password.'}
         </p>
+
+        {/* SCRUM-878 — the session ended on the platform: why this form is
+            here instead of the password, in the offline notice's style. */}
+        {sessionEnded && (
+          <p role="status" data-testid="lock-session-ended"
+            className="mb-6 w-full rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 text-left">
+            {sessionEndedLine(sessionEnded)}
+          </p>
+        )}
 
         {/* A refused hand-off from the launcher: why this screen appeared at
             all, and whether signing in again is enough (S2-02). */}

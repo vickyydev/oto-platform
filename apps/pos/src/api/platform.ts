@@ -46,6 +46,12 @@ export interface MeResponse {
    * for as long as it lasts. Optional for an api from before it.
    */
   impersonation?: PosImpersonation | null;
+  /**
+   * SCRUM-878 — when this session ends: the seconds left on the platform's
+   * clock and the session's whole life in hours. Optional for an api from
+   * before it, which leaves the till saying only that the session has ended.
+   */
+  sessionEnd?: { at: string; inSeconds: number; afterHours: number } | null;
 }
 
 /** SCRUM-648: who is really at this till, as whom, and until when. */

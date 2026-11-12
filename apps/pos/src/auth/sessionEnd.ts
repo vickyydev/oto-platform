@@ -1,0 +1,145 @@
+/**
+ * SCRUM-878 — A STAFF SESSION THAT ENDS DURING A LONG SHIFT.
+ *
+ * A staff session ends twelve hours after sign-in (the platform's
+ * `SESSION_TTL_HOURS`; how long is the owner's decision and is not changed
+ * here). Its cookie is given the same life, so at that moment the browser
+ * stops sending it and the platform answers the next request — the minute's
+ * heartbeat, a poll, an unlock — with a plain 401 "Not signed in".
+ *
+ * BEFORE: the till dropped to "Oto POS is locked — Sign in with your phone to
+ * start your shift" with no explanation, and the cart on screen was gone (the
+ * selling screen was unmounted with the operator). A LOCKED till met the end
+ * differently: until the next heartbeat landed, a correct password answered
+ * "Not signed in" under a line still saying the person was signed in.
+ *
+ * NOW (`auth/OperatorContext.tsx`): a session ended on the platform is not a
+ * sign-out. The till stays as it was under the lock — the same screen, the
+ * same sale, rendering nothing while locked, as a staff lock already keeps it
+ * (`App.tsx`) — and the lock screen becomes the sign-in form with one line
+ * saying what happened. Signing in again on the same till carries on:
+ *
+ *  - the same person: the sale is back exactly as it was (lines, member,
+ *    tier, codes, step), the customer display follows again, and a payment
+ *    that was waiting is read back from the platform by the payment stage's
+ *    own recovery (`lib/usePaymentStage.ts`, "Checking the payment after
+ *    unlock"), so nothing is charged twice and nothing is lost;
+ *  - a different person who may sell: the sale is offered to them plainly —
+ *    who started it and when — to continue or to discard; never silently
+ *    made theirs (`components/auth/KeptSaleOffer.tsx`);
+ *  - anyone else, another park, another operator, another trading day, or a
+ *    person who may not sell: a fresh till, as before.
+ *
+ * The sale is kept in this page's memory only: never on the platform, never in
+ * the browser's storage, with no token, password or session value beside it.
+ * A reload loses an unwritten cart as it always has; a sale already rung up
+ * comes back through the left-behind path (`lib/leftBehindSale.ts`), as before.
+ */
+
+/** A refusal this close to the end the platform gave counts as the end (clock drift, a slow answer). */
+export const SESSION_END_SLACK_MS = 60_000;
+
+/** What the sign-in screen says about the session that has just ended. */
+export interface SessionEnded {
+  /** Who was signed in. */
+  name: string;
+  /** The session reached the end it was given, rather than being ended from elsewhere. */
+  expired: boolean;
+  /** The session's whole life in hours, as the platform gave it; null from an api that does not say. */
+  afterHours: number | null;
+  /** A sale was on screen when it ended, and is kept for the next sign-in on this till. */
+  saleKept: boolean;
+}
+
+/** The selling screen left under the lock when its session ended: what decides who may have it. */
+export interface KeptTill {
+  accountId: string;
+  name: string;
+  /** The operator and park the session sat at, as `/me` said. */
+  operatorId: string | null;
+  branchId: string | null;
+  /** The platform station the till stood at; null on a deployment with no fleet. */
+  stationId: string | null;
+  /** The branch's trading day when it ended: a kept sale never outlives it. */
+  tradingDate: string;
+  /** When the sale on screen was started, or null when nothing was on screen. */
+  saleSince: number | null;
+  endedAt: number;
+}
+
+/** The offer a different person sees after signing in over a kept sale. */
+export interface KeptSaleOffer {
+  startedBy: string;
+  startedAt: number;
+  endedAt: number;
+  stationId: string | null;
+}
+
+/** Who signed in next, and where. */
+export interface NextSignIn {
+  accountId: string;
+  operatorId: string | null;
+  branchId: string | null;
+  tradingDate: string;
+  /** Holds `pos:sale:create` somewhere: a person who may not sell never continues a sale. */
+  maySell: boolean;
+}
+
+/**
+ * What a sign-in does with the screen a session left behind:
+ * `continue` it (the same person), `offer` it (a different person who may
+ * sell, with a sale on it), or start `fresh`.
+ */
+export function afterSignIn(kept: KeptTill | null, next: NextSignIn): 'continue' | 'offer' | 'fresh' {
+  if (!kept) return 'fresh';
+  const samePlace = kept.operatorId === next.operatorId && kept.branchId === next.branchId
+    && kept.tradingDate === next.tradingDate;
+  if (!samePlace) return 'fresh';
+  if (kept.saleSince !== null && !next.maySell) return 'fresh';
+  if (kept.accountId === next.accountId) return 'continue';
+  return kept.saleSince !== null ? 'offer' : 'fresh';
+}
+
+/**
+ * The moment, on this device's clock, the session ends: when `/me` was
+ * answered plus the seconds the platform said were left. Counting from the
+ * answer rather than reading the platform's timestamp keeps a till whose own
+ * clock is wrong on the right moment.
+ */
+export function sessionDeadline(end: { inSeconds: number } | null | undefined, answeredAt: number): number | null {
+  if (!end || !Number.isFinite(end.inSeconds) || end.inSeconds < 0) return null;
+  return answeredAt + end.inSeconds * 1000;
+}
+
+/** Whether a session refused at `now` had reached its end, rather than being ended from elsewhere. */
+export function endedByExpiry(deadline: number | null, now: number): boolean {
+  return deadline !== null && now >= deadline - SESSION_END_SLACK_MS;
+}
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+
+/** "twelve hours", "one hour", "24 hours". */
+export function hoursInWords(hours: number): string {
+  const n = Math.max(0, Math.round(hours));
+  const word = NUMBER_WORDS[n] ?? String(n);
+  return `${word} ${n === 1 ? 'hour' : 'hours'}`;
+}
+
+/** The sign-in screen's one line, in the till's own English. */
+export function sessionEndedLine(ended: SessionEnded): string {
+  const what = ended.expired && ended.afterHours !== null && ended.afterHours > 0
+    ? `The session of ${ended.name} ended after ${hoursInWords(ended.afterHours)}.`
+    : `The session of ${ended.name} has ended.`;
+  return `${what} Sign in again to carry on.${ended.saleKept ? ' The sale in progress is kept on this till.' : ''}`;
+}
+
+/** "20:05", on the till's own clock. */
+export function clockTime(at: number): string {
+  const d = new Date(at);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** What the offer says: who started the sale and when, and when their session ended. */
+export function keptSaleOfferLine(offer: KeptSaleOffer): string {
+  return `${offer.startedBy} started this sale at ${clockTime(offer.startedAt)}. The session of ${offer.startedBy} ended at ${clockTime(offer.endedAt)}.`;
+}
