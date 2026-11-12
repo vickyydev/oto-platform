@@ -81,7 +81,8 @@ describe('the Wallet view’s words', () => {
     const ledger = [entry('grant', 5_000, '2026-09-30T05:00:00.000Z'), entry('spend', -1_200, '2026-09-30T06:00:00.000Z')];
     expect(ledgerNewestFirst(ledger).map((e) => e.kind)).toEqual(['spend', 'grant']);
     expect(walletEntryLabel(ledger[1]!)).toEqual({ kind: 'spend', source: 'fnb order' });
-    expect(bahtOf(1_250)).toBe('฿12.5');
+    // SCRUM-933 — an amount with satang shows its two places on the staff till.
+    expect(bahtOf(1_250)).toBe('฿12.50');
     expect(bahtOf(30_000)).toBe('฿300');
   });
 });
