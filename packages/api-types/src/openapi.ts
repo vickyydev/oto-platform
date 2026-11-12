@@ -13274,6 +13274,12 @@ export interface paths {
                                         subject: "event_pass" | "party_balance" | "extra_hour";
                                         /** @enum {string} */
                                         method: "qr" | "card";
+                                        lines?: {
+                                            label: string;
+                                            qty: number;
+                                            unitPrice?: number;
+                                            lineTotal: number;
+                                        }[];
                                     } | {
                                         supported: boolean;
                                         nickname: string;

@@ -29116,6 +29116,40 @@
                                         "qr",
                                         "card"
                                       ]
+                                    },
+                                    "lines": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "label": {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          "qty": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 100000
+                                          },
+                                          "unitPrice": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 90071992547409.9
+                                          },
+                                          "lineTotal": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 90071992547409.9
+                                          }
+                                        },
+                                        "required": [
+                                          "label",
+                                          "qty",
+                                          "lineTotal"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "maxItems": 50
                                     }
                                   },
                                   "required": [
