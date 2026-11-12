@@ -64,6 +64,7 @@ import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 import { FORM_RECONNECTING_LINE } from '@/components/till/consentFormLayout';
 import { clearConsentDraft } from '@/lib/consentDraftStore';
+import { goesAgainByItself } from '@/lib/displaySendQueue';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -351,6 +352,17 @@ export default function Display() {
     void send(intent.type, intent.payload, true);
   }, [connection, send]);
 
+  /**
+   * SCRUM-963 — and so does a language the family chose while the line was
+   * down: this screen took it at once (it is the family's own), and the box
+   * is told the moment it is heard from again, under the same action id.
+   */
+  useEffect(() => {
+    const intent = pending.current;
+    if (connection !== 'connected' || !intent || intent.type !== 'display.set_language') return;
+    void send(intent.type, intent.payload, true);
+  }, [connection, send]);
+
   const pairedDeviceId = session?.device.id;
   useEffect(() => {
     if (pairedDeviceId && !pending.current && sessionRef.current?.document.language !== lang) void send('display.set_language', { language: lang });
@@ -393,14 +405,17 @@ export default function Display() {
    * keeps typing while the till takes the last one (the form sends the next
    * when it has). Nor for a `photo`, which only names to the till a picture
    * the family took. It locks, and says to wait, for anything else it sent.
+   * SCRUM-963 — nor for a language the family chose (`lib/displaySendQueue`):
+   * Done and "Ask the team" still lock it until the till has them.
    */
   const consentAnswerPending = busy || !!answer || !!pending.current;
   const isLive = (value: unknown): boolean => {
     const action = (value as { action?: unknown } | null | undefined)?.action;
     return action === 'fill' || action === 'photo';
   };
+  const languageOut = pending.current?.type === 'display.set_language';
   const consentLocked = consentAnswerPending
-    && !((!pending.current || pending.current.type === 'display.consent' && isLive(pending.current.payload))
+    && !((!pending.current || languageOut || pending.current.type === 'display.consent' && isLive(pending.current.payload))
       && (!answer || isLive((answer as { payload?: unknown }).payload)));
   /**
    * SCRUM-942 — the family pressed Done and it waits for the till (a till
@@ -416,17 +431,18 @@ export default function Display() {
    * returns (SCRUM-874), so a fill that could not go asks for no Retry.
    */
   const onConsentForm = !!session && connection !== 'paused' && !!view?.consent;
-  const fillWaiting = pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'fill';
-  const formReconnecting = onConsentForm && (connection === 'reconnecting' || !!error && fillWaiting);
+  // A fill, and since SCRUM-963 a language the family chose, waits as their typing does.
+  const goesByItself = goesAgainByItself(pending.current);
+  const formReconnecting = onConsentForm && (connection === 'reconnecting' || !!error && goesByItself);
   /**
    * SCRUM-943 — and it does go by itself: a fill whose reply was lost while
    * the box still answers (no reconnect to send it again on, above) is sent
    * again every few seconds until it is taken, where a Retry used to wait.
+   * SCRUM-963 — a language whose reply was lost goes again the same way.
    */
   useEffect(() => {
     const intent = pending.current;
-    if (connection !== 'connected' || !error || busy || !intent || intent.type !== 'display.consent'
-      || actionOf(intent.payload) !== 'fill') return;
+    if (connection !== 'connected' || !error || busy || !intent || !goesAgainByItself(intent)) return;
     const timer = setTimeout(() => { void send(intent.type, intent.payload, true); }, FILL_RESEND_MS);
     return () => clearTimeout(timer);
   }, [connection, error, busy, send]);
@@ -451,7 +467,7 @@ export default function Display() {
 
   return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
     {session && connection === 'reconnecting' && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
-    {error && (!(session && connection !== 'connected') || pending.current) && !(onConsentForm && fillWaiting) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
+    {error && (!(session && connection !== 'connected') || pending.current) && !(onConsentForm && goesByItself) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{session ? displayErrorText(error, lang, t) : error}</span>
       <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>{session ? t('display.retry') : 'Retry'}</Button>
     </div>}
