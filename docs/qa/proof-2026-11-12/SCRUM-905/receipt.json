@@ -1,0 +1,1088 @@
+{
+  "unit": "SCRUM-905 staging proof",
+  "ticket": "SCRUM-905",
+  "title": "BEO kitchen and bar plan: pick from the till's menu",
+  "landed": "4392efbfe44368a3f32cb9c1b68fc6c43986efc4 (six commits, 416567c7e..4392efbfe)",
+  "deploys": {
+    "file": "deploys.json (before: both named deploys live at 4392efbfe; after: read at the end)",
+    "api": "dep-dbqpg3tckfvc73d4ioog live 10:47:25Z at 4392efbfe; replaced at 10:54:24Z by dep-dbqpjllbedkc73ecb2rg at d0045f1ef, which contains 4392efbfe (15 later commits: messaging, inbox and Twilio test line; none touches the party menu door, the menu read, the party plan, the parties route or the OTO App). The till-menu comparison (10:49Z) ran on 4392efbfe; the till party reads (10:54:29Z on) ran on d0045f1ef.",
+    "app": "dep-dbqpg45bedkc73ec1fbg live 10:45:26Z at 4392efbfe, still live at the end."
+  },
+  "startedAt": "2026-11-12T10:48:48.543Z",
+  "finishedAt": "2026-11-12T11:02:54.357Z",
+  "browser": "Headless Chromium [number] (Playwright), one browser for the whole run, closed at the end",
+  "rules": "ZZ TEST records only (one party, deleted and read back gone); no real party, BEO or template opened for editing; no POS product created; nothing printed (party on 25 Nov, park names no party slips station); no payment; no direct database access; staff names held in memory for masking only; the signed-in initials masked",
+  "viewer": {
+    "role": "global_admin",
+    "park": "Oto Play Park, Central Floresta",
+    "linkedTillBranch": "Oto Play Park, Central Floresta"
+  },
+  "tillMenuComparison": {
+    "door": {
+      "park": {
+        "route": "GET /api/beo/till-menu?parkId=<Central Floresta>",
+        "status": 200,
+        "parkStatus": "ok",
+        "message": null,
+        "readAt": "2026-11-12T10:49:04.801Z",
+        "count": 143
+      },
+      "all": {
+        "route": "GET /api/beo/till-menu",
+        "status": 200,
+        "parks": [
+          {
+            "parkName": "Head Office",
+            "status": "not_linked",
+            "count": 0,
+            "message": "This park is not linked to the till yet, so the till's menu cannot be offered. Type the item instead."
+          },
+          {
+            "parkName": "Oto Play Park, Central Floresta ",
+            "status": "ok",
+            "count": 143,
+            "message": null
+          },
+          {
+            "parkName": "Oto Play Park, Robinson Chalong",
+            "status": "ok",
+            "count": 134,
+            "message": null
+          }
+        ]
+      }
+    },
+    "till": {
+      "routes": {
+        "withBeoOnly": "GET /api/branches/:id/menu?includeBeoOnly=true 200",
+        "tillSelling": "GET /api/branches/:id/menu 200"
+      },
+      "productsAtBranch": {
+        "total": 180,
+        "atThisBranchOrOperatorWide": 180
+      },
+      "expectedForPicker": "143 (kind menu, active, not archived, coded, made at the kitchen or the bar; BEO-only included)",
+      "tillSellingGridMenuItems": 137
+    },
+    "door_vs_till": {
+      "door": 143,
+      "till": 143,
+      "missingFromPicker": [],
+      "extraInPicker": [],
+      "fieldMismatches": [],
+      "duplicateCodes": []
+    },
+    "byStation": {
+      "kitchen": 78,
+      "bar": 65,
+      "beoOnly": 6
+    },
+    "uncodedKitchenBarItemsOnSale": 0,
+    "menuItemsPrintingNowhereOnSale": 0,
+    "offSaleCodedItems": 0,
+    "sample": [
+      {
+        "word": "Margherita",
+        "till": [
+          "CF-24 Margherita"
+        ],
+        "door": [
+          "CF-24 Margherita"
+        ]
+      },
+      {
+        "word": "Pizza",
+        "till": [],
+        "door": []
+      },
+      {
+        "word": "Juice",
+        "till": [
+          "PARTY-2F15AC99 ZZ TEST 829 juice",
+          "CF-63-1 Fresh cold pressed orange juice",
+          "CF-63-2 Fresh watermelon juice"
+        ],
+        "door": [
+          "CF-63-1 Fresh cold pressed orange juice",
+          "CF-63-2 Fresh watermelon juice",
+          "PARTY-2F15AC99 ZZ TEST 829 juice"
+        ]
+      },
+      {
+        "word": "Coke",
+        "till": [
+          "CF-65-1 Coke",
+          "CF-65-2 Coke zero"
+        ],
+        "door": [
+          "CF-65-1 Coke",
+          "CF-65-2 Coke zero"
+        ]
+      },
+      {
+        "word": "Calamari",
+        "till": [
+          "CF-14 Calamari"
+        ],
+        "door": [
+          "CF-14 Calamari"
+        ]
+      },
+      {
+        "word": "Hummus",
+        "till": [
+          "CF-13 Hummus"
+        ],
+        "door": [
+          "CF-13 Hummus"
+        ]
+      },
+      {
+        "word": "French",
+        "till": [
+          "CF-11 French fries"
+        ],
+        "door": [
+          "CF-11 French fries"
+        ]
+      }
+    ],
+    "partyOnlyItemsListed": [
+      "PARTY-A678D0E1 7 balloons",
+      "PARTY-B73D36CC ZZ TEST 822 bubble tea",
+      "PARTY-CBB7D66D ZZ TEST 829 bubble tea",
+      "PARTY-BCA4EB4E ZZ TEST 829 coffee",
+      "PARTY-2F15AC99 ZZ TEST 829 juice",
+      "PARTY-CCFACA10 ZZ TEST 829 nuggets"
+    ],
+    "weekendPriceDiffers": 0,
+    "timing": {
+      "at": "2026-11-12T11:02:30.306Z",
+      "first": {
+        "status": 200,
+        "ms": 228,
+        "readAt": "2026-11-12T11:02:30.486Z",
+        "count": 143
+      },
+      "second": {
+        "status": 200,
+        "ms": 113,
+        "readAt": "2026-11-12T11:02:30.486Z",
+        "count": 143
+      },
+      "allParks": {
+        "status": 200,
+        "ms": 145
+      }
+    }
+  },
+  "party": {
+    "id": "a59e34a9-6a9c-48c9-8e61-fa9bc62b1fc7",
+    "title": "ZZ TEST 905 till menu",
+    "date": "2026-11-25",
+    "startTime": "14:00",
+    "route": "POST /api/admin/events",
+    "status": 201,
+    "createdAt": "2026-11-12T10:50:04.072Z",
+    "packageApplied": {
+      "at": "2026-11-12T10:54:41.094Z",
+      "route": "POST /api/beo/events/:id/package-snapshot",
+      "status": 201,
+      "package": "Birthday package, Central Floresta",
+      "setMenuTemplateId": "0b1db99d-296a-4418-abb8-9d6071a367c4",
+      "slipsTime": "11:00:00"
+    },
+    "parentLink": {
+      "at": "2026-11-12T10:55:07.934Z",
+      "getLink": {
+        "route": "POST /api/beo/set-menu-selections (Get Parent Link)",
+        "status": 201,
+        "dialog": "Parent Menu Selection Link Awaiting parent selections Shareable Link Copy Share this link with the parent so they can choose their set menu options. Close Close"
+      },
+      "publicRead": {
+        "route": "GET /api/beo/set-menu-selections/public/<token>",
+        "status": 200,
+        "template": "Birthday set menu, Central Floresta"
+      },
+      "submitted": {
+        "route": "POST /api/beo/set-menu-selections/public/<token>/submit",
+        "status": 200,
+        "choices": [
+          {
+            "group": "Pizza",
+            "chosen": "Margherita",
+            "code": "CF-24"
+          },
+          {
+            "group": "Hot dish",
+            "chosen": "Chicken schnitzel",
+            "code": "CF-37"
+          },
+          {
+            "group": "Waffles or pancakes",
+            "chosen": "Waffles",
+            "code": "CF-4"
+          },
+          {
+            "group": "Fried rice",
+            "chosen": "Veggie",
+            "code": "CF-43"
+          },
+          {
+            "group": "Drinks pitcher",
+            "chosen": "Juice",
+            "code": null
+          }
+        ],
+        "error": null
+      }
+    }
+  },
+  "picks": {
+    "kidsLine0": [
+      {
+        "at": "2026-11-12T10:51:53.140Z",
+        "button": "button-till-menu-kids-0",
+        "openMs": 147,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "pizza",
+        "found": [
+          "Margherita CF-24 ฿400",
+          "Mushroom & olives CF-25 ฿480",
+          "Four cheese CF-26 ฿515",
+          "Hawaiian CF-27 ฿515",
+          "Smoked salmon CF-28 ฿560",
+          "Burrata & parma ham CF-29 ฿590",
+          "Sausage, brie & onion CF-30 ฿480",
+          "Pepperoni CF-31 ฿420",
+          "Veggie delight CF-32 ฿390",
+          "Prope Montepulciano d’Abruzzo, Italy (bottle) CF-70-BOTTLE ฿1,650"
+        ],
+        "picked": "Margherita CF-24 ฿400",
+        "closedAfterPick": true
+      }
+    ],
+    "kidsExtra": [
+      {
+        "at": "2026-11-12T10:52:19.321Z",
+        "button": "button-till-menu-kids-1",
+        "openMs": 71,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "pepperoni",
+        "found": [
+          "Pepperoni CF-31 ฿420",
+          "S.Pellegrino sparkling water CF-65-4 ฿155",
+          "Prope Montepulciano d’Abruzzo, Italy (bottle) CF-70-BOTTLE ฿1,650"
+        ],
+        "picked": "Pepperoni CF-31 ฿420",
+        "closedAfterPick": true
+      }
+    ],
+    "adultsExtra": [
+      {
+        "at": "2026-11-12T10:52:50.449Z",
+        "button": "button-till-menu-adults-3",
+        "openMs": 73,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "schnitzel",
+        "found": [
+          "Chicken schnitzel CF-37 ฿425"
+        ],
+        "picked": "Chicken schnitzel CF-37 ฿425",
+        "closedAfterPick": true
+      }
+    ],
+    "bar": [
+      {
+        "at": "2026-11-12T10:53:08.246Z",
+        "button": "button-till-menu-bar-0",
+        "openMs": 70,
+        "listed": 143,
+        "firstGroups": [
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)"
+        ],
+        "search": "juice",
+        "found": [
+          "Fresh cold pressed orange juice CF-63-1 ฿210",
+          "Fresh watermelon juice CF-63-2 ฿210",
+          "Apple CF-66-1 ฿50",
+          "Orange CF-66-2 ฿50",
+          "Pineapple CF-66-3 ฿50",
+          "Cranberry mors CF-66-4 ฿50",
+          "ZZ TEST 829 juiceParty only PARTY-2F15AC99 ฿0"
+        ],
+        "picked": "Fresh watermelon juice CF-63-2 ฿210",
+        "closedAfterPick": true
+      }
+    ],
+    "reopenCodedLine": [
+      {
+        "at": "2026-11-12T10:54:01.659Z",
+        "button": "button-till-menu-kids-0",
+        "openMs": 71,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "not from the till",
+        "found": [],
+        "picked": null,
+        "closedAfterPick": null
+      }
+    ],
+    "barSearchPizza": [
+      {
+        "at": "2026-11-12T10:54:04.886Z",
+        "button": "button-till-menu-bar-0",
+        "openMs": 70,
+        "listed": 143,
+        "firstGroups": [
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)"
+        ],
+        "search": "pizza",
+        "found": [
+          "Prope Montepulciano d’Abruzzo, Italy (bottle) CF-70-BOTTLE ฿1,650",
+          "Margherita CF-24 ฿400",
+          "Mushroom & olives CF-25 ฿480",
+          "Four cheese CF-26 ฿515",
+          "Hawaiian CF-27 ฿515",
+          "Smoked salmon CF-28 ฿560",
+          "Burrata & parma ham CF-29 ฿590",
+          "Sausage, brie & onion CF-30 ฿480",
+          "Pepperoni CF-31 ฿420",
+          "Veggie delight CF-32 ฿390"
+        ],
+        "picked": null,
+        "closedAfterPick": null
+      }
+    ],
+    "setMenuAddItem": [
+      {
+        "at": "2026-11-12T10:55:35.276Z",
+        "button": "button-till-menu-kids-11",
+        "openMs": 84,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "hummus",
+        "found": [
+          "Hummus CF-13 ฿275"
+        ],
+        "picked": "Hummus CF-13 ฿275",
+        "closedAfterPick": true
+      }
+    ],
+    "fries": [
+      {
+        "at": "2026-11-12T11:00:13.453Z",
+        "button": "button-till-menu-kids-10",
+        "openMs": 69,
+        "listed": 143,
+        "firstGroups": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)"
+        ],
+        "search": "fries",
+        "found": [
+          "Porridge CF-6 ฿230",
+          "Vegetarian breakfast CF-2 ฿400",
+          "Syrniki CF-8 ฿230",
+          "Steamed jasmine rice CF-10-17 ฿50",
+          "Grilled tomato CF-10-2 ฿50",
+          "Grilled shrimp CF-10-10 ฿95",
+          "Grilled chicken CF-10-11 ฿70",
+          "Bread CF-10-5 ฿70",
+          "Yogurt CF-10-15 ฿135",
+          "Hashbrown CF-10-4 ฿50",
+          "Parma ham CF-10-14 ฿175",
+          "Sour cream CF-10-16 ฿50",
+          "Eggs your way CF-10-18 ฿50",
+          "Sautéed mushrooms CF-10-1 ฿60",
+          "French fries CF-11 ฿175",
+          "Sweet potato fries CF-12 ฿175",
+          "Caesar salad — With chicken CF-15-1 ฿415",
+          "Mushroom & olives CF-25 ฿480",
+          "Grilled chicken wrap CF-39 ฿380",
+          "Fried rice CF-43 ฿240",
+          "Ginger lime CF-61-2 ฿135",
+          "Mango & passion fruit CF-62-3 ฿225",
+          "Mixed berry CF-62-2 ฿225",
+          "S.Pellegrino Lemonata CF-65-3 ฿115",
+          "S.Pellegrino sparkling water CF-65-4 ฿155",
+          "Villa Maria, New Zealand (glass) CF-69-GLASS ฿350",
+          "Ginger Lime Soda CF-FREE-61-2 ฿0",
+          "Iced Latte CF-FREE-59-2 ฿0",
+          "Iced Mocha CF-FREE-59-4 ฿0",
+          "Iced Americano CF-FREE-59-1 ฿0",
+          "Iced Chocolate CF-FREE-60-2 ฿0",
+          "Iced Cappuccino CF-FREE-59-3 ฿0",
+          "Americano CF-FREE-58-2 ฿0",
+          "Cappuccino CF-FREE-58-3 ฿0"
+        ],
+        "picked": null,
+        "closedAfterPick": null
+      }
+    ]
+  },
+  "saves": {
+    "first": {
+      "at": "2026-11-12T10:53:34.625Z",
+      "putStatus": 200,
+      "ms": 2941,
+      "writes": [
+        {
+          "method": "PUT",
+          "path": "/api/events/:id/beo",
+          "status": 200
+        }
+      ],
+      "toasts": [
+        "BEO data saved successfully"
+      ],
+      "readBack": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "setMenuEnabled": false,
+        "adultsDiffer": true,
+        "kids": [
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -"
+        ],
+        "adults": [
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -",
+          "Chicken schnitzel | code CF-37 | price 425 | included false | source -"
+        ],
+        "bar": [
+          "Fresh watermelon juice | code CF-63-2 | price 210 | included false | source -"
+        ]
+      }
+    },
+    "second": {
+      "at": "2026-11-12T10:56:08.424Z",
+      "putStatus": 200,
+      "ms": 3336,
+      "writes": [
+        {
+          "method": "PUT",
+          "path": "/api/events/:id/beo",
+          "status": 200
+        }
+      ],
+      "toasts": [
+        "BEO data saved successfully"
+      ],
+      "readBack": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "setMenuEnabled": true,
+        "adultsDiffer": true,
+        "kids": [
+          "Margherita | code - | price 0 | included true | source set_menu | template group item_cf_bday_pizza",
+          "Chicken schnitzel | code - | price 0 | included true | source set_menu | template group item_cf_bday_hot_dish",
+          "French fries | code - | price 0 | included true | source set_menu | template group item_cf_bday_fries",
+          "Waffles | code - | price 0 | included true | source set_menu | template group item_cf_bday_waffles_pancakes",
+          "Veggie | code - | price 0 | included true | source set_menu | template group item_cf_bday_fried_rice",
+          "Veggie sticks | code - | price 0 | included true | source set_menu | template group item_cf_bday_veggie_sticks",
+          "Fruit skewers | code - | price 0 | included true | source set_menu | template group item_cf_bday_fruit_skewers",
+          "Juice | code - | price 0 | included true | source set_menu | template group item_cf_bday_drinks",
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -",
+          "Hummus | code CF-13 | price 0 | included true | source set_menu"
+        ],
+        "adults": [
+          "Margherita | code - | price 0 | included true | source set_menu | template group item_cf_bday_pizza",
+          "Chicken schnitzel | code - | price 0 | included true | source set_menu | template group item_cf_bday_hot_dish",
+          "French fries | code - | price 0 | included true | source set_menu | template group item_cf_bday_fries",
+          "Waffles | code - | price 0 | included true | source set_menu | template group item_cf_bday_waffles_pancakes",
+          "Veggie | code - | price 0 | included true | source set_menu | template group item_cf_bday_fried_rice",
+          "Veggie sticks | code - | price 0 | included true | source set_menu | template group item_cf_bday_veggie_sticks",
+          "Fruit skewers | code - | price 0 | included true | source set_menu | template group item_cf_bday_fruit_skewers",
+          "Juice | code - | price 0 | included true | source set_menu | template group item_cf_bday_drinks",
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -",
+          "Chicken schnitzel | code CF-37 | price 425 | included false | source -"
+        ],
+        "bar": [
+          "Fresh watermelon juice | code CF-63-2 | price 210 | included false | source -"
+        ]
+      }
+    },
+    "after-clear": {
+      "at": "2026-11-12T11:01:18.644Z",
+      "putStatus": 200,
+      "ms": 2929,
+      "writes": [
+        {
+          "method": "PUT",
+          "path": "/api/events/:id/beo",
+          "status": 200
+        }
+      ],
+      "toasts": [
+        "BEO data saved successfully"
+      ],
+      "readBack": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "setMenuEnabled": true,
+        "adultsDiffer": true,
+        "kids": [
+          "Margherita | code - | price 0 | included true | source set_menu | template group item_cf_bday_pizza",
+          "Chicken schnitzel | code - | price 0 | included true | source set_menu | template group item_cf_bday_hot_dish",
+          "French fries | code - | price 0 | included true | source set_menu | template group item_cf_bday_fries",
+          "Waffles | code - | price 0 | included true | source set_menu | template group item_cf_bday_waffles_pancakes",
+          "Veggie | code - | price 0 | included true | source set_menu | template group item_cf_bday_fried_rice",
+          "Veggie sticks | code - | price 0 | included true | source set_menu | template group item_cf_bday_veggie_sticks",
+          "Fruit skewers | code - | price 0 | included true | source set_menu | template group item_cf_bday_fruit_skewers",
+          "Juice | code - | price 0 | included true | source set_menu | template group item_cf_bday_drinks",
+          "Hummus | code CF-13 | price 0 | included true | source set_menu",
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -"
+        ],
+        "adults": [
+          "Margherita | code - | price 0 | included true | source set_menu | template group item_cf_bday_pizza",
+          "Chicken schnitzel | code - | price 0 | included true | source set_menu | template group item_cf_bday_hot_dish",
+          "French fries | code - | price 0 | included true | source set_menu | template group item_cf_bday_fries",
+          "Waffles | code - | price 0 | included true | source set_menu | template group item_cf_bday_waffles_pancakes",
+          "Veggie | code - | price 0 | included true | source set_menu | template group item_cf_bday_fried_rice",
+          "Veggie sticks | code - | price 0 | included true | source set_menu | template group item_cf_bday_veggie_sticks",
+          "Fruit skewers | code - | price 0 | included true | source set_menu | template group item_cf_bday_fruit_skewers",
+          "Juice | code - | price 0 | included true | source set_menu | template group item_cf_bday_drinks",
+          "Margherita | code CF-24 | price 400 | included true | source -",
+          "Pepperoni | code CF-31 | price 420 | included false | source -",
+          "ZZ TEST fish fingers | code - | price 0 | included false | source -",
+          "Chicken schnitzel | code CF-37 | price 425 | included false | source -"
+        ],
+        "bar": [
+          "Fresh watermelon juice | code CF-63-2 | price 210 | included false | source -"
+        ]
+      }
+    }
+  },
+  "tillReads": {
+    "before-package": {
+      "at": "2026-11-12T10:54:29.868Z",
+      "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+      "status": 200,
+      "planStatus": "no_package",
+      "package": null,
+      "kitchenLines": null,
+      "barLines": null,
+      "slips": null
+    },
+    "after-package": {
+      "at": "2026-11-12T10:54:41.350Z",
+      "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+      "status": 200,
+      "planStatus": "ready",
+      "package": "Birthday package, Central Floresta",
+      "kitchenLines": [
+        "(no code) Pizza",
+        "(no code) Hot dish",
+        "CF-11 French fries",
+        "(no code) Waffles or pancakes",
+        "CF-43 Fried rice",
+        "CF-53 Veggie sticks",
+        "(no code) Fruit skewers",
+        "(no code) Drinks pitcher",
+        "CF-24 Margherita",
+        "CF-31 Pepperoni",
+        "CF-37 Chicken schnitzel [adults only]"
+      ],
+      "barLines": [
+        "(no code) Fresh watermelon juice x1"
+      ],
+      "slips": {
+        "station": null,
+        "records": 0
+      }
+    },
+    "after-set-menu": {
+      "at": "2026-11-12T10:56:08.834Z",
+      "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+      "status": 200,
+      "planStatus": "ready",
+      "package": "Birthday package, Central Floresta",
+      "kitchenLines": [
+        "CF-24 Pizza -> Margherita",
+        "CF-37 Hot dish -> Chicken schnitzel",
+        "CF-11 French fries",
+        "CF-4 Waffles or pancakes -> Waffles",
+        "CF-43 Fried rice -> Veggie",
+        "CF-53 Veggie sticks",
+        "(no code) Fruit skewers",
+        "(no code) Drinks pitcher -> Juice",
+        "CF-24 Margherita",
+        "CF-31 Pepperoni",
+        "CF-13 Hummus [kids only]",
+        "CF-37 Chicken schnitzel [adults only]"
+      ],
+      "barLines": [
+        "(no code) Fresh watermelon juice x1"
+      ],
+      "slips": {
+        "station": null,
+        "records": 0
+      }
+    },
+    "dead-code": {
+      "at": "2026-11-12T11:01:07.253Z",
+      "route": "GET /api/parties/:id?branchId=<Central Floresta>",
+      "status": 200,
+      "planStatus": "ready",
+      "package": "Birthday package, Central Floresta",
+      "kitchenLines": [
+        "CF-24 Pizza -> Margherita",
+        "CF-37 Hot dish -> Chicken schnitzel",
+        "CF-11 French fries",
+        "CF-4 Waffles or pancakes -> Waffles",
+        "CF-43 Fried rice -> Veggie",
+        "CF-53 Veggie sticks",
+        "(no code) Fruit skewers",
+        "(no code) Drinks pitcher -> Juice",
+        "CF-13 Hummus [kids only]",
+        "CF-24 Margherita",
+        "CF-31 Pepperoni",
+        "ZZ-DEAD-1 ZZ TEST fish fingers",
+        "(no code) ZZ TEST fish fingers [adults only]",
+        "CF-37 Chicken schnitzel [adults only]"
+      ],
+      "barLines": [
+        "(no code) Fresh watermelon juice x1"
+      ],
+      "slips": {
+        "station": null,
+        "records": 0
+      }
+    }
+  },
+  "pdf": {
+    "route": "GET /api/events/:id/beo/pdf",
+    "status": 200,
+    "type": "application/pdf",
+    "bytes": 92897,
+    "note": "kept in the scratch folder only; page 1 rendered as picture 09; its text was searched for every held staff name: none"
+  },
+  "deadCode": {
+    "at": "2026-11-12T11:00:50.486Z",
+    "route": "PUT /api/events/:id/beo/kitchen-plan",
+    "status": 200,
+    "lineNow": {
+      "itemName": "ZZ TEST fish fingers",
+      "productCode": "ZZ-DEAD-1"
+    },
+    "kidsLines": 12,
+    "setMenuLinesKept": 9
+  },
+  "settings": {
+    "templatesAtStart": [
+      "Set Central",
+      "Set at Robinson",
+      "Cake (under 10 kids)",
+      "Cake (over 10 kids)",
+      "After school 10 kids chalong",
+      "After school central 20pax",
+      "Birthday set menu, Central Floresta",
+      "After School food set (10 kids)",
+      "After School food set (20 kids)"
+    ],
+    "deadCodesInRealTemplates": [],
+    "marksShownInList": [],
+    "newTemplateDialog": {
+      "title": "New Set Menu Template",
+      "searchBesideCode": 1,
+      "deadMarkForZZDEAD1": "No longer on the till",
+      "searchFries": [
+        "PorridgeCF-6฿230",
+        "Vegetarian breakfastCF-2฿400",
+        "SyrnikiCF-8฿230",
+        "Steamed jasmine riceCF-10-17฿50",
+        "Grilled tomatoCF-10-2฿50",
+        "Grilled shrimpCF-10-10฿95",
+        "Grilled chickenCF-10-11฿70",
+        "BreadCF-10-5฿70",
+        "YogurtCF-10-15฿135",
+        "HashbrownCF-10-4฿50",
+        "Parma hamCF-10-14฿175",
+        "Sour creamCF-10-16฿50",
+        "Eggs your wayCF-10-18฿50",
+        "Sautéed mushroomsCF-10-1฿60",
+        "French friesCF-11฿175",
+        "Sweet potato friesCF-12฿175",
+        "French friesRC-10฿175",
+        "Sweet potato friesRC-11฿175",
+        "Caesar salad — With chickenCF-15-1฿415",
+        "Mushroom & olivesCF-25฿480",
+        "Grilled chicken wrapCF-39฿380",
+        "Fried riceCF-43฿240",
+        "Fried riceRC-41฿240",
+        "Ginger limeCF-61-2฿135",
+        "Mango & passion fruitCF-62-3฿225",
+        "Mango & passion fruitRC-59-3฿225",
+        "Mixed berryCF-62-2฿225",
+        "S.Pellegrino LemonataCF-65-3฿115",
+        "S.Pellegrino sparkling waterCF-65-4฿155",
+        "Villa Maria, New Zealand (glass)CF-69-GLASS฿350",
+        "Ginger Lime SodaCF-FREE-61-2฿0",
+        "Ginger Lime SodaRC-FREE-61-2฿0",
+        "Iced LatteCF-FREE-59-2฿0",
+        "Iced MochaCF-FREE-59-4฿0",
+        "Iced LatteRC-FREE-59-2฿0",
+        "Iced MochaRC-FREE-59-4฿0",
+        "Iced AmericanoCF-FREE-59-1฿0",
+        "Iced AmericanoRC-FREE-59-1฿0",
+        "Iced ChocolateCF-FREE-60-2฿0",
+        "Iced ChocolateRC-FREE-60-2฿0",
+        "Iced CappuccinoCF-FREE-59-3฿0",
+        "Iced CappuccinoRC-FREE-59-3฿0",
+        "AmericanoCF-FREE-58-2฿0",
+        "AmericanoRC-FREE-58-2฿0",
+        "CappuccinoCF-FREE-58-3฿0",
+        "CappuccinoRC-FREE-58-3฿0"
+      ],
+      "afterPick": {
+        "code": "CF-11",
+        "deadMark": 0,
+        "label": "French fries"
+      },
+      "choiceOptionAfterPick": {
+        "code": "CF-24",
+        "groupLabel": ""
+      },
+      "closedWithCancel": true
+    },
+    "templatesUnchanged": true
+  },
+  "roles": {
+    "admin": {
+      "role": "global_admin",
+      "sees": "the search beside every kitchen, adults, set-menu \"+ Add item\" and bar line (pictures 01-08)"
+    },
+    "manager": {
+      "launcherSignIn": 200,
+      "appHandoffExchange": 403,
+      "appUser": 401,
+      "tillMenuDoor": 401,
+      "landedPath": "/auth",
+      "screenSays": "Open the OTO App from the OTO launcher You are signed out. The OTO App opens from the launcher: sign in there and choose the OTO App tile, and you will land here signed in. Open the launcher",
+      "signOut": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "picture": "14-p8-staging-manager-account-has-no-oto-app-login.png"
+    },
+    "reception": {
+      "launcherSignIn": 200,
+      "appHandoffExchange": 403,
+      "appUser": 401,
+      "tillMenuDoor": 401,
+      "landedPath": "/auth",
+      "screenSays": "Open the OTO App from the OTO launcher You are signed out. The OTO App opens from the launcher: sign in there and choose the OTO App tile, and you will land here signed in. Open the launcher",
+      "signOut": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "picture": null
+    }
+  },
+  "pageErrors": [
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:50:06.005Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:51:42.381Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:53:42.957Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:55:01.714Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:55:22.310Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T10:56:22.045Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T11:00:08.910Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T11:00:52.515Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-manager",
+      "at": "2026-11-12T11:01:45.802Z",
+      "kind": "http",
+      "text": "GET /api/user 401"
+    },
+    {
+      "page": "app-manager",
+      "at": "2026-11-12T11:01:45.807Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "app-reception",
+      "at": "2026-11-12T11:02:08.489Z",
+      "kind": "http",
+      "text": "GET /api/user 401"
+    },
+    {
+      "page": "app-reception",
+      "at": "2026-11-12T11:02:08.493Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-12T11:02:44.437Z",
+    "party": {
+      "id": "a59e34a9-6a9c-48c9-8e61-fa9bc62b1fc7",
+      "title": "ZZ TEST 905 till menu",
+      "delete": {
+        "route": "DELETE /api/admin/events/:id",
+        "status": 204,
+        "error": null
+      }
+    },
+    "readBack": {
+      "appEvent": {
+        "route": "GET /api/admin/events/:id",
+        "status": 404
+      },
+      "appBeo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 404
+      },
+      "tillParty": {
+        "route": "GET /api/parties/:id?branchId=<Central Floresta> (till)",
+        "status": 404,
+        "code": "NOT_FOUND"
+      },
+      "zzTest905AtCentralFloresta": []
+    },
+    "setMenuTemplates": {
+      "count": 9,
+      "unchangedSinceStart": true
+    }
+  },
+  "signOut": {
+    "at": "2026-11-12T11:02:54.357Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    },
+    "pos": {
+      "signOut": 200,
+      "meAfter": 401
+    }
+  },
+  "images": [
+    {
+      "file": "01-p1-kids-linea-list.png",
+      "at": "2026-11-12T10:51:54.009Z",
+      "shows": "button-till-menu-kids-0: the picker open, the till's menu unfiltered",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "01-p1-kids-lineb-search.png",
+      "at": "2026-11-12T10:51:55.499Z",
+      "shows": "button-till-menu-kids-0: \"pizza\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "02-p1-p2-p5-kids-lines-picked-and-typed-before-save.png",
+      "at": "2026-11-12T10:52:28.983Z",
+      "shows": "Kids menu: line 0 picked Margherita CF-24, line 1 EXTRA picked Pepperoni CF-31, line 2 typed ZZ TEST fish fingers (no code); + NEW ITEM still below",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03a-p3-adults-tab-mirror-of-kids.png",
+      "at": "2026-11-12T10:52:40.091Z",
+      "shows": "Adults tab with Different for adults off: the kids' lines mirrored, codes shown, no search (nothing to type)",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03b-p3-adults-extrab-search.png",
+      "at": "2026-11-12T10:52:52.714Z",
+      "shows": "button-till-menu-adults-3: \"schnitzel\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03c-p3-adults-own-list-search-on-every-line.png",
+      "at": "2026-11-12T10:52:54.850Z",
+      "shows": "Adults own list (Different for adults on): the copied kids lines and an adults EXTRA picked Chicken schnitzel CF-37; a search beside every line",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04-p3-bara-list.png",
+      "at": "2026-11-12T10:53:09.086Z",
+      "shows": "button-till-menu-bar-0: the picker open, the till's menu unfiltered",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04-p3-barb-search.png",
+      "at": "2026-11-12T10:53:10.622Z",
+      "shows": "button-till-menu-bar-0: \"juice\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "05-p1-p3-after-reload-kids-and-bar-kept.png",
+      "at": "2026-11-12T10:53:49.746Z",
+      "shows": "After Save and a reload: kids lines Margherita CF-24, Pepperoni CF-31, ZZ TEST fish fingers (no code); bar Fresh watermelon juice CF-63-2",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "06-p1-reopen-coded-lineb-search.png",
+      "at": "2026-11-12T10:54:04.012Z",
+      "shows": "button-till-menu-kids-0: \"not from the till\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "07-p3-bar-picker-offers-kitchenb-search.png",
+      "at": "2026-11-12T10:54:07.178Z",
+      "shows": "button-till-menu-bar-0: \"pizza\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "08-p4-set-menu-resolved-dishes-no-search-add-item-has-search.png",
+      "at": "2026-11-12T10:55:50.819Z",
+      "shows": "Set Menu block after the parent's choices: resolved dishes (SET, from the template) have no search; the + Add item line has the search and took Hummus CF-13",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "09-p2-beo-pdf-kitchen-and-bar-extra-prices.png",
+      "shows": "The ZZ TEST BEO PDF (GET /api/events/:id/beo/pdf, page 1, rendered locally): kitchen plan with EXTRA 400/420/425 baht and the bar line; its text was checked: no staff name",
+      "namesMasked": 0
+    },
+    {
+      "file": "10-p7-settings-set-menu-templates-list-live-codes-no-mark.png",
+      "at": "2026-11-12T10:58:49.339Z",
+      "shows": "Settings > Set menu templates: the Central Floresta template expanded (looked at only); live codes, no mark; the signed-in initials masked",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "11a-p7-new-template-dialog-dead-code-marked.png",
+      "at": "2026-11-12T10:59:25.118Z",
+      "shows": "New Set Menu Template (never saved): Always Included item, ZZ-DEAD-1 typed in Code: \"No longer on the till\"; the search beside the Code box",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "11b-p7-new-template-code-search-fries.png",
+      "at": "2026-11-12T10:59:26.509Z",
+      "shows": "The Code box's search: \"fries\"",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "11c-p7-new-template-picked-codes-no-mark.png",
+      "at": "2026-11-12T10:59:29.657Z",
+      "shows": "After the picks (never saved): the Always Included item took CF-11 and the name French fries, the mark gone; the choice option took CF-24, the group name left empty",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "12-defect-search-fries-rankingb-search.png",
+      "at": "2026-11-12T11:00:15.731Z",
+      "shows": "button-till-menu-kids-10: \"fries\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "13-beo-line-with-a-code-not-on-the-till-marked.png",
+      "at": "2026-11-12T11:00:57.713Z",
+      "shows": "The ZZ TEST line given the made-up code ZZ-DEAD-1: the BEO marks it No longer on the till",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "14-p8-staging-manager-account-has-no-oto-app-login.png",
+      "shows": "The staging manager account through the launcher: the OTO App hand-off refused (403); the app shows \"Open the OTO App from the OTO launcher\" (the reception account showed the same)",
+      "namesMasked": 0
+    }
+  ]
+}
