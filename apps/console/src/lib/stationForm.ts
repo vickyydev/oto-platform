@@ -27,13 +27,16 @@ const versionOf = (row: StationRow | null | undefined): number | null =>
 
 /**
  * The list with a saved station in it: in place of the row it replaces, or
- * added when it is new.
+ * added when it is new. An archived one leaves the list at once, as the
+ * re-read that follows leaves it out (the list is read without archived
+ * stations).
  *
  * A save's answer carries no till screen (the api fills `screen` on reads
  * only), so the screen the list last read is kept until the next read brings
  * one; everything else is the answer's.
  */
 export function withSavedStation(stations: readonly StationRow[], saved: StationRow): StationRow[] {
+  if (saved.archived) return stations.filter((row) => row.id !== saved.id);
   const at = stations.findIndex((row) => row.id === saved.id);
   if (at < 0) return [...stations, saved];
   const held = stations[at]!;

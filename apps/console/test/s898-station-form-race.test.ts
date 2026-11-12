@@ -95,10 +95,10 @@ describe('the list holds a save at once', () => {
     expect(list[1]).toBe(otherTill);
   });
 
-  it('a new station is added; an archived one is held as archived', () => {
+  it('a new station is added; an archived one leaves the list at once, as the re-read will leave it out', () => {
     const made: StationRow = { ...otherTill, id: 'new', name: 'ZZ TEST new till', configVersion: 1 };
     expect(withSavedStation([v1], made).map((s) => s.id)).toEqual(['till', 'new']);
-    expect(withSavedStation([v1], { ...v1, archived: true })[0]?.archived).toBe(true);
+    expect(withSavedStation([v1, otherTill], { ...v1, archived: true }).map((s) => s.id)).toEqual(['other']);
   });
 });
 
