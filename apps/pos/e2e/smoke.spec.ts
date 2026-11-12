@@ -888,17 +888,15 @@ test('separate display guardian acknowledgement retains lock and retry, while st
       && valid.prompt.confirmations.every((item: { required: boolean; acknowledged: boolean }) => !item.required || item.acknowledged)).toBe(true);
     expect(/Private local health marker|childPhotoUrl|data:image|medical|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
     await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
-    const finished = readConsent(true, true);
-    await consent.getByRole('button', { name: 'Done', exact: true }).click();
-    await finished;
-    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible();
-    await expect(consent.getByText('Thank you. The team will complete the staff checks.', { exact: true })).toBeVisible();
-    expect(businessWrites === 0).toBe(true);
-    await captureLocalCheck(fixture.display, 'ticket-display-consent-complete-local.png');
 
+    // SCRUM-857 — staff's correction and the family's call for help come
+    // before Done now: the family's Done moves the sale on by itself, so the
+    // form is no longer there to correct after it (the owner's ruling of 8
+    // November). What these steps prove is unchanged.
     await page.getByRole('button', { name: 'Private child details', exact: true }).click();
     await privateForm.getByPlaceholder('Your full name', { exact: true }).fill('Local guardian updated');
     await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian updated', { timeout: 20_000 });
     await expect(consent.getByRole('button', { name: 'Ask the team', exact: true })).toBeVisible({ timeout: 20_000 });
     await consent.getByRole('button', { name: 'Ask the team', exact: true }).click();
     // SCRUM-764 — the form stays on the family's screen (the ticks are theirs);
@@ -906,6 +904,33 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(consent.getByText('The team is coming to help you.', { exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/The family asked for help/)).toBeVisible({ timeout: 20_000 });
     expect(businessWrites === 0).toBe(true);
+
+    // SCRUM-857 — THE FAMILY'S DONE MOVES THE SALE ON WITHOUT STAFF: the
+    // registration is written once, the till leaves the form for what follows
+    // (payment, or the nanny for a child who needs one) with no staff press,
+    // and the display follows it instead of asking the family to wait.
+    const registrations: { status: number; replay: boolean }[] = [];
+    const countRegistration = (response: Response) => {
+      if (response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/checkin/registrations') {
+        registrations.push({ status: response.status(), replay: response.headers()['x-oto-replay'] === 'true' });
+      }
+    };
+    page.on('response', countRegistration);
+    const needsNanny = valid.prompt.slots[0].requirement === 'nanny';
+    const movedOn = fixture.display.waitForResponse(async response => {
+      if (!response.url().endsWith('/display/session') || response.status() !== 200) return false;
+      const document = (await response.json().catch(() => null))?.document;
+      return document?.stage === (needsNanny ? 'order' : 'payment');
+    }, { timeout: 45_000 });
+    await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+    await consent.getByRole('button', { name: 'Done', exact: true }).click();
+    await movedOn;
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeHidden({ timeout: 30_000 });
+    if (!needsNanny) await expect(page.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(consent).toBeHidden({ timeout: 30_000 });
+    expect(registrations).toEqual([{ status: 200, replay: false }]);
+    page.off('response', countRegistration);
+    await captureLocalCheck(fixture.display, 'ticket-display-consent-complete-local.png');
   } catch (error) {
     await captureLocalCheck(page, 'consent-failure-staff-local.png').catch(() => undefined);
     throw error;
