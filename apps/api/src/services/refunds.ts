@@ -39,6 +39,7 @@ import { allocateReceipt, saleViewOf, type SaleView } from './sale';
 import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
 import { releaseOpenHold } from './sale-hold-release';
+import { releaseEventPassHold } from './event-pass-hold';
 import { queueRefundPrepSlips, refundPrepSlipNotes } from './prep-slips';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 import { voidSoldVouchersForRefund } from './voucher-sale-issue';
@@ -623,6 +624,9 @@ export async function refundSale(
   if (partPaid) {
     // SCRUM-774 — a part-paid sale refunded whole from Held sales leaves the list closed.
     await releaseOpenHold(tx, saleId, 'refunded', actor, now);
+    // SCRUM-913 — closed as void, as `voidSale` closes one: an event pass it was
+    // waiting to pay for is let go with it, never landed on the roster later.
+    await releaseEventPassHold(tx, after, actor, now);
     const voucherScope = { saleId, operatorId: row.operatorId, branchId: row.branchId, stationId: row.stationId };
     await auditVoidReleases(tx, voucherScope, heldVouchers, { accountId: actor.accountId, requestId: actor.requestId }, reason);
     const benefitActor = { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null };

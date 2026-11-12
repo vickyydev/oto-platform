@@ -495,6 +495,21 @@ export type PartyCancelSettlementOutcome =
   | { ok: false; message: string };
 
 /**
+ * SCRUM-913 — "Cancel settlement" on a settlement that took money at the
+ * till: the platform refuses the void (`SALE_HAS_PAYMENT`, money taken is
+ * refunded, never voided), and its words name no way out. The party page
+ * names it: a manager's refund of the money taken, from History, which
+ * closes the settlement so the party can be settled again.
+ */
+export function cancelSettlementTakenRefusal(takenSatang: number | null): string {
+  const taken =
+    takenSatang !== null && takenSatang > 0
+      ? `฿${(takenSatang / 100).toLocaleString('en-US', { minimumFractionDigits: takenSatang % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })} was already taken`
+      : 'Money was already taken';
+  return `${taken} on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.`;
+}
+
+/**
  * SCRUM-876 — "CANCEL SETTLEMENT" ON THE PARTY PAGE. A settlement left at its
  * balance step is an open sale with only the party's deposit on it. It is
  * voided on the platform through the ordinary void of an unpaid sale: the
@@ -514,6 +529,10 @@ export async function cancelSettlementOnPlatform(args: {
   try {
     await salesApi.voidSale(args.saleId, args.reason);
   } catch (err) {
+    if (err instanceof ApiError && err.code === 'SALE_HAS_PAYMENT') {
+      const taken = (err.details as { takenSatang?: unknown } | undefined)?.takenSatang;
+      return { ok: false, message: cancelSettlementTakenRefusal(typeof taken === 'number' ? taken : null) };
+    }
     return { ok: false, message: failureOf(err).message };
   }
   try {

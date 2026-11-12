@@ -43,6 +43,7 @@ import type {
   OtoAppDirectory,
 } from '../src/services/otoapp-directory';
 import {
+  BRANCH_MANAGER,
   CENTRAL_BRANCH_CODE,
   RECEPTION,
   branchIdByCode,
@@ -601,6 +602,48 @@ describe('a pass whose QR is walked away from', () => {
     expect(voided.body.sale.status).toBe('voided');
     expect(await holdOf(attendeeId)).toMatchObject({ status: 'released' });
     expect(await linkOf(attendeeId)).toBeNull();
+    const read = await passAnswer(attendeeId);
+    expect(read.status).toBe(409);
+    expect((read.body as unknown as { error: { code: string } }).error.code).toBe('EVENT_PASS_RELEASED');
+    const again = await openPass(body);
+    expect(again.status).toBe(409);
+    expect((again.body as unknown as { error: { code: string } }).error.code).toBe('EVENT_PASS_RELEASED');
+  });
+});
+
+describe('a pass part-paid, then refunded whole from History (SCRUM-913)', () => {
+  it('lets the child go with the sale, as a void does: the hold is released and the roster never gets them', async () => {
+    const manager = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+    const attendeeId = newId();
+    const saleId = newId();
+    const body = openBody({ attendeeId, saleId, name: 'ZZ TEST Part paid' });
+    expect((await openPass(body)).status).toBe(200);
+    const part = await call<{ finalised: boolean; outstandingSatang: number }>('POST', `/sales/${saleId}/finalise`, {
+      actionId: newId(),
+      method: 'cash',
+      kind: 'cash',
+      amountSatang: 10_000,
+      tenderedSatang: 10_000,
+    });
+    expect(part.status, JSON.stringify(part.body)).toBe(200);
+    expect(part.body).toMatchObject({ finalised: false, outstandingSatang: FEE - 10_000 });
+    expect(await holdOf(attendeeId)).toMatchObject({ status: 'pending' });
+
+    const refunded = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/refunds`,
+      headers: { cookie: manager, 'idempotency-key': newId() },
+      payload: { mode: 'whole', reason: 'ZZ TEST guest could not pay the rest', actionId: newId() },
+    });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(refunded.json()).toMatchObject({ sale: { status: 'voided' }, refund: { amountSatang: 10_000 } });
+    expect(await holdOf(attendeeId)).toMatchObject({ status: 'released' });
+    expect(await linkOf(attendeeId)).toBeNull();
+    const trail = await ctx.db
+      .select({ action: auditLog.action })
+      .from(auditLog)
+      .where(and(eq(auditLog.entityType, 'event_pass_hold'), eq(auditLog.entityId, attendeeId)));
+    expect(trail.map((r) => r.action)).toContain('event.pass_release');
     const read = await passAnswer(attendeeId);
     expect(read.status).toBe(409);
     expect((read.body as unknown as { error: { code: string } }).error.code).toBe('EVENT_PASS_RELEASED');

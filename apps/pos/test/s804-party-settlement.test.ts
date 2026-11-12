@@ -571,7 +571,12 @@ describe('SCRUM-876 — a settlement left before its balance is cancelled from t
     expect(confirmButton(page.result.current)!.props.disabled).toBe(false);
     expect(buttonIn(page.result.current, 'Resume settlement ฿13900')).not.toBeNull();
     expect(vi.mocked(toast)).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Settlement not cancelled', description: 'Money has been taken on this sale — it is refunded, not voided', variant: 'destructive' }),
+      // SCRUM-913 — money taken is refunded from History first: the party page names that way out.
+      expect.objectContaining({
+        title: 'Settlement not cancelled',
+        description: "Money was already taken on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.",
+        variant: 'destructive',
+      }),
     );
   });
 
