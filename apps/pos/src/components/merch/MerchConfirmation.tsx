@@ -1,6 +1,7 @@
 import { MerchOrder } from '@/types';
 import { getPrintTemplate } from '@/mockApi';
 import { recordedOrderPromoRows } from '@/lib/itemPromo';
+import { bahtText } from '@/lib/bahtText';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -94,7 +95,7 @@ export function MerchConfirmation({
                       <span className="font-bold tabular-nums">{line.qty}×</span>{' '}
                       <span>{line.merchItem.name}</span>
                     </span>
-                    <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span>
+                    <span className="font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span>
                   </div>
                 ))}
               </div>
@@ -114,12 +115,12 @@ export function MerchConfirmation({
                   <span className="truncate">{promo.label}</span>
                   <span className="text-xs text-emerald-500/70 font-mono">{promo.code}</span>
                 </span>
-                <span className="tabular-nums shrink-0">-฿{promo.amount}</span>
+                <span className="tabular-nums shrink-0">-฿{bahtText(promo.amount)}</span>
               </div>
             ))}
             <div className="flex items-center justify-between text-lg font-bold">
               <span>Total</span>
-              <span className="tabular-nums">฿{order.total}</span>
+              <span className="tabular-nums">฿{bahtText(order.total)}</span>
             </div>
             {payment.creditUsed > 0 && (
               <PaidRow icon={Wallet} label="Credit" amount={payment.creditUsed} />
@@ -150,7 +151,7 @@ export function MerchConfirmation({
                 </div>
               </div>
             </div>
-            <div className="text-2xl font-bold text-primary tabular-nums">฿{newBalance}</div>
+            <div className="text-2xl font-bold text-primary tabular-nums">฿{bahtText(newBalance)}</div>
           </Card>
         )}
 
@@ -182,7 +183,7 @@ function PaidRow({
         <Icon className="w-4 h-4" />
         {label}
       </span>
-      <span className="tabular-nums">฿{amount}</span>
+      <span className="tabular-nums">฿{bahtText(amount)}</span>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import type { FnbOrderLine } from '@/types';
+import { bahtText, satangText } from '@/lib/bahtText';
 
 /**
  * What the customer holds when the phone is handed over at the order station,
@@ -56,7 +57,7 @@ export function MobileOrderReviewScreen({
                 </div>
               )}
             </div>
-            <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span>
+            <span className="font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</span>
           </div>
         ))}
       </div>
@@ -67,13 +68,13 @@ export function MobileOrderReviewScreen({
             <Wallet className="w-4 h-4" />
             {t('display.grant.credit')}
           </span>
-          <span className="tabular-nums">{t('display.credit.available', { amount: creditBalance })}</span>
+          <span className="tabular-nums">{t('display.credit.available', { amount: bahtText(creditBalance) })}</span>
         </div>
       )}
 
       <div className="flex items-center justify-between pt-3 border-t border-white/20">
         <span className="text-xl font-black">{t('common.total')}</span>
-        <span className="text-3xl font-black tabular-nums text-primary">฿{total}</span>
+        <span className="text-3xl font-black tabular-nums text-primary">฿{bahtText(total)}</span>
       </div>
     </div>
   );
@@ -95,7 +96,7 @@ export function MobileOrderQrScreen({
       <div className="text-center mb-6">
         <p className="text-muted-foreground text-sm mb-1">{t('display.order.scanToPay')}</p>
         <div className="text-4xl font-black tabular-nums text-primary">
-          ฿{payment.amountSatang / 100}
+          ฿{satangText(payment.amountSatang)}
         </div>
         {pickupCode && (
           <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full border border-white/20 bg-white/10 text-sm text-white/70">

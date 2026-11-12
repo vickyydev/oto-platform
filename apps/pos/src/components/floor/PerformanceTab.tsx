@@ -11,6 +11,7 @@ import {
 } from '@/components/floor/usePerformance';
 import type { FloorReport } from '@/types';
 import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
+import { groupedBahtText } from '@/lib/bahtText';
 
 /**
  * Performance tab of the "Today" section: a small, glanceable per-day snapshot for any
@@ -114,12 +115,12 @@ function PerformanceFigures({
           size="lg"
           icon={<Banknote className="w-5 h-5" />}
           label="Revenue"
-          value={`฿${report.netRevenueTHB.toLocaleString('en-US')}`}
+          value={`฿${groupedBahtText(report.netRevenueTHB)}`}
           sub={
             <span>
               {report.txnCount} {report.txnCount === 1 ? 'transaction' : 'transactions'}
               {report.creditPaidTHB > 0 && (
-                <> · excl. ฿{report.creditPaidTHB.toLocaleString('en-US')} paid via credit</>
+                <> · excl. ฿{groupedBahtText(report.creditPaidTHB)} paid via credit</>
               )}
             </span>
           }

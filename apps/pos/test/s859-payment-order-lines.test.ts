@@ -117,7 +117,8 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
     expect(summary).toContain(`฿${2 * KID_PRICE}`);
     const amount = from(html, 'payment-amount');
     expect(amount).toContain(t('common.pleasePay'));
-    expect(amount).toContain(`฿${(2 * KID_PRICE).toFixed(2)}`);
+    // SCRUM-948 — the prototype's figure: whole baht bare ("฿1380"), as the staff's Amount Due.
+    expect(amount).toContain(`mb-4">฿${2 * KID_PRICE}</div>`);
     expect(amount).toContain(t('common.toStaff'));
     expect(amount).toContain(t('common.payingBy', { method: '' }).trim());
     // The header the order stage draws: the brand and "Your Order".
@@ -148,7 +149,7 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
     expect(amount).toContain('data-testid="payment-qr-countdown"');
     expect(amount).toContain(t('till.payment.scanToPay'));
     expect(amount).toContain(t('till.payment.timeLeft'));
-    expect(amount).toContain(`฿${(2 * KID_PRICE).toFixed(2)}`);
+    expect(amount).toContain(`mt-8">฿${2 * KID_PRICE}</div>`);
     expect(amount).toContain(t('till.payment.openBankingApp'));
   });
 
@@ -157,8 +158,8 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
     // total read the order; the block reads the stage.
     const html = ticketDisplay({ sale: sale(2, { paymentMethod: 'cash' }), payment: payment(50_000) });
     expect(between(html, 'payment-order-summary', 'payment-amount')).toContain(`฿${2 * KID_PRICE}`);
-    expect(from(html, 'payment-amount')).toContain('฿500.00');
-    expect(from(html, 'payment-amount')).not.toContain(`฿${(2 * KID_PRICE).toFixed(2)}`);
+    expect(from(html, 'payment-amount')).toContain('mb-4">฿500</div>');
+    expect(from(html, 'payment-amount')).not.toContain(`>฿${2 * KID_PRICE}<`);
   });
 
   it('a 25-line order scrolls inside its own area and keeps the amount block out of it', () => {
@@ -183,7 +184,7 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
     expect(amountClass).toContain('@max-4xl:[--text-7xl:3rem]');
     expect(amountClass).not.toMatch(/(^| )\[--/);
     // One amount, after every line.
-    expect(html.split(`฿${(25 * KID_PRICE).toFixed(2)}`).length - 1).toBe(1);
+    expect(html.split(`mb-4">฿${25 * KID_PRICE}</div>`).length - 1).toBe(1);
     expect(html.indexOf('data-testid="payment-amount"')).toBeGreaterThan(html.lastIndexOf('ZZ TEST Play 25'));
     // The frame reads its own width, not the viewport's: two columns from 42rem.
     expect(html).toContain('@container');
@@ -399,7 +400,7 @@ describe('SCRUM-859: the paired display’s payloads carry the lines at payment'
       nothingToPay: view!.nothingToPay, showGrantQr: false,
     }));
     expect(between(html, 'payment-order-lines', 'payment-order-summary')).toContain('ZZ TEST Play 2');
-    expect(from(html, 'payment-amount')).toContain(`฿${(2 * KID_PRICE).toFixed(2)}`);
+    expect(from(html, 'payment-amount')).toContain(`mb-4">฿${2 * KID_PRICE}</div>`);
     const page = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Display.tsx'), 'utf8');
     expect(page).toContain('totals={view.totals} payment={view.payment} lineBreakdowns={view.lineBreakdowns}');
   });

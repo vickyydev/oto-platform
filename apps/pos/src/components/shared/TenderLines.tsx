@@ -1,5 +1,6 @@
 import type { DisplayTenderLine } from '@oto/shared';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * SCRUM-859 — what the tender is for, as the shop's line card draws a line:
@@ -19,10 +20,10 @@ export function TenderLines({ lines }: { lines: readonly DisplayTenderLine[] }) 
         <span className="w-10 h-10 rounded-xl bg-primary/15 text-primary font-black text-lg flex items-center justify-center shrink-0 tabular-nums">{line.qty}</span>
         <div className="min-w-0">
           <div className="text-xl font-bold leading-tight">{line.label}</div>
-          {line.unitPrice !== undefined && <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>}
+          {line.unitPrice !== undefined && <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: bahtText(line.unitPrice) })}</div>}
         </div>
       </div>
-      <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
+      <div className="text-2xl font-bold tabular-nums shrink-0">฿{bahtText(line.lineTotal)}</div>
     </div>
   </div>)}</div>;
 }
@@ -31,5 +32,5 @@ export function TenderLines({ lines }: { lines: readonly DisplayTenderLine[] }) 
 export function TenderTotal({ amount }: { amount: number }) {
   const { t } = useLanguage();
   return <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
-    <span className="text-5xl font-black text-primary tabular-nums">฿{amount}</span></div>;
+    <span className="text-5xl font-black text-primary tabular-nums">฿{bahtText(amount)}</span></div>;
 }

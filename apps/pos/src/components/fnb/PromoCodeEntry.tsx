@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tag, Trash2 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * THE PROMO CODE ENTRY AT AN ITEM COUNTER — SCRUM-362.
@@ -68,7 +69,7 @@ export function PromoCodeEntry({ applied, error, disabled, onApply, onRemove }: 
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-bold tabular-nums">-฿{promo.amount.toFixed(0)}</span>
+            <span className="font-bold tabular-nums">-฿{bahtText(promo.amount)}</span>
             <Button
               variant="ghost"
               size="icon"

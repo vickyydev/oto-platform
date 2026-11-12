@@ -3,6 +3,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { PaymentStageLayout } from './PaymentStageLayout';
 import { PromptPayCustomerScreen } from './PromptPayCustomerScreen';
 import { TenderLines, TenderTotal } from './TenderLines';
+import { bahtText } from '@/lib/bahtText';
 
 export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCart; payment: DisplayPayment }) {
   const { t } = useLanguage();
@@ -26,7 +27,7 @@ export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCa
           expiresAt={waiting ? payment.expiresAt : null} note={note} />
           : <div className="flex flex-col items-center gap-5 text-center">
             <h2 className="text-3xl font-bold">{t('display.tender.payByCard')}</h2>
-            <p className="text-5xl font-bold">฿{amount}</p>
+            <p className="text-5xl font-bold">฿{bahtText(amount)}</p>
             <p className="text-xl">{note}</p>
           </div>}
       </PaymentStageLayout>
@@ -40,7 +41,7 @@ export function TenderCustomerDisplay({ cart, payment }: { cart: DisplayTenderCa
         expiresAt={waiting ? payment.expiresAt : null} note={note} />
     </div> : <main className="flex-1 flex flex-col items-center justify-center gap-5 p-8 text-center">
       <h2 className="text-3xl font-bold">{t('display.tender.payByCard')}</h2>
-      <p className="text-5xl font-bold">฿{amount}</p>
+      <p className="text-5xl font-bold">฿{bahtText(amount)}</p>
       <p className="text-xl">{note}</p>
     </main>}
   </div>;

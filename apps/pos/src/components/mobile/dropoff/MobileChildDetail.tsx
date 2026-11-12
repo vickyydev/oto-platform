@@ -2,6 +2,7 @@ import { CheckIn, ContactChannel } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
+import { bahtText } from '@/lib/bahtText';
 import { WaChip } from '@/components/dropoff/WaChip';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -193,15 +194,15 @@ function ChildSection({
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{child.checkInSale.ticketName}</span>
-            <span className="font-bold">฿{child.checkInSale.ticketPriceTHB}</span>
+            <span className="font-bold">฿{bahtText(child.checkInSale.ticketPriceTHB)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Service fee</span>
-            <span className="font-bold">฿{child.checkInSale.serviceFeeTHB}</span>
+            <span className="font-bold">฿{bahtText(child.checkInSale.serviceFeeTHB)}</span>
           </div>
           <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-1">
             <span>Total paid</span>
-            <span>฿{child.checkInSale.totalTHB}</span>
+            <span>฿{bahtText(child.checkInSale.totalTHB)}</span>
           </div>
         </div>
       )}

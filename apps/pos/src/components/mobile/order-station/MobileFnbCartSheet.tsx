@@ -6,6 +6,7 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { describeModifiers } from '@/lib/fnb';
 import { itemOrderTotals, taxRowsOf } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
+import { bahtText } from '@/lib/bahtText';
 import {
   ShoppingCart,
   ChevronUp,
@@ -84,7 +85,7 @@ export function MobileFnbCartSheet({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tabular-nums">฿{total}</span>
+          <span className="text-lg font-bold tabular-nums">฿{bahtText(total)}</span>
           <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </div>
       </button>
@@ -107,7 +108,7 @@ export function MobileFnbCartSheet({
                     <div className="font-bold leading-tight truncate">{wristband.customerNickname}</div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Wallet className="w-3 h-3" />
-                      <span className="tabular-nums">฿{wristband.creditBalanceTHB} credit</span>
+                      <span className="tabular-nums">฿{bahtText(wristband.creditBalanceTHB)} credit</span>
                       <span className="opacity-50">•</span>
                       <span className="font-mono">#{wristband.code}</span>
                     </div>
@@ -191,7 +192,7 @@ export function MobileFnbCartSheet({
                             ariaLabel={line.menuItem.name}
                           />
                           <div className="font-bold tabular-nums shrink-0 w-14 text-right text-sm">
-                            ฿{line.lineTotal}
+                            ฿{bahtText(line.lineTotal)}
                           </div>
                         </div>
                         {line.note && (
@@ -210,7 +211,7 @@ export function MobileFnbCartSheet({
                                 <span className="text-xs truncate">{formatDiscountDetail(md)}</span>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <span className="text-xs font-bold tabular-nums">-฿{amt}</span>
+                                <span className="text-xs font-bold tabular-nums">-฿{bahtText(amt)}</span>
                                 <button
                                   type="button"
                                   onClick={() => onRemoveManualDiscount(md.id)}
@@ -243,7 +244,7 @@ export function MobileFnbCartSheet({
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-xs font-bold tabular-nums">-฿{amt}</span>
+                      <span className="text-xs font-bold tabular-nums">-฿{bahtText(amt)}</span>
                       <button
                         type="button"
                         onClick={() => onRemoveManualDiscount(md.id)}
@@ -270,7 +271,7 @@ export function MobileFnbCartSheet({
                 taxRowsOf(taxBreakdown).map((row) => (
                   <div key={row.key} className="flex justify-between text-sm text-muted-foreground">
                     <span>{row.label}</span>
-                    <span className="tabular-nums">฿{row.amount}</span>
+                    <span className="tabular-nums">฿{bahtText(row.amount)}</span>
                   </div>
                 ))}
 
@@ -283,7 +284,7 @@ export function MobileFnbCartSheet({
                   onCheckout();
                 }}
               >
-                Checkout · ฿{total}
+                Checkout · ฿{bahtText(total)}
               </Button>
             </div>
           </div>

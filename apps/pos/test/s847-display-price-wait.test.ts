@@ -182,7 +182,8 @@ describe('SCRUM-847: the till’s own customer half while the voucher price is p
   it('a sale with no voucher shows its amount exactly as before', () => {
     const html = under('en', {});
     expect(html).toContain(tFor('en')('common.pleasePay'));
-    expect(html).toContain('฿1315.00');
+    // SCRUM-948 — the prototype's figure: whole baht bare, as Amount Due reads it.
+    expect(html).toContain('<div class="text-7xl font-black text-primary mb-4">฿1315</div>');
     expect(html).toContain(tFor('en')('common.toStaff'));
     expect(html).not.toContain('data-testid="customer-price-pending"');
     expect(html).toBe(under('en', { pricePending: false }));

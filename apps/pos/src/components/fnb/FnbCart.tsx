@@ -6,6 +6,7 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { describeModifiers } from '@/lib/fnb';
 import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
+import { bahtText } from '@/lib/bahtText';
 import { StaffBenefitBreakdown, type StaffBenefitBreakdownData } from '@/components/fnb/StaffBenefitBreakdown';
 import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
 import { Wallet, UserRound, ShoppingCart, Trash2, X, Pencil, BadgePercent, StickyNote, Gift, ChevronUp, History, QrCode as QrCodeIcon } from 'lucide-react';
@@ -108,7 +109,7 @@ function ManualDiscountRow({
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="font-bold tabular-nums">-฿{amount}</span>
+        <span className="font-bold tabular-nums">-฿{bahtText(amount)}</span>
         <Button
           variant="ghost"
           size="icon"
@@ -175,7 +176,7 @@ export function FnbCart({
                 <div className="font-bold leading-tight truncate">{wristband.customerNickname}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Wallet className="w-3 h-3" />
-                  <span className="tabular-nums">฿{wristband.creditBalanceTHB} credit</span>
+                  <span className="tabular-nums">฿{bahtText(wristband.creditBalanceTHB)} credit</span>
                   <span className="opacity-50">•</span>
                   <span className="font-mono">#{wristband.code}</span>
                 </div>
@@ -222,7 +223,7 @@ export function FnbCart({
                         <span className="opacity-40 ml-1">{new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </span>
                       <span className={`tabular-nums font-semibold ${entry.amountTHB < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                        {entry.amountTHB > 0 ? '+' : ''}฿{entry.amountTHB}
+                        {entry.amountTHB > 0 ? '+' : ''}฿{bahtText(entry.amountTHB)}
                       </span>
                     </div>
                   ))}
@@ -358,7 +359,7 @@ export function FnbCart({
                       />
                     )}
                     <div className={`font-bold tabular-nums shrink-0 w-16 text-right ${isPrepaid ? 'text-violet-700 dark:text-violet-300' : ''}`}>
-                      {isPrepaid ? '฿0' : `฿${line.lineTotal}`}
+                      {isPrepaid ? '฿0' : `฿${bahtText(line.lineTotal)}`}
                     </div>
                   </div>
                   {line.note && (
@@ -461,7 +462,7 @@ export function FnbCart({
               className="flex justify-between text-sm text-muted-foreground mb-1"
             >
               <span>{row.label}</span>
-              <span className="tabular-nums">฿{row.amount}</span>
+              <span className="tabular-nums">฿{bahtText(row.amount)}</span>
             </div>
           ))}
 
@@ -474,7 +475,7 @@ export function FnbCart({
           title={chargeBlockedReason ?? undefined}
           onClick={onCheckout}
         >
-          Charge ฿{total}
+          Charge ฿{bahtText(total)}
         </Button>
       </div>
     </div>

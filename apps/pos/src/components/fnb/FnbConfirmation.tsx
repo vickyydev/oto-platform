@@ -3,6 +3,7 @@ import type { FnbOrder, WalletEntry } from '@/types';
 import { buildPrepTickets, describeModifiers } from '@/lib/fnb';
 import { recordedOrderPromoRows } from '@/lib/itemPromo';
 import { prepStationsPrinted } from '@/lib/salePrinting';
+import { bahtText } from '@/lib/bahtText';
 import type { ApiSalePrintJob } from '@/api/history';
 import { getPrintTemplate } from '@/mockApi';
 import { Button } from '@/components/ui/button';
@@ -227,7 +228,7 @@ export function FnbConfirmation({
                         )}
                       </span>
                       <span className={`font-bold tabular-nums shrink-0 ${isPrepaid ? 'text-violet-700 dark:text-violet-300' : ''}`}>
-                        {isPrepaid ? '฿0' : `฿${line.lineTotal}`}
+                        {isPrepaid ? '฿0' : `฿${bahtText(line.lineTotal)}`}
                       </span>
                     </div>
                   );
@@ -261,12 +262,12 @@ export function FnbConfirmation({
                   <span className="truncate">{promo.label}</span>
                   <span className="text-xs text-emerald-500/70 font-mono">{promo.code}</span>
                 </span>
-                <span className="tabular-nums shrink-0">-฿{promo.amount}</span>
+                <span className="tabular-nums shrink-0">-฿{bahtText(promo.amount)}</span>
               </div>
             ))}
             <div className="flex items-center justify-between text-lg font-bold">
               <span>Total</span>
-              <span className="tabular-nums">฿{order.total}</span>
+              <span className="tabular-nums">฿{bahtText(order.total)}</span>
             </div>
             {payment.creditUsed > 0 && (
               <PaidRow icon={Wallet} label="F\&B credit" amount={payment.creditUsed} />
@@ -390,7 +391,7 @@ export function FnbConfirmation({
                   <div className="text-xs text-muted-foreground">{order.wristband.customerNickname}</div>
                 </div>
               </div>
-              <div className="text-2xl font-bold text-primary tabular-nums">฿{newBalance}</div>
+              <div className="text-2xl font-bold text-primary tabular-nums">฿{bahtText(newBalance)}</div>
             </div>
             {ledger.length > 0 && (
               <div className="border-t border-primary/20 pt-2 space-y-1" data-testid="wallet-ledger">
@@ -403,7 +404,7 @@ export function FnbConfirmation({
                       {entry.by ? <span className="opacity-60"> · {entry.by}</span> : null}
                     </span>
                     <span className={`tabular-nums font-semibold ${entry.amountTHB < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                      {entry.amountTHB > 0 ? '+' : ''}฿{entry.amountTHB}
+                      {entry.amountTHB > 0 ? '+' : ''}฿{bahtText(entry.amountTHB)}
                     </span>
                   </div>
                 ))}
@@ -428,7 +429,7 @@ function PaidRow({ icon: Icon, label, amount }: { icon: typeof Wallet; label: st
         <Icon className="w-4 h-4" />
         {label}
       </span>
-      <span className="tabular-nums">฿{amount}</span>
+      <span className="tabular-nums">฿{bahtText(amount)}</span>
     </div>
   );
 }

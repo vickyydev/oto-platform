@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
 import { cn } from '@/lib/utils';
+import { bahtText, groupedSatangText } from '@/lib/bahtText';
 import { getEnabledPaymentMethods, paymentMethodIcon } from '@/lib/payments';
 import { ArrowLeft, Check, CheckCircle2, Hash, Wallet } from 'lucide-react';
 
@@ -58,7 +59,6 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
   const balance = creditBalanceOverride ?? wristband?.creditBalanceTHB ?? 0;
   const outstandingSatang = stage.state.outstandingSatang;
   const free = total === 0 && outstandingSatang === 0;
-  const amountDue = (outstandingSatang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
   // The prototype's credit card (`FnbPayment.tsx`, credit first), on the platform's figures.
   const canTakeCredit = Boolean(onUseCreditChange) && balance > 0;
@@ -68,7 +68,6 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
   const creditUsedSatang = creditApplied ? stage.state.creditSatang : creditPending;
   const remainderSatang = creditSelected ? Math.max(0, outstandingSatang - creditPending) : outstandingSatang;
   const creditCoversAll = creditSelected && stage.creditCoversAll;
-  const baht = (satang: number) => (satang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
   const defaultRemainder = methods.find((method) => method.kind === 'card');
   const wasCreditSelected = useRef(false);
   /**
@@ -149,9 +148,10 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
       <div className="w-full max-w-xl">
         <div className="text-center mb-6">
           <div className="text-muted-foreground">Amount due</div>
-          <div className="text-5xl font-bold tabular-nums">฿{amountDue}</div>
+          {/* SCRUM-948 — grouped as it always was ("1,605"), an amount with satang to two places. */}
+          <div className="text-5xl font-bold tabular-nums">฿{groupedSatangText(outstandingSatang)}</div>
           {outstandingSatang !== Math.round(total * 100) && outstandingSatang > 0 && (
-            <div className="mt-2 text-sm text-muted-foreground">Order total ฿{total}; the amount above is still unpaid.</div>
+            <div className="mt-2 text-sm text-muted-foreground">Order total ฿{bahtText(total)}; the amount above is still unpaid.</div>
           )}
           {pickupCode && (
             <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full border bg-card text-sm text-muted-foreground">
@@ -189,10 +189,10 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                   <div className="font-bold text-lg">{creditLabel}</div>
                   <div className="text-sm text-muted-foreground tabular-nums">
                     {creditApplied
-                      ? `฿${baht(stage.state.creditSatang)} taken from credit`
+                      ? `฿${groupedSatangText(stage.state.creditSatang)} taken from credit`
                       : creditRefusal
-                        ? `Balance ฿${balance} — ${creditRefusal}`
-                        : `Balance ฿${balance}${creditCoversAll ? ' — covers full order' : ` — applies ฿${baht(creditPending || Math.min(balance * 100, outstandingSatang))}`}`}
+                        ? `Balance ฿${bahtText(balance)} — ${creditRefusal}`
+                        : `Balance ฿${bahtText(balance)}${creditCoversAll ? ' — covers full order' : ` — applies ฿${groupedSatangText(creditPending || Math.min(balance * 100, outstandingSatang))}`}`}
                   </div>
                 </div>
                 {(creditSelected || creditApplied) && (
@@ -203,8 +203,8 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
               </div>
               {creditSelected && remainderSatang > 0 && (
                 <div className="mt-4 border-t pt-4">
-                  <div className="mb-3 text-sm text-muted-foreground">Credit covers ฿{baht(creditUsedSatang)}. Collect remaining{' '}
-                    <span className="font-bold text-foreground tabular-nums">฿{baht(remainderSatang)}</span> by:</div>
+                  <div className="mb-3 text-sm text-muted-foreground">Credit covers ฿{groupedSatangText(creditUsedSatang)}. Collect remaining{' '}
+                    <span className="font-bold text-foreground tabular-nums">฿{groupedSatangText(remainderSatang)}</span> by:</div>
                   <div className="grid grid-cols-3 gap-3">
                     {methods.map((method) => {
                       const Icon = paymentMethodIcon(method.kind);
@@ -271,7 +271,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-lg">{method.label}</div>
                     <div className="text-sm text-muted-foreground">
-                      {method.kind === 'cash' ? `Collect ฿${baht(remainderSatang)} in cash` : method.kind === 'card' ? `Charge ฿${baht(remainderSatang)} to card` : `Customer scans to pay ฿${baht(remainderSatang)}`}
+                      {method.kind === 'cash' ? `Collect ฿${groupedSatangText(remainderSatang)} in cash` : method.kind === 'card' ? `Charge ฿${groupedSatangText(remainderSatang)} to card` : `Customer scans to pay ฿${groupedSatangText(remainderSatang)}`}
                     </div>
                   </div>
                   {selected && <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0"><Check className="w-5 h-5" /></div>}
@@ -282,7 +282,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
           {!free && !creditCoversAll && methods.length === 0 && <p role="alert" className="text-sm text-destructive">No enabled payment method is available.</p>}
           {balance > 0 && !canTakeCredit && (
             <Card className="p-4 bg-muted/30">
-              <div className="flex items-center gap-3 text-muted-foreground"><Wallet className="w-5 h-5" /><span>{creditLabel} balance ฿{balance}</span></div>
+              <div className="flex items-center gap-3 text-muted-foreground"><Wallet className="w-5 h-5" /><span>{creditLabel} balance ฿{bahtText(balance)}</span></div>
               <p className="mt-1 text-sm text-muted-foreground">Credit payments are not available at this station.</p>
             </Card>
           )}

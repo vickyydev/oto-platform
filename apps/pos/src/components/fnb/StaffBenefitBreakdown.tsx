@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Gift, Trash2 } from 'lucide-react';
+import { bahtText } from '@/lib/bahtText';
 
 /**
  * Per-primitive relief breakdown for an applied staff benefit — shown
@@ -55,7 +56,7 @@ export function StaffBenefitBreakdown({
           <div className="font-medium text-sm truncate">Staff benefit</div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="font-bold tabular-nums">-฿{data.totalReliefTHB}</span>
+          <span className="font-bold tabular-nums">-฿{bahtText(data.totalReliefTHB)}</span>
           {onRemove && (
             <Button
               variant="ghost"
@@ -73,7 +74,7 @@ export function StaffBenefitBreakdown({
         {rows.map((r) => (
           <div key={r.key} className="flex items-center justify-between text-xs">
             <span className="text-emerald-500/80">{r.label}</span>
-            <span className="tabular-nums font-semibold">-฿{data[r.key]}</span>
+            <span className="tabular-nums font-semibold">-฿{bahtText(data[r.key])}</span>
           </div>
         ))}
         {onlineOnly.map((r) => (

@@ -22,6 +22,7 @@ import {
 import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone, Loader2 } from 'lucide-react';
 // S2-20 K2 — the dialog's parts, shared with the self-service kiosk's screens.
 import { RedeemBandCodes, RedeemCallout, RedeemCountRow, RedeemOutcomeHeader } from './redeemParts';
+import { groupedBahtText, groupedSatangText } from '@/lib/bahtText';
 
 interface RedeemBookingModalProps {
   open: boolean;
@@ -376,7 +377,7 @@ export function RedeemBookingModal({
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0 text-xs">
-                        ฿{(b.totalSatang / 100).toLocaleString('en-US')}
+                        ฿{groupedSatangText(b.totalSatang)}
                       </Badge>
                     </button>
                   ))}
@@ -429,7 +430,7 @@ export function RedeemBookingModal({
                   </div>
                 )}
                 <div className="text-right font-semibold text-foreground">
-                  ฿{foundBooking.total.toLocaleString('en-US')} {notPaid ? 'not paid' : 'paid'}
+                  ฿{groupedBahtText(foundBooking.total)} {notPaid ? 'not paid' : 'paid'}
                 </div>
               </div>
             </div>
@@ -444,7 +445,7 @@ export function RedeemBookingModal({
                   <li>• {foundBooking.willIssue.adultBracelets} adult wristband{foundBooking.willIssue.adultBracelets !== 1 ? 's' : ''}</li>
                 )}
                 {foundBooking.willIssue.creditTotalTHB > 0 && (
-                  <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString('en-US')} credit</li>
+                  <li>• ฿{groupedBahtText(foundBooking.willIssue.creditTotalTHB)} credit</li>
                 )}
                 {dropOffChildren.length > 0 && (
                   <li>• Drop-off check-in for {dropOffChildren.join(', ')}</li>

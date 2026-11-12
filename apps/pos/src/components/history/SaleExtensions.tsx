@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Check, Clock, Timer } from 'lucide-react';
 import { extraHourFactors, extraHourSum, formatTHB } from '@oto/shared';
 import {
-  baht,
   createSaleExtension,
   newActionId,
   parseHistorySearch,
@@ -43,6 +42,7 @@ import {
 } from '@/components/ui/dialog';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
+import { satangText } from '@/lib/bahtText';
 
 export function extensionBandFromScan(
   raw: string,
@@ -164,7 +164,7 @@ export function useSaleExtensions({
                     <Timer className="w-3.5 h-3.5 text-primary" />
                     {entry.label}
                   </span>
-                  <span className="font-semibold tabular-nums">฿{baht(entry.amountSatang)}</span>
+                  <span className="font-semibold tabular-nums">฿{satangText(entry.amountSatang)}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {[
@@ -595,7 +595,7 @@ export function ExtensionPayment({
                     </span>
                   </span>
                   <span className="font-bold tabular-nums shrink-0">
-                    ฿{baht(item.unitSatang * data.children)}
+                    ฿{satangText(item.unitSatang * data.children)}
                   </span>
                 </button>
               ))}
@@ -604,7 +604,7 @@ export function ExtensionPayment({
         </fieldset>
         <div className="rounded-lg bg-muted p-4 flex items-center justify-between">
           <span className="text-muted-foreground">Amount to charge</span>
-          <span className="text-2xl font-black tabular-nums">฿{baht(totalSatang)}</span>
+          <span className="text-2xl font-black tabular-nums">฿{satangText(totalSatang)}</span>
         </div>
         {option && !resume && (
           <p className="text-sm font-medium tabular-nums" aria-label="Extra hour sum">

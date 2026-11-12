@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AnalyticsSummaryRow } from '@oto/shared';
+import { formatBahtAmount, type AnalyticsSummaryRow } from '@oto/shared';
 import { floorReportOf } from '@/api/analytics';
 import { PerformanceView } from '@/components/floor/PerformanceTab';
 import { MobilePerformanceView } from '@/components/mobile/today/MobilePerformanceTab';
@@ -71,7 +71,10 @@ const view = (row: AnalyticsSummaryRow, updatedAt: string | null = '2026-10-06T0
   error: null,
 });
 
-const baht = (satang: number) => (satang / 100).toLocaleString('en-US');
+// SCRUM-948 — the tabs write money through the one formatter, grouped as
+// before: whole baht and two-place amounts read exactly as toLocaleString did;
+// one with a single satang digit now shows two places ("100.50", not "100.5").
+const baht = (satang: number) => formatBahtAmount(satang, { grouped: true });
 
 describe('review — Performance in the prototype’s words, from the stored row', () => {
   const row = awkwardRow();
@@ -107,7 +110,7 @@ describe('review — Performance in the prototype’s words, from the stored row
     expect(phone).toBe(
       [
         `Provisional — still being added up · Updated 14:05`,
-        `Revenue ฿17,434.86 37 transactions · excl. ฿100.5 via credit`,
+        `Revenue ฿17,434.86 37 transactions · excl. ฿100.50 via credit`,
         `Guests checked in 70 41 kids · 29 adults`,
         `Revenue split`,
         `Tickets ฿12,345.67 71% F&B ฿789.01 5% Merch ฿0.05 0% Parties ฿0 0% Drop-off ฿4,300.13 25%`,

@@ -25,6 +25,7 @@ import {
 import { partPaidCloseRefusal } from '@oto/shared';
 import { useOperator } from '@/auth/OperatorContext';
 import { Lock, Vault } from 'lucide-react';
+import { groupedBahtText } from '@/lib/bahtText';
 
 /**
  * End of Day tab of the "Today" section: staff cash-up that matches the POS's recorded
@@ -236,7 +237,7 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
             <div className="text-lg font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString('en-US')}`}
+              {banked === null ? '—' : `฿${groupedBahtText(banked)}`}
             </div>
             <div className="text-xs text-muted-foreground">counted − float left</div>
           </div>

@@ -25,6 +25,7 @@ import { channelLabel, lineFlag, RECON_TOLERANCE_THB } from '@/lib/endOfDay';
 import { useOperator } from '@/auth/OperatorContext';
 import { Lock, Vault, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { groupedBahtText } from '@/lib/bahtText';
 
 /**
  * Portrait-phone version of the End-of-Day cash-up tab.
@@ -169,7 +170,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
             const diffText =
               line.actualTHB === null
                 ? '—'
-                : `${line.differenceTHB > 0 ? '+' : line.differenceTHB < 0 ? '-' : ''}฿${Math.abs(line.differenceTHB).toLocaleString('en-US')}`;
+                : `${line.differenceTHB > 0 ? '+' : line.differenceTHB < 0 ? '-' : ''}฿${groupedBahtText(Math.abs(line.differenceTHB))}`;
 
             return (
               <div key={line.channel} className="rounded-xl bg-muted/40 p-3 space-y-2">
@@ -183,7 +184,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                   <div>
                     <div>Expected</div>
                     <div className="text-base font-bold tabular-nums text-foreground">
-                      ฿{line.expectedTHB.toLocaleString('en-US')}
+                      ฿{groupedBahtText(line.expectedTHB)}
                     </div>
                   </div>
                   <div>
@@ -192,7 +193,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                       <div className="text-base font-bold tabular-nums text-foreground">
                         {line.actualTHB === null
                           ? 'from count'
-                          : `฿${line.actualTHB.toLocaleString('en-US')}`}
+                          : `฿${groupedBahtText(line.actualTHB)}`}
                       </div>
                     ) : (
                       <AmountInput
@@ -235,7 +236,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                 className="h-11 rounded-xl bg-muted/30 border border-border/60 px-4 flex items-center justify-end text-base text-foreground tabular-nums"
                 aria-label="Start-of-day float"
               >
-                ฿{(record.cashCount.floatTHB ?? 0).toLocaleString('en-US')}
+                ฿{groupedBahtText(record.cashCount.floatTHB ?? 0)}
               </div>
               <span className="text-xs">{floatSourceLabel}</span>
             </div>
@@ -256,14 +257,14 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
                     <div className="text-muted-foreground">Income</div>
                     <div className="text-base font-bold tabular-nums">
-                      {income === null ? '—' : `฿${income.toLocaleString('en-US')}`}
+                      {income === null ? '—' : `฿${groupedBahtText(income)}`}
                     </div>
                     <div className="text-[10px] text-muted-foreground">counted − float</div>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
                     <div className="text-muted-foreground">Expected</div>
                     <div className="text-base font-bold tabular-nums">
-                      ฿{expectedCash.toLocaleString('en-US')}
+                      ฿{groupedBahtText(expectedCash)}
                     </div>
                     <div className="text-[10px] text-muted-foreground">from POS</div>
                   </div>
@@ -279,7 +280,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                     >
                       {diff === null
                         ? '—'
-                        : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString('en-US')}`}
+                        : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${groupedBahtText(Math.abs(diff))}`}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       {cashFlag === 'ok' ? 'balanced' : cashFlag === 'off' ? 'over/short' : '—'}
@@ -355,7 +356,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
             <div className="text-xl font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString('en-US')}`}
+              {banked === null ? '—' : `฿${groupedBahtText(banked)}`}
             </div>
             <div className="text-xs text-muted-foreground">counted − float left</div>
           </div>

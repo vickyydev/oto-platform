@@ -35,7 +35,7 @@ import {
 import { paymentMethodKind } from '@/lib/payments';
 import { PaymentStageLayout } from '@/components/shared/PaymentStageLayout';
 import { tierNeedsProof } from '@/lib/membership';
-import { bahtText } from '@/lib/bahtText';
+import { bahtText, satangText } from '@/lib/bahtText';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 import {
@@ -925,7 +925,10 @@ export function CustomerDisplay({
         </div>,
       );
     }
-    const figure = unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`;
+    // SCRUM-948 — the prototype writes this figure as `฿{sale.total}`: a
+    // whole-baht amount bare ("฿1605", as the staff's Amount Due reads it),
+    // and through the one formatter an amount with satang to two places.
+    const figure = unpriced.length > 0 ? '—' : `฿${payment ? satangText(payment.amountSatang) : bahtText(sale.total)}`;
     if (payment?.qrPayload || payment?.qrImageUrl || (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr')) {
       return withOrder(
         <>

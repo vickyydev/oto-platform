@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { FloorRevenueBucket } from '@/types';
+import { groupedBahtText } from '@/lib/bahtText';
 
 const BAR_COLOR: Record<FloorRevenueBucket['key'], string> = {
   tickets: 'bg-sky-500',
@@ -30,7 +31,7 @@ export function RevenueBars({ buckets }: { buckets: FloorRevenueBucket[] }) {
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-sm font-medium">{b.label}</span>
                 <span className="text-sm tabular-nums">
-                  <span className="font-semibold">฿{b.amountTHB.toLocaleString('en-US')}</span>
+                  <span className="font-semibold">฿{groupedBahtText(b.amountTHB)}</span>
                   <span className="text-muted-foreground ml-2">{pct}%</span>
                 </span>
               </div>

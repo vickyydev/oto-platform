@@ -10,6 +10,7 @@ import {
 import { channelLabel, lineFlag, ReconFlag } from '@/lib/endOfDay';
 import { AmountInput } from './AmountInput';
 import { cn } from '@/lib/utils';
+import { groupedBahtText } from '@/lib/bahtText';
 
 const DIFF_CLASS: Record<ReconFlag, string> = {
   ok: 'text-emerald-400',
@@ -20,7 +21,7 @@ const DIFF_CLASS: Record<ReconFlag, string> = {
 function diffText(line: ReconLine): string {
   if (line.actualTHB === null) return '—';
   const sign = line.differenceTHB > 0 ? '+' : line.differenceTHB < 0 ? '-' : '';
-  return `${sign}฿${Math.abs(line.differenceTHB).toLocaleString('en-US')}`;
+  return `${sign}฿${groupedBahtText(Math.abs(line.differenceTHB))}`;
 }
 
 /**
@@ -58,14 +59,14 @@ export function ReconTable({
             <TableRow key={l.channel}>
               <TableCell className="font-medium">{label}</TableCell>
               <TableCell className="text-right tabular-nums">
-                ฿{l.expectedTHB.toLocaleString('en-US')}
+                ฿{groupedBahtText(l.expectedTHB)}
               </TableCell>
               <TableCell className="text-right">
                 {l.channel === 'cash' ? (
                   <span className="text-sm text-muted-foreground tabular-nums">
                     {l.actualTHB === null
                       ? 'from cash count'
-                      : `฿${l.actualTHB.toLocaleString('en-US')}`}
+                      : `฿${groupedBahtText(l.actualTHB)}`}
                   </span>
                 ) : (
                   <AmountInput

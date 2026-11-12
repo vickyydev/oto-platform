@@ -1,6 +1,7 @@
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { QrCode as QrCodeIcon, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { bahtText } from '@/lib/bahtText';
 
 // Customer-facing "Scan to Pay" Thai QR / PromptPay screen. Mirrors the
 // promptpay stage of the in-venue F&B customer display so every surface that
@@ -37,7 +38,7 @@ export function PromptPayCustomerScreen({ amount, qrPayload, qrImageUrl, expires
       <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
         <PaymentQr payload={qrPayload ?? null} imageUrl={qrImageUrl ?? null} className="w-64 h-64" label={t('display.qr.ready')} waitingLabel={t('display.qr.waiting')} />
       </div>
-      <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amount}</div>
+      <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{bahtText(amount)}</div>
       {note && <p className="text-lg text-foreground/60 mt-3">{note}</p>}
       {expiresAt && (
         <p className="text-lg text-foreground/60 mt-3">

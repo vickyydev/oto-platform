@@ -1,4 +1,5 @@
 import type { CashMovementView } from '@oto/shared';
+import { groupedSatangText } from '@/lib/bahtText';
 
 /**
  * S2-15a round 1 — UI ADDITION. The day's paid-outs and safe drops, shown
@@ -24,7 +25,7 @@ export function CashMovementList({ movements }: { movements: readonly CashMoveme
                 — {m.actor.name ?? 'Unknown'}, {secondWord} {second?.name ?? 'Unknown'}
               </span>
             </span>
-            <span className="shrink-0 tabular-nums font-semibold text-foreground">−฿{(m.amountSatang / 100).toLocaleString('en-US')}</span>
+            <span className="shrink-0 tabular-nums font-semibold text-foreground">−฿{groupedSatangText(m.amountSatang)}</span>
           </div>
         );
       })}

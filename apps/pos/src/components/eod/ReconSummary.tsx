@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, Hourglass } from 'lucide-react';
 import { EndOfDay } from '@/types';
 import { reconVerdict } from '@/lib/endOfDay';
 import { cn } from '@/lib/utils';
+import { groupedBahtText } from '@/lib/bahtText';
 
 /**
  * Prominent bottom-line: total expected vs total actual and the day's net over/short,
@@ -20,7 +21,7 @@ export function ReconSummary({ record }: { record: EndOfDay }) {
   }[verdict];
 
   const { Icon } = styles;
-  const overText = `${over > 0 ? '+' : over < 0 ? '-' : ''}฿${Math.abs(over).toLocaleString('en-US')}`;
+  const overText = `${over > 0 ? '+' : over < 0 ? '-' : ''}฿${groupedBahtText(Math.abs(over))}`;
 
   return (
     <Card className={cn('p-5 border', styles.ring)}>
@@ -33,13 +34,13 @@ export function ReconSummary({ record }: { record: EndOfDay }) {
           <div className="text-right">
             <div className="text-muted-foreground">Expected</div>
             <div className="text-lg font-bold tabular-nums">
-              ฿{record.totalExpectedTHB.toLocaleString('en-US')}
+              ฿{groupedBahtText(record.totalExpectedTHB)}
             </div>
           </div>
           <div className="text-right">
             <div className="text-muted-foreground">Actual</div>
             <div className="text-lg font-bold tabular-nums">
-              ฿{record.totalActualTHB.toLocaleString('en-US')}
+              ฿{groupedBahtText(record.totalActualTHB)}
             </div>
           </div>
           <div className="text-right">

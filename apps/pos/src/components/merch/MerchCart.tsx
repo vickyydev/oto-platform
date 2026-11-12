@@ -6,6 +6,7 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
+import { bahtText } from '@/lib/bahtText';
 import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
 import {
   Wallet,
@@ -89,7 +90,7 @@ function ManualDiscountRow({
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="font-bold tabular-nums">-฿{amount}</span>
+        <span className="font-bold tabular-nums">-฿{bahtText(amount)}</span>
         <Button
           variant="ghost"
           size="icon"
@@ -145,7 +146,7 @@ export function MerchCart({
               </div>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Wallet className="w-3 h-3" />
-                <span className="tabular-nums">฿{wristband.creditBalanceTHB ?? 0} credit</span>
+                <span className="tabular-nums">฿{bahtText(wristband.creditBalanceTHB ?? 0)} credit</span>
                 <span className="opacity-50">•</span>
                 <span className="font-mono">#{wristband.code}</span>
               </div>
@@ -209,7 +210,7 @@ export function MerchCart({
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground tabular-nums">
-                      ฿{resolveRateToday(line.merchItem.price)} each
+                      ฿{bahtText(resolveRateToday(line.merchItem.price))} each
                     </div>
                   </div>
                   <QuantityStepper
@@ -220,7 +221,7 @@ export function MerchCart({
                     ariaLabel={line.merchItem.name}
                   />
                   <div className="font-bold tabular-nums shrink-0 w-16 text-right">
-                    ฿{line.lineTotal}
+                    ฿{bahtText(line.lineTotal)}
                   </div>
                 </div>
                 {lineDiscountsFor(line.id).map((md) => {
@@ -292,7 +293,7 @@ export function MerchCart({
               className="flex justify-between text-sm text-muted-foreground mb-1"
             >
               <span>{row.label}</span>
-              <span className="tabular-nums">฿{row.amount}</span>
+              <span className="tabular-nums">฿{bahtText(row.amount)}</span>
             </div>
           ))}
 
@@ -305,7 +306,7 @@ export function MerchCart({
           title={chargeBlockedReason ?? undefined}
           onClick={onCheckout}
         >
-          Charge ฿{total}
+          Charge ฿{bahtText(total)}
         </Button>
       </div>
     </div>

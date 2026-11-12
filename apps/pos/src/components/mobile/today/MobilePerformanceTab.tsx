@@ -11,6 +11,7 @@ import {
   type PerformanceState,
 } from '@/components/floor/usePerformance';
 import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
+import { groupedBahtText } from '@/lib/bahtText';
 
 /**
  * Portrait-phone version of the Performance floor-report tab.
@@ -82,12 +83,12 @@ export function MobilePerformanceView({
         size="lg"
         icon={<Banknote className="w-5 h-5" />}
         label="Revenue"
-        value={`฿${report.netRevenueTHB.toLocaleString('en-US')}`}
+        value={`฿${groupedBahtText(report.netRevenueTHB)}`}
         sub={
           <span>
             {report.txnCount} {report.txnCount === 1 ? 'transaction' : 'transactions'}
             {report.creditPaidTHB > 0 && (
-              <> · excl. ฿{report.creditPaidTHB.toLocaleString('en-US')} via credit</>
+              <> · excl. ฿{groupedBahtText(report.creditPaidTHB)} via credit</>
             )}
           </span>
         }

@@ -21,3 +21,19 @@ export function bahtText(baht: number): string {
 export function satangText(satang: number): string {
   return formatBahtAmount(Math.round(satang));
 }
+
+/**
+ * SCRUM-948 — the same money, for a screen that has always grouped its
+ * thousands (`toLocaleString('en-US')`: End of Day, Performance, booking
+ * redeem, the restaurant's Amount due): a whole-baht amount reads exactly as
+ * it did ("1,605"), an amount with satang shows its two places ("1,444.50")
+ * where it showed one or three.
+ */
+export function groupedBahtText(baht: number): string {
+  return formatBahtAmount(satangFromBaht(baht), { grouped: true });
+}
+
+/** The same, from satang. */
+export function groupedSatangText(satang: number): string {
+  return formatBahtAmount(Math.round(satang), { grouped: true });
+}
