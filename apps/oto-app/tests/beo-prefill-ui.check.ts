@@ -762,4 +762,5 @@ await check("SCRUM-904: a catalogue that could not be read is said so, never cal
 
 await act(async () => { root.unmount(); });
 console.log(`beo-prefill-ui.check: ${checks} checks passed`);
-process.exit(checks === 11 ? 0 : 1);
+// SCRUM-904: twelve, the unread catalogue's case among them.
+process.exit(checks === 12 ? 0 : 1);
