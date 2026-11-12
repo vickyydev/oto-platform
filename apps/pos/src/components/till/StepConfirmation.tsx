@@ -67,7 +67,7 @@ export interface SaleIssue {
   bands: ApiSaleBand[] | null;
   lines: Pick<ApiSaleLine, 'id' | 'cartLineId'>[];
   /**
-   * SCRUM-208 — the sale's print jobs, so the "Credit Grants to Print" block is
+   * SCRUM-208 — the sale's print jobs, so the credit column (`CREDIT_HEADING`) is
    * shown only when the platform reported a credit-voucher printout. Null until
    * the read lands (or when it carries none).
    */
@@ -204,6 +204,20 @@ const ROWS_SCROLL = 'flex-1 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]
  * and the badge together at those widths.
  */
 const ROW_TEXT = 'min-w-[5.5rem] flex-1';
+
+/**
+ * SCRUM-931 — WHAT THE CREDIT COLUMN IS CALLED.
+ *
+ * The prototype's heading was "Credit Grants to Print", because it printed a
+ * credit voucher per wallet as a slip of its own (`printRouting.tsx:86-119`).
+ * Since SCRUM-687 a sale's F&B credit prints ON its one receipt, a CREDIT
+ * VOUCHER section per wallet, and no credit-voucher job is queued — so "to
+ * print" sent people looking for a slip that never comes. The column lists
+ * what the sale issued, in the prototype's own words for it ("Credit grants
+ * issued", its History panel and the receipt template's field): the credit
+ * is on the receipt, items to collect on the receipt or their own slip.
+ */
+export const CREDIT_HEADING = 'Credit Grants Issued';
 const DURATION_BADGE = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-center';
 
 /**
@@ -271,20 +285,27 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
   const bandsOnRow = (lineId: string, kind: 'child' | 'adult'): ApiSaleBand[] =>
     issued?.byRow.get(`${platformId(lineId)}:${kind === 'child' ? 'kid' : 'adult'}`) ?? [];
   // Drop-off / nanny children's bands are issued through the door check-in choice
-  // (now or later at check-in), never the standard sale print — so exclude their
-  // lines from the "Bracelets to Print" panel.
-  const braceletRows = sale.lines.filter((line) => !line.dropOff).flatMap((line) => {
-    const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string }[] = [];
+  // (now or later at check-in), never the standard sale print. SCRUM-931 — the
+  // prototype left their lines out of this panel, so a drop-off sale read
+  // "0 total" here while the customer display said "1 Child bracelet". The
+  // child does get a bracelet: it prints when the child is checked in, on the
+  // drop-off bracelet printer (SCRUM-861). So the row is listed and counted,
+  // and says when it prints (`atCheckIn`).
+  const braceletRows = sale.lines.flatMap((line) => {
+    const atCheckIn = !!line.dropOff;
+    const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string; atCheckIn: boolean }[] = [];
     if (line.kids > 0) {
-      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
+      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn });
     }
     if (line.adults > 0) {
-      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
+      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name, atCheckIn });
     }
     return rows;
   });
 
   const totalBracelets = braceletRows.reduce((sum, row) => sum + row.count, 0);
+  /** The bracelets this sale prints as it closes — not those printed at check-in. */
+  const printedWithSale = braceletRows.filter((row) => !row.atCheckIn).reduce((sum, row) => sum + row.count, 0);
   // Every issued band shows somewhere: a code no row claims — its line was not
   // one of these rows, or could not be placed — is listed under them.
   const onRows = new Set(braceletRows.flatMap((row) => bandsOnRow(row.lineId, row.kind).map((b) => b.id)));
@@ -303,7 +324,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
   const showTaxBreakdown = receiptTpl ? !!receiptTpl.fields.taxServiceBreakdown : true;
   const showCreditInfo = receiptTpl ? !!receiptTpl.fields.voucherInfo : true;
   /**
-   * SCRUM-208 — the "Credit Grants to Print" block is shown only once the
+   * SCRUM-208 — the credit column (`CREDIT_HEADING`) is shown only once the
    * platform reports a credit printout for this sale: an item voucher, or a
    * receipt for a sale that granted wallets or items to collect, which print
    * on it (socks have no slip of their own — SCRUM-765). Until the read lands
@@ -386,6 +407,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
                     <div className="text-sm text-muted-foreground truncate" title={`${row.duration} • ${row.ticket}`}>
                       {row.duration} • {row.ticket}
                     </div>
+                    {row.atCheckIn && <div className="text-sm text-muted-foreground">Prints at check-in</div>}
                     <BandCodes bands={bandsOnRow(row.lineId, row.kind)} />
                   </div>
                   <div
@@ -404,7 +426,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
                   <BandCodes bands={leftover} />
                 </div>
               )}
-              {issue.bands !== null && issue.bands.length === 0 && totalBracelets > 0 && (
+              {issue.bands !== null && issue.bands.length === 0 && printedWithSale > 0 && (
                 <p className="text-sm text-muted-foreground px-1">
                   No band codes came back for this sale. Reprint its bands from History to issue them.
                 </p>
@@ -418,7 +440,8 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
             <div className="flex items-center justify-between mb-4 border-b pb-4">
               <div className="flex items-center gap-3">
                 <UtensilsCrossed className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold">Credit Grants to Print</h3>
+                {/* SCRUM-931 — `CREDIT_HEADING`: issued, not "to print". */}
+                <h3 className="text-2xl font-bold">{CREDIT_HEADING}</h3>
               </div>
               <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
                 {creditGrants.length} total

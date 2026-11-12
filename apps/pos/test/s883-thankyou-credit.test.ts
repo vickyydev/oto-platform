@@ -185,7 +185,8 @@ describe('the staff half follows the same answer', () => {
 
   it('the Thai sale with socks: items to collect only, no ฿350 credit row', () => {
     const html = under(createElement(StepConfirmation, { sale: saleOf('thai', 1), onNewSale: () => undefined, issue: issue([]) }));
-    expect(html).toContain('Credit Grants to Print');
+    // SCRUM-931 — the column's heading says the grants were issued, not "to Print".
+    expect(html).toContain('Credit Grants Issued');
     expect(html).toContain('Regular Socks');
     expect(html).not.toContain('฿350');
   });

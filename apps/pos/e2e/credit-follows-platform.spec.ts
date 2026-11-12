@@ -145,7 +145,8 @@ test('a free Thai adult earns no credit on either half; a paying Tourist adult e
     await shot(page, '01-thai-free-adult-thank-you');
     // Neither half shows a credit.
     await expect(page.getByText('Credit Grants', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('Credit Grants to Print', { exact: true })).toHaveCount(0);
+    // SCRUM-931 — the staff half's credit column is "Credit Grants Issued" now.
+    await expect(page.getByText('Credit Grants Issued', { exact: true })).toHaveCount(0);
     await expect(page.getByText('฿350')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Start New Sale', exact: true }).click();
