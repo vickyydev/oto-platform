@@ -97,7 +97,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 9;
+const CHECKS = 10;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -105,7 +105,7 @@ const park = randomUUID();
 const manager = randomUUID();
 const nok = randomUUID();
 const cat = { floresta: randomUUID(), setMenu: randomUUID(), bubble: randomUUID(), face: randomUUID() };
-const KEYS = ["family", "unread", "held"] as const;
+const KEYS = ["family", "unread", "held", "ruled"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -184,6 +184,36 @@ const FAMILY_ANSWER = {
   },
 };
 
+/**
+ * A team confirmation whose own read times the bubble show and the drinks as steps, while the
+ * conversation's read times them as the show's act and the bar's service (its timeline empty):
+ * the ruling's steps fill the gap, and neither the show nor the drinks may be a step twice.
+ */
+const RULED_LINES: TLine[] = [
+  { id: randomUUID(), author: "customer", at: at(0), text: "Hi, Mia's party please, bubble show at 15:00 and drinks from 14:15. RULED-904" },
+  { id: randomUUID(), author: "staff", at: at(1), text: "Confirmed: Mia's party 14:00 to 16:30, Bubble show at 15:00, drinks served from 14:15, cake at 16:00. RULED-904" },
+];
+const RULED_CONVERSATION = {
+  catalogue: {
+    entertainment: [{ templateId: cat.bubble, said: "Bubble show", quantity: 1, time: "15:00", line: 2 }],
+    event: {
+      startTime: { value: "14:00", line: 2 },
+      endTime: { value: "16:30", line: 2 },
+      barServiceTime: { value: "14:15", said: "drinks served from 14:15", line: 2 },
+    },
+    timeline: [],
+  },
+};
+const RULED_FORM = {
+  summary: "ZZ ruled",
+  event: { childName: "Mia" },
+  timeline: [
+    { time: "15:00", label: "Bubble show" },
+    { time: "14:15", label: "Drinks served" },
+    { time: "16:00", label: "Cake" },
+  ],
+};
+
 const SAVED_ADVICE = "ZZ TEST SAVED ADVICE 904: read the party.";
 const SAVED_FORMAT = '{ "summary": "", "event": { "childName": "" } }';
 const modelCalls: AiCompleteOptions[] = [];
@@ -191,6 +221,7 @@ const ai = {
   configured: () => true,
   complete: async (call: AiCompleteOptions) => {
     modelCalls.push(call);
+    if (call.user.includes("RULED-904")) return JSON.stringify(call.system.includes("THE CONVERSATION") ? RULED_CONVERSATION : RULED_FORM);
     if (call.user.includes("PHASEB-904") && call.system.includes("THE CONVERSATION")) return JSON.stringify(FAMILY_ANSWER);
     return JSON.stringify({ summary: "ZZ plain", event: { childName: "Plain" } });
   },
@@ -202,6 +233,17 @@ const inbox = new Map<string, InboxRead>(
     { ok: true, confirmation: { conversationId: conv[key], eventId: ev[key], message: null, scanned: FAMILY_TEXTS.length, transcript: familyLines(key), transcriptCut: false } },
   ]),
 );
+{
+  const ruling = RULED_LINES.at(-1)!;
+  inbox.set(conv.ruled, {
+    ok: true,
+    confirmation: {
+      conversationId: conv.ruled, eventId: ev.ruled,
+      message: { id: ruling.id, body: ruling.text, bodyLanguage: null, authorName: "ZZ TEST Manager", sentAt: ruling.at, createdAt: ruling.at },
+      scanned: RULED_LINES.length, transcript: RULED_LINES, transcriptCut: false,
+    },
+  });
+}
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
   if (req.get("x-test-as") !== "manager") return res.status(401).json({ message: "Not signed in" });
@@ -714,6 +756,37 @@ try {
     const adults = (rows.kitchen.menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => l.itemName);
     assert.deepEqual(adults, ["Fried rice (Chicken)", "Fried rice (Pork)", "Fried rice"], "never Fried rice (Veggie), which nobody asked for");
     for (const r of rows.activity) for (const w of ["ข้าวผัด", "жареный"]) assert.ok(!r.metadata_json.includes(w) && !r.summary_text.includes(w), "the chat's words never ride the activity row");
+  });
+
+  await check("aShowAndTheDrinksAreOnTheTimelineOnce", async () => {
+    // The rule as one helper: the show the entertainment times, the drinks at the bar's time.
+    const proposal = {
+      entertainment: [{ templateId: cat.bubble, name: "Bubble show", said: "the bubble show", quantity: 1, chatPrice: null, notInCatalogue: false, time: "15:00", from: family(3) }],
+      event: { barServiceTime: { value: "14:15", from: family(3) } },
+    };
+    assert.equal(timedElsewhere({ time: "15:00", label: "Bubble show" }, proposal), true);
+    assert.equal(timedElsewhere({ time: "15:30", label: "Bubble show" }, proposal), false, "another time is another step");
+    assert.equal(timedElsewhere({ time: "14:15", label: "Drinks served" }, proposal), true);
+    assert.equal(timedElsewhere({ time: "14:15", label: "เครื่องดื่ม" }, proposal), true);
+    assert.equal(timedElsewhere({ time: "14:15", label: "Welcome speech" }, proposal), false, "another step at the bar's time stays");
+    // On the route: the team's confirmation lists the show and the drinks as steps in its own read;
+    // the conversation's read times them as the act and the bar's service, its timeline empty.
+    const res = await fill(ev.ruled);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.ok(review.ruling, "the team's confirmation rules");
+    assert.deepEqual(review.proposal.details.timeline.map((t) => [t.time, t.label]), [["16:00", "Cake"]], "the show and the drinks are not steps of their own");
+    const state = initialReviewState(review, { fill: res.body.fill, bookedDate: BOOKED });
+    const ok = await approve(ev.ruled, approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    // After the approval and the Timeline's own regeneration: each moment once.
+    const steps = await q<{ label: string; is_system_generated: boolean }>("select label, is_system_generated from beo_timeline_items where event_id = $1", [ev.ruled]);
+    const labels = steps.map((s) => s.label);
+    assert.equal(labels.filter((l) => /bubble/i.test(l)).length, 1, `the bubble show once: ${JSON.stringify(steps)}`);
+    assert.equal(labels.filter((l) => /drink/i.test(l)).length, 1, `the drinks once: ${JSON.stringify(steps)}`);
+    assert.equal(labels.filter((l) => l === "Cake").length, 1, "the ruling's other step stays");
+    const acts = await q("select custom_name, start_time from beo_entertainment_items where event_id = $1", [ev.ruled]);
+    assert.deepEqual(acts.map((a) => [a.custom_name, a.start_time]), [["Bubble show", "15:00"]]);
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

@@ -1120,12 +1120,11 @@ export function resolveCatalogueAnswer(
     merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
   }
   // The chat's timed steps, one per step, in clock order.
-  // SCRUM-904: a show the entertainment carries at the same time is that act, not a second step.
-  const timedShows = proposal.entertainment.filter((e) => e.time).map((e) => ({ time: e.time!, names: [e.name, e.said].filter((n): n is string => !!n).map(fold) }));
+  // SCRUM-904: a show the entertainment carries at the same time is that act, not a second step
+  // (and the drinks at the bar's time are the bar's service): `timedElsewhere`.
   for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
     if (!t.time || !t.label) continue;
-    const label = fold(t.label);
-    if (timedShows.some((s) => s.time === t.time && s.names.some((n) => n.includes(label) || label.includes(n)))) continue;
+    if (timedElsewhere({ time: t.time, label: t.label }, proposal)) continue;
     const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
   }
@@ -1173,6 +1172,29 @@ export function resolveCatalogueAnswer(
     proposal.details.hosts = { ...(partyHost ? { partyHost } : {}), ...(entertainmentHost ? { entertainmentHost } : {}) };
   }
   return proposal;
+}
+
+/** Words for the drinks or the bar, in the languages the park's chats are written in. */
+const DRINKS_WORDS = /(^|[^\p{L}])(drinks?|bar|beverages?)([^\p{L}]|$)|เครื่องดื่ม|напит/iu;
+
+/**
+ * SCRUM-904: a timeline step the approval already puts on the Timeline
+ * another way, so it is not proposed as a step of its own as well: a show the
+ * proposal times (the same time, and the show's name or the chat's words for
+ * it in the step's label, or the other way round), which approval writes as
+ * an Entertainment Act at that time; and the drinks or the bar at the bar's
+ * service time, which approval writes as the bar plan's service time. The
+ * Timeline makes its own step of each (`generateTimelineFromBeo`), and a
+ * step of the chat's beside it would be the same moment twice.
+ */
+export function timedElsewhere(step: { time: string; label: string }, proposal: Pick<BeoAiProposal, "entertainment" | "event">): boolean {
+  const label = fold(step.label);
+  if (!label) return false;
+  const show = proposal.entertainment.some(
+    (e) => e.time === step.time && [e.name, e.said].some((n) => !!n && (fold(n).includes(label) || label.includes(fold(n)))),
+  );
+  if (show) return true;
+  return proposal.event.barServiceTime?.value === step.time && DRINKS_WORDS.test(step.label);
 }
 
 /** A real calendar day, YYYY-MM-DD. */
@@ -1296,6 +1318,8 @@ export function detailsFromFill(
   if (details.timeline.length === 0) {
     for (const t of fill.timeline ?? []) {
       if (details.timeline.some((x) => sameText(x.label, t.label))) continue;
+      // SCRUM-904: a show the conversation times, or the drinks at the bar's time, is not a step twice.
+      if (timedElsewhere(t, proposal)) continue;
       details.timeline.push({ time: t.time, label: t.label, from: fromFor(t.label) });
     }
     details.timeline.sort((a, b) => a.time.localeCompare(b.time));
