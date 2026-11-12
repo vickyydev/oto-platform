@@ -1,0 +1,1129 @@
+{
+  "unit": "SCRUM-860 Inbox: create a contact and edit a contact name",
+  "liveCommit": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+  "startedAt": "2026-11-12T04:05:07.068Z",
+  "steps": {},
+  "images": [
+    {
+      "file": "01a-new-contact-dialog-filled.png",
+      "at": "2026-11-12T04:07:19.541Z",
+      "shows": "New contact dialog filled: ZZ TEST 860 Contact, Demo WhatsApp · Central Floresta · WhatsApp, a synthetic number",
+      "namesMasked": 2,
+      "masks": 1
+    },
+    {
+      "file": "01b-created-thread.png",
+      "at": "2026-11-12T04:07:23.141Z",
+      "shows": "after Create contact: the list (searched \"ZZ TEST 860\") shows the new contact and its thread is open, empty",
+      "namesMasked": 21,
+      "masks": 1
+    },
+    {
+      "file": "01c-created-thread-empty.png",
+      "at": "2026-11-12T04:08:28.520Z",
+      "shows": "the created contact's thread: no message, no assistant line; the list searched ZZ TEST 860 shows it",
+      "namesMasked": 23,
+      "masks": 1
+    },
+    {
+      "file": "02a-new-contact-dialog-filled.png",
+      "at": "2026-11-12T04:08:43.289Z",
+      "shows": "New contact dialog filled: ZZ TEST 860 Contact again, Demo WhatsApp · Central Floresta · WhatsApp, a synthetic number",
+      "namesMasked": 2,
+      "masks": 1
+    },
+    {
+      "file": "02b-duplicate-refused.png",
+      "at": "2026-11-12T04:08:47.001Z",
+      "shows": "the duplicate refused in the dialog, with Open to the existing contact",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "02c-duplicate-open-existing.png",
+      "at": "2026-11-12T04:08:50.312Z",
+      "shows": "Open pressed: the existing contact's conversation",
+      "namesMasked": 21,
+      "masks": 1
+    },
+    {
+      "file": "03a-inbound-attaches-to-created.png",
+      "at": "2026-11-12T04:09:50.140Z",
+      "shows": "the simulator's message from +66898600001 (profile name ZZ TEST sim profile 860A) landed on the created contact's thread, still named ZZ TEST 860 Contact; the list searched ZZ TEST 860 shows one conversation",
+      "namesMasked": 23,
+      "masks": 1
+    },
+    {
+      "file": "03b-search-profile-name-no-second-contact.png",
+      "at": "2026-11-12T04:09:56.728Z",
+      "shows": "the list searched by the simulator's profile name (sim profile 860A): no second contact was made",
+      "namesMasked": 23,
+      "masks": 1
+    },
+    {
+      "file": "04a-edit-name-dialog.png",
+      "at": "2026-11-12T04:11:01.172Z",
+      "shows": "the pencil beside the name opened Edit name: the shown name in the field, the channel profile name under it",
+      "namesMasked": 23,
+      "masks": 1
+    },
+    {
+      "file": "04b-edit-name-filled.png",
+      "at": "2026-11-12T04:11:32.006Z",
+      "shows": "the new name typed: ZZ TEST 860 Renamed",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "04c-after-save-same-page.png",
+      "at": "2026-11-12T04:11:36.332Z",
+      "shows": "right after the save, on the same page: the header and the list row show the name",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "04d-search-by-shown-name.png",
+      "at": "2026-11-12T04:11:43.207Z",
+      "shows": "a fresh load, the list searched \"ZZ TEST 860 Renamed\": the contact found under the shown name",
+      "namesMasked": 23,
+      "masks": 1
+    },
+    {
+      "file": "04f-edit-dialog-shows-new-profile-name.png",
+      "at": "2026-11-12T04:13:08.680Z",
+      "shows": "the pencil beside the name opened Edit name: the shown name in the field, the channel profile name under it",
+      "namesMasked": 22,
+      "masks": 1
+    },
+    {
+      "file": "04e-later-profile-name-staff-name-stays.png",
+      "at": "2026-11-12T04:15:04.254Z",
+      "shows": "after a later simulator message under the profile name ZZ TEST sim profile 860B (the assistant then auto-resolved the thread, existing behaviour): the Handled list searched ZZ TEST 860 and the header still show the staff name ZZ TEST 860 Renamed",
+      "namesMasked": 22,
+      "masks": 1
+    },
+    {
+      "file": "05a-edit-name-dialog.png",
+      "at": "2026-11-12T04:15:53.322Z",
+      "shows": "the pencil beside the name opened Edit name: the shown name in the field, the channel profile name under it",
+      "namesMasked": 22,
+      "masks": 1
+    },
+    {
+      "file": "05c-after-save-same-page.png",
+      "at": "2026-11-12T04:15:57.541Z",
+      "shows": "right after the save, on the same page: the header and the list row show the name",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "05d-handled-list-search-profile-name.png",
+      "at": "2026-11-12T04:16:25.607Z",
+      "shows": "after Use the profile name: the Handled list searched by the channel profile name finds the contact under ZZ TEST sim profile 860B, the header shows it too",
+      "namesMasked": 22,
+      "masks": 1
+    },
+    {
+      "file": "06a-console-activity-filtered.png",
+      "at": "2026-11-12T04:18:48.249Z",
+      "shows": "the inbox.contact.rename row of the clear (Use the profile name) (the Activity list, filtered by the request id)",
+      "namesMasked": 76,
+      "masks": 1
+    },
+    {
+      "file": "06b-console-activity-row-open.png",
+      "at": "2026-11-12T04:18:51.811Z",
+      "shows": "the inbox.contact.rename row of the clear (Use the profile name) (the row opened: before and after)",
+      "namesMasked": 2,
+      "masks": 1
+    },
+    {
+      "file": "06c-createa-console-activity-filtered.png",
+      "at": "2026-11-12T04:21:22.037Z",
+      "shows": "the inbox.contact.create row of the New contact (the Activity list, filtered by the request id)",
+      "namesMasked": 76,
+      "masks": 1
+    },
+    {
+      "file": "06c-createb-console-activity-row-open.png",
+      "at": "2026-11-12T04:21:25.563Z",
+      "shows": "the inbox.contact.create row of the New contact (the row opened: before and after)",
+      "namesMasked": 2,
+      "masks": 1
+    },
+    {
+      "file": "07a-regression-team-inbox-list-masked.png",
+      "at": "2026-11-12T04:21:58.212Z",
+      "shows": "Team Inbox as it opens: the conversation list (masked, real customers) loads, our ZZ TEST thread opens by its link; the header shows the name and the pencil",
+      "namesMasked": 28,
+      "masks": 1
+    }
+  ],
+  "convs": {
+    "C1": {
+      "key": "C1",
+      "account": "01a156bb-6778-72b0-8237-6028f8874503",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer (simulator)",
+          "profileName": "ZZ TEST sim profile 860A",
+          "text": "ZZ TEST 860 hello, the created contact writes in for the first time",
+          "at": "2026-11-12T04:09:02.653Z",
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "path": "the inbox UI: Settings › Simulator · test only › Send as the customer (POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1cdf0-4cbb-7338-82e6-b377a8aec01b"
+          ],
+          "error": null
+        },
+        {
+          "n": 2,
+          "by": "customer (simulator)",
+          "profileName": "ZZ TEST sim profile 860B",
+          "text": "ZZ TEST 860 a second line, my WhatsApp profile name changed",
+          "at": "2026-11-12T04:12:01.887Z",
+          "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+          "path": "the inbox UI: Settings › Simulator · test only › Send as the customer (POST /api/inbox/simulator/inbound)",
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "conversationIds": [
+            "01a1cdf0-4cbb-7338-82e6-b377a8aec01b"
+          ],
+          "error": null
+        }
+      ],
+      "id": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+      "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+      "created": {
+        "contact": {
+          "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "channel": "whatsapp",
+          "handle": "+66898600001",
+          "displayName": "ZZ TEST 860 Contact",
+          "phone": "+66898600001",
+          "language": null,
+          "erased": false,
+          "profileName": null,
+          "nameSetByStaff": true,
+          "nameSetAt": "2026-11-12T04:07:19.988Z"
+        },
+        "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+        "visible": true,
+        "teamName": "Reception · Central Floresta"
+      },
+      "reads": {
+        "after-create": {
+          "at": "2026-11-12T04:07:47.378Z",
+          "conversation": {
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "id": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+            "contactName": "ZZ TEST 860 Contact",
+            "state": "active",
+            "team": "Reception · Central Floresta",
+            "aiState": "ready"
+          },
+          "contactRoute": {
+            "route": "GET /api/inbox/conversations/:id/contact",
+            "status": 200,
+            "body": {
+              "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+              "channel": "whatsapp",
+              "handle": "+66898600001",
+              "displayName": "ZZ TEST 860 Contact",
+              "phone": "+66898600001",
+              "language": null,
+              "erased": false,
+              "profileName": null,
+              "nameSetByStaff": true,
+              "nameSetAt": "2026-11-12T04:07:19.988Z"
+            }
+          },
+          "messages": [],
+          "eventKinds": [],
+          "aiEvents": 0,
+          "outgoing": 0
+        },
+        "after-inbound-1": {
+          "at": "2026-11-12T04:09:19.840Z",
+          "conversation": {
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "id": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+            "contactName": "ZZ TEST 860 Contact",
+            "state": "active",
+            "team": "Reception · Central Floresta",
+            "aiState": "ready"
+          },
+          "contactRoute": {
+            "route": "GET /api/inbox/conversations/:id/contact",
+            "status": 200,
+            "body": {
+              "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+              "channel": "whatsapp",
+              "handle": "+66898600001",
+              "displayName": "ZZ TEST 860 Contact",
+              "phone": "+66898600001",
+              "language": "en",
+              "erased": false,
+              "profileName": "ZZ TEST sim profile 860A",
+              "nameSetByStaff": true,
+              "nameSetAt": "2026-11-12T04:07:19.988Z"
+            }
+          },
+          "messagesRoute": {
+            "route": "GET /api/inbox/conversations/:id/messages",
+            "status": 200
+          },
+          "lines": [
+            {
+              "id": "01a1cdf1-dd3f-75c0-b8af-63ed499c5f2e",
+              "createdAt": "2026-11-12T04:09:02.000Z",
+              "authorKind": "customer",
+              "direction": "inbound",
+              "providerStatus": null,
+              "body": "ZZ TEST 860 hello, the created contact writes in for the first time"
+            },
+            {
+              "id": "01a1cdf2-0192-7781-9d40-1e0bc9650e06",
+              "createdAt": "2026-11-12T04:09:11.814Z",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "providerStatus": "sent",
+              "body": "(ai, 27 chars)"
+            }
+          ],
+          "eventKinds": [
+            "routed",
+            "assigned",
+            "classified",
+            "ai_replied"
+          ],
+          "aiEvents": 1,
+          "outgoing": 1
+        },
+        "after-inbound-2": {
+          "at": "2026-11-12T04:12:05.318Z",
+          "conversation": {
+            "route": "GET /api/inbox/conversations/:id",
+            "status": 200,
+            "id": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+            "contactName": "ZZ TEST 860 Renamed",
+            "state": "active",
+            "team": "Reception · Central Floresta",
+            "aiState": "ready"
+          },
+          "contactRoute": {
+            "route": "GET /api/inbox/conversations/:id/contact",
+            "status": 200,
+            "body": {
+              "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+              "channel": "whatsapp",
+              "handle": "+66898600001",
+              "displayName": "ZZ TEST 860 Renamed",
+              "phone": "+66898600001",
+              "language": "en",
+              "erased": false,
+              "profileName": "ZZ TEST sim profile 860B",
+              "nameSetByStaff": true,
+              "nameSetAt": "2026-11-12T04:11:32.492Z"
+            }
+          },
+          "messagesRoute": {
+            "route": "GET /api/inbox/conversations/:id/messages",
+            "status": 200
+          },
+          "lines": [
+            {
+              "id": "01a1cdf1-dd3f-75c0-b8af-63ed499c5f2e",
+              "createdAt": "2026-11-12T04:09:02.000Z",
+              "authorKind": "customer",
+              "direction": "inbound",
+              "providerStatus": null,
+              "body": "ZZ TEST 860 hello, the created contact writes in for the first time"
+            },
+            {
+              "id": "01a1cdf2-0192-7781-9d40-1e0bc9650e06",
+              "createdAt": "2026-11-12T04:09:11.814Z",
+              "authorKind": "ai",
+              "direction": "outbound",
+              "providerStatus": "sent",
+              "body": "(ai, 27 chars)"
+            },
+            {
+              "id": "01a1cdf4-9970-745f-bdd1-c42ea89f51c8",
+              "createdAt": "2026-11-12T04:12:01.000Z",
+              "authorKind": "customer",
+              "direction": "inbound",
+              "providerStatus": null,
+              "body": "ZZ TEST 860 a second line, my WhatsApp profile name changed"
+            }
+          ],
+          "eventKinds": [
+            "routed",
+            "assigned",
+            "classified",
+            "ai_replied"
+          ],
+          "aiEvents": 1,
+          "outgoing": 1
+        }
+      }
+    }
+  },
+  "log": [],
+  "browser": "Chromium 153.0.8010.12",
+  "live_before": {
+    "at": "2026-11-12T04:05:25.431Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqiorgae00c738h8rl0",
+        "status": "live",
+        "sha": "3224debf049257810e1e0bea55cb401fab7337f0",
+        "finishedAt": "2026-11-12T03:08:01.711582Z",
+        "newer": {
+          "deployId": "dep-dbqjk7brjlhs738gdf9g",
+          "status": "update_in_progress",
+          "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+          "createdAt": "2026-11-12T04:01:34.051359Z"
+        }
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqjk93bc2fs73dj0mpg",
+        "status": "live",
+        "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+        "finishedAt": "2026-11-12T04:02:42.130944Z"
+      }
+    ],
+    "bundle": {
+      "/assets/index-C9QeZagS.js": {
+        "bytes": 287676,
+        "newContact": true,
+        "editName": true,
+        "useProfileName": true,
+        "recordOnly": true
+      }
+    },
+    "allLiveOnSha": false
+  },
+  "live_after": {
+    "at": "2026-11-12T04:05:43.972Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqjk7brjlhs738gdf9g",
+        "status": "live",
+        "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+        "finishedAt": "2026-11-12T04:05:29.914963Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqjk93bc2fs73dj0mpg",
+        "status": "live",
+        "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+        "finishedAt": "2026-11-12T04:02:42.130944Z"
+      }
+    ],
+    "bundle": {
+      "/assets/index-C9QeZagS.js": {
+        "bytes": 287676,
+        "newContact": true,
+        "editName": true,
+        "useProfileName": true,
+        "recordOnly": true
+      }
+    },
+    "allLiveOnSha": true
+  },
+  "inboxViewer": {
+    "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "roles": [
+      "owner"
+    ],
+    "capabilities": {
+      "writes": true,
+      "dashboard": true,
+      "assign": true,
+      "move": true,
+      "reopen": true,
+      "templates": true,
+      "kb": true,
+      "ai": true
+    },
+    "birthdaysTeams": [
+      {
+        "id": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+        "name": "Birthdays & Events",
+        "branchId": null,
+        "member": false
+      }
+    ],
+    "simulatorAccounts": [
+      {
+        "id": "01a156bb-6782-72d6-9106-b6e4816b6d73",
+        "channel": "facebook",
+        "displayName": "Demo Facebook",
+        "branchId": null
+      },
+      {
+        "id": "01a156bb-677e-728c-acc3-35daa8e43d0b",
+        "channel": "instagram",
+        "displayName": "Demo Instagram",
+        "branchId": null
+      },
+      {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "channel": "whatsapp",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      },
+      {
+        "id": "01a156bb-677c-7671-bb71-b021629d2919",
+        "channel": "whatsapp",
+        "displayName": "Demo WhatsApp · Robinson Chalong",
+        "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      }
+    ],
+    "contactChannels": [
+      {
+        "id": "01a156bb-6782-72d6-9106-b6e4816b6d73",
+        "channel": "facebook",
+        "displayName": "Demo Facebook",
+        "branchId": null
+      },
+      {
+        "id": "01a156bb-677e-728c-acc3-35daa8e43d0b",
+        "channel": "instagram",
+        "displayName": "Demo Instagram",
+        "branchId": null
+      },
+      {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "channel": "whatsapp",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+      },
+      {
+        "id": "01a156bb-677c-7671-bb71-b021629d2919",
+        "channel": "whatsapp",
+        "displayName": "Demo WhatsApp · Robinson Chalong",
+        "branchId": "01a0c9ae-52cf-7aa1-baca-fc55e449148e"
+      }
+    ]
+  },
+  "aiModes": {
+    "status": 200,
+    "rows": [
+      {
+        "id": "01a156bb-6782-72d6-9106-b6e4816b6d73",
+        "displayName": "Demo Facebook",
+        "channel": "facebook",
+        "aiMode": "live"
+      },
+      {
+        "id": "01a156bb-677e-728c-acc3-35daa8e43d0b",
+        "displayName": "Demo Instagram",
+        "channel": "instagram",
+        "aiMode": "live"
+      },
+      {
+        "id": "01a156bb-6778-72b0-8237-6028f8874503",
+        "displayName": "Demo WhatsApp · Central Floresta",
+        "channel": "whatsapp",
+        "aiMode": "live"
+      },
+      {
+        "id": "01a156bb-677c-7671-bb71-b021629d2919",
+        "displayName": "Demo WhatsApp · Robinson Chalong",
+        "channel": "whatsapp",
+        "aiMode": "live"
+      }
+    ]
+  },
+  "creates": {
+    "C1-created": {
+      "key": "C1",
+      "expect": "created",
+      "at": "2026-11-12T04:07:18.539Z",
+      "button": {
+        "visible": true,
+        "title": "New contact",
+        "text": "New"
+      },
+      "identityLabel": "Phone number",
+      "identityPlaceholder": "081 234 5678",
+      "channelOptions": [
+        "Choose the number or account",
+        "Demo Facebook · Facebook",
+        "Demo Instagram · Instagram",
+        "Demo WhatsApp · Central Floresta · WhatsApp",
+        "Demo WhatsApp · Robinson Chalong · WhatsApp"
+      ],
+      "channelChosen": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "filled": {
+        "picture": "01a-new-contact-dialog-filled.png",
+        "listRows": []
+      },
+      "response": {
+        "route": "POST /api/inbox/contacts",
+        "status": 200,
+        "body": {
+          "contact": {
+            "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+            "channel": "whatsapp",
+            "handle": "+66898600001",
+            "displayName": "ZZ TEST 860 Contact",
+            "phone": "+66898600001",
+            "language": null,
+            "erased": false,
+            "profileName": null,
+            "nameSetByStaff": true,
+            "nameSetAt": "2026-11-12T04:07:19.988Z"
+          },
+          "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+          "visible": true,
+          "teamName": "Reception · Central Floresta"
+        }
+      },
+      "dialogStillOpen": false,
+      "url": "?c=01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+      "afterPic": {
+        "picture": "01b-created-thread.png",
+        "listRows": []
+      }
+    },
+    "C1-duplicate": {
+      "key": "C1",
+      "expect": "duplicate",
+      "at": "2026-11-12T04:08:42.056Z",
+      "button": {
+        "visible": true,
+        "title": "New contact",
+        "text": "New"
+      },
+      "identityLabel": "Phone number",
+      "identityPlaceholder": "081 234 5678",
+      "channelOptions": [
+        "Choose the number or account",
+        "Demo Facebook · Facebook",
+        "Demo Instagram · Instagram",
+        "Demo WhatsApp · Central Floresta · WhatsApp",
+        "Demo WhatsApp · Robinson Chalong · WhatsApp"
+      ],
+      "channelChosen": "Demo WhatsApp · Central Floresta · WhatsApp",
+      "filled": {
+        "picture": "02a-new-contact-dialog-filled.png",
+        "listRows": []
+      },
+      "response": {
+        "route": "POST /api/inbox/contacts",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "CONTACT_EXISTS",
+            "message": "ZZ TEST 860 Contact is already a contact on WhatsApp.",
+            "details": {
+              "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+              "displayName": "ZZ TEST 860 Contact",
+              "handle": "+66898600001",
+              "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b"
+            }
+          }
+        }
+      },
+      "refusal": {
+        "text": "ZZ TEST 860 Contact is already a contact on WhatsApp.\n\nOpen",
+        "openButton": true
+      },
+      "refusedPic": {
+        "picture": "02b-duplicate-refused.png",
+        "listRows": []
+      },
+      "openedUrl": "?c=01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+      "openedHeader": [
+        "ZC",
+        "ZZ TEST 860 Contact",
+        "·"
+      ],
+      "openedPic": {
+        "picture": "02c-duplicate-open-existing.png",
+        "listRows": []
+      }
+    }
+  },
+  "consoleErrors": [
+    {
+      "at": "2026-11-12T04:08:43.842Z",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    }
+  ],
+  "renames": {
+    "04": {
+      "key": "C1",
+      "mode": "set",
+      "at": "2026-11-12T04:10:29.130Z",
+      "pencil": {
+        "visible": true,
+        "title": "Edit name"
+      },
+      "opened": {
+        "title": "",
+        "field": "ZZ TEST 860 Contact",
+        "profileLine": "Name on WhatsApp: ZZ TEST sim profile 860A",
+        "setLine": "This name was set by staff, 11:07.",
+        "buttons": [
+          "Cancel",
+          "Use the profile name",
+          "Save name"
+        ]
+      },
+      "openedPic": {
+        "picture": "04a-edit-name-dialog.png",
+        "listRows": []
+      },
+      "filled": {
+        "title": "",
+        "field": "ZZ TEST 860 Renamed",
+        "profileLine": "Name on WhatsApp: ZZ TEST sim profile 860A",
+        "setLine": "This name was set by staff, 11:07.",
+        "buttons": [
+          "Cancel",
+          "Use the profile name",
+          "Save name"
+        ]
+      },
+      "filledPic": {
+        "picture": "04b-edit-name-filled.png",
+        "listRows": []
+      },
+      "response": {
+        "route": "PATCH /api/inbox/conversations/:id/contact",
+        "status": 200,
+        "sent": {
+          "displayName": "ZZ TEST 860 Renamed"
+        },
+        "body": {
+          "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "channel": "whatsapp",
+          "handle": "+66898600001",
+          "displayName": "ZZ TEST 860 Renamed",
+          "phone": "+66898600001",
+          "language": "en",
+          "erased": false,
+          "profileName": "ZZ TEST sim profile 860A",
+          "nameSetByStaff": true,
+          "nameSetAt": "2026-11-12T04:11:32.492Z"
+        }
+      },
+      "headerAfterSave": [
+        "ZR",
+        "ZZ TEST 860 Renamed",
+        "·"
+      ],
+      "listAfterSave": [
+        "1 conversation",
+        "ZZ TEST 860 Renamed · Demo WhatsApp · Central Floresta"
+      ],
+      "afterPic": {
+        "picture": "04c-after-save-same-page.png",
+        "listRows": []
+      },
+      "searchAfter": "ZZ TEST 860 Renamed",
+      "listSearched": [
+        "1 conversation",
+        "ZZ TEST 860 Renamed · Demo WhatsApp · Central Floresta"
+      ],
+      "searchPic": {
+        "picture": "04d-search-by-shown-name.png",
+        "listRows": []
+      }
+    },
+    "04f-edit-dialog-shows-new-profile-name": {
+      "key": "C1",
+      "mode": "peek",
+      "at": "2026-11-12T04:12:36.662Z",
+      "pencil": {
+        "visible": true,
+        "title": "Edit name"
+      },
+      "opened": {
+        "title": "",
+        "field": "ZZ TEST 860 Renamed",
+        "profileLine": "Name on WhatsApp: ZZ TEST sim profile 860B",
+        "setLine": "This name was set by staff, 11:11.",
+        "buttons": [
+          "Cancel",
+          "Use the profile name",
+          "Save name"
+        ]
+      },
+      "openedPic": {
+        "picture": "04f-edit-dialog-shows-new-profile-name.png",
+        "listRows": []
+      },
+      "headerBehind": [
+        "ZR",
+        "ZZ TEST 860 Renamed",
+        "·"
+      ]
+    },
+    "05": {
+      "key": "C1",
+      "mode": "clear",
+      "at": "2026-11-12T04:15:21.444Z",
+      "pencil": {
+        "visible": true,
+        "title": "Edit name"
+      },
+      "opened": {
+        "title": "",
+        "field": "ZZ TEST 860 Renamed",
+        "profileLine": "Name on WhatsApp: ZZ TEST sim profile 860B",
+        "setLine": "This name was set by staff, 11:11.",
+        "buttons": [
+          "Cancel",
+          "Use the profile name",
+          "Save name"
+        ]
+      },
+      "openedPic": {
+        "picture": "05a-edit-name-dialog.png",
+        "listRows": []
+      },
+      "clearButton": "Use the profile name",
+      "response": {
+        "route": "PATCH /api/inbox/conversations/:id/contact",
+        "status": 200,
+        "sent": {
+          "displayName": null
+        },
+        "body": {
+          "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "channel": "whatsapp",
+          "handle": "+66898600001",
+          "displayName": "ZZ TEST sim profile 860B",
+          "phone": "+66898600001",
+          "language": "en",
+          "erased": false,
+          "profileName": "ZZ TEST sim profile 860B",
+          "nameSetByStaff": false,
+          "nameSetAt": null
+        }
+      },
+      "headerAfterSave": [
+        "Z8",
+        "ZZ TEST sim profile 860B",
+        "·"
+      ],
+      "listAfterSave": [
+        "0 conversations",
+        "No conversations"
+      ],
+      "afterPic": {
+        "picture": "05c-after-save-same-page.png",
+        "listRows": []
+      },
+      "searchAfter": "sim profile 860B",
+      "listSearched": [
+        "0 conversations",
+        "No conversations"
+      ],
+      "searchPic": {
+        "picture": "05d-search-by-shown-name.png",
+        "listRows": []
+      }
+    }
+  },
+  "audit": {
+    "at": "2026-11-12T04:17:10.697Z",
+    "contact": {
+      "route": "GET /api/audit?entityType=inbox.contact&entityId=:contactId",
+      "status": 200,
+      "rows": [
+        {
+          "id": "01a1cdf0-4cbd-7b77-9461-f88f33f1e110",
+          "action": "inbox.contact.create",
+          "createdAt": "2026-11-12T04:07:19.988Z",
+          "entityType": "inbox.contact",
+          "entityId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "actorIsTheRunsAccount": true,
+          "requestId": "dea88bfd-f1de-4632-97cd-13aec00b7ffc",
+          "before": null,
+          "after": {
+            "phone": "+66898600001",
+            "handle": "+66898600001",
+            "channel": "whatsapp",
+            "memberId": null,
+            "createdBy": "staff",
+            "displayName": "ZZ TEST 860 Contact",
+            "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503"
+          }
+        },
+        {
+          "id": "01a1cdf4-2711-7ca8-9a12-0872b46781a0",
+          "action": "inbox.contact.rename",
+          "createdAt": "2026-11-12T04:11:32.492Z",
+          "entityType": "inbox.contact",
+          "entityId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "actorIsTheRunsAccount": true,
+          "requestId": "73ffb759-56a5-4d68-a528-7400a8712249",
+          "before": {
+            "nameSetAt": "2026-11-12T04:07:19.988Z",
+            "displayName": "ZZ TEST 860 Contact",
+            "profileName": "ZZ TEST sim profile 860A",
+            "nameSetByAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+          },
+          "after": {
+            "nameSetAt": "2026-11-12T04:11:32.492Z",
+            "displayName": "ZZ TEST 860 Renamed",
+            "profileName": "ZZ TEST sim profile 860A",
+            "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "nameSetByAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+          }
+        },
+        {
+          "id": "01a1cdf8-23dd-72ca-a101-24693eb8f718",
+          "action": "inbox.contact.rename",
+          "createdAt": "2026-11-12T04:15:53.815Z",
+          "entityType": "inbox.contact",
+          "entityId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+          "actorIsTheRunsAccount": true,
+          "requestId": "ac95b39a-acb7-43bc-969f-1e39b8cd9a8b",
+          "before": {
+            "nameSetAt": "2026-11-12T04:11:32.492Z",
+            "displayName": "ZZ TEST 860 Renamed",
+            "profileName": "ZZ TEST sim profile 860B",
+            "nameSetByAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+          },
+          "after": {
+            "nameSetAt": null,
+            "displayName": "ZZ TEST sim profile 860B",
+            "profileName": "ZZ TEST sim profile 860B",
+            "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+            "nameSetByAccountId": null
+          }
+        }
+      ]
+    },
+    "conversation": {
+      "route": "GET /api/audit?entityType=inbox.conversation&entityId=:conversationId",
+      "status": 200,
+      "actions": [
+        "inbox.conversation.create",
+        "inbox.conversation.route",
+        "inbox.conversation.read",
+        "inbox.conversation.handle"
+      ],
+      "create": [
+        {
+          "id": "01a1cdf0-4cbf-79bb-9249-ecc27fdac639",
+          "action": "inbox.conversation.create",
+          "createdAt": "2026-11-12T04:07:19.988Z",
+          "entityType": "inbox.conversation",
+          "entityId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+          "actorIsTheRunsAccount": true,
+          "requestId": "dea88bfd-f1de-4632-97cd-13aec00b7ffc",
+          "before": null,
+          "after": {
+            "teamId": "01a1562e-64ef-7998-a3de-4b3af63c5fe3",
+            "category": "general",
+            "contactId": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+            "createdBy": "staff",
+            "categorySource": "default",
+            "channelAccountId": "01a156bb-6778-72b0-8237-6028f8874503"
+          }
+        }
+      ]
+    }
+  },
+  "consoleAudit": {
+    "06": {
+      "requestId": "ac95b39a-acb7-43bc-969f-1e39b8cd9a8b",
+      "status": 200,
+      "apiRowsUnfiltered": 50,
+      "note": "the Console applies the request id in the browser (its own line says so)",
+      "rowsShown": [
+        "inbox.contact.rename",
+        "inbox.contact"
+      ],
+      "listPic": "06a-console-activity-filtered.png",
+      "drawerText": [
+        "inbox.contact.rename",
+        "(staff name) · 12 Nov 2026, 11:15:53 GMT+7",
+        "ACTOR",
+        "(staff name)",
+        "BRANCH",
+        "Oto Play Park, Central Floresta",
+        "ENTITY",
+        "inbox.contact",
+        "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+        "WHEN",
+        "12 Nov 2026, 11:15:53 GMT+7",
+        "REQUEST ID",
+        "ac95b39a-acb7-43bc-969f-1e39b8cd9a8b",
+        "You are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account.",
+        "Changes",
+        "Raw record",
+        "Related",
+        "CONVERSATION ID",
+        "was —",
+        "now 01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+        "DISPLAY NAME",
+        "was ZZ TEST 860 Renamed",
+        "now ZZ TEST sim profile 860B",
+        "NAME SET AT",
+        "was 2026-11-12T04:11:32.492Z",
+        "now —",
+        "NAME SET BY ACCOUNT ID",
+        "was 01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "now —"
+      ],
+      "drawerPic": "06b-console-activity-row-open.png"
+    },
+    "06c-create": {
+      "requestId": "dea88bfd-f1de-4632-97cd-13aec00b7ffc",
+      "status": 200,
+      "apiRowsUnfiltered": 50,
+      "note": "the Console applies the request id in the browser (its own line says so)",
+      "rowsShown": [
+        "inbox.contact.create",
+        "inbox.contact"
+      ],
+      "listPic": "06c-createa-console-activity-filtered.png",
+      "drawerText": [
+        "inbox.contact.create",
+        "(staff name) · 12 Nov 2026, 11:07:19 GMT+7",
+        "ACTOR",
+        "(staff name)",
+        "BRANCH",
+        "Oto Play Park, Central Floresta",
+        "ENTITY",
+        "inbox.contact",
+        "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+        "WHEN",
+        "12 Nov 2026, 11:07:19 GMT+7",
+        "REQUEST ID",
+        "dea88bfd-f1de-4632-97cd-13aec00b7ffc",
+        "You are reading these rows unmasked. That read is recorded as audit.read_sensitive against your account.",
+        "Changes",
+        "Raw record",
+        "Related",
+        "CHANNEL",
+        "now whatsapp",
+        "CHANNEL ACCOUNT ID",
+        "now 01a156bb-6778-72b0-8237-6028f8874503",
+        "CONVERSATION ID",
+        "now 01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+        "CREATED BY",
+        "now staff",
+        "DISPLAY NAME",
+        "now ZZ TEST 860 Contact",
+        "HANDLE",
+        "now +66898600001",
+        "MEMBER ID",
+        "now —",
+        "PHONE",
+        "now +66898600001"
+      ],
+      "drawerPic": "06c-createb-console-activity-row-open.png"
+    }
+  },
+  "regression": {
+    "listCount": null,
+    "rawKeysSeen": [],
+    "consoleErrors": [
+      {
+        "at": "2026-11-12T04:08:43.842Z",
+        "text": "Failed to load resource: the server responded with a status of 409 ()"
+      }
+    ],
+    "serverErrors": [],
+    "picture": "07a-regression-team-inbox-list-masked.png",
+    "listCountLine": "50+ conversations",
+    "listApi": {
+      "route": "GET /api/inbox/conversations?limit=1",
+      "status": 200,
+      "keys": [
+        "conversations",
+        "nextCursor",
+        "tabCounts"
+      ]
+    }
+  },
+  "live_end": {
+    "at": "2026-11-12T04:23:00.582Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqjk7brjlhs738gdf9g",
+        "status": "live",
+        "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+        "finishedAt": "2026-11-12T04:05:29.914963Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqjk93bc2fs73dj0mpg",
+        "status": "live",
+        "sha": "dc5f5513ccd9c7ae9bf21f5aa8d06f203b1edfd9",
+        "finishedAt": "2026-11-12T04:02:42.130944Z"
+      }
+    ],
+    "bundle": {
+      "/assets/index-C9QeZagS.js": {
+        "bytes": 287676,
+        "newContact": true,
+        "editName": true,
+        "useProfileName": true,
+        "recordOnly": true
+      }
+    },
+    "allLiveOnSha": true
+  },
+  "signOut": {
+    "at": "2026-11-12T04:23:13.185Z",
+    "signOut": {
+      "inbox": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "console": {
+        "route": "POST /api/auth/sign-out (Console)",
+        "status": 200
+      },
+      "launcher": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      }
+    },
+    "readBack": {
+      "inbox": {
+        "route": "GET /api/inbox/me (inbox)",
+        "status": 401
+      },
+      "console": {
+        "route": "GET /api/me (Console)",
+        "status": 401
+      },
+      "launcher": {
+        "route": "GET /api/me (launcher)",
+        "status": 401
+      }
+    }
+  },
+  "notes": [
+    "05d-search-by-shown-name.png was removed: the thread had been auto-resolved by the assistant, so the Team Inbox search showed 0; 05d-handled-list-search-profile-name.png replaces it",
+    "the Console Activity applies the request id filter in the browser (its own line says so): the create row needed the Action filter too",
+    "every incoming simulator message on Demo WhatsApp · Central Floresta (assistant mode live) started the existing assistant turn: one greeting reply, then an auto-resolve; no extra turn was driven"
+  ]
+}
