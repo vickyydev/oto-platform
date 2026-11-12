@@ -1,0 +1,464 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p4",
+  "startedAt": "2026-11-12T05:39:42.430Z",
+  "step": "4: replays: the first refund again with its own key, and with its action id under a new key",
+  "points": {
+    "4": {
+      "verdict": "PASS",
+      "picture": "04-void-slips-bar-then-kitchen.png",
+      "shows": "F&B sale (French fries to the kitchen, Coke to the bar, cash): the manager refunds the Coke by item -> one bar VOID slip of the Coke, no UPDATED slip (nothing else at the bar), nothing in the kitchen; the rest refunded whole -> one kitchen VOID slip of the fries, nothing at the bar; the first refund replayed with its own key and with its action id under a new key -> the same refund back, no slip printed again",
+      "seen": {
+        "firstRefund": {
+          "button": "Refund ฿95",
+          "status": 200,
+          "number": "Z86101-R-000001",
+          "amountSatang": 9500,
+          "saleStatusAfter": "finalised",
+          "sentBodyKeys": [
+            "mode",
+            "lineIds",
+            "reason",
+            "note",
+            "actionId"
+          ],
+          "sentMode": "items",
+          "sentLineCount": 1
+        },
+        "afterFirst": {
+          "barNew": 1,
+          "kitchenNew": 0,
+          "auditSlips": [
+            "refund 1: bar void printed"
+          ]
+        },
+        "secondRefund": {
+          "button": "Refund ฿175",
+          "status": 200,
+          "number": "Z86101-R-000002",
+          "amountSatang": 17500,
+          "saleStatusAfter": "refunded",
+          "sentMode": "whole"
+        },
+        "afterSecond": {
+          "kitchenNew": 1,
+          "barNew": 0,
+          "auditSlips": [
+            "refund 2: kitchen void printed",
+            "refund 1: bar void printed"
+          ]
+        },
+        "replaySameKey": {
+          "status": 200,
+          "replayHeader": "true",
+          "refundId": "01a1ce45-950f-734a-aac2-53f2fee063ee",
+          "sameRefund": true,
+          "saleStatus": "finalised",
+          "errorCode": null
+        },
+        "replaySameAction": {
+          "status": 200,
+          "replayHeader": "true",
+          "refundId": "01a1ce45-950f-734a-aac2-53f2fee063ee",
+          "sameRefund": true,
+          "saleStatus": "refunded",
+          "errorCode": null
+        },
+        "afterReplays": {
+          "kitchenNew": 0,
+          "barNew": 0,
+          "auditRows": 2,
+          "auditSlips": [
+            "refund 2: kitchen void printed",
+            "refund 1: bar void printed"
+          ]
+        },
+        "refunds": [
+          {
+            "number": "Z86101-R-000001",
+            "amountSatang": 9500,
+            "status": null
+          },
+          {
+            "number": "Z86101-R-000002",
+            "amountSatang": 17500,
+            "status": null
+          }
+        ]
+      }
+    },
+    "4-tickets": {
+      "finaliseJobs": [
+        {
+          "id": "01a1ce45-271c-7e38-b028-86f64c102cfa",
+          "kind": "receipt",
+          "role": "receipt",
+          "device": "ZZ TEST SCRUM-861 receipt printer",
+          "status": "queued",
+          "subjectType": "sale",
+          "reprint": null,
+          "reprintReason": null,
+          "queuedAt": "2026-11-12T05:40:00.868Z"
+        },
+        {
+          "id": "01a1ce45-2721-7edc-a0fb-b1ac228fd842",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "device": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "queued",
+          "subjectType": "sale",
+          "reprint": null,
+          "reprintReason": null,
+          "queuedAt": "2026-11-12T05:40:00.869Z"
+        },
+        {
+          "id": "01a1ce45-2724-73c2-a7ba-6b37a8845468",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "device": "ZZ TEST SCRUM-861 bar printer",
+          "status": "queued",
+          "subjectType": "sale",
+          "reprint": null,
+          "reprintReason": null,
+          "queuedAt": "2026-11-12T05:40:00.870Z"
+        }
+      ],
+      "printed": [
+        {
+          "id": "01a1ce45-2724-73c2-a7ba-6b37a8845468",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "device": "ZZ TEST SCRUM-861 bar printer",
+          "status": "printed",
+          "subjectType": "sale",
+          "reprint": null,
+          "reprintReason": null,
+          "queuedAt": "2026-11-12T05:40:00.870Z"
+        },
+        {
+          "id": "01a1ce45-2721-7edc-a0fb-b1ac228fd842",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "device": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "printed",
+          "subjectType": "sale",
+          "reprint": null,
+          "reprintReason": null,
+          "queuedAt": "2026-11-12T05:40:00.869Z"
+        }
+      ],
+      "lines": [
+        {
+          "id": "01a1ce45-22e4-7b96-8fef-94529085650a",
+          "label": "French fries",
+          "kind": "fnb_item"
+        },
+        {
+          "id": "01a1ce45-22e4-7faf-b63b-4cc2356bbf37",
+          "label": "Coke",
+          "kind": "fnb_item"
+        }
+      ]
+    },
+    "4-detail": {
+      "firstRefund": {
+        "button": "Refund ฿95",
+        "status": 200,
+        "number": "Z86101-R-000001",
+        "amountSatang": 9500,
+        "saleStatusAfter": "finalised",
+        "sentBodyKeys": [
+          "mode",
+          "lineIds",
+          "reason",
+          "note",
+          "actionId"
+        ],
+        "sentMode": "items",
+        "sentLineCount": 1
+      },
+      "afterFirst": {
+        "barNew": 1,
+        "kitchenNew": 0,
+        "auditSlips": [
+          "refund 1: bar void printed"
+        ]
+      },
+      "secondRefund": {
+        "button": "Refund ฿175",
+        "status": 200,
+        "number": "Z86101-R-000002",
+        "amountSatang": 17500,
+        "saleStatusAfter": "refunded",
+        "sentMode": "whole"
+      },
+      "afterSecond": {
+        "kitchenNew": 1,
+        "barNew": 0,
+        "auditSlips": [
+          "refund 2: kitchen void printed",
+          "refund 1: bar void printed"
+        ]
+      },
+      "replaySameKey": {
+        "status": 200,
+        "replayHeader": "true",
+        "refundId": "01a1ce45-950f-734a-aac2-53f2fee063ee",
+        "sameRefund": true,
+        "saleStatus": "finalised",
+        "errorCode": null
+      },
+      "replaySameAction": {
+        "status": 200,
+        "replayHeader": "true",
+        "refundId": "01a1ce45-950f-734a-aac2-53f2fee063ee",
+        "sameRefund": true,
+        "saleStatus": "refunded",
+        "errorCode": null
+      },
+      "afterReplays": {
+        "kitchenNew": 0,
+        "barNew": 0,
+        "auditRows": 2,
+        "auditSlips": [
+          "refund 2: kitchen void printed",
+          "refund 1: bar void printed"
+        ]
+      },
+      "refunds": [
+        {
+          "number": "Z86101-R-000001",
+          "amountSatang": 9500,
+          "status": null
+        },
+        {
+          "number": "Z86101-R-000002",
+          "amountSatang": 17500,
+          "status": null
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "manager",
+      "at": "4: a manager at the same till: History, Refund by item, the Coke",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager",
+      "at": "4: a manager at the same till: History, Refund by item, the Coke",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "manager",
+      "at": "4: a manager at the same till: History, Refund by item, the Coke",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR.QUIC_TOO_MANY_RTOS"
+    },
+    {
+      "page": "till",
+      "at": "4: a manager at the same till: History, Refund by item, the Coke",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR.QUIC_TOO_MANY_RTOS"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": null
+    },
+    {
+      "preview": "p4-kitchen-ticket.png",
+      "role": "kitchen",
+      "seq": 1,
+      "at": "2026-11-12T05:40:03.000Z",
+      "widthDots": 576,
+      "heightDots": 89
+    },
+    {
+      "preview": "p4-bar-ticket.png",
+      "role": "bar",
+      "seq": 1,
+      "at": "2026-11-12T05:40:03.070Z",
+      "widthDots": 576,
+      "heightDots": 87
+    },
+    {
+      "signedIn": "manager",
+      "stationIsOwn": null
+    },
+    {
+      "preview": "p4-bar-void-after-drink-refund.png",
+      "role": "bar",
+      "seq": 2,
+      "at": "2026-11-12T05:40:32.739Z",
+      "widthDots": 576,
+      "heightDots": 196
+    },
+    {
+      "preview": "p4-kitchen-void-after-whole-refund.png",
+      "role": "kitchen",
+      "seq": 2,
+      "at": "2026-11-12T05:41:07.711Z",
+      "widthDots": 576,
+      "heightDots": 196
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:41:56.561Z"
+}

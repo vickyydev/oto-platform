@@ -1,0 +1,166 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p5record",
+  "startedAt": "2026-11-12T05:53:31.648Z",
+  "step": null,
+  "points": {
+    "5": {
+      "verdict": "PASS",
+      "picture": "05-party-slips-change-and-cancel.png",
+      "shows": "Read back from the print record and the audit trail: the party's slip-time run printed a kitchen and a bar slip at the ZZ TEST till; the plan change sent the kitchen one VOID and one UPDATED slip and the bar nothing; the deletion sent a VOID slip each to the kitchen and the bar; no other kitchen or bar job at the till since; the park's party slips station is none again",
+      "seen": {
+        "jobs": [
+          "12:44 kitchen printed",
+          "12:44 bar printed",
+          "12:46 kitchen printed",
+          "12:46 kitchen printed",
+          "12:49 kitchen printed",
+          "12:49 bar printed"
+        ],
+        "printRuns": 1,
+        "planChanges": 1,
+        "cancellations": 1
+      }
+    },
+    "5-record": {
+      "party": "ZZ TEST SCRUM-861 party 1243",
+      "jobsAtTheTillSinceP5": [
+        {
+          "queuedAt": "2026-11-12T05:44:01.326Z",
+          "bangkok": "12:44",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "printed",
+          "reprintOf": null
+        },
+        {
+          "queuedAt": "2026-11-12T05:44:01.327Z",
+          "bangkok": "12:44",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "printer": "ZZ TEST SCRUM-861 bar printer",
+          "status": "printed",
+          "reprintOf": null
+        },
+        {
+          "queuedAt": "2026-11-12T05:46:01.327Z",
+          "bangkok": "12:46",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "printed",
+          "reprintOf": null
+        },
+        {
+          "queuedAt": "2026-11-12T05:46:01.328Z",
+          "bangkok": "12:46",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "printed",
+          "reprintOf": null
+        },
+        {
+          "queuedAt": "2026-11-12T05:49:15.630Z",
+          "bangkok": "12:49",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "printer": "ZZ TEST SCRUM-861 kitchen printer",
+          "status": "printed",
+          "reprintOf": null
+        },
+        {
+          "queuedAt": "2026-11-12T05:49:15.631Z",
+          "bangkok": "12:49",
+          "kind": "bar_ticket",
+          "role": "bar",
+          "printer": "ZZ TEST SCRUM-861 bar printer",
+          "status": "printed",
+          "reprintOf": null
+        }
+      ],
+      "partySlipsPrintAudit": [
+        {
+          "run": 1,
+          "trigger": "schedule",
+          "stationIsOurTill": true,
+          "slips": [
+            "kitchen printed",
+            "bar printed"
+          ]
+        }
+      ],
+      "partySlipsChangeAudit": [
+        {
+          "at": "2026-11-12T05:46:01.423Z",
+          "bangkok": "12:46",
+          "run": 1,
+          "cancelled": false,
+          "stationIsOurTill": true,
+          "slips": [
+            "kitchen void printed",
+            "kitchen updated printed"
+          ]
+        },
+        {
+          "at": "2026-11-12T05:49:15.820Z",
+          "bangkok": "12:49",
+          "run": 2,
+          "cancelled": true,
+          "stationIsOurTill": true,
+          "slips": [
+            "kitchen void printed",
+            "bar void printed"
+          ]
+        }
+      ],
+      "partySlipsStationIdNow": null,
+      "partyReadNow": {
+        "till": 404
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:53:32.847Z"
+}

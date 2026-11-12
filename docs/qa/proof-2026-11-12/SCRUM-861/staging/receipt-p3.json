@@ -1,0 +1,186 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p3",
+  "startedAt": "2026-11-12T05:26:27.005Z",
+  "step": "3: History -> the ordinary sale -> Add time +1 hour -> Cash",
+  "points": {
+    "3": {
+      "verdict": "PASS",
+      "picture": "03-add-time-bands-reprinted-new-leave-time.png",
+      "shows": "History -> Add time \"+1 hour\" on the ordinary sale, cash: the finalise answer carries a copy of each band on its own role (kids_band, adult_band) with \"Extra time added (+60 min)\"; both printers printed one band each",
+      "seen": {
+        "extensionSelection": "bands",
+        "finaliseNotes": [],
+        "copies": [
+          {
+            "id": "01a1ce39-3435-7c0d-9012-f63f62d29d27",
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST SCRUM-861 kids band printer",
+            "status": "queued",
+            "subjectType": "band",
+            "reprint": "copy",
+            "reprintReason": "Extra time added (+60 min)",
+            "queuedAt": "2026-11-12T05:26:58.805Z"
+          },
+          {
+            "id": "01a1ce39-343c-7726-b396-a44dd73e8f1a",
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "ZZ TEST SCRUM-861 adult band printer",
+            "status": "queued",
+            "subjectType": "band",
+            "reprint": "copy",
+            "reprintReason": "Extra time added (+60 min)",
+            "queuedAt": "2026-11-12T05:26:58.806Z"
+          }
+        ],
+        "sourceSaleBandJobs": [
+          {
+            "id": "01a1ce39-343c-7726-b396-a44dd73e8f1a",
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "ZZ TEST SCRUM-861 adult band printer",
+            "status": "printed",
+            "subjectType": "band",
+            "reprint": "copy",
+            "reprintReason": "Extra time added (+60 min)",
+            "queuedAt": "2026-11-12T05:26:58.806Z"
+          },
+          {
+            "id": "01a1ce39-3435-7c0d-9012-f63f62d29d27",
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST SCRUM-861 kids band printer",
+            "status": "printed",
+            "subjectType": "band",
+            "reprint": "copy",
+            "reprintReason": "Extra time added (+60 min)",
+            "queuedAt": "2026-11-12T05:26:58.805Z"
+          },
+          {
+            "id": "01a1ce36-e3ff-7d5b-aa6e-44f09b75897f",
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "ZZ TEST SCRUM-861 adult band printer",
+            "status": "printed",
+            "subjectType": "band",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:24:26.122Z"
+          },
+          {
+            "id": "01a1ce36-e3fa-7759-84ad-87f11adbf2a0",
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST SCRUM-861 kids band printer",
+            "status": "printed",
+            "subjectType": "band",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:24:26.121Z"
+          }
+        ],
+        "kidsNew": 1,
+        "adultNew": 1,
+        "dropoffNew": 0
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": null
+    },
+    {
+      "preview": "p3-kids-band-after-add-time.png",
+      "role": "kids_band",
+      "seq": 2,
+      "at": "2026-11-12T05:27:03.075Z",
+      "widthDots": 400,
+      "heightDots": 271
+    },
+    {
+      "preview": "p3-adult-band-after-add-time.png",
+      "role": "adult_band",
+      "seq": 2,
+      "at": "2026-11-12T05:27:03.160Z",
+      "widthDots": 400,
+      "heightDots": 253
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:27:45.682Z"
+}

@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "odd",
+  "startedAt": "2026-11-12T05:54:32.635Z",
+  "step": null,
+  "points": {
+    "6-no-address": {
+      "sale": "Z86101-000001",
+      "jobs": [
+        {
+          "kind": "kids_wristband",
+          "role": "dropoff_band",
+          "printer": "ZZ TEST SCRUM-861 drop-off band printer",
+          "status": "skipped",
+          "error": "DEVICE_NO_ADDRESS"
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "printer": "ZZ TEST SCRUM-861 receipt printer",
+          "status": "skipped",
+          "error": "DEVICE_NO_ADDRESS"
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:54:34.258Z"
+}

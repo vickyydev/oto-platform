@@ -1,0 +1,41 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "retake",
+  "startedAt": "2026-11-12T05:37:16.777Z",
+  "step": "History -> the first drop-off sale: the reprint record",
+  "points": {},
+  "requests": [],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": null
+    },
+    {
+      "reprintHistory": "REPRINT HISTORY Kids bracelet [band code] · ZZ TEST Mali 861 12 Nov, 12:29 Printed · ZZ TEST SCRUM-861 kids band printer Copy of the kids bracelet printed 12 Nov, 12:21 · Reprint from History · by [staff]"
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:38:21.208Z"
+}

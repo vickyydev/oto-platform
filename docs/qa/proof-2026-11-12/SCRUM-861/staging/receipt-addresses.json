@@ -1,0 +1,78 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "addresses",
+  "startedAt": "2026-11-12T05:18:00.149Z",
+  "step": "the ZZ TEST printers get their simulator addresses",
+  "points": {},
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "role": "kids_band",
+      "address": "192.0.2.86:9101"
+    },
+    {
+      "role": "adult_band",
+      "address": "192.0.2.86:9102"
+    },
+    {
+      "role": "dropoff_band",
+      "address": "192.0.2.86:9103"
+    },
+    {
+      "role": "receipt",
+      "address": "192.0.2.86:9104"
+    },
+    {
+      "role": "kitchen",
+      "address": "192.0.2.86:9105"
+    },
+    {
+      "role": "bar",
+      "address": "192.0.2.86:9106"
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:18:02.838Z"
+}

@@ -1,0 +1,192 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p2a",
+  "startedAt": "2026-11-12T05:21:17.274Z",
+  "step": "2a: drop-off sale, a child aged 6, no adult, the form, cash, Check in now",
+  "points": {
+    "2a": {
+      "verdict": "PASS",
+      "picture": "02-dropoff-band-on-dropoff-printer.png",
+      "shows": "Drop-off sale (child 6, no adult, the form, cash): Check in now printed the child's band as a kids_wristband job with role dropoff_band on the ZZ TEST drop-off band printer; nothing on the kids band printer",
+      "seen": {
+        "finaliseJobs": [
+          {
+            "id": "01a1ce34-9beb-730f-9fb9-7cfcd9636363",
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "ZZ TEST SCRUM-861 receipt printer",
+            "status": "queued",
+            "subjectType": "sale",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:21:56.656Z"
+          }
+        ],
+        "checkInJobs": [
+          {
+            "id": "01a1ce34-a02e-7a24-ada8-05585fe6da9e",
+            "kind": "kids_wristband",
+            "role": "dropoff_band",
+            "device": "ZZ TEST SCRUM-861 drop-off band printer",
+            "status": "queued",
+            "subjectType": "band",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:21:57.780Z"
+          }
+        ],
+        "saleJobsPrinted": [
+          {
+            "id": "01a1ce34-a02e-7a24-ada8-05585fe6da9e",
+            "kind": "kids_wristband",
+            "role": "dropoff_band",
+            "device": "ZZ TEST SCRUM-861 drop-off band printer",
+            "status": "printed",
+            "subjectType": "band",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:21:57.780Z"
+          }
+        ],
+        "dropoffPrinterNew": 1,
+        "kidsPrinterNew": 0
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "2a: drop-off sale, a child aged 6, no adult, the form, cash, Check in now",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "till",
+      "at": "2a: drop-off sale, a child aged 6, no adult, the form, cash, Check in now",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": null
+    },
+    {
+      "preview": "p2a-dropoff-band.png",
+      "role": "dropoff_band",
+      "seq": 1,
+      "at": "2026-11-12T05:22:02.507Z",
+      "widthDots": 400,
+      "heightDots": 304
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:22:59.023Z"
+}

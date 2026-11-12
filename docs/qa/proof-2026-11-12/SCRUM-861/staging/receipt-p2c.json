@@ -1,0 +1,228 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p2c",
+  "startedAt": "2026-11-12T05:28:44.496Z",
+  "step": "2c: a new drop-off sale with no drop-off printer",
+  "points": {
+    "2c": {
+      "verdict": "PASS",
+      "picture": "02c-dropoff-fallback-to-kids-printer.png",
+      "shows": "Drop-off printer removed in the Console: History's \"Child bracelet\" reprint of the first drop-off band and a new drop-off child's band both print on kids_band (the ZZ TEST kids band printer), the drop-off badge on the paper",
+      "seen": {
+        "consoleField": "Not set",
+        "reprintJobs": [
+          {
+            "id": "01a1ce3b-a715-7881-8fb0-f36ac1c1f045",
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST SCRUM-861 kids band printer",
+            "status": "queued",
+            "subjectType": "band",
+            "reprint": "copy",
+            "reprintReason": "Reprint from History",
+            "queuedAt": "2026-11-12T05:29:38.317Z"
+          }
+        ],
+        "newDropoffJobs": [
+          {
+            "id": "01a1ce3c-1092-79b3-97de-712d650cfb4d",
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST SCRUM-861 kids band printer",
+            "status": "queued",
+            "subjectType": "band",
+            "reprint": null,
+            "reprintReason": null,
+            "queuedAt": "2026-11-12T05:30:05.310Z"
+          }
+        ],
+        "reprintPreviewIdenticalToFirstPrint": true
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "2c: Console, the drop-off band printer set back to \"Not set\"",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "2c: Console, the drop-off band printer set back to \"Not set\"",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "afterRemoval": {
+        "consoleField": "Not set",
+        "rolesReadBack": [
+          "adult_band",
+          "bar",
+          "kids_band",
+          "kitchen",
+          "receipt"
+        ]
+      }
+    },
+    {
+      "consoleSignOut": 200,
+      "me": 401
+    },
+    {
+      "signedIn": "till",
+      "stationIsOwn": null
+    },
+    {
+      "preview": "p2c-reprint-of-dropoff-band-on-kids.png",
+      "role": "kids_band",
+      "seq": 3,
+      "at": "2026-11-12T05:29:42.649Z",
+      "widthDots": 400,
+      "heightDots": 304
+    },
+    {
+      "preview": "p2c-new-dropoff-band-on-kids.png",
+      "role": "kids_band",
+      "seq": 4,
+      "at": "2026-11-12T05:30:07.961Z",
+      "widthDots": 400,
+      "heightDots": 304
+    },
+    {
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:30:37.700Z"
+}

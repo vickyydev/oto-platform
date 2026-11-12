@@ -1,0 +1,113 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p1",
+  "startedAt": "2026-11-12T05:04:09.008Z",
+  "step": "1: reopen the station form",
+  "points": {
+    "1": {
+      "verdict": "FAIL",
+      "picture": "01-console-station-form-dropoff-band-printer-kept.png",
+      "shows": "The till's station form shows \"Drop-off band printer\" (band printers only); the ZZ TEST drop-off band printer chosen and saved (PATCH 200); reopened, it is kept; the api reads the role back",
+      "seen": {
+        "fieldBefore": "Not set",
+        "optionsOffered": [
+          "Not set",
+          "Band Printer (adults) — Band printer",
+          "Band Printer (kids) — Band printer",
+          "ZZ TEST SCRUM-861 adult band printer — Band printer",
+          "ZZ TEST SCRUM-861 drop-off band printer — Band printer",
+          "ZZ TEST SCRUM-861 kids band printer — Band printer"
+        ],
+        "fieldLabelsInOrder": [
+          "RECEIPT PRINTER Not set Native payment shop-inquiry-confirm 0d008153 printer — Receipt printer Native payment shop-partial-refused 0d008153 printer — Receipt printer Receipt Printer 1 — Receipt printer Receipt Printer 2 — Receipt printer ZZ TEST SCRUM-861 receipt printer — Receipt printer",
+          "KIDS' BAND PRINTER Not set Band Printer (adults) — Band printer Band Printer (kids) — Band printer ZZ TEST SCRUM-861 adult band printer — Band printer ZZ TEST SCRUM-861 drop-off band printer — Band printer ZZ TEST SCRUM-861 kids band printer — Band printer",
+          "ADULT BAND PRINTER Not set Band Printer (adults) — Band printer Band Printer (kids) — Band printer ZZ TEST SCRUM-861 adult band printer — Band printer ZZ TEST SCRUM-861 drop-off band printer — Band printer ZZ TEST SCRUM-861 kids band printer — Band printer",
+          "DROP-OFF BAND PRINTER Not set Band Printer (adults) — Band printer Band Printer (kids) — Band printer ZZ TEST SCRUM-861 adult band printer — Band printer ZZ TEST SCRUM-861 drop-off band printer — Band printer ZZ TEST SCRUM-861 kids band printer — Band printer",
+          "SCANNER Not set Scanner 1 — Scanner",
+          "CARD TERMINAL Not set EDC 1 — Payment terminal EDC 3 — Payment terminal Native payment shop-inquiry-confirm 0d008153 terminal — Payment terminal Native payment shop-partial-refused 0d008153 terminal — Payment terminal ZZ TEST setup traps terminal 20261102 — Payment terminal",
+          "QR TERMINAL Not set EDC 1 — Payment terminal EDC 3 — Payment terminal Native payment shop-inquiry-confirm 0d008153 terminal — Payment terminal Native payment shop-partial-refused 0d008153 terminal — Payment terminal ZZ TEST setup traps terminal 20261102 — Payment terminal",
+          "CASH DRAWER Nothing on this box fits",
+          "KITCHEN PRINTER Not set Kitchen Printer — Kitchen printer ZZ TEST SCRUM-861 kitchen printer — Kitchen printer Native payment shop-inquiry-confirm 0d008153 printer — Receipt printer Native payment shop-partial-refused 0d008153 printer — Receipt printer Receipt Printer 1 — Receipt printer Receipt Printer 2 — Receipt printer ZZ TEST SCRUM-861 receipt printer — Receipt printer",
+          "BAR PRINTER Not set ZZ TEST SCRUM-861 bar printer — Bar printer Native payment shop-inquiry-confirm 0d008153 printer — Receipt printer Native payment shop-partial-refused 0d008153 printer — Receipt printer Receipt Printer 1 — Receipt printer Receipt Printer 2 — Receipt printer ZZ TEST SCRUM-861 receipt printer — Receipt printer",
+          "CARDS Not set The card terminal above On the terminal itself, recorded by hand",
+          "QR Not set The payment gateway, on the customer display The QR terminal above Not taken here"
+        ],
+        "keptIsTheZzPrinter": false,
+        "readBack": [
+          {
+            "role": "adult_band",
+            "label": "ZZ TEST SCRUM-861 adult band printer"
+          },
+          {
+            "role": "bar",
+            "label": "ZZ TEST SCRUM-861 bar printer"
+          },
+          {
+            "role": "dropoff_band",
+            "label": "ZZ TEST SCRUM-861 drop-off band printer"
+          },
+          {
+            "role": "kids_band",
+            "label": "ZZ TEST SCRUM-861 kids band printer"
+          },
+          {
+            "role": "kitchen",
+            "label": "ZZ TEST SCRUM-861 kitchen printer"
+          },
+          {
+            "role": "receipt",
+            "label": "ZZ TEST SCRUM-861 receipt printer"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "kids_band",
+        "kitchen",
+        "receipt",
+        "dropoff_band"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-12T05:04:27.253Z"
+}

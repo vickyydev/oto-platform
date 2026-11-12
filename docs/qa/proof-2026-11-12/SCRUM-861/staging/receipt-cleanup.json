@@ -1,0 +1,340 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "cleanup",
+  "startedAt": "2026-11-12T05:53:57.119Z",
+  "step": null,
+  "points": {
+    "cleanup": [
+      {
+        "what": "the till's sales",
+        "sales": [
+          "refunded 270",
+          "finalised 915",
+          "finalised 300",
+          "finalised 1040",
+          "finalised 915",
+          "finalised 915"
+        ]
+      },
+      {
+        "what": "stay of drop1",
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "what": "stay of drop1b",
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "what": "stay of drop2",
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "what": "number drop1",
+        "member": "archived",
+        "stillFound": false
+      },
+      {
+        "what": "number ordinary",
+        "member": "none"
+      },
+      {
+        "what": "number drop2",
+        "member": "archived",
+        "stillFound": false
+      },
+      {
+        "what": "number drop1b",
+        "member": "archived",
+        "stillFound": false
+      },
+      {
+        "what": "the branch's party slips station",
+        "partySlipsStationId": null
+      },
+      {
+        "what": "the ZZ TEST party",
+        "tillRead": 404
+      },
+      {
+        "what": "the ZZ TEST till",
+        "archived": true,
+        "devices": 0
+      },
+      {
+        "what": "the ZZ TEST printers",
+        "archived": [
+          "kids_band",
+          "adult_band",
+          "dropoff_band",
+          "receipt",
+          "kitchen",
+          "bar"
+        ]
+      }
+    ]
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:54:02.975Z"
+}

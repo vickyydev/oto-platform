@@ -1,0 +1,134 @@
+{
+  "ticket": "SCRUM-861",
+  "phase": "p1",
+  "startedAt": "2026-11-12T05:07:29.185Z",
+  "step": "1: a fresh page, the form again",
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "picture": "01-console-station-form-dropoff-band-printer-kept.png",
+      "shows": "The till's station form asks for a \"Drop-off band printer\" right after the adult band printer, offering band printers only; the ZZ TEST drop-off band printer chosen and saved (PATCH 200); reopened (and again after a reload) it is kept; the api reads the role back",
+      "seen": {
+        "fieldBefore": "Not set",
+        "optionsOffered": [
+          "Not set",
+          "Band Printer (adults) — Band printer",
+          "Band Printer (kids) — Band printer",
+          "ZZ TEST SCRUM-861 adult band printer — Band printer",
+          "ZZ TEST SCRUM-861 drop-off band printer — Band printer",
+          "ZZ TEST SCRUM-861 kids band printer — Band printer"
+        ],
+        "deviceFieldsInOrder": [
+          "RECEIPT PRINTER Not set",
+          "KIDS' BAND PRINTER Not",
+          "ADULT BAND PRINTER Not",
+          "DROP-OFF BAND PRINTER Not",
+          "SCANNER Not set Scanner",
+          "CARD TERMINAL Not set",
+          "QR TERMINAL Not set",
+          "CASH DRAWER Nothing on",
+          "KITCHEN PRINTER Not set",
+          "BAR PRINTER Not set"
+        ],
+        "configVersionAfterSave": 6,
+        "keptIsTheZzPrinter": true,
+        "keptAfterReload": true,
+        "readBack": [
+          {
+            "role": "adult_band",
+            "label": "ZZ TEST SCRUM-861 adult band printer"
+          },
+          {
+            "role": "bar",
+            "label": "ZZ TEST SCRUM-861 bar printer"
+          },
+          {
+            "role": "dropoff_band",
+            "label": "ZZ TEST SCRUM-861 drop-off band printer"
+          },
+          {
+            "role": "kids_band",
+            "label": "ZZ TEST SCRUM-861 kids band printer"
+          },
+          {
+            "role": "kitchen",
+            "label": "ZZ TEST SCRUM-861 kitchen printer"
+          },
+          {
+            "role": "receipt",
+            "label": "ZZ TEST SCRUM-861 receipt printer"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "kids_band",
+        "kitchen",
+        "receipt",
+        "dropoff_band"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "resetBeforeRerun": "drop-off band printer unassigned through the api, the other five kept"
+    },
+    {
+      "consoleSignOut": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T05:08:52.781Z"
+}
