@@ -20,8 +20,15 @@ import {
   CalendarClock,
   ShieldCheck,
   Wallet,
+  Ban,
 } from 'lucide-react';
 import { WaActionPanel } from '@/components/dropoff/WaActionPanel';
+import {
+  bookedForLabel,
+  boardBookingOf,
+  cancelBookingBlockedBy,
+  type CancellableBooking,
+} from '@/components/dropoff/CancelBookingDialog';
 
 interface MobileChildDetailProps {
   family: CheckIn[];
@@ -40,7 +47,11 @@ interface MobileChildDetailProps {
   onSaveAndResend: (checkIn: CheckIn, newPhone: string, newChannel: ContactChannel) => void;
   /** Opens the AuthorizedPickupSheet for this family's registration. */
   onManagePickups: (checkIn: CheckIn) => void;
+  /** SCRUM-886 — "Cancel booking" on a waiting, unpaid family: opens the shared confirm. */
+  onCancelBooking?: (booking: CancellableBooking) => void;
 }
+
+const NO_SALE: ReadonlySet<string> = new Set();
 
 const fmtTime = (iso?: string) =>
   iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -224,6 +235,7 @@ export function MobileChildDetail({
   onMarkFailed,
   onSaveAndResend,
   onManagePickups,
+  onCancelBooking,
 }: MobileChildDetailProps) {
   const rep = family[0];
   const isMulti = family.length > 1;
@@ -263,6 +275,11 @@ export function MobileChildDetail({
         ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
         : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
 
+  // SCRUM-886 — the picker's Cancel booking and its refusals, as on the desk board.
+  const cancellable = onCancelBooking ? boardBookingOf(family) : null;
+  const cancelBlock = cancellable ? cancelBookingBlockedBy(cancellable, NO_SALE) : null;
+  const bookedFor = bookedForLabel(family);
+
   const headerTitle = isMulti
     ? `${rep.parentName} · ${family.length} kids`
     : family[0].childName;
@@ -296,6 +313,12 @@ export function MobileChildDetail({
               )}
             </div>
             <p className="text-xs text-muted-foreground font-mono">{rep.phone}</p>
+            {bookedFor && (
+              <p className="flex items-center gap-1 text-xs font-semibold text-amber-300">
+                <CalendarClock className="w-3.5 h-3.5" />
+                {bookedFor}
+              </p>
+            )}
           </div>
 
           {/* WA connection block */}
@@ -447,6 +470,21 @@ export function MobileChildDetail({
             <LogOut className="w-5 h-5" />
             Check Out
           </Button>
+        )}
+
+        {cancellable && (
+          <>
+            <Button
+              variant="outline"
+              className="w-full h-12 gap-2"
+              disabled={cancelBlock !== null}
+              onClick={() => onCancelBooking?.(cancellable)}
+            >
+              <Ban className="w-4 h-4" />
+              Cancel booking
+            </Button>
+            {cancelBlock && <p className="text-xs text-muted-foreground">{cancelBlock}</p>}
+          </>
         )}
       </div>
     </div>

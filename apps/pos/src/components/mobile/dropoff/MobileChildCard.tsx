@@ -3,6 +3,7 @@ import { CheckIn } from '@/types';
 import { remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus } from '@/lib/waConnection';
 import { WaChip } from '@/components/dropoff/WaChip';
+import { bookedForLabel } from '@/components/dropoff/CancelBookingDialog';
 import { AlertTriangle, Clock, Users, CalendarClock, LogOut } from 'lucide-react';
 
 interface MobileChildCardProps {
@@ -165,6 +166,8 @@ export function MobileChildCard({ family, onTap }: MobileChildCardProps) {
   const rep = family[0];
   const isMulti = family.length > 1;
   const waStatus = deriveWaStatus(rep);
+  // SCRUM-886 — a waiting family for another day says which.
+  const bookedFor = bookedForLabel(family);
 
   const allSameStatus = family.every((c) => c.status === family[0].status);
   const showPerChildStatus = !allSameStatus;
@@ -202,6 +205,12 @@ export function MobileChildCard({ family, onTap }: MobileChildCardProps) {
           {waStatus && (
             <div className="mt-0.5">
               <WaChip status={waStatus} channel={rep.contactMethod} />
+            </div>
+          )}
+          {bookedFor && (
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-300 mt-0.5">
+              <CalendarClock className="w-3 h-3" />
+              {bookedFor}
             </div>
           )}
         </div>

@@ -551,6 +551,8 @@ export interface ApiContact {
 export interface ApiBoardChild extends ApiCheckin {
   nannyName: string | null;
   checkedOutAt: string | null;
+  /** SCRUM-886 — set on a waiting stay for another trading day than today; absent on an older box copy. */
+  bookedForDate?: string | null;
 }
 
 export interface ApiBoardFamily {
@@ -732,6 +734,7 @@ export function boardChildToCheckIn(c: ApiBoardChild, fam: ApiBoardFamily, photo
     ...(c.checkedInAt ? { checkedInAt: c.checkedInAt } : {}),
     ...(c.checkedOutAt ? { checkedOutAt: c.checkedOutAt } : {}),
     ...(c.bookedMinutes != null ? { bookedDurationMinutes: c.bookedMinutes } : {}),
+    ...(c.bookedForDate ? { bookedForDate: c.bookedForDate } : {}),
     ...(fam.contact
       ? {
           waConnection: {

@@ -5,6 +5,7 @@ import { CheckIn, ContactChannel } from '@/types';
 import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from './WaChip';
+import { bookedForLabel, boardBookingOf, cancelBookingBlockedBy, type CancellableBooking } from './CancelBookingDialog';
 import {
   MessageCircle,
   UserPlus,
@@ -19,6 +20,7 @@ import {
   BadgeCheck,
   ShieldCheck,
   Wallet,
+  Ban,
 } from 'lucide-react';
 import { WaActionPanel } from './WaActionPanel';
 
@@ -41,7 +43,14 @@ interface FamilyCheckInCardProps {
   onSaveAndResend: (checkIn: CheckIn, newPhone: string, newChannel: ContactChannel) => void;
   /** Opens the AuthorizedPickupSheet for this family's registration. */
   onManagePickups: (checkIn: CheckIn) => void;
+  /**
+   * SCRUM-886 — "Cancel booking" on a waiting, unpaid family, as the till's
+   * Add drop-off picker offers it (SCRUM-862): opens the shared confirm.
+   */
+  onCancelBooking?: (booking: CancellableBooking) => void;
 }
+
+const NO_SALE: ReadonlySet<string> = new Set();
 
 function useElapsed(sinceISO?: string): string {
   const [, tick] = useState(0);
@@ -205,6 +214,7 @@ export function FamilyCheckInCard({
   onMarkFailed,
   onSaveAndResend,
   onManagePickups,
+  onCancelBooking,
 }: FamilyCheckInCardProps) {
   const rep = family[0];
   const isMulti = family.length > 1;
@@ -230,6 +240,13 @@ export function FamilyCheckInCard({
   const checkInLabel = (children: readonly CheckIn[]) =>
     namedCheckIns ? <span className={NAMED_CHECK_IN}>Check in {childNames(children)}</span> : 'Check in';
 
+  // SCRUM-886 — the picker's Cancel booking, with its refusals: hidden when
+  // every waiting child is paid, disabled with the reason while one is paid or
+  // a sibling is already checked in. The board holds no sale of its own.
+  const cancellable = onCancelBooking ? boardBookingOf(family) : null;
+  const cancelBlock = cancellable ? cancelBookingBlockedBy(cancellable, NO_SALE) : null;
+  const bookedFor = bookedForLabel(family);
+
   return (
     <Card className="p-4 flex flex-col gap-3 bg-card/50">
       {/* Family header: parent info + child count */}
@@ -245,6 +262,12 @@ export function FamilyCheckInCard({
             )}
           </div>
           <div className="text-xs text-muted-foreground font-mono truncate mt-0.5">{rep.phone}</div>
+          {bookedFor && (
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-300 mt-0.5">
+              <CalendarClock className="w-3 h-3" />
+              {bookedFor}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -374,7 +397,21 @@ export function FamilyCheckInCard({
             Check Out
           </Button>
         )}
+
+        {cancellable && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 gap-1.5"
+            disabled={cancelBlock !== null}
+            onClick={() => onCancelBooking?.(cancellable)}
+          >
+            <Ban className="w-4 h-4" />
+            Cancel booking
+          </Button>
+        )}
       </div>
+      {cancelBlock && <p className="text-xs text-muted-foreground">{cancelBlock}</p>}
     </Card>
   );
 }

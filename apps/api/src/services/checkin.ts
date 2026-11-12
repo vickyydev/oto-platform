@@ -349,6 +349,20 @@ async function bookingDatesOf(db: Exec, operatorId: string, registrationIds: rea
 }
 
 /**
+ * SCRUM-862 — the trading day a waiting stay is FOR: the online booking's
+ * visit date, else the booked start, else the day it was registered, in the
+ * branch's timezone and trading day. One rule for the picker's day list and
+ * the board's "Booked for" line (SCRUM-886).
+ */
+function stayDateOf(
+  s: { registrationId: string; scheduledFor: Date | null; createdAt: Date },
+  bookingDates: ReadonlyMap<string, string>,
+  day: { timezone: string; dayStartMinutes: number },
+): string {
+  return bookingDates.get(s.registrationId) ?? businessDate(s.scheduledFor ?? s.createdAt, day.timezone, day.dayStartMinutes);
+}
+
+/**
  * The registrations still waiting for their children to be checked in, for
  * the AddDropOffModal (prototype `getRegistrationsAwaitingCheckIn`): every
  * registration at the branch with at least one child `registered`.
@@ -408,12 +422,7 @@ export async function registrationsAwaitingCheckIn(
   );
   const forToday = new Set(
     waiting
-      .filter(
-        (s) =>
-          named !== null ||
-          (bookingDates.get(s.registrationId) ??
-            businessDate(s.scheduledFor ?? s.createdAt, day.timezone, day.dayStartMinutes)) === day.date,
-      )
+      .filter((s) => named !== null || stayDateOf(s, bookingDates, day) === day.date)
       .map((s) => s.id),
   );
   const out: RegistrationView[] = [];
@@ -1391,6 +1400,12 @@ export interface BoardChild extends Omit<CheckinView, 'status'> {
   status: Exclude<CheckinStatus, 'cancelled'>;
   nannyName: string | null;
   checkedOutAt: string | null;
+  /**
+   * SCRUM-886 — a waiting stay that is for another trading day than today
+   * (`stayDateOf`): that day, so the board can say a leftover is old. Null
+   * for a stay that is for today, or not waiting; absent outside the board.
+   */
+  bookedForDate?: string | null;
 }
 
 export interface BoardFamily {
@@ -1436,6 +1451,7 @@ function boardChildOf(
   nannyName: string | null,
   paidOnline?: PaidOnlineBooking | null,
   paidAtTill?: PaidAtTill | null,
+  bookedForDate?: string | null,
 ): BoardChild {
   const view = checkinViewOf(row);
   if (view.status === 'cancelled') throw new Error(`A cancelled stay (${row.id}) is never on the board`);
@@ -1446,6 +1462,7 @@ function boardChildOf(
     checkedOutAt: row.checkedOutAt?.toISOString() ?? null,
     ...(paidOnline !== undefined ? { paidOnline } : {}),
     ...(paidAtTill !== undefined ? { paidAtTill } : {}),
+    ...(bookedForDate !== undefined ? { bookedForDate } : {}),
   };
 }
 
@@ -1600,6 +1617,19 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
   for (const s of stays) counts[tabOfStay(s.status)] += 1;
   const paidOnline = await paidOnlineStaysOf(db, operatorId, stays.filter((s) => s.status === 'registered'));
   const paidAtTill = await paidAtTillStaysOf(db, operatorId, stays.filter((s) => s.status === 'registered'));
+  // SCRUM-886 — a waiting stay for another day says which (the leftovers the
+  // picker no longer lists stay here, where they can be cancelled).
+  const day = await tradingDayOf(db, branchId, now);
+  const bookingDates = await bookingDatesOf(
+    db,
+    operatorId,
+    regs.filter((r) => r.source === 'booking').map((r) => r.id),
+  );
+  const otherDayOf = (s: CheckinRow): string | null => {
+    if (s.status !== 'registered') return null;
+    const date = stayDateOf(s, bookingDates, day);
+    return date === day.date ? null : date;
+  };
 
   const families: BoardFamily[] = regs.map((r) => {
     const children = (byReg.get(r.id) ?? []).map((s) =>
@@ -1608,6 +1638,7 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
         s.nannyId ? (names.get(s.nannyId) ?? null) : null,
         paidOnline.get(s.id) ?? null,
         paidAtTill.get(s.id) ?? null,
+        otherDayOf(s),
       ),
     );
     return {

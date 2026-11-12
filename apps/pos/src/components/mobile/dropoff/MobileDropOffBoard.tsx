@@ -38,6 +38,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { OverstayBanner } from '@/components/dropoff/OverstayBanner';
 import { AssignNannyModal } from '@/components/dropoff/AssignNannyModal';
 import { EditCheckInModal } from '@/components/dropoff/EditCheckInModal';
+import { CancelBookingDialog, type CancellableBooking } from '@/components/dropoff/CancelBookingDialog';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import { AuthorizedPickupSheet } from '@/components/shared/AuthorizedPickupSheet';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
@@ -473,6 +474,10 @@ export function MobileDropOffBoard() {
     setView('board');
     setSelectedRegId(null);
   };
+
+  // SCRUM-886 — the picker's Cancel booking on the board: the shared confirm,
+  // then the family leaves the board and the counts are read again.
+  const [cancelFor, setCancelFor] = useState<CancellableBooking | null>(null);
 
   // ── Platform handlers (the desktop board's calls) ──────────────────────────
 
@@ -980,8 +985,18 @@ export function MobileDropOffBoard() {
           onMarkFailed={(c) => void handleMarkFailed(c)}
           onSaveAndResend={(c, phone, channel) => void handleSaveAndResend(c, phone, channel)}
           onManagePickups={handleManagePickups}
+          onCancelBooking={setCancelFor}
         />
       )}
+
+      <CancelBookingDialog
+        booking={cancelFor}
+        onClose={() => setCancelFor(null)}
+        onCancelled={() => {
+          closeDetail();
+          refresh();
+        }}
+      />
 
       {/* ── Check-out full-screen (above detail / board) ── */}
       {checkOutFor && (

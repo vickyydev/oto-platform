@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,12 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CANCEL_REASON_MAX_LENGTH } from '@oto/shared';
 import { CheckIn, DropOffServiceType } from '@/types';
 import { useBranch } from '@/branch/BranchContext';
 import { toast } from '@/hooks/use-toast';
 import { apiCheckinToCheckIn, checkinApi, TILL_NOT_LINKED, type ApiRegistration } from '@/api/checkin';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { CancelBookingDialog, cancelBookingBlockedBy } from '@/components/dropoff/CancelBookingDialog';
 import { Baby, AlertTriangle, Ban, UserPlus, Phone, X, CheckCircle2, HandHeart, UserCheck } from 'lucide-react';
 
 /** One waiting registration as the picker lists it (prototype `RegistrationGroup`). */
@@ -50,28 +49,8 @@ interface AddDropOffModalProps {
   onAttach: (children: CheckIn[], service?: DropOffServiceType) => void;
 }
 
-/**
- * SCRUM-862 — why a family's "Cancel booking" is not offered right now, or
- * null when it is. A child already on this sale is cancelled by taking them
- * off the sale first (the platform refuses a sale under a cancelled stay); a
- * booking with ANY child paid for or already checked in is handled through its
- * sale: the platform refuses the whole press then (CHECKIN_CANCEL_PAID,
- * CHECKIN_CANCEL_CHECKED_IN), so the till never offers a press that can only
- * be refused.
- */
-export function cancelBookingBlockedBy(
-  group: Pick<RegistrationGroup, 'children' | 'checkedIn'>,
-  attached: ReadonlySet<string>,
-): string | null {
-  const chargeable = group.children.filter((c) => !c.paidOnline && !c.paidAtTill);
-  if (group.children.length > 0 && chargeable.length === 0) return 'A paid booking is handled through its sale.';
-  if (chargeable.some((c) => attached.has(c.id))) return 'Take the children off this sale first.';
-  const settled = group.checkedIn?.[0];
-  if (settled) return `${settled} is already checked in — a checked-in booking is handled through its sale.`;
-  const paid = group.children.find((c) => c.paidOnline || c.paidAtTill);
-  if (paid) return `${paid.childName} is paid for — a paid booking is handled through its sale.`;
-  return null;
-}
+// SCRUM-886 — the rule and the confirm are shared with the Check-in board.
+export { cancelBookingBlockedBy };
 
 /**
  * One family on the picker: who they are, the button that adds them to the sale,
@@ -289,35 +268,10 @@ export function AddDropOffModal({
   const attached = new Set(attachedCheckInIds);
 
   // SCRUM-862 — "Cancel booking": one confirm with a reason, as the till's Void
-  // asks (HeldSales). The platform cancels every waiting, unpaid child on the
-  // booking and keeps the signed form; a paid or checked-in child refuses the
-  // whole press, and the refusal is shown in its own words.
+  // asks (HeldSales); the dialog is shared with the board (SCRUM-886). After a
+  // cancel the list is re-read, as after a sibling is added.
   const [cancelling, setCancelling] = useState<RegistrationGroup | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [cancelBusy, setCancelBusy] = useState(false);
-  const askCancel = (group: RegistrationGroup) => {
-    setCancelReason('');
-    setCancelling(group);
-  };
-  const handleCancelBooking = async () => {
-    const group = cancelling;
-    const reason = cancelReason.trim();
-    if (!group || !reason || cancelBusy) return;
-    setCancelBusy(true);
-    try {
-      await checkinApi.cancelRegistration(group.registrationId, reason);
-      setCancelling(null);
-      setBump((b) => b + 1);
-    } catch (err) {
-      toast({
-        title: "Couldn't cancel this booking",
-        description: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'destructive',
-      });
-    } finally {
-      setCancelBusy(false);
-    }
-  };
+  const askCancel = (group: RegistrationGroup) => setCancelling(group);
 
   const handleAddSibling = async (registrationId: string) => {
     const trimmed = name.trim();
@@ -482,47 +436,11 @@ export function AddDropOffModal({
           </ScrollArea>
         )}
 
-        <Dialog
-          open={cancelling !== null}
-          onOpenChange={(next) => {
-            if (!next && !cancelBusy) setCancelling(null);
-          }}
-        >
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Cancel this waiting booking</DialogTitle>
-              <DialogDescription>
-                {cancelling
-                  ? `${cancelling.parentName || 'Booking'}'s booking: ${cancelling.children.map((c) => c.childName).join(', ')} ` +
-                    "leave the waiting list and can't be added to a sale. The signed form stays on record."
-                  : ''}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label htmlFor="cancel-booking-reason">Reason</Label>
-              <Input
-                id="cancel-booking-reason"
-                value={cancelReason}
-                maxLength={CANCEL_REASON_MAX_LENGTH}
-                onChange={(e) => setCancelReason(e.target.value)}
-                autoFocus
-              />
-              {cancelReason.trim() === '' && <p className="text-xs text-muted-foreground">A reason is required.</p>}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" disabled={cancelBusy} onClick={() => setCancelling(null)}>
-                Back
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={cancelReason.trim() === '' || cancelBusy}
-                onClick={() => void handleCancelBooking()}
-              >
-                {cancelBusy ? 'Cancelling…' : cancelReason.trim() ? 'Cancel the booking' : 'Give a reason to cancel'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <CancelBookingDialog
+          booking={cancelling}
+          onClose={() => setCancelling(null)}
+          onCancelled={() => setBump((b) => b + 1)}
+        />
       </DialogContent>
     </Dialog>
   );

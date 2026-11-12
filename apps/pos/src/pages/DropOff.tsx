@@ -53,6 +53,7 @@ import {
 import { AssignNannyModal } from '@/components/dropoff/AssignNannyModal';
 import { CheckOutModal } from '@/components/dropoff/CheckOutModal';
 import { EditCheckInModal } from '@/components/dropoff/EditCheckInModal';
+import { CancelBookingDialog, type CancellableBooking } from '@/components/dropoff/CancelBookingDialog';
 import { OverstayBanner } from '@/components/dropoff/OverstayBanner';
 import { MessagingPanel, type MessagingContext } from '@/components/shared/MessagingPanel';
 import { AuthorizedPickupSheet } from '@/components/shared/AuthorizedPickupSheet';
@@ -423,6 +424,8 @@ export default function DropOff() {
   const [checkInBookedFor, setCheckInBookedFor] = useState<CheckIn[] | null>(null);
   const [checkOutFor, setCheckOutFor] = useState<CheckIn | null>(null);
   const [editFor, setEditFor] = useState<CheckIn | null>(null);
+  // SCRUM-886 — the picker's Cancel booking on the board (the shared confirm).
+  const [cancelFor, setCancelFor] = useState<CancellableBooking | null>(null);
   const [messageCtx, setMessageCtx] = useState<MessagingContext | null>(null);
   const [dueOnly, setDueOnly] = useState(dueParam);
   const [waFlagged, setWaFlagged] = useState(false);
@@ -1064,6 +1067,7 @@ export default function DropOff() {
                         onMarkFailed={(c) => void handleMarkFailed(c)}
                         onSaveAndResend={(c, phone, channel) => void handleSaveAndResend(c, phone, channel)}
                         onManagePickups={handleManagePickups}
+                        onCancelBooking={setCancelFor}
                       />
                     ))}
                   </div>
@@ -1073,6 +1077,8 @@ export default function DropOff() {
           )}
         </div>
       </div>
+
+      <CancelBookingDialog booking={cancelFor} onClose={() => setCancelFor(null)} onCancelled={refresh} />
 
       {assignFor && (
         <AssignNannyModal

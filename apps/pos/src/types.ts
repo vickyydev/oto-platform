@@ -1790,6 +1790,8 @@ export interface CheckIn {
    * a line to charge: the board checks them in on that sale with no payment.
    */
   paidAtTill?: { saleId: string; receiptNumber: string | null };
+  /** SCRUM-886 — a waiting stay for another trading day: that day (YYYY-MM-DD), for the board's "Booked for" line. */
+  bookedForDate?: string;
   registeredAt: string;
   checkedInAt?: string; // set on Enter Park (drives the timer)
   checkedOutAt?: string; // set on Check Out
