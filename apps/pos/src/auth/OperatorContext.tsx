@@ -284,6 +284,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const sessionPlace = useRef<{ operatorId: string | null; branchId: string | null }>({ operatorId: null, branchId: null });
   /** The screen an ended session left under the lock: memory only, nothing that signs anybody in. */
   const keptTill = useRef<KeptTill | null>(null);
+  /**
+   * The kept till behind the offer on screen, as it was offered: the sale
+   * stays its first owner's until somebody presses Continue, so a session
+   * that ends before an answer leaves it as it was, to be offered again.
+   */
+  const offeredTill = useRef<KeptTill | null>(null);
   /** When this device last signed in: a refusal of a request sent before it is the old session's. */
   const signedInAt = useRef(0);
   const seatSerial = useRef(0);
@@ -340,6 +346,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     // SCRUM-878 — signing out on purpose keeps no sale for anybody: the next
     // person starts a fresh till, and nothing of this one is offered to them.
     keptTill.current = null;
+    offeredTill.current = null;
     setSessionEnded(null);
     setKeptOffer(null);
     setKeptOfferAsleep(false);
@@ -410,6 +417,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     if (!op || keptTill.current) return;
     // Read before anything below moves state.
     const nothingToKeep = Boolean(viewAsRef.current || mustChangeRef.current || preparedRef.current);
+    // An offer still waiting for an answer: the sale is not this person's.
+    const offered = offeredTill.current;
+    offeredTill.current = null;
     clearTimers();
     // The box session ends with the platform's, as at a lock (offline plan
     // §2.2): the operator and the station stay on screen, so nothing else
@@ -436,6 +446,22 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
     const now = Date.now();
     const saleSince = saleOpenSince();
+    if (offered) {
+      // Signed in over somebody else's kept sale, and this session ended
+      // before Continue or Discard: the sale keeps its first owner, as it
+      // was offered (who started it and when, when their session ended).
+      // That person carries on with it at their next sign-in here; anyone
+      // else who may sell, this person included, is offered it again.
+      keptTill.current = offered;
+      setSessionEnded({
+        name: op.name,
+        expired: endedByExpiry(sessionEnds.current.deadline, now),
+        afterHours: sessionEnds.current.afterHours,
+        saleKept: saleSince !== null,
+      });
+      setLocked(true);
+      return;
+    }
     // Rung up (Pay pressed, not yet closed): a QR or card payment may be
     // waiting on the customer display, so the next person is told so.
     const rungUpSaleId = saleSince !== null && station ? saleOnScreen(station) : null;
@@ -548,6 +574,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
        */
       const ended = keptTill.current;
       keptTill.current = null;
+      offeredTill.current = null;
       setKeptOfferAsleep(false);
       if (owesPasswordChange) {
         // A temporary password (issuing one ends every session, which is how
@@ -573,6 +600,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         maySell: held.has('pos:sale:create'),
       });
       if (outcome === 'offer' && kept && kept.saleSince !== null) {
+        offeredTill.current = kept;
         setKeptOffer({
           startedBy: kept.name, startedAt: kept.saleSince, endedAt: kept.endedAt, stationId: kept.stationId,
           ...(kept.rungUpSaleId ? { rungUpSaleId: kept.rungUpSaleId } : {}),
@@ -591,6 +619,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
   /** SCRUM-878 — the person now signed in carries on the kept sale: it is theirs from the next press. */
   const continueKept = useCallback(() => {
+    // Theirs from here: a session that ends now keeps the sale as theirs.
+    offeredTill.current = null;
     setKeptOffer(null);
     setKeptOfferAsleep(false);
     setLocked(false);
@@ -599,6 +629,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   /** SCRUM-878 — the kept sale is dropped from this till: a fresh screen for the person signed in. */
   const discardKept = useCallback(() => {
     const op = operatorRef.current;
+    offeredTill.current = null;
     setKeptOffer(null);
     setKeptOfferAsleep(false);
     if (op) freshSeat(op.id);

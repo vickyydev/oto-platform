@@ -537,6 +537,59 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
     } finally { hook.unmount(); }
   });
 
+  it('their own session ends before they choose: the sale stays its first owner’s and is offered again, never made theirs', async () => {
+    const { hook, value, seat } = await endedMidCart();
+    try {
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      const offered = value().keptOffer;
+      expect(offered?.startedBy).toBe(ANN.name);
+
+      // Ben's session ends (Sign out everywhere, a password reset) with the offer unanswered.
+      vi.setSystemTime(Date.now() + 60_000);
+      refused();
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(true);
+      expect(value().tillSeat).toBe(seat);
+      expect(value().sessionEnded).toEqual({ name: BEN.name, expired: false, afterHours: 12, saleKept: true });
+
+      // Ben signs in again: offered again, as Ann's sale, with Ann's times; still locked over it.
+      vi.setSystemTime(Date.now() + 60_000);
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().operator?.id).toBe(BEN.id);
+      expect(value().keptOffer).toEqual(offered);
+      expect(value().locked).toBe(true);
+      expect(value().tillSeat).toBe(seat);
+
+      // It ends again, and Ann signs in: her own sale, carried on at once.
+      vi.setSystemTime(Date.now() + 60_000);
+      refused();
+      who = { ...ANN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST phone', PASSWORD);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(false);
+      expect(value().tillSeat).toBe(seat);
+    } finally { hook.unmount(); }
+  });
+
+  it('once they press Continue the sale is theirs: a later end offers it to the next person as theirs', async () => {
+    const { hook, value, seat } = await endedMidCart();
+    try {
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      value().continueKept();
+      vi.setSystemTime(Date.now() + 60_000);
+      refused();
+      expect(value().sessionEnded?.name).toBe(BEN.name);
+      // Ben again: his own sale now, carried on with no offer.
+      vi.setSystemTime(Date.now() + 60_000);
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(false);
+      expect(value().tillSeat).toBe(seat);
+    } finally { hook.unmount(); }
+  });
+
   it('discarding it starts a fresh till for them', async () => {
     const { hook, value, seat } = await endedMidCart();
     try {
