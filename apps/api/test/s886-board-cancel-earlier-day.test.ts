@@ -204,3 +204,40 @@ describe("an earlier day's booking is cancelled from the board", () => {
     expect((await board()).families.some((f) => f.registrationId === paid.id)).toBe(true);
   });
 });
+
+describe('a family one child of which came and left on an earlier day', () => {
+  it("names the collected child on the board, whatever the day, and the cancel's refusal is unchanged", async () => {
+    const fam = await register([childBody('ZZ TEST Came'), childBody('ZZ TEST Never')]);
+    const [came, never] = fam.children;
+    const saleId = await paidSaleFor(came!.id);
+    const checkedIn = await post('/checkin/check-in-now', { saleId, entries: [{ checkinId: came!.id }] });
+    expect(checkedIn.statusCode, checkedIn.body).toBe(200);
+    const fiveWeeksAgo = new Date(todayTradingDayStart().getTime() - 38 * DAY + 9 * 3_600_000);
+    await backdate(fam.id, fiveWeeksAgo);
+    await ctx.db
+      .update(checkin)
+      .set({ status: 'out', checkedInAt: fiveWeeksAgo, checkedOutAt: new Date(fiveWeeksAgo.getTime() + 2 * 3_600_000) })
+      .where(eq(checkin.id, came!.id));
+
+    const b = await board();
+    const onBoard = b.families.find((f) => f.registrationId === fam.id) as
+      | (BoardAnswer['families'][number] & { checkedInChildNames?: string[] })
+      | undefined;
+    // The card holds only the waiting child (the Out tab is today's pickups)…
+    expect(onBoard?.children.map((c) => [c.id, c.status])).toEqual([[never!.id, 'registered']]);
+    // …and names the one who came, so the till disables its Cancel booking.
+    expect(onBoard?.checkedInChildNames).toEqual(['ZZ TEST Came']);
+
+    // SCRUM-862's refusal stands (an owner rule question, not changed here).
+    const res = await post(`/checkin/registrations/${fam.id}/cancel`, { reason: 'ZZ TEST tidy' });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('CHECKIN_CANCEL_CHECKED_IN');
+    expect((await board()).families.some((f) => f.registrationId === fam.id)).toBe(true);
+  });
+
+  it('a family nobody on which was checked in names nobody', async () => {
+    const fam = await register([childBody('ZZ TEST Waiting')]);
+    const onBoard = (await board()).families.find((f) => f.registrationId === fam.id) as { checkedInChildNames?: string[] } | undefined;
+    expect(onBoard?.checkedInChildNames).toEqual([]);
+  });
+});

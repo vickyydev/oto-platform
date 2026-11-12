@@ -291,3 +291,41 @@ describe('s886 — after the cancel the board is read again', () => {
     expect(dialog.slice(0, dialog.indexOf('/>'))).toMatch(/onCancelled=\{\(\) => \{\s*closeDetail\(\);\s*refresh\(\);\s*\}\}/);
   });
 });
+
+describe('s886 — a sibling who came and left on an earlier day', () => {
+  // The board's card holds only today's collected: the platform names the
+  // booking's checked-in children whatever the day, as the cancel counts them.
+  const earlier = (names?: string[]): CheckIn[] => {
+    const children = [apiChild('c2', { childName: 'ZZ TEST Never', bookedForDate: '2026-10-05' })];
+    const fam = { ...apiFamily(children), ...(names ? { checkedInChildNames: names } : {}) };
+    return children.map((c) => boardChildToCheckIn(c, fam));
+  };
+
+  it('rides onto the board row, and an older box copy without it carries nothing', () => {
+    expect(earlier(['ZZ TEST Came'])[0]!.bookingCheckedIn).toEqual(['ZZ TEST Came']);
+    expect(earlier([])[0]!.bookingCheckedIn).toBeUndefined();
+    expect(earlier()[0]!.bookingCheckedIn).toBeUndefined();
+  });
+
+  it('boardBookingOf names them, once, beside today’s collected', () => {
+    expect(boardBookingOf(earlier(['ZZ TEST Came']))?.checkedIn).toEqual(['ZZ TEST Came']);
+    const children = [
+      apiChild('c1', { status: 'out', checkedInAt: '2026-11-12T03:00:00Z', checkedOutAt: '2026-11-12T05:00:00Z' }),
+      apiChild('c2', { childName: 'ZZ TEST Nok' }),
+    ];
+    const fam = { ...apiFamily(children), checkedInChildNames: ['ZZ TEST Mint'] };
+    expect(boardBookingOf(children.map((c) => boardChildToCheckIn(c, fam)))?.checkedIn).toEqual(['ZZ TEST Mint']);
+  });
+
+  it('the desk card and the phone screen show Cancel booking disabled with the picker’s line', () => {
+    const line = 'ZZ TEST Came is already checked in — a checked-in booking is handled through its sale.';
+    const desk = deskCard(earlier(['ZZ TEST Came']), noop);
+    expect(isDisabled(cancelButton(desk))).toBe(true);
+    expect(desk).toContain(line);
+    const phone = phoneDetail(earlier(['ZZ TEST Came']), noop);
+    expect(isDisabled(cancelButton(phone))).toBe(true);
+    expect(phone).toContain(line);
+    // With none checked in on any day it stays enabled.
+    expect(isDisabled(cancelButton(deskCard(earlier([]), noop)))).toBe(false);
+  });
+});
