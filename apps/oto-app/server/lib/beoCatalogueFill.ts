@@ -1485,8 +1485,23 @@ function onlyAudience(text: string): boolean {
     .filter(Boolean)
     .every((w) => AUDIENCE_FILLER.has(w) || /^\d+$/.test(w));
 }
-/** SCRUM-958: whom a phrase names: the adults, the kids, both or neither. */
-const audienceOf = (text: string) => ({ adults: ADULT_WORDS.test(text), kids: KID_WORDS.test(text) });
+/**
+ * SCRUM-958 (the lane's reviews): a headcount ("12 kids and 8 adults", "12
+ * детей", "เด็ก 12 คน") says how many come, never whom a dish is for. Kept
+ * only when the words give the dish to them: "for the 10 adults", "для 8
+ * взрослых", "สำหรับผู้ใหญ่ 8 ท่าน".
+ */
+const HEADCOUNTS = [
+  /(?<!\p{L})(for\s+the\s+)?\d+\s*(?:adults?|grown[- ]?ups?|parents|kids?|kiddies|children|child|little ones)(?!\p{L})/giu,
+  /(?<!\p{L})(для\s+)?\d+\s*(?:взросл|дет|ребён|ребен|родител)\p{L}*/giu,
+  /(สำหรับ\s*)?(?:(?:เด็ก|ผู้ใหญ่)\s*\d+\s*(?:คน|ท่าน)?|\d+\s*(?:คน\s*)?(?:เด็ก|ผู้ใหญ่))/gu,
+];
+const withoutHeadcounts = (text: string) => HEADCOUNTS.reduce((t, re) => t.replace(re, (m: string, giving?: string) => (giving ? m : " ")), text);
+/** SCRUM-958: whom a phrase names: the adults, the kids, both or neither (a headcount names nobody). */
+const audienceOf = (text: string) => {
+  const words = withoutHeadcounts(text);
+  return { adults: ADULT_WORDS.test(words), kids: KID_WORDS.test(words) };
+};
 /**
  * SCRUM-958 (the 12 November proof, thread A: "And chicken fried rice for the
  * adults."): whether the chat says a set-menu choice only for the adults. The

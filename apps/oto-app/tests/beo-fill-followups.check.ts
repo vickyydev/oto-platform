@@ -396,6 +396,23 @@ try {
     assert.deepEqual(labelled.menuLines.map((l) => [l.menu, l.setMenuItemId, l.matchedName]), [["adults", RICE, "Fried rice (Chicken)"]]);
     const joined = read(["Chicken fried rice for the adults and the kids please."], [{ itemId: RICE, option: "Chicken", said: "Chicken fried rice", line: 1 }]);
     assert.deepEqual([joined.setMenu?.choices.map((c) => c.option), joined.menuLines.length], [["Chicken"], 0], "the kids' choice, which the adults eat");
+    // A headcount says how many come, never whom a dish is for; "for the 10 adults" does.
+    const counted = read(["Package for 12 kids and 8 adults with chicken fried rice and margherita"], [
+      { itemId: RICE, option: "Chicken", said: "chicken fried rice", line: 1 },
+      { itemId: PIZZA, option: "Margherita", said: "margherita", line: 1 },
+    ]);
+    assert.equal(counted.menuLines.length, 0, "no adults' line");
+    assert.deepEqual(counted.setMenu?.choices.map((c) => [c.itemId, c.option]), [[RICE, "Chicken"], [PIZZA, "Margherita"]], "both the kids' choices");
+    const fries = resolveCatalogueAnswer(
+      { setMenu: { templateId: cat.setMenu, line: 1, choices: [] }, menuLines: [{ productCode: "CF-11", itemName: "extra fries", menu: "kids", line: 1 }], event: counts(15, 10) },
+      catalogue,
+      refsOf(["We are 15 kids and 10 adults we'd like extra fries"]),
+    );
+    assert.deepEqual(fries.menuLines.map((l) => [l.menu, l.productCode]), [["kids", "CF-11"]], "the kids' extra fries stay the kids'");
+    assert.equal(saidForTheAdults("жареный рис с курицей", "Праздник на 12 детей и 8 взрослых, жареный рис с курицей."), false);
+    assert.equal(saidForTheAdults("ข้าวผัดไก่", "เด็ก 12 คน ผู้ใหญ่ 8 คน ข้าวผัดไก่"), false);
+    assert.equal(saidForTheAdults("chicken fried rice", "12 kids and 8 adults, chicken fried rice for the 8 adults"), true, "for the 8 adults");
+    assert.equal(saidForTheAdults("ข้าวผัดไก่", "ข้าวผัดไก่สำหรับผู้ใหญ่ 8 ท่าน"), true);
     // The option a name stands for.
     const rice = setMenuItems[3] as any;
     assert.deepEqual(["Chicken", "Fried rice (Chicken)", "fried rice (shrimp)", "Beef"].map((n) => setMenuOptionOf(rice, n)), ["Chicken", "Chicken", "Shrimp", null]);
