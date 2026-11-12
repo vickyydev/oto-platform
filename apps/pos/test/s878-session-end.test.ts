@@ -285,6 +285,28 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
     } finally { hook.unmount(); }
   });
 
+  it('a heartbeat sent with no session just before the sign-in, refused after it, does not end the new session', async () => {
+    const { hook, value } = await signedIn();
+    try {
+      setSaleOpen('till', true);
+      pastTheMark();
+      const sentBeforeTheSignIn = Date.now();
+      refused();
+      vi.setSystemTime(Date.now() + 2_000);
+      await value().signIn('ZZ TEST phone', PASSWORD);
+      expect(value().locked).toBe(false);
+      // The old heartbeat's 401 lands now: it is the old session's.
+      window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt: sentBeforeTheSignIn } }));
+      expect(value().sessionEnded).toBeNull();
+      expect(value().locked).toBe(false);
+      // A request sent in the new session and refused is the new session ending.
+      vi.setSystemTime(Date.now() + 1_000);
+      window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt: Date.now() } }));
+      expect(value().locked).toBe(true);
+      expect(value().sessionEnded?.expired).toBe(false);
+    } finally { hook.unmount(); }
+  });
+
   it('ended before its time (Sign out everywhere, a password reset): it has ended, with no hours claimed', async () => {
     const { hook, value } = await signedIn();
     try {

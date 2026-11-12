@@ -67,6 +67,9 @@ async function request<T>(
 ): Promise<T> {
   let res: Response;
   const binary = body instanceof Blob;
+  // SCRUM-878 — when it was sent: a refusal of a request sent before the
+  // latest sign-in is about the session before it.
+  const sentAt = Date.now();
   try {
     res = await fetch(`/api${path}`, {
       method,
@@ -94,7 +97,7 @@ async function request<T>(
     // Session died mid-use (expiry, deactivation, reset elsewhere): tell the
     // shell so the POS returns to the lock screen instead of failing quietly.
     if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
-      window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+      window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt } }));
     }
     // 423: the session is alive but locked (another tab, or the box). Show
     // the lock screen rather than an error the operator cannot act on.
@@ -122,6 +125,7 @@ async function requestFile(
   signal?: AbortSignal,
 ): Promise<{ blob: Blob; filename: string | null; contentType: string | null }> {
   let res: Response;
+  const sentAt = Date.now();
   try {
     res = await fetch(`/api${path}`, {
       method,
@@ -140,7 +144,7 @@ async function requestFile(
       | null;
     const err = data?.error;
     if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
-      window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+      window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt } }));
     }
     if (res.status === 423) {
       window.dispatchEvent(new CustomEvent('oto:session-locked'));

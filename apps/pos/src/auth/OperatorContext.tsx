@@ -274,6 +274,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const sessionPlace = useRef<{ operatorId: string | null; branchId: string | null }>({ operatorId: null, branchId: null });
   /** The screen an ended session left under the lock: memory only, nothing that signs anybody in. */
   const keptTill = useRef<KeptTill | null>(null);
+  /** When this device last signed in: a refusal of a request sent before it is the old session's. */
+  const signedInAt = useRef(0);
   const seatSerial = useRef(0);
   const tillSeatRef = useRef<string | null>(null);
   const setTillSeat = useCallback((seat: string | null) => {
@@ -503,6 +505,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // Signing in by hand answers the hand-off notice, whatever it said.
       setHandoffError(null);
       await authApi.signIn(phone, password);
+      signedInAt.current = Date.now();
       // The screen a session left under the lock, if any: `hydrate` gives a
       // fresh one only when there is none.
       const screenBefore = tillSeatRef.current;
@@ -753,7 +756,13 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   // SCRUM-878 — with the screen it was on kept under it (`endSession`).
   useEffect(() => {
     if (!operator) return;
-    const onUnauthorized = () => endSession();
+    const onUnauthorized = (event: Event) => {
+      // A heartbeat sent with no session just before the sign-in answers
+      // after it: that refusal is the old session's, not the new one's.
+      const sentAt = (event as CustomEvent<{ sentAt?: unknown } | null>).detail?.sentAt;
+      if (typeof sentAt === 'number' && sentAt < signedInAt.current) return;
+      endSession();
+    };
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
   }, [operator, endSession]);
