@@ -29,6 +29,7 @@ export * from './sync';
 export * from './print';
 export * from './staff-token';
 export * from './device-settings';
+export * from './printer-address';
 export * from './scanning';
 export * from './booth';
 export * from './booth-code';

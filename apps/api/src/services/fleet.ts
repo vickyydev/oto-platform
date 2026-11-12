@@ -39,6 +39,9 @@ import {
   invoiceStationSegment,
   newId,
   STATION_SESSION_STAGES,
+  isPrinterKind,
+  printerAddressProblem,
+  printerAddressWords,
   type DeviceSettings,
   type DisplayPresence,
   type TillScreen,
@@ -2356,6 +2359,23 @@ function assertTerminalProtocol(kind: string, protocol: string | null | undefine
   );
 }
 
+/**
+ * SCRUM-899 — a printer is saved with the address the box prints to, in a
+ * form the box can open (`printerAddressProblem` in `@oto/shared`): a printer
+ * saved without one took a till's jobs and the box skipped every one of them
+ * `DEVICE_NO_ADDRESS`. Judged on a new printer and on an edit that changes
+ * the address; a printer already saved without one still renames and
+ * archives, so no saved configuration is locked by the rule. Every other kind
+ * of device keeps its own addressing (a terminal's serial port, a scanner the
+ * box finds).
+ */
+function assertPrinterAddress(kind: string, address: string | null): void {
+  if (!isPrinterKind(kind)) return;
+  const problem = printerAddressProblem(address);
+  if (problem === 'missing') throw new AppError(400, 'PRINTER_ADDRESS_REQUIRED', printerAddressWords(problem));
+  if (problem === 'invalid') throw new AppError(400, 'PRINTER_ADDRESS_INVALID', printerAddressWords(problem));
+}
+
 export async function createDevice(
   db: Db,
   ctx: OpContext,
@@ -2385,6 +2405,9 @@ export async function createDevice(
   );
   if (claim.replay) return markReplay({ device: deviceView(claim.row) });
   assertTerminalProtocol(input.kind, input.protocol);
+  // A printer's address is kept as the box reads it, without the spaces around it.
+  const address = isPrinterKind(input.kind) ? input.address?.trim() || null : (input.address ?? null);
+  assertPrinterAddress(input.kind, address);
   const id = claim.id;
   try {
     return await withTx(db, ctx, 'device.create', async (tx) => {
@@ -2396,7 +2419,7 @@ export async function createDevice(
         kind: input.kind,
         label: input.label,
         transport: input.transport,
-        address: input.address ?? null,
+        address,
         model: input.model ?? null,
         protocol: input.protocol ?? null,
         serialNumber: input.serialNumber ?? null,
@@ -2449,9 +2472,18 @@ export async function updateDevice(
   if (patch.protocol !== undefined && patch.protocol !== before.protocol) {
     assertTerminalProtocol(before.kind, patch.protocol);
   }
+  // The same rule for a printer's address (SCRUM-899): only a change is
+  // judged, so clearing one is refused and an older stored value sent back
+  // as it was still saves.
+  let set = patch;
+  if (patch.address !== undefined && isPrinterKind(before.kind)) {
+    const address = patch.address?.trim() || null;
+    if (address !== before.address) assertPrinterAddress(before.kind, address);
+    set = { ...patch, address };
+  }
   try {
     return await withTx(db, ctx, 'device.update', async (tx) => {
-      const [after] = await tx.update(device).set(patch).where(eq(device.id, before.id)).returning();
+      const [after] = await tx.update(device).set(set).where(eq(device.id, before.id)).returning();
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: before.operatorId,
