@@ -1354,14 +1354,37 @@ export async function createStation(
   }
 }
 
+/**
+ * SCRUM-898 — a save made from a form opened at an older config version.
+ * Without it, a Console form reopened before its list caught up wrote the
+ * settings it was opened with back over the ones just saved.
+ */
+function stationChanged(expected: number, current: number): AppError {
+  return new AppError(
+    409,
+    'STATION_CHANGED',
+    'This station was changed since you opened it. Close it and open it again.',
+    { expectedConfigVersion: expected, configVersion: current },
+  );
+}
+
 export async function updateStation(
   db: Db,
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   before: typeof station.$inferSelect,
-  patch: Partial<Omit<StationWriteInput, 'id'>>,
+  patch: Partial<Omit<StationWriteInput, 'id'>> & {
+    /** SCRUM-898 — the version the caller's form was filled from; absent, nothing is compared. */
+    expectedConfigVersion?: number;
+  },
   env?: BoxBridgePolicy,
 ): Promise<{ station: StationView }> {
+  // Decided first, so a stale form hears that and not an older refusal of
+  // its own settings; decided again below on the row locked for the write.
+  const expected = patch.expectedConfigVersion;
+  if (expected !== undefined && before.configVersion !== expected) {
+    throw stationChanged(expected, before.configVersion);
+  }
   /**
    * `boxId: null` is accepted only where the station already has none — a
    * Sprint 1 row that predates boxes. Detaching a working station from its box
@@ -1428,12 +1451,15 @@ export async function updateStation(
        * prefix and not about a copy the route loaded a moment earlier.
        */
       const [stored] = await tx
-        .select({ kind: station.kind, codePrefix: station.codePrefix })
+        .select({ kind: station.kind, codePrefix: station.codePrefix, configVersion: station.configVersion })
         .from(station)
         .where(eq(station.id, before.id))
         .for('no key update')
         .limit(1);
       const held = stored ?? before;
+      if (expected !== undefined && held.configVersion !== expected) {
+        throw stationChanged(expected, held.configVersion);
+      }
       const nextKind = patch.kind ?? held.kind;
       const nextPrefix = patch.codePrefix === undefined ? held.codePrefix : patch.codePrefix;
       if (nextPrefix !== held.codePrefix || !numbersReceipts(held.kind)) {

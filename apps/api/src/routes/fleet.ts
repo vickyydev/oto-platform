@@ -524,9 +524,16 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`. A prefix another live booth of the operator carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`; the station being edited does not count against itself.',
+          'Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`. A prefix another live booth of the operator carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`; the station being edited does not count against itself. `expectedConfigVersion`, optional, is the config version the form was opened at: when the station has moved on since, the edit is refused with 409 `STATION_CHANGED` and nothing is written (SCRUM-898). Left out, the edit is made as before.',
         params: IdParams,
-        body: StationWriteSchema.partial(),
+        body: StationWriteSchema.partial().extend({
+          /**
+           * SCRUM-898 — the `configVersion` the form was filled from. Optional,
+           * so every caller that does not send it (the till's own station
+           * setup, scripts, the booth) saves exactly as it did.
+           */
+          expectedConfigVersion: z.number().int().min(1).optional(),
+        }),
         response: { 200: z.object({ station: StationSchema }) },
       },
     },
