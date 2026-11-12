@@ -1,0 +1,68 @@
+{
+  "readAt": "2026-11-12T01:43:38.281Z",
+  "runs": {
+    "01": {
+      "till": "Z86201",
+      "sales": [
+        "finalised 1040",
+        "finalised 915",
+        "voided 915"
+      ],
+      "registrations": [
+        {
+          "tag": "a",
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "tag": "b",
+          "children": [
+            "out"
+          ]
+        }
+      ],
+      "liveMembers": 0
+    },
+    "02": {
+      "till": "Z86202",
+      "sales": [
+        "finalised 1040",
+        "finalised 915",
+        "voided 915"
+      ],
+      "registrations": [
+        {
+          "tag": "a",
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "tag": "b",
+          "children": [
+            "out"
+          ]
+        }
+      ],
+      "liveMembers": 0
+    }
+  },
+  "waitingListToday": {
+    "total": 0,
+    "ofThisProof": 0
+  },
+  "tills": [
+    {
+      "prefix": "Z86201",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "prefix": "Z86202",
+      "archived": true,
+      "devices": 0
+    }
+  ],
+  "adminMe": 401
+}

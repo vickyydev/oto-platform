@@ -1,0 +1,752 @@
+{
+  "ticket": "SCRUM-862",
+  "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+  "startedAt": "2026-11-12T01:39:17.118Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqh9056e07s73f729a0",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:04.366423Z",
+        "finishedAt": "2026-11-12T01:22:04.771553Z"
+      },
+      "serving": {
+        "id": "dep-dbqh9056e07s73f729a0",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:04.366423Z",
+        "finishedAt": "2026-11-12T01:22:04.771553Z"
+      },
+      "readAt": "2026-11-12T01:31:43.843Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqh90l6e07s73f72c50",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:07.034927Z",
+        "finishedAt": "2026-11-12T01:24:07.88643Z"
+      },
+      "serving": {
+        "id": "dep-dbqh90l6e07s73f72c50",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:07.034927Z",
+        "finishedAt": "2026-11-12T01:24:07.88643Z"
+      },
+      "readAt": "2026-11-12T01:31:44.482Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "serving": {
+        "id": "dep-dbqh8vei0phs73clv3bg",
+        "status": "live",
+        "sha": "7f653066f89d0976f30a32eee14aaab902fb86ba",
+        "createdAt": "2026-11-12T01:21:01.857215Z",
+        "finishedAt": "2026-11-12T01:25:29.790858Z"
+      },
+      "readAt": "2026-11-12T01:31:45.385Z"
+    }
+  },
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01-picker-as-it-opens-today-only.png",
+      "shows": "The window lists 0 family(ies) (\"No bookings are waiting to be checked in.\"); the platform lists 0 for 2026-11-12, 0 from an earlier day",
+      "seen": {
+        "platform": {
+          "today": "2026-11-12",
+          "count": 0,
+          "families": [],
+          "earlierDay": 0
+        },
+        "window": {
+          "empty": true,
+          "families": 0,
+          "zzFamilies": 0,
+          "ownFamilies": []
+        }
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02c-picker-lists-waiting-booking-a.png",
+      "shows": "A signed drop-off booking left unpaid (its sale cancelled) is listed with \"Add to sale\" and \"Cancel booking\"",
+      "seen": {
+        "form": {
+          "phoneNumberLabel": 1,
+          "numberFields": 1,
+          "channels": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ]
+        },
+        "leftHow": "till Cancel",
+        "saleStatus": "voided",
+        "children": [
+          {
+            "name": "ZZ TEST 862 child a",
+            "status": "registered"
+          }
+        ],
+        "window": {
+          "empty": false,
+          "families": 1,
+          "zzFamilies": 1,
+          "ownFamilies": [
+            "ZZ TEST 862 guardian"
+          ]
+        },
+        "addToSale": true,
+        "cancelBooking": true
+      }
+    },
+    "3": {
+      "pass": true,
+      "picture": "03a-confirm-asks-for-a-reason.png",
+      "shows": "The confirm needs a reason; with \"ZZ TEST cancel\" the booking is cancelled (200), leaves the window (03c) and is not on the board's Upcoming list (03d); the signed form stays on record",
+      "seen": {
+        "description": "Cancel this waiting booking ZZ TEST 862 guardian's booking: ZZ TEST 862 child a leave the waiting list and can't be added to a sale. The signed form stays on record. Reason A reason is required. Back Give a reason to cancel Close",
+        "pressBeforeReason": {
+          "label": "Give a reason to cancel",
+          "enabled": false
+        },
+        "pressAfterReason": {
+          "label": "Cancel the booking",
+          "enabled": true
+        },
+        "cancelAnswer": 200,
+        "windowAfter": {
+          "empty": true,
+          "families": 0,
+          "zzFamilies": 0,
+          "ownFamilies": []
+        },
+        "registration": {
+          "consentRecordedAt": true,
+          "children": [
+            {
+              "name": "ZZ TEST 862 child a",
+              "status": "cancelled"
+            }
+          ]
+        },
+        "platformListAfter": {
+          "today": "2026-11-12",
+          "count": 0,
+          "families": [],
+          "earlierDay": 0
+        },
+        "boardCards": 0
+      }
+    },
+    "4": {
+      "pass": true,
+      "picture": "04b-picker-paid-booking-no-cancel.png",
+      "shows": "Paid in cash and left as booked: no usable Cancel booking (the control is not shown; the card's button reads \"Paid at till\"); the platform refuses a cancel press (409 CHECKIN_CANCEL_PAID)",
+      "seen": {
+        "saleStatus": "finalised",
+        "grossSatang": 91500,
+        "cardText": "ZZ TEST 862 guardian b's booking +66898620023 Paid at till ZZ TEST 862 child b · 6y Paid at till · Z86202-000001 Add sibling",
+        "cancelBookingButtons": 0,
+        "cancelBookingEnabled": null,
+        "paidLine": null,
+        "firstButton": "Paid at till",
+        "platformRefusal": {
+          "status": 409,
+          "code": "CHECKIN_CANCEL_PAID"
+        },
+        "afterRefusal": [
+          "registered"
+        ]
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05-stay-change-history.png",
+      "shows": "The stay's change history on the till: Status Upcoming -> Cancelled and Cancel reason \"ZZ TEST cancel\", by the reception account, with the time; the audit row behind it agrees",
+      "seen": {
+        "tillChangeHistory": [
+          {
+            "status": 200,
+            "field": "Status",
+            "from": "Upcoming",
+            "to": "Cancelled",
+            "at": "2026-11-12T01:40:31.114Z",
+            "by": "the reception test account at the ZZ TEST till"
+          },
+          {
+            "status": 200,
+            "field": "Cancel reason",
+            "from": "—",
+            "to": "ZZ TEST cancel",
+            "at": "2026-11-12T01:40:31.114Z",
+            "by": "the reception test account at the ZZ TEST till"
+          }
+        ],
+        "cancelRow": {
+          "at": "2026-11-12T01:40:31.114Z",
+          "action": "checkin.update",
+          "entityType": "checkin",
+          "byTheTillAccount": true,
+          "by": "the reception test account at the ZZ TEST till",
+          "before": {
+            "status": "registered",
+            "cancelReason": null
+          },
+          "after": {
+            "status": "cancelled",
+            "cancelReason": "ZZ TEST cancel",
+            "cancelledAt": "2026-11-12T01:40:31.114Z",
+            "event": "cancel"
+          }
+        },
+        "rowCount": 2,
+        "responseShapes": [
+          {
+            "status": 200,
+            "keys": [
+              "entries",
+              "masked",
+              "nextCursor"
+            ]
+          }
+        ]
+      }
+    },
+    "6": {
+      "pass": true,
+      "picture": "06-ordinary-sale-paid-cash.png",
+      "shows": "One adult and one child paid in cash completes (finalised); the drop-off form still showed its \"Phone number\" field (02a)",
+      "seen": {
+        "sale": {
+          "status": "finalised",
+          "receipt": "Z86202-000002",
+          "grossSatang": 104000
+        },
+        "dropOffForm": {
+          "phoneNumberLabel": 1,
+          "numberFields": 1,
+          "channels": [
+            "WhatsApp",
+            "Telegram",
+            "LINE"
+          ]
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 400,
+      "errorCode": "VALIDATION"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cd68-cc85-7f38-b238-8639a7a6d9a5",
+      "name": "ZZ TEST SCRUM-862 proof till 1794447557268",
+      "prefix": "Z86202"
+    },
+    {
+      "kind": "registration",
+      "tag": "a",
+      "id": "01a1cd69-8fad-79a4-8c32-870577259894",
+      "stays": [
+        "01a1cd69-8fae-7f13-9b7c-fcb82702e590"
+      ]
+    },
+    {
+      "kind": "dropoff-sale-a",
+      "id": "01a1cd69-9364-75c3-8686-1db6a56b401e"
+    },
+    {
+      "kind": "registration",
+      "tag": "b",
+      "id": "01a1cd6a-4c31-7219-8974-94f910f6f8b3",
+      "stays": [
+        "01a1cd6a-4c31-7219-8974-94fad575cfc3"
+      ]
+    },
+    {
+      "kind": "dropoff-sale-b",
+      "id": "01a1cd6a-5084-74a0-ade7-601b340de06b"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1cd6a-d32b-7640-b452-e10cb61e96e4"
+    }
+  ],
+  "checks": {
+    "cancelRouteProbe": {
+      "status": 400,
+      "code": "VALIDATION",
+      "meaning": "an empty body on the new route is refused by validation; the old api answered 404"
+    },
+    "testNumbersUnusedBefore": true,
+    "meIdKnown": true,
+    "bundle": {
+      "files": 1,
+      "cancelDialogMarkers": 1
+    },
+    "bookingA": {
+      "leftHow": "till Cancel",
+      "saleStatus": "voided",
+      "children": [
+        {
+          "name": "ZZ TEST 862 child a",
+          "status": "registered"
+        }
+      ]
+    },
+    "bookingBCheckIn": {
+      "via": "board",
+      "children": [
+        "in_park"
+      ]
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "a",
+      "id": "01a1cd69-8fad-79a4-8c32-870577259894",
+      "children": [
+        {
+          "id": "01a1cd69-8fae-7f13-9b7c-fcb82702e590",
+          "status": "cancelled"
+        }
+      ]
+    },
+    {
+      "kind": "registration",
+      "tag": "b",
+      "id": "01a1cd6a-4c31-7219-8974-94f910f6f8b3",
+      "children": [
+        {
+          "id": "01a1cd6a-4c31-7219-8974-94fad575cfc3",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd6a-d32b-7640-b452-e10cb61e96e4",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cd6a-5084-74a0-ade7-601b340de06b",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cd6a-d32b-7640-b452-e10cb61e96e4",
+          "status": "finalised",
+          "grossSatang": 104000
+        },
+        {
+          "id": "01a1cd6a-5084-74a0-ade7-601b340de06b",
+          "status": "finalised",
+          "grossSatang": 91500
+        },
+        {
+          "id": "01a1cd69-9364-75c3-8686-1db6a56b401e",
+          "status": "voided",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cd68-cc85-7f38-b238-8639a7a6d9a5",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "picker0",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "bookA",
+      "id": "01a1cd69-8e6f-7327-8418-822b3c38374e",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "pickerA",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "bookB",
+      "id": "01a1cd6a-4b11-787c-8c50-aa38e81fab47",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "pickerB",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "waiting-list-after",
+      "today": "2026-11-12",
+      "count": 0,
+      "families": [],
+      "earlierDay": 0
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "picker0": "0898620020",
+    "bookA": "0898620021",
+    "pickerA": "0898620022",
+    "bookB": "0898620023",
+    "pickerB": "0898620024",
+    "ordinary": "0898620025"
+  },
+  "only": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T01:41:43.406Z"
+}

@@ -1,0 +1,44 @@
+{
+ "health": {
+  "status": 200,
+  "version": "{\"status\":\"ok\"}"
+ },
+ "branch": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+ "cancelRouteProbe": {
+  "status": 400,
+  "code": "VALIDATION"
+ },
+ "waiting": [],
+ "keys": [],
+ "numbers": {
+  "0898620010": "unused",
+  "0898620011": "unused",
+  "0898620012": "unused",
+  "0898620013": "unused",
+  "0898620014": "unused",
+  "0898620015": "unused",
+  "0898620016": "unused",
+  "0898620017": "unused",
+  "0898620018": "unused",
+  "0898620019": "unused",
+  "0898620020": "unused",
+  "0898620021": "unused",
+  "0898620022": "unused",
+  "0898620023": "unused",
+  "0898620024": "unused",
+  "0898620025": "unused",
+  "0898620026": "unused",
+  "0898620027": "unused",
+  "0898620028": "unused",
+  "0898620029": "unused",
+  "0898620030": "unused"
+ },
+ "activeZz": [
+  "ZZ TEST SCRUM-710 display",
+  "ZZ TEST SCRUM-718 path",
+  "ZZ TEST setup traps 20261102"
+ ],
+ "prefixesZ862": [],
+ "signOut": 200,
+ "me": 401
+}

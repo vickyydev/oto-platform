@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-862",
+  "readAt": "2026-11-12T01:4x (Bangkok 08:4x), read-only, no names",
+  "pickerToday": "The Add drop-off child window and GET /checkin/registrations list 0 families on 2026-11-12 before and after both runs.",
+  "boardUpcoming": {
+    "familiesWithAWaitingChild": 15,
+    "zzTestFamilies": 11,
+    "otherFamilies": 4,
+    "oldestRegistered": "2026-10-05T17:00:17Z",
+    "childrenWaiting": 18,
+    "meaning": "These are the earlier-day leftovers the old picker listed. They are no longer in the picker (the picker lists the trading day only), but the Check-in board's Upcoming tab still shows all 18 children (boardOf lists every registered stay whatever the day), and the till offers Cancel booking only inside the picker. So an earlier day's waiting booking has no cancel control anywhere on the till."
+  },
+  "observations": [
+    "A drop-off child paid and left as booked shows 'Overdue · <time of payment>' on the board straight away (04c).",
+    "The header's 'in park' count reads 0 while the board's In Park tab reads 7-8 (drop-off children); after the ordinary sale it reads 1 (03d, 04e, 06). Not part of this ticket.",
+    "A booking whose every child is paid shows 'Paid at till' and no Cancel booking control at all (04b); the disabled control with a 'paid for' line is only for a booking that mixes a paid child with an unpaid sibling (AddDropOffModal.tsx cancelBookingBlockedBy / WaitingFamily). The platform refuses the press for the paid booking: 409 CHECKIN_CANCEL_PAID."
+  ]
+}

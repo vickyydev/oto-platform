@@ -1,0 +1,67 @@
+{
+  "registrationId": "01a1cd69-8fad-79a4-8c32-870577259894",
+  "stays": [
+    "01a1cd69-8fae-7f13-9b7c-fcb82702e590"
+  ],
+  "tillChangeHistory": [
+    {
+      "status": 200,
+      "field": "Status",
+      "from": "Upcoming",
+      "to": "Cancelled",
+      "at": "2026-11-12T01:40:31.114Z",
+      "by": "the reception test account at the ZZ TEST till"
+    },
+    {
+      "status": 200,
+      "field": "Cancel reason",
+      "from": "—",
+      "to": "ZZ TEST cancel",
+      "at": "2026-11-12T01:40:31.114Z",
+      "by": "the reception test account at the ZZ TEST till"
+    }
+  ],
+  "auditRows": [
+    {
+      "at": "2026-11-12T01:40:09.837Z",
+      "action": "checkin.create",
+      "entityType": "checkin",
+      "byTheTillAccount": true,
+      "by": "the reception test account at the ZZ TEST till",
+      "before": null,
+      "after": {
+        "status": null,
+        "cancelReason": null,
+        "cancelledAt": null,
+        "event": null
+      }
+    },
+    {
+      "at": "2026-11-12T01:40:31.114Z",
+      "action": "checkin.update",
+      "entityType": "checkin",
+      "byTheTillAccount": true,
+      "by": "the reception test account at the ZZ TEST till",
+      "before": {
+        "status": "registered",
+        "cancelReason": null
+      },
+      "after": {
+        "status": "cancelled",
+        "cancelReason": "ZZ TEST cancel",
+        "cancelledAt": "2026-11-12T01:40:31.114Z",
+        "event": "cancel"
+      }
+    }
+  ],
+  "responseShapes": [
+    {
+      "status": 200,
+      "keys": [
+        "entries",
+        "masked",
+        "nextCursor"
+      ]
+    }
+  ]
+}
