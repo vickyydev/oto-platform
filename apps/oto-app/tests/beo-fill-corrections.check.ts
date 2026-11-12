@@ -35,7 +35,8 @@
 //      answered the menu link (the choices are marked as read from the chat);
 //      Billing's "Deposit from the family's chat" box agrees with the BEO (the
 //      deposit asked, not "No deposit asked yet"); the approval's toast names
-//      only the sections that were written.
+//      only the sections that were written; a value taken from a long message
+//      quotes the words that matter (the sentence, or the clause, saying it).
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -65,7 +66,7 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere, namesOnlyShows, detailsFromFill, cakeSaidIncluded, quoteOf } = await import("../server/lib/beoCatalogueFill");
 type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions, approvalResultWords } = await import("../client/src/lib/beo-ai-review");
@@ -93,7 +94,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 12;
+const CHECKS = 13;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -662,6 +663,26 @@ try {
     assert.equal(approvalResultWords(res.body), "Saved: the setup plan and the deposit.");
     // A server before this rule answers no count: the fixed words, as before.
     assert.ok(approvalResultWords({}).startsWith("Saved: the event's name and details, the counts"));
+  });
+
+  // --- 9e. The words that matter in a long message -------------------------------------------
+  await check("aLongMessageIsQuotedByTheWordsThatMatter", () => {
+    // The proof's thread A, line 4, and its thread E's confirmation (the numbers as written there).
+    const family = "Important: she is allergic to peanuts. For the setup, balloons at the entrance by 13:30 please. If you can't reach me, please call my husband on 089 870 0417 (invented). We will transfer the 3,000 baht deposit tomorrow. (ZZ TEST)";
+    assert.equal(quoteOf(null, family, [3000]), "We will transfer the 3,000 baht deposit tomorrow.", "the deposit's own sentence");
+    assert.equal(quoteOf(null, family, ["13:30"]), "For the setup, balloons at the entrance by 13:30 please.");
+    const first = "Hi! We'd like to book a birthday party for our daughter ZZ Test Lina, she turns 6. Saturday 5 December, from 14:00 to 16:30, 12 kids and 8 adults. (ZZ TEST)";
+    assert.equal(quoteOf(null, first, ["14:00"]), "Saturday 5 December, from 14:00 to 16:30, 12 kids and 8 adults.");
+    const confirmed =
+      "Confirmed: ZZ Test Toby's 9th birthday party on Saturday 19 December 2026, 13:00 to 15:30, 15 kids and 6 adults, Birthday package, Central Floresta, Pepperoni pizza, the Bubble show at 14:00, drinks from 13:15, the park's cake at 15:00, booking name ZZ TEST Toby, in the Party Room. Deposit 3,000 THB asked.";
+    assert.equal(quoteOf(null, confirmed, ["6 adult", 6]), "15 kids and 6 adults", "a sentence too long to quote: its clause");
+    assert.equal(quoteOf(null, confirmed, ["Party Room"]), "in the Party Room.");
+    assert.equal(quoteOf(null, confirmed, [3000]), "Deposit 3,000 THB asked.");
+    assert.equal(quoteOf(null, confirmed, ["15:00"]), "the park's cake at 15:00");
+    // As before: the model's own words when the line holds them; a short line whole; nothing found, the line's start.
+    assert.equal(quoteOf("the Bubble show", confirmed, ["14:00"]), "the Bubble show");
+    assert.equal(quoteOf(null, "12 kids and 8 adults, 14:00. (ZZ TEST)", [12]), "12 kids and 8 adults, 14:00. (ZZ TEST)");
+    assert.ok(quoteOf(null, confirmed, ["nothing here"])!.startsWith("Confirmed:"));
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

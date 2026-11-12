@@ -237,8 +237,32 @@ export function quoteOf(
   if (one.length <= BEO_AI_QUOTE_MAX) return one;
   // SCRUM-904: a long line (a team's whole confirmation) is quoted around the value's own words,
   // not by its first characters, which can stop before the words that matter.
+  // SCRUM-927: and by the words that matter themselves — the sentence that says it, or, in a
+  // sentence too long to quote, its clause — never the characters on either side of them.
   const found = findInLine(one, [said, ...hints]);
-  return found ? quoteAround(one, found.start, found.end) : clipQuote(one);
+  return found ? wordsThatMatter(one, found.start, found.end) : clipQuote(one);
+}
+
+/**
+ * SCRUM-927 (the 12 November proof quoted "…can't reach me, please call my
+ * husband on …. We will transfer the 3,000 baht deposit tomorrow. (ZZ TEST)"
+ * for the deposit): the sentence of a long line that holds [start, end); in a
+ * sentence too long to quote whole, the clause holding it (between commas or
+ * semicolons) when it says enough; else the part around it, as before.
+ */
+function wordsThatMatter(line: string, start: number, end: number): string {
+  let from = 0;
+  for (const m of line.slice(0, start).matchAll(/[.!?](?:\s+|$)/g)) from = (m.index ?? 0) + m[0].length;
+  const stop = /[.!?](?=\s|$)/.exec(line.slice(end));
+  const to = stop ? end + stop.index + 1 : line.length;
+  const sentence = line.slice(from, to).trim();
+  if (sentence && sentence.length <= BEO_AI_QUOTE_MAX) return sentence;
+  let clauseFrom = from;
+  for (const m of line.slice(from, start).matchAll(/[,;]\s*/g)) clauseFrom = from + (m.index ?? 0) + m[0].length;
+  const clauseStop = /[,;]/.exec(line.slice(end, to));
+  const clause = line.slice(clauseFrom, clauseStop ? end + clauseStop.index : to).trim();
+  if (clause.length >= 12 && clause.length <= BEO_AI_QUOTE_MAX) return clause;
+  return quoteAround(line, start, end);
 }
 
 const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
