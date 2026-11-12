@@ -1,0 +1,114 @@
+{
+  "note": "SCRUM-904 landed at e5caad301 on oto-app-staging as dep-dbqqjfdg1s2s73f49t80 (live 12:01:02Z). At 12:15:21Z dep-dbqqq7tckfvc73d7ofk0 at f48d1df69 went live on top (it contains e5caad301; between them only the till-menu search fix in apps/oto-app/shared/tillMenu.ts, its check, docs and a CI change). Every AI Fill of this proof (12:25Z to 13:00Z) ran on dep-dbqqq7tckfvc73d7ofk0 at f48d1df69. No app deploy happened during the run. The inbox and the api were not changed by this lane and are recorded as they were.",
+  "before": {
+    "at": "2026-11-12T12:15:54.179Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqqaeijnfac739er580",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "finishedAt": "2026-11-12T11:43:17.953003Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqpjlpsrm7s73dk27cg",
+        "status": "live",
+        "sha": "d0045f1ef42b3223b83b4fdb1b3bce1c5ff5f2f3",
+        "finishedAt": "2026-11-12T10:51:02.411245Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbqqq7tckfvc73d7ofk0",
+        "status": "live",
+        "sha": "f48d1df69fd70f107b41b9bb5efffee832a8e87e",
+        "finishedAt": "2026-11-12T12:15:21.054922Z"
+      }
+    ],
+    "appLiveOnFixSha": false,
+    "inboxLive": true
+  },
+  "afterDriver": {
+    "at": "2026-11-12T13:01:10.346Z",
+    "services": [
+      {
+        "name": "oto-api-staging",
+        "deployId": "dep-dbqqaeijnfac739er580",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "finishedAt": "2026-11-12T11:43:17.953003Z"
+      },
+      {
+        "name": "oto-inbox-staging",
+        "deployId": "dep-dbqpjlpsrm7s73dk27cg",
+        "status": "live",
+        "sha": "d0045f1ef42b3223b83b4fdb1b3bce1c5ff5f2f3",
+        "finishedAt": "2026-11-12T10:51:02.411245Z"
+      },
+      {
+        "name": "oto-app-staging",
+        "deployId": "dep-dbqqq7tckfvc73d7ofk0",
+        "status": "live",
+        "sha": "f48d1df69fd70f107b41b9bb5efffee832a8e87e",
+        "finishedAt": "2026-11-12T12:15:21.054922Z"
+      }
+    ],
+    "appLiveOnFixSha": false,
+    "inboxLive": true
+  },
+  "after": {
+    "readAt": "2026-11-12T13:01:27.688Z",
+    "services": {
+      "oto-app-staging": {
+        "named": {
+          "id": "dep-dbqqjfdg1s2s73f49t80",
+          "status": "deactivated",
+          "sha": "e5caad301728c24cbc50c6e2ecd1c460cff61a38",
+          "createdAt": "2026-11-12T11:57:49.715307Z",
+          "finishedAt": "2026-11-12T12:01:02.156845Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqqq7tckfvc73d7ofk0",
+          "sha": "f48d1df69fd70f107b41b9bb5efffee832a8e87e",
+          "createdAt": "2026-11-12T12:12:15.666406Z",
+          "finishedAt": "2026-11-12T12:15:21.054922Z"
+        },
+        "latest": {
+          "id": "dep-dbqqq7tckfvc73d7ofk0",
+          "status": "live",
+          "sha": "f48d1df69fd70f107b41b9bb5efffee832a8e87e",
+          "createdAt": "2026-11-12T12:12:15.666406Z"
+        }
+      },
+      "oto-api-staging": {
+        "live": {
+          "id": "dep-dbqqaeijnfac739er580",
+          "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+          "createdAt": "2026-11-12T11:38:34.184385Z",
+          "finishedAt": "2026-11-12T11:43:17.953003Z"
+        },
+        "latest": {
+          "id": "dep-dbqqaeijnfac739er580",
+          "status": "live",
+          "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+          "createdAt": "2026-11-12T11:38:34.184385Z"
+        }
+      },
+      "oto-inbox-staging": {
+        "live": {
+          "id": "dep-dbqpjlpsrm7s73dk27cg",
+          "sha": "d0045f1ef42b3223b83b4fdb1b3bce1c5ff5f2f3",
+          "createdAt": "2026-11-12T10:49:59.976436Z",
+          "finishedAt": "2026-11-12T10:51:02.411245Z"
+        },
+        "latest": {
+          "id": "dep-dbqpjlpsrm7s73dk27cg",
+          "status": "live",
+          "sha": "d0045f1ef42b3223b83b4fdb1b3bce1c5ff5f2f3",
+          "createdAt": "2026-11-12T10:49:59.976436Z"
+        }
+      }
+    }
+  }
+}
