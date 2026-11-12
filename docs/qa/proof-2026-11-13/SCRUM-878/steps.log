@@ -1,0 +1,2415 @@
+
+=== 2026-11-12T18:07:47.674Z setup: walk-in numbers checked unused, the gateway read (provider name only), the own ZZ TEST desk till, the two ZZ TEST login users
+S.phase = 'setup: walk-in numbers checked unused, the gateway read (provider name only), the own ZZ TEST desk till, the two ZZ TEST login users';
+const r = await S.setup();
+const a = await S.makeAccounts();
+return { r, a };
+--> {
+ "ok": true,
+ "value": {
+  "r": {
+   "free": 30,
+   "first": "0898878010",
+   "station": "01a1d0f1-d1ba-7865-a482-070685b347c3",
+   "prefix": "Z87801",
+   "gateway": {
+    "status": 200,
+    "provider": "simulator",
+    "simulatorAvailable": true,
+    "fellBack": false
+   },
+   "qr": "gateway"
+  },
+  "a": {
+   "A": {
+    "id": "01a1d0f1-d3f9-7e6d-9294-bddabafde18c",
+    "signInWithTemporary": 200,
+    "mustChangeAtFirst": true,
+    "changePassword": 200,
+    "signOut": 200,
+    "status": "active",
+    "mustChangePassword": false,
+    "assignments": [
+     "reception branch park"
+    ],
+    "holdsSaleCreate": true
+   },
+   "B": {
+    "id": "01a1d0f1-d7df-7745-8bbe-e36629653c31",
+    "signInWithTemporary": 200,
+    "mustChangeAtFirst": true,
+    "changePassword": 200,
+    "signOut": 200,
+    "status": "active",
+    "mustChangePassword": false,
+    "assignments": [
+     "reception branch park"
+    ],
+    "holdsSaleCreate": true
+   }
+  }
+ }
+}
+
+=== 2026-11-12T18:08:08.257Z 1: A signs in at the own desk till (1680x1050); GET /api/me carries sessionEnd
+S.phase = '1: A signs in at the own desk till (1680x1050); GET /api/me carries sessionEnd';
+const till = await S.openTill('desk', { width: 1680, height: 1050 });
+S.till = till;
+const st = await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await S.landing(till).waitFor({ timeout: 30000 });
+const me = await S.me(till);
+const answeredAt = Date.now();
+S.walkNames(me.body);
+const end = me.body?.sessionEnd ?? null;
+const atStation = JSON.stringify(me.body ?? {}).includes(S.station.id);
+S.receipt.reads.p1 = { signIn: st, ...after, meStatus: me.status, sessionEnd: end, atOwnStation: atStation, accountName: me.body?.employee?.name ?? me.body?.account?.name ?? null,
+  endMinusNowHours: end ? Math.round((Date.parse(end.at) - answeredAt) / 36000) / 100 : null };
+await S.shot(till, '01a-desk-A-signed-in-landing.png');
+await S.facts('01b-get-me-sessionEnd.png', 'SCRUM-878 point 1 — GET /api/me as ZZ TEST Session A, read on the till right after sign-in', [
+  ['account', 'ZZ TEST Session A (reception at the park)'],
+  ['sessionEnd.at', end?.at], ['sessionEnd.inSeconds', end?.inSeconds], ['sessionEnd.afterHours', end?.afterHours],
+  ['at minus now (hours)', S.receipt.reads.p1.endMinusNowHours], ['station', atStation ? 'the own ZZ TEST desk till' : 'NOT the own till']]);
+const pass = me.status === 200 && end && end.afterHours === 12 && Math.abs(end.inSeconds - 43200) <= 120 && atStation;
+S.point('1', !!pass, ['01a-desk-A-signed-in-landing.png', '01b-get-me-sessionEnd.png'], { sessionEnd: end });
+S.keepAlive(true);
+return S.receipt.reads.p1;
+--> {
+ "ok": true,
+ "value": {
+  "signIn": 200,
+  "pickerAsked": true,
+  "meStatus": 200,
+  "sessionEnd": {
+   "at": "2026-11-13T06:08:11.076Z",
+   "inSeconds": 43198,
+   "afterHours": 12
+  },
+  "atOwnStation": true,
+  "accountName": "ZZ TEST Session A",
+  "endMinusNowHours": 12
+ }
+}
+
+=== 2026-11-12T18:08:22.797Z 12b: an ordinary lock and unlock with the password, as before
+S.phase = '12b: an ordinary lock and unlock with the password, as before';
+const till = S.till;
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.waitForTimeout(700);
+const locked = await S.readLock(till);
+await S.shot(till, '12b-1-ordinary-lock-screen.png');
+await S.typePassword(till.locator('input[type="password"][autocomplete="current-password"]'), 'A');
+const [u] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/unlock' && r.request().method() === 'POST'),
+  till.getByRole('button', { name: 'Unlock', exact: true }).click(),
+]);
+await S.landing(till).waitFor({ timeout: 30000 });
+await till.waitForTimeout(800);
+const back = await S.readLock(till);
+await S.shot(till, '12b-2-ordinary-unlock-back.png');
+const out = { lockedHeading: locked.heading, lockedText: locked.text.slice(0, 300), unlockStatus: u.status(), sessionEndedLineWhileLocked: await S.endedLine(till).count(), afterUnlockHeading: back.heading, landing: await S.landing(till).isVisible() };
+S.receipt.reads.p12b = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "lockedHeading": "Locked",
+  "lockedText": "Locked ZZ TEST Session A is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked",
+  "unlockStatus": 200,
+  "sessionEndedLineWhileLocked": 0,
+  "afterUnlockHeading": "",
+  "landing": true
+ }
+}
+
+=== 2026-11-12T18:09:05.914Z 2: a ZZ TEST counter display paired to the own till; A starts a walk-in Tourist 2 Hours Play cart (1 kid, 1 adult)
+S.phase = '2: a ZZ TEST counter display paired to the own till; A starts a walk-in Tourist 2 Hours Play cart (1 kid, 1 adult)';
+const till = S.till;
+const d = await S.pairDisplay('d1');
+S.d = d;
+await S.landing(d).waitFor({ timeout: 60000 });
+await till.waitForTimeout(1500);
+const n = S.nextNumber();
+S.receipt.numbers.p2 = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 1, '2 Hours Play');
+await expect(till.getByRole('button', { name: /^Pay ฿/ })).toBeEnabled({ timeout: 20000 });
+await till.waitForTimeout(2500);
+const cart = await S.cartState(till);
+const dText = S.flat(await d.locator('body').innerText());
+S.receipt.reads.p2before = { cart, display: dText.slice(0, 400) }; S.save();
+await S.both('02a-A-cart-on-till-and-display.png', 'point 2 — A mid-cart before the session is ended', till, d);
+return S.receipt.reads.p2before;
+--> {
+ "ok": false,
+ "error": "ReferenceError: expect is not defined"
+}
+
+=== 2026-11-12T18:09:18.286Z 2: a ZZ TEST counter display paired to the own till; A starts a walk-in Tourist 2 Hours Play cart (1 kid, 1 adult)
+S.phase = '2: a ZZ TEST counter display paired to the own till; A starts a walk-in Tourist 2 Hours Play cart (1 kid, 1 adult)';
+const { expect } = S;
+const till = S.till, d = S.d;
+await expect(till.getByRole('button', { name: /^Pay ฿/ })).toBeEnabled({ timeout: 20000 });
+await till.waitForTimeout(1500);
+const cart = await S.cartState(till);
+const dText = S.flat(await d.locator('body').innerText());
+S.receipt.reads.p2before = { cart, display: dText.slice(0, 400) }; S.save();
+await S.both('02a-A-cart-on-till-and-display.png', 'point 2 — A mid-cart before the session is ended', till, d);
+return S.receipt.reads.p2before;
+--> {
+ "ok": true,
+ "value": {
+  "cart": {
+   "configure": "Configure: 2 Hours Play",
+   "pay": "Pay ฿1240",
+   "kids": "1",
+   "adults": "1",
+   "panel": "Current Order TOURIST 2 Hours Play EDITING ฿1240 Kids ฿890 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1240 VAT included ฿81.12 Total ฿1240 Cancel Pay ฿1240",
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240"
+ }
+}
+
+=== 2026-11-12T18:09:29.173Z 2: Sign out everywhere on A (admin route); the till hears it at once (offline and online again)
+S.phase = '2: Sign out everywhere on A (admin route); the till hears it at once (offline and online again)';
+const till = S.till, d = S.d;
+const rv = await S.revoke('A');
+const k = await S.kick('desk');
+const line = await S.waitEnded(till);
+const lock = await S.readLock(till);
+const dText = S.flat(await d.locator('body').innerText());
+const meAfter = await S.me(till);
+S.receipt.reads.p2ended = { revoke: rv, kick: k, line, lock, displayAfterEnd: dText.slice(0, 300), meStatus: meAfter.status, familyLine: await S.familyLine(till).count() }; S.save();
+await S.both('02b-A-session-ended-sign-in-form-and-display.png', 'point 2 — Sign out everywhere on A: the till locks to the sign-in form with the amber line', till, d);
+await S.shot(till, '02c-A-session-ended-till-close.png');
+return S.receipt.reads.p2ended;
+--> {
+ "ok": true,
+ "value": {
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:09:29.261Z"
+  },
+  "kick": {
+   "heartbeat": 401
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "lock": {
+   "text": "Oto POS is locked Sign in with your phone to start your shift. The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till. Phone number 🇹🇭 +66 Password Sign in First shift? Set up account Forgot password? Back to launcher Open customer booking site (temp) Open Admin Open stock module (temp) Locks automatically after inactivity",
+   "saleWordsInText": [],
+   "saleWordsInHtml": [],
+   "amountInText": false,
+   "payButton": 0,
+   "stillSignedIn": false,
+   "notSignedIn": false,
+   "heading": "Oto POS is locked"
+  },
+  "displayAfterEnd": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240",
+  "meStatus": 401,
+  "familyLine": 0
+ }
+}
+
+=== 2026-11-12T18:09:46.147Z 2: A signs in again on the form: the same cart, the same step, no station picker; the display follows
+S.phase = '2: A signs in again on the form: the same cart, the same step, no station picker; the display follows';
+const till = S.till, d = S.d;
+S.picks = [];
+const st = await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.getByRole('heading', { name: /^Configure:/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(3000);
+const cart = await S.cartState(till);
+const dText = S.flat(await d.locator('body').innerText());
+const me = await S.me(till);
+const same = JSON.stringify({ c: cart.configure, p: cart.pay, k: cart.kids, a: cart.adults, panel: cart.panel }) === JSON.stringify({ c: S.receipt.reads.p2before.cart.configure, p: S.receipt.reads.p2before.cart.pay, k: S.receipt.reads.p2before.cart.kids, a: S.receipt.reads.p2before.cart.adults, panel: S.receipt.reads.p2before.cart.panel });
+S.receipt.reads.p2back = { signIn: st, ...after, stationPicks: S.picks.length, cart, sameAsBefore: same, endedLineGone: (await S.endedLine(till).count()) === 0, display: dText.slice(0, 300), meStation: JSON.stringify(me.body ?? {}).includes(S.station.id), sessionEnd: me.body?.sessionEnd ?? null }; S.save();
+await S.both('02d-A-signed-in-again-same-cart-display-follows.png', 'point 2 — A signs in again: the same cart and step, no picker; the display shows the order', till, d);
+const pass = st === 200 && !after.pickerAsked && same && S.receipt.reads.p2ended.lock.saleWordsInText.length === 0 && !S.receipt.reads.p2ended.lock.amountInText
+  && /has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/.test(S.receipt.reads.p2ended.line) && /2 Hours Play/.test(dText);
+S.point('2', pass, ['02a-A-cart-on-till-and-display.png', '02b-A-session-ended-sign-in-form-and-display.png', '02c-A-session-ended-till-close.png', '02d-A-signed-in-again-same-cart-display-follows.png'], { line: S.receipt.reads.p2ended.line });
+return S.receipt.reads.p2back;
+--> {
+ "ok": true,
+ "value": {
+  "signIn": 200,
+  "pickerAsked": false,
+  "stationPicks": 1,
+  "cart": {
+   "configure": "Configure: 2 Hours Play",
+   "pay": "Pay ฿1240",
+   "kids": "1",
+   "adults": "1",
+   "panel": "Current Order TOURIST 2 Hours Play EDITING ฿1240 Kids ฿890 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1240 VAT included ฿81.12 Total ฿1240 Cancel Pay ฿1240",
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "sameAsBefore": true,
+  "endedLineGone": true,
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240",
+  "meStation": true,
+  "sessionEnd": {
+   "at": "2026-11-13T06:09:47.099Z",
+   "inSeconds": 43196,
+   "afterHours": 12
+  }
+ }
+}
+
+=== 2026-11-12T18:10:01.911Z 2: the display follows live after the sign-in: a second kid added on the till reaches the display, then taken off again
+S.phase = '2: the display follows live after the sign-in: a second kid added on the till reaches the display, then taken off again';
+const { expect } = S;
+const till = S.till, d = S.d;
+await S.quantity(till, 'Kids', 2);
+let seen2 = false;
+try { await expect(d.getByText(/Kids\s*2\s*×/)).toBeVisible({ timeout: 15000 }); seen2 = true; } catch {}
+const dText2 = S.flat(await d.locator('body').innerText());
+await S.both('02e-A-after-sign-in-a-change-reaches-the-display.png', 'point 2 — after the sign-in, a second kid added on the till reaches the display', till, d);
+await S.quantity(till, 'Kids', 1);
+let seen1 = false;
+try { await expect(d.getByText(/Kids\s*1\s*×/)).toBeVisible({ timeout: 15000 }); seen1 = true; } catch {}
+S.receipt.reads.p2follow = { displayShowedTwoKids: seen2, display2: dText2.slice(0, 200), displayBackToOne: seen1 }; S.save();
+S.receipt.points['2'].displayFollowsLive = seen2 && seen1; S.save();
+return S.receipt.reads.p2follow;
+--> {
+ "ok": true,
+ "value": {
+  "displayShowedTwoKids": true,
+  "display2": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿2130 Kids2 × ฿890 ฿1780 Adults1 × ฿350 ฿350 VAT included ฿139.35 Total ฿2130",
+  "displayBackToOne": true
+ }
+}
+
+=== 2026-11-12T18:10:11.912Z 3: the other person: revoke A mid-cart, B signs in on the same till: the offer names A and the two times
+S.phase = '3: the other person: revoke A mid-cart, B signs in on the same till: the offer names A and the two times';
+const till = S.till, d = S.d;
+S.p3startedAt = S.receipt.reads.p2before ? null : null;
+const rv = await S.revoke('A');
+const k = await S.kick('desk');
+const line = await S.waitEnded(till);
+S.picks = [];
+const st = await S.formSignIn(till, 'B');
+const after = await S.afterSignIn(till);
+const offerH = till.getByRole('heading', { name: 'A sale is open on this till' });
+await offerH.waitFor({ timeout: 30000 });
+await till.waitForTimeout(1000);
+const offerLine = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+const lock = await S.readLock(till);
+const buttons = await till.getByRole('button').evaluateAll(bs => bs.map(b => b.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean));
+const rungUp = await till.getByTestId('kept-sale-rung-up').count();
+const dText = S.flat(await d.locator('body').innerText());
+S.receipt.reads.p3offer = { revoke: rv, kick: k, line, signIn: st, ...after, stationPicks: S.picks.length, offerLine, offerText: lock.text, saleWordsInText: lock.saleWordsInText, saleWordsInHtml: lock.saleWordsInHtml, amountInText: lock.amountInText, buttons, rungUpLine: rungUp, display: dText.slice(0, 200) }; S.save();
+await S.both('03a-B-offer-names-A-and-two-times.png', 'point 3 — B signs in over the kept sale: the offer', till, d);
+return S.receipt.reads.p3offer;
+--> {
+ "ok": true,
+ "value": {
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:10:11.994Z"
+  },
+  "kick": {
+   "heartbeat": 401
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "signIn": 200,
+  "pickerAsked": false,
+  "stationPicks": 1,
+  "offerLine": "ZZ TEST Session A started this sale at 01:09. The session of ZZ TEST Session A ended at 01:10.",
+  "offerText": "A sale is open on this till Continue it, or discard it and start a new sale. ZZ TEST Session A started this sale at 01:09. The session of ZZ TEST Session A ended at 01:10. Continue this sale Discard it and start a new sale",
+  "saleWordsInText": [],
+  "saleWordsInHtml": [],
+  "amountInText": false,
+  "buttons": [
+   "Continue this sale",
+   "Discard it and start a new sale"
+  ],
+  "rungUpLine": 0,
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240"
+ }
+}
+
+=== 2026-11-12T18:10:28.066Z 3: B presses Continue this sale: the cart is on B's till; the display follows B; B rings it up and takes ZZ TEST cash
+S.phase = '3: B presses Continue this sale: the cart is on B\'s till; the display follows B; B rings it up and takes ZZ TEST cash';
+const { expect } = S;
+const till = S.till, d = S.d;
+await till.getByRole('button', { name: 'Continue this sale', exact: true }).click();
+await till.getByRole('heading', { name: /^Configure:/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const cart = await S.cartState(till);
+const corner = S.flat(await till.locator('header').first().innerText().catch(() => ''));
+await S.both('03b-B-continued-cart-on-B-till.png', 'point 3 — B pressed Continue this sale: the same cart on B\'s till', till, d);
+// does the display follow B? one more kid on the till, then back
+await S.quantity(till, 'Kids', 2);
+let follows = false;
+try { await expect(d.getByText(/Kids\s*2\s*×/)).toBeVisible({ timeout: 20000 }); follows = true; } catch {}
+const dAfter = S.flat(await d.locator('body').innerText());
+const notice = await till.getByText(/Another till is using this station|display/i).allInnerTexts().catch(() => []);
+await S.both('03c-B-change-reaches-display-or-not.png', 'point 3 — B adds a second kid: does the display follow B?', till, d);
+await S.quantity(till, 'Kids', 1);
+let backTo1 = false;
+try { await expect(d.getByText(/Kids\s*1\s*×/)).toBeVisible({ timeout: 20000 }); backTo1 = true; } catch {}
+S.receipt.reads.p3continue = { cart, headerText: corner.slice(0, 300), displayFollowsB: follows, displayText: dAfter.slice(0, 220), notices: notice.map(S.flat).slice(0, 5), displayBackToOne: backTo1 }; S.save();
+return S.receipt.reads.p3continue;
+--> {
+ "ok": true,
+ "value": {
+  "cart": {
+   "configure": "Configure: 2 Hours Play",
+   "pay": "Pay ฿1240",
+   "kids": "1",
+   "adults": "1",
+   "panel": "Current Order TOURIST 2 Hours Play EDITING ฿1240 Kids ฿890 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1240 VAT included ฿81.12 Total ฿1240 Cancel Pay ฿1240",
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "headerText": "",
+  "displayFollowsB": false,
+  "displayText": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240",
+  "notices": [
+   "Test harness — staff till and customer display share one live sale.",
+   "Hide customer display",
+   "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+  ],
+  "displayBackToOne": true
+ }
+}
+
+=== 2026-11-12T18:11:48.854Z 3 (hunt): does the display come back to B by itself? watched for up to 3 minutes, one kid added every 30 s and taken off
+S.phase = '3 (hunt): does the display come back to B by itself? watched for up to 3 minutes, one kid added every 30 s and taken off';
+const { expect } = S;
+const till = S.till, d = S.d;
+const t0 = Date.now();
+const samples = [];
+let healedAt = null;
+for (let i = 0; i < 7; i++) {
+  const target = i % 2 === 0 ? 2 : 1;
+  await S.quantity(till, 'Kids', target);
+  let ok = false;
+  try { await expect(d.getByText(new RegExp(`Kids\s*${target}\s*×`))).toBeVisible({ timeout: 25000 }); ok = true; } catch {}
+  const notice = await till.getByText(/^Display connection:/).allInnerTexts().catch(() => []);
+  const banner = await till.getByText(/^(Test harness|Display connected)/).allInnerTexts().catch(() => []);
+  samples.push({ s: Math.round((Date.now() - t0) / 1000), target, displayFollowed: ok, notice: notice.map(S.flat), banner: banner.map(S.flat) });
+  if (ok && healedAt === null && i > 0) { healedAt = Math.round((Date.now() - t0) / 1000); }
+  if (ok) break;
+  await till.waitForTimeout(5000);
+}
+await S.quantity(till, 'Kids', 1);
+await till.waitForTimeout(2000);
+await S.both('03d-B-display-after-waiting.png', 'point 3 (hunt) — after waiting: the display and B\'s till', till, d);
+S.receipt.reads.p3heal = { samples, healedAt }; S.save();
+return S.receipt.reads.p3heal;
+--> {
+ "ok": true,
+ "value": {
+  "samples": [
+   {
+    "s": 25,
+    "target": 2,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 56,
+    "target": 1,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 86,
+    "target": 2,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 116,
+    "target": 1,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 147,
+    "target": 2,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 177,
+    "target": 1,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   },
+   {
+    "s": 207,
+    "target": 2,
+    "displayFollowed": false,
+    "notice": [
+     "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+    ],
+    "banner": [
+     "Test harness — staff till and customer display share one live sale."
+    ]
+   }
+  ],
+  "healedAt": null
+ }
+}
+
+=== 2026-11-12T18:15:40.989Z 3: B rings the continued cart up and takes ZZ TEST cash; the sales list and History say who sold it
+S.phase = '3: B rings the continued cart up and takes ZZ TEST cash; the sales list and History say who sold it';
+S.receipt.defects.push({ id: 'D1', title: 'After a different person continues a kept sale, the paired customer display stops following for the rest of that sale',
+  steps: 'A mid-cart with a paired display; Sign out everywhere on A; B signs in, Continue this sale; change the cart (a second kid)',
+  seen: 'Till: "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen." and it falls back to the test-harness half; the paired display stays on A\'s last order (Kids 1, ฿1240) while the till shows Kids 2 (฿2130). Watched 207 s with a change every 30 s: never healed.',
+  where: 'apps/pos/src/lib/displaySession.ts useStationDisplay: the publisher (channel) outlives the person (the Till stays mounted on Continue, OperatorContext.continueKept), so it keeps A\'s leaseId; the box refuses B\'s renew/publish 403 STATION_NOT_PERMITTED (packages/box-agent/src/station-session.ts renew → heldBy, NOT_THE_HOLDER), and the catch at displaySession.ts:815 clears the lease only on STATION_STALE / STATION_NO_LEASE, so it retries A\'s lease for ever.',
+  pictures: ['03b-B-continued-cart-on-B-till.png', '03c-B-change-reaches-display-or-not.png', '03d-B-display-after-waiting.png'] }); S.save();
+const till = S.till;
+const [written] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST', { timeout: 45000 }),
+  S.pressPay(till),
+]);
+const sale = (await written.json()).sale;
+S.knownSales.add(sale.id);
+S.receipt.created.push({ kind: 'sale', point: '3', id: sale.id, status: sale.status }); S.save();
+await till.waitForTimeout(1000);
+await S.both('03e-B-payment-step-display-not-following.png', 'point 3 — B pressed Pay on the continued sale: the payment step; the paired display', till, S.d);
+await S.payCash(till);
+await till.waitForTimeout(1500);
+await S.both('03f-B-paid-in-cash.png', 'point 3 — B took ZZ TEST cash: Payment Successful', till, S.d);
+const list = (await S.stationSales()).find(s => s.id === sale.id);
+S.p3sale = sale.id;
+S.receipt.reads.p3pay = { saleId: sale.id, statusAtWrite: sale.status, listed: list ? { receipt: list.receiptNumber, status: list.status, soldBy: list.soldBy ? { accountId: list.soldBy.accountId === S.acct.B.id ? 'B' : list.soldBy.accountId === S.acct.A.id ? 'A' : 'other', name: list.soldBy.name } : null, gross: list.totals?.grossSatang / 100 } : null };
+S.save();
+return S.receipt.reads.p3pay;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d0f8-fcdd-7728-bf03-485aa02a418b",
+  "statusAtWrite": "tendering",
+  "listed": {
+   "receipt": "Z87801-000001",
+   "status": "finalised",
+   "soldBy": {
+    "accountId": "B",
+    "name": "ZZ TEST Session B"
+   },
+   "gross": 1240
+  }
+ }
+}
+
+=== 2026-11-12T18:15:58.799Z 3: History on B's till: the continued sale and who sold it
+S.phase = '3: History on B\'s till: the continued sale and who sold it';
+const till = S.till;
+const rec = S.receipt.reads.p3pay.listed.receipt;
+// leave the success screen the ordinary way first
+const next = till.getByRole('button', { name: /New Sale|Next customer|Start new sale|Done/ }).first();
+const nextLabel = await next.innerText().catch(() => null);
+await till.locator('a[href="/history"]').first().click();
+await till.waitForTimeout(3000);
+await S.markMine(till, [rec]);
+const row = till.locator('div.space-y-2 > button.w-full.text-left').filter({ hasText: rec }).first();
+const rowText = S.flat(await row.innerText().catch(() => ''));
+await S.shot(till, '03g-B-history-list-continued-sale.png');
+await row.click();
+await till.waitForTimeout(2500);
+const detail = S.flat(await till.locator('body').innerText());
+const soldLine = (detail.match(/(Sold by|Operator|Staff|By)[^.]{0,60}ZZ TEST Session [AB]/) ?? [null])[0];
+await S.markMine(till, [rec]);
+await S.shot(till, '03h-B-history-detail-sold-by.png');
+S.receipt.reads.p3history = { successNextButton: nextLabel, rowText, soldLine, detailHasB: detail.includes('ZZ TEST Session B'), detailHasA: detail.includes('ZZ TEST Session A') }; S.save();
+return S.receipt.reads.p3history;
+--> {
+ "ok": true,
+ "value": {
+  "successNextButton": "Start New Sale",
+  "rowText": "Z87801-000001 13 Nov, 01:15 ZZ TEST Session B Paid ฿1240",
+  "soldLine": null,
+  "detailHasB": true,
+  "detailHasA": false
+ }
+}
+
+=== 2026-11-12T18:16:25.547Z 12a: an ordinary sign-out ("Sign out and hand over the till") with a cart on screen keeps nothing and shows no session-ended line
+S.phase = '12a: an ordinary sign-out ("Sign out and hand over the till") with a cart on screen keeps nothing and shows no session-ended line';
+const { expect } = S;
+const till = S.till, d = S.d;
+const home = till.locator('a[href="/"]').first();
+if (await home.count()) await home.click(); else await till.getByRole('button', { name: 'Tickets', exact: true }).first().click();
+await till.waitForTimeout(2000);
+const n = S.nextNumber();
+S.receipt.numbers.p12a = n;
+await S.firstScreen(d, till, n, { tap: true }).catch(async e => { S.odd('p12a: the display first screen did not answer; typed on the till half', { e: String(e.message).slice(0, 160) }); await S.firstScreen(till, till, n); });
+await S.ticket(till, 1, 1, '1 Hour Play');
+await till.waitForTimeout(1500);
+const cart = await S.cartState(till);
+await S.both('12a-1-B-cart-before-sign-out.png', 'point 12a — B has a cart on screen, then locks and signs out', till, d);
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.getByRole('button', { name: 'Sign out and hand over the till' }).click();
+await till.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const lock = await S.readLock(till);
+const ended = await S.endedLine(till).count();
+await S.both('12a-2-after-ordinary-sign-out-no-line.png', 'point 12a — after Sign out and hand over the till: the sign-in form, no session-ended line', till, d);
+const dText = S.flat(await d.locator('body').innerText());
+// A signs in: a fresh till, no offer
+const st = await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.waitForTimeout(2500);
+const offer = await till.getByRole('heading', { name: 'A sale is open on this till' }).count();
+const fresh = await S.cartState(till);
+await S.both('12a-3-A-signs-in-after-sign-out-fresh-till.png', 'point 12a — the next sign-in (A) after an ordinary sign-out: a fresh till, no offer', till, d);
+S.receipt.reads.p12a = { cartBefore: cart, lockText: lock.text, endedLine: ended, saleWordsInText: lock.saleWordsInText, displayAfterSignOut: dText.slice(0, 200), signIn: st, ...after, offer, fresh };
+S.save();
+return S.receipt.reads.p12a;
+--> {
+ "ok": true,
+ "value": {
+  "cartBefore": {
+   "configure": "Configure: 1 Hour Play",
+   "pay": "Pay ฿1040",
+   "kids": "1",
+   "adults": "1",
+   "panel": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "lockText": "Oto POS is locked Sign in with your phone to start your shift. Phone number 🇹🇭 +66 Password Sign in First shift? Set up account Forgot password? Back to launcher Open customer booking site (temp) Open Admin Open stock module (temp) Locks automatically after inactivity",
+  "endedLine": 0,
+  "saleWordsInText": [],
+  "displayAfterSignOut": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1",
+  "signIn": 200,
+  "pickerAsked": false,
+  "offer": 0,
+  "fresh": {
+   "configure": null,
+   "pay": "Pay ฿0",
+   "kids": null,
+   "adults": null,
+   "panel": "Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+   "membershipCheck": true,
+   "paymentStep": false,
+   "url": "/"
+  }
+ }
+}
+
+=== 2026-11-12T18:17:29.711Z 3b: once more, and Discard: A mid-cart, revoke A, B signs in, Discard it and start a new sale: a fresh till, nothing kept
+S.phase = '3b: once more, and Discard: A mid-cart, revoke A, B signs in, Discard it and start a new sale: a fresh till, nothing kept';
+const till = S.till, d = S.d;
+S.receipt.defects[0].healsAt = 'After B finishes the continued sale and presses Start New Sale, the next sale follows on the display again (12a-1: B\'s next cart on the display). So the display is wrong for the rest of the continued sale only — which includes its payment step (03e: the display still shows A\'s order and no "Please pay").';
+S.save();
+const n = S.nextNumber();
+S.receipt.numbers.p3b = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 1, '2 Hours Play');
+await till.waitForTimeout(1500);
+const cart = await S.cartState(till);
+const rv = await S.revoke('A');
+const k = await S.kick('desk');
+const line = await S.waitEnded(till);
+const st = await S.formSignIn(till, 'B');
+await S.afterSignIn(till);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+const offerLine = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+await S.shot(till, '03i-B-offer-before-discard.png');
+await till.getByRole('button', { name: 'Discard it and start a new sale', exact: true }).click();
+await till.getByText('Membership Check', { exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const fresh = await S.cartState(till);
+const text = await S.bodyText(till);
+const dText = S.flat(await d.locator('body').innerText());
+await S.both('03j-B-discarded-fresh-till.png', 'point 3b — B pressed Discard: a fresh till (Membership Check), nothing of A\'s cart', till, d);
+const sales = (await S.stationSales()).filter(s => !S.knownSales.has(s.id));
+S.receipt.reads.p3b = { cartBefore: cart.configure + ' ' + cart.pay, revoke: rv, kick: k, line, signIn: st, offerLine, fresh, cartWordsAfter: ['2 Hours Play'].filter(w => text.includes(w)), display: dText.slice(0, 200), newSalesWritten: sales.length };
+S.save();
+return S.receipt.reads.p3b;
+--> {
+ "ok": true,
+ "value": {
+  "cartBefore": "Configure: 2 Hours Play Pay ฿1240",
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:17:33.549Z"
+  },
+  "kick": {
+   "heartbeat": 401
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "signIn": 200,
+  "offerLine": "ZZ TEST Session A started this sale at 01:17. The session of ZZ TEST Session A ended at 01:17.",
+  "fresh": {
+   "configure": null,
+   "pay": "Pay ฿0",
+   "kids": null,
+   "adults": null,
+   "panel": "Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+   "membershipCheck": true,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "cartWordsAfter": [],
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 2 Hours Play ฿1240 Kids1 × ฿890 ฿890 Adults1 × ฿350 ฿350 VAT included ฿81.12 Total ฿1240",
+  "newSalesWritten": 0
+ }
+}
+
+=== 2026-11-12T18:18:29.347Z 3b (hunt): after Discard, how long does the paired display keep showing the discarded cart?
+S.phase = '3b (hunt): after Discard, how long does the paired display keep showing the discarded cart?';
+const till = S.till, d = S.d;
+const t0 = Date.now();
+const samples = [];
+let healed = null;
+while (Date.now() - t0 < 150000) {
+  const dText = S.flat(await d.locator('body').innerText());
+  const notice = (await till.getByText(/^Display connection:/).allInnerTexts().catch(() => [])).map(S.flat);
+  const stale = dText.includes('2 Hours Play');
+  samples.push({ s: Math.round((Date.now() - t0) / 1000), displayShowsDiscardedCart: stale, notice: notice[0] ?? null, banner: S.flat((await till.getByText(/^(Test harness|Display connected)/).first().innerText().catch(() => ''))) });
+  if (!stale && !notice.length) { healed = Math.round((Date.now() - t0) / 1000); break; }
+  await till.waitForTimeout(10000);
+}
+await S.both('03k-B-after-discard-display-later.png', 'point 3b (hunt) — the display after Discard, later', till, d);
+S.receipt.reads.p3bDisplay = { samples, healedAfterSeconds: healed, secondsSinceDiscardAtStart: Math.round((t0 - Date.parse('2026-11-12T18:18:12Z')) / 1000) }; S.save();
+return S.receipt.reads.p3bDisplay;
+--> {
+ "ok": true,
+ "value": {
+  "samples": [
+   {
+    "s": 0,
+    "displayShowsDiscardedCart": true,
+    "notice": "Display connection: Another till is using this station. A manager can take it over. The team can continue using this screen.",
+    "banner": "Test harness — staff till and customer display share one live sale."
+   },
+   {
+    "s": 10,
+    "displayShowsDiscardedCart": false,
+    "notice": null,
+    "banner": "Display connected: ZZ TEST SCRUM-878 display d1"
+   }
+  ],
+  "healedAfterSeconds": 10,
+  "secondsSinceDiscardAtStart": 17
+ }
+}
+
+=== 2026-11-12T18:19:05.391Z 5: the first owner is kept — A mid-cart, revoke A, B signs in and leaves the offer, revoke B
+S.receipt.defects.push({ id: 'D2', title: 'Minor: right after a session end, the next person\'s fresh till cannot take the display for up to about a minute; the display keeps the old cart meanwhile',
+  steps: 'A mid-cart with a paired display; Sign out everywhere on A; B signs in, Discard it and start a new sale',
+  seen: 'For about 27 s after Discard (about 70 s after A\'s session ended) the till said "Display connection: Another till is using this station. A manager can take it over. The team can continue using this screen." and the paired display still showed A\'s discarded cart (2 Hours Play ฿1240); then it healed by itself ("Display connected").',
+  where: 'The ended session\'s display lease is not released at the end (it runs out on its 60 s TTL, packages/box-agent/src/station-session.ts STATION_LEASE_TTL_S); the new seat\'s claim is refused no_lease until then (apps/pos/src/lib/displaySession.ts claim back-off).',
+  pictures: ['03j-B-discarded-fresh-till.png', '03k-B-after-discard-display-later.png'] });
+const r3 = S.receipt.reads;
+const pass3 = /^ZZ TEST Session A started this sale at \d\d:\d\d\. The session of ZZ TEST Session A ended at \d\d:\d\d\.$/.test(r3.p3offer.offerLine) && r3.p3offer.saleWordsInText.length === 0 && !r3.p3offer.amountInText
+  && r3.p3continue.cart.configure === 'Configure: 2 Hours Play' && r3.p3pay.listed.status === 'finalised' && r3.p3pay.listed.soldBy.accountId === 'B' && r3.p3history.detailHasB && r3.p3b.fresh.membershipCheck && r3.p3b.newSalesWritten === 0;
+S.point('3', pass3, ['03a-B-offer-names-A-and-two-times.png', '03b-B-continued-cart-on-B-till.png', '03e-B-payment-step-display-not-following.png', '03f-B-paid-in-cash.png', '03g-B-history-list-continued-sale.png', '03h-B-history-detail-sold-by.png', '03i-B-offer-before-discard.png', '03j-B-discarded-fresh-till.png'],
+  { offerLine: r3.p3offer.offerLine, soldBy: r3.p3pay.listed.soldBy, receipt: r3.p3pay.listed.receipt, defects: ['D1 (display does not follow B for the rest of the continued sale)', 'D2 (minor)'] });
+const pass12a = r3.p12a.endedLine === 0 && r3.p12a.offer === 0 && r3.p12a.fresh.membershipCheck && !/session of/.test(r3.p12a.lockText);
+S.receipt.points['12a'] = { pass: pass12a, pictures: ['12a-1-B-cart-before-sign-out.png', '12a-2-after-ordinary-sign-out-no-line.png', '12a-3-A-signs-in-after-sign-out-fresh-till.png'], seen: { lockText: r3.p12a.lockText.slice(0, 120) } };
+S.receipt.points['12b'] = { pass: r3.p12b.unlockStatus === 200 && r3.p12b.landing && /ZZ TEST Session A is still signed in — enter your password to continue\./.test(r3.p12b.lockedText), pictures: ['12b-1-ordinary-lock-screen.png', '12b-2-ordinary-unlock-back.png'], seen: { locked: r3.p12b.lockedText.slice(0, 110) } };
+S.save();
+// point 5 begins: B signs out the ordinary way; A signs in and starts a cart
+S.phase = '5: the first owner is kept — A mid-cart, revoke A, B signs in and leaves the offer, revoke B';
+const till = S.till, d = S.d;
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.getByRole('button', { name: 'Sign out and hand over the till' }).click();
+await till.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 30000 });
+await S.formSignIn(till, 'A');
+await S.afterSignIn(till);
+await S.landing(till).waitFor({ timeout: 30000 }).catch(() => {});
+await till.waitForTimeout(2000);
+const n = S.nextNumber();
+S.receipt.numbers.p5 = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 2, 1, '2 Hours Play');
+await till.waitForTimeout(1500);
+const cart = await S.cartState(till);
+S.receipt.reads.p5cart = cart; S.save();
+await S.both('05a-A-cart-2-kids-1-adult.png', 'point 5 — A\'s cart (2 kids, 1 adult) before A\'s session is ended', till, d);
+const rvA = await S.revoke('A');
+await S.kick('desk');
+const lineA = await S.waitEnded(till);
+await S.formSignIn(till, 'B');
+await S.afterSignIn(till);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+const offer1 = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+await S.shot(till, '05b-B-offer-left-unanswered.png');
+// B leaves the offer; B's session is ended too
+const rvB = await S.revoke('B');
+await S.kick('desk');
+const lineB = await S.waitEnded(till);
+const lockB = await S.readLock(till);
+await S.shot(till, '05c-B-session-ended-over-the-offer.png');
+S.receipt.reads.p5 = { cart: cart.configure + ' ' + cart.pay + ' kids ' + cart.kids + ' adults ' + cart.adults, revokeA: rvA, lineA, offer1, revokeB: rvB, lineB, lockB: { saleWordsInText: lockB.saleWordsInText, amountInText: lockB.amountInText, heading: lockB.heading } };
+S.save();
+return S.receipt.reads.p5;
+--> {
+ "ok": true,
+ "value": {
+  "cart": "Configure: 2 Hours Play Pay ฿2130 kids 2 adults 1",
+  "revokeA": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:19:14.915Z"
+  },
+  "lineA": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "offer1": "ZZ TEST Session A started this sale at 01:19. The session of ZZ TEST Session A ended at 01:19.",
+  "revokeB": {
+   "who": "B",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:19:17.470Z"
+  },
+  "lineB": "The session of ZZ TEST Session B has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "lockB": {
+   "saleWordsInText": [],
+   "amountInText": false,
+   "heading": "Oto POS is locked"
+  }
+ }
+}
+
+=== 2026-11-12T18:19:31.593Z 5: B signs in again: the offer still says A started it; revoke B; A signs in: A's cart, no offer
+S.phase = '5: B signs in again: the offer still says A started it; revoke B; A signs in: A\'s cart, no offer';
+const till = S.till, d = S.d;
+await S.formSignIn(till, 'B');
+await S.afterSignIn(till);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(800);
+const offer2 = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+await S.shot(till, '05d-B-signs-in-again-offer-still-names-A.png');
+const rvB = await S.revoke('B');
+await S.kick('desk');
+const lineB2 = await S.waitEnded(till);
+S.picks = [];
+const st = await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.getByRole('heading', { name: /^Configure:/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const offer = await till.getByRole('heading', { name: 'A sale is open on this till' }).count();
+const cart = await S.cartState(till);
+await S.both('05e-A-signs-in-own-cart-no-offer.png', 'point 5 — A signs in after B\'s session ended over the offer: A\'s own cart, no offer', till, d);
+const before = S.receipt.reads.p5cart;
+const same = cart.configure === before.configure && cart.pay === before.pay && cart.kids === before.kids && cart.adults === before.adults && cart.panel === before.panel;
+S.receipt.reads.p5b = { offer2, revokeB2: rvB, lineB2, signIn: st, ...after, offerShownToA: offer, cart, sameAsBefore: same };
+const r = S.receipt.reads.p5;
+const pass = /^The session of ZZ TEST Session B has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/.test(r.lineB)
+  && /^ZZ TEST Session A started this sale at/.test(offer2) && offer2 === r.offer1 && offer === 0 && same && !after.pickerAsked;
+S.point('5', pass, ['05a-A-cart-2-kids-1-adult.png', '05b-B-offer-left-unanswered.png', '05c-B-session-ended-over-the-offer.png', '05d-B-signs-in-again-offer-still-names-A.png', '05e-A-signs-in-own-cart-no-offer.png'], { lineB: r.lineB, offerFirst: r.offer1, offerAgain: offer2 });
+return S.receipt.reads.p5b;
+--> {
+ "ok": true,
+ "value": {
+  "offer2": "ZZ TEST Session A started this sale at 01:19. The session of ZZ TEST Session A ended at 01:19.",
+  "revokeB2": {
+   "who": "B",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:19:33.493Z"
+  },
+  "lineB2": "The session of ZZ TEST Session B has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "signIn": 200,
+  "pickerAsked": false,
+  "offerShownToA": 0,
+  "cart": {
+   "configure": "Configure: 2 Hours Play",
+   "pay": "Pay ฿2130",
+   "kids": "2",
+   "adults": "1",
+   "panel": "Current Order TOURIST 2 Hours Play EDITING ฿2130 Kids ฿890 each 2 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿2130 VAT included ฿139.35 Total ฿2130 Cancel Pay ฿2130",
+   "membershipCheck": false,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "sameAsBefore": true
+ }
+}
+
+=== 2026-11-12T18:20:01.271Z 4: the offer locks: revoke A mid-cart, B signs in and touches nothing; Locking soon near 1:45, the lock at 2:00; B's password brings the same offer; Continue works
+S.phase = '4: the offer locks: revoke A mid-cart, B signs in and touches nothing; Locking soon near 1:45, the lock at 2:00; B\'s password brings the same offer; Continue works';
+const till = S.till, d = S.d;
+const rv = await S.revoke('A');
+await S.kick('desk');
+await S.waitEnded(till);
+S.keepAlive(false);
+await S.formSignIn(till, 'B');
+const t0 = Date.now(); // the Sign in press is the last touch
+await S.afterSignIn(till);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+const offer1 = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+await S.shot(till, '04a-B-offer-untouched.png');
+const soon = till.getByText('Locking soon…', { exact: true });
+await soon.waitFor({ timeout: 150000 });
+const soonAt = (Date.now() - t0) / 1000;
+await till.waitForTimeout(1500);
+const soonBar = S.flat(await soon.locator('xpath=ancestor::div[2]').innerText().catch(() => 'Locking soon…'));
+await S.shot(till, '04b-B-offer-locking-soon-bar.png');
+const lockedH = till.getByRole('heading', { name: 'Locked', exact: true });
+await lockedH.waitFor({ timeout: 60000 });
+const lockedAt = (Date.now() - t0) / 1000;
+await till.waitForTimeout(800);
+const lock = await S.readLock(till, ['2 Hours Play']);
+await S.shot(till, '04c-B-offer-locked-after-two-minutes.png');
+await S.typePassword(till.locator('input[type="password"][autocomplete="current-password"]'), 'B');
+const [u] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/unlock' && r.request().method() === 'POST'),
+  till.getByRole('button', { name: 'Unlock', exact: true }).click(),
+]);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(800);
+const offer2 = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+await S.shot(till, '04d-B-password-same-offer-again.png');
+await till.getByRole('button', { name: 'Continue this sale', exact: true }).click();
+await till.getByRole('heading', { name: /^Configure:/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(2000);
+const cart = await S.cartState(till);
+await S.shot(till, '04e-B-continued-after-unlock.png');
+S.keepAlive(true);
+S.receipt.reads.p4 = { revoke: rv, offer1, soonAtSeconds: Math.round(soonAt * 10) / 10, soonBar, lockedAtSeconds: Math.round(lockedAt * 10) / 10, lockedText: lock.text.slice(0, 200), lockSaleWords: lock.saleWordsInText, unlock: u.status(), offer2, sameOffer: offer1 === offer2, cart: cart.configure + ' ' + cart.pay + ' kids ' + cart.kids + ' adults ' + cart.adults };
+const pass = soonAt >= 95 && soonAt <= 115 && lockedAt >= 115 && lockedAt <= 130 && /ZZ TEST Session B is still signed in — enter your password to continue\./.test(lock.text) && u.status() === 200 && offer1 === offer2 && cart.configure === 'Configure: 2 Hours Play' && cart.kids === '2';
+S.point('4', pass, ['04a-B-offer-untouched.png', '04b-B-offer-locking-soon-bar.png', '04c-B-offer-locked-after-two-minutes.png', '04d-B-password-same-offer-again.png', '04e-B-continued-after-unlock.png'], { soonAt, lockedAt, locked: lock.text.slice(0, 90) });
+return S.receipt.reads.p4;
+--> {
+ "ok": true,
+ "value": {
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:20:01.358Z"
+  },
+  "offer1": "ZZ TEST Session A started this sale at 01:19. The session of ZZ TEST Session A ended at 01:20.",
+  "soonAtSeconds": 105.7,
+  "soonBar": "Locking soon… Auto-lock in 14s with no activity Stay Lock now",
+  "lockedAtSeconds": 120.8,
+  "lockedText": "Locked ZZ TEST Session B is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked",
+  "lockSaleWords": [],
+  "unlock": 200,
+  "offer2": "ZZ TEST Session A started this sale at 01:19. The session of ZZ TEST Session A ended at 01:20.",
+  "sameOffer": true,
+  "cart": "Configure: 2 Hours Play Pay ฿2130 kids 2 adults 1"
+ }
+}
+
+=== 2026-11-12T18:22:29.332Z 6a: nothing to lose — B cancels the continued cart (nothing written) and signs out; A types only a ZZ TEST number on the customer screen; revoke A
+S.phase = '6a: nothing to lose — B cancels the continued cart (nothing written) and signs out; A types only a ZZ TEST number on the customer screen; revoke A';
+const till = S.till, d = S.d;
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).last();
+await cancel.click();
+await till.waitForTimeout(1000);
+const dlg = till.getByRole('alertdialog').or(till.getByRole('dialog'));
+let dialogText = null;
+if (await dlg.count()) { dialogText = S.flat(await dlg.first().innerText()); const yes = dlg.first().getByRole('button', { name: /Cancel sale|Yes|Discard|Clear|Confirm/ }).first(); if (await yes.count()) await yes.click(); }
+await till.getByText('Membership Check', { exact: true }).waitFor({ timeout: 30000 });
+const writtenSince = (await S.stationSales()).filter(s => !S.knownSales.has(s.id)).length;
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.getByRole('button', { name: 'Sign out and hand over the till' }).click();
+await till.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 30000 });
+await S.formSignIn(till, 'A');
+await S.afterSignIn(till);
+await S.landing(till).waitFor({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const n = S.nextNumber();
+S.receipt.numbers.p6a = n;
+await S.firstScreen(d, till, n, { tap: true, press: false });
+await till.waitForTimeout(2000);
+const tillPhone = S.flat(await till.getByText('Phone', { exact: true }).first().locator('xpath=..').innerText().catch(() => ''));
+await S.both('06a-A-only-a-number-typed.png', 'point 6a — A: only a ZZ TEST number typed on the customer screen, nothing else', till, d);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+const lock = await S.readLock(till, [n, n.slice(1)]);
+await S.both('06b-A-ended-no-kept-sentence.png', 'point 6a — Sign out everywhere on A with only a number typed: no "kept" sentence', till, d);
+await S.formSignIn(till, 'B');
+const after = await S.afterSignIn(till);
+await till.waitForTimeout(2500);
+const offer = await till.getByRole('heading', { name: 'A sale is open on this till' }).count();
+const fresh = await S.cartState(till);
+const dText = S.flat(await d.locator('body').innerText());
+await S.both('06c-B-fresh-till-no-offer.png', 'point 6a — B signs in: a fresh till, no offer', till, d);
+S.receipt.reads.p6a = { cancelDialog: dialogText, salesWrittenByTheCancelledCart: writtenSince, tillPhoneCard: tillPhone, revoke: rv, line, numberOnLockScreen: lock.saleWordsInText.length > 0, ...after, offer, fresh: { membershipCheck: fresh.membershipCheck, pay: fresh.pay }, display: dText.slice(0, 160) };
+S.save();
+return S.receipt.reads.p6a;
+--> {
+ "ok": true,
+ "value": {
+  "cancelDialog": null,
+  "salesWrittenByTheCancelledCart": 0,
+  "tillPhoneCard": "Phone —",
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:22:39.025Z"
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on.",
+  "numberOnLockScreen": false,
+  "pickerAsked": false,
+  "offer": 0,
+  "fresh": {
+   "membershipCheck": true,
+   "pay": "Pay ฿0"
+  },
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 English MEMBERS SAVE What's your phone number? Members are recognised automatically and"
+ }
+}
+
+=== 2026-11-12T18:23:39.735Z 6b: a finished cash sale still on its success screen: revoke B; no kept sentence; A signs in: a fresh till, no offer
+S.phase = '6b: a finished cash sale still on its success screen: revoke B; no kept sentence; A signs in: a fresh till, no offer';
+const { expect } = S;
+const till = S.till, d = S.d;
+S.receipt.defects.find(x => x.id === 'D2').alsoSeen = 'Point 6a: after A\'s session ended with only a number typed, B\'s fresh till showed the same "Another till is using this station" line and the paired display still showed the previous customer\'s typed number (+66 0898878014, a ZZ TEST number) under "What\'s your phone number?" (06c) until the old lease ran out.';
+S.save();
+await expect(till.getByText(/^Display connected:/)).toBeVisible({ timeout: 120000 });
+const healedDisplay = S.flat(await d.locator('body').innerText()).slice(0, 120);
+const n = S.nextNumber();
+S.receipt.numbers.p6b = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 1, '1 Hour Play');
+const [written] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST', { timeout: 45000 }),
+  S.pressPay(till),
+]);
+const sale = (await written.json()).sale;
+S.knownSales.add(sale.id);
+S.receipt.created.push({ kind: 'sale', point: '6b', id: sale.id }); S.save();
+await S.payCash(till);
+await till.waitForTimeout(1500);
+await S.both('06d-B-cash-sale-success-screen.png', 'point 6b — B\'s cash sale on its success screen, before B\'s session is ended', till, d);
+const rv = await S.revoke('B');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+await S.both('06e-B-ended-on-success-screen-no-kept.png', 'point 6b — Sign out everywhere on B on the success screen: no "kept" sentence', till, d);
+await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.waitForTimeout(2500);
+const offer = await till.getByRole('heading', { name: 'A sale is open on this till' }).count();
+const fresh = await S.cartState(till);
+const success = await till.getByText('Payment Successful', { exact: true }).count();
+await S.both('06f-A-fresh-till-after-finished-sale.png', 'point 6b — A signs in: a fresh till, no offer', till, d);
+const listed = (await S.stationSales()).find(s => s.id === sale.id);
+S.receipt.reads.p6b = { displayBeforeSale: healedDisplay, sale: { receipt: listed?.receiptNumber, status: listed?.status, soldBy: listed?.soldBy?.name }, revoke: rv, line, ...after, offer, successScreenShown: success, fresh: { membershipCheck: fresh.membershipCheck, pay: fresh.pay } };
+const r6a = S.receipt.reads.p6a;
+const pass = r6a.line === 'The session of ZZ TEST Session A has ended. Sign in again to carry on.' && r6a.offer === 0 && r6a.fresh.membershipCheck
+  && line === 'The session of ZZ TEST Session B has ended. Sign in again to carry on.' && offer === 0 && fresh.membershipCheck && success === 0;
+S.point('6', pass, ['06a-A-only-a-number-typed.png', '06b-A-ended-no-kept-sentence.png', '06c-B-fresh-till-no-offer.png', '06d-B-cash-sale-success-screen.png', '06e-B-ended-on-success-screen-no-kept.png', '06f-A-fresh-till-after-finished-sale.png'], { lineA: r6a.line, lineB: line });
+return S.receipt.reads.p6b;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.tap: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('body').getByRole('button', { name: '7', exact: true }).last()\u001b[22m | \u001b[2m    - locator resolved to <button type=\"button\" class=\"h-20 rounded-2xl bg-foreground/5 border border-foreground/10 text-4xl font-bold text-foreground transition-transform active:scale-95 hover:bg-foreground/10\">7</button>\u001b[22m | \u001b[2m  - attempting tap action\u001b[22m | \u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m"
+}
+
+=== 2026-11-12T18:24:20.998Z 6b: look at the display and the till after the keypad tap timed out
+S.phase = '6b: look at the display and the till after the keypad tap timed out';
+const till = S.till, d = S.d;
+await S.both('06x-look-after-tap-timeout.png', 'point 6b (look) — the display keypad did not take a tap', till, d);
+return { display: S.flat(await d.locator('body').innerText()).slice(0, 400), till: (await S.cartState(till)), notice: (await till.getByText(/^Display (connection|connected)/).allInnerTexts()).map(S.flat) };
+--> {
+ "ok": true,
+ "value": {
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中文 使用中文继续 ไทย ดำเนินการต่อเป็นภาษาไทย Русский Продолжить на русском Français Continuer en français",
+  "till": {
+   "configure": null,
+   "pay": "Pay ฿0",
+   "kids": null,
+   "adults": null,
+   "panel": "Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0",
+   "membershipCheck": true,
+   "paymentStep": false,
+   "url": "/"
+  },
+  "notice": [
+   "Display connected: ZZ TEST SCRUM-878 display d1"
+  ]
+ }
+}
+
+=== 2026-11-12T18:25:01.092Z 6b: a finished cash sale still on its success screen: revoke B; no kept sentence; A signs in: a fresh till, no offer
+S.phase = '6b: a finished cash sale still on its success screen: revoke B; no kept sentence; A signs in: a fresh till, no offer';
+const { expect } = S;
+const till = S.till, d = S.d;
+S.receipt.defects.find(x => x.id === 'D2').alsoSeen = 'Point 6a: after A\'s session ended with only a number typed, B\'s fresh till showed the same "Another till is using this station" line and the paired display still showed the previous customer\'s typed number (+66 0898878014, a ZZ TEST number) under "What\'s your phone number?" (06c) until the old lease ran out.';
+S.save();
+await expect(till.getByText(/^Display connected:/)).toBeVisible({ timeout: 120000 });
+const healedDisplay = S.flat(await d.locator('body').innerText()).slice(0, 120);
+await d.waitForTimeout(1500);
+const n = S.nextNumber();
+S.receipt.numbers.p6b = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 1, '1 Hour Play');
+const [written] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST', { timeout: 45000 }),
+  S.pressPay(till),
+]);
+const sale = (await written.json()).sale;
+S.knownSales.add(sale.id);
+S.receipt.created.push({ kind: 'sale', point: '6b', id: sale.id }); S.save();
+await S.payCash(till);
+await till.waitForTimeout(1500);
+await S.both('06d-B-cash-sale-success-screen.png', 'point 6b — B\'s cash sale on its success screen, before B\'s session is ended', till, d);
+const rv = await S.revoke('B');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+await S.both('06e-B-ended-on-success-screen-no-kept.png', 'point 6b — Sign out everywhere on B on the success screen: no "kept" sentence', till, d);
+await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.waitForTimeout(2500);
+const offer = await till.getByRole('heading', { name: 'A sale is open on this till' }).count();
+const fresh = await S.cartState(till);
+const success = await till.getByText('Payment Successful', { exact: true }).count();
+await S.both('06f-A-fresh-till-after-finished-sale.png', 'point 6b — A signs in: a fresh till, no offer', till, d);
+const listed = (await S.stationSales()).find(s => s.id === sale.id);
+S.receipt.reads.p6b = { displayBeforeSale: healedDisplay, sale: { receipt: listed?.receiptNumber, status: listed?.status, soldBy: listed?.soldBy?.name }, revoke: rv, line, ...after, offer, successScreenShown: success, fresh: { membershipCheck: fresh.membershipCheck, pay: fresh.pay } };
+const r6a = S.receipt.reads.p6a;
+const pass = r6a.line === 'The session of ZZ TEST Session A has ended. Sign in again to carry on.' && r6a.offer === 0 && r6a.fresh.membershipCheck
+  && line === 'The session of ZZ TEST Session B has ended. Sign in again to carry on.' && offer === 0 && fresh.membershipCheck && success === 0;
+S.point('6', pass, ['06a-A-only-a-number-typed.png', '06b-A-ended-no-kept-sentence.png', '06c-B-fresh-till-no-offer.png', '06d-B-cash-sale-success-screen.png', '06e-B-ended-on-success-screen-no-kept.png', '06f-A-fresh-till-after-finished-sale.png'], { lineA: r6a.line, lineB: line });
+return S.receipt.reads.p6b;
+--> {
+ "ok": true,
+ "value": {
+  "displayBeforeSale": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 LANGUAGE Choose your language 请选择您的语言 · เลือกภา",
+  "sale": {
+   "receipt": "Z87801-000002",
+   "status": "finalised",
+   "soldBy": "ZZ TEST Session B"
+  },
+  "revoke": {
+   "who": "B",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:25:07.666Z"
+  },
+  "line": "The session of ZZ TEST Session B has ended. Sign in again to carry on.",
+  "pickerAsked": false,
+  "offer": 0,
+  "successScreenShown": 0,
+  "fresh": {
+   "membershipCheck": true,
+   "pay": "Pay ฿0"
+  }
+ }
+}
+
+=== 2026-11-12T18:26:08.297Z 7: a locked till — A mid-cart presses the lock button; revoke A; A types the password and presses Unlock within seconds
+S.phase = '7: a locked till — A mid-cart presses the lock button; revoke A; A types the password and presses Unlock within seconds';
+const { expect } = S;
+const till = S.till, d = S.d;
+await d.waitForTimeout(1000);
+const n = S.nextNumber();
+S.receipt.numbers.p7 = n;
+await S.landing(d).waitFor({ timeout: 30000 });
+await d.waitForTimeout(1500);
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 2, '2 Hours Play');
+await till.waitForTimeout(1500);
+const cart = await S.cartState(till);
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.waitForTimeout(600);
+const lockedBefore = await S.readLock(till);
+await S.shot(till, '07a-A-locked-before-the-end.png');
+let unlockSeen = null;
+const hb = [];
+till.on('response', r => { if (new URL(r.url()).pathname === '/api/me/station/heartbeat') hb.push({ at: Date.now(), status: r.status() }); });
+const rv = await S.revoke('A');
+const tRevoke = Date.now();
+await S.typePassword(till.locator('input[type="password"][autocomplete="current-password"]'), 'A');
+const [u] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/unlock' && r.request().method() === 'POST'),
+  till.getByRole('button', { name: 'Unlock', exact: true }).click(),
+]);
+const unlockAfterMs = Date.now() - tRevoke;
+const line = await S.waitEnded(till, 15000);
+await till.waitForTimeout(500);
+const lock = await S.readLock(till, ['2 Hours Play']);
+await S.shot(till, '07b-A-unlock-after-end-says-ended-sign-in-form.png');
+await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.getByRole('heading', { name: /^Configure:/ }).first().waitFor({ timeout: 30000 });
+await till.waitForTimeout(2000);
+const back = await S.cartState(till);
+await S.both('07c-A-signed-in-cart-back.png', 'point 7 — A signs in on the form: the cart is back', till, d);
+const heartbeatsBetween = hb.filter(h => h.at < tRevoke + unlockAfterMs).length;
+S.receipt.reads.p7 = { cart: cart.configure + ' ' + cart.pay + ' kids ' + cart.kids + ' adults ' + cart.adults, lockedBefore: lockedBefore.text.slice(0, 120), revoke: rv, unlockStatus: u.status(), unlockAfterMs, heartbeatsBeforeUnlockAnswer: heartbeatsBetween, line, lock: { heading: lock.heading, stillSignedIn: lock.stillSignedIn, notSignedIn: lock.notSignedIn, saleWords: lock.saleWordsInText, amount: lock.amountInText, text: lock.text.slice(0, 260) }, ...after, back: back.configure + ' ' + back.pay + ' kids ' + back.kids + ' adults ' + back.adults };
+const pass = u.status() === 401 && heartbeatsBetween === 0 && /^The session of ZZ TEST Session A has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/.test(line)
+  && !lock.stillSignedIn && !lock.notSignedIn && lock.heading === 'Oto POS is locked' && lock.saleWordsInText.length === 0 && back.configure === cart.configure && back.pay === cart.pay && back.adults === '2';
+S.point('7', pass, ['07a-A-locked-before-the-end.png', '07b-A-unlock-after-end-says-ended-sign-in-form.png', '07c-A-signed-in-cart-back.png'], { unlock: u.status(), line });
+return S.receipt.reads.p7;
+--> {
+ "ok": true,
+ "value": {
+  "cart": "Configure: 2 Hours Play Pay ฿1590 kids 1 adults 2",
+  "lockedBefore": "Locked ZZ TEST Session A is still signed in — enter your password to continue. Password Unlock Sign out and hand over th",
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:26:20.431Z"
+  },
+  "unlockStatus": 401,
+  "unlockAfterMs": 94,
+  "heartbeatsBeforeUnlockAnswer": 0,
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "lock": {
+   "heading": "Oto POS is locked",
+   "stillSignedIn": false,
+   "notSignedIn": false,
+   "saleWords": [],
+   "amount": false,
+   "text": "Oto POS is locked Sign in with your phone to start your shift. The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till. Phone number 🇹🇭 +66 Password Sign in First shift? Set up account Forgot password?"
+  },
+  "pickerAsked": false,
+  "back": "Configure: 2 Hours Play Pay ฿1590 kids 1 adults 2"
+ }
+}
+
+=== 2026-11-12T18:26:41.786Z 9: a rung-up sale and a different person — A presses Pay (rung up, unpaid), revoke A, B signs in: the offer with the two rung-up lines and Continue only
+S.phase = '9: a rung-up sale and a different person — A presses Pay (rung up, unpaid), revoke A, B signs in: the offer with the two rung-up lines and Continue only';
+const till = S.till, d = S.d;
+const [written] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST', { timeout: 45000 }),
+  S.pressPay(till),
+]);
+const sale = (await written.json()).sale;
+S.knownSales.add(sale.id);
+S.p9sale = sale.id;
+S.receipt.created.push({ kind: 'sale', point: '9', id: sale.id, status: sale.status }); S.save();
+await till.waitForTimeout(1500);
+await S.both('09a-A-rung-up-payment-step.png', 'point 9 — A pressed Pay: the sale is rung up, unpaid, at the payment step', till, d);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+await S.formSignIn(till, 'B');
+await S.afterSignIn(till);
+await till.getByRole('heading', { name: 'A sale is open on this till' }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(1000);
+const ask = S.flat(await till.getByRole('heading', { name: 'A sale is open on this till' }).locator('xpath=following-sibling::p[1]').innerText());
+const offerLine = S.flat(await till.getByTestId('kept-sale-offer').innerText());
+const rungLine = S.flat(await till.getByTestId('kept-sale-rung-up').innerText().catch(() => ''));
+const buttons = await till.getByRole('button').evaluateAll(bs => bs.map(b => b.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean));
+const lock = await S.readLock(till, ['2 Hours Play']);
+const html = await till.content();
+await S.shot(till, '09b-B-offer-rung-up-continue-only.png');
+S.receipt.reads.p9 = { saleId: sale.id, statusAtWrite: sale.status, revoke: rv, line, ask, offerLine, rungLine, buttons, saleWords: lock.saleWordsInText, amount: lock.amountInText, saleIdInHtml: html.includes(sale.id) };
+const pass = sale.status === 'tendering' && ask === 'Continue it to read its payment back, then finish it or cancel it.' && rungLine === 'It is rung up; a payment may be waiting on the customer display.'
+  && buttons.includes('Continue this sale') && !buttons.some(b => /Discard/.test(b)) && /^ZZ TEST Session A started this sale at/.test(offerLine) && lock.saleWordsInText.length === 0 && !lock.amountInText && !html.includes(sale.id);
+S.point('9', pass, ['09a-A-rung-up-payment-step.png', '09b-B-offer-rung-up-continue-only.png'], { ask, offerLine, rungLine, buttons });
+return S.receipt.reads.p9;
+--> {
+ "ok": true,
+ "value": {
+  "saleId": "01a1d103-120b-7598-b011-52bdd7159fc8",
+  "statusAtWrite": "tendering",
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:26:43.849Z"
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "ask": "Continue it to read its payment back, then finish it or cancel it.",
+  "offerLine": "ZZ TEST Session A started this sale at 01:26. The session of ZZ TEST Session A ended at 01:26.",
+  "rungLine": "It is rung up; a payment may be waiting on the customer display.",
+  "buttons": [
+   "Continue this sale"
+  ],
+  "saleWords": [],
+  "amount": false,
+  "saleIdInHtml": false
+ }
+}
+
+=== 2026-11-12T18:27:09.978Z 9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)
+S.phase = '9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till\'s own Cancel voids a sale that took no money)';
+const till = S.till, d = S.d;
+await till.getByRole('button', { name: 'Continue this sale', exact: true }).click();
+await S.paymentStep(till).waitFor({ timeout: 30000 });
+await till.waitForTimeout(3000);
+const stepText = S.flat(await S.paymentStep(till).innerText()).slice(0, 300);
+const notice = (await till.getByText(/^Display connection:/).allInnerTexts()).map(S.flat);
+await S.both('09c-B-continued-rung-up-payment-step.png', 'point 9 — B continued the rung-up sale: the payment step', till, d);
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).last();
+const voidResp = till.waitForResponse(r => /\/api\/sales\/[^/]+\/void$/.test(new URL(r.url()).pathname), { timeout: 30000 }).catch(() => null);
+await cancel.click();
+await till.waitForTimeout(1200);
+let dialogText = null;
+const dlg = till.getByRole('alertdialog').or(till.getByRole('dialog'));
+if (await dlg.count()) { dialogText = S.flat(await dlg.first().innerText()); await S.shot(till, '09d-B-cancel-dialog.png'); const yes = dlg.first().getByRole('button', { name: /Cancel sale|Void|Yes|Confirm|Discard/ }).first(); if (await yes.count()) await yes.click(); }
+const v = await voidResp;
+await till.waitForTimeout(2500);
+const after = await S.cartState(till);
+const s = await S.sale(S.p9sale);
+await S.both('09e-B-after-cancel.png', 'point 9 — after B cancelled the rung-up sale', till, d);
+S.receipt.reads.p9b = { stepText, displayNotice: notice, dialogText, voidStatus: v ? v.status() : null, saleStatus: s?.sale?.status, payments: (s?.attempts ?? []).length, after: { membershipCheck: after.membershipCheck, pay: after.pay } };
+S.save();
+return S.receipt.reads.p9b;
+--> {
+ "ok": true,
+ "value": {
+  "stepText": "Amount Due ฿1590 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received",
+  "displayNotice": [
+   "Display connection: Another till is holding this station. A manager can take it over. The team can continue using this screen."
+  ],
+  "dialogText": null,
+  "voidStatus": 200,
+  "saleStatus": "voided",
+  "payments": 0,
+  "after": {
+   "membershipCheck": true,
+   "pay": "Pay ฿0"
+  }
+ }
+}
+
+=== 2026-11-12T18:28:23.045Z 8: a payment waiting — A rings up a cart and chooses PromptPay (the staging gateway simulator), the QR waits on the display; revoke A
+S.phase = '8: a payment waiting — A rings up a cart and chooses PromptPay (the staging gateway simulator), the QR waits on the display; revoke A';
+const { expect } = S;
+const till = S.till, d = S.d;
+S.receipt.reads.p9b && (S.receipt.points['9'].after = { continuedTo: 'payment step (Amount Due ฿1590, methods offered)', cancelledBy: 'B, with the till\'s Cancel: void 200, sale voided, 0 payments', displayNotice: S.receipt.reads.p9b.displayNotice[0] });
+S.save();
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.getByRole('button', { name: 'Sign out and hand over the till' }).click();
+await till.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 30000 });
+await S.formSignIn(till, 'A');
+await S.afterSignIn(till);
+await expect(till.getByText(/^Display connected:/)).toBeVisible({ timeout: 120000 });
+await S.landing(d).waitFor({ timeout: 30000 }); await d.waitForTimeout(2000);
+const n = S.nextNumber();
+S.receipt.numbers.p8 = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 1, '1 Hour Play');
+const [written] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/sales' && r.request().method() === 'POST', { timeout: 45000 }),
+  S.pressPay(till),
+]);
+const sale = (await written.json()).sale;
+S.knownSales.add(sale.id); S.p8sale = sale.id;
+S.receipt.created.push({ kind: 'sale', point: '8', id: sale.id }); S.save();
+const [att] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/payments/attempts' && r.request().method() === 'POST', { timeout: 45000 }),
+  till.getByRole('heading', { name: 'PromptPay', exact: true }).first().click(),
+]);
+const attempt = (await att.json().catch(() => null))?.attempt ?? null;
+S.p8attempt = attempt?.id ?? null;
+S.receipt.created.push({ kind: 'payment attempt', point: '8', id: S.p8attempt, provider: attempt?.provider, method: attempt?.method }); S.save();
+await d.waitForTimeout(4000);
+const dText = S.flat(await d.locator('body').innerText()).slice(0, 300);
+const qrOnDisplay = await d.locator('canvas, svg[role="img"], img[alt*="QR" i]').count();
+await S.both('08a-A-promptpay-qr-waiting-on-display.png', 'point 8 — A chose PromptPay (gateway simulator): the QR waits on the display (QR masked)', till, d);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+const lock = await S.readLock(till, ['1 Hour Play']);
+await S.both('08b-A-ended-while-qr-waits.png', 'point 8 — Sign out everywhere on A while the QR waits', till, d);
+const status = (await S.call('GET', `/payments/attempts/${S.p8attempt}`)).body;
+S.receipt.reads.p8a = { sale: { id: sale.id, status: sale.status }, attempt: { status: attempt?.status, provider: attempt?.provider, amount: attempt?.amountSatang / 100 }, displayText: dText, qrElementsOnDisplay: qrOnDisplay, revoke: rv, line, lockSaleWords: lock.saleWordsInText, attemptAfterEnd: status?.attempt?.status ?? status?.status ?? null };
+S.save();
+return S.receipt.reads.p8a;
+--> {
+ "ok": false,
+ "error": "TimeoutError: page.waitForResponse: Timeout 45000ms exceeded while waiting for event \"response\""
+}
+
+=== 2026-11-12T18:29:21.261Z 8: look after the wait timed out
+S.phase = '8: look after the wait timed out';
+const till = S.till, d = S.d;
+await S.both('08x-look.png', 'point 8 (look)', till, d);
+const sales = (await S.stationSales()).filter(s => !S.knownSales.has(s.id)).map(s => ({ id: s.id, status: s.status, receipt: s.receiptNumber }));
+return { cart: await S.cartState(till), display: S.flat(await d.locator('body').innerText()).slice(0, 300), newSales: sales, p8sale: S.p8sale ?? null, attempt: S.p8attempt ?? null, errors: S.receipt.pageErrors.slice(-6) };
+--> {
+ "ok": true,
+ "value": {
+  "cart": {
+   "configure": null,
+   "pay": "Pay ฿1040",
+   "kids": "1",
+   "adults": "1",
+   "panel": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+   "membershipCheck": false,
+   "paymentStep": true,
+   "url": "/"
+  },
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040 to our staff",
+  "newSales": [],
+  "p8sale": "01a1d104-b80c-7439-9bea-a11168e983fb",
+  "attempt": null,
+  "errors": [
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "http",
+    "text": "POST /api/box/v1/station/:id/lease/renew 403"
+   },
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 403 ()"
+   },
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "http",
+    "text": "POST /api/box/v1/station/:id/lease/renew 403"
+   },
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 403 ()"
+   },
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "http",
+    "text": "POST /api/box/v1/station/:id/lease/renew 403"
+   },
+   {
+    "page": "desk",
+    "at": "9: B presses Continue on the rung-up sale: the payment step reads it back; B cancels it (the till's own Cancel voids a sale that took no money)",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 403 ()"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T18:30:05.138Z 8: Show payment QR (gateway simulator): the QR waits on the display; revoke A
+S.phase = '8: Show payment QR (gateway simulator): the QR waits on the display; revoke A';
+const till = S.till, d = S.d;
+const [att] = await Promise.all([
+  till.waitForResponse(r => new URL(r.url()).pathname === '/api/payments/attempts' && r.request().method() === 'POST', { timeout: 45000 }),
+  till.getByRole('button', { name: 'Show payment QR', exact: true }).click(),
+]);
+const attempt = (await att.json().catch(() => null))?.attempt ?? null;
+S.p8attempt = attempt?.id ?? null;
+S.receipt.created.push({ kind: 'payment attempt', point: '8', id: S.p8attempt, provider: attempt?.provider, method: attempt?.method, status: att.status() }); S.save();
+await d.waitForTimeout(5000);
+const dText = S.flat(await d.locator('body').innerText()).slice(0, 300);
+const qrOnDisplay = await d.locator('canvas, svg').count();
+const tillStep = S.flat(await S.paymentStep(till).innerText().catch(() => '')).slice(0, 300);
+await S.both('08a-A-promptpay-qr-waiting-on-display.png', 'point 8 — A chose PromptPay (gateway simulator): the QR waits on the display (QR masked)', till, d);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+const lock = await S.readLock(till, ['1 Hour Play']);
+const dText2 = S.flat(await d.locator('body').innerText()).slice(0, 300);
+await S.both('08b-A-ended-while-qr-waits.png', 'point 8 — Sign out everywhere on A while the QR waits', till, d);
+const status = (await S.call('GET', `/payments/attempts/${S.p8attempt}`)).body;
+S.receipt.reads.p8a = { attemptCreate: att.status(), attempt: { status: attempt?.status, provider: attempt?.provider, amount: attempt?.amountSatang / 100 }, tillStep, displayText: dText, svgOrCanvasOnDisplay: qrOnDisplay, revoke: rv, line, lockSaleWords: lock.saleWordsInText, displayAfterEnd: dText2, attemptAfterEnd: status?.attempt?.status ?? status?.status ?? null };
+S.save();
+return S.receipt.reads.p8a;
+--> {
+ "ok": true,
+ "value": {
+  "attemptCreate": 200,
+  "attempt": {
+   "status": "sent_to_terminal",
+   "provider": "simulator",
+   "amount": 1040
+  },
+  "tillStep": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 ฿1040.00 · 19:57 Wait for the payment answer. An expired QR does not confirm that no money was taken. Cancel payment QR Hold sale A payment is in progress — finish or cancel it first. Back Show payment ",
+  "displayText": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 SCAN TO PAY Scan to Pay ฿1040 QR time remaining 19:57 Open your banking app and scan to complete the pay",
+  "svgOrCanvasOnDisplay": 5,
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:30:10.699Z"
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "lockSaleWords": [],
+  "displayAfterEnd": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 SCAN TO PAY Scan to Pay ฿1040 QR time remaining 19:55 Open your banking app and scan to complete the pay",
+  "attemptAfterEnd": "sent_to_terminal"
+ }
+}
+
+=== 2026-11-12T18:30:36.676Z masks: the simulator QR is an SVG (not a canvas): every large square SVG is masked from now on; 08a and 08b redrawn with the QRs covered
+S.phase = 'masks: the simulator QR is an SVG (not a canvas): every large square SVG is masked from now on; 08a and 08b redrawn with the QRs covered';
+const { readFileSync, writeFileSync } = await import('node:fs');
+if (!S.captureBase) S.captureBase = S.capture;
+S.capture = async (page, opts = {}, extra = []) => {
+  await page.evaluate(() => { for (const s of document.querySelectorAll('svg')) { const r = s.getBoundingClientRect(); if (r.width >= 90 && r.height >= 90 && Math.abs(r.width - r.height) < 12) s.setAttribute('data-zz-qr', '1'); } }).catch(() => {});
+  try { return await S.captureBase(page, opts, [...extra, page.locator('[data-zz-qr]')]); }
+  finally { await page.evaluate(() => { for (const s of document.querySelectorAll('[data-zz-qr]')) s.removeAttribute('data-zz-qr'); }).catch(() => {}); }
+};
+const cover = async (name, boxes) => {
+  const file = S.resolve(S.out, name);
+  const b64 = readFileSync(file).toString('base64');
+  const page = await S.browser.newPage({ viewport: { width: 2000, height: 1000 } });
+  await page.setContent(`<html><body style="margin:0"><div style="position:relative;display:inline-block"><img id="i" src="data:image/png;base64,${b64}">${boxes.map(([x, y, w, h]) => `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#18181b"></div>`).join('')}</div></body></html>`);
+  const size = await page.evaluate(() => { const i = document.getElementById('i'); return [i.naturalWidth, i.naturalHeight]; });
+  await page.setViewportSize({ width: size[0], height: size[1] });
+  await page.locator('div').first().screenshot({ path: file });
+  await page.close();
+  return size;
+};
+const s1 = await cover('08a-A-promptpay-qr-waiting-on-display.png', [[488, 676, 186, 182], [1488, 670, 226, 228]]);
+return { s1 };
+--> {
+ "ok": true,
+ "value": {
+  "s1": [
+   2000,
+   975
+  ]
+ }
+}
+
+=== 2026-11-12T18:30:47.881Z masks: 08b redrawn with the display QR covered
+S.phase = 'masks: 08b redrawn with the display QR covered';
+const { readFileSync } = await import('node:fs');
+S.cover = async (name, boxes) => {
+  const file = S.resolve(S.out, name);
+  const b64 = readFileSync(file).toString('base64');
+  const page = await S.browser.newPage({ viewport: { width: 2000, height: 1000 } });
+  await page.setContent(`<html><body style="margin:0"><div style="position:relative;display:inline-block"><img id="i" src="data:image/png;base64,${b64}">${boxes.map(([x, y, w, h]) => `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#18181b"></div>`).join('')}</div></body></html>`);
+  const size = await page.evaluate(() => { const i = document.getElementById('i'); return [i.naturalWidth, i.naturalHeight]; });
+  await page.setViewportSize({ width: size[0], height: size[1] });
+  await page.locator('div').first().screenshot({ path: file });
+  await page.close();
+  return size;
+};
+return await S.cover('08b-A-ended-while-qr-waits.png', [[1488, 670, 226, 228]]);
+--> {
+ "ok": true,
+ "value": [
+  2000,
+  975
+ ]
+}
+
+=== 2026-11-12T18:31:05.465Z 8: A signs in: "Checking the payment after unlock." and the attempt's true state; the simulator approves it once; paid once
+S.phase = '8: A signs in: "Checking the payment after unlock." and the attempt\'s true state; the simulator approves it once; paid once';
+const till = S.till, d = S.d;
+await till.evaluate(() => {
+  window.__seen = [];
+  const look = () => { const t = document.body.innerText; if (t.includes('Checking the payment after unlock')) window.__seen.push({ at: Date.now(), text: 'Checking the payment after unlock.' }); };
+  window.__obs = new MutationObserver(look); window.__obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+});
+const polls = [];
+till.on('response', r => { const p = new URL(r.url()).pathname; if (/\/api\/payments\/attempts\/[^/]+$/.test(p)) polls.push({ at: Date.now(), status: r.status() }); });
+const t0 = Date.now();
+await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await S.paymentStep(till).waitFor({ timeout: 30000 });
+let checkingShot = null;
+try { await till.getByText('Checking the payment after unlock.', { exact: false }).first().waitFor({ timeout: 4000 }); checkingShot = await S.shot(till, '08c-A-checking-the-payment-after-unlock.png'); } catch {}
+await till.waitForTimeout(4000);
+const seen = await till.evaluate(() => window.__seen.slice(0, 3));
+const stepText = S.flat(await S.paymentStep(till).innerText()).slice(0, 400);
+const attemptNow = (await S.call('GET', `/payments/attempts/${S.p8attempt}`)).body;
+await S.both('08d-A-after-sign-in-payment-read-back.png', 'point 8 — A signed in again: the payment step has read the waiting QR back (QR masked)', till, d);
+// the simulator approves it once (staging gateway simulator, admin route)
+const sim = await S.call('POST', '/webhooks/2c2p/simulator', { attemptId: S.p8attempt, event: 'paid' });
+await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 60000 });
+await till.waitForTimeout(2000);
+await S.both('08e-A-paid-once.png', 'point 8 — the simulator approved the QR once: Payment Successful', till, d);
+const s = await S.sale(S.p8sale);
+const list = (await S.stationSales()).find(x => x.id === S.p8sale);
+S.receipt.reads.p8b = { signInMs: Date.now() - t0, ...after, checkingSeen: seen.length > 0, checkingSeenAfterMs: seen[0] ? seen[0].at - t0 : null, checkingShot, attemptPollsAfterSignIn: polls.length, stepText, attemptAfterSignIn: attemptNow?.attempt?.status ?? attemptNow?.status ?? null,
+  simulator: { status: sim.status, event: sim.body?.event, webhookOutcome: sim.body?.webhookOutcome, gatewayState: sim.body?.gatewayState },
+  sale: { status: s?.sale?.status, receipt: list?.receiptNumber, soldBy: list?.soldBy?.name, attempts: (s?.attempts ?? []).map(a => `${a.method} ${a.provider} ${a.status} ${a.amountSatang / 100}`), approved: (s?.attempts ?? []).filter(a => a.status === 'approved').length } };
+const pass = seen.length > 0 && sim.status === 200 && s?.sale?.status === 'finalised' && S.receipt.reads.p8b.sale.approved === 1 && (s?.attempts ?? []).length === 1;
+S.point('8', pass, ['08a-A-promptpay-qr-waiting-on-display.png', '08b-A-ended-while-qr-waits.png', ...(checkingShot ? [checkingShot] : []), '08d-A-after-sign-in-payment-read-back.png', '08e-A-paid-once.png'], { checking: seen[0]?.text ?? null, attempts: S.receipt.reads.p8b.sale.attempts });
+return S.receipt.reads.p8b;
+--> {
+ "ok": true,
+ "value": {
+  "signInMs": 14250,
+  "pickerAsked": false,
+  "checkingSeen": true,
+  "checkingSeenAfterMs": 902,
+  "checkingShot": null,
+  "attemptPollsAfterSignIn": 7,
+  "stepText": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 ฿1040.00 · 18:52 Wait for the payment answer. An expired QR does not confirm that no money was taken. Cancel payment QR Hold sale A payment is in progress — finish or cancel it first. Back Show payment QR",
+  "attemptAfterSignIn": "sent_to_terminal",
+  "simulator": {
+   "status": 200,
+   "event": "paid",
+   "webhookOutcome": "settled",
+   "gatewayState": "paid"
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z87801-000003",
+   "soldBy": "ZZ TEST Session A",
+   "attempts": [
+    "qr simulator approved 1040"
+   ],
+   "approved": 1
+  }
+ }
+}
+
+=== 2026-11-12T18:31:39.117Z masks: what draws a QR (inspect), 08d and 08e redrawn with the QRs covered
+S.phase = 'masks: what draws a QR (inspect), 08d and 08e redrawn with the QRs covered';
+const till = S.till;
+const kinds = await till.evaluate(() => [...document.querySelectorAll('svg, canvas, img')].map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, w: Math.round(r.width), h: Math.round(r.height), cls: String(e.getAttribute('class') ?? '').slice(0, 40), vb: e.getAttribute('viewBox'), kids: e.childElementCount }; }).filter(x => x.w >= 30 && x.h >= 30));
+await S.cover('08d-A-after-sign-in-payment-read-back.png', [[488, 676, 186, 182], [1488, 670, 226, 228]]);
+await S.cover('08e-A-paid-once.png', [[776, 566, 62, 62]]);
+return kinds;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "tag": "IMG",
+   "w": 74,
+   "h": 32,
+   "cls": "h-8 w-auto cursor-pointer",
+   "vb": null,
+   "kids": 0
+  },
+  {
+   "tag": "svg",
+   "w": 44,
+   "h": 44,
+   "cls": "lucide lucide-circle-check w-11 h-11",
+   "vb": "0 0 24 24",
+   "kids": 2
+  }
+ ]
+}
+
+=== 2026-11-12T18:31:48.123Z masks: find the element that draws the credit code
+S.phase = 'masks: find the element that draws the credit code';
+const till = S.till;
+return await till.evaluate(() => {
+  const out = [];
+  for (const e of document.querySelectorAll('body *')) { const r = e.getBoundingClientRect(); if (r.width >= 40 && r.width <= 260 && Math.abs(r.width - r.height) < 6 && e.querySelectorAll('*').length >= 20) out.push({ tag: e.tagName, w: Math.round(r.width), h: Math.round(r.height), cls: String(e.getAttribute('class') ?? '').slice(0, 60), desc: e.querySelectorAll('*').length, testid: e.getAttribute('data-testid'), aria: e.getAttribute('aria-label') }); }
+  return out.slice(0, 8);
+});
+--> {
+ "ok": true,
+ "value": [
+  {
+   "tag": "DIV",
+   "w": 64,
+   "h": 64,
+   "cls": "bg-white rounded-lg p-1.5 shrink-0 w-16 h-16",
+   "desc": 122,
+   "testid": null,
+   "aria": null
+  },
+  {
+   "tag": "DIV",
+   "w": 52,
+   "h": 52,
+   "cls": "grid w-full h-full gap-px",
+   "desc": 121,
+   "testid": null,
+   "aria": null
+  }
+ ]
+}
+
+=== 2026-11-12T18:31:58.101Z masks: every square code-like element (an svg, img or canvas 90 px or more, or a square box of 20+ cells) is masked from now on
+S.phase = 'masks: every square code-like element (an svg, img or canvas 90 px or more, or a square box of 20+ cells) is masked from now on';
+S.capture = async (page, opts = {}, extra = []) => {
+  await page.evaluate(() => {
+    for (const s of document.querySelectorAll('svg, img, canvas, div')) {
+      const r = s.getBoundingClientRect(); if (r.width < 40 || r.width > 320 || Math.abs(r.width - r.height) > 8) continue;
+      const media = s.tagName !== 'DIV' && r.width >= 90;
+      const grid = s.tagName === 'DIV' && s.querySelectorAll('*').length >= 20;
+      const svgCells = s.tagName === 'svg' && s.querySelectorAll('rect, path').length >= 3 && r.width >= 60;
+      if (media || grid || svgCells) s.setAttribute('data-zz-qr', '1');
+    }
+  }).catch(() => {});
+  try { return await S.captureBase(page, opts, [...extra, page.locator('[data-zz-qr]')]); }
+  finally { await page.evaluate(() => { for (const s of document.querySelectorAll('[data-zz-qr]')) s.removeAttribute('data-zz-qr'); }).catch(() => {}); }
+};
+await S.shot(S.till, '08f-A-paid-once-till-masked.png');
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T18:32:15.058Z masks: the credit codes on the earlier success screens covered (03f, 06d)
+S.phase = 'masks: the credit codes on the earlier success screens covered (03f, 06d)';
+await S.cover('03f-B-paid-in-cash.png', [[412, 598, 62, 62], [862, 662, 64, 64]]);
+await S.cover('06d-B-cash-sale-success-screen.png', [[776, 566, 62, 62]]);
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T18:32:33.696Z 10: the family's line — a drop-off ticket (1 kid, no adult) open on the family's form on the paired display; revoke A
+S.phase = '10: the family\'s line — a drop-off ticket (1 kid, no adult) open on the family\'s form on the paired display; revoke A';
+const till = S.till, d = S.d;
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click();
+await till.getByText('Membership Check', { exact: true }).waitFor({ timeout: 30000 });
+await S.landing(d).waitFor({ timeout: 30000 }); await d.waitForTimeout(2000);
+const n = S.nextNumber();
+S.receipt.numbers.p10 = n;
+await S.firstScreen(d, till, n, { tap: true });
+await S.ticket(till, 1, 0, '1 Hour Play', true);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).first().waitFor({ timeout: 30000 }).catch(() => {});
+await d.getByTestId('display-consent').waitFor({ timeout: 30000 });
+await d.waitForTimeout(2000);
+// the family starts: a ZZ TEST child name typed on the display's own keys
+const nameBox = d.getByTestId('display-consent').getByTestId('consent-child-name');
+await nameBox.tap();
+await d.waitForTimeout(500);
+const kb = d.getByTestId('screen-keyboard');
+if (await kb.count()) { for (const ch of 'ZZ TEST') { const b = ch === ' ' ? kb.getByRole('button', { name: /^Space$/ }) : kb.getByRole('button', { name: ch, exact: true }); await b.tap(); } }
+await d.waitForTimeout(1500);
+await S.both('10a-A-family-filling-drop-off-form-on-display.png', 'point 10 — a drop-off ticket: the family is filling the form on the paired display', till, d);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+await till.waitForTimeout(1500);
+const fam = await S.familyLine(till).count() ? S.flat(await S.familyLine(till).innerText()) : null;
+const order = await till.evaluate(() => { const a = document.querySelector('[data-testid="lock-family-form"]'); const b = document.querySelector('[data-testid="lock-session-ended"]'); return a && b ? (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? 'family line above the ended line' : 'family line below') : null; });
+const lock = await S.readLock(till, ['1 Hour Play', 'ZZ TEST']);
+await S.both('10b-A-ended-family-line-above-ended-line.png', 'point 10 — Sign out everywhere on A while the family fills the form: the family line above the session-ended line', till, d);
+await S.shot(till, '10c-A-ended-family-line-till-close.png');
+const dState = S.flat(await d.locator('body').innerText()).slice(0, 200);
+S.receipt.reads.p10 = { revoke: rv, familyLine: fam, line, order, lockText: lock.text.slice(0, 300), displayWhileEnded: dState };
+S.save();
+const pass = fam === 'A family is filling in the drop-off form on the display.' && order === 'family line above the ended line' && /^The session of ZZ TEST Session A has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/.test(line);
+S.point('10', pass, ['10a-A-family-filling-drop-off-form-on-display.png', '10b-A-ended-family-line-above-ended-line.png', '10c-A-ended-family-line-till-close.png'], { familyLine: fam, line, order });
+return S.receipt.reads.p10;
+--> {
+ "ok": true,
+ "value": {
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:32:44.329Z"
+  },
+  "familyLine": null,
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "order": null,
+  "lockText": "Oto POS is locked Sign in with your phone to start your shift. The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till. Phone number 🇹🇭 +66 Password Sign in First shift? Set up account Forgot password? Back to launcher Open customer booking ",
+  "displayWhileEnded": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your ch"
+ }
+}
+
+=== 2026-11-12T18:33:16.169Z 10: the family line — read the locked sign-in form again over 12 s; what the status read answers with no session
+S.phase = '10: the family line — read the locked sign-in form again over 12 s; what the status read answers with no session';
+const till = S.till;
+const reads = [];
+for (let i = 0; i < 4; i++) { reads.push({ s: i * 4, family: await S.familyLine(till).count(), ended: await S.endedLine(till).count() }); await till.waitForTimeout(4000); }
+const statusReads = S.receipt.pageErrors.filter(e => /station\/:id\/status/.test(e.text)).slice(-3);
+const st = await till.evaluate(async (id) => { const r = await fetch(`/api/box/v1/station/${id}/status`, { credentials: 'include' }); return { status: r.status }; }, S.station.id);
+return { reads, statusReadErrors: statusReads, statusNow: st };
+--> {
+ "ok": true,
+ "value": {
+  "reads": [
+   {
+    "s": 0,
+    "family": 0,
+    "ended": 1
+   },
+   {
+    "s": 4,
+    "family": 0,
+    "ended": 1
+   },
+   {
+    "s": 8,
+    "family": 0,
+    "ended": 1
+   },
+   {
+    "s": 12,
+    "family": 0,
+    "ended": 1
+   }
+  ],
+  "statusReadErrors": [
+   {
+    "page": "desk",
+    "at": "10: the family's line — a drop-off ticket (1 kid, no adult) open on the family's form on the paired display; revoke A",
+    "kind": "http",
+    "text": "GET /api/box/v1/station/:id/status 401"
+   },
+   {
+    "page": "desk",
+    "at": "10: the family's line — a drop-off ticket (1 kid, no adult) open on the family's form on the paired display; revoke A",
+    "kind": "http",
+    "text": "GET /api/box/v1/station/:id/status 401"
+   },
+   {
+    "page": "desk",
+    "at": "10: the family line — read the locked sign-in form again over 12 s; what the status read answers with no session",
+    "kind": "http",
+    "text": "GET /api/box/v1/station/:id/status 401"
+   }
+  ],
+  "statusNow": {
+   "status": 401
+  }
+ }
+}
+
+=== 2026-11-12T18:34:17.629Z 10 (compare): A signs in again (the form comes back?); then an ordinary lock with the form open: is the SCRUM-942 line there?
+S.phase = '10 (compare): A signs in again (the form comes back?); then an ordinary lock with the form open: is the SCRUM-942 line there?';
+const till = S.till, d = S.d;
+await S.formSignIn(till, 'A');
+const after = await S.afterSignIn(till);
+await till.waitForTimeout(4000);
+const mirror = await till.getByText('The family is filling in the form on the display', { exact: false }).count();
+const heading = await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count();
+const dText = S.flat(await d.locator('body').innerText()).slice(0, 200);
+const notice = (await till.getByText(/^Display (connection|connected)/).allInnerTexts()).map(S.flat);
+await S.both('10d-A-signed-in-again-form-back.png', 'point 10 — A signed in again: the drop-off form on the till and the display', till, d);
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.waitForTimeout(4000);
+const fam = await S.familyLine(till).count() ? S.flat(await S.familyLine(till).innerText()) : null;
+await S.shot(till, '10e-A-ordinary-lock-with-form-open-942-line.png');
+await S.typePassword(till.locator('input[type="password"][autocomplete="current-password"]'), 'A');
+await till.getByRole('button', { name: 'Unlock', exact: true }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ state: 'detached', timeout: 20000 });
+S.receipt.reads.p10compare = { ...after, mirrorOnTill: mirror, dropOffHeading: heading, display: dText, displayNotice: notice, ordinaryLockFamilyLine: fam };
+S.save();
+return S.receipt.reads.p10compare;
+--> {
+ "ok": true,
+ "value": {
+  "pickerAsked": false,
+  "mirrorOnTill": 0,
+  "dropOffHeading": 1,
+  "display": "ZZ TEST SCRUM-878 desk till 1794506870335 · ZZ TEST SCRUM-878 display d1 English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your ch",
+  "displayNotice": [],
+  "ordinaryLockFamilyLine": null
+ }
+}
+
+=== 2026-11-12T18:34:44.973Z 10 (hunt): after the unlock, does the display link come back on its own? read for 40 s
+S.phase = '10 (hunt): after the unlock, does the display link come back on its own? read for 40 s';
+const till = S.till, d = S.d;
+const out = [];
+for (let i = 0; i < 5; i++) {
+  out.push({ s: i * 10, banner: (await till.getByText(/^(Test harness|Display connected|Display connection)/).allInnerTexts()).map(S.flat), mirror: await till.getByText('The customer is filling this in', { exact: false }).count() });
+  await till.waitForTimeout(10000);
+}
+const errs = S.receipt.pageErrors.filter(e => /^10/.test(e.at ?? '') && e.kind === 'http').map(e => e.text);
+const grouped = {}; for (const e of errs) grouped[e] = (grouped[e] ?? 0) + 1;
+await S.both('10f-A-later-display-link.png', 'point 10 (hunt) — 40 s after the unlock: the display link', till, d);
+S.receipt.reads.p10later = { out, httpErrorsDuringPoint10: grouped }; S.save();
+return S.receipt.reads.p10later;
+--> {
+ "ok": true,
+ "value": {
+  "out": [
+   {
+    "s": 0,
+    "banner": [
+     "Display connected: ZZ TEST SCRUM-878 display d1"
+    ],
+    "mirror": 1
+   },
+   {
+    "s": 10,
+    "banner": [
+     "Display connected: ZZ TEST SCRUM-878 display d1"
+    ],
+    "mirror": 1
+   },
+   {
+    "s": 20,
+    "banner": [
+     "Display connected: ZZ TEST SCRUM-878 display d1"
+    ],
+    "mirror": 1
+   },
+   {
+    "s": 30,
+    "banner": [
+     "Display connected: ZZ TEST SCRUM-878 display d1"
+    ],
+    "mirror": 1
+   },
+   {
+    "s": 40,
+    "banner": [
+     "Display connected: ZZ TEST SCRUM-878 display d1"
+    ],
+    "mirror": 1
+   }
+  ],
+  "httpErrorsDuringPoint10": {
+   "POST /api/me/station/heartbeat 401": 2,
+   "GET /api/branches/:id/occupancy 401": 1,
+   "GET /api/me/station/link 401": 1,
+   "POST /api/box/v1/station/:id/intents 401": 1,
+   "GET /api/box/v1/station/:id/status 401": 7,
+   "GET /api/me/station/link 409": 1,
+   "POST /api/box/v1/station/:id/intents 403": 1,
+   "GET /api/stations/:id/channel 403": 1
+  }
+ }
+}
+
+=== 2026-11-12T18:35:48.004Z 10 (again): the ordinary lock with the form open (the SCRUM-942 line, for comparison), then the session end once more with the form open
+S.phase = '10 (again): the ordinary lock with the form open (the SCRUM-942 line, for comparison), then the session end once more with the form open';
+const till = S.till, d = S.d;
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+const famReads = [];
+for (let i = 0; i < 3; i++) { await till.waitForTimeout(2000); famReads.push(await S.familyLine(till).count() ? S.flat(await S.familyLine(till).innerText()) : null); }
+await S.shot(till, '10g-A-ordinary-lock-form-open-942-line.png');
+await S.typePassword(till.locator('input[type="password"][autocomplete="current-password"]'), 'A');
+await till.getByRole('button', { name: 'Unlock', exact: true }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ state: 'detached', timeout: 20000 });
+await till.waitForTimeout(5000);
+const mirrorBefore = await till.getByText('The customer is filling this in', { exact: false }).count();
+const bannerBefore = (await till.getByText(/^(Test harness|Display connected|Display connection)/).allInnerTexts()).map(S.flat);
+const rv = await S.revoke('A');
+await S.kick('desk');
+const line = await S.waitEnded(till);
+const reads = [];
+for (let i = 0; i < 6; i++) { reads.push({ ms: i * 500, family: await S.familyLine(till).count() }); await till.waitForTimeout(500); }
+await S.both('10h-A-ended-again-form-open.png', 'point 10 (again) — Sign out everywhere on A with the form open and the display connected', till, d);
+S.receipt.reads.p10again = { ordinaryLockFamilyLine: famReads, mirrorBefore, bannerBefore, revoke: rv, line, familyLineReads: reads };
+S.save();
+return S.receipt.reads.p10again;
+--> {
+ "ok": true,
+ "value": {
+  "ordinaryLockFamilyLine": [
+   "A family is filling in the drop-off form on the display.",
+   "A family is filling in the drop-off form on the display.",
+   "A family is filling in the drop-off form on the display."
+  ],
+  "mirrorBefore": 1,
+  "bannerBefore": [
+   "Display connected: ZZ TEST SCRUM-878 display d1"
+  ],
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:35:59.340Z"
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "familyLineReads": [
+   {
+    "ms": 0,
+    "family": 0
+   },
+   {
+    "ms": 500,
+    "family": 0
+   },
+   {
+    "ms": 1000,
+    "family": 0
+   },
+   {
+    "ms": 1500,
+    "family": 0
+   },
+   {
+    "ms": 2000,
+    "family": 0
+   },
+   {
+    "ms": 2500,
+    "family": 0
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T18:36:36.123Z 10: record; A signs in again and cancels the drop-off cart (no registration was written); the desk till signed out the ordinary way
+S.phase = '10: record; A signs in again and cancels the drop-off cart (no registration was written); the desk till signed out the ordinary way';
+const till = S.till, d = S.d;
+S.receipt.defects.push({ id: 'D3', title: 'The SCRUM-942 family line is not shown when the session ENDS with the family form open (it is shown on an ordinary lock)',
+  steps: 'Paired display; walk-in, Tourist, 1 Hour Play, 1 kid and no adult, Continue: the drop-off form opens on the display and the till mirrors it ("The customer is filling this in"); the family types a child name; Sign out everywhere on A (heartbeat sent at once)',
+  seen: 'The sign-in form shows only "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till." — no "A family is filling in the drop-off form on the display." line, read 4 times over 12 s and, on a second try, 6 times over 3 s. The same till locked with the lock button in the same state shows the line ("A family is filling in the drop-off form on the display.", 10g).',
+  where: 'The line is drawn by LockScreen.tsx:286 from the lockedFamilyForm store, which Till.tsx:3967 (useLockedFamilyFormWatch) feeds with formOpen = consentMirror && !completed && !finishing. consentMirror (Till.tsx:3946) needs `consent` (needs displayOnline, Till.tsx:3645/3759) and !inlineDisplay (Till.tsx:3931, false once linkedDisplay has an error). After a session end the till\'s requests answer 401 (seen: POST /box/v1/station/:id/intents 401, GET /me/station/link 401, GET /box/v1/station/:id/status 401), so formOpen goes false and the watch sets the line to null. The lane\'s test (apps/pos/test/s878-lock-screen.test.ts:165) sets the store directly, so it never meets this.',
+  pictures: ['10a-A-family-filling-drop-off-form-on-display.png', '10b-A-ended-family-line-above-ended-line.png', '10c-A-ended-family-line-till-close.png', '10g-A-ordinary-lock-form-open-942-line.png', '10h-A-ended-again-form-open.png'] });
+S.receipt.points['10'].pass = false;
+S.receipt.points['10'].seen = { line: S.receipt.reads.p10.line, familyLine: null, ordinaryLockFamilyLine: S.receipt.reads.p10again.ordinaryLockFamilyLine[0], defect: 'D3' };
+S.receipt.points['10'].pictures.push('10g-A-ordinary-lock-form-open-942-line.png', '10h-A-ended-again-form-open.png');
+S.save();
+await S.formSignIn(till, 'A');
+await S.afterSignIn(till);
+await till.waitForTimeout(3000);
+const back = await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count();
+// Back to the ticket step, then Cancel the cart (nothing written yet)
+const backBtn = till.getByRole('button', { name: 'Back', exact: true }).first();
+if (await backBtn.isVisible().catch(() => false)) { await backBtn.click(); await till.waitForTimeout(1500); }
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).last();
+if (await cancel.isVisible().catch(() => false)) { await cancel.click(); await till.waitForTimeout(1500); }
+const dlg = till.getByRole('alertdialog').or(till.getByRole('dialog'));
+let dialogText = null;
+if (await dlg.count()) { dialogText = S.flat(await dlg.first().innerText()).slice(0, 200); const yes = dlg.first().getByRole('button', { name: /Cancel sale|Discard|Yes|Confirm|Clear/ }).first(); if (await yes.count()) await yes.click(); await till.waitForTimeout(1500); }
+const fresh = await S.cartState(till);
+const regs = S.receipt.pageErrors.length;
+await S.both('10i-A-cancelled-the-drop-off-cart.png', 'point 10 — clean-up: A cancelled the drop-off cart (no registration written)', till, d);
+const newSales = (await S.stationSales()).filter(s => !S.knownSales.has(s.id)).map(s => ({ id: s.id, status: s.status }));
+await till.getByRole('button', { name: 'Lock screen' }).click();
+await till.getByRole('heading', { name: 'Locked', exact: true }).waitFor({ timeout: 15000 });
+await till.getByRole('button', { name: 'Sign out and hand over the till' }).click();
+await till.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 30000 });
+return { formBackAfterSignIn: back, dialogText, fresh: { membershipCheck: fresh.membershipCheck, pay: fresh.pay }, newSales };
+--> {
+ "ok": true,
+ "value": {
+  "formBackAfterSignIn": 1,
+  "dialogText": null,
+  "fresh": {
+   "membershipCheck": true,
+   "pay": "Pay ฿0"
+  },
+  "newSales": []
+ }
+}
+
+=== 2026-11-12T18:37:44.679Z memory: the desk context (already signed out) closed and the ZZ TEST display revoked and closed before the phone till
+S.phase = 'memory: the desk context (already signed out) closed and the ZZ TEST display revoked and closed before the phone till';
+const so = await S.signOut('desk');
+const dd = await S.dropDisplay('d1', 'ZZ TEST SCRUM-878 proof: desk points done');
+S.till = null; S.d = null;
+return { so, dd };
+--> {
+ "ok": true,
+ "value": {
+  "so": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "dd": {
+   "label": "d1",
+   "revoked": true
+  }
+ }
+}
+
+=== 2026-11-12T18:41:51.254Z memory: the laptop fell under 1 GB free (other jobs); the idle browser is closed until there is room again
+S.phase = 'memory: the laptop fell under 1 GB free (other jobs); the idle browser is closed until there is room again';
+S.keepAlive(false);
+const open = Object.keys(S.pages).length + Object.keys(S.displays).length;
+await S.browser?.close().catch(() => {});
+S.browser = null;
+return { contextsOpenBefore: open, closed: true };
+--> {
+ "ok": true,
+ "value": {
+  "contextsOpenBefore": 0,
+  "closed": true
+ }
+}
+
+=== 2026-11-12T18:42:04.377Z clean up: sessions signed out; every own finalised sale refunded whole by the staging manager; own numbers read; the till retired; the display read back; A and B deactivated and read back
+S.phase = 'clean up: sessions signed out; every own finalised sale refunded whole by the staging manager; own numbers read; the till retired; the display read back; A and B deactivated and read back';
+const out = { signOuts: {}, refunds: [], members: [], board: null };
+for (const label of Object.keys(S.pages)) out.signOuts[label] = await S.signOut(label);
+const mgr = await S.pw.request.newContext({ baseURL: S.pos });
+const ms = await mgr.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } });
+out.managerSignIn = ms.status();
+for (const s of await S.stationSales()) {
+  S.assert.equal(s.stationId, S.station.id);
+  S.assert.ok(S.knownSales.has(s.id), 'own sale only');
+  if (s.status !== 'finalised') { out.refunds.push({ receipt: s.receiptNumber, status: s.status, skipped: true }); continue; }
+  const res = await mgr.fetch(`/api/sales/${s.id}/refunds`, { method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST SCRUM-878 proof clean-up' } });
+  const b = await res.json().catch(() => null);
+  const after = await S.sale(s.id);
+  out.refunds.push({ receipt: s.receiptNumber, gross: s.totals?.grossSatang / 100, soldBy: s.soldBy?.name, status: res.status(), errorCode: b?.error?.code ?? null, errorMessage: b?.error?.message ?? null, refund: (b?.refund?.amountSatang ?? 0) / 100, saleStatus: after.sale?.status, refundStatus: after.refundStatus ?? null, refundable: after.refundableSatang ?? null });
+}
+const mso = await mgr.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+out.managerSignOut = mso.status();
+await mgr.dispose();
+for (const n of S.receipt.numbers.used ?? []) { const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null; out.members.push({ n, member: m ? { id: m.id, name: m.name } : null }); }
+const board = (await S.call('GET', `/checkin/board?branchId=${S.branchId}`)).body;
+const used = new Set((S.receipt.numbers.used ?? []).map(n => '+66' + n.slice(1)));
+out.board = board.families.filter(f => used.has(f.guardianPhone)).map(f => ({ guardian: f.guardianName, children: f.children.map(c => c.status) }));
+S.receipt.cleanup.refunds = out.refunds; S.receipt.cleanup.members = out.members; S.receipt.cleanup.boardOwnNumbers = out.board; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "signOuts": {},
+  "refunds": [
+   {
+    "receipt": "Z87801-000003",
+    "gross": 1040,
+    "soldBy": "ZZ TEST Session A",
+    "status": 200,
+    "errorCode": null,
+    "errorMessage": null,
+    "refund": 1040,
+    "saleStatus": "refunded",
+    "refundStatus": "refunded",
+    "refundable": 0
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "skipped": true
+   },
+   {
+    "receipt": "Z87801-000002",
+    "gross": 1040,
+    "soldBy": "ZZ TEST Session B",
+    "status": 200,
+    "errorCode": null,
+    "errorMessage": null,
+    "refund": 1040,
+    "saleStatus": "refunded",
+    "refundStatus": "refunded",
+    "refundable": 0
+   },
+   {
+    "receipt": "Z87801-000001",
+    "gross": 1240,
+    "soldBy": "ZZ TEST Session B",
+    "status": 200,
+    "errorCode": null,
+    "errorMessage": null,
+    "refund": 1240,
+    "saleStatus": "refunded",
+    "refundStatus": "refunded",
+    "refundable": 0
+   }
+  ],
+  "members": [
+   {
+    "n": "0898878010",
+    "member": null
+   },
+   {
+    "n": "0898878011",
+    "member": null
+   },
+   {
+    "n": "0898878012",
+    "member": null
+   },
+   {
+    "n": "0898878013",
+    "member": null
+   },
+   {
+    "n": "0898878014",
+    "member": null
+   },
+   {
+    "n": "0898878015",
+    "member": null
+   },
+   {
+    "n": "0898878016",
+    "member": null
+   },
+   {
+    "n": "0898878017",
+    "member": null
+   },
+   {
+    "n": "0898878018",
+    "member": null
+   },
+   {
+    "n": "0898878019",
+    "member": null
+   }
+  ],
+  "board": [],
+  "managerSignIn": 200,
+  "managerSignOut": 200
+ }
+}
+
+=== 2026-11-12T18:53:43.046Z 11: the phone till at 390x844 — a ticket in the cart, revoke A, A signs in: the cart is back
+S.phase = '11: the phone till at 390x844 — a ticket in the cart, revoke A, A signs in: the cart is back';
+const { expect } = S;
+const p = await S.openTill('phone', { width: 390, height: 844 });
+S.phone = p;
+await S.formSignIn(p, 'A');
+const first = await S.afterSignIn(p);
+const tourist = p.getByRole('heading', { name: 'Tourist', exact: true });
+await tourist.waitFor({ timeout: 45000 });
+await p.waitForTimeout(1500);
+await tourist.click();
+await p.getByText('1 Hour Play', { exact: true }).first().click();
+const configure = p.getByRole('heading', { name: 'Configure: 1 Hour Play' });
+await configure.waitFor({ timeout: 20000 });
+const addKid = p.getByRole('button', { name: 'Add one Kids', exact: true });
+await addKid.click(); await p.waitForTimeout(300); await addKid.click(); await p.waitForTimeout(800);
+const kids = p.getByRole('button', { name: 'Remove one Kids', exact: true }).locator('xpath=following-sibling::span[1]');
+const counted = S.flat(await kids.textContent());
+const cart = p.getByRole('button', { name: /^Open cart/ });
+await expect(cart).toContainText('฿', { timeout: 20000 });
+const cartSaid = S.flat(await cart.textContent());
+await S.shot(p, '11a-phone-390-A-cart.png');
+const rv = await S.revoke('A');
+const k = await S.kick('phone');
+const line = await S.waitEnded(p);
+const text = await S.bodyText(p);
+const html = await p.content();
+await S.shot(p, '11b-phone-390-A-session-ended.png');
+S.picks = [];
+await S.formSignIn(p, 'A');
+const after = await S.afterSignIn(p);
+await configure.waitFor({ timeout: 30000 });
+await p.waitForTimeout(1500);
+const counted2 = S.flat(await kids.textContent());
+const cartSaid2 = S.flat(await cart.textContent());
+await S.shot(p, '11c-phone-390-A-cart-back.png');
+S.receipt.reads.p11 = { firstPicker: first.pickerAsked, kids: counted, cart: cartSaid, revoke: rv, kick: k, line, cartWordsInText: ['1 Hour Play'].filter(w => text.includes(w)), cartWordsInHtml: ['1 Hour Play'].filter(w => html.includes(w)), amountInText: /฿\s?\d/.test(text), pickerAfter: after.pickerAsked, kidsAfter: counted2, cartAfter: cartSaid2 };
+const pass = /^The session of ZZ TEST Session A has ended\. Sign in again to carry on\. The sale in progress is kept on this till\.$/.test(line) && !text.includes('1 Hour Play') && !html.includes('1 Hour Play') && !after.pickerAsked && counted2 === counted && cartSaid2 === cartSaid;
+S.point('11', pass, ['11a-phone-390-A-cart.png', '11b-phone-390-A-session-ended.png', '11c-phone-390-A-cart-back.png'], { line, cart: cartSaid, cartAfter: cartSaid2 });
+return S.receipt.reads.p11;
+--> {
+ "ok": true,
+ "value": {
+  "firstPicker": true,
+  "kids": "3",
+  "cart": "11 item฿2420",
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:53:49.403Z"
+  },
+  "kick": {
+   "heartbeat": 401
+  },
+  "line": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "cartWordsInText": [],
+  "cartWordsInHtml": [],
+  "amountInText": false,
+  "pickerAfter": false,
+  "kidsAfter": "3",
+  "cartAfter": "11 item฿2420"
+ }
+}
+
+=== 2026-11-12T18:54:03.749Z hunt: the twelve-hour words on the phone till without waiting — the page clock alone is moved 12 h 1 min ahead (Playwright setFixedTime; nothing on the platform), then the session is ended and heard
+S.phase = 'hunt: the twelve-hour words on the phone till without waiting — the page clock alone is moved 12 h 1 min ahead (Playwright setFixedTime; nothing on the platform), then the session is ended and heard';
+const p = S.phone;
+const before = S.flat(await p.getByRole('button', { name: /^Open cart/ }).textContent().catch(() => ''));
+const now = await p.evaluate(() => Date.now());
+await p.clock.setFixedTime(new Date(now + 12 * 3600000 + 60000));
+await p.waitForTimeout(1500);
+const lockedFirst = await p.getByText('still signed in', { exact: false }).count();
+const rv = await S.revoke('A');
+const k = await S.kick('phone');
+const line = await S.waitEnded(p);
+await S.shot(p, '13a-phone-twelve-hour-words.png');
+await S.formSignIn(p, 'A');
+const after = await S.afterSignIn(p);
+await p.waitForTimeout(3000);
+const configure = await p.getByRole('heading', { name: /^Configure:/ }).count();
+const cartAfter = S.flat(await p.getByRole('button', { name: /^Open cart/ }).textContent().catch(() => ''));
+await S.shot(p, '13b-phone-after-twelve-hours-sign-in.png');
+S.receipt.reads.hunt12h = { cartBefore: before, lockedByInactivityAfterClockMove: lockedFirst, revoke: rv, kick: k, line, ...after, configureAfter: configure, cartAfter };
+S.save();
+return S.receipt.reads.hunt12h;
+--> {
+ "ok": true,
+ "value": {
+  "cartBefore": "11 item฿2420",
+  "lockedByInactivityAfterClockMove": 0,
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:54:05.358Z"
+  },
+  "kick": {
+   "heartbeat": 401
+  },
+  "line": "The session of ZZ TEST Session A ended after twelve hours. Sign in again to carry on. The sale in progress is kept on this till.",
+  "pickerAsked": false,
+  "configureAfter": 1,
+  "cartAfter": "11 item฿2420"
+ }
+}
+
+=== 2026-11-12T18:54:25.318Z hunt: someone reloads the till at the session-ended sign-in form (as a person may do to a till that looks stuck)
+S.phase = 'hunt: someone reloads the till at the session-ended sign-in form (as a person may do to a till that looks stuck)';
+const p = S.phone;
+const rv = await S.revoke('A');
+await S.kick('phone');
+const line = await S.waitEnded(p);
+await p.reload();
+await p.getByRole('heading', { name: 'Oto POS is locked' }).waitFor({ timeout: 60000 });
+await p.waitForTimeout(2000);
+const endedAfterReload = await S.endedLine(p).count();
+await S.shot(p, '13c-phone-after-reload-no-line.png');
+await S.formSignIn(p, 'A');
+const after = await S.afterSignIn(p);
+await p.waitForTimeout(3000);
+const configure = await p.getByRole('heading', { name: /^Configure:/ }).count();
+const cart = S.flat(await p.getByRole('button', { name: /^Open cart/ }).textContent().catch(() => ''));
+await S.shot(p, '13d-phone-after-reload-sign-in-fresh.png');
+S.receipt.reads.huntReload = { revoke: rv, lineBeforeReload: line, endedLineAfterReload: endedAfterReload, ...after, configureAfter: configure, cartAfter: cart };
+S.save();
+return S.receipt.reads.huntReload;
+--> {
+ "ok": true,
+ "value": {
+  "revoke": {
+   "who": "A",
+   "sessionsEnded": 1,
+   "at": "2026-11-12T18:54:25.402Z"
+  },
+  "lineBeforeReload": "The session of ZZ TEST Session A has ended. Sign in again to carry on. The sale in progress is kept on this till.",
+  "endedLineAfterReload": 0,
+  "pickerAsked": false,
+  "configureAfter": 0,
+  "cartAfter": "No items yet฿0"
+ }
+}
+
+=== 2026-11-12T18:54:58.793Z clean up: the phone till signed out; the own ZZ TEST till retired; the display read back; A and B deactivated and read back; the read-back picture; the admin signed out
+S.phase = 'clean up: the phone till signed out; the own ZZ TEST till retired; the display read back; A and B deactivated and read back; the read-back picture; the admin signed out';
+const out = { signOuts: {} };
+for (const label of Object.keys(S.pages)) out.signOuts[label] = await S.signOut(label);
+S.phone = null;
+// any own sale still open on the till? (none expected: three refunded, one voided)
+out.salesNow = (await S.stationSales()).map(s => ({ receipt: s.receiptNumber, status: s.status }));
+const st = (await S.call('GET', `/stations/${S.station.id}`)).body.station;
+S.assert.ok(/^ZZ TEST SCRUM-878/.test(st.name));
+const p = await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] });
+const del = await S.call('DELETE', `/stations/${S.station.id}`);
+const back = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === S.station.id);
+out.station = { prefix: back?.codePrefix, patch: p.status, del: del.status, archived: back?.archived ?? null, devices: back?.devices?.length ?? null };
+S.receipt.cleanup.station = out.station;
+const disp = (await S.call('GET', `/stations/${S.station.id}/displays`));
+out.displays = { status: disp.status, connected: (disp.body?.displays ?? []).filter(x => x.connected).length, revokedEarlier: (S.receipt.cleanup.displays ?? []).map(x => `${x.label} revoked`) };
+// A and B: sessions ended, then deactivated (the Login Users "Deactivate"), then read back
+out.accounts = {};
+for (const who of ['A', 'B']) {
+  const a = S.acct[who];
+  S.assert.ok(S.isZz(a.name));
+  const rv = await S.call('POST', `/accounts/${a.id}/sessions/revoke`);
+  const de = await S.call('PATCH', `/accounts/${a.id}`, { status: 'inactive' });
+  const row = (await S.call('GET', `/accounts?q=${a.local.slice(1)}`)).body.accounts.find(x => x.id === a.id);
+  const sessions = (await S.call('GET', `/accounts/${a.id}/sessions?limit=50`)).body;
+  const attempt = await S.trySignIn(who);
+  out.accounts[who] = { revoke: rv.status, deactivate: de.status, statusNow: row?.status, liveSessions: (sessions.sessions ?? []).filter(s => s.status !== 'ended').length, sessionsTotal: sessions.total, signInAttempt: attempt };
+}
+S.receipt.cleanup.accounts = out.accounts; S.save();
+const rows = [];
+rows.push(['login user ZZ TEST Session A', `inactive: ${out.accounts.A.statusNow}; live sessions ${out.accounts.A.liveSessions} of ${out.accounts.A.sessionsTotal}; sign-in with its own password → ${out.accounts.A.signInAttempt.status} ${out.accounts.A.signInAttempt.code ?? ''} "${out.accounts.A.signInAttempt.message ?? ''}"`]);
+rows.push(['login user ZZ TEST Session B', `inactive: ${out.accounts.B.statusNow}; live sessions ${out.accounts.B.liveSessions} of ${out.accounts.B.sessionsTotal}; sign-in with its own password → ${out.accounts.B.signInAttempt.status} ${out.accounts.B.signInAttempt.code ?? ''} "${out.accounts.B.signInAttempt.message ?? ''}"`]);
+for (const r of S.receipt.cleanup.refunds) rows.push([`sale ${r.receipt ?? '(rung up, point 9)'}`, r.skipped ? `${r.status} (no money taken)` : `refunded whole by the staging manager: ${r.status} → sale ${r.saleStatus}, refundable ${r.refundable}`]);
+rows.push(['own ZZ TEST till', `${out.station.prefix}: archived ${out.station.archived}, devices ${out.station.devices}`]);
+rows.push(['ZZ TEST display d1', `revoked; connected displays on the till now ${out.displays.connected}`]);
+rows.push(['walk-in numbers used', `${(S.receipt.numbers.used ?? []).length}, no member made on any (${S.receipt.cleanup.members.filter(m => m.member).length} found)`]);
+rows.push(['families on the board with an own number', JSON.stringify(S.receipt.cleanup.boardOwnNumbers)]);
+rows.push(['browser sessions', Object.entries(S.receipt.cleanup.signOuts ?? {}).map(([k, v]) => `${k} ${v.signOut}→me ${v.meAfter}`).join(', ')]);
+await S.facts('99-cleanup-read-back.png', 'SCRUM-878 session-end proof — clean-up read back', rows);
+const g = {};
+for (const e of S.receipt.pageErrors) { const k = `${e.page} | ${e.kind} | ${e.text}`; g[k] = g[k] ?? { n: 0, at: [] }; g[k].n++; if (g[k].at.length < 2 && !g[k].at.includes(e.at)) g[k].at.push(e.at); }
+S.receipt.pageErrorsGrouped = g;
+const so = await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+const me = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.admin = { signOut: so.status(), me };
+S.receipt.finishedAt = new Date().toISOString(); S.save();
+return { ...out, admin: S.receipt.cleanup.admin };
+--> {
+ "ok": true,
+ "value": {
+  "signOuts": {
+   "phone": {
+    "signOut": 200,
+    "meAfter": 401
+   }
+  },
+  "salesNow": [
+   {
+    "receipt": "Z87801-000003",
+    "status": "refunded"
+   },
+   {
+    "receipt": null,
+    "status": "voided"
+   },
+   {
+    "receipt": "Z87801-000002",
+    "status": "refunded"
+   },
+   {
+    "receipt": "Z87801-000001",
+    "status": "refunded"
+   }
+  ],
+  "station": {
+   "prefix": "Z87801",
+   "patch": 200,
+   "del": 200,
+   "archived": true,
+   "devices": 0
+  },
+  "displays": {
+   "status": 200,
+   "connected": 0,
+   "revokedEarlier": [
+    "d1 revoked"
+   ]
+  },
+  "accounts": {
+   "A": {
+    "revoke": 200,
+    "deactivate": 200,
+    "statusNow": "inactive",
+    "liveSessions": 0,
+    "sessionsTotal": 17,
+    "signInAttempt": {
+     "status": 401,
+     "code": "INVALID_CREDENTIALS",
+     "message": "Phone or password is incorrect"
+    }
+   },
+   "B": {
+    "revoke": 200,
+    "deactivate": 200,
+    "statusNow": "inactive",
+    "liveSessions": 0,
+    "sessionsTotal": 8,
+    "signInAttempt": {
+     "status": 401,
+     "code": "INVALID_CREDENTIALS",
+     "message": "Phone or password is incorrect"
+    }
+   }
+  },
+  "admin": {
+   "signOut": 200,
+   "me": 401
+  }
+ }
+}
