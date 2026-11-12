@@ -650,11 +650,13 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const adultsMarkHtml = (mark: string | null | undefined) =>
     mark ? ` <span class="item-note" style="color:#92400e;font-weight:600;">— ${s(mark)}</span>` : '';
 
+  // SCRUM-906: a price entered on an EXTRA line is the price of one (the owner, 12 November):
+  // the till charges it times the line's count, so the BEO prints it "120฿ each".
   const menuItemRow = (item: { quantity: number; itemName: string; notes?: string; price?: number; included?: boolean; source?: string }, mark: string | null = null) => {
     const isSet = item.source === 'set_menu';
     const badge = isSet
       ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-      : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)}</span>` : ''}`;
+      : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
     return `<tr>
       <td class="qty">${item.quantity}x</td>
       <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(mark)}</td>
@@ -732,7 +734,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
                const isSet = item.source === 'set_menu';
                const badge = isSet
                  ? '<span class="incl-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd;">SET</span>'
-                 : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)}</span>` : ''}`;
+                 : `<span class="extra-badge">EXTRA</span>${item.price ? ` <span class="price">${formatCurrency(item.price)} each</span>` : ''}`;
                return `<tr>
                  <td class="qty">${item.quantity}x</td>
                  <td>${s(item.itemName)}${item.notes ? ` <span class="item-note">(${s(item.notes)})</span>` : ''}${adultsMarkHtml(adultsMarkOf(item))}</td>

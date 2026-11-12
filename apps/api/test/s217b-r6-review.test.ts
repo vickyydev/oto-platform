@@ -501,7 +501,10 @@ describe('A. fences and seams', () => {
       // SCRUM-829: the BEO PDF prints ONE food list — the kids' menu with the adults' changes
       // marked beside it and their own dishes after (shared/kitchenAdults.ts), never a second
       // Adults Menu table; where the BEO's documents live is unchanged.
-      'pdf.ts': 'e8de2d8cf863aec7b85f9d6c3ac2590dec96a530fb20e5f38947db90e5bbffa1',
+      // SCRUM-906: the owner's ruling of 12 November, a price entered on a kitchen-plan EXTRA line is
+      // the price of one (the till charges it times the count), so the PDF prints it "120฿ each";
+      // where the BEO's documents live is unchanged.
+      'pdf.ts': '62f5837ab59362aa962238d43886627ad5448228bea5c49ab6fe19c765b4a713',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
