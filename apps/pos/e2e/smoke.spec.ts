@@ -1454,6 +1454,69 @@ test('separate display guest shop uses captured sizes, lock retention, disconnec
 });
 
 
+test('SCRUM-929 separate display takes the till Display theme live and keeps it through a reload', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL, true);
+  const screen = () => fixture.display.getByTestId('separate-display');
+  const look = (theme: 'light' | 'dark') => (theme === 'light' ? /(^|\s)light(\s|$)/ : /(^|\s)dark(\s|$)/);
+  try {
+    // Never told: the display is dark, and the till's switch shows what it shows.
+    await expect(screen()).toHaveClass(look('dark'));
+    await page.getByRole('button', { name: 'Theme settings', exact: true }).click();
+    await page.getByRole('button', { name: 'Switch display theme to light', exact: true }).click();
+    await expect(screen()).toHaveClass(look('light'), { timeout: 10_000 });
+    await page.keyboard.press('Escape');
+    await expect(fixture.display.getByRole('button', { name: 'Continue', exact: true })).toBeVisible({ timeout: 20_000 });
+    await captureLocalCheck(fixture.display, 'scrum929-phone-light.png');
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
+    await lookup;
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible();
+    const greeting = fixture.display.getByRole('heading', { level: 1 });
+    await expect.poll(() => greeting.evaluate(element => Number(getComputedStyle(element.closest('.animate-in') ?? element).opacity)),
+      { timeout: 10_000 }).toBeGreaterThan(0.99);
+    await captureLocalCheck(fixture.display, 'scrum929-after-lookup-light.png');
+    await page.getByRole('dialog').getByRole('button', { name: 'Skip for now', exact: true }).click();
+    await page.getByRole('button', { name: 'F&B', exact: true }).click();
+    await expect(fixture.display.getByTestId('display-fnb').getByRole('heading', { name: 'Order here', exact: true })).toBeVisible();
+    await expect(screen()).toHaveClass(look('light'));
+    await captureLocalCheck(fixture.display, 'scrum929-fnb-welcome-light.png');
+
+    // A reload comes back in the look it was told, from its own browser.
+    await fixture.display.reload();
+    await expect(screen()).toHaveClass(look('light'));
+    expect(await fixture.display.evaluate(() => localStorage.getItem('oto.display.theme'))).toBe('light');
+    await expect(fixture.display.getByTestId('display-fnb')).toBeVisible({ timeout: 20_000 });
+    await fixture.display.context().setOffline(true);
+    await expect(fixture.display.getByText('Reconnecting', { exact: true })).toBeVisible();
+    await captureLocalCheck(fixture.display, 'scrum929-reconnecting-light.png');
+    await fixture.display.context().setOffline(false);
+    await expect(fixture.display.getByTestId('display-fnb')).toBeVisible({ timeout: 20_000 });
+
+    // And back and forth from the F&B screen, with nothing else on the order changed.
+    await page.getByRole('button', { name: 'Theme settings', exact: true }).click();
+    await page.getByRole('button', { name: 'Switch display theme to dark', exact: true }).click();
+    await expect(screen()).toHaveClass(look('dark'), { timeout: 10_000 });
+    await page.getByRole('button', { name: 'Switch display theme to light', exact: true }).click();
+    await expect(screen()).toHaveClass(look('light'), { timeout: 10_000 });
+    await page.keyboard.press('Escape');
+    // Unpaired, the setup screen keeps the look it remembers.
+    await fixture.revoke();
+    await expect(fixture.display.getByRole('heading', { name: 'Set up this display' })).toBeVisible({ timeout: 20_000 });
+    await expect(screen()).toHaveClass(look('light'));
+    await captureLocalCheck(fixture.display, 'scrum929-pairing-light.png');
+    await fixture.releaseLease();
+    await signOut(page);
+  } finally {
+    await fixture.display.context().setOffline(false);
+    try { await fixture.releaseLease(); } finally { await fixture.cleanup(); await clearStaffPage(page); }
+  }
+});
+
 test('separate display streams till changes and customer answers, then holds and pauses on disconnect', async ({ page, browser, baseURL }) => {
   test.setTimeout(120_000);
   requireLocalFixture(baseURL);
