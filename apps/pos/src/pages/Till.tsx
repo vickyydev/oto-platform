@@ -2070,6 +2070,17 @@ export default function Till() {
   // SCRUM-798 — a Golden Ticket's drop-off opens it for the gift's child alone
   // (`only`), on the cart just rung up, with the age staff already asked.
   const openSupervisionGate = (only?: { lines: CartLine[]; lineId: string; age: number }) => {
+    // SCRUM-857 — never while a run of the gate is still writing (the family's
+    // Done, or a Continue retried online under SCRUM-887) and staff went Back:
+    // opening it again would clear the ids and the online hold that run writes
+    // with. Once it lands the sale carries the children and is not gated again.
+    if (gateRunningRef.current) {
+      toast({
+        title: 'Still registering the children',
+        description: 'The drop-off form is being saved. Wait a moment, then press again.',
+      });
+      return;
+    }
     const slots: SupervisedSlot[] = [];
     for (const l of only?.lines ?? lines) {
       if (l.dropOff) continue;

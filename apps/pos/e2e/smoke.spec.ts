@@ -1250,6 +1250,11 @@ test('separate display drop-off: the family takes the photo, a half-done form wr
     await cancelledDone.click();
     await visitReached;
     await page.getByRole('button', { name: 'Back', exact: true }).first().click();
+    // Pay from the cart while the Done is still being saved: the gate does not
+    // open afresh under its own run (which would clear the ids it writes with).
+    await page.getByRole('button', { name: /^Pay ฿/ }).click();
+    await expect(page.getByText('Still registering the children', { exact: true }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Cancel', exact: true }).first().click();
     await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
     // The next family: the same member, the children skipped, so no visit is theirs.
