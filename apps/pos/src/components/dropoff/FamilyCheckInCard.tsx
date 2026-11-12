@@ -81,6 +81,13 @@ const fmtTime = (iso?: string) =>
 // a long name wraps inside the button rather than running out of it.
 const PAYMENT_PILL = 'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold';
 const NAMED_CHECK_IN = 'min-w-0 whitespace-normal break-words text-center leading-tight';
+// SCRUM-901 — the family's buttons are 44px high; a named label on several
+// lines used to spill above and below its button beside Cancel booking. A
+// button that names children grows with its label instead (at least 44px);
+// a one-word "Check in" keeps the row exactly as it was.
+const FAMILY_ACTION = 'h-11 flex-1 min-w-[120px] gap-1.5';
+const NAMED_ACTION = 'h-auto min-h-11 py-2';
+const NAMED_FAMILY_ACTION = `${NAMED_ACTION} flex-1 min-w-[120px] gap-1.5`;
 
 function StatusBadge({ child }: { child: CheckIn }) {
   const elapsed = useElapsed(child.status === 'in_park' ? child.checkedInAt : undefined);
@@ -246,6 +253,7 @@ export function FamilyCheckInCard({
   const namedCheckIns = [anyToRedeem, anyScheduled, anyRegistered].filter(Boolean).length > 1;
   const checkInLabel = (children: readonly CheckIn[]) =>
     namedCheckIns ? <span className={NAMED_CHECK_IN}>Check in {childNames(children)}</span> : 'Check in';
+  const checkInClass = namedCheckIns ? NAMED_FAMILY_ACTION : FAMILY_ACTION;
 
   // SCRUM-886 — the picker's Cancel booking, with its refusals: hidden when
   // every waiting child is paid, disabled with the reason while one is paid or
@@ -366,7 +374,7 @@ export function FamilyCheckInCard({
         {anyToRedeem && (
           <Button
             size="sm"
-            className="h-11 flex-1 min-w-[120px] gap-1.5"
+            className={checkInClass}
             onClick={() => onRedeemBooking(toRedeem[0])}
           >
             <LogIn className="w-4 h-4" />
@@ -377,7 +385,7 @@ export function FamilyCheckInCard({
         {anyScheduled && (
           <Button
             size="sm"
-            className="h-11 flex-1 min-w-[120px] gap-1.5"
+            className={checkInClass}
             onClick={() => onCheckInBooked(scheduledChildren)}
           >
             <LogIn className="w-4 h-4" />
@@ -388,7 +396,7 @@ export function FamilyCheckInCard({
         {anyRegistered && (
           <Button
             size="sm"
-            className="h-11 flex-1 min-w-[120px] gap-1.5"
+            className={checkInClass}
             onClick={() => onCheckIn(registeredChild)}
           >
             <LogIn className="w-4 h-4" />
@@ -422,7 +430,7 @@ export function FamilyCheckInCard({
         )}
 
         {alone && (
-          <Button variant="outline" size="sm" className="h-11 gap-1.5" onClick={() => onCancelBooking?.(alone)}>
+          <Button variant="outline" size="sm" className={`gap-1.5 max-w-full ${NAMED_ACTION} whitespace-normal text-center`} onClick={() => onCancelBooking?.(alone)}>
             <Ban className="w-4 h-4" />
             {cancelAloneLabel(alone)}
           </Button>

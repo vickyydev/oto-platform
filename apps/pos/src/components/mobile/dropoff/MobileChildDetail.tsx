@@ -266,6 +266,10 @@ export function MobileChildDetail({
     ) : (
       'Check In'
     );
+  // SCRUM-901 — a Check In that names children grows with its label (at least
+  // the 64px it was), so three long names stay inside the button; the plain
+  // "Check In" keeps its button exactly as it was.
+  const checkInClass = split ? 'w-full h-auto min-h-16 py-3 text-lg gap-2 rounded-2xl' : 'w-full h-16 text-lg gap-2 rounded-2xl';
 
   const allSameInPark = allSameStatus && rep.status === 'in_park';
   const remaining = allSameInPark ? remainingMinutes(rep) : null;
@@ -436,7 +440,7 @@ export function MobileChildDetail({
               </div>
             )}
             <Button
-              className="w-full h-16 text-lg gap-2 rounded-2xl"
+              className={checkInClass}
               onClick={() => onRedeemBooking(toRedeem[0])}
             >
               <LogIn className="w-5 h-5" />
@@ -457,7 +461,7 @@ export function MobileChildDetail({
 
         {anyRegistered && (
           <Button
-            className="w-full h-16 text-lg gap-2 rounded-2xl"
+            className={checkInClass}
             onClick={() => onCheckIn(registeredChild)}
           >
             <LogIn className="w-5 h-5" />
@@ -492,7 +496,7 @@ export function MobileChildDetail({
         )}
 
         {alone && (
-          <Button variant="outline" className="w-full h-12 gap-2" onClick={() => onCancelBooking?.(alone)}>
+          <Button variant="outline" className="w-full h-auto min-h-12 py-2 gap-2 whitespace-normal text-center" onClick={() => onCancelBooking?.(alone)}>
             <Ban className="w-4 h-4" />
             {cancelAloneLabel(alone)}
           </Button>
