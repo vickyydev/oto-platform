@@ -280,6 +280,13 @@ export interface BeoAiMenuLine {
    * review before Approve, SCRUM-926's hold). Absent on every other line.
    */
   setMenuItemId?: string;
+  /**
+   * SCRUM-958: a total the chat gives for several of the dish ("2 Margherita
+   * pizzas for 900"), in baht, with the count it was said for. Never written
+   * as a price each (the owner's rule: a price is per item); the review names
+   * it in the line's reason so staff can type a price if they want.
+   */
+  chatTotal?: { amount: number; quantity: number };
   from: BeoAiFrom;
 }
 
@@ -550,6 +557,18 @@ export function setMenuOptionOf(
 /** SCRUM-958: the words beside an adults' set-menu line in the review: what it is, and that it is not charged. */
 export const adultsSetMenuLineWords = (groupLabel: string): string =>
   `The set menu's ${groupLabel}, on the adults' own menu: a SET line, not charged.`;
+
+/**
+ * SCRUM-958: the reason a line carries when the chat gives a total for several
+ * of it ("2 Margherita pizzas for 900"): the chat's figure, and what is written
+ * instead — the till's price for each, or none (a total is never a price each).
+ */
+export function chatTotalWords(total: { amount: number; quantity: number }, tillPriceBaht: number | null): string {
+  const figure = `฿${total.amount.toLocaleString("en", { maximumFractionDigits: 2 })}`;
+  return tillPriceBaht !== null
+    ? `The chat says ${figure} for ${total.quantity}; the till's price is ฿${tillPriceBaht.toLocaleString("en", { maximumFractionDigits: 2 })} each.`
+    : `The chat says ${figure} for ${total.quantity}; no price each is written: type one if you want.`;
+}
 
 /** A set menu's choices as the parent link records them: each group's chosen options. */
 export interface BeoAiSetMenuChoices {

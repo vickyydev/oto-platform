@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, ListTodo, Loader2, MessageSquare, Music, Settings, Sparkles, Trash2, Users, Utensils, Wallet } from "lucide-react";
-import { BEO_AI_MENUS, adultsSetMenuLineWords, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { BEO_AI_MENUS, adultsSetMenuLineWords, beoAiMatchLabel, beoAiSourceLabel, chatTotalWords, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
 import { dayLabel } from "@/lib/beo-ai-date";
 import { aiReviewCakeNotSaidNote } from "@/lib/beo-ai-preview";
 import {
@@ -794,6 +794,12 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={l.from} indent={false} />
+              {/* SCRUM-958: a total the chat gives for several is named, never written as a price each. */}
+              {l.chatTotal && (
+                <div className="text-xs text-muted-foreground" data-testid="text-ai-review-chat-total">
+                  {chatTotalWords(l.chatTotal, tillMatchOf(review, l.productCode)?.price ?? null)}
+                </div>
+              )}
               {setGroup && (
                 <div className="text-xs text-muted-foreground" data-testid="text-ai-review-adults-set">
                   {adultsSetMenuLineWords(setGroup.label)}
@@ -827,8 +833,8 @@ function ReviewSections({
                 </div>
               )}
               {/* SCRUM-946: the price written on the line, for each item, as Approve and create writes it.
-                  SCRUM-958: never on an adults' SET line. */}
-              {!setGroup && (l.chatPrice !== null || l.price !== null) && (
+                  SCRUM-958: never on an adults' SET line; shown beside a chat's total, to type one. */}
+              {!setGroup && (l.chatPrice !== null || l.price !== null || !!l.chatTotal) && (
                 <div className="flex items-center gap-2 text-xs flex-wrap" data-testid="ai-review-menu-price">
                   <span className="text-muted-foreground">Price:</span>
                   <Input

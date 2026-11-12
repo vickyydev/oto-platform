@@ -112,6 +112,8 @@ export interface ReviewMenuLine {
    * `matchedName`. Absent on every other line.
    */
   setMenuItemId?: string;
+  /** SCRUM-958: the total the chat gives for several of the dish, named in the line's reason. */
+  chatTotal?: { amount: number; quantity: number };
 }
 
 export interface ReviewEntertainment {
@@ -394,8 +396,9 @@ export function initialReviewState(
         decision: null,
         ...(l.notes ? { notes: l.notes } : {}),
         ...(options.length > 1 ? { options } : {}),
-        // SCRUM-958: the adults' SET line of a set-menu dish.
+        // SCRUM-958: the adults' SET line of a set-menu dish, and a total the chat gives.
         ...(l.setMenuItemId ? { setMenuItemId: l.setMenuItemId } : {}),
+        ...(l.chatTotal ? { chatTotal: l.chatTotal } : {}),
         // SCRUM-946: the chat's price is the line's, per item, as it will be written. SCRUM-944: else
         // the till's weekday price for a dish or drink the till sells, as its picker writes an EXTRA.
         ...priceOfLine(review, l),

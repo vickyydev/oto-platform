@@ -21,6 +21,8 @@
 //   3. thread G, "The adults will eat the same as the kids, the Margherita
 //      pizza for them too.": the fold is said, in the review (with the chat's
 //      words) and in the toast after Approve.
+//   4. thread I, "2 Margherita pizzas for 900": written at the till's price
+//      each, and the review names the chat's 900 in the line's reason.
 //
 // Every model answer here is scripted (the proof's own words): no model key is used.
 //
@@ -54,7 +56,7 @@ type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, undecidedOptions, approvalResultWords, adultsFoldNoticeOf } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
-const { adultsFoldedWords, adultsFoldedOnOwnMenuWords, adultsSetMenuLineWords, setMenuOptionOf } = await import("../shared/beoAiFill");
+const { adultsFoldedWords, adultsFoldedOnOwnMenuWords, adultsSetMenuLineWords, chatTotalWords, setMenuOptionOf } = await import("../shared/beoAiFill");
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
 type BeoAiCatalogueView = import("../shared/beoAiFill").BeoAiCatalogueView;
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
@@ -75,7 +77,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 6;
+const CHECKS = 7;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -498,6 +500,36 @@ try {
     );
   });
 
+  // --- 4. A chat total is shown (thread I) ------------------------------------------------------
+  await check("threadI_aChatTotalIsNamedInTheReason", async () => {
+    const res = await fill(ev.I);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    const margherita = review.proposal.menuLines.find((l) => l.productCode === "CF-24")!;
+    assert.deepEqual([margherita.chatPrice, margherita.chatTotal, margherita.setMenuItemId ?? null], [null, { amount: 900, quantity: 2 }, null], "2 for 900: no price each, the total kept, an EXTRA");
+    const state = initialReviewState(review, { fill: res.body.fill });
+    const line = state.menuLines.find((l) => l.productCode === "CF-24")!;
+    assert.deepEqual([line.price, line.priceFrom], [400, "till"], "written at the till's price each");
+    assert.equal(chatTotalWords({ amount: 900, quantity: 2 }, 400), "The chat says ฿900 for 2; the till's price is ฿400 each.");
+    const page = html(review, state);
+    assert.ok(page.includes("The chat says ฿900 for 2; the till&#x27;s price is ฿400 each."), "the reason names the chat's 900");
+    // The Pepperoni at the chat's 300 and the extra fries are as before.
+    const pepperoni = state.menuLines.find((l) => l.productCode === "CF-31")!;
+    assert.deepEqual([pepperoni.price, pepperoni.priceFrom, pepperoni.setMenuItemId ?? null], [300, "chat", null]);
+    const fries = state.menuLines.find((l) => l.productCode === "CF-11")!;
+    assert.deepEqual([fries.quantity, fries.price, fries.priceFrom], [3, 175, "till"]);
+    // A total for a dish the till does not price: the box is offered to type a price each.
+    const noTill = { ...review, catalogue: { ...review.catalogue, till: [] } };
+    const noTillState = initialReviewState(noTill, {});
+    const noTillPage = html(noTill, noTillState);
+    assert.ok(noTillPage.includes("The chat says ฿900 for 2; no price each is written: type one if you want."));
+    const box = noTillPage.slice(noTillPage.indexOf("The chat says ฿900 for 2"));
+    assert.ok(box.includes('data-testid="input-ai-review-menu-price"'), "the price box, to type one");
+    const ok = await approve(ev.I, approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const adults = ((await kitchenOf(ev.I)).menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => [l.itemName, l.quantity, l.price]);
+    assert.deepEqual(adults, [["Pepperoni", 1, 300], ["Margherita", 2, 400]], "2 at 400 each, never 900 each, never 450 made up");
+  });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
   const events = Object.values(ev);

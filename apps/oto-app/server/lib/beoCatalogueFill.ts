@@ -1036,6 +1036,10 @@ export function resolveCatalogueAnswer(
     const shared = food ? foodOptionNamed(names, m.option) ?? foodNameFor(names, m.itemName) : null;
     const matchedName = food || till ? codedLineNameOf(names, till, shared) : null;
     const code = food?.code ?? till?.code ?? null;
+    // SCRUM-946 (the lane's reviews): the chat's price is written as the price for each item, so a
+    // total the chat gives for several ("2 pizzas for 900") is not one. SCRUM-958: the total is
+    // kept beside the line, for its reason in the review; never a price each.
+    const total = m.chatPrice !== undefined && chatPriceIsTotal(lineTextOf(m), m.chatPrice, m.quantity ?? 1);
     const line: BeoAiProposal["menuLines"][number] = {
       menu,
       itemName,
@@ -1043,9 +1047,8 @@ export function resolveCatalogueAnswer(
       productCode: code,
       matchedName,
       notInMenu: !code,
-      // SCRUM-946 (the lane's reviews): the chat's price is written as the price for each item, so a
-      // total the chat gives for several ("2 pizzas for 900") is not one.
-      chatPrice: m.chatPrice !== undefined && !chatPriceIsTotal(lineTextOf(m), m.chatPrice, m.quantity ?? 1) ? m.chatPrice : null,
+      chatPrice: m.chatPrice !== undefined && !total ? m.chatPrice : null,
+      ...(total ? { chatTotal: { amount: m.chatPrice!, quantity: m.quantity ?? 1 } } : {}),
       // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
       ...(m.notes ? { notes: m.notes } : {}),
       from: fromOf(m, m.itemName),
@@ -1194,7 +1197,8 @@ export function resolveCatalogueAnswer(
     // (the dish and the line that said it), so the review and the toast say so.
     const folded: NonNullable<BeoAiProposal["adultsFolded"]> = [];
     proposal.menuLines = proposal.menuLines.filter((l) => {
-      if (l.menu === "bar" || l.chatPrice !== null) return true;
+      // SCRUM-958: a line the chat gives a total for names a price too: its own order.
+      if (l.menu === "bar" || l.chatPrice !== null || l.chatTotal) return true;
       const count = l.menu === "kids" ? kids : adultsN;
       const sameOrder = l.quantity === 1 || (count !== null && l.quantity === count);
       if (l.menu === "kids" && sameOrder) {
