@@ -957,6 +957,20 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-catalogue-fill.check.ts
+      # SCRUM-904: the conversation's read fills every field of the BEO form,
+      # each with the chat's own words: the prompt asks the whole form and
+      # reaches the model under a park group's saved advice too; the resolver
+      # keeps only what the chat gives; the option of a shared till code is
+      # the one the chat names, and one nobody named waits for staff
+      # (SCRUM-926); an extra order of a set-menu dish stays its own line;
+      # every guard holds (nothing written before Approve, typed text never
+      # replaced, a claimed deposit as asked); a show and the drinks are on
+      # the Timeline once.
+      - name: The app's AI fill every-field checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-phase-b.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept
