@@ -7,7 +7,7 @@ settings and hashes only: never a value, a connection string or a person.
 
 ## Status
 
-_Updated 12 November 2026, 17:10 Bangkok._
+_Updated 12 November 2026, 18:05 Bangkok._
 
 **The live link: https://oto-launcher-production.onrender.com** (sign in
 there; the HR app itself is https://oto-app-production.onrender.com).
@@ -42,7 +42,9 @@ there; the HR app itself is https://oto-app-production.onrender.com).
   lines, 3 packages with 29 lines; a second run changes nothing).
 - **Logins.** The administrator the owner asked for exists (platform and
   operator administrator; number and password are his, the phone is not
-  counted as verified, so no SMS reset reaches it until it is). The staff
+  counted as verified, so no SMS reset reaches it until it is) and has a
+  profile inside the HR app (a global administrator there, the name and
+  email the owner gave). The staff
   accounts script was applied under that administrator: **52 people have
   their login** (6 admins, 12 managers, 33 staff, 1 advisor; 50 phones
   verified, 2 not; 1 carries a forced password change; 47 linked to their
@@ -81,12 +83,23 @@ there; the HR app itself is https://oto-app-production.onrender.com).
    checklist runs 2,545, tasks 515, service check-ins 2,694, drop-off
    check-ins 1,801, notifications 942.
 
+8. **Inside the HR app as the administrator** (18:00, after the owner gave the
+   profile's name and email and it was made with
+   `POST /admin/apps/oto_app/users`; no message was sent). The launcher's tile
+   opens the production HR app on its Today page, signed in as a global
+   administrator. Read through the app's own screens and routes: 3 branches
+   (Central Floresta, Robinson Chalong, Head Office; 2 joined to a park), 1
+   operator, 12 departments, 77 employees, 80 users (the dump's 79 and the
+   administrator's profile), 98 contracts, 4,077 time-off records, 7 leave
+   types, 17 checklist templates, today's event on the Today page, 285 open
+   attention items, and under Event Settings the 3 seeded birthday packages
+   with their printed prices, 9 set menus and 19 entertainment lines.
+   Pictures (Today, Branches, Birthday Packages): on SCRUM-920 in Jira and
+   in `C:\oto-data\golive\shots\` on the owner's laptop. They are pictures of
+   the production app's own screens and are kept out of the repository.
+
 **Not proved yet, and why:**
 
-- **Inside the HR app as the administrator.** The app answers the
-  administrator's hand-off with `not_provisioned`: the new administrator has
-  no profile inside the HR app. It needs a name and an email from the owner
-  (one call, `POST /admin/apps/oto_app/users`, as on staging on 9 November).
 - **A real staff sign-in.** Nobody's password is known here. The first
   sign-in with an app password was proved on staging (SCRUM-795); on
   production it waits for one real person to try.
@@ -190,7 +203,7 @@ Render API and read back: 46 on the api, 24 on the app, 1 on the launcher.
 Each is a ticket under SCRUM-110 (P7 Cutover), filed 12 November:
 
 1. SCRUM-920 (the administrator's profile inside the HR app, then the app's
-   screens): the owner gives a name and an email; then the in-app proof.
+   screens): DONE on 12 November, Deployed with its pictures.
 2. SCRUM-921 (14 active people have no phone number): the owner gives the
    numbers, or they are added in the old app before the final dump.
 3. SCRUM-922 (one real staff member signs in on the live link).
