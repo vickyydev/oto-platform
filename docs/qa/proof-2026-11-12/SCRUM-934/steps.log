@@ -1,0 +1,3678 @@
+
+=== 2026-11-12T13:46:54.528Z setup
+S.phase = 'setup';
+const r = await S.setup();
+// the catalogue: what a 1,605 cart can be made of
+const pk = (await S.call('GET', `/branches/${S.branchId}/ticket-packages`)).body;
+const list = (pk.packages ?? pk.ticketPackages ?? pk).filter?.(p => !p.archivedAt && p.active !== false) ?? [];
+r.packages = list.map(p => ({ name: p.name, kidW: p.kidPriceWeekday ?? p.prices?.tourist?.kidWeekday ?? null, adultW: p.adultPriceWeekday ?? null, keys: Object.keys(p).slice(0, 40) })).slice(0, 12);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "free": 30,
+  "first": "0898909040",
+  "last": "0898909069",
+  "station": "01a1d002-f8be-743a-83d9-79dfa0d5cb1a",
+  "prefix": "Z93401",
+  "code": "ZZTEST934A",
+  "packages": [
+   {
+    "name": "1 Hour Play",
+    "kidW": null,
+    "adultW": null,
+    "keys": [
+     "id",
+     "operatorId",
+     "branchId",
+     "name",
+     "description",
+     "durationLabel",
+     "hours",
+     "prices",
+     "tierPricing",
+     "adultRules",
+     "freebies",
+     "creditRule",
+     "gateAccess",
+     "translations",
+     "active",
+     "createdAt",
+     "updatedAt",
+     "archivedAt"
+    ]
+   },
+   {
+    "name": "2 Hours Play",
+    "kidW": null,
+    "adultW": null,
+    "keys": [
+     "id",
+     "operatorId",
+     "branchId",
+     "name",
+     "description",
+     "durationLabel",
+     "hours",
+     "prices",
+     "tierPricing",
+     "adultRules",
+     "freebies",
+     "creditRule",
+     "gateAccess",
+     "translations",
+     "active",
+     "createdAt",
+     "updatedAt",
+     "archivedAt"
+    ]
+   },
+   {
+    "name": "Full Day Pass",
+    "kidW": null,
+    "adultW": null,
+    "keys": [
+     "id",
+     "operatorId",
+     "branchId",
+     "name",
+     "description",
+     "durationLabel",
+     "hours",
+     "prices",
+     "tierPricing",
+     "adultRules",
+     "freebies",
+     "creditRule",
+     "gateAccess",
+     "translations",
+     "active",
+     "createdAt",
+     "updatedAt",
+     "archivedAt"
+    ]
+   },
+   {
+    "name": "Eat & Play Kids Pass",
+    "kidW": null,
+    "adultW": null,
+    "keys": [
+     "id",
+     "operatorId",
+     "branchId",
+     "name",
+     "description",
+     "durationLabel",
+     "hours",
+     "prices",
+     "tierPricing",
+     "adultRules",
+     "freebies",
+     "creditRule",
+     "gateAccess",
+     "translations",
+     "active",
+     "createdAt",
+     "updatedAt",
+     "archivedAt"
+    ]
+   },
+   {
+    "name": "1 Kid + 1 Adult (1 hour)",
+    "kidW": null,
+    "adultW": null,
+    "keys": [
+     "id",
+     "operatorId",
+     "branchId",
+     "name",
+     "description",
+     "durationLabel",
+     "hours",
+     "prices",
+     "tierPricing",
+     "adultRules",
+     "freebies",
+     "creditRule",
+     "gateAccess",
+     "translations",
+     "active",
+     "createdAt",
+     "updatedAt",
+     "archivedAt"
+    ]
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T13:47:03.913Z setup
+const pk = (await S.call('GET', `/branches/${S.branchId}/ticket-packages`)).body;
+const list = (pk.packages ?? pk.ticketPackages ?? pk).filter(p => !p.archivedAt && p.active !== false);
+return list.map(p => ({ name: p.name, prices: p.prices, tier: p.tierPricing?.tourist ?? null, adultRules: p.adultRules }));
+--> {
+ "ok": true,
+ "value": [
+  {
+   "name": "1 Hour Play",
+   "prices": {
+    "thai": {
+     "weekday": 42000,
+     "weekend": 52000
+    },
+    "expat": {
+     "weekday": 48300,
+     "weekend": 55200
+    },
+    "tourist": {
+     "weekday": 69000,
+     "weekend": 69000
+    }
+   },
+   "tier": null,
+   "adultRules": {
+    "thai": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    },
+    "expat": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    },
+    "tourist": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    }
+   }
+  },
+  {
+   "name": "2 Hours Play",
+   "prices": {
+    "thai": {
+     "weekday": 52000,
+     "weekend": 62000
+    },
+    "expat": {
+     "weekday": 62300,
+     "weekend": 71200
+    },
+    "tourist": {
+     "weekday": 89000,
+     "weekend": 89000
+    }
+   },
+   "tier": null,
+   "adultRules": {
+    "thai": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    },
+    "expat": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    },
+    "tourist": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    }
+   }
+  },
+  {
+   "name": "Full Day Pass",
+   "prices": {
+    "thai": {
+     "weekday": 62000,
+     "weekend": 72000
+    },
+    "expat": {
+     "weekday": 76300,
+     "weekend": 87200
+    },
+    "tourist": {
+     "weekday": 109000,
+     "weekend": 109000
+    }
+   },
+   "tier": null,
+   "adultRules": {
+    "thai": {
+     "kind": "free_adults",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     },
+     "freeAdults": 1,
+     "overflow": "set_price"
+    },
+    "expat": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    },
+    "tourist": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     }
+    }
+   }
+  },
+  {
+   "name": "Eat & Play Kids Pass",
+   "prices": {
+    "thai": {
+     "weekday": 130000,
+     "weekend": 130000
+    },
+    "expat": {
+     "weekday": 130000,
+     "weekend": 130000
+    },
+    "tourist": {
+     "weekday": 130000,
+     "weekend": 130000
+    }
+   },
+   "tier": null,
+   "adultRules": {
+    "thai": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 35000
+     }
+    },
+    "expat": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 35000
+     }
+    },
+    "tourist": {
+     "kind": "set_price",
+     "price": {
+      "weekday": 35000,
+      "weekend": 35000
+     }
+    }
+   }
+  },
+  {
+   "name": "1 Kid + 1 Adult (1 hour)",
+   "prices": {
+    "thai": {
+     "weekday": 50000,
+     "weekend": 50000
+    },
+    "expat": {
+     "weekday": 50000,
+     "weekend": 50000
+    },
+    "tourist": {
+     "weekday": 50000,
+     "weekend": 50000
+    }
+   },
+   "tier": null,
+   "adultRules": {
+    "thai": {
+     "kind": "free_adults",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     },
+     "freeAdults": 1,
+     "overflow": "set_price"
+    },
+    "expat": {
+     "kind": "free_adults",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     },
+     "freeAdults": 1,
+     "overflow": "set_price"
+    },
+    "tourist": {
+     "kind": "free_adults",
+     "price": {
+      "weekday": 35000,
+      "weekend": 50000
+     },
+     "freeAdults": 1,
+     "overflow": "set_price"
+    }
+   }
+  }
+ ]
+}
+
+=== 2026-11-12T13:47:35.205Z setup
+const tries = ['/menu/products', `/menu/products?branchId=${S.branchId}`, `/branches/${S.branchId}/products`];
+const out = {};
+for (const t of tries) {
+  const r = await S.call('GET', t);
+  const arr = r.body?.products ?? r.body?.items ?? (Array.isArray(r.body) ? r.body : null);
+  out[t] = { status: r.status, n: arr?.length ?? null, odd: arr ? arr.filter(p => !p.archivedAt && p.active !== false).map(p => ({ name: p.name, price: p.priceSatang ?? p.price ?? p.unitSatang, cat: p.categoryName ?? p.category ?? p.revenueCategory ?? null })).filter(p => typeof p.price === 'number' && p.price % 1000 !== 0).slice(0, 15) : null };
+}
+// the drop-off service fee rule
+const rule = await S.call('GET', `/branches/${S.branchId}/dropoff-pricing`);
+out.dropoff = { status: rule.status, body: rule.status === 200 ? rule.body : null };
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "/menu/products": {
+   "status": 404,
+   "n": null,
+   "odd": null
+  },
+  "/menu/products?branchId=01a0bbdc-8c42-7753-b7e3-5ae19fb66d33": {
+   "status": 404,
+   "n": null,
+   "odd": null
+  },
+  "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/products": {
+   "status": 404,
+   "n": null,
+   "odd": null
+  },
+  "dropoff": {
+   "status": 404,
+   "body": null
+  }
+ }
+}
+
+=== 2026-11-12T13:48:11.455Z sign in desk till
+// the same helper as driver.mjs now has (ages, last child first)
+S.fillDropOff = async (page, children, guardian, picture, ages = []) => {
+  const { expect, assert } = S;
+  await page.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+  const first = page.getByPlaceholder('Full name', { exact: true }).first();
+  await first.waitFor();
+  const half = S.halfOf(first);
+  const fields = half.getByPlaceholder('Full name', { exact: true });
+  assert.equal(await fields.count(), children.length, 'one name field per child');
+  for (let i = 0; i < children.length; i++) await fields.nth(i).fill(children[i]);
+  for (let i = children.length - 1; i >= 0; i--) await S.setAge(page, half, ages[i] ?? 6);
+  await half.getByPlaceholder('Your full name', { exact: true }).fill(guardian);
+  for (let i = 0; i < children.length; i++) {
+    await half.getByRole('button', { name: 'Start camera', exact: true }).first().click();
+    await half.getByRole('button', { name: 'Take photo', exact: true }).first().click();
+    await expect(half.getByAltText('Captured', { exact: true })).toHaveCount(i + 1);
+  }
+  for (const box of await half.getByRole('checkbox').all()) if (await box.isEnabled()) await box.check();
+  if (picture) await S.shot(page, picture);
+  const [registered] = await Promise.all([
+    page.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST'),
+    page.getByRole('button', { name: 'Continue to payment', exact: true }).click(),
+  ]);
+  const reg = await registered.json().catch(() => null);
+  assert.equal(registered.status(), 200, 'the registration is written');
+  S.receipt.created.push({ kind: 'registration', guardian, id: reg.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) }); S.save();
+  return reg;
+};
+S.phase = 'sign in desk till';
+const till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1680, height: 1050 });
+S.till = till;
+const bundle = await till.evaluate(async () => {
+  const urls = [...new Set(performance.getEntriesByType('resource').map(e => e.name).filter(n => /\.js(\?|$)/.test(n)))];
+  const found = { files: urls.length, leavesTheWaitingList: 0, partySettlement: 0, partyDeposit: 0, balanceDue: 0, notSettled: 0 };
+  for (const url of urls) { const t = await (await fetch(url, { cache: 'no-store' })).text();
+    found.leavesTheWaitingList += t.split('leaves the waiting list').length - 1 + t.split("leaves' : 'leave").length - 1; found.partySettlement += t.split('Party settlement').length - 1; found.partyDeposit += t.split('Party deposit').length - 1;
+    found.balanceDue += t.split('Balance due').length - 1; found.notSettled += t.split('Not settled').length - 1; }
+  return found;
+});
+S.receipt.reads.bundle = bundle;
+await S.landing(till).waitFor();
+await S.shot(till, '00-desk-till-signed-in-landing.png');
+return bundle;
+--> {
+ "ok": true,
+ "value": {
+  "files": 1,
+  "leavesTheWaitingList": 0,
+  "partySettlement": 4,
+  "partyDeposit": 2,
+  "balanceDue": 4,
+  "notSettled": 1
+ }
+}
+
+=== 2026-11-12T13:48:29.083Z 1: family A, two drop-off children on one sale, cash, Leave as booked
+S.phase = '1: family A, two drop-off children on one sale, cash, Leave as booked';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.fam = S.fam ?? {};
+S.receipt.numbers.A = S.free[0];
+await S.walkIn(till, S.free[0]);
+await S.ticket(till, 2, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST Mint 934', 'ZZ TEST Pang 934'], 'ZZ TEST 934 guardian A', '01a-family-a-dropoff-form-two-children.png', [6, 6]);
+const sale = await S.saleWritten('dropoff-sale-A');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const due = await S.amountDue(till);
+await S.payCash(till);
+const leave = till.getByRole('button', { name: 'Leave as booked', exact: true });
+await leave.waitFor({ timeout: 20000 });
+await S.shot(till, '01b-family-a-paid.png');
+await leave.click();
+await till.waitForTimeout(2500);
+S.fam.A = { reg: reg.id, sale: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+const s = await S.sale(sale.id);
+return { due, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, receipt: s.sale.receiptNumber,
+  lines: s.lines.map(l => ({ kind: l.kind, label: l.label, childName: l.childName ?? null, cart: S.fam.A.stays.findIndex(x => x.id === l.cartLineId), gross: l.grossSatang / 100 })),
+  board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1830",
+  "status": "finalised",
+  "gross": 1830,
+  "receipt": "Z93401-000001",
+  "lines": [
+   {
+    "kind": "kids",
+    "label": "Kids",
+    "childName": "ZZ TEST Mint 934",
+    "cart": 0,
+    "gross": 690
+   },
+   {
+    "kind": "service_fee",
+    "label": "Drop-off service",
+    "childName": "ZZ TEST Mint 934",
+    "cart": 0,
+    "gross": 225
+   },
+   {
+    "kind": "kids",
+    "label": "Kids",
+    "childName": "ZZ TEST Pang 934",
+    "cart": 1,
+    "gross": 690
+   },
+   {
+    "kind": "service_fee",
+    "label": "Drop-off service",
+    "childName": "ZZ TEST Pang 934",
+    "cart": 1,
+    "gross": 225
+   }
+  ],
+  "board": [
+   {
+    "child": "ZZ TEST Mint 934",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z93401-000001"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST Pang 934",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z93401-000001"
+    },
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T13:48:53.068Z 1: History, the sale: the item cards name each child
+S.phase = '1: History, the sale: the item cards name each child';
+const till = S.till;
+await S.unlock('till');
+await till.goto('/history'); await till.waitForTimeout(5000);
+S.mine = ['Z93401-'];
+await S.markMine(till, S.mine);
+await S.shot(till, '01c-history-list-family-a-sale.png');
+await till.locator('button[data-zz]').filter({ hasText: 'Z93401-000001' }).first().click();
+await till.waitForTimeout(3500);
+await S.markMine(till, S.mine);
+// the item cards: headings in the detail column
+const body = S.flat(await till.locator('body').innerText());
+const named = body.match(/ZZ TEST (Mint|Pang) 934 · [^฿]{0,60}/g) ?? [];
+await S.shot(till, '01d-history-detail-item-cards-name-each-child.png');
+return { named, hasRefund: await till.getByTestId('refund-sale').count(), oneDecimal: S.oneDecimal(body) };
+--> {
+ "ok": true,
+ "value": {
+  "named": [
+   "ZZ TEST Mint 934 · 1 Hour Play · Tourist ",
+   "ZZ TEST Pang 934 · 1 Hour Play · Tourist "
+  ],
+  "hasRefund": 1,
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:49:14.471Z 1: the manager: Refund, By item rows
+S.phase = '1: the manager: Refund, By item rows';
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+await S.markMine(mgr, S.mine);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z93401-000001' }).first().click();
+await mgr.waitForTimeout(3500);
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+await mgr.waitForTimeout(800);
+const rows = dialog.locator('div.max-h-44 > button');
+const labels = [];
+for (let i = 0; i < await rows.count(); i++) labels.push(S.flat(await rows.nth(i).innerText()));
+await S.shot(mgr, '01e-refund-by-item-rows-name-each-child.png');
+return { labels };
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915",
+   "ZZ TEST Pang 934 · 1 Hour Play · 1 ppl ฿915"
+  ]
+ }
+}
+
+=== 2026-11-12T13:49:40.390Z 1: refund the second child (Pang) only
+S.phase = '1: refund the second child (Pang) only';
+const mgr = S.mgr;
+const dialog = mgr.getByRole('dialog');
+const rows = dialog.locator('div.max-h-44 > button');
+await rows.nth(1).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-934 proof: Pang went home, Mint stays');
+await mgr.waitForTimeout(500);
+await S.shot(mgr, '01f-refund-by-item-pang-ticked.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+const label = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.A.sale}/refunds` && r.request().method() === 'POST');
+await press.click();
+const r = await resp;
+const body = await r.json().catch(() => null);
+await mgr.waitForTimeout(3000);
+await S.shot(mgr, '01g-history-detail-after-refund-pang.png');
+const s = await S.sale(S.fam.A.sale);
+const refundedLineIds = new Set(s.refunds.flatMap(x => x.lines.map(l => l.saleLineId)));
+const refundedCart = [...new Set(s.lines.filter(l => refundedLineIds.has(l.id)).map(l => l.cartLineId))];
+S.receipt.reads.p1 = { label, status: r.status(), amount: body?.refund?.amountSatang / 100, mode: body?.refund?.mode, refundStatus: s.refundStatus, refundable: s.refundableSatang / 100,
+  refundedIsPangOnly: refundedCart.length === 1 && refundedCart[0] === S.fam.A.stays[1].id,
+  board: S.stayFacts(await S.familyOnBoard(S.fam.A.reg)), reg: (await S.registration(S.fam.A.reg)).children.map(c => ({ name: c.childName, status: c.status, saleLinked: Boolean(c.saleId) })) };
+S.save();
+return S.receipt.reads.p1;
+--> {
+ "ok": true,
+ "value": {
+  "label": "Refund ฿915",
+  "status": 200,
+  "amount": 915,
+  "mode": "items",
+  "refundStatus": "partially_refunded",
+  "refundable": 915,
+  "refundedIsPangOnly": true,
+  "board": [
+   {
+    "child": "ZZ TEST Mint 934",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z93401-000001"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST Pang 934",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ],
+  "reg": [
+   {
+    "name": "ZZ TEST Mint 934",
+    "status": "registered",
+    "saleLinked": true
+   },
+   {
+    "name": "ZZ TEST Pang 934",
+    "status": "registered",
+    "saleLinked": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T13:49:59.604Z 1/6: the board after the refund; cancel Pang alone (leaves the waiting list)
+S.phase = '1/6: the board after the refund; cancel Pang alone (leaves the waiting list)';
+const till = S.till;
+await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 934 guardian A');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 934 guardian A' }).first();
+await card.waitFor({ timeout: 15000 });
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+await S.shot(till, '01h-board-family-a-after-refund-pang-to-pay.png');
+await card.getByRole('button', { name: "Cancel ZZ TEST Pang 934's booking", exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: "Cancel ZZ TEST Pang 934's booking" }).last();
+await dialog.waitFor();
+const seen = { card: text.slice(0, 700), title: S.flat(await dialog.getByRole('heading').first().innerText()), description: S.flat(await dialog.locator('p').first().innerText()) };
+await dialog.getByLabel('Reason').fill('ZZ TEST SCRUM-934: Pang went home, refunded by item');
+await S.shot(till, '06a-board-cancel-pang-alone-leaves-the-waiting-list.png');
+const [answer] = await Promise.all([
+  till.waitForResponse(r => /\/api\/checkin\/registrations\/[^/]+\/cancel$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST'),
+  dialog.getByRole('button', { name: 'Cancel the booking' }).click(),
+]);
+seen.answer = answer.status();
+const posted = answer.request().postDataJSON();
+seen.postedOnlyPang = posted.checkinIds?.length === 1 && posted.checkinIds[0] === S.fam.A.stays[1].id;
+await till.waitForTimeout(2500);
+await S.shot(till, '06b-board-after-cancel-pang-mint-still-paid.png');
+seen.reg = (await S.registration(S.fam.A.reg)).children.map(c => ({ name: c.childName, status: c.status }));
+S.receipt.cancelled.push({ reg: S.fam.A.reg, child: 'ZZ TEST Pang 934', from: 'desk board card', status: seen.answer });
+S.receipt.reads.p6cancel = seen; S.save();
+return seen;
+--> {
+ "ok": true,
+ "value": {
+  "card": "ZZ TEST 934 guardian A 2 children <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST Mint 934 6 yrs DROP-OFF ZZ TEST Pang 934 6 yrs DROP-OFF Overdue · 20:48 Booked & paid · ZZ TEST Mint 934 To pay · ZZ TEST Pang 934 Check in ZZ TEST Mint 934 Check in ZZ TEST Pang 934 Cancel booking Cancel ZZ TEST Pang 934's booking ZZ TEST Mint 934 is paid for — a paid booking is handled through its sale.",
+  "title": "Cancel ZZ TEST Pang 934's booking",
+  "description": "ZZ TEST 934 guardian A's booking: ZZ TEST Pang 934 leaves the waiting list and can't be added to a sale; the rest of the booking stays as it is. The signed form stays on record.",
+  "answer": 200,
+  "postedOnlyPang": true,
+  "reg": [
+   {
+    "name": "ZZ TEST Mint 934",
+    "status": "registered"
+   },
+   {
+    "name": "ZZ TEST Pang 934",
+    "status": "cancelled"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T13:50:25.808Z 1: the phone till (manager): History, the sale, Ticket lines, Refund, By item
+S.phase = '1: the phone till (manager): History, the sale, Ticket lines, Refund, By item';
+const deskOut = await S.signOut('mgr'); S.mgr = null;
+const ph = await S.signIn('mgrPhone', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 390, height: 844 });
+S.mgrPhone = ph;
+await ph.goto('/history'); await ph.waitForTimeout(5000);
+const body = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, 'zz-debug-phone-history.png');
+return { deskOut, url: ph.url(), text: body.slice(0, 900) };
+--> {
+ "ok": true,
+ "value": {
+  "deskOut": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "url": "https://oto-pos-web-staging.onrender.com/history",
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Today Yesterday This week All time Scan bracelet Find by phone All Tickets F&B 122 sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Partial refund ฿1830 Z90601-000001 · ZZ TEST 906 party 12 Nov, 20:46 [staff] Refunded ฿17715 Z85707-000001 · ZZ TEST 857 guardian W 12 Nov, 18:53 [staff] Paid ฿915 Z92901-000001 12 Nov, 18:52 [staff] Refunded ฿1040 Z85706-000006 · ZZ TEST 857 guardian U 12 Nov, 18:43 [staff] Paid ฿915 Z85706-000005 · ZZ TEST 857 guardian T 12 Nov, 18:40 [staff] Paid ฿915 Z85706-000004 12 Nov, 18:39 [staff] Paid ฿1040 Z85706-000003 · ZZ TEST 857 guardian S 12 Nov, 18:38 [staff] Paid ฿915 Z85706-000002 · ZZ TEST 857 guardian N 12 "
+ }
+}
+
+=== 2026-11-12T13:50:48.844Z 1: the phone till (manager): the sale, Ticket lines, Refund, By item
+S.phase = '1: the phone till (manager): the sale, Ticket lines, Refund, By item';
+const ph = S.mgrPhone;
+await S.markMine(ph, S.mine);
+await S.shot(ph, '01i-phone-history-list-family-a.png');
+await ph.locator('button[data-zz]').filter({ hasText: 'Z93401-000001' }).first().click();
+await ph.waitForTimeout(3500);
+let body = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '01j-phone-sale-detail.png');
+const tl = ph.getByText('Ticket lines', { exact: false }).first();
+let opened = false;
+if (await tl.isVisible().catch(() => false)) { await tl.click(); opened = true; await ph.waitForTimeout(1500); }
+body = S.flat(await ph.locator('body').innerText());
+const lines = body.match(/ZZ TEST (Mint|Pang) 934 · [^฿]{0,40}/g) ?? [];
+await S.shot(ph, '01k-phone-ticket-lines-name-each-child.png', [], { fullPage: true });
+const buttons = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && (await b.isVisible())) buttons.push(l.slice(0, 50)); }
+return { opened, lines, buttons: buttons.slice(0, 40), text: body.slice(0, 1200) };
+--> {
+ "ok": true,
+ "value": {
+  "opened": true,
+  "lines": [],
+  "buttons": [
+   "0 no gate",
+   "TICKET LINES",
+   "Reprint",
+   "Refund (฿915 left)",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Drop-off charge Z93401-000001 Partial refund ZZ TEST 934 guardian A · +66898909040 12 Nov, 20:48 · by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · 2026-11-12 · Tourist TICKET LINES Subtotal ฿1830 VAT (included) ฿119.72 Total paid ฿1830 Refunded −฿915 PAYMENT Cash · Approved 12 Nov, 20:48 ฿1830 REFUND HISTORY −฿915 12 Nov, 20:49 Service recovery · Z93401-R-000001 “ZZ TEST SCRUM-934 proof: Pang went home, Mint stays” Cash — hand it back in cash ฿915 by [staff] · manager approval Reprint Refund (฿915 left) Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T13:51:02.108Z 1: the phone till (manager): the sale, Ticket lines, Refund, By item
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: /TICKET LINES/i }).first().click();
+await ph.waitForTimeout(1500);
+const body = S.flat(await ph.locator('body').innerText());
+const lines = body.match(/ZZ TEST (Mint|Pang) 934 · [^฿]{0,40}/g) ?? [];
+await S.shot(ph, '01k-phone-ticket-lines-name-each-child.png', [], { fullPage: true });
+return { lines, text: body.slice(0, 900) };
+--> {
+ "ok": true,
+ "value": {
+  "lines": [
+   "ZZ TEST Mint 934 · 1 Hour Play ",
+   "ZZ TEST Pang 934 · 1 Hour Play "
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Drop-off charge Z93401-000001 Partial refund ZZ TEST 934 guardian A · +66898909040 12 Nov, 20:48 · by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · 2026-11-12 · Tourist TICKET LINES ZZ TEST Mint 934 · 1 Hour Play ฿915 Kids · 1× ฿690 ฿690 Drop-off service · 1× ฿225 ฿225 ZZ TEST Pang 934 · 1 Hour Play ฿915 Kids · 1× ฿690 ฿690 Drop-off service · 1× ฿225 ฿225 Subtotal ฿1830 VAT (included) ฿119.72 Total paid ฿1830 Refunded −฿915 PAYMENT Cash · Approved 12 Nov, 20:48 ฿1830 REFUND HISTORY −฿915 12 Nov, 20:49 Service recovery · Z93401-R-000001 “ZZ TEST SCRUM-934 proof: Pang went home, Mint stays” Cash — hand it back in cash ฿915 by [staff] · manager approval Reprint Refund (฿915 left) Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T13:51:13.017Z 1: the phone till: Refund, By item rows; refund Mint (the rest of sale A)
+S.phase = '1: the phone till: Refund, By item rows; refund Mint (the rest of sale A)';
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: /^Refund \(/ }).first().click();
+await ph.waitForTimeout(1500);
+const byItem = ph.getByRole('button', { name: 'By item', exact: true });
+await byItem.waitFor({ timeout: 15000 });
+await byItem.click();
+await ph.waitForTimeout(1000);
+const body = S.flat(await ph.locator('body').innerText());
+const rows = body.match(/ZZ TEST (Mint|Pang) 934 · 1 Hour Play · \d+ ppl[^฿]{0,30}฿[0-9,.]+/g) ?? [];
+await S.shot(ph, '01l-phone-refund-by-item-rows-name-each-child.png');
+const cands = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/ZZ TEST/.test(l) && (await b.isVisible())) cands.push({ l, e: await b.isEnabled() }); }
+return { rows, cands, text: body.slice(0, 1500) };
+--> {
+ "ok": true,
+ "value": {
+  "rows": [
+   "ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915"
+  ],
+  "cands": [
+   {
+    "l": "ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915",
+    "e": true
+   }
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Refund How much to refund? Up to ฿915 refundable · by [staff] Whole sale By item Amount Choose items to refund ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915 Next — choose reason Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T13:51:29.074Z 1: the phone till: Refund, By item rows; refund Mint (the rest of sale A)
+const ph = S.mgrPhone;
+await S.markMine(ph, ['ZZ TEST Mint 934', 'ZZ TEST Pang 934', ...S.mine]);
+await S.shot(ph, '01l-phone-refund-by-item-rows-name-each-child.png');
+// the refund of Mint (the rest of sale A): the row, Next, a reason, Refund
+await ph.getByRole('button', { name: /ZZ TEST Mint 934 · 1 Hour Play/ }).first().click();
+await ph.waitForTimeout(600);
+await S.markMine(ph, ['ZZ TEST Mint 934', ...S.mine]);
+await S.shot(ph, '01m-phone-refund-mint-ticked.png');
+await ph.getByRole('button', { name: /^Next/ }).first().click();
+await ph.waitForTimeout(1200);
+const txt = S.flat(await ph.locator('body').innerText());
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && (await b.isVisible())) btns.push(l.slice(0, 50)); }
+return { txt: txt.slice(0, 900), btns };
+--> {
+ "ok": true,
+ "value": {
+  "txt": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Refund Why? Refund amount −฿915 Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Review refund Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "btns": [
+   "0 no gate",
+   "Service recovery",
+   "Staff / family",
+   "Damaged item",
+   "Manager comp",
+   "Promotion",
+   "Loyalty",
+   "Other",
+   "Review refund",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ]
+ }
+}
+
+=== 2026-11-12T13:51:47.273Z 1: the phone till: Refund, By item rows; refund Mint (the rest of sale A)
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: 'Service recovery', exact: true }).click();
+const note = ph.locator('textarea').first();
+if (await note.isVisible().catch(() => false)) await note.fill('ZZ TEST SCRUM-934 proof clean-up: the rest of sale A');
+await ph.getByRole('button', { name: 'Review refund', exact: true }).click();
+await ph.waitForTimeout(1200);
+const review = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '01n-phone-refund-review.png');
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && (await b.isVisible())) btns.push(l.slice(0, 50)); }
+const go = ph.getByRole('button', { name: /^(Refund|Confirm)/ }).last();
+const resp = ph.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.A.sale}/refunds` && r.request().method() === 'POST', { timeout: 30000 });
+await go.click();
+const r = await resp;
+await ph.waitForTimeout(2500);
+await S.shot(ph, '01o-phone-refund-done.png');
+const s = await S.sale(S.fam.A.sale);
+S.receipt.reads.p1.phoneRefund = { status: r.status(), saleRefund: s.refundStatus, refundable: s.refundableSatang / 100, board: S.stayFacts(await S.familyOnBoard(S.fam.A.reg)) }; S.save();
+return { review: review.slice(0, 600), btns, ...S.receipt.reads.p1.phoneRefund };
+--> {
+ "ok": true,
+ "value": {
+  "review": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Refund Confirm refund Refund amount −฿915 Scope Full Reason Service recovery Note \"ZZ TEST SCRUM-934 proof clean-up: the rest of sale A\" By [staff] Hand the refund back to the customer manually. Confirm refund ฿915 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "btns": [
+   "0 no gate",
+   "Confirm refund ฿915",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "status": 200,
+  "saleRefund": "refunded",
+  "refundable": 0,
+  "board": [
+   {
+    "child": "ZZ TEST Mint 934",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T13:53:04.892Z 2: family B, two children (6 and 9), the 10 percent code at the ticket step
+S.phase = '2: family B, two children (6 and 9), the 10 percent code at the ticket step';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.receipt.numbers.B = S.free[1];
+await S.walkIn(till, S.free[1]);
+await S.ticket(till, 2, 0, '1 Hour Play', false);
+S.promoInput = () => till.getByPlaceholder('Promo code…', { exact: true });
+S.orderColumn = () => S.promoInput().locator('xpath=ancestor::div[contains(@class,"w-[360px]")][1]');
+await expect(S.promoInput()).toBeEnabled({ timeout: 15000 });
+await S.promoInput().fill(S.CODE);
+await S.promoInput().locator('xpath=ancestor::div[contains(@class,"space-y-1.5")][1]').getByRole('button', { name: 'Apply', exact: true }).click();
+const badge = S.orderColumn().locator('div.font-mono').filter({ hasText: new RegExp(`^${S.CODE}$`) });
+await expect.poll(async () => await badge.count(), { timeout: 30000 }).toBeGreaterThan(0);
+await till.waitForTimeout(3500);
+const order = S.flat(await S.orderColumn().innerText());
+const half = S.flat(await S.halfOf(till.getByText('Your Order', { exact: true }).first()).innerText().catch(() => ''));
+await S.shot(till, '02a-code-at-ticket-step-order-and-customer-half.png');
+return { order: order.slice(0, 900), half: half.slice(0, 900), oneDecimal: S.oneDecimal(order + ' ' + half) };
+--> {
+ "ok": true,
+ "value": {
+  "order": "Current Order TOURIST 1 Hour Play EDITING ฿1380 Kids ฿690 each 2 Adults ฿350 each 0 Regular Socks ฿60 each 0 ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿138 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1380 VAT included ฿81.25 Total ฿1242 Cancel Pay ฿1242",
+  "half": "O Oto Play Park Your Order English 1 Hour Play ฿1380 Kids2 × ฿690 ฿1380 Discount code −฿138 VAT included ฿81.25 Total ฿1242",
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:53:30.005Z 2: drop-off form (6 and 9), the payment step with the code
+S.phase = '2: drop-off form (6 and 9), the payment step with the code';
+const { expect } = S;
+const till = S.till;
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+const reg = await S.fillDropOff(till, ['ZZ TEST Mint B 934', 'ZZ TEST Nok B 934'], 'ZZ TEST 934 guardian B', null, [6, 9]);
+const sale = await S.saleWritten('dropoff-sale-B-coded');
+S.fam.B = { reg: reg.id, sale: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(3000);
+const due = await S.amountDue(till);
+const order = S.flat(await S.orderColumn().innerText().catch(() => ''));
+const payBtn = await till.getByRole('button', { name: /^Pay ฿/ }).allInnerTexts().catch(() => []);
+const disp = await till.evaluate(() => { const el = [...document.querySelectorAll('div')].find(d => /Please pay/.test(d.textContent) && d.children.length > 0 && d.getBoundingClientRect().left > 900); return el ? el.innerText : null; });
+await S.shot(till, '02b-payment-step-code-till-and-customer-half.png');
+const body = S.flat(await till.locator('body').innerText());
+const s = await S.sale(sale.id);
+S.receipt.reads.p2 = { due, order: order.slice(0, 900), payBtn, half: S.flat(disp).slice(0, 700), oneDecimal: S.oneDecimal(body),
+  sale: { gross: s.sale.totals.grossSatang / 100, discount: s.sale.totals.discountSatang / 100, vat: s.sale.totals.taxInclusiveSatang / 100, subtotal: s.sale.totals.subtotalSatang / 100, lines: s.lines.map(l => `${l.childName ?? '-'} ${l.kind} ${l.grossSatang / 100}`) } };
+S.save();
+return S.receipt.reads.p2;
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1444.50",
+  "order": "Current Order TOURIST ZZ TEST 934 guardian B ZZ TEST Mint B 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok B 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿1444.50",
+  "payBtn": [
+   "Pay ฿1444.50"
+  ],
+  "half": "Please pay ฿1444.50 to our staff",
+  "oneDecimal": [],
+  "sale": {
+   "gross": 1444.5,
+   "discount": 160.5,
+   "vat": 94.5,
+   "subtotal": 1605,
+   "lines": [
+    "ZZ TEST Mint B 934 kids 621",
+    "ZZ TEST Mint B 934 service_fee 202.5",
+    "ZZ TEST Nok B 934 kids 621"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T13:53:59.719Z 2: the code badge close up; a display paired mid-sale
+S.phase = '2: the code badge close up; a display paired mid-sale';
+const till = S.till;
+const badge = S.orderColumn().locator('div.font-mono').filter({ hasText: new RegExp(`^${S.CODE}$`) }).first().locator('xpath=ancestor::div[contains(@class,"rounded-lg")][1]');
+const box = await badge.boundingBox();
+await till.screenshot({ path: S.resolve(S.out, '02c-code-badge-close-up.png'), clip: { x: box.x - 8, y: box.y - 8, width: box.width + 16, height: box.height + 16 }, animations: 'disabled' });
+const badgeHtml = await badge.evaluate(e => ({ text: e.innerText, html: e.innerHTML.replace(/class="[^"]*"/g, '').slice(0, 600) }));
+// pair a display to the own till now
+const d = await S.pair('A');
+await S.sleep(6000);
+const dispText = S.flat(await d.locator('body').innerText());
+const tillTop = S.flat(await till.locator('body').innerText()).slice(0, 160);
+await S.both('02d-display-paired-mid-sale-payment-stage.png', 'Point 2: a display paired while the coded sale is at the payment step', till, d);
+return { badgeHtml, dispText: dispText.slice(0, 800), tillTop };
+--> {
+ "ok": true,
+ "value": {
+  "badgeHtml": {
+   "text": "ZZ TEST SCRUM-934 proof ZZTEST934A\nZZTEST934A\n-฿160.50",
+   "html": "<div ><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"  aria-hidden=\"true\"><path d=\"M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z\"></path><circle cx=\"7.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg><div><div >ZZ TEST SCRUM-934 proof ZZTEST934A</div><div >ZZTEST934A</div></div></div><div ><span >-฿160.50</span><button ><svg xmlns=\"http://www.w3.org/2000/sv"
+  },
+  "dispText": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A Customer ZZ TEST 934 guardian B O Oto Play Park Your Order English 1 Hour Play ฿915 Kids1 × ฿690 ฿690 Drop-off service1 × ฿225 ฿225 1 Hour Play ฿690 Kids1 × ฿690 ฿690 Discount code −฿160.50 VAT included ฿94.50 Total ฿1444.50 Please pay ฿1444.50 to our staff",
+  "tillTop": "Display connected: ZZ TEST SCRUM-934 display A Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History "
+ }
+}
+
+=== 2026-11-12T13:54:24.989Z 2: Back from the payment step: the order stage on the paired display
+S.phase = '2: Back from the payment step: the order stage on the paired display';
+const till = S.till, d = S.displays.A.page;
+await S.paymentStep(till).getByRole('button', { name: 'Back', exact: true }).click();
+await S.sleep(4000);
+const tillText = S.flat(await till.locator('body').innerText());
+const dispText = S.flat(await d.locator('body').innerText());
+await S.both('02e-after-back-display-order-stage.png', 'Point 2: Back pressed on the till: the paired display\'s order stage', till, d);
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Continue|Pay|Back/.test(l) && (await b.isVisible())) btns.push(l); }
+return { till: tillText.slice(0, 900), disp: dispText.slice(0, 800), btns, oneDecimal: S.oneDecimal(tillText + ' ' + dispText) };
+--> {
+ "ok": true,
+ "value": {
+  "till": "Display connected: ZZ TEST SCRUM-934 display A Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone +66 89 890 9041 Nickname — Back Current Order TOURIST ZZ TEST 934 guardian B ZZ TEST Mint B 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok B 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿",
+  "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A English Customer ZZ TEST 934 guardian B YOUR TURN Enter your details For membership & so we can reach you Phone number +66 89 890 9041 We will use the number you gave at the start. Nickname Done",
+  "btns": [
+   "Back",
+   "Pay ฿1444.50"
+  ],
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:54:38.058Z 2: Back from the payment step: the order stage on the paired display
+const till = S.till, d = S.displays.A.page;
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await S.sleep(4000);
+const tillText = S.flat(await till.locator('body').innerText());
+const dispText = S.flat(await d.locator('body').innerText());
+await S.both('02e-after-back-display-order-stage.png', 'Point 2: Back on the till to the order: the paired display\'s order stage', till, d);
+return { till: tillText.slice(150, 1000), disp: dispText.slice(0, 800), oneDecimal: S.oneDecimal(tillText + ' ' + dispText) };
+--> {
+ "ok": true,
+ "value": {
+  "till": "n History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order TOURIST ZZ TEST 934 guardian B ZZ TEST Mint B 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok B 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay",
+  "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A Customer ZZ TEST 934 guardian B O Oto Play Park Your Order English 1 Hour Play ฿915 Kids1 × ฿690 ฿690 Drop-off service1 × ฿225 ฿225 1 Hour Play ฿690 Kids1 × ฿690 ฿690 Discount code −฿160.50 VAT included ฿94.50 Total ฿1444.50",
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:54:56.294Z 2: Pay, cash, the success line
+S.phase = '2: Pay, cash, the success line';
+const { expect } = S;
+const till = S.till, d = S.displays.A.page;
+const pay = till.getByRole('button', { name: /^Pay ฿/ }).first();
+const payLabel = S.flat(await pay.innerText());
+await pay.click();
+await S.sleep(3000);
+// it may stop at the customer details step again
+if (!(await S.paymentStep(till).isVisible().catch(() => false))) {
+  const cont = till.getByRole('button', { name: /^(Continue|Skip|Pay ฿)/ }).first();
+  if (await cont.isVisible().catch(() => false)) { await cont.click(); await S.sleep(3000); }
+}
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await S.sleep(2000);
+const due = await S.amountDue(till);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+await S.sleep(2000);
+const cashPanel = S.flat(await S.paymentStep(till).innerText());
+await S.both('02f-cash-chosen-till-and-display.png', 'Point 2: Cash chosen at ฿1444.50', till, d);
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.click();
+await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 45000 });
+await S.sleep(3000);
+const success = S.flat(await till.locator('body').innerText());
+await S.both('02g-payment-successful-till-and-display.png', 'Point 2: paid in cash: the success line and the display', till, d);
+const s = await S.sale(S.fam.B.sale);
+const leave = till.getByRole('button', { name: 'Leave as booked', exact: true });
+const leaveSeen = await leave.isVisible().catch(() => false);
+S.receipt.reads.p2.pay = { payLabel, due, cashPanel: cashPanel.slice(0, 500), success: success.match(/Payment Successful.{0,300}/)?.[0] ?? null, disp: S.flat(await d.locator('body').innerText()).slice(0, 400),
+  sale: { status: s.sale.status, receipt: s.sale.receiptNumber, gross: s.sale.totals.grossSatang / 100, paid: s.attempts.map(a => `${a.method} ${a.status} ${a.amountSatang / 100}`) }, leaveSeen, oneDecimal: S.oneDecimal(success) };
+S.save();
+return S.receipt.reads.p2.pay;
+--> {
+ "ok": true,
+ "value": {
+  "payLabel": "Pay ฿1444.50",
+  "due": "฿1444.50",
+  "cashPanel": "Amount Due ฿1444.50 Select Payment Method Cash Card PromptPay Partial payment Cash received Change ฿0.00 Hold sale Back Confirm Payment Received",
+  "success": "Payment Successful Receipt Z93401-000002 • ฿1444.50 • Cash VAT included ฿94.50 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 0 TOTAL Start New Sale Sending to printers Receipt → Receipt Printer 1 Check in the drop-off child? Payment is complete. For each registration, choose whether to check the c",
+  "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A English Customer ZZ TEST 934 guardian B Thank you! Here's what you're receiving — enjoy your play! 2 Child bracelets 0 Adult bracelets",
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z93401-000002",
+   "gross": 1444.5,
+   "paid": [
+    "cash approved 1444.5"
+   ]
+  },
+  "leaveSeen": true,
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:55:21.521Z 2: History card and detail of the coded sale
+S.phase = '2: History card and detail of the coded sale';
+const till = S.till;
+await S.shot(till, '02h-payment-successful-success-line.png');
+await till.getByRole('button', { name: 'Leave as booked', exact: true }).click();
+await S.sleep(2500);
+await till.goto('/history'); await S.sleep(5000);
+await S.markMine(till, S.mine);
+const card = till.locator('button[data-zz]').filter({ hasText: 'Z93401-000002' }).first();
+const cardText = S.flat(await card.innerText());
+await S.shot(till, '02i-history-list-coded-sale-card.png');
+await card.click(); await S.sleep(3500);
+await S.markMine(till, S.mine);
+const detail = S.flat(await till.locator('body').innerText());
+await S.shot(till, '02j-history-detail-coded-sale.png');
+S.receipt.reads.p2.history = { card: cardText, detail: detail.match(/Drop-off charge[^]*?Refund \([^)]*\)/)?.[0]?.slice(0, 1200) ?? detail.slice(0, 1200), oneDecimal: S.oneDecimal(detail + ' ' + cardText) };
+S.save();
+return S.receipt.reads.p2.history;
+--> {
+ "ok": true,
+ "value": {
+  "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+  "detail": "Drop-off charge Z93401-000002 ZZ TEST 934 guardian B · +66898909041 12 Nov, 20:53 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing ZZ TEST Mint B 934 · 1 Hour Play · Tourist ฿823.50 Kids 1× ฿690 ฿621 Drop-off service 1× ฿225 ฿202.50 ZZ TEST Nok B 934 · 1 Hour Play · Tourist ฿621 Kids 1× ฿690 ฿621 Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50 Payment Cash · Approved 12 Nov, 20:55 ฿1444.50 Reprint Refund (฿1444.50 left)",
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:55:51.470Z 1/2: the phone (manager): sale B ticket lines and Refund By item, both children
+S.phase = '1/2: the phone (manager): sale B ticket lines and Refund By item, both children';
+const ph = S.mgrPhone;
+await ph.goto('/history'); await S.sleep(5000);
+await S.markMine(ph, S.mine);
+const card = ph.locator('button[data-zz]').filter({ hasText: 'Z93401-000002' }).first();
+const cardText = S.flat(await card.innerText());
+await S.shot(ph, '02k-phone-history-card-coded-sale.png');
+await card.click(); await S.sleep(3500);
+await ph.getByRole('button', { name: /TICKET LINES/i }).first().click();
+await S.sleep(1200);
+const detail = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '02l-phone-sale-detail-ticket-lines.png', [], { fullPage: true });
+await ph.getByRole('button', { name: /^Refund \(/ }).first().click();
+await S.sleep(1200);
+await ph.getByRole('button', { name: 'By item', exact: true }).click();
+await S.sleep(1000);
+await S.markMine(ph, ['ZZ TEST Mint B 934', 'ZZ TEST Nok B 934', ...S.mine]);
+const rows = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/ZZ TEST/.test(l) && (await b.isVisible())) rows.push(l); }
+await S.shot(ph, '01p-phone-refund-by-item-both-children-named.png');
+// leave without refunding: back out of the flow
+await ph.getByRole('button').first().click().catch(() => {});
+S.receipt.reads.p2.phone = { card: cardText, detail: detail.match(/TICKET LINES[^]*?Total paid ฿[0-9.,]+/)?.[0] ?? null, rows, oneDecimal: S.oneDecimal(detail + ' ' + rows.join(' ')) };
+S.save();
+return S.receipt.reads.p2.phone;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.innerText: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('button[data-zz]').filter({ hasText: 'Z93401-000002' }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T13:56:36.141Z 1/2: the phone (manager): sale B ticket lines and Refund By item, both children
+const ph = S.mgrPhone;
+const locked = await S.unlock('mgrPhone');
+await ph.goto('/history'); await S.sleep(5000);
+await S.markMine(ph, S.mine);
+return { locked, url: ph.url(), n: await ph.locator('button[data-zz]').count(), text: S.flat(await ph.locator('body').innerText()).slice(0, 600) };
+--> {
+ "ok": true,
+ "value": {
+  "locked": true,
+  "url": "https://oto-pos-web-staging.onrender.com/history",
+  "n": 2,
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Today Yesterday This week All time Scan bracelet Find by phone All Tickets F&B 123 sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50 Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830 Z90601-000001 · ZZ TEST 906 party 12 Nov, 20:46 [staff] Refunded ฿17715 Z85707-000001 · ZZ TEST 857 guardia"
+ }
+}
+
+=== 2026-11-12T13:56:51.288Z 1/2: the phone (manager): sale B ticket lines and Refund By item, both children
+S.phase = '1/2: the phone (manager): sale B ticket lines and Refund By item, both children';
+const ph = S.mgrPhone; await S.unlock("mgrPhone");
+await ph.goto('/history'); await S.sleep(5000);
+await S.markMine(ph, S.mine);
+const card = ph.locator('button[data-zz]').filter({ hasText: 'Z93401-000002' }).first();
+const cardText = S.flat(await card.innerText());
+await S.shot(ph, '02k-phone-history-card-coded-sale.png');
+await card.click(); await S.sleep(3500);
+await ph.getByRole('button', { name: /TICKET LINES/i }).first().click();
+await S.sleep(1200);
+const detail = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '02l-phone-sale-detail-ticket-lines.png', [], { fullPage: true });
+await ph.getByRole('button', { name: /^Refund \(/ }).first().click();
+await S.sleep(1200);
+await ph.getByRole('button', { name: 'By item', exact: true }).click();
+await S.sleep(1000);
+await S.markMine(ph, ['ZZ TEST Mint B 934', 'ZZ TEST Nok B 934', ...S.mine]);
+const rows = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/ZZ TEST/.test(l) && (await b.isVisible())) rows.push(l); }
+await S.shot(ph, '01p-phone-refund-by-item-both-children-named.png');
+// leave without refunding: back out of the flow
+await ph.getByRole('button').first().click().catch(() => {});
+S.receipt.reads.p2.phone = { card: cardText, detail: detail.match(/TICKET LINES[^]*?Total paid ฿[0-9.,]+/)?.[0] ?? null, rows, oneDecimal: S.oneDecimal(detail + ' ' + rows.join(' ')) };
+S.save();
+return S.receipt.reads.p2.phone;
+--> {
+ "ok": true,
+ "value": {
+  "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+  "detail": "TICKET LINES Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50",
+  "rows": [
+   "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+   "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+  ],
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:57:26.092Z 2: the refund window of the coded sale (desk manager), whole sale
+S.phase = '2: the refund window of the coded sale (desk manager), whole sale';
+const phoneOut = await S.signOut('mgrPhone'); S.mgrPhone = null;
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await S.sleep(5000);
+await S.markMine(mgr, S.mine);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z93401-000002' }).first().click();
+await S.sleep(3500);
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor();
+await S.sleep(800);
+const whole = S.flat(await dialog.innerText());
+await S.shot(mgr, '02m-refund-window-whole-sale.png');
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+await S.sleep(800);
+const rows = [];
+const rl = dialog.locator('div.max-h-44 > button');
+for (let i = 0; i < await rl.count(); i++) rows.push(S.flat(await rl.nth(i).innerText()));
+await rl.nth(1).click(); await S.sleep(500);
+const oneTicked = S.flat(await dialog.innerText()).match(/Refund amount[^]{0,30}/)?.[0] ?? null;
+await S.shot(mgr, '02n-refund-window-by-item-satang.png');
+await rl.nth(1).click(); await S.sleep(300);
+await dialog.getByRole('button', { name: 'Whole sale', exact: true }).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-934 proof: the coded sale refunded whole');
+await S.sleep(500);
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+const label = S.flat(await press.innerText());
+await S.shot(mgr, '02o-refund-window-whole-ready.png');
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.B.sale}/refunds` && r.request().method() === 'POST');
+await press.click();
+const r = await resp;
+await S.sleep(3000);
+const after = S.flat(await mgr.locator('body').innerText());
+await S.shot(mgr, '02p-history-detail-after-whole-refund.png');
+const s = await S.sale(S.fam.B.sale);
+S.receipt.reads.p2.refund = { phoneOut, whole: whole.replace(/By .*? ·/, 'By [staff] ·').slice(0, 600), rows, oneTicked, label, status: r.status(), saleRefund: s.refundStatus, refundable: s.refundableSatang / 100,
+  after: after.match(/Refunded[^]{0,40}/)?.[0] ?? null, oneDecimal: S.oneDecimal(whole + ' ' + rows.join(' ') + ' ' + after) };
+S.save();
+return S.receipt.reads.p2.refund;
+--> {
+ "ok": true,
+ "value": {
+  "phoneOut": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "whole": "Refund By [staff] · up to ฿1444.50 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1444.50 Hand the refund back to the customer manually. Choose a reason to refund Close",
+  "rows": [
+   "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+   "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+  ],
+  "oneTicked": "Refund amount −฿621 Hand the refund back to",
+  "label": "Refund ฿1444.50",
+  "status": 200,
+  "saleRefund": "refunded",
+  "refundable": 0,
+  "after": "Refunded Drop-off charge Z93401-000002 ZZ TEST 9",
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T13:58:07.913Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+S.phase = '7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired';
+const { expect } = S;
+const till = S.till, d = S.displays.A.page;
+await S.unlock('till');
+S.receipt.numbers.H = S.free[7];
+await till.goto('/'); await S.sleep(2000);
+// with the display paired the phone is entered on the display
+await d.getByTestId('language-choice').waitFor({ timeout: 30000 }).catch(() => {});
+if (await d.getByTestId('language-choice-en').isVisible().catch(() => false)) await d.getByTestId('language-choice-en').click();
+for (const c of S.free[7]) await d.getByRole('button', { name: c, exact: true }).last().click();
+await d.getByRole('button', { name: 'Continue', exact: true }).click();
+const offer = till.getByRole('button', { name: 'Continue as walk-in', exact: true }); const tiers = till.getByRole('heading', { name: 'Tourist', exact: true });
+await expect.poll(async () => (await offer.isVisible()) || (await tiers.isVisible()), { timeout: 30000 }).toBe(true);
+if (await offer.isVisible()) await offer.click();
+await S.ticket(till, 1, 1, '1 Hour Play', false);
+await d.getByText('Your Order', { exact: true }).waitFor({ timeout: 20000 });
+await S.sleep(3000);
+const orderAtTicket = S.flat(await S.orderColumn().innerText());
+await S.both('07a-no-code-order-till-and-display.png', 'Point 2/7: no code, 1 Hour Play 1 kid + 1 adult: the order on the till and the paired display', till, d);
+const dispOrder = S.flat(await d.locator('body').innerText());
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await S.sleep(2500);
+if (!(await S.paymentStep(till).isVisible().catch(() => false))) { await till.getByRole('button', { name: /^Pay ฿/ }).first().click(); }
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const sale = await S.saleWritten('ticket-sale-H-no-code');
+S.saleH = sale.id;
+await S.sleep(2500);
+const due = await S.amountDue(till);
+const payBtn = await till.getByRole('button', { name: /^Pay ฿/ }).allInnerTexts().catch(() => []);
+await S.both('07b-no-code-payment-step-till-and-display.png', 'Point 2/7: no code: the payment step and the display', till, d);
+const dispPay = S.flat(await d.locator('body').innerText());
+await S.payCash(till);
+await S.sleep(3000);
+const success = S.flat(await till.locator('body').innerText()).match(/Payment Successful.{0,200}/)?.[0] ?? null;
+await S.both('07c-no-code-paid-till-and-display.png', 'Point 2/7: no code: paid in cash', till, d);
+const s = await S.sale(sale.id);
+await expect.poll(async () => (await S.sale(sale.id)).printJobs.every(j => j.status === 'printed'), { timeout: 60000 }).toBe(true).catch(() => {});
+const prints = (await S.sale(sale.id)).printJobs.map(j => `${j.kind} ${j.status}`);
+S.receipt.reads.p7 = { orderAtTicket, dispOrder: dispOrder.slice(0, 500), due, payBtn, dispPay: dispPay.slice(0, 500), success, prints,
+  sale: { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: s.bands.map(b => `${b.kind} ${b.status}`) },
+  dotZeroZero: (orderAtTicket + ' ' + due + ' ' + payBtn.join(' ') + ' ' + success).match(/\.00/g)?.length ?? 0 };
+S.save();
+return S.receipt.reads.p7;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: '0', exact: true }).last()\u001b[22m | "
+}
+
+=== 2026-11-12T13:59:18.905Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+const till = S.till, d = S.displays.A.page;
+await S.both('zz-debug-p7.png', 'debug', till, d);
+return { till: S.flat(await till.locator('body').innerText()).slice(0, 600), disp: S.flat(await d.locator('body').innerText()).slice(0, 600) };
+--> {
+ "ok": true,
+ "value": {
+  "till": "Test harness — staff till and customer display share one live sale. Hide customer display Display connection: Another till is using this station. A manager can take it over. The team can continue using this screen. 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for th",
+  "disp": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A"
+ }
+}
+
+=== 2026-11-12T13:59:27.768Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+const out = await S.signOut('mgr'); S.mgr = null;
+const till = S.till, d = S.displays.A.page;
+await till.reload(); await S.sleep(6000);
+await S.unlock('till');
+await S.sleep(3000);
+return { out, till: S.flat(await till.locator('body').innerText()).slice(0, 300), disp: S.flat(await d.locator('body').innerText()).slice(0, 300) };
+--> {
+ "ok": true,
+ "value": {
+  "out": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "till": "Test harness — staff till and customer display share one live sale. Hide customer display Display connection: Another till is using this station. A manager can take it over. The team can continue using this screen. 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in Hi",
+  "disp": "Welcome to OTO Park Please follow the staff screen. ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A"
+ }
+}
+
+=== 2026-11-12T13:59:47.031Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+const till = S.till;
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+const banner = await till.evaluate(() => { const el = [...document.querySelectorAll('*')].find(e => e.children.length < 6 && /Another till is using this station/.test(e.textContent)); return el ? el.outerHTML.replace(/class="[^"]*"/g, '').slice(0, 800) : null; });
+return { btns: btns.slice(0, 30), banner };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   "Hide customer display",
+   "0 in park no gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7 Messages",
+   "Cash",
+   "Theme settings",
+   "ZZ TEST SCRUM-934 proof till 1794491217436",
+   "Lock screen",
+   "7 overdue Review →",
+   "Redeem Booking",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿0",
+   "English Continue in English",
+   "中文 使用中文继续",
+   "ไทย ดำเนินการต่อเป็นภาษาไทย",
+   "Русский Продолжить на русском",
+   "Français Continuer en français"
+  ],
+  "banner": "<html lang=\"en\" ><head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1\">\n    <title>Oto POS Till</title>\n    <meta name=\"description\" content=\"Point of sale for OTO Park — admissions, membership check and the customer display.\">\n    <meta name=\"robots\" content=\"noindex, nofollow\">\n    <meta property=\"og:title\" content=\"Oto POS Till\">\n    <meta property=\"og:description\" content=\"Point of sale for OTO Park — admissions, membership check and the customer display.\">\n    <meta property=\"og:type\" content=\"website\">\n    <meta name=\"twitter:card\" content=\"summary_large_image\">\n    <meta name=\"twitter:title\" content=\"Oto POS Till\">\n    <meta name=\"twitter:description\" content=\"Point of sale for OTO Park — admissions, membership c"
+ }
+}
+
+=== 2026-11-12T14:00:16.422Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+const till = S.till, d = S.displays.A.page;
+const t0 = Date.now();
+let ok = false;
+while (Date.now() - t0 < 150000) {
+  const t = S.flat(await till.locator('body').innerText()).slice(0, 200);
+  if (/Display connected/.test(t)) { ok = true; break; }
+  await S.sleep(5000);
+}
+if (!ok) { await till.reload(); await S.sleep(8000); await S.unlock('till'); }
+return { ok, waitedS: Math.round((Date.now() - t0) / 1000), till: S.flat(await till.locator('body').innerText()).slice(0, 200), disp: S.flat(await d.locator('body').innerText()).slice(0, 200) };
+--> {
+ "ok": true,
+ "value": {
+  "ok": true,
+  "waitedS": 15,
+  "till": "Display connected: ZZ TEST SCRUM-934 display A Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ",
+  "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English 中"
+ }
+}
+
+=== 2026-11-12T14:00:36.271Z 7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired
+S.phase = '7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired';
+const { expect } = S;
+const till = S.till, d = S.displays.A.page;
+await S.unlock('till');
+S.receipt.numbers.H = S.free[7];
+await S.sleep(500);
+// with the display paired the phone is entered on the display
+await d.getByTestId('language-choice').waitFor({ timeout: 30000 }).catch(() => {});
+if (await d.getByTestId('language-choice-en').isVisible().catch(() => false)) await d.getByTestId('language-choice-en').click();
+for (const c of S.free[7]) await d.getByRole('button', { name: c, exact: true }).last().click();
+await d.getByRole('button', { name: 'Continue', exact: true }).click();
+const offer = till.getByRole('button', { name: 'Continue as walk-in', exact: true }); const tiers = till.getByRole('heading', { name: 'Tourist', exact: true });
+await expect.poll(async () => (await offer.isVisible()) || (await tiers.isVisible()), { timeout: 30000 }).toBe(true);
+if (await offer.isVisible()) await offer.click();
+await S.ticket(till, 1, 1, '1 Hour Play', false);
+await d.getByText('Your Order', { exact: true }).waitFor({ timeout: 20000 });
+await S.sleep(3000);
+const orderAtTicket = S.flat(await S.orderColumn().innerText());
+await S.both('07a-no-code-order-till-and-display.png', 'Point 2/7: no code, 1 Hour Play 1 kid + 1 adult: the order on the till and the paired display', till, d);
+const dispOrder = S.flat(await d.locator('body').innerText());
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await S.sleep(2500);
+if (!(await S.paymentStep(till).isVisible().catch(() => false))) { await till.getByRole('button', { name: /^Pay ฿/ }).first().click(); }
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const sale = await S.saleWritten('ticket-sale-H-no-code');
+S.saleH = sale.id;
+await S.sleep(2500);
+const due = await S.amountDue(till);
+const payBtn = await till.getByRole('button', { name: /^Pay ฿/ }).allInnerTexts().catch(() => []);
+await S.both('07b-no-code-payment-step-till-and-display.png', 'Point 2/7: no code: the payment step and the display', till, d);
+const dispPay = S.flat(await d.locator('body').innerText());
+await S.payCash(till);
+await S.sleep(3000);
+const success = S.flat(await till.locator('body').innerText()).match(/Payment Successful.{0,200}/)?.[0] ?? null;
+await S.both('07c-no-code-paid-till-and-display.png', 'Point 2/7: no code: paid in cash', till, d);
+const s = await S.sale(sale.id);
+await expect.poll(async () => (await S.sale(sale.id)).printJobs.every(j => j.status === 'printed'), { timeout: 60000 }).toBe(true).catch(() => {});
+const prints = (await S.sale(sale.id)).printJobs.map(j => `${j.kind} ${j.status}`);
+S.receipt.reads.p7 = { orderAtTicket, dispOrder: dispOrder.slice(0, 500), due, payBtn, dispPay: dispPay.slice(0, 500), success, prints,
+  sale: { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: s.bands.map(b => `${b.kind} ${b.status}`) },
+  dotZeroZero: (orderAtTicket + ' ' + due + ' ' + payBtn.join(' ') + ' ' + success).match(/\.00/g)?.length ?? 0 };
+S.save();
+return S.receipt.reads.p7;
+--> {
+ "ok": true,
+ "value": {
+  "orderAtTicket": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+  "dispOrder": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040",
+  "due": "฿1040",
+  "payBtn": [
+   "Pay ฿1040"
+  ],
+  "dispPay": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+  "success": "Payment Successful Receipt Z93401-000003 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93401-4C46N8 1 HOUR 1× Adult",
+  "prints": [
+   "adult_wristband printed",
+   "kids_wristband printed",
+   "receipt printed"
+  ],
+  "sale": {
+   "receipt": "Z93401-000003",
+   "status": "finalised",
+   "gross": 1040,
+   "bands": [
+    "kid active",
+    "adult active"
+   ]
+  },
+  "dotZeroZero": 0
+ }
+}
+
+=== 2026-11-12T14:01:15.678Z 7: History of the no-code sale; the manager refunds it whole
+S.phase = '7: History of the no-code sale; the manager refunds it whole';
+const till = S.till;
+// the display: revoke, read back, close
+const dv = S.displays.A;
+const revoke = await S.call('POST', `/credentials/${dv.deviceId}/revoke`, { reason: 'ZZ TEST SCRUM-934 proof complete' });
+await S.sleep(3000);
+const session = await dv.page.evaluate(async () => { const b = localStorage.getItem('oto.display.credential'); const r = await fetch('/api/display/session', { credentials: 'omit', cache: 'no-store', headers: { authorization: `Bearer ${b}` } }); return r.status; }).catch(() => null);
+await dv.ctx.close(); delete S.displays.A;
+S.receipt.cleanup.display = { revoke: revoke.status, sessionAfter: session }; S.save();
+// history on the till
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click().catch(() => {});
+await till.goto('/history'); await S.sleep(5000);
+await S.markMine(till, S.mine);
+const card = till.locator('button[data-zz]').filter({ hasText: 'Z93401-000003' }).first();
+const cardText = S.flat(await card.innerText());
+await card.click(); await S.sleep(3500);
+await S.markMine(till, S.mine);
+const detail = S.flat(await till.locator('body').innerText());
+await S.shot(till, '07d-no-code-history-detail.png');
+// the manager
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await S.sleep(5000);
+await S.markMine(mgr, S.mine);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z93401-000003' }).first().click();
+await S.sleep(3500);
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor(); await S.sleep(600);
+const whole = S.flat(await dialog.innerText());
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+await S.sleep(600);
+const rows = [];
+const rl = dialog.locator('div.max-h-44 > button');
+for (let i = 0; i < await rl.count(); i++) rows.push(S.flat(await rl.nth(i).innerText()));
+await S.shot(mgr, '07e-no-code-refund-by-item-row-as-before.png');
+await dialog.getByRole('button', { name: 'Whole sale', exact: true }).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-934 proof: the ordinary sale refunded whole');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+const label = S.flat(await press.innerText());
+await S.shot(mgr, '07f-no-code-refund-window-whole.png');
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.saleH}/refunds` && r.request().method() === 'POST');
+await press.click();
+const r = await resp;
+await S.sleep(3000);
+await S.shot(mgr, '07g-no-code-after-whole-refund.png');
+const s = await S.sale(S.saleH);
+S.receipt.reads.p7.history = { card: cardText, detail: detail.match(/Ticket sale[^]*?Refund \([^)]*\)/)?.[0]?.slice(0, 700) ?? detail.slice(0, 700), refundWindow: whole.replace(/By .*? ·/, 'By [staff] ·').slice(0, 400), rows, label,
+  refund: { status: r.status(), saleRefund: s.refundStatus, refundable: s.refundableSatang / 100, bands: s.bands.map(b => `${b.kind} ${b.status}`) },
+  dotZeroZero: (cardText + ' ' + detail + ' ' + whole + ' ' + rows.join(' ') + ' ' + label).match(/\.00/g)?.length ?? 0 };
+S.save();
+return S.receipt.reads.p7.history;
+--> {
+ "ok": true,
+ "value": {
+  "card": "Z93401-000003 12 Nov, 21:00 [staff] Paid ฿1040",
+  "detail": "Ticket sale Z93401-000003 Walk-in 12 Nov, 21:00 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 BRACELETS PRINTED 2 1 child 1 adult Z93401-4C46N8 Z93401-R8NJFX Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Payment Cash · Approved 12 Nov, 21:00 ฿1040 Reprint Add time Refund (฿1040 left)",
+  "refundWindow": "Refund By [staff] · up to ฿1040 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1040 Hand the refund back to the customer manually. Choose a reason to refund Close",
+  "rows": [
+   "1 Hour Play · 2 ppl ฿1040"
+  ],
+  "label": "Refund ฿1040",
+  "refund": {
+   "status": 200,
+   "saleRefund": "refunded",
+   "refundable": 0,
+   "bands": [
+    "kid revoked",
+    "adult revoked"
+   ]
+  },
+  "dotZeroZero": 0
+ }
+}
+
+=== 2026-11-12T14:01:59.806Z 5: a ticket sale, cash, partial 100, Confirm: Pay names the balance
+S.phase = '5: a ticket sale, cash, partial 100, Confirm: Pay names the balance';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.receipt.numbers.P = S.free[8];
+await S.walkIn(till, S.free[8]);
+await S.ticket(till, 1, 1);
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const sale = await S.saleWritten('ticket-sale-P-part-paid');
+S.saleP = sale.id;
+await S.sleep(2000);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+await S.sleep(800);
+await till.getByRole('button', { name: 'Partial payment', exact: true }).click();
+await till.locator('#payment-part-amount').fill('100');
+await till.locator('#payment-cash-received').fill('100');
+await S.sleep(800);
+await S.shot(till, '05a-partial-100-entered.png');
+const posts = [];
+const on = rr => { const u = new URL(rr.url()); if (/\/api\/sales\//.test(u.pathname) && rr.request().method() === 'POST') posts.push({ path: u.pathname.replace(S.ID, ':id'), status: rr.status() }); };
+till.on('response', on);
+await S.paymentStep(till).getByRole('button', { name: 'Confirm Payment Received', exact: true }).click();
+await S.sleep(5000);
+till.off('response', on);
+const due = await S.amountDue(till);
+const pay = await till.getByRole('button', { name: /^Pay ฿/ }).allInnerTexts().catch(() => []);
+const recorded = S.flat(await S.paymentStep(till).innerText()).match(/Recorded payments[^]*?Balance[^฿]*฿[0-9,.]+/)?.[0] ?? null;
+await S.shot(till, '05b-after-part-payment-pay-names-the-balance.png');
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/partly|Save|Pay|Confirm|Back|Hold/i.test(l) && (await b.isVisible())) btns.push({ l, e: await b.isEnabled() }); }
+S.receipt.reads.p5 = { posts, due, pay, recorded, btns };
+S.save();
+return S.receipt.reads.p5;
+--> {
+ "ok": true,
+ "value": {
+  "posts": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "status": 200
+   }
+  ],
+  "due": "฿940",
+  "pay": [
+   "Pay ฿940"
+  ],
+  "recorded": "Recorded payments Cash · ฿100.00 Balance due ฿940.00",
+  "btns": [
+   {
+    "l": "Hold sale",
+    "e": false
+   },
+   {
+    "l": "Save as partly paid",
+    "e": true
+   },
+   {
+    "l": "Back",
+    "e": false
+   },
+   {
+    "l": "Confirm Payment Received",
+    "e": false
+   },
+   {
+    "l": "Pay ฿940",
+    "e": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:02:27.698Z 5: Save as partly paid; the History card
+S.phase = '5: Save as partly paid; the History card';
+const till = S.till;
+await till.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+await S.sleep(2500);
+const dlg = till.getByRole('dialog');
+let dialogText = null;
+if (await dlg.count()) { dialogText = S.flat(await dlg.first().innerText()).slice(0, 500); await S.shot(till, '05c-save-as-partly-paid-dialog.png');
+  const ok = dlg.first().getByRole('button', { name: /Save|Confirm|Yes/ }).last(); if (await ok.isVisible().catch(() => false)) { await ok.click(); await S.sleep(2500); } }
+const afterSave = S.flat(await till.locator('body').innerText()).slice(0, 400);
+await till.goto('/history'); await S.sleep(5000);
+await S.markMine(till, S.mine);
+const card = till.locator('button[data-zz]').filter({ hasText: 'Z93401-000004' }).first();
+const n = await card.count();
+const cardText = n ? S.flat(await card.innerText()) : null;
+const all = [];
+for (const c of await till.locator('button[data-zz]').all()) all.push(S.flat(await c.innerText()).slice(0, 140));
+await S.shot(till, '05d-history-list-partly-paid-card.png');
+if (n) { const box = await card.boundingBox(); await till.screenshot({ path: S.resolve(S.out, '05e-history-partly-paid-card-close-up.png'), clip: { x: box.x - 6, y: box.y - 6, width: box.width + 12, height: box.height + 12 } }); }
+const s = await S.sale(S.saleP);
+S.receipt.reads.p5.saved = { dialogText, afterSave, cardText, all, sale: { status: s.sale.status, receipt: s.sale.receiptNumber, gross: s.sale.totals.grossSatang / 100, attempts: s.attempts.map(a => `${a.method} ${a.status} ${a.amountSatang / 100}`) } };
+S.save();
+return S.receipt.reads.p5.saved;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('dialog').first().getByRole('button', { name: /Save|Confirm|Yes/ }).last()\u001b[22m | \u001b[2m    - locator resolved to <button disabled class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 bg-primary text-primary-foreground border border-primary-border min-h-9 px-4 py-2\">Save as partly paid</button>\u001b[22m | \u001b[2m  - attempting click action\u001b[22m | \u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m"
+}
+
+=== 2026-11-12T14:03:17.073Z 5: Save as partly paid; the History card
+const till = S.till;
+const dlg = till.getByRole('dialog').first();
+const labels = await dlg.locator('label').allInnerTexts().catch(() => []);
+await dlg.getByPlaceholder(/Khun Anna/).fill('ZZ TEST 934 guardian P');
+await dlg.getByPlaceholder(/Back after lunch/).fill('ZZ TEST SCRUM-902 proof');
+await S.sleep(500);
+await S.shot(till, '05c-save-as-partly-paid-dialog.png');
+await dlg.getByRole('button', { name: 'Save as partly paid', exact: true }).click();
+await S.sleep(3000);
+const afterSave = S.flat(await till.locator('body').innerText()).slice(0, 300);
+await till.goto('/history'); await S.sleep(5000);
+await S.markMine(till, S.mine);
+const card = till.locator('button[data-zz]').filter({ hasText: 'Z93401-000004' }).first();
+let n = await card.count();
+const all = [];
+for (const c of await till.locator('button[data-zz]').all()) all.push(S.flat(await c.innerText()).slice(0, 160));
+let target = card;
+if (!n) { target = till.locator('button[data-zz]').filter({ hasText: /Partly paid/ }).first(); n = await target.count(); }
+const cardText = n ? S.flat(await target.innerText()) : null;
+await S.shot(till, '05d-history-list-partly-paid-card.png');
+if (n) { const box = await target.boundingBox(); await till.screenshot({ path: S.resolve(S.out, '05e-history-partly-paid-card-close-up.png'), clip: { x: box.x - 6, y: box.y - 6, width: box.width + 12, height: box.height + 12 } }); }
+const s = await S.sale(S.saleP);
+S.receipt.reads.p5.saved = { labels, afterSave, cardText, all, sale: { status: s.sale.status, receipt: s.sale.receiptNumber, gross: s.sale.totals.grossSatang / 100, attempts: s.attempts.map(a => `${a.method} ${a.status} ${a.amountSatang / 100}`) } };
+S.save();
+return S.receipt.reads.p5.saved;
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "Customer’s name or band",
+   "Note (optional)"
+  ],
+  "afterSave": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker R",
+  "cardText": null,
+  "all": [
+   "Z93401-000003 12 Nov, 21:00 [staff] Refunded ฿1040",
+   "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Refunded ฿1444.50",
+   "Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830"
+  ],
+  "sale": {
+   "status": "tendering",
+   "receipt": null,
+   "gross": 1040,
+   "attempts": [
+    "cash approved 100"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T14:03:40.167Z 5: Save as partly paid; the History card
+const till = S.till;
+const cards = till.locator('div.space-y-2 > button.w-full.text-left');
+const found = [];
+for (let i = 0; i < Math.min(await cards.count(), 15); i++) { const t = S.flat(await cards.nth(i).innerText()); if (/Partly paid|guardian P|ZZ TEST 934/.test(t)) found.push({ i, t: t.slice(0, 200) }); }
+// mark: own receipts, and the part-paid card carrying the own walk-in's name or the own time
+S.mine = ['Z93401-', 'ZZ TEST 934 guardian P'];
+await S.markMine(till, S.mine);
+const marked = [];
+for (const c of await till.locator('button[data-zz]').all()) marked.push(S.flat(await c.innerText()).slice(0, 200));
+// which mask needles hit the dialog labels (counts only, never the names)
+const hits = S.needles().filter(s => new RegExp('(?<![\\p{L}\\p{N}])' + S.esc(s) + '(?![\\p{L}\\p{N}])', 'iu').test("Customer’s name or band Note (optional)")).map(s => ({ len: s.length, common: /^(name|band|note|customer|optional)$/i.test(s) }));
+return { found, marked, hits };
+--> {
+ "ok": true,
+ "value": {
+  "found": [
+   {
+    "i": 0,
+    "t": "No receipt number 12 Nov, 21:02 [staff] Partly paid BALANCE DUE ฿940 of ฿1040"
+   },
+   {
+    "i": 2,
+    "t": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Refunded ฿1444.50"
+   },
+   {
+    "i": 3,
+    "t": "Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830"
+   }
+  ],
+  "marked": [
+   "Z93401-000003 12 Nov, 21:00 [staff] Refunded ฿1040",
+   "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Refunded ฿1444.50",
+   "Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830"
+  ],
+  "hits": []
+ }
+}
+
+=== 2026-11-12T14:03:53.894Z 5: Save as partly paid; the History card
+const till = S.till;
+const s = await S.sale(S.saleP);
+S.hhmmP = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(s.sale.occurredAt));
+S.markPart = page => page.evaluate((hhmm) => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) {
+    const t = b.innerText.replace(/\s+/g, ' ');
+    if (t.includes('Z93401-') || (t.includes(hhmm) && /Partly paid/.test(t) && /1,?040/.test(t))) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz');
+  }
+}, S.hhmmP);
+await S.markPart(till);
+const card = till.locator('button[data-zz]').filter({ hasText: /Partly paid/ }).first();
+const cardText = S.flat(await card.innerText());
+await S.shot(till, '05d-history-list-partly-paid-card.png');
+const box = await card.boundingBox();
+await till.screenshot({ path: S.resolve(S.out, '05e-history-partly-paid-card-close-up.png'), clip: { x: box.x - 6, y: box.y - 6, width: box.width + 12, height: box.height + 12 }, mask: [till.locator('[data-zz-none]')] });
+S.receipt.reads.p5.card = cardText; S.save();
+return { hhmm: S.hhmmP, cardText };
+--> {
+ "ok": true,
+ "value": {
+  "hhmm": "21:02",
+  "cardText": "No receipt number 12 Nov, 21:02 [staff] Partly paid BALANCE DUE ฿940 of ฿1040"
+ }
+}
+
+=== 2026-11-12T14:04:03.196Z 5: Save as partly paid; the History card
+const till = S.till;
+await S.markPart(till);
+const card = till.locator('button[data-zz]').filter({ hasText: /Partly paid/ }).first();
+const box = await card.boundingBox();
+await S.shot(till, '05e-history-partly-paid-card-close-up.png', [], { clip: { x: box.x - 6, y: box.y - 6, width: box.width + 12, height: box.height + 12 } });
+return box;
+--> {
+ "ok": true,
+ "value": {
+  "x": 328,
+  "y": 327,
+  "width": 1024,
+  "height": 93
+ }
+}
+
+=== 2026-11-12T14:04:20.565Z 5: the phone History card of the part-paid sale; the manager refunds its 100
+S.phase = '5: the phone History card of the part-paid sale; the manager refunds its 100';
+const mgrOut = await S.signOut('mgr'); S.mgr = null;
+const ph = await S.signIn('mgrPhone', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 390, height: 844 });
+S.mgrPhone = ph;
+await ph.goto('/history'); await S.sleep(5000);
+await S.markPart(ph);
+const card = ph.locator('button[data-zz]').filter({ hasText: /Partly paid/ }).first();
+const cardText = S.flat(await card.innerText());
+await S.shot(ph, '05f-phone-history-partly-paid-card.png');
+await card.click(); await S.sleep(3500);
+const detail = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '05g-phone-partly-paid-detail.png');
+await ph.getByRole('button', { name: /^Refund/ }).first().click();
+await S.sleep(1500);
+const step1 = S.flat(await ph.locator('body').innerText());
+await S.shot(ph, '05h-phone-refund-part-paid.png');
+return { mgrOut, cardText, detail: detail.slice(0, 900), step1: step1.slice(0, 700) };
+--> {
+ "ok": true,
+ "value": {
+  "mgrOut": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "cardText": "No receipt number 12 Nov, 21:02 [staff] Partly paid BALANCE DUE ฿940 of ฿1040",
+  "detail": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Ticket sale No receipt number Partly paid Walk-in 12 Nov, 21:02 · by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · 2026-11-12 · Tourist TICKET LINES 1 Hour Play ฿1040 Kids · 1× ฿690 ฿690 Adults · 1× ฿350 ฿350 Subtotal ฿1040 VAT (included) ฿68.04 Balance due ฿940 PAYMENT Cash · Approved 12 Nov, 21:02 ฿100 Reprint Refund (฿100 left) Partly paid — the refund gives back everything taken and closes the sale. Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "step1": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Refund How much to refund? Up to ฿100 refundable · by [staff] Whole sale By item Amount Refund amount −฿100 Next — choose reason Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T14:04:46.753Z 5: the phone History card of the part-paid sale; the manager refunds its 100
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: /^Next/ }).first().click();
+await S.sleep(1000);
+await ph.getByRole('button', { name: 'Service recovery', exact: true }).click();
+const note = ph.locator('textarea').first();
+if (await note.isVisible().catch(() => false)) await note.fill('ZZ TEST SCRUM-902 proof: the part payment given back');
+await ph.getByRole('button', { name: 'Review refund', exact: true }).click();
+await S.sleep(1000);
+const resp = ph.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.saleP}/refunds` && r.request().method() === 'POST', { timeout: 30000 });
+await ph.getByRole('button', { name: /^Confirm refund/ }).click();
+const r = await resp;
+await S.sleep(2500);
+await S.shot(ph, '05i-phone-part-paid-refunded.png');
+const s = await S.sale(S.saleP);
+S.receipt.reads.p5.refund = { status: r.status(), saleStatus: s.sale.status, refundStatus: s.refundStatus };
+S.save();
+return S.receipt.reads.p5.refund;
+--> {
+ "ok": true,
+ "value": {
+  "status": 200,
+  "saleStatus": "voided",
+  "refundStatus": "refunded"
+ }
+}
+
+=== 2026-11-12T14:05:05.117Z 2: family C (6 and 9) registered on the desk, left unpaid for the phone till
+S.phase = '2: family C (6 and 9) registered on the desk, left unpaid for the phone till';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.receipt.numbers.C = S.free[2];
+await S.walkIn(till, S.free[2]);
+await S.ticket(till, 2, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST Mint C 934', 'ZZ TEST Nok C 934'], 'ZZ TEST 934 guardian C', null, [6, 9]);
+const sale = await S.saleWritten('dropoff-sale-C-left-unpaid');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await S.sleep(1500);
+await S.orderColumn().getByRole('button', { name: 'Cancel', exact: true }).click().catch(async () => { await till.getByRole('button', { name: 'Cancel', exact: true }).first().click(); });
+await S.sleep(3000);
+const dlg = till.getByRole('dialog');
+let dialog = null;
+if (await dlg.count()) { dialog = S.flat(await dlg.first().innerText()).slice(0, 300); }
+const now = (await S.sale(sale.id)).sale.status;
+S.fam.C = { reg: reg.id, voided: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+return { firstSale: now, dialog, board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": true,
+ "value": {
+  "firstSale": "voided",
+  "dialog": null,
+  "board": [
+   {
+    "child": "ZZ TEST Mint C 934",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST Nok C 934",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:05:29.132Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+S.phase = '2: the phone till: Add drop-off child (family C), the code, the cart bar';
+const ph = S.mgrPhone;
+await S.unlock('mgrPhone');
+await ph.goto('/'); await S.sleep(4000);
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 50)); }
+await S.shot(ph, 'zz-debug-phone-tickets.png');
+return { btns, text: S.flat(await ph.locator('body').innerText()).slice(0, 800) };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   "0 no gate",
+   "Theme and station setup",
+   "Lock screen",
+   "Redeem Online Booking",
+   "No items yet ฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local pricing Proof required — verify now Redeem Online Booking No items yet ฿0 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T14:05:41.165Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+await ph.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await S.sleep(2000);
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 50)); }
+return { btns, text: S.flat(await ph.locator('body').innerText()).slice(0, 900) };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   "0 no gate",
+   "Theme and station setup",
+   "Lock screen",
+   "Back",
+   "Add drop-off child",
+   "No items yet ฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Add to Sale Add drop-off child Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person No items yet ฿0 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T14:05:52.197Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+await S.sleep(3000);
+await S.boardApi();
+const dialog = ph.getByRole('dialog').last();
+await dialog.waitFor({ timeout: 15000 });
+const card = dialog.locator('div').filter({ hasText: /^ZZ TEST 934 guardian C's booking/ }).first();
+const cards = S.pickerCards(ph);
+const n = await cards.count();
+const zz = cards.filter({ hasText: 'ZZ TEST 934 guardian C' }).first();
+const has = await zz.count();
+if (has) await zz.scrollIntoViewIfNeeded();
+await S.shot(ph, '02q-phone-add-drop-off-child-picker.png');
+const btns = [];
+if (has) for (const b of await zz.getByRole('button').all()) btns.push({ l: S.flat(await b.innerText()), e: await b.isEnabled() });
+return { n, has, btns, text: has ? S.flat(await zz.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>').slice(0, 400) : S.flat(await dialog.innerText()).slice(0, 300).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>') };
+--> {
+ "ok": true,
+ "value": {
+  "n": 9,
+  "has": 1,
+  "btns": [
+   {
+    "l": "Add to sale",
+    "e": true
+   },
+   {
+    "l": "Cancel booking",
+    "e": true
+   },
+   {
+    "l": "Add sibling",
+    "e": true
+   }
+  ],
+  "text": "ZZ TEST 934 guardian C's booking <number> Add to sale Cancel booking ZZ TEST Mint C 934 · 6y ZZ TEST Nok C 934 · 9y Add sibling"
+ }
+}
+
+=== 2026-11-12T14:06:08.318Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+const zz = S.pickerCards(ph).filter({ hasText: 'ZZ TEST 934 guardian C' }).first();
+await zz.getByRole('button', { name: 'Cancel booking', exact: true }).click();
+await S.sleep(1200);
+const dlg = ph.getByRole('dialog').filter({ hasText: /Cancel/ }).last();
+const text = S.flat(await dlg.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>').slice(0, 500);
+await S.shot(ph, '06c-phone-two-child-booking-cancel-words-not-confirmed.png');
+await dlg.getByRole('button', { name: 'Back', exact: true }).click();
+await S.sleep(1000);
+const reg = (await S.registration(S.fam.C.reg)).children.map(c => c.status);
+S.receipt.reads.p6twoChild = { text, regAfterBack: reg }; S.save();
+// now add family C to the sale
+await zz.getByRole('button', { name: 'Add to sale', exact: true }).click();
+await S.sleep(3000);
+const body = S.flat(await ph.locator('body').innerText());
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+await S.shot(ph, '02r-phone-family-c-in-cart.png');
+return { text, reg, body: body.slice(0, 900), btns };
+--> {
+ "ok": true,
+ "value": {
+  "text": "Cancel this waiting booking ZZ TEST 934 guardian C's booking: ZZ TEST Mint C 934, ZZ TEST Nok C 934 leave the waiting list and can't be added to a sale. The signed form stays on record. Reason A reason is required. Back Give a reason to cancel Close",
+  "reg": [
+   "registered",
+   "registered"
+  ],
+  "body": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Configure Drop-Off Tourist Cancel ZZ TEST Mint C 934 · 6y Back to tickets Play ticket length Choose a length to price this child (also sets nanny hours). 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Drop-off service Drop-Off Flat ฿225 Nanny ฿330/hr · shared Choose a play ticket length to price this child. Back to tickets Choose length 2 2 items ฿1380 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "btns": [
+   "0 no gate",
+   "Theme and station setup",
+   "Lock screen",
+   "Back",
+   "Cancel",
+   "Back to tickets",
+   "Drop-Off Flat ฿225",
+   "Nanny ฿330/hr · shared",
+   "Back to tickets",
+   "Choose length",
+   "2 2 items ฿1380",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ]
+ }
+}
+
+=== 2026-11-12T14:06:25.151Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+const out = [];
+for (let round = 0; round < 4; round++) {
+  const body = S.flat(await ph.locator('body').innerText());
+  if (!/Configure Drop-Off/.test(body)) { out.push({ round, done: true }); break; }
+  const who = body.match(/ZZ TEST \w+ C 934 · \d+y/)?.[0] ?? null;
+  await ph.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+  await S.sleep(800);
+  const flat = ph.getByRole('button', { name: /Drop-Off Flat/ }).first();
+  if (await flat.isVisible().catch(() => false) && await flat.isEnabled().catch(() => false)) { await flat.click(); await S.sleep(500); }
+  const btns = [];
+  for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && (await b.isVisible())) btns.push(l.slice(0, 50)); }
+  out.push({ round, who, btns: btns.filter(l => !/^(Tickets|F&B|Shop|Check-in|Events|History|Today|7 Messages|0 no gate)$/.test(l)) });
+  const next = ph.getByRole('button', { name: /^(Next child|Done|Save|Add to sale|Confirm|Continue)/ }).first();
+  if (await next.isVisible().catch(() => false)) { await next.click(); await S.sleep(1500); } else break;
+}
+await S.shot(ph, '02s-phone-cart-after-config.png');
+return { out, text: S.flat(await ph.locator('body').innerText()).slice(0, 900) };
+--> {
+ "ok": true,
+ "value": {
+  "out": [
+   {
+    "round": 0,
+    "who": "ZZ TEST Mint C 934 · 6y",
+    "btns": [
+     "Cancel",
+     "Back to tickets",
+     "Drop-Off Flat ฿225",
+     "Nanny ฿330/hr · shared",
+     "Sizes",
+     "Back to tickets",
+     "Continue",
+     "2 2 items ฿1605"
+    ]
+   },
+   {
+    "round": 1,
+    "who": "ZZ TEST Nok C 934 · 9y",
+    "btns": [
+     "Cancel",
+     "Back to tickets",
+     "Drop-Off Flat ฿225",
+     "Nanny ฿330/hr · shared",
+     "Sizes",
+     "Back to tickets",
+     "Continue",
+     "2 2 items ฿1830"
+    ]
+   },
+   {
+    "round": 2,
+    "done": true
+   }
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 2 2 items ฿1830 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T14:06:54.833Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+const salesBefore = (await S.stationSales()).filter(s => ['tendering', 'open'].includes(s.status)).length;
+await ph.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await S.sleep(1500);
+const dlg = ph.getByRole('dialog');
+let dialog = null;
+if (await dlg.count()) { dialog = S.flat(await dlg.last().innerText()).slice(0, 300); const yes = dlg.last().getByRole('button', { name: /Cancel sale|Yes|Discard|Clear|Confirm/ }).last(); if (await yes.isVisible().catch(() => false)) { await yes.click(); await S.sleep(1500); } }
+await ph.goto('/'); await S.sleep(3000);
+await ph.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await S.sleep(1500);
+await ph.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+await S.sleep(3000);
+const zz = S.pickerCards(ph).filter({ hasText: 'ZZ TEST 934 guardian C' }).first();
+await zz.getByRole('button', { name: 'Add to sale', exact: true }).click();
+await S.sleep(3000);
+const out = [];
+for (let round = 0; round < 3; round++) {
+  const body = S.flat(await ph.locator('body').innerText());
+  if (!/Configure Drop-Off/.test(body)) break;
+  const who = body.match(/ZZ TEST \w+ C 934 · \d+y/)?.[0] ?? null;
+  const flat = ph.getByRole('button', { name: /Drop-Off Flat/ }).first();
+  const flatState = await flat.evaluate(e => ({ pressed: e.getAttribute('aria-pressed'), checked: e.getAttribute('aria-checked'), state: e.getAttribute('data-state'), cls: e.className.slice(0, 160) })).catch(() => null);
+  await ph.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+  await S.sleep(800);
+  const total = S.flat(await ph.getByRole('button', { name: /items ฿/ }).first().innerText().catch(() => ''));
+  out.push({ who, flatState, totalAfterLength: total });
+  const next = ph.getByRole('button', { name: 'Continue', exact: true }).first();
+  if (await next.isVisible().catch(() => false)) { await next.click(); await S.sleep(1500); } else break;
+}
+const bar = S.flat(await ph.getByRole('button', { name: /items ฿/ }).first().innerText().catch(() => ''));
+return { salesBefore, dialog, out, bar };
+--> {
+ "ok": true,
+ "value": {
+  "salesBefore": 0,
+  "dialog": null,
+  "out": [
+   {
+    "who": "ZZ TEST Mint C 934 · 6y",
+    "flatState": {
+     "pressed": null,
+     "checked": null,
+     "state": null,
+     "cls": "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus"
+    },
+    "totalAfterLength": ""
+   },
+   {
+    "who": "ZZ TEST Nok C 934 · 9y",
+    "flatState": {
+     "pressed": null,
+     "checked": null,
+     "state": null,
+     "cls": "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus"
+    },
+    "totalAfterLength": ""
+   }
+  ],
+  "bar": ""
+ }
+}
+
+=== 2026-11-12T14:08:48.890Z 2: the phone till: Add drop-off child (family C), the code, the cart bar
+const ph = S.mgrPhone;
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+await S.shot(ph, 'zz-debug-phone-cart.png');
+return { btns, text: S.flat(await ph.locator('body').innerText()).slice(0, 700) };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   "0 no gate",
+   "Theme and station setup",
+   "Lock screen",
+   "Back",
+   "Cancel",
+   "Add drop-off child",
+   "Done Adding",
+   "2 2 items ฿1605",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 2 2 items ฿1605 Tickets F&B Shop Check-in Events History Today 7 Messages"
+ }
+}
+
+=== 2026-11-12T14:09:00.307Z 2: the phone till: the code on the cart; the cart bar and the panel
+S.phase = '2: the phone till: the code on the cart; the cart bar and the panel';
+const { expect } = S;
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: /items ฿/ }).first().click();
+await S.sleep(1500);
+const promo = ph.getByPlaceholder(/Promo code/).first();
+const hasPromo = await promo.isVisible().catch(() => false);
+let applied = null;
+if (hasPromo) {
+  await promo.fill(S.CODE);
+  await promo.locator('xpath=ancestor::div[1]/..').getByRole('button', { name: 'Apply', exact: true }).first().click().catch(async () => { await ph.getByRole('button', { name: 'Apply', exact: true }).first().click(); });
+  await S.sleep(4000);
+  applied = S.flat(await ph.locator('body').innerText());
+}
+await S.shot(ph, '02t-phone-cart-sheet-panel-with-code.png', [], { fullPage: true });
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+return { hasPromo, applied: applied?.slice(0, 1200) ?? S.flat(await ph.locator('body').innerText()).slice(0, 1200), btns, oneDecimal: S.oneDecimal(applied ?? '') };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /items ฿/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T14:09:36.691Z 2: the phone till: the code on the cart; the cart bar and the panel
+S.phase = '2: the phone till: the code on the cart; the cart bar and the panel';
+const { expect } = S;
+const ph = S.mgrPhone; const wasLocked = await S.unlock("mgrPhone");
+await ph.getByRole('button', { name: /items ฿/ }).first().click();
+await S.sleep(1500);
+const promo = ph.getByPlaceholder(/Promo code/).first();
+const hasPromo = await promo.isVisible().catch(() => false);
+let applied = null;
+if (hasPromo) {
+  await promo.fill(S.CODE);
+  await promo.locator('xpath=ancestor::div[1]/..').getByRole('button', { name: 'Apply', exact: true }).first().click().catch(async () => { await ph.getByRole('button', { name: 'Apply', exact: true }).first().click(); });
+  await S.sleep(4000);
+  applied = S.flat(await ph.locator('body').innerText());
+}
+await S.shot(ph, '02t-phone-cart-sheet-panel-with-code.png', [], { fullPage: true });
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+return { hasPromo, applied: applied?.slice(0, 1200) ?? S.flat(await ph.locator('body').innerText()).slice(0, 1200), btns, oneDecimal: S.oneDecimal(applied ?? '') };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /items ฿/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T14:10:11.037Z 2: the phone till: the code on the cart; the cart bar and the panel
+const ph = S.mgrPhone;
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+await S.shot(ph, 'zz-debug-phone-cart.png');
+return { btns, text: S.flat(await ph.locator('body').innerText()).slice(0, 700) };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   "Unlock",
+   "Sign out and hand over the till"
+  ],
+  "text": "Locked [staff] is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked"
+ }
+}
+
+=== 2026-11-12T14:10:20.624Z 2: the phone till: the code on the cart; the cart bar and the panel
+S.unlock = async label => {
+  const t = S.pages[label];
+  const btn = t.page.getByRole('button', { name: 'Unlock', exact: true });
+  if ((await t.page.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false)) || (await btn.isVisible().catch(() => false))) {
+    await t.page.locator('input[type="password"]').first().fill(S.need(t.passwordKey));
+    await t.page.getByRole('button', { name: /Unlock/ }).first().click(); await t.page.waitForTimeout(3000);
+    return true;
+  }
+  return false;
+};
+const r = await S.unlock('mgrPhone');
+const ph = S.mgrPhone;
+return { r, text: S.flat(await ph.locator('body').innerText()).slice(0, 300) };
+--> {
+ "ok": true,
+ "value": {
+  "r": true,
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kid"
+ }
+}
+
+=== 2026-11-12T14:10:31.734Z 2: the phone till: the code on the cart; the cart bar and the panel
+S.phase = '2: the phone till: the code on the cart; the cart bar and the panel';
+const { expect } = S;
+const ph = S.mgrPhone; const wasLocked = await S.unlock("mgrPhone");
+await ph.getByRole('button', { name: /items ฿/ }).first().click();
+await S.sleep(1500);
+const promo = ph.getByPlaceholder(/Promo code/).first();
+const hasPromo = await promo.isVisible().catch(() => false);
+let applied = null;
+if (hasPromo) {
+  await promo.fill(S.CODE);
+  await promo.locator('xpath=ancestor::div[1]/..').getByRole('button', { name: 'Apply', exact: true }).first().click().catch(async () => { await ph.getByRole('button', { name: 'Apply', exact: true }).first().click(); });
+  await S.sleep(4000);
+  applied = S.flat(await ph.locator('body').innerText());
+}
+await S.shot(ph, '02t-phone-cart-sheet-panel-with-code.png', [], { fullPage: true });
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+return { hasPromo, applied: applied?.slice(0, 1200) ?? S.flat(await ph.locator('body').innerText()).slice(0, 1200), btns, oneDecimal: S.oneDecimal(applied ?? '') };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /items ฿/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T14:11:08.132Z 2: the phone till: the code on the cart; the cart bar and the panel
+S.phase = '2: the phone till: the code on the cart; the cart bar and the panel';
+const { expect } = S;
+const ph = S.mgrPhone; const wasLocked = await S.unlock("mgrPhone");
+const barBtn = ph.locator('button').filter({ hasText: /items/ }).last(); S.barText = S.flat(await barBtn.innerText()); S.barLabel = await barBtn.getAttribute('aria-label'); await S.shot(ph, '02s-phone-cart-bar-before-code.png'); await barBtn.click();
+await S.sleep(1500);
+const promo = ph.getByPlaceholder(/Promo code/).first();
+const hasPromo = await promo.isVisible().catch(() => false);
+let applied = null;
+if (hasPromo) {
+  await promo.fill(S.CODE);
+  await promo.locator('xpath=ancestor::div[1]/..').getByRole('button', { name: 'Apply', exact: true }).first().click().catch(async () => { await ph.getByRole('button', { name: 'Apply', exact: true }).first().click(); });
+  await S.sleep(4000);
+  applied = S.flat(await ph.locator('body').innerText());
+}
+await S.shot(ph, '02t-phone-cart-sheet-panel-with-code.png', [], { fullPage: true });
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+return { bar: S.barText, barLabel: S.barLabel, hasPromo, applied: applied?.slice(0, 1200) ?? S.flat(await ph.locator('body').innerText()).slice(0, 1200), btns, oneDecimal: S.oneDecimal(applied ?? '') };
+--> {
+ "ok": true,
+ "value": {
+  "bar": "2 2 items ฿1605",
+  "barLabel": "Open cart",
+  "hasPromo": true,
+  "applied": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 2 2 items ฿1444.50 Tickets F&B Shop Check-in Events History Today 7 Messages Close Current Order Current Order TOURIST ZZ TEST Mint C 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok C 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿1444.50",
+  "btns": [
+   "Close",
+   "Configure",
+   "Configure",
+   "Apply",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1444.50"
+  ],
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T14:11:29.586Z 2: the phone till: the code on the cart; the cart bar and the panel
+const ph = S.mgrPhone;
+await S.unlock('mgrPhone');
+const keep = S.inPlace;
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try {
+  await S.shot(ph, '02t-phone-cart-sheet-panel-with-code.png', [], { fullPage: true });
+  // scroll the sheet to its foot
+  await ph.getByRole('button', { name: /^Pay ฿/ }).first().scrollIntoViewIfNeeded();
+  await S.sleep(500);
+  await S.shot(ph, '02u-phone-cart-sheet-totals-and-pay.png');
+  const badge = await ph.evaluate(() => { const el = [...document.querySelectorAll('span')].find(s => /^-฿160\.50$/.test(s.textContent.trim())); if (!el) return null; const r = el.getBoundingClientRect(); return { text: el.textContent, w: Math.round(r.width), h: Math.round(r.height), lines: Math.round(r.height / parseFloat(getComputedStyle(el).lineHeight || '20')) }; });
+  await ph.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await S.sleep(1200);
+  const bar = S.flat(await ph.locator('button').filter({ hasText: /items/ }).last().innerText());
+  await S.shot(ph, '02v-phone-cart-bar-with-code.png');
+  S.receipt.reads.p2.phoneCart = { barBefore: S.barText, barAfter: bar, badge };
+  S.save();
+  return S.receipt.reads.p2.phoneCart;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "barBefore": "2 2 items ฿1605",
+  "barAfter": "2 2 items ฿1444.50",
+  "badge": {
+   "text": "-฿160.50",
+   "w": 65,
+   "h": 48,
+   "lines": 2
+  }
+ }
+}
+
+=== 2026-11-12T14:11:57.892Z 2: the phone till: the code on the cart; the cart bar and the panel
+const { expect } = S;
+const ph = S.mgrPhone;
+await S.unlock('mgrPhone');
+await ph.locator('button').filter({ hasText: /items/ }).last().click();
+await S.sleep(1200);
+await ph.getByRole('button', { name: /^Pay ฿/ }).first().click();
+await S.sleep(4000);
+let body = S.flat(await ph.locator('body').innerText());
+// a drop-off sale may ask more before payment
+const sale = await S.saleWritten('phone-sale-C-coded').catch(() => null);
+const keep = S.inPlace;
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(ph, '02w-phone-payment-step-amount-due.png', [], { fullPage: true }); } finally { S.inPlace = keep; }
+const due = body.match(/Amount Due ?฿[0-9,.]+/)?.[0] ?? body.match(/฿1444\.50/)?.[0] ?? null;
+const btns = [];
+for (const b of await ph.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+S.phoneSaleC = sale?.id ?? null;
+return { due, sale: sale ? { id: 'own', status: sale.status } : null, btns, text: body.slice(0, 900), oneDecimal: S.oneDecimal(body) };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1444.50",
+  "sale": null,
+  "btns": [
+   "0 no gate",
+   "Theme and station setup",
+   "Lock screen",
+   "Back",
+   "Cancel",
+   "Add drop-off child",
+   "Done Adding",
+   "2 2 items ฿1444.50",
+   "Customer is ready",
+   "Cancel",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Add to Sale Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 2 2 items ฿1444.50 Hand the phone to the customer They'll enter their phone number and nickname. Point the screen toward them Customer is ready Cancel Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "oneDecimal": []
+ }
+}
+
+=== 2026-11-12T14:12:41.958Z 2: the phone till: the code on the cart; the cart bar and the panel
+const ph = S.mgrPhone;
+await ph.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await S.sleep(1200);
+await ph.getByRole('button', { name: 'Cancel', exact: true }).first().click().catch(() => {});
+await S.sleep(1500);
+const dlg = ph.getByRole('dialog');
+let dialog = null;
+if (await dlg.count()) { dialog = S.flat(await dlg.last().innerText()).slice(0, 300); }
+const open = (await S.stationSales()).filter(s => ['tendering', 'open'].includes(s.status)).length;
+const reg = (await S.registration(S.fam.C.reg)).children.map(c => c.status);
+const text = S.flat(await ph.locator('body').innerText()).slice(0, 300);
+return { dialog, openSalesAtOwnTill: open, reg, text };
+--> {
+ "ok": true,
+ "value": {
+  "dialog": null,
+  "openSalesAtOwnTill": 0,
+  "reg": [
+   "registered",
+   "registered"
+  ],
+  "text": "0 no gate Oto Play Park, Central Floresta [staff] [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local prici"
+ }
+}
+
+=== 2026-11-12T14:13:03.121Z 2: the phone till: the code on the cart; the cart bar and the panel
+const R = S.receipt.reads;
+S.point('1', R.p1.refundedIsPangOnly && R.p1.status === 200 && R.p1.board[0].paidAtTill && !R.p1.board[1].paidAtTill && R.p2.phone.rows.length === 2,
+  ['01d-history-detail-item-cards-name-each-child.png', '01e-refund-by-item-rows-name-each-child.png', '01f-refund-by-item-pang-ticked.png', '01g-history-detail-after-refund-pang.png', '01h-board-family-a-after-refund-pang-to-pay.png', '01k-phone-ticket-lines-name-each-child.png', '01l-phone-refund-by-item-rows-name-each-child.png', '01p-phone-refund-by-item-both-children-named.png', '07e-no-code-refund-by-item-row-as-before.png'],
+  { itemCards: ['ZZ TEST Mint 934 · 1 Hour Play · Tourist', 'ZZ TEST Pang 934 · 1 Hour Play · Tourist'], deskRows: ['ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915', 'ZZ TEST Pang 934 · 1 Hour Play · 1 ppl ฿915'],
+    refundPangOnly: R.p1, phoneRows: R.p2.phone.rows, ordinaryRow: R.p7.history.rows });
+S.point('2', R.p2.due === '฿1444.50' && R.p2.payBtn[0] === 'Pay ฿1444.50' && R.p2.pay.success.includes('฿1444.50') && R.p2.history.card.endsWith('฿1444.50') && R.p2.refund.label === 'Refund ฿1444.50' && R.p2.phoneCart.barAfter.endsWith('฿1444.50') && R.p7.dotZeroZero === 0 && R.p7.history.dotZeroZero === 0,
+  ['02a-code-at-ticket-step-order-and-customer-half.png', '02b-payment-step-code-till-and-customer-half.png', '02c-code-badge-close-up.png', '02d-display-paired-mid-sale-payment-stage.png', '02e-after-back-display-order-stage.png', '02f-cash-chosen-till-and-display.png', '02g-payment-successful-till-and-display.png', '02h-payment-successful-success-line.png', '02i-history-list-coded-sale-card.png', '02j-history-detail-coded-sale.png', '02k-phone-history-card-coded-sale.png', '02m-refund-window-whole-sale.png', '02n-refund-window-by-item-satang.png', '02o-refund-window-whole-ready.png', '02t-phone-cart-sheet-panel-with-code.png', '02u-phone-cart-sheet-totals-and-pay.png', '02v-phone-cart-bar-with-code.png', '07a-no-code-order-till-and-display.png', '07b-no-code-payment-step-till-and-display.png', '07c-no-code-paid-till-and-display.png', '07d-no-code-history-detail.png', '07f-no-code-refund-window-whole.png'],
+  { coded: R.p2, noCode: R.p7 });
+S.point('5', R.p5.due === '฿940' && R.p5.pay[0] === 'Pay ฿940' && /Partly paid BALANCE DUE ฿940 of ฿1040/.test(R.p5.card) && R.p5.refund.saleStatus === 'voided',
+  ['05a-partial-100-entered.png', '05b-after-part-payment-pay-names-the-balance.png', '05c-save-as-partly-paid-dialog.png', '05d-history-list-partly-paid-card.png', '05e-history-partly-paid-card-close-up.png', '05f-phone-history-partly-paid-card.png', '05g-phone-partly-paid-detail.png', '05i-phone-part-paid-refunded.png'], R.p5);
+S.point('7', R.p7.sale.status === 'finalised' && R.p7.prints.every(p => / printed$/.test(p)) && R.p7.history.refund.saleRefund === 'refunded',
+  ['07a-no-code-order-till-and-display.png', '07b-no-code-payment-step-till-and-display.png', '07c-no-code-paid-till-and-display.png', '07d-no-code-history-detail.png', '07e-no-code-refund-by-item-row-as-before.png', '07f-no-code-refund-window-whole.png', '07g-no-code-after-whole-refund.png'], R.p7);
+return Object.fromEntries(Object.entries(S.receipt.points).map(([k, v]) => [k, v.pass]));
+--> {
+ "ok": true,
+ "value": {
+  "1": true,
+  "2": true,
+  "5": true,
+  "7": true
+ }
+}
+
+=== 2026-11-12T14:13:20.543Z 3: the ZZ TEST party made in the OTO App; the party page before Settle party
+S.phase = '3: the ZZ TEST party made in the OTO App; the party page before Settle party';
+S.PARTY = 'ZZ TEST SCRUM-936 party';
+const made = await S.makeParty(S.PARTY);
+S.partyId = made.id;
+const p = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+const api = { deposit: p?.event?.party?.depositSatang / 100, base: p?.event?.party?.basePriceSatang != null ? p.event.party.basePriceSatang / 100 : null, settlement: p?.event?.party?.settlement ?? null, keys: Object.keys(p?.event?.party ?? {}).slice(0, 40) };
+const till = S.till;
+await S.unlock('till');
+await till.goto('/parties'); await S.sleep(3500);
+const row = till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+await row.waitFor({ timeout: 20000 });
+const rowText = S.flat(await row.innerText());
+S.inPlaceParties = page => [page.getByLabel('Lock screen').locator('..'), S.otherParties(page)];
+const keep = S.inPlace; S.inPlace = S.inPlaceParties;
+try { await S.shot(till, '03a-parties-list-before-settle.png'); } finally { S.inPlace = keep; }
+// open it and catch the first frames
+const frames = [];
+await row.click();
+for (let i = 0; i < 12; i++) {
+  const t = S.flat(await till.locator('body').innerText());
+  frames.push({ ms: i * 250, bill: t.match(/Party bill[^]*?Outstanding[^฿—]*(฿[0-9,.]+|—)/)?.[0]?.slice(0, 260) ?? null, take: t.match(/(Take balance (฿[0-9,.]+|—)|Fully paid)/)?.[0] ?? null });
+  if (i === 1) { S.inPlace = page => [page.getByLabel('Lock screen').locator('..')]; try { await S.shot(till, '03b-party-page-first-moment.png'); } finally { S.inPlace = keep; } }
+  await S.sleep(250);
+}
+await S.sleep(3000);
+const body = S.flat(await till.locator('body').innerText());
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, '03c-party-page-before-settle-package-owed.png', [], { fullPage: true }); } finally { S.inPlace = keep; }
+const sections = (body.match(/(Kitchen|Bar|Set menu|Food|Drinks|Kids' food|Adults' food|Menu)[^.]{0,40}/g) ?? []).slice(0, 10);
+S.receipt.reads.p3 = { made, api, rowText, frames: frames.filter((f, i, a) => i === 0 || JSON.stringify(f.bill) !== JSON.stringify(a[i - 1].bill) || f.take !== a[i - 1].take),
+  before: { bill: body.match(/Party bill[^]*?Outstanding[^฿—]*(฿[0-9,.]+|—)/)?.[0]?.slice(0, 400) ?? null, btns, sections } };
+S.save();
+return S.receipt.reads.p3;
+--> {
+ "ok": true,
+ "value": {
+  "made": {
+   "id": "4bd8e99c-288d-4c7f-8420-020d8424778e",
+   "bill": 201,
+   "snap": 201
+  },
+  "api": {
+   "deposit": 1000,
+   "base": null,
+   "settlement": null,
+   "keys": [
+    "childName",
+    "kidTurningAge",
+    "bookingName",
+    "parentName",
+    "parentPhone",
+    "activities",
+    "decoration",
+    "totalValueSatang",
+    "depositSatang",
+    "depositDate",
+    "walkUpCharges",
+    "charges",
+    "payments",
+    "lastEdited",
+    "editSync",
+    "bill",
+    "settlement"
+   ]
+  },
+  "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900",
+  "frames": [
+   {
+    "ms": 0,
+    "bill": "Party bill Base package — Total — Deposit paid −฿1000 Outstanding —",
+    "take": "Take balance —"
+   },
+   {
+    "ms": 1250,
+    "bill": "Party bill Birthday package, Central Floresta — Total — Deposit paid −฿1000 Outstanding —",
+    "take": "Take balance —"
+   },
+   {
+    "ms": 2000,
+    "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+    "take": "Take balance ฿15900"
+   }
+  ],
+  "before": {
+   "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+   "btns": [
+    {
+     "l": "Settle party",
+     "e": true
+    },
+    {
+     "l": "Take balance ฿15900",
+     "e": true
+    }
+   ],
+   "sections": [
+    "Kitchen plan Package Birthday package, Central ",
+    "Drinks pitcher Included: Kids' table reserved ",
+    "Kitchen & bar slips Slip time 11:00 Kitchen sli",
+    "Bar slip Not printed yet Print party slips "
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T14:14:03.459Z 3: the phone parties list and party page before Settle party
+S.phase = '3: the phone parties list and party page before Settle party';
+const ph = S.mgrPhone;
+await S.unlock('mgrPhone');
+await ph.goto('/parties'); await S.sleep(5000);
+const row = ph.locator('button').filter({ hasText: S.PARTY }).first();
+await row.waitFor({ timeout: 20000 });
+const rowText = S.flat(await row.innerText());
+const keep = S.inPlace;
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), page.locator('button').filter({ hasText: /PARTY|Party|party/ }).filter({ hasNotText: 'ZZ TEST' })];
+try { await S.shot(ph, '03d-phone-parties-list-before-settle.png'); } finally { S.inPlace = keep; }
+await row.click(); await S.sleep(5000);
+const body = S.flat(await ph.locator('body').innerText());
+const btns = [];
+for (const b of await ph.locator('button.w-full').all()) { if (await b.isVisible()) btns.push({ l: S.flat(await b.innerText()), e: await b.isEnabled() }); }
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(ph, '03e-phone-party-page-before-settle.png', [], { fullPage: true }); } finally { S.inPlace = keep; }
+S.receipt.reads.p3.phone = { rowText, due: body.match(/Due (฿[0-9,.]+|—)/)?.[0] ?? null, line: body.match(/Take it with[^.]*\./)?.[0] ?? null,
+  bill: (body.match(/(Birthday package[^฿]{0,40}|Total|Deposit paid|Outstanding)[^฿—]{0,10}[−-]?(฿[0-9,.]+|—)/g) ?? []).slice(0, 6), btns: btns.filter(b => !/^(Tickets|F&B|Shop|Check-in|Events|History|Today|\d+ Messages)$/.test(b.l)), kitchen: /Kitchen plan|Pizza/.test(body) };
+S.save();
+return S.receipt.reads.p3.phone;
+--> {
+ "ok": true,
+ "value": {
+  "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15900",
+  "due": null,
+  "line": "Take it with Settle party on a counter till's party page.",
+  "bill": [
+   "Total ฿16900",
+   "Deposit paid −฿1000",
+   "Outstanding ฿15900"
+  ],
+  "btns": [
+   {
+    "l": "Add F&B to party tab",
+    "e": true
+   },
+   {
+    "l": "Not settled · ฿15900",
+    "e": false
+   }
+  ],
+  "kitchen": true
+ }
+}
+
+=== 2026-11-12T14:14:38.385Z 3: Take balance opens Settle party; Confirm; the settle payment screen
+S.phase = '3: Take balance opens Settle party; Confirm; the settle payment screen';
+const till = S.till;
+await S.unlock('till');
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try {
+  await till.getByRole('button', { name: /^Take balance ฿/ }).click();
+  await S.sleep(2000);
+  const dlg = till.getByRole('dialog').last();
+  const opened = (await dlg.count()) ? S.flat(await dlg.innerText()).slice(0, 700) : null;
+  await S.shot(till, '03f-take-balance-opens-settle-party.png');
+  const confirm = till.getByRole('button', { name: /^Confirm/ }).first();
+  const confirmEnabled = await confirm.isEnabled().catch(() => null);
+  const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 });
+  await confirm.click();
+  const sr = await settled;
+  const sb = await sr.json().catch(() => null);
+  S.settleSale = sb?.sale?.id;
+  S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save();
+  await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await S.sleep(3500);
+  const pay = S.flat(await till.getByTestId('payment-step').innerText());
+  await S.shot(till, '06d-settle-payment-screen-recorded-payments-party-deposit.png');
+  S.receipt.reads.p3.settle = { opened, confirmEnabled, settleStatus: sr.status(), settlement: sb?.settlement ? { state: sb.settlement.state, gross: sb.settlement.grossSatang / 100, deposit: sb.settlement.depositSatang / 100, outstanding: sb.settlement.outstandingSatang / 100 } : null,
+    amountDue: await S.amountDue(till), recorded: pay.match(/Recorded payments[^]*?Balance due ฿[0-9,.]+/)?.[0] ?? pay.slice(0, 400) };
+  S.save();
+  return S.receipt.reads.p3.settle;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('payment-step') to be visible\u001b[22m | "
+}
+
+=== 2026-11-12T14:15:19.474Z 3: Take balance opens Settle party; Confirm; the settle payment screen
+const till = S.till;
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, 'zz-debug-settle.png'); } finally { S.inPlace = keep; }
+const party = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+const st = party?.event?.party?.settlement ?? null;
+return { settleSale: S.settleSale ?? null, st: st ? { state: st.state, outstanding: st.outstandingSatang / 100 } : null, url: till.url(), text: S.flat(await till.locator('body').innerText()).slice(0, 1200), errs: S.receipt.pageErrors.slice(-5) };
+--> {
+ "ok": true,
+ "value": {
+  "settleSale": null,
+  "st": null,
+  "url": "https://oto-pos-web-staging.onrender.com/parties",
+  "text": "1 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks All parties ZZ TEST SCRUM-936 party UPCOMING · 15:00–18:00 · Edit party Settle party Add F&B to party Take balance ฿15900 Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900 Event info Date Thu, 12 Nov 2026 Time 15:00 – 18:00 Room Headcount 2 kids · 2 adults Parent contact Parent Kitchen plan Package Birthday package, Central Floresta Ready 20 min before Slips print 11:00 Pizza Hot dish French fries Waffles or pancakes Fried rice Veggie sticks Fruit skewers · not on the till menu Drinks pitcher Included: Kids' table reserved for 3 hours · Special birthday set menu · Interactive birthday animation program, 30 minutes · Ice-cream cake with candles and birthday song · Entry for 4 accompanying adults · Socks for all children Run of show Kitchen & bar slips Slip time 11:00 Kitchen slip Not printed yet Bar slip Not printed yet Print party slips now Settle party ZZ TEST SCRUM-936 party 2 ",
+  "errs": [
+   {
+    "page": "mgr",
+    "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   },
+   {
+    "page": "mgrPhone",
+    "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+    "kind": "http",
+    "text": "GET /api/me 401"
+   },
+   {
+    "page": "mgrPhone",
+    "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   },
+   {
+    "page": "till",
+    "at": "3: Take balance opens Settle party; Confirm; the settle payment screen",
+    "kind": "http",
+    "text": "POST /api/parties/:id/settle 409"
+   },
+   {
+    "page": "till",
+    "at": "3: Take balance opens Settle party; Confirm; the settle payment screen",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 409 ()"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:15:30.170Z 3: Take balance opens Settle party; Confirm; the settle payment screen
+const till = S.till;
+const dlg = till.getByRole('dialog').last();
+const text = (await dlg.count()) ? S.flat(await dlg.innerText()).slice(0, 1800) : null;
+const toasts = S.flat(await till.locator('li[role="status"], [data-sonner-toast], ol li').allInnerTexts().then(a => a.join(' | '))).slice(0, 600);
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, 'zz-debug-settle2.png'); } finally { S.inPlace = keep; }
+return { text, toasts };
+--> {
+ "ok": true,
+ "value": {
+  "text": null,
+  "toasts": ""
+ }
+}
+
+=== 2026-11-12T14:15:48.500Z 3: Settle party with no socks given; the settle payment screen
+S.phase = '3: Settle party with no socks given; the settle payment screen';
+const till = S.till;
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try {
+  await S.shot(till, '03f-take-balance-opened-settle-party.png');
+  const socks = till.getByText('Socks given', { exact: true }).locator('xpath=ancestor::div[.//button][1]');
+  for (let i = 0; i < 2; i++) { await socks.getByRole('button').first().click(); await S.sleep(400); }
+  await S.sleep(1500);
+  const modal = S.flat(await till.locator('body').innerText()).match(/Birthday package, Central Floresta · weekday[^]*?Balance ฿[0-9,.]+/)?.[0] ?? null;
+  const confirm = till.getByRole('button', { name: /^Confirm/ }).first();
+  const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 });
+  await confirm.click();
+  const sr = await settled;
+  const sb = await sr.json().catch(() => null);
+  S.settleSale = sb?.sale?.id;
+  if (S.settleSale) { S.receipt.created.push({ kind: 'party-settlement-sale', id: S.settleSale }); S.save(); }
+  await till.getByTestId('payment-step').waitFor({ timeout: 30000 }); await S.sleep(3500);
+  const pay = S.flat(await till.getByTestId('payment-step').innerText());
+  await S.shot(till, '06d-settle-payment-screen-recorded-payments-party-deposit.png');
+  S.receipt.reads.p3.settle = { modal, settleStatus: sr.status(), settlement: sb?.settlement ? { state: sb.settlement.state, gross: sb.settlement.grossSatang / 100, deposit: sb.settlement.depositSatang / 100, outstanding: sb.settlement.outstandingSatang / 100 } : null,
+    amountDue: await S.amountDue(till), recorded: pay.match(/Recorded payments[^]*?Balance due ฿[0-9,.]+/)?.[0] ?? pay.slice(0, 400) };
+  S.save();
+  return S.receipt.reads.p3.settle;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "modal": "Birthday package, Central Floresta · weekday ฿16,900 Total ฿16,900 Deposit paid −฿1,000 Balance ฿15,900",
+  "settleStatus": 200,
+  "settlement": {
+   "state": "open",
+   "gross": 16900,
+   "deposit": 1000,
+   "outstanding": 15900
+  },
+  "amountDue": "฿15900",
+  "recorded": "Recorded payments Party deposit · ฿1000.00 Balance due ฿15900.00"
+ }
+}
+
+=== 2026-11-12T14:16:12.401Z 3/935: a part payment of 100 in cash; close with X; the page without a reload
+S.phase = '3/935: a part payment of 100 in cash; close with X; the page without a reload';
+const till = S.till;
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try {
+  await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+  await S.sleep(800);
+  await till.getByRole('button', { name: 'Partial payment', exact: true }).click();
+  await till.locator('#payment-part-amount').fill('100');
+  await till.locator('#payment-cash-received').fill('100');
+  await S.sleep(800);
+  await S.shot(till, '03g-settle-partial-100-cash.png');
+  const fin = till.waitForResponse(rr => /\/api\/sales\/[^/]+\/finalise$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 });
+  await till.getByTestId('payment-step').getByRole('button', { name: 'Confirm Payment Received', exact: true }).click();
+  const fr = await fin;
+  await S.sleep(4000);
+  const after = { amountDue: await S.amountDue(till), recorded: S.flat(await till.getByTestId('payment-step').innerText()).match(/Recorded payments[^]*?Balance due ฿[0-9,.]+/)?.[0] ?? null };
+  await S.shot(till, '03h-after-part-payment-100.png');
+  // close the settle window with X, no reload
+  const urlBefore = till.url();
+  let navs = 0; const onNav = f => { if (f === till.mainFrame()) navs++; }; till.on('framenavigated', onNav);
+  await till.getByRole('button', { name: 'Close', exact: true }).last().click();
+  const frames = [];
+  for (let i = 0; i < 8; i++) { await S.sleep(500); const t = S.flat(await till.locator('body').innerText()); frames.push({ ms: (i + 1) * 500, bill: t.match(/Party bill[^]*?Outstanding[^฿—]*(฿[0-9,.]+|—)/)?.[0]?.slice(0, 300) ?? null, take: t.match(/Take balance (฿[0-9,.]+|—)/)?.[0] ?? null, resume: t.match(/Resume settlement (฿[0-9,.]+|—)/)?.[0] ?? null }); }
+  till.off('framenavigated', onNav);
+  const btns = [];
+  for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+  await S.shot(till, '03i-party-page-after-x-no-reload-15800.png');
+  const party = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+  const st = party?.event?.party?.settlement ?? null;
+  S.receipt.reads.p3.part = { finalise: fr.status(), after, navigationsAfterX: navs, urlSame: till.url() === urlBefore, frames: frames.filter((f, i, a) => i === 0 || JSON.stringify(f) .slice(10) !== JSON.stringify(a[i - 1]).slice(10)), btns,
+    api: st ? { state: st.state, paid: st.paidSatang / 100, outstanding: st.outstandingSatang / 100 } : null };
+  S.save();
+  return S.receipt.reads.p3.part;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "finalise": 200,
+  "after": {
+   "amountDue": "฿15800",
+   "recorded": "Recorded payments Party deposit · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00"
+  },
+  "navigationsAfterX": 0,
+  "urlSame": true,
+  "frames": [
+   {
+    "ms": 500,
+    "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+    "take": "Take balance ฿15800",
+    "resume": "Resume settlement ฿15800"
+   },
+   {
+    "ms": 1000,
+    "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+    "take": "Take balance ฿15800",
+    "resume": "Resume settlement ฿15800"
+   }
+  ],
+  "btns": [
+   {
+    "l": "Resume settlement ฿15800",
+    "e": true
+   },
+   {
+    "l": "Cancel settlement",
+    "e": true
+   },
+   {
+    "l": "Take balance ฿15800",
+    "e": true
+   }
+  ],
+  "api": {
+   "state": "open",
+   "paid": 1100,
+   "outstanding": 15800
+  }
+ }
+}
+
+=== 2026-11-12T14:16:41.648Z 3: the parties lists after the part payment
+S.phase = '3: the parties lists after the part payment';
+const till = S.till, ph = S.mgrPhone;
+await till.getByText('All parties').first().click();
+await S.sleep(3500);
+const row = till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+const rowText = S.flat(await row.innerText());
+const keep = S.inPlace; S.inPlace = S.inPlaceParties;
+try { await S.shot(till, '03j-parties-list-after-part-payment-15800.png'); } finally { S.inPlace = keep; }
+await S.unlock('mgrPhone');
+await ph.goto('/parties'); await S.sleep(5000);
+const prow = ph.locator('button').filter({ hasText: S.PARTY }).first();
+const prowText = S.flat(await prow.innerText());
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), page.locator('button').filter({ hasText: /PARTY|Party|party/ }).filter({ hasNotText: 'ZZ TEST' })];
+try { await S.shot(ph, '03k-phone-parties-list-after-part-payment.png'); } finally { S.inPlace = keep; }
+await prow.click(); await S.sleep(4500);
+const body = S.flat(await ph.locator('body').innerText());
+const pbtns = [];
+for (const b of await ph.locator('button.w-full').all()) { if (await b.isVisible()) pbtns.push({ l: S.flat(await b.innerText()), e: await b.isEnabled() }); }
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(ph, '03l-phone-party-page-after-part-payment.png'); } finally { S.inPlace = keep; }
+S.receipt.reads.p3.lists = { desk: rowText, phone: prowText, phonePage: { bill: (body.match(/(Settlement open|Total|Deposit paid|Payments taken|Outstanding)[^฿—]{0,12}[−-]?(฿[0-9,.]+|—)/g) ?? []).slice(0, 6), line: body.match(/Take it with[^.]*\./)?.[0] ?? null, btns: pbtns.filter(b => /Settle|settle|Take|Pay|Paid|฿/.test(b.l)) } };
+S.save();
+return S.receipt.reads.p3.lists;
+--> {
+ "ok": true,
+ "value": {
+  "desk": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15800",
+  "phone": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15800",
+  "phonePage": {
+   "bill": [
+    "Settlement open ฿15800",
+    "Total ฿16900",
+    "Deposit paid −฿1000",
+    "Payments taken −฿100",
+    "Outstanding ฿15800",
+    "Settlement open · ฿15800"
+   ],
+   "line": "Take it with Resume settlement on a counter till's party page.",
+   "btns": [
+    {
+     "l": "Settlement open · ฿15800",
+     "e": false
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T14:17:14.967Z 6/3: History heads the settlement; the manager refunds the 100
+S.phase = '6/3: History heads the settlement; the manager refunds the 100';
+const ph = S.mgrPhone;
+const s0 = await S.sale(S.settleSale);
+S.hhmmSettle = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(s0.sale.occurredAt));
+S.markSettle = page => page.evaluate(({ hhmm, party }) => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) {
+    const t = b.innerText.replace(/\s+/g, ' ');
+    if (t.includes('Z93401-') || t.includes(party) || (t.includes(hhmm) && /16,?900/.test(t))) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz');
+  }
+}, { hhmm: S.hhmmSettle, party: S.PARTY });
+await S.unlock('mgrPhone');
+await ph.goto('/history'); await S.sleep(5000);
+await S.markSettle(ph);
+const pcard = ph.locator('button[data-zz]').filter({ hasText: S.PARTY }).first();
+const pcardText = (await pcard.count()) ? S.flat(await pcard.innerText()) : null;
+await S.shot(ph, '06e-phone-history-party-settlement-card.png');
+const phoneOut = await S.signOut('mgrPhone'); S.mgrPhone = null;
+// desk manager
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await S.sleep(5000);
+await S.markSettle(mgr);
+const card = mgr.locator('button[data-zz]').filter({ hasText: S.PARTY }).first();
+const cardText = (await card.count()) ? S.flat(await card.innerText()) : null;
+await S.shot(mgr, '06f-history-list-party-settlement-card.png');
+await (await card.count() ? card : mgr.locator('button[data-zz]').filter({ hasText: /16,?900/ }).first()).click();
+await S.sleep(3500);
+const detail = S.flat(await mgr.locator('body').innerText());
+await S.shot(mgr, '06g-history-detail-party-settlement-heading.png');
+S.receipt.reads.p6settle = { phoneCard: pcardText, deskCard: cardText, detailHead: detail.match(/Back to history[^]{0,260}/)?.[0] ?? null, depositRow: detail.match(/Party deposit[^฿]{0,40}฿[0-9,.]+/)?.[0] ?? null, phoneOut };
+S.save();
+return S.receipt.reads.p6settle;
+--> {
+ "ok": true,
+ "value": {
+  "phoneCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+  "deskCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+  "detailHead": "Back to history Partly paid Party settlement Party settlement ZZ TEST SCRUM-936 party 12 Nov, 21:15 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿169",
+  "depositRow": "Party deposit · Approved 12 Nov, 21:15 ฿1000",
+  "phoneOut": {
+   "signOut": 200,
+   "meAfter": 401
+  }
+ }
+}
+
+=== 2026-11-12T14:18:00.134Z 3: the manager refunds the 100 taken on the settlement
+S.phase = '3: the manager refunds the 100 taken on the settlement';
+const mgr = S.mgr;
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor(); await S.sleep(600);
+const dtext = S.flat(await dialog.innerText()).replace(/By .*? ·/, 'By [staff] ·').slice(0, 500);
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-936 proof: refund the 100 taken on the settlement');
+await S.shot(mgr, '03m-manager-refund-settlement-100.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+const label = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(rr => new URL(rr.url()).pathname === `/api/sales/${S.settleSale}/refunds` && rr.request().method() === 'POST');
+await press.click();
+const rr = await resp;
+await S.sleep(3000);
+await S.shot(mgr, '03n-history-detail-after-settlement-refund.png');
+const sale = await S.sale(S.settleSale);
+const party = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+const st = party?.event?.party?.settlement ?? null;
+S.receipt.reads.p3.refund = { dialog: dtext, label, status: rr.status(), saleStatus: sale.sale.status, saleRefund: sale.refundStatus, settlementAfter: st ? { state: st.state } : null, deposit: party?.event?.party?.depositSatang / 100 };
+S.save();
+return S.receipt.reads.p3.refund;
+--> {
+ "ok": true,
+ "value": {
+  "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+  "label": "Refund ฿100",
+  "status": 200,
+  "saleStatus": "voided",
+  "saleRefund": "refunded",
+  "settlementAfter": {
+   "state": "voided"
+  },
+  "deposit": 1000
+ }
+}
+
+=== 2026-11-12T14:18:16.276Z 3: the party page after the settlement was refunded
+S.phase = '3: the party page after the settlement was refunded';
+const till = S.till;
+await S.unlock('till');
+await till.goto(`/parties?party=${S.partyId}`); await S.sleep(6000);
+const body = S.flat(await till.locator('body').innerText());
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, '03o-party-page-after-settlement-refunded.png'); } finally { S.inPlace = keep; }
+await till.getByText('All parties').first().click().catch(() => {});
+await S.sleep(3500);
+const row = till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+const rowText = (await row.count()) ? S.flat(await row.innerText()) : null;
+S.inPlace = S.inPlaceParties;
+try { await S.shot(till, '03p-parties-list-after-settlement-refunded.png'); } finally { S.inPlace = keep; }
+S.receipt.reads.p3.after = { bill: body.match(/Party bill[^]*?Outstanding[^฿—]*(฿[0-9,.]+|—)/)?.[0]?.slice(0, 300) ?? null, btns, rowText };
+S.save();
+return S.receipt.reads.p3.after;
+--> {
+ "ok": true,
+ "value": {
+  "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+  "btns": [
+   {
+    "l": "Settle party",
+    "e": true
+   },
+   {
+    "l": "Take balance ฿15900",
+    "e": true
+   }
+  ],
+  "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults"
+ }
+}
+
+=== 2026-11-12T14:18:40.376Z 3: the party page after the settlement was refunded
+const till = S.till;
+const reads = [];
+const rowOf = () => till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+for (let i = 0; i < 4; i++) { await S.sleep(3000); reads.push({ t: (i + 1) * 3, row: S.flat(await rowOf().innerText()).slice(-40) }); }
+// what the list's own preview call answers (read-only, the same call the page makes)
+const posts = [];
+const on = r => { const u = new URL(r.url()); if (/\/api\/parties\//.test(u.pathname)) posts.push({ m: r.request().method(), p: u.pathname.replace(S.ID, ':id').replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, ':id'), s: r.status() }); };
+till.on('response', on);
+await till.reload(); await S.sleep(8000);
+await S.unlock('till');
+await S.sleep(2000);
+till.off('response', on);
+const afterReload = (await rowOf().count()) ? S.flat(await rowOf().innerText()).slice(-40) : null;
+const keep = S.inPlace; S.inPlace = S.inPlaceParties;
+try { await S.shot(till, '03p-parties-list-after-settlement-refunded.png'); } finally { S.inPlace = keep; }
+const preview = await S.call('POST', `/parties/${S.partyId}/settle/preview`, { branchId: S.branchId, stationId: S.station.id, children: 2, adults: 2 });
+S.receipt.reads.p3.listAfter = { reads, afterReload, posts: posts.slice(0, 20), previewAsAdmin: { status: preview.status, code: preview.body?.error?.code ?? null, message: preview.body?.error?.message ?? null } };
+S.save();
+return S.receipt.reads.p3.listAfter;
+--> {
+ "ok": true,
+ "value": {
+  "reads": [
+   {
+    "t": 3,
+    "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+   },
+   {
+    "t": 6,
+    "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+   },
+   {
+    "t": 9,
+    "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+   },
+   {
+    "t": 12,
+    "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+   }
+  ],
+  "afterReload": null,
+  "posts": [
+   {
+    "m": "GET",
+    "p": "/api/parties/:id",
+    "s": 200
+   },
+   {
+    "m": "GET",
+    "p": "/api/parties/:id",
+    "s": 200
+   },
+   {
+    "m": "POST",
+    "p": "/api/parties/:id/settle/preview",
+    "s": 200
+   }
+  ],
+  "previewAsAdmin": {
+   "status": 400,
+   "code": "VALIDATION",
+   "message": "Request does not match the schema"
+  }
+ }
+}
+
+=== 2026-11-12T14:19:16.353Z 3: the party page after the settlement was refunded
+const till = S.till;
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, '03o-party-page-after-settlement-refunded.png'); } finally { S.inPlace = keep; }
+await till.getByText('All parties').first().click();
+await S.sleep(6000);
+const row = till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+const rowText = S.flat(await row.innerText());
+S.inPlace = S.inPlaceParties;
+try { await S.shot(till, '03p-parties-list-after-settlement-refunded.png'); } finally { S.inPlace = keep; }
+S.receipt.reads.p3.after.rowTextSettled = rowText; S.save();
+return rowText;
+--> {
+ "ok": true,
+ "value": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900"
+}
+
+=== 2026-11-12T14:19:47.267Z 4: the party on the Check-in Events board
+S.phase = '4: the party on the Check-in Events board';
+const till = S.till;
+await S.unlock('till');
+await till.goto('/');
+await till.getByRole('button', { name: 'Check-in', exact: true }).click();
+await S.sleep(2500);
+await till.getByRole('button', { name: 'Events', exact: true }).last().click().catch(() => {});
+await S.sleep(3000);
+const zz = till.getByText(S.PARTY).first();
+const has = await zz.count();
+if (has) { await zz.click(); await S.sleep(3000); }
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()) || (await b.getAttribute('aria-label')); if (l && (await b.isVisible())) btns.push(l.slice(0, 60)); }
+const keep = S.inPlace; S.inPlace = page => [page.getByLabel('Lock screen').locator('..')];
+try { await S.shot(till, 'zz-debug-events-board.png'); } finally { S.inPlace = keep; }
+return { has, btns: btns.slice(0, 50), text: S.flat(await till.locator('main, body').first().innerText()).slice(0, 1200) };
+--> {
+ "ok": true,
+ "value": {
+  "has": 0,
+  "btns": [
+   "0 in park no gate",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages",
+   "Cash",
+   "Theme settings",
+   "ZZ TEST SCRUM-934 proof till 1794491217436",
+   "Lock screen",
+   "Drop-off",
+   "Events"
+  ],
+  "text": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Drop-off Events No events today Events with registered attendees appear here."
+ }
+}
+
+=== 2026-11-12T14:21:11.140Z 4: the party on the Check-in Events board
+const till = S.till;
+await S.unlock('till');
+await till.goto('/'); await S.sleep(5000);
+const t = S.flat(await till.locator('body').innerText());
+return { passes: t.match(/EVENT PASSES[^]{0,300}/)?.[0] ?? null };
+--> {
+ "ok": true,
+ "value": {
+  "passes": "EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and upcoming events appear here. Redeem Booking Current Order No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ "
+ }
+}
+
+=== 2026-11-12T14:21:40.814Z 4: the party on the Check-in Events board
+const R = S.receipt.reads;
+const p3 = R.p3;
+S.point('3', /Outstanding ฿15900/.test(p3.before.bill) && p3.before.btns.some(b => b.l === 'Take balance ฿15900' && b.e) && !p3.frames.some(f => /Fully paid/.test(f.take ?? '')) && p3.before.sections.length > 0
+  && /OUTSTANDING ฿15900/.test(p3.rowText) && /DUE ฿15900/.test(p3.phone.rowText) && p3.phone.btns.some(b => b.l === 'Not settled · ฿15900')
+  && p3.part.navigationsAfterX === 0 && /Outstanding ฿15800/.test(p3.part.frames[0].bill) && p3.part.btns.some(b => b.l === 'Take balance ฿15800') && p3.part.btns.some(b => b.l === 'Resume settlement ฿15800')
+  && /฿15800/.test(p3.lists.desk) && /฿15800/.test(p3.lists.phone) && p3.refund.saleStatus === 'voided' && p3.refund.settlementAfter?.state === 'voided',
+  ['03a-parties-list-before-settle.png', '03b-party-page-first-moment.png', '03c-party-page-before-settle-package-owed.png', '03d-phone-parties-list-before-settle.png', '03e-phone-party-page-before-settle.png', '03f-take-balance-opened-settle-party.png', '03g-settle-partial-100-cash.png', '03h-after-part-payment-100.png', '03i-party-page-after-x-no-reload-15800.png', '03j-parties-list-after-part-payment-15800.png', '03k-phone-parties-list-after-part-payment.png', '03l-phone-party-page-after-part-payment.png', '03m-manager-refund-settlement-100.png', '03n-history-detail-after-settlement-refund.png', '03o-party-page-after-settlement-refunded.png', '03p-parties-list-after-settlement-refunded.png'], p3);
+S.point('4', null, [], { covered: false, why: 'A walk-up guest is added from the Check-in board\'s Events tab (Add attendee), and that board lists only events that already have registered attendees (pages/DropOff.tsx:181). A ZZ TEST party made in the OTO App has none, and the only writer of OTO App attendees is the platform\'s directory seam (apps/oto-app/server/directory/eventRoutes.ts:171), a machine credential that was not used. The other tab case (money taken on the tab with Take payment) is a tender with no sale behind it and no refund path (services/parties.ts:75), so it could not be given back and was not made.' });
+S.point('6', /leaves the waiting list/.test(R.p6cancel.description) && R.p6cancel.postedOnlyPang && /leave the waiting list/.test(R.p6twoChild.text) && /Party deposit · ฿1000\.00/.test(R.p3.settle.recorded) && /^Party settlement · ZZ TEST SCRUM-936 party/.test(R.p6settle.deskCard) && /^Party settlement · ZZ TEST SCRUM-936 party/.test(R.p6settle.phoneCard),
+  ['06a-board-cancel-pang-alone-leaves-the-waiting-list.png', '06b-board-after-cancel-pang-mint-still-paid.png', '06c-phone-two-child-booking-cancel-words-not-confirmed.png', '06d-settle-payment-screen-recorded-payments-party-deposit.png', '06e-phone-history-party-settlement-card.png', '06f-history-list-party-settlement-card.png', '06g-history-detail-party-settlement-heading.png'],
+  { oneChild: R.p6cancel, twoChildren: R.p6twoChild, recorded: R.p3.settle.recorded, history: R.p6settle, defect: 'detail heading reads "Party settlement Party settlement" while the settlement has no receipt number' });
+return Object.fromEntries(Object.entries(S.receipt.points).map(([k, v]) => [k, v.pass]));
+--> {
+ "ok": true,
+ "value": {
+  "1": true,
+  "2": true,
+  "3": true,
+  "4": null,
+  "5": true,
+  "6": true,
+  "7": true
+ }
+}
+
+=== 2026-11-12T14:21:54.097Z sweep: one decimal place on staff screens
+S.phase = 'sweep: one decimal place on staff screens';
+const till = S.till;
+await S.unlock('till');
+const out = {};
+for (const path of ['/history', '/parties', '/today']) {
+  await till.goto(path); await S.sleep(6000);
+  await S.unlock('till');
+  const t = S.flat(await till.locator('body').innerText());
+  out[path] = { oneDecimal: S.oneDecimal(t), satang: (t.match(/฿[0-9][0-9,]*\.[0-9]{2}/g) ?? []).slice(0, 8), len: t.length };
+}
+// the Today tab's sub-views, if any
+const tabs = [];
+for (const b of await till.getByRole('tab').all()) tabs.push(S.flat(await b.innerText()));
+for (const name of tabs.slice(0, 6)) {
+  await till.getByRole('tab', { name, exact: true }).click().catch(() => {});
+  await S.sleep(2500);
+  const t = S.flat(await till.locator('body').innerText());
+  out['/today#' + name] = { oneDecimal: S.oneDecimal(t), satang: (t.match(/฿[0-9][0-9,]*\.[0-9]{2}/g) ?? []).slice(0, 6) };
+}
+S.receipt.reads.sweep = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "/history": {
+   "oneDecimal": [],
+   "satang": [
+    "฿1444.50",
+    "฿1444.50"
+   ],
+   "len": 8079
+  },
+  "/parties": {
+   "oneDecimal": [],
+   "satang": [],
+   "len": 505
+  },
+  "/today": {
+   "oneDecimal": [
+    "฿98,855.5"
+   ],
+   "satang": [
+    "฿44,809.54"
+   ],
+   "len": 690
+  },
+  "/today#Performance": {
+   "oneDecimal": [
+    "฿98,855.5"
+   ],
+   "satang": [
+    "฿44,809.54"
+   ]
+  },
+  "/today#End of Day": {
+   "oneDecimal": [
+    "฿98,855.5",
+    "฿97,615.5",
+    "฿97,615.5"
+   ],
+   "satang": []
+  }
+ }
+}
+
+=== 2026-11-12T14:22:32.830Z sweep: one decimal place on staff screens
+const till = S.till;
+await S.unlock('till');
+const out = {};
+const clipOf = async (re, name) => {
+  const el = till.getByText(re).first();
+  if (!(await el.count())) return null;
+  // the nearest card around the figure
+  const card = el.locator('xpath=ancestor::div[contains(@class,"rounded")][1]');
+  const target = (await card.count()) ? card : el;
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  const label = S.flat(await target.innerText()).slice(0, 200);
+  await S.shot(till, name, [], { clip: { x: Math.max(0, box.x - 8), y: Math.max(0, box.y - 8), width: Math.min(1680, box.width + 16), height: Math.min(600, box.height + 16) } });
+  return { label, names: S.needles().some(n => label.includes(n)) };
+};
+for (const name of ['Performance', 'End of Day']) {
+  await till.getByRole('tab', { name, exact: true }).click().catch(() => {});
+  await S.sleep(3000);
+  out[name] = [];
+  const t = S.flat(await till.locator('body').innerText());
+  const hits = [...new Set(S.oneDecimal(t))];
+  let i = 0;
+  for (const h of hits) { i++; out[name].push({ figure: h, ...(await clipOf(new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9])'), `08${name === 'Performance' ? 'a' : 'b'}${i}-one-decimal-${name.toLowerCase().replace(/ /g, '-')}.png`)) }); }
+}
+S.receipt.reads.sweepShots = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "Performance": [
+   {
+    "figure": "฿98,855.5",
+    "label": "Revenue ฿98,855.5 101 transactions",
+    "names": false
+   }
+  ],
+  "End of Day": [
+   {
+    "figure": "฿98,855.5",
+    "label": "Counts outstanding Expected ฿98,855.5 Actual ฿0 Over / short ฿0",
+    "names": false
+   },
+   {
+    "figure": "฿97,615.5",
+    "label": "Reconciliation by channel · each EDC terminal listed by TID Channel Expected Actual Difference Cash ฿97,615.5 from cash count — PromptPay / QR ฿0 ฿ — Card · Card terminal (simulated EDC) (SIMTID01) ฿1",
+    "names": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:23:10.026Z clean up: the party
+S.phase = 'clean up: the party';
+const r = {};
+const p = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+S.assert.equal(p?.event?.title ?? p?.event?.name ?? S.PARTY, S.PARTY);
+r.settlementBefore = p?.event?.party?.settlement?.state ?? null;
+r.delete = (await S.appCall('DELETE', `/admin/events/${S.partyId}`)).status;
+r.readBack = { app: (await S.appCall('GET', `/admin/events/${S.partyId}`)).status, till: (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).status };
+const so = await S.appCtx.request.post(S.LAUNCHER + '/api/auth/sign-out', { data: {}, headers: { 'Idempotency-Key': S.randomUUID() } });
+r.appSignOut = so.status();
+await S.appCtx.close(); S.appCtx = null;
+S.receipt.cleanup.party = r; S.save();
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "settlementBefore": "voided",
+  "delete": 204,
+  "readBack": {
+   "app": 404,
+   "till": 404
+  },
+  "appSignOut": 200
+ }
+}
+
+=== 2026-11-12T14:23:28.713Z clean up: bookings, sales, members, code
+S.phase = 'clean up: bookings, sales, members, code';
+const out = { registrations: [], members: [] };
+for (const item of S.receipt.created.filter(i => i.kind === 'registration')) {
+  let reg = await S.registration(item.id);
+  S.assert.equal(reg.guardianName, item.guardian, 'only this run\'s own booking');
+  S.assert.ok(S.isZz(reg.guardianName) && reg.children.every(c => S.isZz(c.childName)));
+  const released = reg.children.some(c => c.status === 'in_park') ? await S.releaseOwn(item.id, item.guardian) : [];
+  reg = await S.registration(item.id);
+  let cancelled = null;
+  if (reg.children.some(c => c.status === 'registered')) {
+    const r = await S.call('POST', `/checkin/registrations/${item.id}/cancel`, { reason: 'ZZ TEST SCRUM-934 proof clean-up' });
+    cancelled = { status: r.status, code: r.body?.error?.code ?? null };
+    reg = await S.registration(item.id);
+  }
+  out.registrations.push({ guardian: item.guardian, released, cancelled, children: reg.children.map(c => c.status) });
+}
+let sales = await S.stationSales();
+for (const s of sales.filter(x => ['tendering', 'open'].includes(x.status))) {
+  const r = await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-934 proof clean-up' });
+  out.voidedAtCleanup = (out.voidedAtCleanup ?? []).concat(r.status);
+}
+sales = await S.stationSales();
+out.sales = sales.map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals.grossSatang / 100, refunded: (s.totals.refundedSatang ?? 0) / 100 }));
+out.printJobs = {};
+for (const s of sales.filter(x => x.status === 'finalised')) out.printJobs[s.receiptNumber] = (await S.sale(s.id)).printJobs.map(j => `${j.kind} ${j.status}`);
+for (const [key, phone] of Object.entries(S.receipt.numbers)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+  if (m) {
+    const named = `${m.nickname ?? ''} ${m.name ?? ''}`;
+    if (named.includes('ZZ TEST')) {
+      const d = await S.call('DELETE', `/members/${m.id}`);
+      const after = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+      out.members.push({ key, archived: d.status, lookupAfter: after ? 'still found' : 'gone' });
+    } else out.members.push({ key, member: 'found, not ZZ TEST named: left alone', nameEmpty: !named.trim() });
+  } else out.members.push({ key, member: null });
+}
+// the code
+const row = (await S.call('GET', '/menu/discounts?includeArchived=true')).body.discounts.find(d => d.id === S.codeId);
+S.assert.ok(row && row.code === S.CODE && /^ZZ TEST SCRUM-934/.test(row.label), 'only this run\'s own code');
+const del = row.archivedAt ? null : (await S.call('DELETE', `/menu/discounts/${S.codeId}`)).status;
+const after = (await S.call('GET', '/menu/discounts?includeArchived=true')).body.discounts.find(d => d.id === S.codeId);
+const live = (await S.call('GET', '/menu/discounts')).body.discounts.some(d => d.id === S.codeId);
+out.code = { code: S.CODE, archive: del, archived: Boolean(after.archivedAt), active: after.active, usedCount: after.usedCount, inLiveList: live };
+Object.assign(S.receipt.cleanup, { registrations: out.registrations, sales: out.sales, printJobs: out.printJobs, members: out.members, code: out.code, voidedAtCleanup: out.voidedAtCleanup ?? [] });
+S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "registrations": [
+   {
+    "guardian": "ZZ TEST 934 guardian A",
+    "released": [],
+    "cancelled": {
+     "status": 200,
+     "code": null
+    },
+    "children": [
+     "cancelled",
+     "cancelled"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 934 guardian B",
+    "released": [],
+    "cancelled": {
+     "status": 200,
+     "code": null
+    },
+    "children": [
+     "cancelled",
+     "cancelled"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 934 guardian C",
+    "released": [],
+    "cancelled": {
+     "status": 200,
+     "code": null
+    },
+    "children": [
+     "cancelled",
+     "cancelled"
+    ]
+   }
+  ],
+  "members": [
+   {
+    "key": "A",
+    "archived": 200,
+    "lookupAfter": "gone"
+   },
+   {
+    "key": "B",
+    "archived": 200,
+    "lookupAfter": "gone"
+   },
+   {
+    "key": "H",
+    "member": null
+   },
+   {
+    "key": "P",
+    "member": null
+   },
+   {
+    "key": "C",
+    "archived": 200,
+    "lookupAfter": "gone"
+   }
+  ],
+  "sales": [
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 16900,
+    "refunded": 100
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 1605,
+    "refunded": 0
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 1040,
+    "refunded": 100
+   },
+   {
+    "receipt": "Z93401-000003",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040
+   },
+   {
+    "receipt": "Z93401-000002",
+    "status": "refunded",
+    "gross": 1444.5,
+    "refunded": 1444.5
+   },
+   {
+    "receipt": "Z93401-000001",
+    "status": "refunded",
+    "gross": 1830,
+    "refunded": 1830
+   }
+  ],
+  "printJobs": {},
+  "code": {
+   "code": "ZZTEST934A",
+   "archive": 200,
+   "archived": true,
+   "active": false,
+   "usedCount": 0,
+   "inLiveList": false
+  }
+ }
+}
+
+=== 2026-11-12T14:23:46.056Z clean up: retire the till, sign out
+S.phase = 'clean up: retire the till, sign out';
+const out = {};
+out.signOuts = {};
+for (const label of Object.keys(S.pages)) out.signOuts[label] = await S.signOut(label);
+S.till = null; S.mgr = null; S.mgrPhone = null;
+S.assert.equal((await S.call('GET', `/stations/${S.station.id}`)).body.station.name, S.fixtureName);
+out.devicesCleared = (await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status;
+out.retired = (await S.call('DELETE', `/stations/${S.station.id}`)).status;
+const st = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === S.station.id);
+out.station = { archived: Boolean(st.archived), devices: st.devices.length };
+const board = await S.boardApi();
+out.boardZz934 = board.families.filter(f => /ZZ TEST 934/.test(f.guardianName)).map(f => ({ guardian: f.guardianName, children: f.children.map(c => c.status) }));
+const g = {};
+for (const e of S.receipt.pageErrors) { const k = `${e.page} | ${e.kind} | ${e.text}`; g[k] = g[k] ?? { n: 0, at: [] }; g[k].n++; if (g[k].at.length < 2 && !g[k].at.includes(e.at)) g[k].at.push(e.at); }
+S.receipt.pageErrorsGrouped = g;
+S.receipt.cleanup.station = out.station; S.receipt.cleanup.boardAfter = out.boardZz934; S.receipt.cleanup.retire = { devicesCleared: out.devicesCleared, retired: out.retired };
+S.receipt.cleanup.signOutsFinal = out.signOuts;
+await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+out.adminMe = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.adminMe = out.adminMe;
+S.receipt.finishedAt = new Date().toISOString();
+S.receipt.passed = Object.values(S.receipt.points).filter(p => p.pass !== null).every(p => p.pass);
+S.save();
+return { ...out, errors: g };
+--> {
+ "ok": true,
+ "value": {
+  "signOuts": {
+   "till": {
+    "signOut": 200,
+    "meAfter": 401
+   },
+   "mgr": {
+    "signOut": 200,
+    "meAfter": 401
+   }
+  },
+  "devicesCleared": 200,
+  "retired": 200,
+  "station": {
+   "archived": true,
+   "devices": 0
+  },
+  "boardZz934": [],
+  "adminMe": 401,
+  "errors": {
+   "till | http | GET /api/me 401": {
+    "n": 2,
+    "at": [
+     "sign in desk till",
+     "clean up: retire the till, sign out"
+    ]
+   },
+   "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+    "n": 2,
+    "at": [
+     "sign in desk till",
+     "clean up: retire the till, sign out"
+    ]
+   },
+   "mgr | http | GET /api/me 401": {
+    "n": 8,
+    "at": [
+     "1: the manager: Refund, By item rows",
+     "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item"
+    ]
+   },
+   "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+    "n": 8,
+    "at": [
+     "1: the manager: Refund, By item rows",
+     "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item"
+    ]
+   },
+   "mgrPhone | http | GET /api/me 401": {
+    "n": 4,
+    "at": [
+     "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+     "2: the refund window of the coded sale (desk manager), whole sale"
+    ]
+   },
+   "mgrPhone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+    "n": 4,
+    "at": [
+     "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+     "2: the refund window of the coded sale (desk manager), whole sale"
+    ]
+   },
+   "mgrPhone | http | GET /api/branches 423": {
+    "n": 2,
+    "at": [
+     "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+     "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+    ]
+   },
+   "mgrPhone | console.error | Failed to load resource: the server responded with a status of 423 ()": {
+    "n": 4,
+    "at": [
+     "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+     "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+    ]
+   },
+   "mgrPhone | http | GET /api/me/stations 423": {
+    "n": 2,
+    "at": [
+     "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+     "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+    ]
+   },
+   "till | http | POST /api/box/v1/station/:id/lease 409": {
+    "n": 13,
+    "at": [
+     "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired"
+    ]
+   },
+   "till | console.error | Failed to load resource: the server responded with a status of 409 ()": {
+    "n": 14,
+    "at": [
+     "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+     "3: Take balance opens Settle party; Confirm; the settle payment screen"
+    ]
+   },
+   "A | http | GET /api/box/v1/station/:id/display/session 401": {
+    "n": 1,
+    "at": [
+     "7: History of the no-code sale; the manager refunds it whole"
+    ]
+   },
+   "A | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+    "n": 2,
+    "at": [
+     "7: History of the no-code sale; the manager refunds it whole"
+    ]
+   },
+   "A | http | GET /api/display/session 401": {
+    "n": 1,
+    "at": [
+     "7: History of the no-code sale; the manager refunds it whole"
+    ]
+   },
+   "till | http | POST /api/parties/:id/settle 409": {
+    "n": 1,
+    "at": [
+     "3: Take balance opens Settle party; Confirm; the settle payment screen"
+    ]
+   }
+  }
+ }
+}

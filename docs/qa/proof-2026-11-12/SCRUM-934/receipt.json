@@ -1,0 +1,2927 @@
+{
+  "tickets": [
+    "SCRUM-934",
+    "SCRUM-933",
+    "SCRUM-936",
+    "SCRUM-935",
+    "SCRUM-902",
+    "SCRUM-938",
+    "SCRUM-917"
+  ],
+  "sha": "963605c974d847030502a6091525ca13f7cef40c",
+  "startedAt": "2026-11-12T13:46:46.627Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqs39rm8hqs73endo8g",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:51.788201Z",
+        "finishedAt": "2026-11-12T13:44:52.415156Z"
+      },
+      "serving": {
+        "id": "dep-dbqs39rm8hqs73endo8g",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:51.788201Z",
+        "finishedAt": "2026-11-12T13:44:52.415156Z"
+      },
+      "readAt": "2026-11-12T13:46:38.773Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqs3adckfvc73dat7fg",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:53.2211Z",
+        "finishedAt": "2026-11-12T13:43:22.385102Z"
+      },
+      "serving": {
+        "id": "dep-dbqs3adckfvc73dat7fg",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:53.2211Z",
+        "finishedAt": "2026-11-12T13:43:22.385102Z"
+      },
+      "readAt": "2026-11-12T13:46:39.376Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqs3aifngtc738gs710",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:54.599835Z",
+        "finishedAt": "2026-11-12T13:41:05.218787Z"
+      },
+      "serving": {
+        "id": "dep-dbqs3aifngtc738gs710",
+        "status": "live",
+        "sha": "963605c974d847030502a6091525ca13f7cef40c",
+        "createdAt": "2026-11-12T13:39:54.599835Z",
+        "finishedAt": "2026-11-12T13:41:05.218787Z"
+      },
+      "readAt": "2026-11-12T13:46:39.992Z"
+    }
+  },
+  "numbers": {
+    "A": "0898909040",
+    "B": "0898909041",
+    "H": "0898909047",
+    "P": "0898909048",
+    "C": "0898909042"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d002-f8be-743a-83d9-79dfa0d5cb1a",
+      "name": "ZZ TEST SCRUM-934 proof till 1794491217436",
+      "prefix": "Z93401"
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST934A",
+      "id": "01a1d002-f996-77eb-ac79-90c3d145a4b1",
+      "valueBp": 1000,
+      "usageLimit": 10,
+      "validOn": "2026-11-12"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 934 guardian A",
+      "id": "01a1d004-7e02-7c58-8410-85e59c8f47e4",
+      "stays": [
+        {
+          "id": "01a1d004-7e02-7c58-8410-85e66e8832bc",
+          "name": "ZZ TEST Mint 934"
+        },
+        {
+          "id": "01a1d004-7e02-7c58-8410-85e73748b5e8",
+          "name": "ZZ TEST Pang 934"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-A",
+      "id": "01a1d004-860e-7b8f-8a5f-c9986d80b70e"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 934 guardian B",
+      "id": "01a1d009-06c8-7bd5-a575-727660bb38a8",
+      "stays": [
+        {
+          "id": "01a1d009-06c8-7bd5-a575-7277f7de8642",
+          "name": "ZZ TEST Mint B 934"
+        },
+        {
+          "id": "01a1d009-06c8-7bd5-a575-7278820d07bd",
+          "name": "ZZ TEST Nok B 934"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-B-coded",
+      "id": "01a1d009-0c5f-7799-835d-295364ec5dc1"
+    },
+    {
+      "kind": "display",
+      "label": "A",
+      "id": "01a1d009-6e2b-7806-9f62-a36083032fe3",
+      "station": "01a1d002-f8be-743a-83d9-79dfa0d5cb1a"
+    },
+    {
+      "kind": "ticket-sale-H-no-code",
+      "id": "01a1d00f-8dfb-7f2d-bfaa-0bb456f9b66e"
+    },
+    {
+      "kind": "ticket-sale-P-part-paid",
+      "id": "01a1d010-c763-7851-b001-80c277a829e7"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 934 guardian C",
+      "id": "01a1d013-b083-708b-b25c-a9cd0666f136",
+      "stays": [
+        {
+          "id": "01a1d013-b083-708b-b25c-a9ceb05c111c",
+          "name": "ZZ TEST Mint C 934"
+        },
+        {
+          "id": "01a1d013-b083-708b-b25c-a9cf30b1ae77",
+          "name": "ZZ TEST Nok C 934"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-C-left-unpaid",
+      "id": "01a1d013-b6ba-791b-8d3a-6152ec293e8d"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "4bd8e99c-288d-4c7f-8420-020d8424778e",
+      "title": "ZZ TEST SCRUM-936 party"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1d01d-69c8-71fb-903a-fcad9ae0ffed"
+    }
+  ],
+  "cancelled": [
+    {
+      "reg": "01a1d004-7e02-7c58-8410-85e59c8f47e4",
+      "child": "ZZ TEST Pang 934",
+      "from": "desk board card",
+      "status": 200
+    }
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "pictures": [
+        "01d-history-detail-item-cards-name-each-child.png",
+        "01e-refund-by-item-rows-name-each-child.png",
+        "01f-refund-by-item-pang-ticked.png",
+        "01g-history-detail-after-refund-pang.png",
+        "01h-board-family-a-after-refund-pang-to-pay.png",
+        "01k-phone-ticket-lines-name-each-child.png",
+        "01l-phone-refund-by-item-rows-name-each-child.png",
+        "01p-phone-refund-by-item-both-children-named.png",
+        "07e-no-code-refund-by-item-row-as-before.png"
+      ],
+      "seen": {
+        "itemCards": [
+          "ZZ TEST Mint 934 · 1 Hour Play · Tourist",
+          "ZZ TEST Pang 934 · 1 Hour Play · Tourist"
+        ],
+        "deskRows": [
+          "ZZ TEST Mint 934 · 1 Hour Play · 1 ppl ฿915",
+          "ZZ TEST Pang 934 · 1 Hour Play · 1 ppl ฿915"
+        ],
+        "refundPangOnly": {
+          "label": "Refund ฿915",
+          "status": 200,
+          "amount": 915,
+          "mode": "items",
+          "refundStatus": "partially_refunded",
+          "refundable": 915,
+          "refundedIsPangOnly": true,
+          "board": [
+            {
+              "child": "ZZ TEST Mint 934",
+              "status": "registered",
+              "paidAtTill": {
+                "receipt": "Z93401-000001"
+              },
+              "paidOnline": false
+            },
+            {
+              "child": "ZZ TEST Pang 934",
+              "status": "registered",
+              "paidAtTill": null,
+              "paidOnline": false
+            }
+          ],
+          "reg": [
+            {
+              "name": "ZZ TEST Mint 934",
+              "status": "registered",
+              "saleLinked": true
+            },
+            {
+              "name": "ZZ TEST Pang 934",
+              "status": "registered",
+              "saleLinked": false
+            }
+          ],
+          "phoneRefund": {
+            "status": 200,
+            "saleRefund": "refunded",
+            "refundable": 0,
+            "board": [
+              {
+                "child": "ZZ TEST Mint 934",
+                "status": "registered",
+                "paidAtTill": null,
+                "paidOnline": false
+              }
+            ]
+          }
+        },
+        "phoneRows": [
+          "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+          "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+        ],
+        "ordinaryRow": [
+          "1 Hour Play · 2 ppl ฿1040"
+        ]
+      }
+    },
+    "2": {
+      "pass": true,
+      "pictures": [
+        "02a-code-at-ticket-step-order-and-customer-half.png",
+        "02b-payment-step-code-till-and-customer-half.png",
+        "02c-code-badge-close-up.png",
+        "02d-display-paired-mid-sale-payment-stage.png",
+        "02e-after-back-display-order-stage.png",
+        "02f-cash-chosen-till-and-display.png",
+        "02g-payment-successful-till-and-display.png",
+        "02h-payment-successful-success-line.png",
+        "02i-history-list-coded-sale-card.png",
+        "02j-history-detail-coded-sale.png",
+        "02k-phone-history-card-coded-sale.png",
+        "02m-refund-window-whole-sale.png",
+        "02n-refund-window-by-item-satang.png",
+        "02o-refund-window-whole-ready.png",
+        "02t-phone-cart-sheet-panel-with-code.png",
+        "02u-phone-cart-sheet-totals-and-pay.png",
+        "02v-phone-cart-bar-with-code.png",
+        "07a-no-code-order-till-and-display.png",
+        "07b-no-code-payment-step-till-and-display.png",
+        "07c-no-code-paid-till-and-display.png",
+        "07d-no-code-history-detail.png",
+        "07f-no-code-refund-window-whole.png"
+      ],
+      "seen": {
+        "coded": {
+          "due": "฿1444.50",
+          "order": "Current Order TOURIST ZZ TEST 934 guardian B ZZ TEST Mint B 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok B 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿1444.50",
+          "payBtn": [
+            "Pay ฿1444.50"
+          ],
+          "half": "Please pay ฿1444.50 to our staff",
+          "oneDecimal": [],
+          "sale": {
+            "gross": 1444.5,
+            "discount": 160.5,
+            "vat": 94.5,
+            "subtotal": 1605,
+            "lines": [
+              "ZZ TEST Mint B 934 kids 621",
+              "ZZ TEST Mint B 934 service_fee 202.5",
+              "ZZ TEST Nok B 934 kids 621"
+            ]
+          },
+          "pay": {
+            "payLabel": "Pay ฿1444.50",
+            "due": "฿1444.50",
+            "cashPanel": "Amount Due ฿1444.50 Select Payment Method Cash Card PromptPay Partial payment Cash received Change ฿0.00 Hold sale Back Confirm Payment Received",
+            "success": "Payment Successful Receipt Z93401-000002 • ฿1444.50 • Cash VAT included ฿94.50 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 0 TOTAL Start New Sale Sending to printers Receipt → Receipt Printer 1 Check in the drop-off child? Payment is complete. For each registration, choose whether to check the c",
+            "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A English Customer ZZ TEST 934 guardian B Thank you! Here's what you're receiving — enjoy your play! 2 Child bracelets 0 Adult bracelets",
+            "sale": {
+              "status": "finalised",
+              "receipt": "Z93401-000002",
+              "gross": 1444.5,
+              "paid": [
+                "cash approved 1444.5"
+              ]
+            },
+            "leaveSeen": true,
+            "oneDecimal": []
+          },
+          "history": {
+            "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+            "detail": "Drop-off charge Z93401-000002 ZZ TEST 934 guardian B · +66898909041 12 Nov, 20:53 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing ZZ TEST Mint B 934 · 1 Hour Play · Tourist ฿823.50 Kids 1× ฿690 ฿621 Drop-off service 1× ฿225 ฿202.50 ZZ TEST Nok B 934 · 1 Hour Play · Tourist ฿621 Kids 1× ฿690 ฿621 Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50 Payment Cash · Approved 12 Nov, 20:55 ฿1444.50 Reprint Refund (฿1444.50 left)",
+            "oneDecimal": []
+          },
+          "phone": {
+            "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+            "detail": "TICKET LINES Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50",
+            "rows": [
+              "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+              "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+            ],
+            "oneDecimal": []
+          },
+          "refund": {
+            "phoneOut": {
+              "signOut": 200,
+              "meAfter": 401
+            },
+            "whole": "Refund By [staff] · up to ฿1444.50 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1444.50 Hand the refund back to the customer manually. Choose a reason to refund Close",
+            "rows": [
+              "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+              "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+            ],
+            "oneTicked": "Refund amount −฿621 Hand the refund back to",
+            "label": "Refund ฿1444.50",
+            "status": 200,
+            "saleRefund": "refunded",
+            "refundable": 0,
+            "after": "Refunded Drop-off charge Z93401-000002 ZZ TEST 9",
+            "oneDecimal": []
+          },
+          "phoneCart": {
+            "barBefore": "2 2 items ฿1605",
+            "barAfter": "2 2 items ฿1444.50",
+            "badge": {
+              "text": "-฿160.50",
+              "w": 65,
+              "h": 48,
+              "lines": 2
+            }
+          }
+        },
+        "noCode": {
+          "orderAtTicket": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+          "dispOrder": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040",
+          "due": "฿1040",
+          "payBtn": [
+            "Pay ฿1040"
+          ],
+          "dispPay": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+          "success": "Payment Successful Receipt Z93401-000003 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93401-4C46N8 1 HOUR 1× Adult",
+          "prints": [
+            "adult_wristband printed",
+            "kids_wristband printed",
+            "receipt printed"
+          ],
+          "sale": {
+            "receipt": "Z93401-000003",
+            "status": "finalised",
+            "gross": 1040,
+            "bands": [
+              "kid active",
+              "adult active"
+            ]
+          },
+          "dotZeroZero": 0,
+          "history": {
+            "card": "Z93401-000003 12 Nov, 21:00 [staff] Paid ฿1040",
+            "detail": "Ticket sale Z93401-000003 Walk-in 12 Nov, 21:00 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 BRACELETS PRINTED 2 1 child 1 adult Z93401-4C46N8 Z93401-R8NJFX Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Payment Cash · Approved 12 Nov, 21:00 ฿1040 Reprint Add time Refund (฿1040 left)",
+            "refundWindow": "Refund By [staff] · up to ฿1040 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1040 Hand the refund back to the customer manually. Choose a reason to refund Close",
+            "rows": [
+              "1 Hour Play · 2 ppl ฿1040"
+            ],
+            "label": "Refund ฿1040",
+            "refund": {
+              "status": 200,
+              "saleRefund": "refunded",
+              "refundable": 0,
+              "bands": [
+                "kid revoked",
+                "adult revoked"
+              ]
+            },
+            "dotZeroZero": 0
+          }
+        }
+      }
+    },
+    "3": {
+      "pass": true,
+      "pictures": [
+        "03a-parties-list-before-settle.png",
+        "03b-party-page-first-moment.png",
+        "03c-party-page-before-settle-package-owed.png",
+        "03d-phone-parties-list-before-settle.png",
+        "03e-phone-party-page-before-settle.png",
+        "03f-take-balance-opens-settle-party.png",
+        "03f2-settle-refused-regular-socks-out-of-stock.png",
+        "03g-settle-partial-100-cash.png",
+        "03h-after-part-payment-100.png",
+        "03i-party-page-after-x-no-reload-15800.png",
+        "03j-parties-list-after-part-payment-15800.png",
+        "03k-phone-parties-list-after-part-payment.png",
+        "03l-phone-party-page-after-part-payment.png",
+        "03m-manager-refund-settlement-100.png",
+        "03n-history-detail-after-settlement-refund.png",
+        "03o-party-page-after-settlement-refunded.png",
+        "03p-parties-list-after-settlement-refunded.png"
+      ],
+      "seen": {
+        "made": {
+          "id": "4bd8e99c-288d-4c7f-8420-020d8424778e",
+          "bill": 201,
+          "snap": 201
+        },
+        "api": {
+          "deposit": 1000,
+          "base": null,
+          "settlement": null,
+          "keys": [
+            "childName",
+            "kidTurningAge",
+            "bookingName",
+            "parentName",
+            "parentPhone",
+            "activities",
+            "decoration",
+            "totalValueSatang",
+            "depositSatang",
+            "depositDate",
+            "walkUpCharges",
+            "charges",
+            "payments",
+            "lastEdited",
+            "editSync",
+            "bill",
+            "settlement"
+          ]
+        },
+        "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900",
+        "frames": [
+          {
+            "ms": 0,
+            "bill": "Party bill Base package — Total — Deposit paid −฿1000 Outstanding —",
+            "take": "Take balance —"
+          },
+          {
+            "ms": 1250,
+            "bill": "Party bill Birthday package, Central Floresta — Total — Deposit paid −฿1000 Outstanding —",
+            "take": "Take balance —"
+          },
+          {
+            "ms": 2000,
+            "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+            "take": "Take balance ฿15900"
+          }
+        ],
+        "before": {
+          "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "btns": [
+            {
+              "l": "Settle party",
+              "e": true
+            },
+            {
+              "l": "Take balance ฿15900",
+              "e": true
+            }
+          ],
+          "sections": [
+            "Kitchen plan Package Birthday package, Central ",
+            "Drinks pitcher Included: Kids' table reserved ",
+            "Kitchen & bar slips Slip time 11:00 Kitchen sli",
+            "Bar slip Not printed yet Print party slips "
+          ]
+        },
+        "phone": {
+          "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15900",
+          "due": null,
+          "line": "Take it with Settle party on a counter till's party page.",
+          "bill": [
+            "Total ฿16900",
+            "Deposit paid −฿1000",
+            "Outstanding ฿15900"
+          ],
+          "btns": [
+            {
+              "l": "Add F&B to party tab",
+              "e": true
+            },
+            {
+              "l": "Not settled · ฿15900",
+              "e": false
+            }
+          ],
+          "kitchen": true
+        },
+        "settle": {
+          "modal": "Birthday package, Central Floresta · weekday ฿16,900 Total ฿16,900 Deposit paid −฿1,000 Balance ฿15,900",
+          "settleStatus": 200,
+          "settlement": {
+            "state": "open",
+            "gross": 16900,
+            "deposit": 1000,
+            "outstanding": 15900
+          },
+          "amountDue": "฿15900",
+          "recorded": "Recorded payments Party deposit · ฿1000.00 Balance due ฿15900.00"
+        },
+        "part": {
+          "finalise": 200,
+          "after": {
+            "amountDue": "฿15800",
+            "recorded": "Recorded payments Party deposit · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00"
+          },
+          "navigationsAfterX": 0,
+          "urlSame": true,
+          "frames": [
+            {
+              "ms": 500,
+              "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+              "take": "Take balance ฿15800",
+              "resume": "Resume settlement ฿15800"
+            },
+            {
+              "ms": 1000,
+              "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+              "take": "Take balance ฿15800",
+              "resume": "Resume settlement ฿15800"
+            }
+          ],
+          "btns": [
+            {
+              "l": "Resume settlement ฿15800",
+              "e": true
+            },
+            {
+              "l": "Cancel settlement",
+              "e": true
+            },
+            {
+              "l": "Take balance ฿15800",
+              "e": true
+            }
+          ],
+          "api": {
+            "state": "open",
+            "paid": 1100,
+            "outstanding": 15800
+          }
+        },
+        "lists": {
+          "desk": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15800",
+          "phone": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15800",
+          "phonePage": {
+            "bill": [
+              "Settlement open ฿15800",
+              "Total ฿16900",
+              "Deposit paid −฿1000",
+              "Payments taken −฿100",
+              "Outstanding ฿15800",
+              "Settlement open · ฿15800"
+            ],
+            "line": "Take it with Resume settlement on a counter till's party page.",
+            "btns": [
+              {
+                "l": "Settlement open · ฿15800",
+                "e": false
+              }
+            ]
+          }
+        },
+        "refund": {
+          "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+          "label": "Refund ฿100",
+          "status": 200,
+          "saleStatus": "voided",
+          "saleRefund": "refunded",
+          "settlementAfter": {
+            "state": "voided"
+          },
+          "deposit": 1000
+        },
+        "after": {
+          "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "btns": [
+            {
+              "l": "Settle party",
+              "e": true
+            },
+            {
+              "l": "Take balance ฿15900",
+              "e": true
+            }
+          ],
+          "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults",
+          "rowTextSettled": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900"
+        },
+        "listAfter": {
+          "reads": [
+            {
+              "t": 3,
+              "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+            },
+            {
+              "t": 6,
+              "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+            },
+            {
+              "t": 9,
+              "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+            },
+            {
+              "t": 12,
+              "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+            }
+          ],
+          "afterReload": null,
+          "posts": [
+            {
+              "m": "GET",
+              "p": "/api/parties/:id",
+              "s": 200
+            },
+            {
+              "m": "GET",
+              "p": "/api/parties/:id",
+              "s": 200
+            },
+            {
+              "m": "POST",
+              "p": "/api/parties/:id/settle/preview",
+              "s": 200
+            }
+          ],
+          "previewAsAdmin": {
+            "status": 400,
+            "code": "VALIDATION",
+            "message": "Request does not match the schema"
+          }
+        }
+      }
+    },
+    "4": {
+      "pass": null,
+      "pictures": [],
+      "seen": {
+        "covered": false,
+        "why": "A walk-up guest is added from the Check-in board's Events tab (Add attendee), and that board lists only events that already have registered attendees (pages/DropOff.tsx:181). A ZZ TEST party made in the OTO App has none, and the only writer of OTO App attendees is the platform's directory seam (apps/oto-app/server/directory/eventRoutes.ts:171), a machine credential that was not used. The other tab case (money taken on the tab with Take payment) is a tender with no sale behind it and no refund path (services/parties.ts:75), so it could not be given back and was not made."
+      }
+    },
+    "5": {
+      "pass": true,
+      "pictures": [
+        "05a-partial-100-entered.png",
+        "05b-after-part-payment-pay-names-the-balance.png",
+        "05c-save-as-partly-paid-dialog.png",
+        "05d-history-list-partly-paid-card.png",
+        "05e-history-partly-paid-card-close-up.png",
+        "05f-phone-history-partly-paid-card.png",
+        "05g-phone-partly-paid-detail.png",
+        "05i-phone-part-paid-refunded.png"
+      ],
+      "seen": {
+        "posts": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "status": 200
+          }
+        ],
+        "due": "฿940",
+        "pay": [
+          "Pay ฿940"
+        ],
+        "recorded": "Recorded payments Cash · ฿100.00 Balance due ฿940.00",
+        "btns": [
+          {
+            "l": "Hold sale",
+            "e": false
+          },
+          {
+            "l": "Save as partly paid",
+            "e": true
+          },
+          {
+            "l": "Back",
+            "e": false
+          },
+          {
+            "l": "Confirm Payment Received",
+            "e": false
+          },
+          {
+            "l": "Pay ฿940",
+            "e": true
+          }
+        ],
+        "saved": {
+          "labels": [
+            "Customer’s name or band",
+            "Note (optional)"
+          ],
+          "afterSave": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker R",
+          "cardText": null,
+          "all": [
+            "Z93401-000003 12 Nov, 21:00 [staff] Refunded ฿1040",
+            "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Refunded ฿1444.50",
+            "Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830"
+          ],
+          "sale": {
+            "status": "tendering",
+            "receipt": null,
+            "gross": 1040,
+            "attempts": [
+              "cash approved 100"
+            ]
+          }
+        },
+        "card": "No receipt number 12 Nov, 21:02 [staff] Partly paid BALANCE DUE ฿940 of ฿1040",
+        "refund": {
+          "status": 200,
+          "saleStatus": "voided",
+          "refundStatus": "refunded"
+        }
+      }
+    },
+    "6": {
+      "pass": true,
+      "pictures": [
+        "06a-board-cancel-pang-alone-leaves-the-waiting-list.png",
+        "06b-board-after-cancel-pang-mint-still-paid.png",
+        "06c-phone-two-child-booking-cancel-words-not-confirmed.png",
+        "06d-settle-payment-screen-recorded-payments-party-deposit.png",
+        "06e-phone-history-party-settlement-card.png",
+        "06f-history-list-party-settlement-card.png",
+        "06g-history-detail-party-settlement-heading.png"
+      ],
+      "seen": {
+        "oneChild": {
+          "card": "ZZ TEST 934 guardian A 2 children <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST Mint 934 6 yrs DROP-OFF ZZ TEST Pang 934 6 yrs DROP-OFF Overdue · 20:48 Booked & paid · ZZ TEST Mint 934 To pay · ZZ TEST Pang 934 Check in ZZ TEST Mint 934 Check in ZZ TEST Pang 934 Cancel booking Cancel ZZ TEST Pang 934's booking ZZ TEST Mint 934 is paid for — a paid booking is handled through its sale.",
+          "title": "Cancel ZZ TEST Pang 934's booking",
+          "description": "ZZ TEST 934 guardian A's booking: ZZ TEST Pang 934 leaves the waiting list and can't be added to a sale; the rest of the booking stays as it is. The signed form stays on record.",
+          "answer": 200,
+          "postedOnlyPang": true,
+          "reg": [
+            {
+              "name": "ZZ TEST Mint 934",
+              "status": "registered"
+            },
+            {
+              "name": "ZZ TEST Pang 934",
+              "status": "cancelled"
+            }
+          ]
+        },
+        "twoChildren": {
+          "text": "Cancel this waiting booking ZZ TEST 934 guardian C's booking: ZZ TEST Mint C 934, ZZ TEST Nok C 934 leave the waiting list and can't be added to a sale. The signed form stays on record. Reason A reason is required. Back Give a reason to cancel Close",
+          "regAfterBack": [
+            "registered",
+            "registered"
+          ]
+        },
+        "recorded": "Recorded payments Party deposit · ฿1000.00 Balance due ฿15900.00",
+        "history": {
+          "phoneCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+          "deskCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+          "detailHead": "Back to history Partly paid Party settlement Party settlement ZZ TEST SCRUM-936 party 12 Nov, 21:15 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿169",
+          "depositRow": "Party deposit · Approved 12 Nov, 21:15 ฿1000",
+          "phoneOut": {
+            "signOut": 200,
+            "meAfter": 401
+          }
+        },
+        "defect": "detail heading reads \"Party settlement Party settlement\" while the settlement has no receipt number"
+      }
+    },
+    "7": {
+      "pass": true,
+      "pictures": [
+        "07a-no-code-order-till-and-display.png",
+        "07b-no-code-payment-step-till-and-display.png",
+        "07c-no-code-paid-till-and-display.png",
+        "07d-no-code-history-detail.png",
+        "07e-no-code-refund-by-item-row-as-before.png",
+        "07f-no-code-refund-window-whole.png",
+        "07g-no-code-after-whole-refund.png"
+      ],
+      "seen": {
+        "orderAtTicket": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+        "dispOrder": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040",
+        "due": "฿1040",
+        "payBtn": [
+          "Pay ฿1040"
+        ],
+        "dispPay": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+        "success": "Payment Successful Receipt Z93401-000003 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93401-4C46N8 1 HOUR 1× Adult",
+        "prints": [
+          "adult_wristband printed",
+          "kids_wristband printed",
+          "receipt printed"
+        ],
+        "sale": {
+          "receipt": "Z93401-000003",
+          "status": "finalised",
+          "gross": 1040,
+          "bands": [
+            "kid active",
+            "adult active"
+          ]
+        },
+        "dotZeroZero": 0,
+        "history": {
+          "card": "Z93401-000003 12 Nov, 21:00 [staff] Paid ฿1040",
+          "detail": "Ticket sale Z93401-000003 Walk-in 12 Nov, 21:00 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 BRACELETS PRINTED 2 1 child 1 adult Z93401-4C46N8 Z93401-R8NJFX Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Payment Cash · Approved 12 Nov, 21:00 ฿1040 Reprint Add time Refund (฿1040 left)",
+          "refundWindow": "Refund By [staff] · up to ฿1040 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1040 Hand the refund back to the customer manually. Choose a reason to refund Close",
+          "rows": [
+            "1 Hour Play · 2 ppl ฿1040"
+          ],
+          "label": "Refund ฿1040",
+          "refund": {
+            "status": 200,
+            "saleRefund": "refunded",
+            "refundable": 0,
+            "bands": [
+              "kid revoked",
+              "adult revoked"
+            ]
+          },
+          "dotZeroZero": 0
+        }
+      }
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "leavesTheWaitingList": 0,
+      "partySettlement": 4,
+      "partyDeposit": 2,
+      "balanceDue": 4,
+      "notSettled": 1
+    },
+    "p1": {
+      "label": "Refund ฿915",
+      "status": 200,
+      "amount": 915,
+      "mode": "items",
+      "refundStatus": "partially_refunded",
+      "refundable": 915,
+      "refundedIsPangOnly": true,
+      "board": [
+        {
+          "child": "ZZ TEST Mint 934",
+          "status": "registered",
+          "paidAtTill": {
+            "receipt": "Z93401-000001"
+          },
+          "paidOnline": false
+        },
+        {
+          "child": "ZZ TEST Pang 934",
+          "status": "registered",
+          "paidAtTill": null,
+          "paidOnline": false
+        }
+      ],
+      "reg": [
+        {
+          "name": "ZZ TEST Mint 934",
+          "status": "registered",
+          "saleLinked": true
+        },
+        {
+          "name": "ZZ TEST Pang 934",
+          "status": "registered",
+          "saleLinked": false
+        }
+      ],
+      "phoneRefund": {
+        "status": 200,
+        "saleRefund": "refunded",
+        "refundable": 0,
+        "board": [
+          {
+            "child": "ZZ TEST Mint 934",
+            "status": "registered",
+            "paidAtTill": null,
+            "paidOnline": false
+          }
+        ]
+      }
+    },
+    "p6cancel": {
+      "card": "ZZ TEST 934 guardian A 2 children <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST Mint 934 6 yrs DROP-OFF ZZ TEST Pang 934 6 yrs DROP-OFF Overdue · 20:48 Booked & paid · ZZ TEST Mint 934 To pay · ZZ TEST Pang 934 Check in ZZ TEST Mint 934 Check in ZZ TEST Pang 934 Cancel booking Cancel ZZ TEST Pang 934's booking ZZ TEST Mint 934 is paid for — a paid booking is handled through its sale.",
+      "title": "Cancel ZZ TEST Pang 934's booking",
+      "description": "ZZ TEST 934 guardian A's booking: ZZ TEST Pang 934 leaves the waiting list and can't be added to a sale; the rest of the booking stays as it is. The signed form stays on record.",
+      "answer": 200,
+      "postedOnlyPang": true,
+      "reg": [
+        {
+          "name": "ZZ TEST Mint 934",
+          "status": "registered"
+        },
+        {
+          "name": "ZZ TEST Pang 934",
+          "status": "cancelled"
+        }
+      ]
+    },
+    "p2": {
+      "due": "฿1444.50",
+      "order": "Current Order TOURIST ZZ TEST 934 guardian B ZZ TEST Mint B 934 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok B 934 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-934 proof ZZTEST934A ZZTEST934A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿1444.50",
+      "payBtn": [
+        "Pay ฿1444.50"
+      ],
+      "half": "Please pay ฿1444.50 to our staff",
+      "oneDecimal": [],
+      "sale": {
+        "gross": 1444.5,
+        "discount": 160.5,
+        "vat": 94.5,
+        "subtotal": 1605,
+        "lines": [
+          "ZZ TEST Mint B 934 kids 621",
+          "ZZ TEST Mint B 934 service_fee 202.5",
+          "ZZ TEST Nok B 934 kids 621"
+        ]
+      },
+      "pay": {
+        "payLabel": "Pay ฿1444.50",
+        "due": "฿1444.50",
+        "cashPanel": "Amount Due ฿1444.50 Select Payment Method Cash Card PromptPay Partial payment Cash received Change ฿0.00 Hold sale Back Confirm Payment Received",
+        "success": "Payment Successful Receipt Z93401-000002 • ฿1444.50 • Cash VAT included ฿94.50 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 0 TOTAL Start New Sale Sending to printers Receipt → Receipt Printer 1 Check in the drop-off child? Payment is complete. For each registration, choose whether to check the c",
+        "disp": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A English Customer ZZ TEST 934 guardian B Thank you! Here's what you're receiving — enjoy your play! 2 Child bracelets 0 Adult bracelets",
+        "sale": {
+          "status": "finalised",
+          "receipt": "Z93401-000002",
+          "gross": 1444.5,
+          "paid": [
+            "cash approved 1444.5"
+          ]
+        },
+        "leaveSeen": true,
+        "oneDecimal": []
+      },
+      "history": {
+        "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+        "detail": "Drop-off charge Z93401-000002 ZZ TEST 934 guardian B · +66898909041 12 Nov, 20:53 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing ZZ TEST Mint B 934 · 1 Hour Play · Tourist ฿823.50 Kids 1× ฿690 ฿621 Drop-off service 1× ฿225 ฿202.50 ZZ TEST Nok B 934 · 1 Hour Play · Tourist ฿621 Kids 1× ฿690 ฿621 Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50 Payment Cash · Approved 12 Nov, 20:55 ฿1444.50 Reprint Refund (฿1444.50 left)",
+        "oneDecimal": []
+      },
+      "phone": {
+        "card": "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Paid ฿1444.50",
+        "detail": "TICKET LINES Subtotal ฿1605 ZZ TEST SCRUM-934 proof ZZTEST934A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50",
+        "rows": [
+          "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+          "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+        ],
+        "oneDecimal": []
+      },
+      "refund": {
+        "phoneOut": {
+          "signOut": 200,
+          "meAfter": 401
+        },
+        "whole": "Refund By [staff] · up to ฿1444.50 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1444.50 Hand the refund back to the customer manually. Choose a reason to refund Close",
+        "rows": [
+          "ZZ TEST Mint B 934 · 1 Hour Play · 1 ppl ฿823.50",
+          "ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl ฿621"
+        ],
+        "oneTicked": "Refund amount −฿621 Hand the refund back to",
+        "label": "Refund ฿1444.50",
+        "status": 200,
+        "saleRefund": "refunded",
+        "refundable": 0,
+        "after": "Refunded Drop-off charge Z93401-000002 ZZ TEST 9",
+        "oneDecimal": []
+      },
+      "phoneCart": {
+        "barBefore": "2 2 items ฿1605",
+        "barAfter": "2 2 items ฿1444.50",
+        "badge": {
+          "text": "-฿160.50",
+          "w": 65,
+          "h": 48,
+          "lines": 2
+        }
+      }
+    },
+    "p7": {
+      "orderAtTicket": "Current Order TOURIST 1 Hour Play EDITING ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040",
+      "dispOrder": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040",
+      "due": "฿1040",
+      "payBtn": [
+        "Pay ฿1040"
+      ],
+      "dispPay": "ZZ TEST SCRUM-934 proof till 1794491217436 · ZZ TEST SCRUM-934 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+      "success": "Payment Successful Receipt Z93401-000003 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93401-4C46N8 1 HOUR 1× Adult",
+      "prints": [
+        "adult_wristband printed",
+        "kids_wristband printed",
+        "receipt printed"
+      ],
+      "sale": {
+        "receipt": "Z93401-000003",
+        "status": "finalised",
+        "gross": 1040,
+        "bands": [
+          "kid active",
+          "adult active"
+        ]
+      },
+      "dotZeroZero": 0,
+      "history": {
+        "card": "Z93401-000003 12 Nov, 21:00 [staff] Paid ฿1040",
+        "detail": "Ticket sale Z93401-000003 Walk-in 12 Nov, 21:00 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 BRACELETS PRINTED 2 1 child 1 adult Z93401-4C46N8 Z93401-R8NJFX Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Payment Cash · Approved 12 Nov, 21:00 ฿1040 Reprint Add time Refund (฿1040 left)",
+        "refundWindow": "Refund By [staff] · up to ฿1040 refundable · logged for the refunds report. Refund Whole sale By item Amount Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿1040 Hand the refund back to the customer manually. Choose a reason to refund Close",
+        "rows": [
+          "1 Hour Play · 2 ppl ฿1040"
+        ],
+        "label": "Refund ฿1040",
+        "refund": {
+          "status": 200,
+          "saleRefund": "refunded",
+          "refundable": 0,
+          "bands": [
+            "kid revoked",
+            "adult revoked"
+          ]
+        },
+        "dotZeroZero": 0
+      }
+    },
+    "p5": {
+      "posts": [
+        {
+          "path": "/api/sales/:id/finalise",
+          "status": 200
+        }
+      ],
+      "due": "฿940",
+      "pay": [
+        "Pay ฿940"
+      ],
+      "recorded": "Recorded payments Cash · ฿100.00 Balance due ฿940.00",
+      "btns": [
+        {
+          "l": "Hold sale",
+          "e": false
+        },
+        {
+          "l": "Save as partly paid",
+          "e": true
+        },
+        {
+          "l": "Back",
+          "e": false
+        },
+        {
+          "l": "Confirm Payment Received",
+          "e": false
+        },
+        {
+          "l": "Pay ฿940",
+          "e": true
+        }
+      ],
+      "saved": {
+        "labels": [
+          "Customer’s name or band",
+          "Note (optional)"
+        ],
+        "afterSave": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-934 proof till 1794491217436 [staff] 4 out of stock Glow Band, Locker R",
+        "cardText": null,
+        "all": [
+          "Z93401-000003 12 Nov, 21:00 [staff] Refunded ฿1040",
+          "Z93401-000002 · ZZ TEST 934 guardian B 12 Nov, 20:53 [staff] Refunded ฿1444.50",
+          "Z93401-000001 · ZZ TEST 934 guardian A 12 Nov, 20:48 [staff] Refunded ฿1830"
+        ],
+        "sale": {
+          "status": "tendering",
+          "receipt": null,
+          "gross": 1040,
+          "attempts": [
+            "cash approved 100"
+          ]
+        }
+      },
+      "card": "No receipt number 12 Nov, 21:02 [staff] Partly paid BALANCE DUE ฿940 of ฿1040",
+      "refund": {
+        "status": 200,
+        "saleStatus": "voided",
+        "refundStatus": "refunded"
+      }
+    },
+    "p6twoChild": {
+      "text": "Cancel this waiting booking ZZ TEST 934 guardian C's booking: ZZ TEST Mint C 934, ZZ TEST Nok C 934 leave the waiting list and can't be added to a sale. The signed form stays on record. Reason A reason is required. Back Give a reason to cancel Close",
+      "regAfterBack": [
+        "registered",
+        "registered"
+      ]
+    },
+    "p3": {
+      "made": {
+        "id": "4bd8e99c-288d-4c7f-8420-020d8424778e",
+        "bill": 201,
+        "snap": 201
+      },
+      "api": {
+        "deposit": 1000,
+        "base": null,
+        "settlement": null,
+        "keys": [
+          "childName",
+          "kidTurningAge",
+          "bookingName",
+          "parentName",
+          "parentPhone",
+          "activities",
+          "decoration",
+          "totalValueSatang",
+          "depositSatang",
+          "depositDate",
+          "walkUpCharges",
+          "charges",
+          "payments",
+          "lastEdited",
+          "editSync",
+          "bill",
+          "settlement"
+        ]
+      },
+      "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900",
+      "frames": [
+        {
+          "ms": 0,
+          "bill": "Party bill Base package — Total — Deposit paid −฿1000 Outstanding —",
+          "take": "Take balance —"
+        },
+        {
+          "ms": 1250,
+          "bill": "Party bill Birthday package, Central Floresta — Total — Deposit paid −฿1000 Outstanding —",
+          "take": "Take balance —"
+        },
+        {
+          "ms": 2000,
+          "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "take": "Take balance ฿15900"
+        }
+      ],
+      "before": {
+        "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+        "btns": [
+          {
+            "l": "Settle party",
+            "e": true
+          },
+          {
+            "l": "Take balance ฿15900",
+            "e": true
+          }
+        ],
+        "sections": [
+          "Kitchen plan Package Birthday package, Central ",
+          "Drinks pitcher Included: Kids' table reserved ",
+          "Kitchen & bar slips Slip time 11:00 Kitchen sli",
+          "Bar slip Not printed yet Print party slips "
+        ]
+      },
+      "phone": {
+        "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15900",
+        "due": null,
+        "line": "Take it with Settle party on a counter till's party page.",
+        "bill": [
+          "Total ฿16900",
+          "Deposit paid −฿1000",
+          "Outstanding ฿15900"
+        ],
+        "btns": [
+          {
+            "l": "Add F&B to party tab",
+            "e": true
+          },
+          {
+            "l": "Not settled · ฿15900",
+            "e": false
+          }
+        ],
+        "kitchen": true
+      },
+      "settle": {
+        "modal": "Birthday package, Central Floresta · weekday ฿16,900 Total ฿16,900 Deposit paid −฿1,000 Balance ฿15,900",
+        "settleStatus": 200,
+        "settlement": {
+          "state": "open",
+          "gross": 16900,
+          "deposit": 1000,
+          "outstanding": 15900
+        },
+        "amountDue": "฿15900",
+        "recorded": "Recorded payments Party deposit · ฿1000.00 Balance due ฿15900.00"
+      },
+      "part": {
+        "finalise": 200,
+        "after": {
+          "amountDue": "฿15800",
+          "recorded": "Recorded payments Party deposit · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00"
+        },
+        "navigationsAfterX": 0,
+        "urlSame": true,
+        "frames": [
+          {
+            "ms": 500,
+            "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+            "take": "Take balance ฿15800",
+            "resume": "Resume settlement ฿15800"
+          },
+          {
+            "ms": 1000,
+            "bill": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+            "take": "Take balance ฿15800",
+            "resume": "Resume settlement ฿15800"
+          }
+        ],
+        "btns": [
+          {
+            "l": "Resume settlement ฿15800",
+            "e": true
+          },
+          {
+            "l": "Cancel settlement",
+            "e": true
+          },
+          {
+            "l": "Take balance ฿15800",
+            "e": true
+          }
+        ],
+        "api": {
+          "state": "open",
+          "paid": 1100,
+          "outstanding": 15800
+        }
+      },
+      "lists": {
+        "desk": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15800",
+        "phone": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2k · 2a DUE ฿15800",
+        "phonePage": {
+          "bill": [
+            "Settlement open ฿15800",
+            "Total ฿16900",
+            "Deposit paid −฿1000",
+            "Payments taken −฿100",
+            "Outstanding ฿15800",
+            "Settlement open · ฿15800"
+          ],
+          "line": "Take it with Resume settlement on a counter till's party page.",
+          "btns": [
+            {
+              "l": "Settlement open · ฿15800",
+              "e": false
+            }
+          ]
+        }
+      },
+      "refund": {
+        "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+        "label": "Refund ฿100",
+        "status": 200,
+        "saleStatus": "voided",
+        "saleRefund": "refunded",
+        "settlementAfter": {
+          "state": "voided"
+        },
+        "deposit": 1000
+      },
+      "after": {
+        "bill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+        "btns": [
+          {
+            "l": "Settle party",
+            "e": true
+          },
+          {
+            "l": "Take balance ฿15900",
+            "e": true
+          }
+        ],
+        "rowText": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults",
+        "rowTextSettled": "15:00 18:00 ZZ TEST SCRUM-936 party PARTY UPCOMING 2 kids · 2 adults OUTSTANDING ฿15900"
+      },
+      "listAfter": {
+        "reads": [
+          {
+            "t": 3,
+            "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+          },
+          {
+            "t": 6,
+            "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+          },
+          {
+            "t": 9,
+            "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+          },
+          {
+            "t": 12,
+            "row": "ING 2 kids · 2 adults OUTSTANDING ฿15900"
+          }
+        ],
+        "afterReload": null,
+        "posts": [
+          {
+            "m": "GET",
+            "p": "/api/parties/:id",
+            "s": 200
+          },
+          {
+            "m": "GET",
+            "p": "/api/parties/:id",
+            "s": 200
+          },
+          {
+            "m": "POST",
+            "p": "/api/parties/:id/settle/preview",
+            "s": 200
+          }
+        ],
+        "previewAsAdmin": {
+          "status": 400,
+          "code": "VALIDATION",
+          "message": "Request does not match the schema"
+        }
+      }
+    },
+    "p6settle": {
+      "phoneCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+      "deskCard": "Party settlement · ZZ TEST SCRUM-936 party 12 Nov, 21:15 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+      "detailHead": "Back to history Partly paid Party settlement Party settlement ZZ TEST SCRUM-936 party 12 Nov, 21:15 · sold by [staff] ZZ TEST SCRUM-934 proof till 1794491217436 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birthday package, Central Floresta 1× ฿169",
+      "depositRow": "Party deposit · Approved 12 Nov, 21:15 ฿1000",
+      "phoneOut": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "sweep": {
+      "/history": {
+        "oneDecimal": [],
+        "satang": [
+          "฿1444.50",
+          "฿1444.50"
+        ],
+        "len": 8079
+      },
+      "/parties": {
+        "oneDecimal": [],
+        "satang": [],
+        "len": 505
+      },
+      "/today": {
+        "oneDecimal": [
+          "฿98,855.5"
+        ],
+        "satang": [
+          "฿44,809.54"
+        ],
+        "len": 690
+      },
+      "/today#Performance": {
+        "oneDecimal": [
+          "฿98,855.5"
+        ],
+        "satang": [
+          "฿44,809.54"
+        ]
+      },
+      "/today#End of Day": {
+        "oneDecimal": [
+          "฿98,855.5",
+          "฿97,615.5",
+          "฿97,615.5"
+        ],
+        "satang": []
+      }
+    },
+    "sweepShots": {
+      "Performance": [
+        {
+          "figure": "฿98,855.5",
+          "label": "Revenue ฿98,855.5 101 transactions",
+          "names": false
+        }
+      ],
+      "End of Day": [
+        {
+          "figure": "฿98,855.5",
+          "label": "Counts outstanding Expected ฿98,855.5 Actual ฿0 Over / short ฿0",
+          "names": false
+        },
+        {
+          "figure": "฿97,615.5",
+          "label": "Reconciliation by channel · each EDC terminal listed by TID Channel Expected Actual Difference Cash ฿97,615.5 from cash count — PromptPay / QR ฿0 ฿ — Card · Card terminal (simulated EDC) (SIMTID01) ฿1",
+          "names": false
+        }
+      ]
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "1: the manager: Refund, By item rows",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "1: the manager: Refund, By item rows",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "2: the refund window of the coded sale (desk manager), whole sale",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "2: the refund window of the coded sale (desk manager), whole sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "2: the refund window of the coded sale (desk manager), whole sale",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "2: the refund window of the coded sale (desk manager), whole sale",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "till",
+      "at": "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "A",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "http",
+      "text": "GET /api/box/v1/station/:id/display/session 401"
+    },
+    {
+      "page": "A",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "http",
+      "text": "GET /api/display/session 401"
+    },
+    {
+      "page": "A",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "7: History of the no-code sale; the manager refunds it whole",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "5: the phone History card of the part-paid sale; the manager refunds its 100",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "3: Take balance opens Settle party; Confirm; the settle payment screen",
+      "kind": "http",
+      "text": "POST /api/parties/:id/settle 409"
+    },
+    {
+      "page": "till",
+      "at": "3: Take balance opens Settle party; Confirm; the settle payment screen",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "3/935: a part payment of 100 in cash; close with X; the page without a reload",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "3/935: a part payment of 100 in cash; close with X; the page without a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "3/935: a part payment of 100 in cash; close with X; the page without a reload",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "3/935: a part payment of 100 in cash; close with X; the page without a reload",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "6/3: History heads the settlement; the manager refunds the 100",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "6/3: History heads the settlement; the manager refunds the 100",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "6/3: History heads the settlement; the manager refunds the 100",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "6/3: History heads the settlement; the manager refunds the 100",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the till, sign out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the till, sign out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: retire the till, sign out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: retire the till, sign out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/ticket-packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/ticket-packages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/products",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/menu/products",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/products",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/dropoff-pricing",
+      "status": 404,
+      "errorCode": "ROUTE_NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/parties/:id/settle/preview",
+      "status": 400,
+      "errorCode": "VALIDATION"
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "signOuts": {
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgrPhone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "display": {
+      "revoke": 200,
+      "sessionAfter": 401
+    },
+    "party": {
+      "settlementBefore": "voided",
+      "delete": 204,
+      "readBack": {
+        "app": 404,
+        "till": 404
+      },
+      "appSignOut": 200
+    },
+    "registrations": [
+      {
+        "guardian": "ZZ TEST 934 guardian A",
+        "released": [],
+        "cancelled": {
+          "status": 200,
+          "code": null
+        },
+        "children": [
+          "cancelled",
+          "cancelled"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 934 guardian B",
+        "released": [],
+        "cancelled": {
+          "status": 200,
+          "code": null
+        },
+        "children": [
+          "cancelled",
+          "cancelled"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 934 guardian C",
+        "released": [],
+        "cancelled": {
+          "status": 200,
+          "code": null
+        },
+        "children": [
+          "cancelled",
+          "cancelled"
+        ]
+      }
+    ],
+    "sales": [
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 16900,
+        "refunded": 100
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 1605,
+        "refunded": 0
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 1040,
+        "refunded": 100
+      },
+      {
+        "receipt": "Z93401-000003",
+        "status": "refunded",
+        "gross": 1040,
+        "refunded": 1040
+      },
+      {
+        "receipt": "Z93401-000002",
+        "status": "refunded",
+        "gross": 1444.5,
+        "refunded": 1444.5
+      },
+      {
+        "receipt": "Z93401-000001",
+        "status": "refunded",
+        "gross": 1830,
+        "refunded": 1830
+      }
+    ],
+    "printJobs": {},
+    "members": [
+      {
+        "key": "A",
+        "archived": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "key": "B",
+        "archived": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "key": "H",
+        "member": null
+      },
+      {
+        "key": "P",
+        "member": null
+      },
+      {
+        "key": "C",
+        "archived": 200,
+        "lookupAfter": "gone"
+      }
+    ],
+    "code": {
+      "code": "ZZTEST934A",
+      "archive": 200,
+      "archived": true,
+      "active": false,
+      "usedCount": 0,
+      "inLiveList": false
+    },
+    "voidedAtCleanup": [],
+    "station": {
+      "archived": true,
+      "devices": 0
+    },
+    "boardAfter": [],
+    "retire": {
+      "devicesCleared": 200,
+      "retired": 200
+    },
+    "signOutsFinal": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "adminMe": 401
+  },
+  "checks": {
+    "numbersCheckedUnused": 30
+  },
+  "pageErrorsGrouped": {
+    "till | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "sign in desk till",
+        "clean up: retire the till, sign out"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "sign in desk till",
+        "clean up: retire the till, sign out"
+      ]
+    },
+    "mgr | http | GET /api/me 401": {
+      "n": 8,
+      "at": [
+        "1: the manager: Refund, By item rows",
+        "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item"
+      ]
+    },
+    "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 8,
+      "at": [
+        "1: the manager: Refund, By item rows",
+        "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item"
+      ]
+    },
+    "mgrPhone | http | GET /api/me 401": {
+      "n": 4,
+      "at": [
+        "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+        "2: the refund window of the coded sale (desk manager), whole sale"
+      ]
+    },
+    "mgrPhone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 4,
+      "at": [
+        "1: the phone till (manager): History, the sale, Ticket lines, Refund, By item",
+        "2: the refund window of the coded sale (desk manager), whole sale"
+      ]
+    },
+    "mgrPhone | http | GET /api/branches 423": {
+      "n": 2,
+      "at": [
+        "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+        "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+      ]
+    },
+    "mgrPhone | console.error | Failed to load resource: the server responded with a status of 423 ()": {
+      "n": 4,
+      "at": [
+        "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+        "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+      ]
+    },
+    "mgrPhone | http | GET /api/me/stations 423": {
+      "n": 2,
+      "at": [
+        "1/2: the phone (manager): sale B ticket lines and Refund By item, both children",
+        "3/935: a part payment of 100 in cash; close with X; the page without a reload"
+      ]
+    },
+    "till | http | POST /api/box/v1/station/:id/lease 409": {
+      "n": 13,
+      "at": [
+        "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 409 ()": {
+      "n": 14,
+      "at": [
+        "7 (and 2 whole baht): an ordinary cash ticket sale, no code, display paired",
+        "3: Take balance opens Settle party; Confirm; the settle payment screen"
+      ]
+    },
+    "A | http | GET /api/box/v1/station/:id/display/session 401": {
+      "n": 1,
+      "at": [
+        "7: History of the no-code sale; the manager refunds it whole"
+      ]
+    },
+    "A | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "7: History of the no-code sale; the manager refunds it whole"
+      ]
+    },
+    "A | http | GET /api/display/session 401": {
+      "n": 1,
+      "at": [
+        "7: History of the no-code sale; the manager refunds it whole"
+      ]
+    },
+    "till | http | POST /api/parties/:id/settle 409": {
+      "n": 1,
+      "at": [
+        "3: Take balance opens Settle party; Confirm; the settle payment screen"
+      ]
+    }
+  },
+  "finishedAt": "2026-11-12T14:23:47.138Z",
+  "passed": true,
+  "deployNote": {
+    "startedOn": "963605c974d847030502a6091525ca13f7cef40c (deploys.json, all three live 20:45 Bangkok)",
+    "midRun": "d880f8f30 went live on oto-pos-staging 21:04:58, oto-pos-web-staging 21:07:31, oto-api-staging 21:08:26 Bangkok (deploys-end.json). It contains 963605c97; its changes are station setup, printer addresses and the paid screen print lines (StepConfirmation.tsx), none in the money formatter, History, refunds or parties. Points 1, 2 (desk sale, display, History, refund window) and 7 (sale and success line) ran on 963605c97; the phone cart bar, point 5 History, point 3 and point 6 History steps ran on d880f8f30."
+  },
+  "notes": [
+    "The first Settle party press was refused (409, Regular Socks out of stock, nothing saved); no sale was made by it. The second press, with socks given set to 0 as in the SCRUM-909 run, made the settlement sale listed in created."
+  ]
+}
