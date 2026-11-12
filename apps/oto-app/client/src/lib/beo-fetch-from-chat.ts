@@ -1,4 +1,4 @@
-import { beoAiMatchLabel, foodNamesFor, laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
+import { asksForMore, beoAiMatchLabel, foodNamesFor, laterLineWins, setMenuOptionOf, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSetMenuItem, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
 import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, tillMatchOf, type ApprovedMarks } from "./beo-ai-review";
@@ -490,15 +490,19 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
 
   for (const l of p.menuLines) {
     const name = l.matchedName ?? l.itemName;
+    // SCRUM-958 (SCRUM-946's open point): a dish of the set menu the BEO holds under its option's
+    // name ("Fried rice: Chicken" held as "Chicken", on the kids' list or the adults') is held.
+    if (holdsSetMenuDish(cat, held, p.setMenu?.templateId ?? null, l)) continue;
     // SCRUM-926: a code several options share ("Fried rice" Veggie, Chicken, Pork) is the same dish only by its name too.
     // SCRUM-946: the names the party's own set menu gives the code.
     const shared = !!l.productCode && foodNamesFor(cat, l.productCode, p.setMenu?.templateId ?? null).length > 1;
-    const line = held.menuLines.find(
-      (h) =>
-        (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||
-        sameName(h.itemName, name) ||
-        sameName(h.itemName, l.itemName),
-    );
+    const same = (h: FetchHeldCatalogue["menuLines"][number]) =>
+      (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase() && (!shared || sameName(h.itemName, name))) ||
+      sameName(h.itemName, name) ||
+      sameName(h.itemName, l.itemName);
+    // SCRUM-958: of the lines of that dish, the one in the same count first (the set menu's
+    // Margherita and the adults' 3 more beside it are both "Margherita").
+    const line = held.menuLines.find((h) => same(h) && h.quantity === l.quantity) ?? held.menuLines.find(same);
     if (line && line.quantity === l.quantity) continue;
     // SCRUM-904: the chat's note on the dish rides with it.
     // SCRUM-944: a dish or drink the till sells, as the review shows it: the chat's words, the till's
@@ -520,6 +524,51 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
   }
 
   return changes;
+}
+
+/**
+ * SCRUM-958 (SCRUM-946's open point: straight after an approval a fetch offered
+ * "chicken fried rice for the adults → Fried rice (CF-43)" while the BEO held
+ * the set menu's Fried rice: Chicken, a line named "Chicken"): whether the BEO
+ * holds the set-menu dish a chat's line names, compared by the set menu's group
+ * and option, not only by name. The dish is the line's group (an adults' SET
+ * line names it) or the choice group its till code belongs to (an option's own
+ * code, or the group's that its options share) or an option's name; its option
+ * is the one the line names, or any when it names none. Held when a line of the
+ * BEO's lists (the kids', the adults' or the bar's) is that group's with that
+ * option. An extra order of the dish (a price, a total, a word asking for more)
+ * is never the set menu's: it is compared by name and code, as before.
+ */
+export function holdsSetMenuDish(
+  catalogue: BeoAiReview["catalogue"],
+  held: Pick<FetchHeldCatalogue, "setMenuTemplateId" | "menuLines">,
+  proposedSetMenuId: string | null,
+  line: Pick<BeoAiReview["proposal"]["menuLines"][number], "itemName" | "matchedName" | "productCode" | "chatPrice" | "chatTotal" | "setMenuItemId" | "menu">,
+): boolean {
+  if (line.menu === "bar") return false;
+  if (!line.setMenuItemId && (line.chatPrice !== null || line.chatTotal || asksForMore(line.itemName))) return false;
+  const menuId = held.setMenuTemplateId ?? proposedSetMenuId;
+  const menu = menuId ? catalogue.setMenus.find((m) => m.id === menuId) : undefined;
+  if (!menu) return false;
+  const groups = menu.items.filter((i): i is Extract<BeoAiSetMenuItem, { type: "choice_group" }> => i.type === "choice_group");
+  const code = line.productCode?.trim().toUpperCase() ?? "";
+  const named = (n: string) => [line.matchedName, line.itemName].some((x) => !!x && sameName(x, n));
+  const dish = (() => {
+    if (line.setMenuItemId) {
+      const group = groups.find((g) => g.id === line.setMenuItemId);
+      return group ? { group, option: setMenuOptionOf(group, line.matchedName, line.productCode) } : null;
+    }
+    for (const group of groups) {
+      const own = code ? group.options.find((o) => group.optionProductCodes[o]?.trim().toUpperCase() === code) : undefined;
+      if (own) return { group, option: own };
+      if (code && group.productCode?.trim().toUpperCase() === code) return { group, option: setMenuOptionOf(group, line.matchedName ?? line.itemName) };
+      const byName = group.options.find((o) => [o, `${group.label} (${o})`, `${o} ${group.label}`].some(named));
+      if (byName) return { group, option: byName };
+    }
+    return null;
+  })();
+  if (!dish) return false;
+  return held.menuLines.some((h) => h.groupId === dish.group.id && (dish.option === null || sameName(h.itemName, dish.option)));
 }
 
 /** "2 changes to the package, menu or entertainment", "1 change to the package, menu or entertainment". */

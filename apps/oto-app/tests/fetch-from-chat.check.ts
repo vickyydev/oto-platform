@@ -690,6 +690,59 @@ try {
     for (const words of ["NORULING-826", "no nuts", "unicorn"]) assert.ok(!(row.summaryText + row.metadataJson).includes(words), `no "${words}" in the activity row`);
   });
 
+  // SCRUM-958 (SCRUM-946's open point, the 12 November proof): straight after an approval a fetch
+  // offered "chicken fried rice for the adults → Fried rice (CF-43), Till 240" while the BEO held the
+  // set menu's Fried rice: Chicken, a line named "Chicken". Compared by the set menu's group and
+  // option and the till code, on the kids' list and the adults', it is held.
+  await check("SCRUM-958: a set-menu dish the BEO holds under its option's name is not offered again; another option or an extra order still is", () => {
+    const setMenu = "e5e5e5e5-0000-4000-8000-000000000005";
+    const RICE = "item_958_fried_rice";
+    const PIZZA = "item_958_pizza";
+    const family = { source: "family" as const, at: null, line: 2 };
+    const review = (menuLines: BeoAiReview["proposal"]["menuLines"]): BeoAiReview => ({
+      ...fetched.review,
+      catalogue: {
+        packages: [],
+        setMenus: [{
+          id: setMenu, name: "ZZ TEST Birthday set menu",
+          items: [
+            { id: PIZZA, type: "choice_group", label: "Pizza", options: ["Margherita", "Hawaiian"], allowMultiple: false, productCode: null, optionProductCodes: { Margherita: "CF-24", Hawaiian: "CF-27" }, qty: null },
+            { id: RICE, type: "choice_group", label: "Fried rice", options: ["Veggie", "Chicken", "Shrimp"], allowMultiple: false, productCode: "CF-43", optionProductCodes: {}, qty: null },
+          ],
+        }],
+        entertainment: [],
+        food: [{ code: "CF-24", names: ["Margherita"] }, { code: "CF-43", names: ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Shrimp)"] }],
+        till: [{ code: "CF-24", name: "Margherita", category: "Pizza", station: "kitchen", priceSatang: 40000 }, { code: "CF-43", name: "Fried rice", category: "Asian Food", station: "kitchen", priceSatang: 24000 }],
+      },
+      proposal: { ...fetched.review.proposal, package: null, addOns: [], setMenu: { templateId: setMenu, from: family, choices: [] }, menuLines, entertainment: [], otherLines: [] },
+    });
+    const line = (over: Partial<BeoAiReview["proposal"]["menuLines"][number]>): BeoAiReview["proposal"]["menuLines"][number] => ({
+      menu: "adults", itemName: "chicken fried rice for the adults", quantity: 1, productCode: "CF-43", matchedName: "Fried rice (Chicken)", notInMenu: false, chatPrice: null, from: family, ...over,
+    });
+    // The BEO as the approval of before left it: the kids' set menu holds Fried rice: Chicken.
+    const kidsHeld: FetchHeldCatalogue = {
+      package: null, packageItems: [], setMenuTemplateId: setMenu, entertainment: [],
+      menuLines: [{ itemName: "Hawaiian", quantity: 1, productCode: null, groupId: PIZZA }, { itemName: "Chicken", quantity: 1, productCode: null, groupId: RICE }],
+    };
+    const food = (r: BeoAiReview, h: FetchHeldCatalogue) => fetchCatalogueChangesOf(r, h, FORM).filter((c) => c.section === "food").map((c) => c.now);
+    assert.deepEqual(food(review([line({})]), kidsHeld), [], "the proof's case: held as Chicken of Fried rice");
+    assert.deepEqual(food(review([line({ matchedName: "Fried rice" })]), kidsHeld), [], "no option told: the group's dish is held");
+    // The BEO as this rule writes it: the adults' own SET line of the dish, on the adults' list.
+    const adultsHeld: FetchHeldCatalogue = {
+      ...kidsHeld,
+      menuLines: [{ itemName: "Hawaiian", quantity: 1, productCode: null, groupId: PIZZA }, { itemName: "Hawaiian", quantity: 1, productCode: null, groupId: PIZZA }, { itemName: "Chicken", quantity: 1, productCode: null, groupId: RICE }],
+    };
+    assert.deepEqual(food(review([line({ setMenuItemId: RICE })]), adultsHeld), [], "the adults' SET line, held on their list");
+    // Another option than the one held is offered.
+    assert.equal(food(review([line({ itemName: "shrimp fried rice for the adults", matchedName: "Fried rice (Shrimp)", setMenuItemId: RICE })]), adultsHeld).length, 1);
+    // An extra order of a set-menu dish is no set-menu dish: compared by name and quantity, as before.
+    const extra = line({ itemName: "3 more Margherita pizzas for the adults", quantity: 3, productCode: "CF-24", matchedName: "Margherita" });
+    assert.equal(food(review([extra]), { ...kidsHeld, menuLines: [{ itemName: "Margherita", quantity: 1, productCode: null, groupId: PIZZA }] }).length, 1, "the 3 more are offered beside the set menu's one");
+    assert.deepEqual(food(review([extra]), { ...kidsHeld, menuLines: [{ itemName: "Margherita", quantity: 1, productCode: null, groupId: PIZZA }, { itemName: "Margherita", quantity: 3, productCode: "CF-24", groupId: null }] }), [], "held as the adults' extra: not offered");
+    // A BEO with no such dish: offered.
+    assert.equal(food(review([line({})]), { ...kidsHeld, menuLines: [] }).length, 1);
+  });
+
   await check("nothing is written by a fetch: no BEO row for the event", async () => {
     for (const eventId of [ev.chat, proof.event, mirror.event, noRuling.event]) {
       const { rows } = await appDbPool.query<{ n: string }>(
