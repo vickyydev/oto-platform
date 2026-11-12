@@ -11,12 +11,14 @@
 //     in it), then the code, then the category ("pizza" lists the pizzas,
 //     whose names do not say pizza), then the station;
 //   - several words must each be found; nothing typed keeps the whole menu;
+//   - the best answer comes first whatever its category ("chicken": Chicken
+//     schnitzel before Grilled chicken, though Sides come before Mains);
 //   - "Not from the till" is found by its own words only.
 //
 // Usage, from apps/oto-app:
 //   npx tsx tests/till-menu-search.check.ts
 import assert from "node:assert/strict";
-import { tillMenuSearchScore, tillMenuWordsMatch, type TillMenuItem } from "../shared/tillMenu";
+import { tillMenuSearch, tillMenuSearchScore, tillMenuWordsMatch, type TillMenuItem } from "../shared/tillMenu";
 
 let checks = 0;
 const check = (title: string, fn: () => void) => {
@@ -44,12 +46,8 @@ const MENU: TillMenuItem[] = [
   item("CF-70", "S.Pellegrino sparkling water", "Water", "Drinks", "bar"),
   item("CF-81", "Pinot Grigio, glass", "Wine", "Drinks", "bar"),
 ];
-/** The names the search lists, best first; equal answers keep the menu's order. */
-const found = (search: string): string[] =>
-  MENU.map((m, at) => ({ m, at, score: tillMenuSearchScore(m, search) }))
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score || a.at - b.at)
-    .map((r) => r.m.name);
+/** The names the picker lists for a search: `tillMenuSearch`, the one list it shows. */
+const found = (search: string): string[] => tillMenuSearch(MENU, search).map((m) => m.name);
 
 check("\"fries\" finds French fries and nothing else: scattered letters are no match", () => {
   assert.deepEqual(found("fries"), ["French fries"]);
@@ -84,6 +82,23 @@ check("several words must each be found; nothing typed keeps the whole menu", ()
   assert.equal(found("").length, MENU.length);
   assert.equal(found("   ").length, MENU.length);
   assert.deepEqual(found("zz no such dish"), []);
+});
+
+check("the best answer first whatever its category: a name that starts with the word before one that only holds it", () => {
+  // The menu's order: Sides, Salads, Mains, Kids. The picker used to keep the headings in this order.
+  const chicken: TillMenuItem[] = [
+    item("CF-10-11", "Grilled chicken", "Sides", "Food", "kitchen"),
+    item("CF-20", "Caesar salad — With chicken", "Salads", "Food", "kitchen"),
+    item("CF-37", "Chicken schnitzel", "Mains", "Food", "kitchen"),
+    item("CF-38", "Honey balsamic chicken", "Mains", "Food", "kitchen"),
+    item("CF-50", "Chicken soup", "Kids", "Food", "kitchen"),
+  ];
+  assert.deepEqual(
+    tillMenuSearch(chicken, "chicken").map((m) => m.name),
+    ["Chicken schnitzel", "Chicken soup", "Grilled chicken", "Caesar salad — With chicken", "Honey balsamic chicken"],
+    "the two that start with it first, in the menu's order; then the rest in the menu's order",
+  );
+  assert.deepEqual(tillMenuSearch(chicken, "").map((m) => m.code), chicken.map((m) => m.code), "nothing typed: the menu as given");
 });
 
 check("\"Not from the till\" is found by its own words only", () => {

@@ -193,6 +193,23 @@ export function tillMenuSearchScore(
   return 0;
 }
 
+/**
+ * The items a search finds, the best answer first whatever its category; equal
+ * answers keep the order they were given in (the menu's). The picker shows this
+ * as one list: the list component kept the menu's headings in their own order,
+ * so "chicken" put Grilled chicken (Sides) above Chicken schnitzel (Mains).
+ */
+export function tillMenuSearch<T extends Pick<TillMenuItem, "code" | "name" | "category" | "parentCategory" | "station">>(
+  items: readonly T[],
+  search: string,
+): T[] {
+  return items
+    .map((item, at) => ({ item, at, score: tillMenuSearchScore(item, search) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || a.at - b.at)
+    .map((row) => row.item);
+}
+
 /** The same reading for a row that is no till item ("Not from the till"): found by its own words only. */
 export function tillMenuWordsMatch(words: readonly string[], search: string): boolean {
   const q = foldForSearch(search);

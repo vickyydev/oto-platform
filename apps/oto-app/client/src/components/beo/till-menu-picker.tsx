@@ -10,7 +10,7 @@ import {
   bahtOfSatang,
   tillCodeState,
   tillMenuIndexOf,
-  tillMenuSearchScore,
+  tillMenuSearch,
   tillMenuWordsMatch,
   type TillMenuIndex,
   type TillMenuItem,
@@ -88,6 +88,9 @@ const priceText = (satang: number) =>
 
 type Group = { heading: string; items: TillMenuItem[] };
 
+/** What "Not from the till" answers to in the search. */
+const NOT_FROM_THE_TILL_WORDS = ["not from the till", "remove", "clear"] as const;
+
 /** The menu in its own order, grouped by category; the preferred station's first, the BEO-made items last. */
 function groupsOf(items: readonly TillMenuItem[], prefer?: TillMenuStation): Group[] {
   const ordered = prefer ? [...items.filter((i) => i.station === prefer), ...items.filter((i) => i.station !== prefer)] : [...items];
@@ -134,19 +137,48 @@ export function TillMenuPick({
   const [open, setOpen] = useState(false);
   const groups = useMemo(() => groupsOf(menu.index.items, prefer), [menu.index.items, prefer]);
   // SCRUM-939: the list's own fuzzy match found letters scattered across the
-  // code and the name; an item is found by what was typed as it stands, best first.
-  const filter = useMemo(() => {
-    const byValue = new Map(menu.index.items.map((item) => [item.code.trim().toLowerCase(), item] as const));
-    return (value: string, search: string, keywords?: string[]): number => {
-      const item = byValue.get(value.trim().toLowerCase());
-      if (item) return tillMenuSearchScore(item, search);
-      return tillMenuWordsMatch(keywords ?? [value], search) ? 0.2 : 0;
-    };
-  }, [menu.index.items]);
+  // code and the name, and it never moved a better heading up. So the search
+  // is read here: with something typed, one list of the items found by what
+  // was typed as it stands, the best answer first whatever its category
+  // (equal answers in the menu's order); with nothing typed, the menu by
+  // category as before.
+  const [search, setSearch] = useState("");
+  const typed = search.trim() !== "";
+  const found = useMemo(
+    () => (typed ? tillMenuSearch(groups.flatMap((group) => group.items), search) : []),
+    [groups, search, typed],
+  );
   if (!menu.editable) return null;
   const current = code?.trim() || null;
+  const option = (item: TillMenuItem) => (
+    <CommandItem
+      key={item.code}
+      value={item.code}
+      title={item.category ? (item.parentCategory ? `${item.parentCategory} · ${item.category}` : item.category) : undefined}
+      onSelect={() => {
+        onPick(item);
+        setOpen(false);
+        setSearch("");
+      }}
+      data-testid={`${testId}-option-${item.code}`}
+    >
+      <Check className={`mr-2 h-3 w-3 shrink-0 ${current === item.code ? "opacity-100" : "opacity-0"}`} />
+      <span className="flex-1 text-xs">{item.name}</span>
+      {item.beoOnly && (
+        <Badge variant="outline" className="text-[10px] px-1.5 ml-1 shrink-0">Party only</Badge>
+      )}
+      <span className="text-[10px] font-mono text-muted-foreground ml-2 shrink-0">{item.code}</span>
+      <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{priceText(item.priceSatang)}</span>
+    </CommandItem>
+  );
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -165,42 +197,30 @@ export function TillMenuPick({
             {menu.loading ? "Reading the till's menu…" : menu.message ?? "The till's menu is not available. Type the item instead."}
           </p>
         ) : (
-          <Command filter={filter}>
-            <CommandInput placeholder="Search the till's menu..." data-testid={`${testId}-search`} />
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search the till's menu..."
+              value={search}
+              onValueChange={setSearch}
+              data-testid={`${testId}-search`}
+            />
             <CommandList className="max-h-72">
               <CommandEmpty>Not on the till's menu. Type the item instead.</CommandEmpty>
-              {groups.map((group) => (
-                <CommandGroup key={group.heading} heading={group.heading}>
-                  {group.items.map((item) => (
-                    <CommandItem
-                      key={item.code}
-                      value={item.code}
-                      keywords={[item.name, item.category ?? "", item.parentCategory ?? "", item.station]}
-                      onSelect={() => {
-                        onPick(item);
-                        setOpen(false);
-                      }}
-                      data-testid={`${testId}-option-${item.code}`}
-                    >
-                      <Check className={`mr-2 h-3 w-3 shrink-0 ${current === item.code ? "opacity-100" : "opacity-0"}`} />
-                      <span className="flex-1 text-xs">{item.name}</span>
-                      {item.beoOnly && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 ml-1 shrink-0">Party only</Badge>
-                      )}
-                      <span className="text-[10px] font-mono text-muted-foreground ml-2 shrink-0">{item.code}</span>
-                      <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{priceText(item.priceSatang)}</span>
-                    </CommandItem>
+              {typed
+                ? found.length > 0 && <CommandGroup>{found.map(option)}</CommandGroup>
+                : groups.map((group) => (
+                    <CommandGroup key={group.heading} heading={group.heading}>
+                      {group.items.map(option)}
+                    </CommandGroup>
                   ))}
-                </CommandGroup>
-              ))}
-              {current && onClear && (
+              {current && onClear && (!typed || tillMenuWordsMatch(NOT_FROM_THE_TILL_WORDS, search)) && (
                 <CommandGroup>
                   <CommandItem
                     value="not-from-the-till"
-                    keywords={["not from the till", "remove", "clear"]}
                     onSelect={() => {
                       onClear();
                       setOpen(false);
+                      setSearch("");
                     }}
                     data-testid={`${testId}-clear`}
                   >
