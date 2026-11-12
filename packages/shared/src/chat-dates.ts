@@ -1040,9 +1040,12 @@ export function readChatPartyDate(
  *   - a phone number: "0812345678", "081-234-5678", "+66 81 234 5678";
  *   - an age: "5 ขวบ", "7 years", "6 лет", "turning 7", "อายุ 5", "исполняется 6";
  *   - another number it is written into ("1,500", "12.5", "1/2"), or a range
- *     with one of these ("5-6 ขวบ", "11:00-13:00").
+ *     with one of these ("5-6 ขวบ", "12-13 ธันวาคม", "11:00-13").
  * A range of counts stays counts ("8-10 kids"), and a zero the text writes is
- * one ("0 kids"). Thai and Arabic-Indic digits are read as the digits they are.
+ * one ("0 kids"). A dash that only separates a time, a date or an age from a
+ * count makes no range: "в 15:00 — 10 детей", "14:00 - 10 kids", a "- 12 kids"
+ * bullet on its own line. Thai and Arabic-Indic digits are read as the digits
+ * they are.
  *
  * What it does not do: say what a count counts. The caller's own words do,
  * as the prototype's "<n> kids" did.
@@ -1075,8 +1078,20 @@ function everyDigitAscii(text: string): string {
 
 /** Between two numbers, one of these makes them one: a time, a date, a price, a decimal ("13:00", "12/12", "1,500"). */
 const WRITTEN_INTO = ':.,/';
-/** Between two numbers, a dash makes a range ("8-10", "11:00 - 13:00"). */
-const RANGE_GAP = /^\s*[-–—~]\s*$/u;
+/** Between two numbers on one line, a dash makes a range ("8-10", "11:00 - 13:00"); a dash bullet on a new line does not. */
+const RANGE_GAP = /^[\p{Zs}\t]*[-–—~][\p{Zs}\t]*$/u;
+/** A dash with no space around it: "11:00-13" is a range, "15:00 — 10 детей" may be a dash between two things. */
+const TIGHT_RANGE_GAP = /^[-–~]$/u;
+/**
+ * A guest word right after a number: it is that number's ("14:00 - 10 kids",
+ * "в 15:00 — 10 детей"). A Thai "เด็ก"/"ผู้ใหญ่"/"แขก" with "<n> คน" after it
+ * is that next number's ("11:00-13 เด็ก 8 คน": the 8 is the kids').
+ */
+const GUEST_WORD_AFTER_NUMBER =
+  /^\s*(?:(?:kids?|kiddos?|children|child|guests?|adults?|people|persons?|pax)(?![a-z])|дет\p{L}*|ребен\p{L}*|ребят\p{L}*|взросл\p{L}*|гост\p{L}*|человек\p{L}*|(?:เด็ก|ผู้?ใหญ่|แขก)(?!\s*[0-9]+\s*(?:คน|ท่าน))|คน|ท่าน)/iu;
+/** A guest word right before a number: it is that number's ("เด็ก 10 - 14:00", "kids: 10 - 14:00"). */
+const GUEST_WORD_BEFORE_NUMBER =
+  /(?:(?:^|[^\p{L}])(?:kids?|kiddos?|children|child|guests?|adults?|people|pax)|(?:^|[^\p{L}])(?:дет\p{L}*|ребен\p{L}*|ребят\p{L}*|взросл\p{L}*|гост\p{L}*)|เด็ก|ผู้?ใหญ่|แขก)\s*[:=]?\s*$/iu;
 /** Between the groups of a phone number: one space, dash or dot, or a bracket. */
 const PHONE_GAP = /^(?:[\s.-]|\)\s?|\s?\(|\)-)$/u;
 /** A price before the number: "฿500", "THB 500", "ราคา 590", "price: 590", "цена 590". */
@@ -1150,19 +1165,27 @@ export function readChatNumbers(text: string): ChatNumbersReading {
       AGE_AFTER_NUMBER.test(after) ||
       ORDINAL_AFTER_NUMBER.test(after) ||
       THAI_DAY_BEFORE_NUMBER.test(before) ||
-      TIME_AFTER_NUMBER.test(after)
+      TIME_AFTER_NUMBER.test(after) ||
+      // The day of a month the date reader does not start at: the 13 of "12-13 ธันวาคม".
+      (r.digits.length <= 2 && MONTH_AFTER.test(after))
     );
   });
-  // A range is of one kind: "5-6 ขวบ" are two ages, "11:00 - 13:00" two times, "8-10 kids" two counts.
+  // A range is of one kind: "5-6 ขวบ" are two ages, "11:00-13" two times, "8-10 kids" two counts. A dash
+  // also only separates two things ("в 15:00 — 10 детей", "turning 6 - 10 kids", a "- 12 kids" bullet), so a
+  // number with its own guest word beside it is never drawn in; nor is the number after a spaced dash, nor
+  // one on another line. The number before the dash is ("5 - 6 ขวบ", "500 - 700 บาท", "11 - 13 น.").
+  const ownGuestWord = (k: number) =>
+    GUEST_WORD_AFTER_NUMBER.test(t.slice(runs[k]!.end)) ||
+    GUEST_WORD_BEFORE_NUMBER.test(t.slice(Math.max(0, runs[k]!.start - 24), runs[k]!.start));
   for (const order of [1, -1] as const) {
     for (let k = 1; k < runs.length; k++) {
       const i = order === 1 ? k : runs.length - 1 - k;
       const a = Math.min(i, i - order);
       const b = Math.max(i, i - order);
-      if (RANGE_GAP.test(t.slice(runs[a]!.end, runs[b]!.start)) && (notCount[a] || notCount[b])) {
-        notCount[a] = true;
-        notCount[b] = true;
-      }
+      const gap = t.slice(runs[a]!.end, runs[b]!.start);
+      if (!RANGE_GAP.test(gap)) continue;
+      if (notCount[b] && !notCount[a] && !ownGuestWord(a)) notCount[a] = true;
+      if (notCount[a] && !notCount[b] && TIGHT_RANGE_GAP.test(gap) && !ownGuestWord(b)) notCount[b] = true;
     }
   }
   return {

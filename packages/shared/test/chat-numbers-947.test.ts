@@ -142,8 +142,21 @@ describe('a count is still a count', () => {
   it('a range of counts stays counts; a range with a time, a price or an age does not', () => {
     expect(counts('8-10 kids')).toEqual(['8', '10']);
     expect(counts('เด็ก 8 - 10 คน')).toEqual(['8', '10']);
-    expect(counts('11:00 - 13 kids')).toEqual([]);
+    expect(counts('11:00 - 13 kids')).toEqual(['13']);
     expect(counts('500-700 บาท')).toEqual([]);
+  });
+
+  it('the number before a dash joins the time, date, price or age after it', () => {
+    expect(counts('5-6 ขวบ เด็ก 8 คน')).toEqual(['8']);
+    expect(counts('5 - 6 ขวบ เด็ก 8 คน')).toEqual(['8']);
+    expect(counts('12-13 ธันวาคม เด็ก 8 คน')).toEqual(['8']);
+    expect(counts('11 - 13 น. เด็ก 8 คน')).toEqual(['8']);
+    expect(counts('500 - 700 บาท, 8 kids')).toEqual(['8']);
+  });
+
+  it('the number after a tight dash joins the time before it, when it is no guests’ number', () => {
+    expect(counts('11:00-13 เด็ก 8 คน')).toEqual(['8']);
+    expect(counts('party 11:00-13, 8 kids')).toEqual(['8']);
   });
 
   it('a weekday before a count leaves it a count, as the date reader rules ("в субботу 15 детей")', () => {
@@ -160,5 +173,31 @@ describe('a count is still a count', () => {
   it('a text with no digits has no numbers', () => {
     expect(readChatNumbers('สิบคน, ten kids, десять детей').numbers).toEqual([]);
     expect(readChatNumbers('').numbers).toEqual([]);
+  });
+});
+
+describe('a dash between a time, a date or an age and a count is no range', () => {
+  it.each([
+    ['ru', 'Праздник 12 декабря в 15:00 — 10 детей и 6 взрослых', ['10', '6']],
+    ['ru', 'в 15:00 — 10 детей', ['10']],
+    ['ru', 'в 14:00 — 10 детей', ['10']],
+    ['ru', '12 декабря в 14:00 - 10 детей', ['10']],
+    ['en', 'Party at 14:00 - 12 kids and 6 adults', ['12', '6']],
+    ['en', 'Booking details:\n- Saturday 12 December\n- 14:00\n- 12 kids\n- 6 adults', ['12', '6']],
+    ['en', 'Sat 12/12 – 10 kids, 5 adults', ['10', '5']],
+    ['en', 'turning 6 - 10 kids', ['10']],
+    ['en', 'turning 5 - 10 kids', ['10']],
+    ['en', '14:00 ~ 10 kids', ['10']],
+    ['en', '14:00 - 10 kids', ['10']],
+    ['en', '14:00-10 kids', ['10']],
+    ['en', 'Saturday 13 Dec 14:00 - 10 kids, 5 adults', ['10', '5']],
+    ['en', '12/12 - 15 kids', ['15']],
+    ['en', 'party on 21/12 - 15 kids', ['15']],
+    ['en', 'Dec 12 - 10 kids', ['10']],
+    ['th', 'วันเสาร์ที่ 12 ธันวาคม 14:00 - 10 คน', ['10']],
+    ['th', 'วันเสาร์ที่ 12 ธันวาคม\n- 14:00\n- เด็ก 10 คน', ['10']],
+    ['th', 'เด็ก 10 - 14:00', ['10']],
+  ] as const)('%s: "%s" counts its guests', (_language, text, expected) => {
+    expect(counts(text)).toEqual(expected);
   });
 });
