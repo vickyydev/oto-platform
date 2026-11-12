@@ -1,0 +1,7016 @@
+{
+  "tickets": [
+    "SCRUM-954",
+    "SCRUM-956",
+    "SCRUM-953"
+  ],
+  "sha": "e4989a0d612fba311a301eb30f31acb64284021c",
+  "startedAt": "2026-11-12T17:06:10.033Z",
+  "deploys": {
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqv06ei0phs738luh7g",
+        "status": "live",
+        "sha": "e4989a0d612fba311a301eb30f31acb64284021c",
+        "createdAt": "2026-11-12T16:58:01.617117Z",
+        "finishedAt": "2026-11-12T17:01:58.372244Z"
+      },
+      "serving": {
+        "id": "dep-dbqv06ei0phs738luh7g",
+        "status": "live",
+        "sha": "e4989a0d612fba311a301eb30f31acb64284021c",
+        "createdAt": "2026-11-12T16:58:01.617117Z",
+        "finishedAt": "2026-11-12T17:01:58.372244Z"
+      },
+      "readAt": "2026-11-12T17:02:17.663Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqv06rl550s73dsgssg",
+        "status": "live",
+        "sha": "e4989a0d612fba311a301eb30f31acb64284021c",
+        "createdAt": "2026-11-12T16:58:03.060347Z",
+        "finishedAt": "2026-11-12T16:59:20.31505Z"
+      },
+      "serving": {
+        "id": "dep-dbqv06rl550s73dsgssg",
+        "status": "live",
+        "sha": "e4989a0d612fba311a301eb30f31acb64284021c",
+        "createdAt": "2026-11-12T16:58:03.060347Z",
+        "finishedAt": "2026-11-12T16:59:20.31505Z"
+      },
+      "readAt": "2026-11-12T17:02:18.256Z"
+    },
+    "oto-api-staging": {
+      "named": null,
+      "serving": {
+        "id": "dep-dbqurd5g1s2s73a03kug",
+        "status": "live",
+        "sha": "32e4adb579609e9b3b655f463a1a92969ebb29e2",
+        "createdAt": "2026-11-12T16:47:48.224003Z",
+        "finishedAt": "2026-11-12T16:53:14.038098Z"
+      },
+      "readAt": "2026-11-12T17:02:18.555Z"
+    }
+  },
+  "numbers": {
+    "A": "0898954010",
+    "B": "0898954011",
+    "L": "0898954012",
+    "P": "0898954013",
+    "C": "0898954014",
+    "D": "0898954015",
+    "T": "0898954016",
+    "O": "0898954017",
+    "H": "0898954018"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7",
+      "name": "ZZ TEST SCRUM-954 proof till 1794503184405",
+      "prefix": "Z95401"
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST954A",
+      "id": "01a1d0b9-9425-7ad3-bd55-617f1289cab7",
+      "valueBp": 1000,
+      "usageLimit": 10,
+      "validOn": "2026-11-13"
+    },
+    {
+      "kind": "display",
+      "label": "main",
+      "id": "01a1d0b9-e191-77fd-83fd-457754a4f502",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "registration",
+      "family": "A",
+      "id": "01a1d0c1-e262-7027-b2a3-853b001e854f"
+    },
+    {
+      "kind": "dropoff-sale-A",
+      "id": "01a1d0c1-e57a-7048-b719-c529f8d72c94",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "registration",
+      "family": "L",
+      "id": "01a1d0c7-ee54-7b9e-9900-d1c22e869e3c"
+    },
+    {
+      "kind": "dropoff-sale-L",
+      "id": "01a1d0c7-f15e-75ab-b56c-7401d17e0c4b",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d0c8-3fda-79c3-bd90-ca5dc0bdbb07",
+      "name": "ZZ TEST SCRUM-954 phone till 1794504146051",
+      "prefix": "Z95402"
+    },
+    {
+      "kind": "registration",
+      "family": "P",
+      "id": "01a1d0cb-3e6f-7034-8280-151d516156c0"
+    },
+    {
+      "kind": "dropoff-sale-P",
+      "id": "01a1d0cb-48c9-7f31-87fb-c6a0c5743146",
+      "station": "01a1d0c8-3fda-79c3-bd90-ca5dc0bdbb07"
+    },
+    {
+      "kind": "registration",
+      "family": "C",
+      "id": "01a1d0cb-e83f-7ed2-97ff-aad94a5ef211"
+    },
+    {
+      "kind": "dropoff-sale-C-coded",
+      "id": "01a1d0cb-ee2a-7399-8213-c9a3a3862131",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "registration",
+      "family": "D",
+      "id": "01a1d0cc-d367-7ebc-a2bf-38b0dd549cd2"
+    },
+    {
+      "kind": "dropoff-sale-D-coded",
+      "id": "01a1d0cc-d89a-7c54-abdf-560f828007f5",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "8efbc1a7-54a5-4d14-a2d1-02f558bcff56",
+      "title": "ZZ TEST SCRUM-954 party"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "54ac1a43-548b-4608-8d37-9b915608987b",
+      "title": "ZZ TEST SCRUM-954 party"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1d0d2-4618-7d00-a73a-97bc912bc3f3"
+    },
+    {
+      "kind": "display",
+      "label": "thai",
+      "id": "01a1d0d4-2b2b-7a29-b75a-9eb9dde28783",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "registration",
+      "family": "T",
+      "id": "01a1d0d5-04bf-7ceb-8f9b-91c2f896e52e"
+    },
+    {
+      "kind": "dropoff-sale-T-thai",
+      "id": "01a1d0d5-0a82-7d53-9dcb-455e1febc38d",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    },
+    {
+      "kind": "ordinary-sale-O",
+      "id": "01a1d0d5-7039-7553-aa76-0f2ca88e35a9",
+      "station": "01a1d0b9-935f-7a4c-8d35-10f3c36a5fc7"
+    }
+  ],
+  "points": {
+    "1 SCRUM-954 (2) the keys' own button reads Hide, grey like Space, closes the keys; the only blue Done is the form's; Thai ซ่อน": {
+      "pass": true,
+      "pictures": [
+        "01a-600-first-screen-nickname-keys-hide-grey.png",
+        "01b-600-first-screen-keys-close-up.png",
+        "02b-600-child-name-keys-hide.png",
+        "02c-600-allergies-keys-hide.png",
+        "02d-600-dietary-keys-hide.png",
+        "02e-600-agreements-guardian-keys-hide-bar.png",
+        "19a-600-th-first-screen-nickname-keys-hide-thai.png",
+        "19c-600-th-child-a-keys-hide-thai.png",
+        "19g-600-th-guardian-keys-hide-only-blue-done.png"
+      ],
+      "seen": {
+        "firstScreen": {
+          "text": "Hide",
+          "aria": "Hide",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 111.5,
+          "left": 413,
+          "right": 524,
+          "top": 831,
+          "bottom": 879,
+          "primaryClass": false,
+          "icon": true
+        },
+        "space": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "keysAfterHide": 0,
+        "blueOnAgreements": [
+          {
+            "text": "3. Agreements",
+            "h": 44
+          },
+          {
+            "text": "Done",
+            "h": 44
+          }
+        ],
+        "thai": {
+          "hide": "ซ่อน",
+          "aria": "ซ่อน",
+          "sameBgAsSpace": true,
+          "space": "เว้นวรรค",
+          "primaryClass": false,
+          "hideH": 48
+        }
+      }
+    },
+    "2 SCRUM-954 (4) every press 44 px at 600x1024 and 1024x600; box and keys above the bar; language menu choices 40 (known leftover)": {
+      "pass": true,
+      "pictures": [
+        "02a-600-form-step1-opened.png",
+        "03a-1024x600-agreements-guardian-keys-above-bar.png",
+        "03b-1024x600-allergies-keys-above-bar.png",
+        "03c-1024x600-dietary-keys-above-bar.png",
+        "03d-1024x600-child-name-keys-above-bar-sizes.png",
+        "02f-600-language-menu-choices.png",
+        "03e-1024x600-language-menu-choices.png"
+      ],
+      "seen": {
+        "sizes600": [
+          {
+            "viewport": "600x1024",
+            "language": {
+              "text": "English",
+              "h": 44,
+              "w": 97.4
+            },
+            "pills": [
+              {
+                "text": "1. Your children",
+                "h": 44,
+                "w": 152.1
+              },
+              {
+                "text": "2. Care details",
+                "h": 44,
+                "w": 144.8
+              },
+              {
+                "text": "3. Agreements",
+                "h": 44,
+                "w": 147
+              }
+            ],
+            "bar": [
+              {
+                "text": "Ask the team",
+                "h": 44,
+                "w": 121.5
+              },
+              {
+                "text": "Continue",
+                "h": 44,
+                "w": 94.5
+              }
+            ],
+            "under44": []
+          },
+          {
+            "viewport": "600x1024",
+            "language": {
+              "text": "English",
+              "h": 44,
+              "w": 97.4
+            },
+            "pills": [
+              {
+                "text": "1. Your children",
+                "h": 44,
+                "w": 152.1
+              },
+              {
+                "text": "2. Care details",
+                "h": 44,
+                "w": 144.8
+              },
+              {
+                "text": "3. Agreements",
+                "h": 44,
+                "w": 147
+              }
+            ],
+            "bar": [
+              {
+                "text": "Ask the team",
+                "h": 44,
+                "w": 121.5
+              },
+              {
+                "text": "Back",
+                "h": 44,
+                "w": 67.1
+              },
+              {
+                "text": "Continue",
+                "h": 44,
+                "w": 94.5
+              }
+            ],
+            "under44": []
+          },
+          {
+            "viewport": "600x1024",
+            "language": {
+              "text": "English",
+              "h": 44,
+              "w": 97.4
+            },
+            "pills": [
+              {
+                "text": "1. Your children",
+                "h": 44,
+                "w": 152.1
+              },
+              {
+                "text": "2. Care details",
+                "h": 44,
+                "w": 144.8
+              },
+              {
+                "text": "3. Agreements",
+                "h": 44,
+                "w": 147
+              }
+            ],
+            "bar": [
+              {
+                "text": "Ask the team",
+                "h": 44,
+                "w": 121.5
+              },
+              {
+                "text": "Back",
+                "h": 44,
+                "w": 67.1
+              },
+              {
+                "text": "Done",
+                "h": 44,
+                "w": 69.2
+              }
+            ],
+            "under44": []
+          }
+        ],
+        "sizes1024": {
+          "menu600": {
+            "menuBg": "oklch(0.208 0.042 265.755)",
+            "menuColor": "rgb(248, 250, 252)",
+            "choices": [
+              {
+                "text": "English",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(60, 131, 246)"
+              },
+              {
+                "text": "中文",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "ไทย",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "Русский",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "Français",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              }
+            ]
+          },
+          "agreements": {
+            "sizes": {
+              "viewport": "1024x600",
+              "language": {
+                "text": "English",
+                "h": 44,
+                "w": 97.4
+              },
+              "pills": [
+                {
+                  "text": "1. Your children",
+                  "h": 44,
+                  "w": 152.1
+                },
+                {
+                  "text": "2. Care details",
+                  "h": 44,
+                  "w": 144.8
+                },
+                {
+                  "text": "3. Agreements",
+                  "h": 44,
+                  "w": 147
+                }
+              ],
+              "bar": [
+                {
+                  "text": "Ask the team",
+                  "h": 44,
+                  "w": 121.5
+                },
+                {
+                  "text": "Back",
+                  "h": 44,
+                  "w": 67.1
+                },
+                {
+                  "text": "Done",
+                  "h": 44,
+                  "w": 69.2
+                }
+              ],
+              "under44": []
+            },
+            "guardianPlacing": {
+              "fieldInView": true,
+              "keysInView": true,
+              "keysBelowField": true,
+              "clearOfBar": true,
+              "viewport": "1024x600",
+              "scrollTop": 28,
+              "field": [
+                241,
+                297
+              ],
+              "keys": [
+                309,
+                487
+              ],
+              "bar": [
+                487,
+                600
+              ]
+            },
+            "keyHeights": {
+              "hide": 40,
+              "space": 40,
+              "hideText": "Hide"
+            }
+          },
+          "care": {
+            "sizes": {
+              "viewport": "1024x600",
+              "language": {
+                "text": "English",
+                "h": 44,
+                "w": 97.4
+              },
+              "pills": [
+                {
+                  "text": "1. Your children",
+                  "h": 44,
+                  "w": 152.1
+                },
+                {
+                  "text": "2. Care details",
+                  "h": 44,
+                  "w": 144.8
+                },
+                {
+                  "text": "3. Agreements",
+                  "h": 44,
+                  "w": 147
+                }
+              ],
+              "bar": [
+                {
+                  "text": "Ask the team",
+                  "h": 44,
+                  "w": 121.5
+                },
+                {
+                  "text": "Back",
+                  "h": 44,
+                  "w": 67.1
+                },
+                {
+                  "text": "Continue",
+                  "h": 44,
+                  "w": 94.5
+                }
+              ],
+              "under44": []
+            },
+            "consent-allergies": {
+              "fieldInView": true,
+              "keysInView": true,
+              "keysBelowField": true,
+              "clearOfBar": true,
+              "viewport": "1024x600",
+              "scrollTop": 168,
+              "field": [
+                245,
+                333
+              ],
+              "keys": [
+                345,
+                523
+              ],
+              "bar": [
+                523,
+                600
+              ]
+            },
+            "consent-dietary": {
+              "fieldInView": true,
+              "keysInView": true,
+              "keysBelowField": true,
+              "clearOfBar": true,
+              "viewport": "1024x600",
+              "scrollTop": 317,
+              "field": [
+                236,
+                284
+              ],
+              "keys": [
+                296,
+                474
+              ],
+              "bar": [
+                523,
+                600
+              ]
+            }
+          },
+          "children": {
+            "sizes": {
+              "viewport": "1024x600",
+              "language": {
+                "text": "English",
+                "h": 44,
+                "w": 97.4
+              },
+              "pills": [
+                {
+                  "text": "1. Your children",
+                  "h": 44,
+                  "w": 152.1
+                },
+                {
+                  "text": "2. Care details",
+                  "h": 44,
+                  "w": 144.8
+                },
+                {
+                  "text": "3. Agreements",
+                  "h": 44,
+                  "w": 147
+                }
+              ],
+              "bar": [
+                {
+                  "text": "Ask the team",
+                  "h": 44,
+                  "w": 121.5
+                },
+                {
+                  "text": "Continue",
+                  "h": 44,
+                  "w": 94.5
+                }
+              ],
+              "under44": []
+            },
+            "namePlacing": {
+              "fieldInView": true,
+              "keysInView": true,
+              "keysBelowField": true,
+              "clearOfBar": true,
+              "viewport": "1024x600",
+              "scrollTop": 0,
+              "field": [
+                269,
+                325
+              ],
+              "keys": [
+                337,
+                515
+              ],
+              "bar": [
+                523,
+                600
+              ]
+            }
+          },
+          "menu1024": {
+            "menuBg": "oklch(0.208 0.042 265.755)",
+            "menuColor": "rgb(248, 250, 252)",
+            "choices": [
+              {
+                "text": "English",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(60, 131, 246)"
+              },
+              {
+                "text": "中文",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "ไทย",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "Русский",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              },
+              {
+                "text": "Français",
+                "h": 40,
+                "w": 158,
+                "color": "rgb(248, 250, 252)"
+              }
+            ]
+          }
+        },
+        "menu": [
+          40,
+          40,
+          40,
+          40,
+          40
+        ]
+      }
+    },
+    "3 SCRUM-954 (3) the reconnecting line under the language button, which opens its list; nothing moves; a letter typed offline reaches the till": {
+      "pass": true,
+      "pictures": [
+        "05a-600-offline-line-under-language-button.png",
+        "05b-600-offline-line-close-up.png",
+        "05c-600-offline-language-list-open-over-line.png",
+        "05e-offline-letter-typed-till-not-yet.png",
+        "05f-online-again-till-has-the-letter.png"
+      ],
+      "seen": {
+        "w1": {
+          "lineSeenAfterMs": 216,
+          "geo": {
+            "line": {
+              "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+              "rect": [
+                0,
+                0,
+                600,
+                57
+              ],
+              "z": "30",
+              "pointerEvents": "none",
+              "position": "absolute",
+              "wordsLeft": 49.2,
+              "wordsRight": 422.8
+            },
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          },
+          "menu": [
+            "English",
+            "中文",
+            "ไทย",
+            "Русский",
+            "Français"
+          ],
+          "afterClosingList": {
+            "line": {
+              "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+              "rect": [
+                0,
+                0,
+                600,
+                57
+              ],
+              "z": "30",
+              "pointerEvents": "none",
+              "position": "absolute",
+              "wordsLeft": 49.2,
+              "wordsRight": 422.8
+            },
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          },
+          "offlineMs": 1134,
+          "afterOnline": {
+            "line": null,
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          }
+        },
+        "w2": {
+          "lineSeenAfterMs": 202,
+          "topKeysOpenBeforeOffline": 473,
+          "topWithLine": 473,
+          "value": "None X",
+          "geoAfterTyping": {
+            "line": {
+              "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+              "rect": [
+                0,
+                0,
+                600,
+                57
+              ],
+              "z": "30",
+              "pointerEvents": "none",
+              "position": "absolute",
+              "wordsLeft": 49.2,
+              "wordsRight": 422.8
+            },
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          },
+          "tillCopyWhileOffline": "None",
+          "offlineMs": 2082,
+          "tillCaughtUpMs": 890,
+          "after": {
+            "tillCopy": "None X",
+            "line": 0,
+            "geo": {
+              "line": null,
+              "lang": [
+                486.6,
+                16,
+                584,
+                60
+              ],
+              "langLayerZ": "40",
+              "topmostAtLangCentreIsLangButton": true,
+              "allergiesTop": 473,
+              "headingTop": 64,
+              "formInert": false,
+              "alert": null,
+              "paused": false
+            }
+          }
+        },
+        "defect": "a language CHOSEN while reconnecting locks the form (06a, 06b, 06c)"
+      }
+    },
+    "4 SCRUM-954 (5) the age picker follows the display's look: display, till customer half, returning family review": {
+      "pass": true,
+      "pictures": [
+        "04a-600-display-dark-age-picker-dark.png",
+        "04b-600-display-light-age-picker-light.png",
+        "04e-600-returning-review-is-this-still-your-child-dark.png",
+        "04f-600-returning-review-picker-dark.png",
+        "04g-600-returning-review-picker-light.png",
+        "04i-1680-half-picker-follows-half-light.png",
+        "04j-1680-half-picker-follows-half-dark.png",
+        "04k-1680-half-returning-review-picker-light.png",
+        "04l-1680-half-returning-review-picker-dark.png"
+      ],
+      "seen": {
+        "display": [
+          "dark",
+          "light",
+          "dark"
+        ],
+        "review": [
+          "dark",
+          "light"
+        ],
+        "half": [
+          "light",
+          "dark"
+        ],
+        "halfReview": [
+          "light",
+          "dark"
+        ]
+      }
+    },
+    "5 SCRUM-954 (6) phone: Continue to payment inside the margin; the form scrolls as one page; everything reachable; a whole drop-off sale with the photo": {
+      "pass": true,
+      "pictures": [
+        "12a-phone-390x844-gate-continue-inside-margin.png",
+        "12b-phone-360x740-gate-continue-inside-margin.png",
+        "13a-phone-390x844-family-form-top.png",
+        "13b-phone-390x844-family-form-scrolled-heading-gone.png",
+        "13c-phone-360x740-family-form-number-tick-still-needed-done-return.png",
+        "13d-phone-390x844-everything-given-done-enabled.png",
+        "13e-phone-390x844-paid.png"
+      ],
+      "seen": {
+        "gate": {
+          "gate390": {
+            "innerWidth": 390,
+            "docScrollWidth": 390,
+            "continue": {
+              "left": 136.5,
+              "right": 374,
+              "w": 237.5,
+              "h": 56,
+              "rightMargin": 16,
+              "textLines": 1,
+              "enabled": true
+            },
+            "back": {
+              "left": 16,
+              "right": 124.5,
+              "leftMargin": 16
+            }
+          },
+          "gate360": {
+            "innerWidth": 360,
+            "docScrollWidth": 360,
+            "continue": {
+              "left": 136.5,
+              "right": 344,
+              "w": 207.5,
+              "h": 56,
+              "rightMargin": 16,
+              "textLines": 2,
+              "enabled": true
+            },
+            "back": {
+              "left": 16,
+              "right": 124.5,
+              "leftMargin": 16
+            }
+          }
+        },
+        "form": {
+          "s390": {
+            "innerHeight": 844,
+            "bodyScroll": {
+              "overflowY": "auto",
+              "scrollTop": 0,
+              "scrollHeight": 2816,
+              "clientHeight": 624,
+              "rect": [
+                0,
+                624
+              ]
+            },
+            "heading": [
+              88,
+              168
+            ],
+            "language": [
+              16,
+              50
+            ],
+            "bar": [
+              624,
+              755
+            ],
+            "returnPhone": [
+              772,
+              828
+            ],
+            "scrollingShare": 73.9
+          },
+          "s360": {
+            "innerHeight": 740,
+            "bodyScroll": {
+              "overflowY": "auto",
+              "scrollTop": 0,
+              "scrollHeight": 2912,
+              "clientHeight": 500,
+              "rect": [
+                0,
+                500
+              ]
+            },
+            "heading": [
+              88,
+              168
+            ],
+            "language": [
+              16,
+              50
+            ],
+            "bar": [
+              500,
+              651
+            ],
+            "returnPhone": [
+              668,
+              724
+            ],
+            "scrollingShare": 67.6
+          }
+        },
+        "sale": {
+          "guardian": "ZZ TEST 954 parent P",
+          "phoneEnds": "4013",
+          "contactConfirmedBy": "family",
+          "children": [
+            {
+              "name": "ZZ TEST PHONE P",
+              "status": "in_park",
+              "photo": true,
+              "allergies": "ZZ TEST none"
+            }
+          ],
+          "regPhoto": true
+        }
+      }
+    },
+    "6 SCRUM-956 the phone family screen is the phone's width; names wrap; WhatsApp confirmed and May order food No whole": {
+      "pass": true,
+      "pictures": [
+        "11b-phone-390x844-family-screen-long-name.png",
+        "11d-phone-390x844-family-screen-whatsapp-confirmed.png",
+        "11d-phone-360x740-family-screen-whatsapp-confirmed.png",
+        "11e-phone-360x740-family-screen-child-name-wraps-food-no.png"
+      ],
+      "seen": {
+        "390x844": {
+          "top": {
+            "innerWidth": 390,
+            "docScrollWidth": 390,
+            "chip": {
+              "text": "WhatsApp confirmed",
+              "left": 213.3,
+              "right": 357,
+              "lines": 2,
+              "boxRight": 357,
+              "whole": true
+            },
+            "food": {
+              "row": "May order foodNo",
+              "rowRight": 357,
+              "value": "No",
+              "valueText": {
+                "left": 324.7,
+                "right": 344,
+                "lines": 1
+              }
+            },
+            "childName": {
+              "left": 101,
+              "right": 305.2,
+              "lines": 3,
+              "h": 72
+            },
+            "guardian": {
+              "left": 33,
+              "right": 243.6,
+              "lines": 1
+            }
+          },
+          "lower": {
+            "innerWidth": 390,
+            "docScrollWidth": 390,
+            "chip": {
+              "text": "WhatsApp confirmed",
+              "left": 213.3,
+              "right": 357,
+              "lines": 2,
+              "boxRight": 357,
+              "whole": true
+            },
+            "food": {
+              "row": "May order foodNo",
+              "rowRight": 357,
+              "value": "No",
+              "valueText": {
+                "left": 324.7,
+                "right": 344,
+                "lines": 1
+              }
+            },
+            "childName": {
+              "left": 101,
+              "right": 305.2,
+              "lines": 3,
+              "h": 72
+            },
+            "guardian": {
+              "left": 33,
+              "right": 243.6,
+              "lines": 1
+            }
+          },
+          "fit": {
+            "viewport": [
+              390,
+              844
+            ],
+            "docScrollWidth": 390,
+            "pageSideways": false,
+            "truncated": [
+              {
+                "tag": "SPAN",
+                "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+                "sw": 466,
+                "cw": 310
+              }
+            ],
+            "spill": [],
+            "outsideViewport": [],
+            "sidewaysScrollers": [],
+            "pastRightEdge": [],
+            "problems": true
+          }
+        },
+        "360x740": {
+          "top": {
+            "innerWidth": 360,
+            "docScrollWidth": 360,
+            "chip": {
+              "text": "WhatsApp confirmed",
+              "left": 183.3,
+              "right": 327,
+              "lines": 2,
+              "boxRight": 327,
+              "whole": true
+            },
+            "food": {
+              "row": "May order foodNo",
+              "rowRight": 327,
+              "value": "No",
+              "valueText": {
+                "left": 294.7,
+                "right": 314,
+                "lines": 1
+              }
+            },
+            "childName": {
+              "left": 101,
+              "right": 275.1,
+              "lines": 3,
+              "h": 72
+            },
+            "guardian": {
+              "left": 33,
+              "right": 243.6,
+              "lines": 1
+            }
+          },
+          "lower": {
+            "innerWidth": 360,
+            "docScrollWidth": 360,
+            "chip": {
+              "text": "WhatsApp confirmed",
+              "left": 183.3,
+              "right": 327,
+              "lines": 2,
+              "boxRight": 327,
+              "whole": true
+            },
+            "food": {
+              "row": "May order foodNo",
+              "rowRight": 327,
+              "value": "No",
+              "valueText": {
+                "left": 294.7,
+                "right": 314,
+                "lines": 1
+              }
+            },
+            "childName": {
+              "left": 101,
+              "right": 275.1,
+              "lines": 3,
+              "h": 72
+            },
+            "guardian": {
+              "left": 33,
+              "right": 243.6,
+              "lines": 1
+            }
+          },
+          "fit": {
+            "viewport": [
+              360,
+              740
+            ],
+            "docScrollWidth": 360,
+            "pageSideways": false,
+            "truncated": [
+              {
+                "tag": "SPAN",
+                "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+                "sw": 466,
+                "cw": 280
+              }
+            ],
+            "spill": [
+              {
+                "text": "7 Messages",
+                "by": 2.3,
+                "box": [
+                  315,
+                  683,
+                  45,
+                  57
+                ]
+              },
+              {
+                "text": "7 Messages",
+                "by": 2.3,
+                "box": [
+                  315,
+                  683,
+                  45,
+                  57
+                ]
+              }
+            ],
+            "outsideViewport": [],
+            "sidewaysScrollers": [],
+            "pastRightEdge": [],
+            "problems": true
+          }
+        }
+      }
+    },
+    "7 SCRUM-953 (5) History item cards add up to the Subtotal (desk and phone); no-code sale as before": {
+      "pass": true,
+      "pictures": [
+        "15b-1680-history-detail-coded-sale-cards-add-up.png",
+        "15c-1680-history-detail-no-code-sale-as-before.png",
+        "16d-phone-390x844-coded-sale-ticket-lines-open.png",
+        "16e-phone-390x844-no-code-sale-ticket-lines-open.png"
+      ],
+      "seen": {
+        "desk": {
+          "D": {
+            "listCard": "Z95401-000004 · ZZ TEST 954 guardian D 13 Nov, 00:27 [staff] Paid ฿1444.50",
+            "cards": [
+              {
+                "head": "ZZ TEST Mint D 954 · 1 Hour Play · Tourist ฿915",
+                "headAmount": "฿915",
+                "lines": [
+                  "Kids 1× ฿690 ฿690",
+                  "Drop-off service 1× ฿225 ฿225"
+                ]
+              },
+              {
+                "head": "ZZ TEST Nok D 954 · 1 Hour Play · Tourist ฿690",
+                "headAmount": "฿690",
+                "lines": [
+                  "Kids 1× ฿690 ฿690"
+                ]
+              },
+              {
+                "head": "BRACELETS PRINTED",
+                "headAmount": null,
+                "lines": [
+                  "2 child"
+                ]
+              }
+            ],
+            "subtotal": "฿1605",
+            "code": "−฿160.50",
+            "vat": "฿94.50",
+            "total": "฿1444.50",
+            "sumOfCards": 1605,
+            "cardsEqualSubtotal": true,
+            "payments": "Cash · Approved 13 Nov, 00:27 ฿1444.50 "
+          },
+          "C": {
+            "listCard": "Z95401-000003 · ZZ TEST 954 guardian C 13 Nov, 00:26 [staff] Paid ฿1605",
+            "cards": [
+              {
+                "head": "ZZ TEST Mint C 954 · 1 Hour Play · Tourist ฿915",
+                "headAmount": "฿915",
+                "lines": [
+                  "Kids 1× ฿690 ฿690",
+                  "Drop-off service 1× ฿225 ฿225"
+                ]
+              },
+              {
+                "head": "ZZ TEST Nok C 954 · 1 Hour Play · Tourist ฿690",
+                "headAmount": "฿690",
+                "lines": [
+                  "Kids 1× ฿690 ฿690"
+                ]
+              },
+              {
+                "head": "BRACELETS PRINTED",
+                "headAmount": null,
+                "lines": [
+                  "2 child"
+                ]
+              }
+            ],
+            "subtotal": "฿1605",
+            "code": null,
+            "vat": "฿105",
+            "total": "฿1605",
+            "sumOfCards": 1605,
+            "cardsEqualSubtotal": true,
+            "payments": "Cash · Approved 13 Nov, 00:26 ฿1605 "
+          }
+        },
+        "phone": {
+          "D": {
+            "ariaExpandedBefore": "true",
+            "linesShownBefore": true,
+            "lines": [
+              "TICKET LINES",
+              "ZZ TEST Mint D 954 · 1 Hour Play",
+              "฿915",
+              "Kids · 1× ฿690",
+              "฿690",
+              "Drop-off service · 1× ฿225",
+              "฿225",
+              "ZZ TEST Nok D 954 · 1 Hour Play",
+              "฿690",
+              "Kids · 1× ฿690",
+              "฿690",
+              "BRACELETS PRINTED",
+              "2",
+              "2 child · 0 adult",
+              "Z95401-CWD86S ZZ TEST Mint D 954",
+              "Z95401-QVEX2F ZZ TEST Nok D 954",
+              "Subtotal",
+              "฿1605",
+              "ZZ TEST SCRUM-954 proof ZZTEST954A",
+              "−฿160.50",
+              "VAT (included)",
+              "฿94.50",
+              "Total paid",
+              "฿1444.50"
+            ],
+            "cardHeads": [
+              [
+                "ZZ TEST Mint D 954 · 1 Hour Play",
+                "฿915"
+              ],
+              [
+                "ZZ TEST Nok D 954 · 1 Hour Play",
+                "฿690"
+              ]
+            ],
+            "sumOfCards": 1605
+          },
+          "C": {
+            "ariaExpandedBefore": "true",
+            "linesShownBefore": true,
+            "lines": [
+              "TICKET LINES",
+              "ZZ TEST Mint C 954 · 1 Hour Play",
+              "฿915",
+              "Kids · 1× ฿690",
+              "฿690",
+              "Drop-off service · 1× ฿225",
+              "฿225",
+              "ZZ TEST Nok C 954 · 1 Hour Play",
+              "฿690",
+              "Kids · 1× ฿690",
+              "฿690",
+              "BRACELETS PRINTED",
+              "2",
+              "2 child · 0 adult",
+              "Z95401-KFT8SR ZZ TEST Mint C 954",
+              "Z95401-3MKTGG ZZ TEST Nok C 954",
+              "Subtotal",
+              "฿1605",
+              "VAT (included)",
+              "฿105",
+              "Total paid",
+              "฿1605"
+            ],
+            "cardHeads": [
+              [
+                "ZZ TEST Mint C 954 · 1 Hour Play",
+                "฿915"
+              ],
+              [
+                "ZZ TEST Nok C 954 · 1 Hour Play",
+                "฿690"
+              ]
+            ],
+            "sumOfCards": 1605
+          }
+        }
+      }
+    },
+    "8 SCRUM-953 (6) the door dialog repeats the success line; the phone refund rows wrap with the amount on the right": {
+      "pass": true,
+      "pictures": [
+        "08a-door-check-in-dialog-success-line-under-title.png",
+        "08b-door-check-in-dialog-close-up.png",
+        "08c-door-check-in-dialog-two-children-close-up.png",
+        "16b-phone-390x844-refund-by-item-long-name-wraps-amount-right.png",
+        "16c-phone-360x740-refund-by-item-long-name.png"
+      ],
+      "seen": {
+        "door": {
+          "title": "Check in the drop-off child?",
+          "paidLine": "Receipt Z95401-000001 • ฿915 • Cash",
+          "paidColor": "oklch(0.596 0.145 163.225)",
+          "underTitle": true,
+          "description": "Payment is complete. For each registration, choose whether to check the child in now or leave them booked for later.",
+          "buttons": [
+            "Leave as booked",
+            "Check in now",
+            "Close"
+          ]
+        },
+        "doorD": [
+          "฿1444.50 • Cash",
+          [
+            "Receipt Z95401-000004 • ฿1444.50 • Cash"
+          ]
+        ],
+        "rows": {
+          "360": [
+            {
+              "labelLines": 4,
+              "amount": "฿915",
+              "amountRight": 327,
+              "buttonRight": 344,
+              "innerWidth": 360
+            }
+          ],
+          "390": [
+            {
+              "labelLines": 3,
+              "amount": "฿915",
+              "amountRight": 357,
+              "buttonRight": 374,
+              "innerWidth": 390
+            }
+          ],
+          "refunds": 0
+        }
+      }
+    },
+    "9 SCRUM-953 (4) a refunded part-paid settlement: Party deposit · Stays with the party ฿1000, Cash · Approved ฿100; the party keeps its deposit": {
+      "pass": true,
+      "pictures": [
+        "17a-1680-party-page-before-take-balance.png",
+        "17b-1680-settle-partial-100-cash.png",
+        "17c-1680-after-part-payment-100.png",
+        "18a-1680-history-settlement-before-refund.png",
+        "18b-1680-manager-refund-settlement-100.png",
+        "18c-1680-history-settlement-after-refund-deposit-stays-with-the-party.png",
+        "18d-1680-party-page-after-settlement-refund-deposit-held.png",
+        "18e-phone-390x844-settlement-payments-deposit-stays-with-the-party.png"
+      ],
+      "seen": {
+        "refund": {
+          "listCard": "Party settlement · ZZ TEST SCRUM-954 party 13 Nov, 00:33 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+          "before": {
+            "text": "Payments Party deposit · Approved 13 Nov, 00:33 ฿1000 Cash · Approved 13 Nov, 00:33 ฿100",
+            "rows": [
+              "Party deposit · Approved 13 Nov, 00:33 ฿1000",
+              "Cash · Approved 13 Nov, 00:33 ฿100"
+            ],
+            "statusSpans": [
+              {
+                "t": "Party deposit · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Party deposit · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Party deposit · Approved",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "· Approved",
+                "c": "oklch(0.765 0.177 163.223)"
+              },
+              {
+                "t": "Cash · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Cash · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Cash · Approved",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "· Approved",
+                "c": "oklch(0.765 0.177 163.223)"
+              }
+            ]
+          },
+          "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+          "press": "Refund ฿100",
+          "refundStatus": 200,
+          "after": {
+            "text": "Payments Party deposit · Stays with the party 13 Nov, 00:33 ฿1000 Cash · Approved 13 Nov, 00:33 ฿100",
+            "rows": [
+              "Party deposit · Stays with the party 13 Nov, 00:33 ฿1000",
+              "Cash · Approved 13 Nov, 00:33 ฿100"
+            ],
+            "statusSpans": [
+              {
+                "t": "Party deposit · Stays with the party13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Party deposit · Stays with the party13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Party deposit · Stays with the party",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "· Stays with the party",
+                "c": "rgb(118, 100, 86)"
+              },
+              {
+                "t": "Cash · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Cash · Approved13 Nov, 00:33",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "Cash · Approved",
+                "c": "rgb(59, 40, 28)"
+              },
+              {
+                "t": "· Approved",
+                "c": "oklch(0.765 0.177 163.223)"
+              }
+            ]
+          },
+          "headAfter": "Back to history Voided Party settlement ZZ TEST SCRUM-954 party 13 Nov, 00:33 · sold by [staff] ZZ TEST SCRUM-954 proof till 1794503184405 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birt",
+          "sale": {
+            "status": "voided",
+            "refund": "refunded",
+            "attempts": [
+              "other cancelled 1000 deposit",
+              "cash approved 100"
+            ]
+          },
+          "partyApi": {
+            "deposit": 1000,
+            "settlement": "voided"
+          }
+        },
+        "after": {
+          "partyBill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "btns": [
+            "Settle party",
+            "Take balance ฿15900"
+          ],
+          "phoneLayout": 390,
+          "phonePayments": [
+            "PAYMENT",
+            "Party deposit · Stays with the party",
+            "13 Nov, 00:33",
+            "฿1000",
+            "Cash · Approved",
+            "13 Nov, 00:33",
+            "฿100",
+            "REFUND HISTORY",
+            "−฿100"
+          ]
+        }
+      }
+    },
+    "10 nothing else moved: Thai journey on the counter display shape, an ordinary cash sale, the till half at desk size": {
+      "pass": true,
+      "pictures": [
+        "19b-600-th-form-step1.png",
+        "19e-600-th-step1-two-children-aged.png",
+        "19f-600-th-care-allergy-keys-hide-thai.png",
+        "19h-600-th-all-ticked-done-ready.png",
+        "19i-th-paid-door-dialog-and-display.png",
+        "20a-ordinary-sale-payment-step-till-and-display.png",
+        "20b-ordinary-sale-paid-till-and-display.png",
+        "21b-1680-half-form-opened-as-before.png"
+      ],
+      "seen": {
+        "thai": {
+          "guardian": "Zz Test Parent Thai",
+          "contactConfirmedBy": "family",
+          "children": [
+            {
+              "name": "Zz Test Thai A",
+              "status": "in_park",
+              "allergies": "Shellfish",
+              "photo": true
+            },
+            {
+              "name": "Zz Test Thai B",
+              "status": "in_park",
+              "allergies": null,
+              "photo": true
+            }
+          ]
+        },
+        "ordinary": {
+          "straightToPayment": true,
+          "amountDue": "฿1040",
+          "doorDialog": 0,
+          "success": "Receipt Z95401-000006 • ฿1040 • Cash",
+          "sale": {
+            "receipt": "Z95401-000006",
+            "status": "finalised",
+            "gross": 1040
+          },
+          "revoke": {
+            "label": "thai",
+            "revoked": true
+          }
+        },
+        "half": {
+          "lang": 34,
+          "done": 38
+        }
+      }
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "hideKey": 1,
+      "thaiHide": 1,
+      "staysWithParty": 1,
+      "doorPaid": 1,
+      "formBody": 1,
+      "minH11": 2,
+      "z30": 2
+    },
+    "p1first": {
+      "facts": {
+        "url": "/display?keyboard=screen",
+        "touch": 1,
+        "w": 600,
+        "h": 1024,
+        "theme": "dark"
+      },
+      "look": {
+        "keys": true,
+        "hide": {
+          "text": "Hide",
+          "aria": "Hide",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 111.5,
+          "left": 413,
+          "right": 524,
+          "top": 831,
+          "bottom": 879,
+          "primaryClass": false,
+          "icon": true
+        },
+        "space": {
+          "text": "Space",
+          "aria": "Space",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 330.5,
+          "left": 76,
+          "right": 407,
+          "top": 831,
+          "bottom": 879,
+          "primaryClass": false,
+          "icon": false
+        },
+        "backspace": {
+          "text": "",
+          "aria": "Backspace",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 78.7,
+          "left": 423,
+          "right": 502,
+          "top": 777,
+          "bottom": 825,
+          "primaryClass": false,
+          "icon": true
+        },
+        "sameBgAsSpace": true,
+        "bottomRight": true,
+        "lastButton": true,
+        "keyboardBox": [
+          76,
+          669,
+          524,
+          879
+        ]
+      },
+      "blue": {
+        "primary": "rgb(60, 131, 246)",
+        "blue": [
+          {
+            "text": "Continue",
+            "h": 80
+          }
+        ],
+        "doneLike": [
+          {
+            "text": "Hide",
+            "aria": "Hide",
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)"
+          }
+        ]
+      },
+      "typed": "Zz",
+      "keysAfterHide": 0,
+      "nicknameAfter": ""
+    },
+    "p1formStep1": {
+      "sizes1": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "English",
+          "h": 44,
+          "w": 97.4
+        },
+        "pills": [
+          {
+            "text": "1. Your children",
+            "h": 44,
+            "w": 152.1
+          },
+          {
+            "text": "2. Care details",
+            "h": 44,
+            "w": 144.8
+          },
+          {
+            "text": "3. Agreements",
+            "h": 44,
+            "w": 147
+          }
+        ],
+        "bar": [
+          {
+            "text": "Ask the team",
+            "h": 44,
+            "w": 121.5
+          },
+          {
+            "text": "Continue",
+            "h": 44,
+            "w": 94.5
+          }
+        ],
+        "under44": []
+      },
+      "nameKeys": {
+        "keys": true,
+        "hide": {
+          "text": "Hide",
+          "aria": "Hide",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 121,
+          "left": 422,
+          "right": 543,
+          "top": 559,
+          "bottom": 607,
+          "primaryClass": false,
+          "icon": true
+        },
+        "space": {
+          "text": "Space",
+          "aria": "Space",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 359,
+          "left": 57,
+          "right": 416,
+          "top": 559,
+          "bottom": 607,
+          "primaryClass": false,
+          "icon": false
+        },
+        "backspace": {
+          "text": "",
+          "aria": "Backspace",
+          "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+          "color": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "border": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+          "h": 48,
+          "w": 86.3,
+          "left": 432,
+          "right": 519,
+          "top": 505,
+          "bottom": 553,
+          "primaryClass": false,
+          "icon": true
+        },
+        "sameBgAsSpace": true,
+        "bottomRight": true,
+        "lastButton": true,
+        "keyboardBox": [
+          57,
+          397,
+          543,
+          607
+        ]
+      },
+      "namePlacing": {
+        "fieldInView": true,
+        "keysInView": true,
+        "keysBelowField": true,
+        "clearOfBar": true,
+        "viewport": "600x1024",
+        "scrollTop": 0,
+        "field": [
+          329,
+          385
+        ],
+        "keys": [
+          397,
+          607
+        ],
+        "bar": [
+          947,
+          1024
+        ]
+      },
+      "blueWhileNameKeys": {
+        "primary": "rgb(60, 131, 246)",
+        "blue": [
+          {
+            "text": "1. Your children",
+            "h": 44
+          },
+          {
+            "text": "Continue",
+            "h": 44
+          }
+        ],
+        "doneLike": [
+          {
+            "text": "Hide",
+            "aria": "Hide",
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)"
+          }
+        ]
+      },
+      "keysAfterHide": 0,
+      "displayTheme": "dark",
+      "pickerDark": {
+        "dataSurface": "dark",
+        "darkClass": true,
+        "lightClass": false,
+        "bg": "rgb(15, 23, 41)",
+        "color": "rgb(248, 250, 252)",
+        "ageButtonBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.55)",
+        "title": ""
+      },
+      "mirror": {
+        "shown": true,
+        "childName": "Zz Test Aya",
+        "allergies": null,
+        "dietary": null,
+        "guardian": null
+      },
+      "state": {
+        "shown": true,
+        "step": "1. Your children",
+        "childName": "Zz Test Aya",
+        "allergies": null,
+        "guardian": null,
+        "keysOpen": 0,
+        "reconnecting": null
+      }
+    },
+    "p1formCareAgree": {
+      "sizes2": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "English",
+          "h": 44,
+          "w": 97.4
+        },
+        "pills": [
+          {
+            "text": "1. Your children",
+            "h": 44,
+            "w": 152.1
+          },
+          {
+            "text": "2. Care details",
+            "h": 44,
+            "w": 144.8
+          },
+          {
+            "text": "3. Agreements",
+            "h": 44,
+            "w": 147
+          }
+        ],
+        "bar": [
+          {
+            "text": "Ask the team",
+            "h": 44,
+            "w": 121.5
+          },
+          {
+            "text": "Back",
+            "h": 44,
+            "w": 67.1
+          },
+          {
+            "text": "Continue",
+            "h": 44,
+            "w": 94.5
+          }
+        ],
+        "under44": []
+      },
+      "consent-allergies": {
+        "hide": "Hide",
+        "aria": "Hide",
+        "sameBgAsSpace": true,
+        "hideBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "spaceBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "primaryClass": false,
+        "placing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 245,
+          "field": [
+            637,
+            725
+          ],
+          "keys": [
+            737,
+            947
+          ],
+          "bar": [
+            947,
+            1024
+          ]
+        },
+        "value": "None"
+      },
+      "consent-dietary": {
+        "hide": "Hide",
+        "aria": "Hide",
+        "sameBgAsSpace": true,
+        "hideBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "spaceBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "primaryClass": false,
+        "placing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 394,
+          "field": [
+            628,
+            676
+          ],
+          "keys": [
+            688,
+            898
+          ],
+          "bar": [
+            947,
+            1024
+          ]
+        },
+        "value": "No Pork"
+      },
+      "photo": "The team has this photo.",
+      "sizes3before": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "English",
+          "h": 44,
+          "w": 97.4
+        },
+        "pills": [
+          {
+            "text": "1. Your children",
+            "h": 44,
+            "w": 152.1
+          },
+          {
+            "text": "2. Care details",
+            "h": 44,
+            "w": 144.8
+          },
+          {
+            "text": "3. Agreements",
+            "h": 44,
+            "w": 147
+          }
+        ],
+        "bar": [
+          {
+            "text": "Ask the team",
+            "h": 44,
+            "w": 121.5
+          },
+          {
+            "text": "Back",
+            "h": 44,
+            "w": 67.1
+          },
+          {
+            "text": "Done",
+            "h": 44,
+            "w": 69.2
+          }
+        ],
+        "under44": []
+      },
+      "guardian": {
+        "hide": "Hide",
+        "sameBgAsSpace": true,
+        "primaryClass": false,
+        "placing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 0,
+          "field": [
+            329,
+            385
+          ],
+          "keys": [
+            397,
+            607
+          ],
+          "bar": [
+            887,
+            1024
+          ]
+        }
+      },
+      "blueGuardianKeysOpen": {
+        "primary": "rgb(60, 131, 246)",
+        "blue": [
+          {
+            "text": "3. Agreements",
+            "h": 44
+          },
+          {
+            "text": "Done",
+            "h": 44
+          }
+        ],
+        "doneLike": [
+          {
+            "text": "Hide",
+            "aria": "Hide",
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)"
+          },
+          {
+            "text": "Done",
+            "aria": null,
+            "bg": "rgb(60, 131, 246)"
+          }
+        ]
+      },
+      "barNow": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "English",
+          "h": 44,
+          "w": 97.4
+        },
+        "pills": [
+          {
+            "text": "1. Your children",
+            "h": 44,
+            "w": 152.1
+          },
+          {
+            "text": "2. Care details",
+            "h": 44,
+            "w": 144.8
+          },
+          {
+            "text": "3. Agreements",
+            "h": 44,
+            "w": 147
+          }
+        ],
+        "bar": [
+          {
+            "text": "Ask the team",
+            "h": 44,
+            "w": 121.5
+          },
+          {
+            "text": "Back",
+            "h": 44,
+            "w": 67.1
+          },
+          {
+            "text": "Done",
+            "h": 44,
+            "w": 69.2
+          }
+        ],
+        "under44": []
+      }
+    },
+    "p2sizes": {
+      "menu600": {
+        "menuBg": "oklch(0.208 0.042 265.755)",
+        "menuColor": "rgb(248, 250, 252)",
+        "choices": [
+          {
+            "text": "English",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(60, 131, 246)"
+          },
+          {
+            "text": "中文",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "ไทย",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "Русский",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "Français",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          }
+        ]
+      },
+      "agreements": {
+        "sizes": {
+          "viewport": "1024x600",
+          "language": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4
+          },
+          "pills": [
+            {
+              "text": "1. Your children",
+              "h": 44,
+              "w": 152.1
+            },
+            {
+              "text": "2. Care details",
+              "h": 44,
+              "w": 144.8
+            },
+            {
+              "text": "3. Agreements",
+              "h": 44,
+              "w": 147
+            }
+          ],
+          "bar": [
+            {
+              "text": "Ask the team",
+              "h": 44,
+              "w": 121.5
+            },
+            {
+              "text": "Back",
+              "h": 44,
+              "w": 67.1
+            },
+            {
+              "text": "Done",
+              "h": 44,
+              "w": 69.2
+            }
+          ],
+          "under44": []
+        },
+        "guardianPlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 28,
+          "field": [
+            241,
+            297
+          ],
+          "keys": [
+            309,
+            487
+          ],
+          "bar": [
+            487,
+            600
+          ]
+        },
+        "keyHeights": {
+          "hide": 40,
+          "space": 40,
+          "hideText": "Hide"
+        }
+      },
+      "care": {
+        "sizes": {
+          "viewport": "1024x600",
+          "language": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4
+          },
+          "pills": [
+            {
+              "text": "1. Your children",
+              "h": 44,
+              "w": 152.1
+            },
+            {
+              "text": "2. Care details",
+              "h": 44,
+              "w": 144.8
+            },
+            {
+              "text": "3. Agreements",
+              "h": 44,
+              "w": 147
+            }
+          ],
+          "bar": [
+            {
+              "text": "Ask the team",
+              "h": 44,
+              "w": 121.5
+            },
+            {
+              "text": "Back",
+              "h": 44,
+              "w": 67.1
+            },
+            {
+              "text": "Continue",
+              "h": 44,
+              "w": 94.5
+            }
+          ],
+          "under44": []
+        },
+        "consent-allergies": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 168,
+          "field": [
+            245,
+            333
+          ],
+          "keys": [
+            345,
+            523
+          ],
+          "bar": [
+            523,
+            600
+          ]
+        },
+        "consent-dietary": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 317,
+          "field": [
+            236,
+            284
+          ],
+          "keys": [
+            296,
+            474
+          ],
+          "bar": [
+            523,
+            600
+          ]
+        }
+      },
+      "children": {
+        "sizes": {
+          "viewport": "1024x600",
+          "language": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4
+          },
+          "pills": [
+            {
+              "text": "1. Your children",
+              "h": 44,
+              "w": 152.1
+            },
+            {
+              "text": "2. Care details",
+              "h": 44,
+              "w": 144.8
+            },
+            {
+              "text": "3. Agreements",
+              "h": 44,
+              "w": 147
+            }
+          ],
+          "bar": [
+            {
+              "text": "Ask the team",
+              "h": 44,
+              "w": 121.5
+            },
+            {
+              "text": "Continue",
+              "h": 44,
+              "w": 94.5
+            }
+          ],
+          "under44": []
+        },
+        "namePlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 0,
+          "field": [
+            269,
+            325
+          ],
+          "keys": [
+            337,
+            515
+          ],
+          "bar": [
+            523,
+            600
+          ]
+        }
+      },
+      "menu1024": {
+        "menuBg": "oklch(0.208 0.042 265.755)",
+        "menuColor": "rgb(248, 250, 252)",
+        "choices": [
+          {
+            "text": "English",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(60, 131, 246)"
+          },
+          {
+            "text": "中文",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "ไทย",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "Русский",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          },
+          {
+            "text": "Français",
+            "h": 40,
+            "w": 158,
+            "color": "rgb(248, 250, 252)"
+          }
+        ]
+      }
+    },
+    "p3offline": {
+      "before": {
+        "line": null,
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langLayerZ": "40",
+        "topmostAtLangCentreIsLangButton": true,
+        "allergiesTop": 473,
+        "headingTop": 64,
+        "formInert": false,
+        "alert": null,
+        "paused": false
+      },
+      "w1": {
+        "lineSeenAfterMs": 216,
+        "geo": {
+          "line": {
+            "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+            "rect": [
+              0,
+              0,
+              600,
+              57
+            ],
+            "z": "30",
+            "pointerEvents": "none",
+            "position": "absolute",
+            "wordsLeft": 49.2,
+            "wordsRight": 422.8
+          },
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "menu": [
+          "English",
+          "中文",
+          "ไทย",
+          "Русский",
+          "Français"
+        ],
+        "afterClosingList": {
+          "line": {
+            "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+            "rect": [
+              0,
+              0,
+              600,
+              57
+            ],
+            "z": "30",
+            "pointerEvents": "none",
+            "position": "absolute",
+            "wordsLeft": 49.2,
+            "wordsRight": 422.8
+          },
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "offlineMs": 1134,
+        "afterOnline": {
+          "line": null,
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        }
+      },
+      "w2": {
+        "lineSeenAfterMs": 202,
+        "topKeysOpenBeforeOffline": 473,
+        "topWithLine": 473,
+        "value": "None X",
+        "geoAfterTyping": {
+          "line": {
+            "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+            "rect": [
+              0,
+              0,
+              600,
+              57
+            ],
+            "z": "30",
+            "pointerEvents": "none",
+            "position": "absolute",
+            "wordsLeft": 49.2,
+            "wordsRight": 422.8
+          },
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "tillCopyWhileOffline": "None",
+        "offlineMs": 2082,
+        "tillCaughtUpMs": 890,
+        "after": {
+          "tillCopy": "None X",
+          "line": 0,
+          "geo": {
+            "line": null,
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          }
+        }
+      }
+    },
+    "p3langOffline": {
+      "before": {
+        "line": null,
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langLayerZ": "40",
+        "topmostAtLangCentreIsLangButton": true,
+        "allergiesTop": 473,
+        "headingTop": 64,
+        "formInert": false,
+        "alert": null,
+        "paused": false
+      },
+      "thaiChosenOffline": {
+        "ms": 1776,
+        "geo": {
+          "line": {
+            "text": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+            "rect": [
+              0,
+              56,
+              600,
+              93
+            ],
+            "z": "30",
+            "pointerEvents": "none",
+            "position": "absolute",
+            "wordsLeft": 38.2,
+            "wordsRight": 433.8
+          },
+          "lang": [
+            513.4,
+            72,
+            584,
+            116
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": false,
+          "allergiesTop": 501,
+          "headingTop": 120,
+          "formInert": true,
+          "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+          "paused": false
+        },
+        "status": [
+          "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+          "กรุณารอทีมงานยืนยันการเปลี่ยนแปลงนี้"
+        ]
+      },
+      "secondPress": "refused: locator.tap: Timeout 2500ms exceeded.",
+      "secondPressAllergies": "refused: locator.tap: Timeout 2000ms exceeded.",
+      "offlineMs": 6353,
+      "eightSecondsOnline": {
+        "geo": {
+          "line": null,
+          "lang": [
+            513.4,
+            72,
+            584,
+            116
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": false,
+          "allergiesTop": 501,
+          "headingTop": 120,
+          "formInert": true,
+          "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+          "paused": false
+        },
+        "status": [
+          "กรุณารอทีมงานยืนยันการเปลี่ยนแปลงนี้"
+        ],
+        "alerts": [
+          "กรุณาลองอีกครั้ง\nลองอีกครั้ง"
+        ],
+        "state": {
+          "shown": true,
+          "step": "2. ข้อมูลการดูแล",
+          "childName": null,
+          "allergies": "None",
+          "guardian": null,
+          "keysOpen": 0,
+          "reconnecting": null
+        }
+      },
+      "tillLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+      "afterRetry": {
+        "geo": {
+          "line": null,
+          "lang": [
+            513.4,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 445,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "alerts": [],
+        "state": {
+          "shown": true,
+          "step": "2. ข้อมูลการดูแล",
+          "childName": null,
+          "allergies": "None",
+          "guardian": null,
+          "keysOpen": 0,
+          "reconnecting": null
+        }
+      },
+      "english": {
+        "geo": {
+          "line": null,
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "step": "2. Care details"
+      }
+    },
+    "p4display": {
+      "themeBefore": "dark",
+      "menu": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "themeAfter": "light",
+      "ageButtonText": "6 yrs",
+      "pickerLight": {
+        "dataSurface": "light",
+        "darkClass": false,
+        "lightClass": true,
+        "bg": "rgb(251, 245, 239)",
+        "color": "rgb(59, 40, 28)",
+        "ageButtonBg": "rgba(0, 0, 0, 0)",
+        "ageButtonColor": "oklab(0.296409 0.0199053 0.0280578 / 0.7)",
+        "title": ""
+      },
+      "pickerSmall": [
+        {
+          "tag": "button",
+          "role": null,
+          "text": "6 yrs",
+          "w": 54,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "Jan",
+          "w": 45,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "1",
+          "w": 26,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "Close",
+          "w": 16,
+          "h": 16,
+          "withLabel": null
+        }
+      ],
+      "pickerClosed": 0,
+      "langMenuLight": {
+        "menuBg": "oklch(0.208 0.042 265.755)",
+        "choices": [
+          {
+            "text": "English",
+            "color": "rgb(241, 93, 39)",
+            "bg": "oklab(0.664944 0.151089 0.120689 / 0.15)"
+          },
+          {
+            "text": "中文",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "ไทย",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "Русский",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "Français",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          }
+        ],
+        "pillBg": "oklab(0.296409 0.0199053 0.0280578 / 0.1)",
+        "pillColor": "rgb(59, 40, 28)"
+      },
+      "menu2": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "themeBack": "dark",
+      "pickerDarkAgain": {
+        "dataSurface": "dark",
+        "darkClass": true,
+        "lightClass": false,
+        "bg": "rgb(15, 23, 41)",
+        "color": "rgb(248, 250, 252)",
+        "ageButtonBg": "rgba(0, 0, 0, 0)",
+        "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+        "title": ""
+      }
+    },
+    "p8doorA": {
+      "missing": null,
+      "blueReadyToFinish": {
+        "primary": "rgb(60, 131, 246)",
+        "blue": [
+          {
+            "text": "3. Agreements",
+            "h": 44
+          },
+          {
+            "text": "",
+            "h": 24
+          },
+          {
+            "text": "",
+            "h": 24
+          },
+          {
+            "text": "",
+            "h": 24
+          },
+          {
+            "text": "",
+            "h": 24
+          },
+          {
+            "text": "",
+            "h": 24
+          },
+          {
+            "text": "Done",
+            "h": 44
+          }
+        ],
+        "doneLike": [
+          {
+            "text": "Done",
+            "aria": null,
+            "bg": "rgb(60, 131, 246)"
+          }
+        ]
+      },
+      "reg": {
+        "status": 200,
+        "id": "01a1d0c1-e262-7027-b2a3-853b001e854f"
+      },
+      "amountDue": "฿915",
+      "door": {
+        "title": "Check in the drop-off child?",
+        "paidLine": "Receipt Z95401-000001 • ฿915 • Cash",
+        "paidColor": "oklch(0.596 0.145 163.225)",
+        "underTitle": true,
+        "description": "Payment is complete. For each registration, choose whether to check the child in now or leave them booked for later.",
+        "buttons": [
+          "Leave as booked",
+          "Check in now",
+          "Close"
+        ]
+      },
+      "successLineBehind": "Receipt Z95401-000001 • ฿915 • Cash",
+      "after": {
+        "children": [
+          "Zz Test Aya: in_park, photo true"
+        ],
+        "guardian": "Zz Test Parent A",
+        "sale": "Z95401-000001 finalised 915"
+      }
+    },
+    "p4review": {
+      "tillHeading": [
+        "Is this still your child?"
+      ],
+      "displayTheme": "dark",
+      "displayReview": "ZZ TEST SCRUM-954 proof till 1794503184405 · ZZ TEST SCRUM-954 display main WELCOME BACK Is this still your child? Choose a saved child for each place, check their name and age, then confirm. Child 1 Saved — still correct? Child's name Age 6 yrs Confirm Zz Test Aya (age 6) + A new child — ask the team Ask the team to remove a child Edits stay on this display until you press Confirm. Wait for the member's record to be confirmed before pressing Done. Adding or removing a child continues on the sta",
+      "ageButton": {
+        "text": "6 yrs",
+        "enabled": true
+      },
+      "pickerDark": {
+        "dataSurface": "dark",
+        "darkClass": true,
+        "lightClass": false,
+        "bg": "rgb(15, 23, 41)",
+        "color": "rgb(248, 250, 252)",
+        "ageButtonBg": "rgba(0, 0, 0, 0)",
+        "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+        "title": ""
+      },
+      "toggle": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "displayThemeAfter": "light",
+      "pickerLight": {
+        "dataSurface": "light",
+        "darkClass": false,
+        "lightClass": true,
+        "bg": "rgb(251, 245, 239)",
+        "color": "rgb(59, 40, 28)",
+        "ageButtonBg": "rgba(0, 0, 0, 0)",
+        "ageButtonColor": "oklab(0.296409 0.0199053 0.0280578 / 0.7)",
+        "title": ""
+      },
+      "fitReview": {
+        "viewport": [
+          600,
+          1024
+        ],
+        "docScrollWidth": 600,
+        "pageSideways": false,
+        "truncated": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [],
+        "pastRightEdge": [],
+        "problems": false
+      },
+      "smallReview": [],
+      "displayThemeBack": "dark"
+    },
+    "p4half": {
+      "halfThemeAtStart": "light",
+      "halfThemeOnForm": "light",
+      "picker1": {
+        "dataSurface": "light",
+        "darkClass": false,
+        "lightClass": true,
+        "bg": "rgb(251, 245, 239)",
+        "color": "rgb(59, 40, 28)",
+        "ageButtonBg": "oklab(0.296409 0.0199053 0.0280578 / 0.05)",
+        "ageButtonColor": "oklab(0.296409 0.0199053 0.0280578 / 0.55)",
+        "title": ""
+      },
+      "toggle": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "halfThemeAfterToggle": "dark",
+      "picker2": {
+        "dataSurface": "dark",
+        "darkClass": true,
+        "lightClass": false,
+        "bg": "rgb(15, 23, 41)",
+        "color": "rgb(248, 250, 252)",
+        "ageButtonBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.55)",
+        "title": ""
+      }
+    },
+    "p4halfReview": {
+      "round1": {
+        "halfTheme": "light",
+        "picker": {
+          "dataSurface": "light",
+          "darkClass": false,
+          "lightClass": true,
+          "bg": "rgb(251, 245, 239)",
+          "color": "rgb(59, 40, 28)",
+          "ageButtonBg": "rgba(0, 0, 0, 0)",
+          "ageButtonColor": "oklab(0.296409 0.0199053 0.0280578 / 0.7)",
+          "title": ""
+        }
+      },
+      "round2": {
+        "halfTheme": "dark",
+        "picker": {
+          "dataSurface": "dark",
+          "darkClass": true,
+          "lightClass": false,
+          "bg": "rgb(15, 23, 41)",
+          "color": "rgb(248, 250, 252)",
+          "ageButtonBg": "rgba(0, 0, 0, 0)",
+          "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.7)",
+          "title": ""
+        }
+      },
+      "staffSide": {
+        "dataSurface": "light",
+        "darkClass": false,
+        "lightClass": true,
+        "bg": "rgb(251, 245, 239)",
+        "color": "rgb(59, 40, 28)",
+        "ageButtonBg": "rgba(0, 0, 0, 0)",
+        "ageButtonColor": "oklab(0.296409 0.0199053 0.0280578 / 0.7)",
+        "title": ""
+      },
+      "cancel": null,
+      "unknownSales": [],
+      "registrationsWritten": 0,
+      "halfThemeEnd": "dark"
+    },
+    "p6familyL": {
+      "halfTheme": "light",
+      "amountDue": "฿915",
+      "door": {
+        "title": "Check in the drop-off child?",
+        "paidLine": "Receipt Z95401-000002 • ฿915 • Cash"
+      },
+      "after": {
+        "children": [
+          "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956: in_park, photo true, age ?"
+        ],
+        "guardian": "ZZ TEST 954 guardian L",
+        "contactConfirmedBy": "family",
+        "channel": "whatsapp",
+        "sale": "Z95401-000002 finalised 915"
+      }
+    },
+    "p6phone956": {
+      "w390": {
+        "card": "ZZ TEST 954 guardian L Awaiting confirmation ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 6 yrs DROP-OFF 1h 00m left",
+        "measure": {
+          "innerWidth": 390,
+          "docScrollWidth": 390,
+          "bodyScrollWidth": 390,
+          "viewport": {
+            "w": 390,
+            "scrollW": 390,
+            "clientW": 390
+          },
+          "innerWrapper": {
+            "display": "block",
+            "w": 390
+          },
+          "childName": {
+            "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+            "h": 72,
+            "lineHeight": 24,
+            "lines": 3,
+            "right": 309
+          },
+          "topBarTitle": [
+            {
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "ellipsis": true
+            }
+          ]
+        },
+        "whatsapp": null,
+        "food": null,
+        "guardian": {
+          "text": "ZZ TEST 954 guardian L",
+          "box": [
+            33,
+            89,
+            210.6,
+            28
+          ],
+          "textRight": 243.6,
+          "insideWindowX": true,
+          "whole": true,
+          "ellipsis": false
+        },
+        "fit": {
+          "viewport": [
+            390,
+            844
+          ],
+          "docScrollWidth": 390,
+          "pageSideways": false,
+          "truncated": [
+            {
+              "tag": "SPAN",
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "sw": 466,
+              "cw": 310
+            }
+          ],
+          "spill": [],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": true
+        }
+      },
+      "w360": {
+        "card": "ZZ TEST 954 guardian L Awaiting confirmation ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 6 yrs DROP-OFF 59m left",
+        "measure": {
+          "innerWidth": 360,
+          "docScrollWidth": 360,
+          "bodyScrollWidth": 360,
+          "viewport": {
+            "w": 360,
+            "scrollW": 360,
+            "clientW": 360
+          },
+          "innerWrapper": {
+            "display": "block",
+            "w": 360
+          },
+          "childName": {
+            "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+            "h": 72,
+            "lineHeight": 24,
+            "lines": 3,
+            "right": 279
+          },
+          "topBarTitle": [
+            {
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "ellipsis": true
+            }
+          ]
+        },
+        "whatsapp": null,
+        "food": null,
+        "guardian": {
+          "text": "ZZ TEST 954 guardian L",
+          "box": [
+            33,
+            89,
+            210.6,
+            28
+          ],
+          "textRight": 243.6,
+          "insideWindowX": true,
+          "whole": true,
+          "ellipsis": false
+        },
+        "fit": {
+          "viewport": [
+            360,
+            740
+          ],
+          "docScrollWidth": 360,
+          "pageSideways": false,
+          "truncated": [
+            {
+              "tag": "SPAN",
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "sw": 466,
+              "cw": 280
+            }
+          ],
+          "spill": [
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            },
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            }
+          ],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": true
+        }
+      }
+    },
+    "p6phone956b": {
+      "390x844": {
+        "top": {
+          "innerWidth": 390,
+          "docScrollWidth": 390,
+          "chip": {
+            "text": "WhatsApp confirmed",
+            "left": 213.3,
+            "right": 357,
+            "lines": 2,
+            "boxRight": 357,
+            "whole": true
+          },
+          "food": {
+            "row": "May order foodNo",
+            "rowRight": 357,
+            "value": "No",
+            "valueText": {
+              "left": 324.7,
+              "right": 344,
+              "lines": 1
+            }
+          },
+          "childName": {
+            "left": 101,
+            "right": 305.2,
+            "lines": 3,
+            "h": 72
+          },
+          "guardian": {
+            "left": 33,
+            "right": 243.6,
+            "lines": 1
+          }
+        },
+        "lower": {
+          "innerWidth": 390,
+          "docScrollWidth": 390,
+          "chip": {
+            "text": "WhatsApp confirmed",
+            "left": 213.3,
+            "right": 357,
+            "lines": 2,
+            "boxRight": 357,
+            "whole": true
+          },
+          "food": {
+            "row": "May order foodNo",
+            "rowRight": 357,
+            "value": "No",
+            "valueText": {
+              "left": 324.7,
+              "right": 344,
+              "lines": 1
+            }
+          },
+          "childName": {
+            "left": 101,
+            "right": 305.2,
+            "lines": 3,
+            "h": 72
+          },
+          "guardian": {
+            "left": 33,
+            "right": 243.6,
+            "lines": 1
+          }
+        },
+        "fit": {
+          "viewport": [
+            390,
+            844
+          ],
+          "docScrollWidth": 390,
+          "pageSideways": false,
+          "truncated": [
+            {
+              "tag": "SPAN",
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "sw": 466,
+              "cw": 310
+            }
+          ],
+          "spill": [],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": true
+        }
+      },
+      "360x740": {
+        "top": {
+          "innerWidth": 360,
+          "docScrollWidth": 360,
+          "chip": {
+            "text": "WhatsApp confirmed",
+            "left": 183.3,
+            "right": 327,
+            "lines": 2,
+            "boxRight": 327,
+            "whole": true
+          },
+          "food": {
+            "row": "May order foodNo",
+            "rowRight": 327,
+            "value": "No",
+            "valueText": {
+              "left": 294.7,
+              "right": 314,
+              "lines": 1
+            }
+          },
+          "childName": {
+            "left": 101,
+            "right": 275.1,
+            "lines": 3,
+            "h": 72
+          },
+          "guardian": {
+            "left": 33,
+            "right": 243.6,
+            "lines": 1
+          }
+        },
+        "lower": {
+          "innerWidth": 360,
+          "docScrollWidth": 360,
+          "chip": {
+            "text": "WhatsApp confirmed",
+            "left": 183.3,
+            "right": 327,
+            "lines": 2,
+            "boxRight": 327,
+            "whole": true
+          },
+          "food": {
+            "row": "May order foodNo",
+            "rowRight": 327,
+            "value": "No",
+            "valueText": {
+              "left": 294.7,
+              "right": 314,
+              "lines": 1
+            }
+          },
+          "childName": {
+            "left": 101,
+            "right": 275.1,
+            "lines": 3,
+            "h": 72
+          },
+          "guardian": {
+            "left": 33,
+            "right": 243.6,
+            "lines": 1
+          }
+        },
+        "fit": {
+          "viewport": [
+            360,
+            740
+          ],
+          "docScrollWidth": 360,
+          "pageSideways": false,
+          "truncated": [
+            {
+              "tag": "SPAN",
+              "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+              "sw": 466,
+              "cw": 280
+            }
+          ],
+          "spill": [
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            },
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            }
+          ],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": true
+        }
+      }
+    },
+    "p5gate": {
+      "gate390": {
+        "innerWidth": 390,
+        "docScrollWidth": 390,
+        "continue": {
+          "left": 136.5,
+          "right": 374,
+          "w": 237.5,
+          "h": 56,
+          "rightMargin": 16,
+          "textLines": 1,
+          "enabled": true
+        },
+        "back": {
+          "left": 16,
+          "right": 124.5,
+          "leftMargin": 16
+        }
+      },
+      "gate360": {
+        "innerWidth": 360,
+        "docScrollWidth": 360,
+        "continue": {
+          "left": 136.5,
+          "right": 344,
+          "w": 207.5,
+          "h": 56,
+          "rightMargin": 16,
+          "textLines": 2,
+          "enabled": true
+        },
+        "back": {
+          "left": 16,
+          "right": 124.5,
+          "leftMargin": 16
+        }
+      }
+    },
+    "p5form": {
+      "handText": "2 no gate Oto Play Park, Central Floresta [staff] Children Playing Alone Tourist Cancel Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision",
+      "390x844": {
+        "top": {
+          "innerHeight": 844,
+          "bodyScroll": {
+            "overflowY": "auto",
+            "scrollTop": 0,
+            "scrollHeight": 2816,
+            "clientHeight": 624,
+            "rect": [
+              0,
+              624
+            ]
+          },
+          "heading": [
+            88,
+            168
+          ],
+          "language": [
+            16,
+            50
+          ],
+          "bar": [
+            624,
+            755
+          ],
+          "returnPhone": [
+            772,
+            828
+          ],
+          "scrollingShare": 73.9
+        },
+        "scrolled400": {
+          "innerHeight": 844,
+          "bodyScroll": {
+            "overflowY": "auto",
+            "scrollTop": 400,
+            "scrollHeight": 2816,
+            "clientHeight": 624,
+            "rect": [
+              0,
+              624
+            ]
+          },
+          "heading": [
+            -312,
+            -232
+          ],
+          "language": [
+            -384,
+            -350
+          ],
+          "bar": [
+            624,
+            755
+          ],
+          "returnPhone": [
+            772,
+            828
+          ],
+          "scrollingShare": 73.9
+        },
+        "reach": {
+          "camera": {
+            "sel": "camera",
+            "found": true,
+            "text": "Start camera",
+            "box": [
+              57,
+              284,
+              276,
+              56
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "numberTick": {
+            "sel": "numberTick",
+            "found": true,
+            "text": "",
+            "box": [
+              74,
+              300,
+              24,
+              24
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "stillNeeded": {
+            "sel": "stillNeeded",
+            "found": true,
+            "text": "Still needed before Done: your name · your consent · each confirmation · confirm",
+            "box": [
+              16,
+              637,
+              358,
+              60
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "done": {
+            "sel": "done",
+            "found": true,
+            "text": "Done",
+            "box": [
+              304.8,
+              705,
+              69.2,
+              38
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": false
+          },
+          "returnPhone": {
+            "sel": "returnPhone",
+            "found": true,
+            "text": "Return phone to staff",
+            "box": [
+              16,
+              772,
+              358,
+              56
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          }
+        },
+        "fit": {
+          "viewport": [
+            390,
+            844
+          ],
+          "docScrollWidth": 390,
+          "pageSideways": false,
+          "truncated": [],
+          "spill": [],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": false
+        },
+        "small": [
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Change language",
+            "w": 97,
+            "h": 34,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Select country code",
+            "w": 99,
+            "h": 40,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "WhatsApp",
+            "w": 101,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Telegram",
+            "w": 94,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "LINE",
+            "w": 66,
+            "h": 28,
+            "withLabel": null
+          }
+        ]
+      },
+      "360x740": {
+        "top": {
+          "innerHeight": 740,
+          "bodyScroll": {
+            "overflowY": "auto",
+            "scrollTop": 0,
+            "scrollHeight": 2912,
+            "clientHeight": 500,
+            "rect": [
+              0,
+              500
+            ]
+          },
+          "heading": [
+            88,
+            168
+          ],
+          "language": [
+            16,
+            50
+          ],
+          "bar": [
+            500,
+            651
+          ],
+          "returnPhone": [
+            668,
+            724
+          ],
+          "scrollingShare": 67.6
+        },
+        "scrolled400": {
+          "innerHeight": 740,
+          "bodyScroll": {
+            "overflowY": "auto",
+            "scrollTop": 400,
+            "scrollHeight": 2912,
+            "clientHeight": 500,
+            "rect": [
+              0,
+              500
+            ]
+          },
+          "heading": [
+            -312,
+            -232
+          ],
+          "language": [
+            -384,
+            -350
+          ],
+          "bar": [
+            500,
+            651
+          ],
+          "returnPhone": [
+            668,
+            724
+          ],
+          "scrollingShare": 67.6
+        },
+        "reach": {
+          "camera": {
+            "sel": "camera",
+            "found": true,
+            "text": "Start camera",
+            "box": [
+              57,
+              221.5,
+              246,
+              56
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "numberTick": {
+            "sel": "numberTick",
+            "found": true,
+            "text": "",
+            "box": [
+              74,
+              237.5,
+              24,
+              24
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "stillNeeded": {
+            "sel": "stillNeeded",
+            "found": true,
+            "text": "Still needed before Done: your name · your consent · each confirmation · confirm",
+            "box": [
+              16,
+              513,
+              328,
+              80
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          },
+          "done": {
+            "sel": "done",
+            "found": true,
+            "text": "Done",
+            "box": [
+              274.8,
+              601,
+              69.2,
+              38
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": false
+          },
+          "returnPhone": {
+            "sel": "returnPhone",
+            "found": true,
+            "text": "Return phone to staff",
+            "box": [
+              16,
+              668,
+              328,
+              56
+            ],
+            "inWindow": true,
+            "clearOfBar": true,
+            "topmost": true
+          }
+        },
+        "fit": {
+          "viewport": [
+            360,
+            740
+          ],
+          "docScrollWidth": 360,
+          "pageSideways": false,
+          "truncated": [],
+          "spill": [
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            },
+            {
+              "text": "7 Messages",
+              "by": 2.3,
+              "box": [
+                315,
+                683,
+                45,
+                57
+              ]
+            }
+          ],
+          "outsideViewport": [],
+          "sidewaysScrollers": [],
+          "pastRightEdge": [],
+          "problems": true
+        },
+        "small": [
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Change language",
+            "w": 97,
+            "h": 34,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Select country code",
+            "w": 99,
+            "h": 40,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "WhatsApp",
+            "w": 101,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Telegram",
+            "w": 94,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "LINE",
+            "w": 66,
+            "h": 28,
+            "withLabel": null
+          }
+        ]
+      }
+    },
+    "p5sale": {
+      "missing": null,
+      "doneReach": {
+        "sel": "done",
+        "found": true,
+        "text": "Done",
+        "box": [
+          304.8,
+          705,
+          69.2,
+          38
+        ],
+        "inWindow": true,
+        "clearOfBar": true,
+        "topmost": true
+      },
+      "returnReach": {
+        "sel": "returnPhone",
+        "found": true,
+        "text": "Return phone to staff",
+        "box": [
+          16,
+          772,
+          358,
+          56
+        ],
+        "inWindow": true,
+        "clearOfBar": true,
+        "topmost": true
+      },
+      "reg": {
+        "status": 200,
+        "id": "01a1d0cb-3e6f-7034-8280-151d516156c0"
+      },
+      "paid": "Payment Successful Receipt Z95402-000001 · ฿915 · Cash",
+      "doorDialogOnPhone": 0,
+      "reg2": {
+        "guardian": "ZZ TEST 954 parent P",
+        "phoneEnds": "4013",
+        "contactConfirmedBy": "family",
+        "children": [
+          {
+            "name": "ZZ TEST PHONE P",
+            "status": "in_park",
+            "photo": true,
+            "allergies": "ZZ TEST none"
+          }
+        ],
+        "regPhoto": true
+      },
+      "sale": {
+        "receipt": "Z95402-000001",
+        "status": "finalised",
+        "gross": 915
+      }
+    },
+    "p7saleC": {
+      "amountDue": "฿1605",
+      "orderPanel": "Current Order TOURIST ZZ TEST 954 guardian C ZZ TEST Mint C 954 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok C 954 ฿690 1 Hour Play ฿690 Drop-off service Configure Apply Code \"ZZTEST954A\" is not valid until 13 Nov 2026. Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿105 Total ฿1605 Cancel Pay ฿1605",
+      "door": {
+        "title": "Check in the drop-off child?",
+        "paidLine": "฿1605 • Cash"
+      },
+      "sale": {
+        "receipt": "Z95401-000003",
+        "status": "finalised",
+        "gross": 1605,
+        "discount": 0,
+        "subtotal": 1605,
+        "vat": 105,
+        "lines": [
+          "ZZ TEST Mint C 954 kids base 690 gross 690",
+          "ZZ TEST Mint C 954 service_fee base 225 gross 225",
+          "ZZ TEST Nok C 954 kids base 690 gross 690"
+        ]
+      }
+    },
+    "p7saleD": {
+      "amountDue": "฿1444.50",
+      "orderPanel": "Current Order TOURIST ZZ TEST 954 guardian D ZZ TEST Mint D 954 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST Nok D 954 ฿690 1 Hour Play ฿690 Drop-off service Configure ZZ TEST SCRUM-954 proof ZZTEST954A ZZTEST954A -฿160.50 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1605 VAT included ฿94.50 Total ฿1444.50 Cancel Pay ฿1444.50",
+      "doorAtOnce": "฿1444.50 • Cash",
+      "doorOver4s": [
+        "Receipt Z95401-000004 • ฿1444.50 • Cash"
+      ],
+      "successLineBehind": "Receipt Z95401-000004 • ฿1444.50 • Cash",
+      "sale": {
+        "receipt": "Z95401-000004",
+        "status": "finalised",
+        "gross": 1444.5,
+        "discount": 160.5,
+        "subtotal": 1605,
+        "vat": 94.5,
+        "lines": [
+          "ZZ TEST Mint D 954 kids base 690 gross 621",
+          "ZZ TEST Mint D 954 service_fee base 225 gross 202.5",
+          "ZZ TEST Nok D 954 kids base 690 gross 621"
+        ]
+      }
+    },
+    "p7historyDesk": {
+      "D": {
+        "listCard": "Z95401-000004 · ZZ TEST 954 guardian D 13 Nov, 00:27 [staff] Paid ฿1444.50",
+        "cards": [
+          {
+            "head": "ZZ TEST Mint D 954 · 1 Hour Play · Tourist ฿915",
+            "headAmount": "฿915",
+            "lines": [
+              "Kids 1× ฿690 ฿690",
+              "Drop-off service 1× ฿225 ฿225"
+            ]
+          },
+          {
+            "head": "ZZ TEST Nok D 954 · 1 Hour Play · Tourist ฿690",
+            "headAmount": "฿690",
+            "lines": [
+              "Kids 1× ฿690 ฿690"
+            ]
+          },
+          {
+            "head": "BRACELETS PRINTED",
+            "headAmount": null,
+            "lines": [
+              "2 child"
+            ]
+          }
+        ],
+        "subtotal": "฿1605",
+        "code": "−฿160.50",
+        "vat": "฿94.50",
+        "total": "฿1444.50",
+        "sumOfCards": 1605,
+        "cardsEqualSubtotal": true,
+        "payments": "Cash · Approved 13 Nov, 00:27 ฿1444.50 "
+      },
+      "C": {
+        "listCard": "Z95401-000003 · ZZ TEST 954 guardian C 13 Nov, 00:26 [staff] Paid ฿1605",
+        "cards": [
+          {
+            "head": "ZZ TEST Mint C 954 · 1 Hour Play · Tourist ฿915",
+            "headAmount": "฿915",
+            "lines": [
+              "Kids 1× ฿690 ฿690",
+              "Drop-off service 1× ฿225 ฿225"
+            ]
+          },
+          {
+            "head": "ZZ TEST Nok C 954 · 1 Hour Play · Tourist ฿690",
+            "headAmount": "฿690",
+            "lines": [
+              "Kids 1× ฿690 ฿690"
+            ]
+          },
+          {
+            "head": "BRACELETS PRINTED",
+            "headAmount": null,
+            "lines": [
+              "2 child"
+            ]
+          }
+        ],
+        "subtotal": "฿1605",
+        "code": null,
+        "vat": "฿105",
+        "total": "฿1605",
+        "sumOfCards": 1605,
+        "cardsEqualSubtotal": true,
+        "payments": "Cash · Approved 13 Nov, 00:26 ฿1605 "
+      }
+    },
+    "p7p8phone": {
+      "phoneOut": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "D": {
+        "card": "Z95401-000004 · ZZ TEST 954 guardian D 13 Nov, 00:27 [staff] Paid ฿1444.50",
+        "detail": "TICKET LINES BRACELETS PRINTED 2 2 child · 0 adult Z95401-CWD86S ZZ TEST Mint D 954 Z95401-QVEX2F ZZ TEST Nok D 954 Subtotal ฿1605 ZZ TEST SCRUM-954 proof ZZTEST954A −฿160.50 VAT (included) ฿94.50 Total paid ฿1444.50",
+        "cards": [
+          "TICKET LINES",
+          "BRACELETS PRINTED",
+          "2",
+          "2 child · 0 adult",
+          "Z95401-CWD86S ZZ TEST Mint D 954",
+          "Z95401-QVEX2F ZZ TEST Nok D 954",
+          "Subtotal",
+          "฿1605",
+          "ZZ TEST SCRUM-954 proof ZZTEST954A",
+          "−฿160.50",
+          "VAT (included)",
+          "฿94.50",
+          "Total paid",
+          "฿1444.50",
+          "PAYMENT",
+          "Cash · Approved",
+          "13 Nov, 00:27",
+          "฿1444.50",
+          "Reprint",
+          "Add time",
+          "Refund (฿1444.50 left)",
+          "Tickets",
+          "F&B",
+          "Shop"
+        ]
+      },
+      "L": {
+        "card": "Z95401-000002 · ZZ TEST 954 guardian L 13 Nov, 00:22 [staff] Paid ฿915",
+        "rows": [
+          {
+            "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 · 1 Hour Play · 1 ppl ฿915",
+            "button": [
+              16,
+              374
+            ],
+            "labelLines": 3,
+            "labelEllipsis": false,
+            "amount": "฿915",
+            "amountRight": 357,
+            "amountLeft": 316.7,
+            "labelRight": 304.7,
+            "amountOnRightOfLabel": true,
+            "insideWindow": true
+          }
+        ],
+        "docScrollWidth": [
+          390,
+          390
+        ],
+        "rows360": [
+          {
+            "amountRight": 327,
+            "innerWidth": 360,
+            "text": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 · 1 Hour Play · 1 ppl ฿915"
+          }
+        ],
+        "refundsAfter": 0
+      }
+    },
+    "p7phoneLines": {
+      "D": {
+        "ariaExpandedBefore": "true",
+        "linesShownBefore": true,
+        "lines": [
+          "TICKET LINES",
+          "ZZ TEST Mint D 954 · 1 Hour Play",
+          "฿915",
+          "Kids · 1× ฿690",
+          "฿690",
+          "Drop-off service · 1× ฿225",
+          "฿225",
+          "ZZ TEST Nok D 954 · 1 Hour Play",
+          "฿690",
+          "Kids · 1× ฿690",
+          "฿690",
+          "BRACELETS PRINTED",
+          "2",
+          "2 child · 0 adult",
+          "Z95401-CWD86S ZZ TEST Mint D 954",
+          "Z95401-QVEX2F ZZ TEST Nok D 954",
+          "Subtotal",
+          "฿1605",
+          "ZZ TEST SCRUM-954 proof ZZTEST954A",
+          "−฿160.50",
+          "VAT (included)",
+          "฿94.50",
+          "Total paid",
+          "฿1444.50"
+        ],
+        "cardHeads": [
+          [
+            "ZZ TEST Mint D 954 · 1 Hour Play",
+            "฿915"
+          ],
+          [
+            "ZZ TEST Nok D 954 · 1 Hour Play",
+            "฿690"
+          ]
+        ],
+        "sumOfCards": 1605
+      },
+      "C": {
+        "ariaExpandedBefore": "true",
+        "linesShownBefore": true,
+        "lines": [
+          "TICKET LINES",
+          "ZZ TEST Mint C 954 · 1 Hour Play",
+          "฿915",
+          "Kids · 1× ฿690",
+          "฿690",
+          "Drop-off service · 1× ฿225",
+          "฿225",
+          "ZZ TEST Nok C 954 · 1 Hour Play",
+          "฿690",
+          "Kids · 1× ฿690",
+          "฿690",
+          "BRACELETS PRINTED",
+          "2",
+          "2 child · 0 adult",
+          "Z95401-KFT8SR ZZ TEST Mint C 954",
+          "Z95401-3MKTGG ZZ TEST Nok C 954",
+          "Subtotal",
+          "฿1605",
+          "VAT (included)",
+          "฿105",
+          "Total paid",
+          "฿1605"
+        ],
+        "cardHeads": [
+          [
+            "ZZ TEST Mint C 954 · 1 Hour Play",
+            "฿915"
+          ],
+          [
+            "ZZ TEST Nok C 954 · 1 Hour Play",
+            "฿690"
+          ]
+        ],
+        "sumOfCards": 1605
+      }
+    },
+    "p8refundRows": {
+      "360": [
+        {
+          "labelLines": 4,
+          "amount": "฿915",
+          "amountRight": 327,
+          "buttonRight": 344,
+          "innerWidth": 360
+        }
+      ],
+      "390": [
+        {
+          "labelLines": 3,
+          "amount": "฿915",
+          "amountRight": 357,
+          "buttonRight": 374,
+          "innerWidth": 390
+        }
+      ],
+      "refunds": 0
+    },
+    "p9party": {
+      "before": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+      "dialog": "",
+      "settle": {
+        "status": 200,
+        "state": "open",
+        "gross": 16900,
+        "deposit": 1000,
+        "outstanding": 15900,
+        "error": null
+      },
+      "recorded": "Recorded payments Party deposit · ฿1000.00 Balance due ฿15900.00",
+      "finalise": 200,
+      "afterPart": "Recorded payments Party deposit · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00",
+      "pageAfter": "Party bill Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+      "saleNow": {
+        "receipt": null,
+        "status": "tendering",
+        "attempts": [
+          "other approved 1000 deposit",
+          "cash approved 100"
+        ]
+      }
+    },
+    "p9refund": {
+      "listCard": "Party settlement · ZZ TEST SCRUM-954 party 13 Nov, 00:33 [staff] Partly paid BALANCE DUE ฿15800 of ฿16900",
+      "before": {
+        "text": "Payments Party deposit · Approved 13 Nov, 00:33 ฿1000 Cash · Approved 13 Nov, 00:33 ฿100",
+        "rows": [
+          "Party deposit · Approved 13 Nov, 00:33 ฿1000",
+          "Cash · Approved 13 Nov, 00:33 ฿100"
+        ],
+        "statusSpans": [
+          {
+            "t": "Party deposit · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Party deposit · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Party deposit · Approved",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "· Approved",
+            "c": "oklch(0.765 0.177 163.223)"
+          },
+          {
+            "t": "Cash · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Cash · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Cash · Approved",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "· Approved",
+            "c": "oklch(0.765 0.177 163.223)"
+          }
+        ]
+      },
+      "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+      "press": "Refund ฿100",
+      "refundStatus": 200,
+      "after": {
+        "text": "Payments Party deposit · Stays with the party 13 Nov, 00:33 ฿1000 Cash · Approved 13 Nov, 00:33 ฿100",
+        "rows": [
+          "Party deposit · Stays with the party 13 Nov, 00:33 ฿1000",
+          "Cash · Approved 13 Nov, 00:33 ฿100"
+        ],
+        "statusSpans": [
+          {
+            "t": "Party deposit · Stays with the party13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Party deposit · Stays with the party13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Party deposit · Stays with the party",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "· Stays with the party",
+            "c": "rgb(118, 100, 86)"
+          },
+          {
+            "t": "Cash · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Cash · Approved13 Nov, 00:33",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "Cash · Approved",
+            "c": "rgb(59, 40, 28)"
+          },
+          {
+            "t": "· Approved",
+            "c": "oklch(0.765 0.177 163.223)"
+          }
+        ]
+      },
+      "headAfter": "Back to history Voided Party settlement ZZ TEST SCRUM-954 party 13 Nov, 00:33 · sold by [staff] ZZ TEST SCRUM-954 proof till 1794503184405 · trading day 2026-11-12 · Tourist · Weekday pricing Items · Tourist ฿16900 Birt",
+      "sale": {
+        "status": "voided",
+        "refund": "refunded",
+        "attempts": [
+          "other cancelled 1000 deposit",
+          "cash approved 100"
+        ]
+      },
+      "partyApi": {
+        "deposit": 1000,
+        "settlement": "voided"
+      }
+    },
+    "p9after": {
+      "partyBill": "Party bill Birthday package, Central Floresta ฿16900 Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+      "btns": [
+        "Settle party",
+        "Take balance ฿15900"
+      ],
+      "phoneLayout": 390,
+      "phonePayments": [
+        "PAYMENT",
+        "Party deposit · Stays with the party",
+        "13 Nov, 00:33",
+        "฿1000",
+        "Cash · Approved",
+        "13 Nov, 00:33",
+        "฿100",
+        "REFUND HISTORY",
+        "−฿100"
+      ]
+    },
+    "p10thai1": {
+      "theme": "dark",
+      "firstScreenKeys": {
+        "hide": "ซ่อน",
+        "aria": "ซ่อน",
+        "sameBgAsSpace": true,
+        "space": "เว้นวรรค",
+        "primaryClass": false,
+        "hideH": 48
+      },
+      "keysAfterHide": 0,
+      "sizesTh1": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "ไทย",
+          "h": 44,
+          "w": 70.6
+        },
+        "pills": [
+          {
+            "text": "1. ลูก ๆ ของคุณ",
+            "h": 44,
+            "w": 140.8
+          },
+          {
+            "text": "2. ข้อมูลการดูแล",
+            "h": 44,
+            "w": 146.8
+          },
+          {
+            "text": "3. ข้อตกลง",
+            "h": 44,
+            "w": 110.8
+          }
+        ],
+        "bar": [
+          {
+            "text": "ขอความช่วยเหลือจากทีมงาน",
+            "h": 44,
+            "w": 191.2
+          },
+          {
+            "text": "ดำเนินการต่อ",
+            "h": 44,
+            "w": 107.4
+          }
+        ],
+        "under44": []
+      },
+      "nameBoxes": 2,
+      "formKeys": {
+        "hide": "ซ่อน",
+        "sameBgAsSpace": true,
+        "space": "เว้นวรรค",
+        "primaryClass": false
+      },
+      "ageButtons": 2,
+      "pickerTh": {
+        "dataSurface": "dark",
+        "darkClass": true,
+        "lightClass": false,
+        "bg": "rgb(15, 23, 41)",
+        "color": "rgb(248, 250, 252)",
+        "ageButtonBg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)",
+        "ageButtonColor": "oklab(0.983828 -0.00126734 -0.00320476 / 0.55)",
+        "title": ""
+      },
+      "state": {
+        "shown": true,
+        "step": "1. ลูก ๆ ของคุณ",
+        "childName": "Zz Test Thai A",
+        "allergies": null,
+        "guardian": null,
+        "keysOpen": 0,
+        "reconnecting": null
+      },
+      "mirror": {
+        "shown": true,
+        "childName": "Zz Test Thai A",
+        "allergies": null,
+        "dietary": null,
+        "guardian": null
+      }
+    },
+    "p10thai2": {
+      "photoBlocks": 2,
+      "photo0": "ทีมงานได้รับรูปภาพนี้แล้ว",
+      "photo1": "ทีมงานได้รับรูปภาพนี้แล้ว",
+      "allergyPlacing": {
+        "fieldInView": true,
+        "keysInView": true,
+        "keysBelowField": true,
+        "clearOfBar": true,
+        "viewport": "600x1024",
+        "scrollTop": 336,
+        "field": [
+          550,
+          638
+        ],
+        "keys": [
+          650,
+          860
+        ],
+        "bar": [
+          947,
+          1024
+        ]
+      },
+      "allergyHide": "ซ่อน",
+      "blueTh": {
+        "primary": "rgb(60, 131, 246)",
+        "blue": [
+          {
+            "text": "3. ข้อตกลง",
+            "h": 44
+          },
+          {
+            "text": "เสร็จสิ้น",
+            "h": 44
+          }
+        ],
+        "doneLike": [
+          {
+            "text": "ซ่อน",
+            "aria": "ซ่อน",
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.05)"
+          },
+          {
+            "text": "เสร็จสิ้น",
+            "aria": null,
+            "bg": "rgb(60, 131, 246)"
+          }
+        ]
+      },
+      "sizesTh3": {
+        "viewport": "600x1024",
+        "language": {
+          "text": "ไทย",
+          "h": 44,
+          "w": 70.6
+        },
+        "pills": [
+          {
+            "text": "1. ลูก ๆ ของคุณ",
+            "h": 44,
+            "w": 140.8
+          },
+          {
+            "text": "2. ข้อมูลการดูแล",
+            "h": 44,
+            "w": 146.8
+          },
+          {
+            "text": "3. ข้อตกลง",
+            "h": 44,
+            "w": 110.8
+          }
+        ],
+        "bar": [
+          {
+            "text": "ขอความช่วยเหลือจากทีมงาน",
+            "h": 44,
+            "w": 191.2
+          },
+          {
+            "text": "ย้อนกลับ",
+            "h": 44,
+            "w": 83.8
+          },
+          {
+            "text": "เสร็จสิ้น",
+            "h": 44,
+            "w": 76.9
+          }
+        ],
+        "under44": []
+      },
+      "state": {
+        "shown": true,
+        "step": "3. ข้อตกลง",
+        "childName": null,
+        "allergies": null,
+        "guardian": "Zz Test Parent Thai",
+        "keysOpen": 0,
+        "reconnecting": null
+      },
+      "fit": {
+        "viewport": [
+          600,
+          1024
+        ],
+        "docScrollWidth": 600,
+        "pageSideways": false,
+        "truncated": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [],
+        "pastRightEdge": [],
+        "problems": false
+      },
+      "small": [
+        {
+          "tag": "button",
+          "role": null,
+          "text": "WhatsApp",
+          "w": 127,
+          "h": 40,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "Telegram",
+          "w": 119,
+          "h": 40,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "LINE",
+          "w": 87,
+          "h": 40,
+          "withLabel": null
+        }
+      ],
+      "amountDue": "฿1830",
+      "door": {
+        "title": "Check in the drop-off child?",
+        "paidLine": "Receipt Z95401-000005 • ฿1830 • Cash"
+      },
+      "reg": {
+        "guardian": "Zz Test Parent Thai",
+        "contactConfirmedBy": "family",
+        "children": [
+          {
+            "name": "Zz Test Thai A",
+            "status": "in_park",
+            "allergies": "Shellfish",
+            "photo": true
+          },
+          {
+            "name": "Zz Test Thai B",
+            "status": "in_park",
+            "allergies": null,
+            "photo": true
+          }
+        ]
+      },
+      "sale": {
+        "receipt": "Z95401-000005",
+        "status": "finalised",
+        "gross": 1830
+      },
+      "displayAfter": "ZZ TEST SCRUM-954 proof till 1794503184405 · ZZ TEST SCRUM-954 display thai ไทย ลูกค้า Zz Test Parent Thai ขอบคุณค่ะ/ครับ! นี่คือสิ่งที่คุณจะได้รับ — ขอให้สนุกกับการเล่น! 2 สายรัดข้อมือเด็ก 0 สายรัดข้"
+    },
+    "p10ordinary": {
+      "straightToPayment": true,
+      "amountDue": "฿1040",
+      "doorDialog": 0,
+      "success": "Receipt Z95401-000006 • ฿1040 • Cash",
+      "sale": {
+        "receipt": "Z95401-000006",
+        "status": "finalised",
+        "gross": 1040
+      },
+      "revoke": {
+        "label": "thai",
+        "revoked": true
+      }
+    },
+    "p10half": {
+      "halfTheme": "light",
+      "halfSizes": {
+        "lang": 34,
+        "done": 38
+      },
+      "fitHalf": {
+        "viewport": [
+          1680,
+          1050
+        ],
+        "docScrollWidth": 1680,
+        "pageSideways": false,
+        "truncated": [
+          {
+            "tag": "SPAN",
+            "text": "ZZ TEST SCRUM-954 proof till 1794503184405",
+            "sw": 320,
+            "cw": 140
+          }
+        ],
+        "spill": [
+          {
+            "text": "ZZ TEST SCRUM-954 proof till 1794503184405",
+            "by": 167.6,
+            "box": [
+              1329.5,
+              62.5,
+              186,
+              36
+            ]
+          },
+          {
+            "text": "ZZ TEST SCRUM-954 proof till 1794503184405",
+            "by": 167.6,
+            "box": [
+              1329.5,
+              62.5,
+              186,
+              36
+            ]
+          }
+        ],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 567,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "pastRightEdge": [],
+        "problems": true
+      },
+      "cancel": null,
+      "unknownSales": [],
+      "registrationsWritten": 0
+    }
+  },
+  "odd": [
+    {
+      "what": "the ZZ TEST code was first made valid from the calendar day (13 Nov) while the trading day was still 12 Nov; sale C went through at full price (no code) and is kept as the \"no code\" sale; the code was widened to 12-13 Nov",
+      "patch": 200
+    },
+    {
+      "what": "the credit-grant QR code on 20b was blacked out on the saved picture; svg QR codes are masked from then on"
+    }
+  ],
+  "defects": [
+    {
+      "what": "Counter display: a language chosen while the display is reconnecting locks the whole family form (inert) under \"Please try again / Retry\", pushes the form down 56 px, and it stays locked after the connection returns until the family presses Retry; the language button cannot be pressed again",
+      "pictures": [
+        "06a-600-defect-thai-chosen-offline-form-locked-retry-bar.png",
+        "06b-defect-online-8s-later-form-still-locked.png",
+        "06c-600-after-retry-form-free-thai.png"
+      ],
+      "reads": {
+        "before": {
+          "line": null,
+          "lang": [
+            486.6,
+            16,
+            584,
+            60
+          ],
+          "langLayerZ": "40",
+          "topmostAtLangCentreIsLangButton": true,
+          "allergiesTop": 473,
+          "headingTop": 64,
+          "formInert": false,
+          "alert": null,
+          "paused": false
+        },
+        "thaiChosenOffline": {
+          "ms": 1776,
+          "geo": {
+            "line": {
+              "text": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+              "rect": [
+                0,
+                56,
+                600,
+                93
+              ],
+              "z": "30",
+              "pointerEvents": "none",
+              "position": "absolute",
+              "wordsLeft": 38.2,
+              "wordsRight": 433.8
+            },
+            "lang": [
+              513.4,
+              72,
+              584,
+              116
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": false,
+            "allergiesTop": 501,
+            "headingTop": 120,
+            "formInert": true,
+            "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+            "paused": false
+          },
+          "status": [
+            "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+            "กรุณารอทีมงานยืนยันการเปลี่ยนแปลงนี้"
+          ]
+        },
+        "secondPress": "refused: locator.tap: Timeout 2500ms exceeded.",
+        "secondPressAllergies": "refused: locator.tap: Timeout 2000ms exceeded.",
+        "offlineMs": 6353,
+        "eightSecondsOnline": {
+          "geo": {
+            "line": null,
+            "lang": [
+              513.4,
+              72,
+              584,
+              116
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": false,
+            "allergiesTop": 501,
+            "headingTop": 120,
+            "formInert": true,
+            "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+            "paused": false
+          },
+          "status": [
+            "กรุณารอทีมงานยืนยันการเปลี่ยนแปลงนี้"
+          ],
+          "alerts": [
+            "กรุณาลองอีกครั้ง\nลองอีกครั้ง"
+          ],
+          "state": {
+            "shown": true,
+            "step": "2. ข้อมูลการดูแล",
+            "childName": null,
+            "allergies": "None",
+            "guardian": null,
+            "keysOpen": 0,
+            "reconnecting": null
+          }
+        },
+        "tillLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+        "afterRetry": {
+          "geo": {
+            "line": null,
+            "lang": [
+              513.4,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 445,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          },
+          "alerts": [],
+          "state": {
+            "shown": true,
+            "step": "2. ข้อมูลการดูแล",
+            "childName": null,
+            "allergies": "None",
+            "guardian": null,
+            "keysOpen": 0,
+            "reconnecting": null
+          }
+        },
+        "english": {
+          "geo": {
+            "line": null,
+            "lang": [
+              486.6,
+              16,
+              584,
+              60
+            ],
+            "langLayerZ": "40",
+            "topmostAtLangCentreIsLangButton": true,
+            "allergiesTop": 473,
+            "headingTop": 64,
+            "formInert": false,
+            "alert": null,
+            "paused": false
+          },
+          "step": "2. Care details"
+        }
+      }
+    }
+  ],
+  "hunt": [
+    {
+      "what": "display offline longer than 15 s while the family fills in the form",
+      "frames": [
+        {
+          "s": 1,
+          "form": true,
+          "step": "2. ข้อมูลการดูแล",
+          "line": null,
+          "body": null
+        }
+      ],
+      "after": {
+        "shown": true,
+        "step": "2. ข้อมูลการดูแล",
+        "childName": null,
+        "allergies": "None",
+        "guardian": null,
+        "keysOpen": 0,
+        "reconnecting": null
+      }
+    },
+    {
+      "what": "Light display: the language list opens as a dark navy box with dark brown words (中文, ไทย, Русский, Français nearly unreadable)",
+      "picture": "04c-600-display-light-language-menu.png",
+      "where": "apps/pos/src/components/shared/LanguageSwitcher.tsx menuClass for variant \"dark\" (bg-slate-900 + text-foreground); PublicConsentCapture passes variant=\"dark\" on a light display",
+      "reads": {
+        "menuBg": "oklch(0.208 0.042 265.755)",
+        "choices": [
+          {
+            "text": "English",
+            "color": "rgb(241, 93, 39)",
+            "bg": "oklab(0.664944 0.151089 0.120689 / 0.15)"
+          },
+          {
+            "text": "中文",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "ไทย",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "Русский",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          },
+          {
+            "text": "Français",
+            "color": "rgb(59, 40, 28)",
+            "bg": "rgba(0, 0, 0, 0)"
+          }
+        ],
+        "pillBg": "oklab(0.296409 0.0199053 0.0280578 / 0.1)",
+        "pillColor": "rgb(59, 40, 28)"
+      }
+    },
+    {
+      "what": "Age picker on the counter display: the close X is 16 x 16 px and the Age/Month/Day crumbs 28 px tall",
+      "picture": "04b-600-display-light-age-picker-light.png",
+      "reads": [
+        {
+          "tag": "button",
+          "role": null,
+          "text": "6 yrs",
+          "w": 54,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "Jan",
+          "w": 45,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "1",
+          "w": 26,
+          "h": 28,
+          "withLabel": null
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "text": "Close",
+          "w": 16,
+          "h": 16,
+          "withLabel": null
+        }
+      ]
+    },
+    {
+      "what": "Display form: the WhatsApp / Telegram / LINE choice buttons are 40 px tall at 600x1024 (28 px on the phone form)",
+      "reads": {
+        "display": [
+          {
+            "tag": "button",
+            "role": null,
+            "text": "WhatsApp",
+            "w": 127,
+            "h": 40,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Telegram",
+            "w": 119,
+            "h": 40,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "LINE",
+            "w": 87,
+            "h": 40,
+            "withLabel": null
+          }
+        ],
+        "phone": [
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Change language",
+            "w": 97,
+            "h": 34,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Select country code",
+            "w": 99,
+            "h": 40,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "WhatsApp",
+            "w": 101,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "Telegram",
+            "w": 94,
+            "h": 28,
+            "withLabel": null
+          },
+          {
+            "tag": "button",
+            "role": null,
+            "text": "LINE",
+            "w": 66,
+            "h": 28,
+            "withLabel": null
+          }
+        ]
+      }
+    },
+    {
+      "what": "Display keys are 40 px tall at 1024x600 (SCRUM-894 short-screen rule); language menu choices 40 px at both shapes (known leftover)",
+      "reads": {
+        "keys1024": {
+          "hide": 40,
+          "space": 40,
+          "hideText": "Hide"
+        },
+        "menu": [
+          40,
+          40,
+          40,
+          40,
+          40
+        ]
+      }
+    },
+    {
+      "what": "Phone at 360x740: on \"Children playing alone\" the child card (name and age) is squeezed to a sliver between the heading and the \"Before payment\" list",
+      "picture": "12b-phone-360x740-gate-continue-inside-margin.png"
+    },
+    {
+      "what": "Light display, returning family review: \"Saved — still correct?\" is pale yellow on cream (text-amber-300), hard to read",
+      "picture": "04h-600-returning-review-light.png",
+      "where": "apps/pos/src/components/shared/SavedChildrenReview.tsx badge text-amber-300 / text-emerald-300"
+    },
+    {
+      "what": "The door dialog line first shows \"฿1444.50 • Cash\" and gains \"Receipt Z95401-000004\" about half a second later",
+      "reads": [
+        "฿1444.50 • Cash",
+        [
+          "Receipt Z95401-000004 • ฿1444.50 • Cash"
+        ]
+      ]
+    },
+    {
+      "what": "Display offline longer than 15 s: the form is replaced by \"Connection paused, your order is safe\" with Retry; on return it comes back by itself with what was typed (by design, GRACE_MS 15 s in pages/Display.tsx)",
+      "picture": "05x-600-offline-thai-state-inspect.png"
+    },
+    {
+      "what": "The phone sale (Z95402-000001) shows no family name on its History card (the phone form's guardian does not name the sale)",
+      "picture": "15a-1680-history-list-own-sales.png"
+    },
+    {
+      "what": "History detail summary: a long code label is cut (\"ZZ TEST SCRUM-954 proof ZZTEST9...\") and touches its amount",
+      "picture": "15b-1680-history-detail-coded-sale-cards-add-up.png"
+    },
+    {
+      "what": "Phone bottom bar at 360 wide: \"Messages\" spills 2.3 px past its button at the right edge",
+      "reads": [
+        {
+          "text": "7 Messages",
+          "by": 2.3,
+          "box": [
+            315,
+            683,
+            45,
+            57
+          ]
+        },
+        {
+          "text": "7 Messages",
+          "by": 2.3,
+          "box": [
+            315,
+            683,
+            45,
+            57
+          ]
+        }
+      ]
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "setup: numbers, own till, code, sign in the desk till (reception, 1680x1050)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "setup: numbers, own till, code, sign in the desk till (reception, 1680x1050)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: inspect the display after Thai was chosen offline (the language button did not take a tap)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) timed under the 15 s grace: window 1 the line, the language button on top opens its list (closed without a choice); window 2 a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) timed under the 15 s grace: window 1 the line, the language button on top opens its list (closed without a choice); window 2 a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) timed under the 15 s grace: window 1 the line, the language button on top opens its list (closed without a choice); window 2 a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3: SCRUM-954 (3) timed under the 15 s grace: window 1 the line, the language button on top opens its list (closed without a choice); window 2 a letter typed offline reaches the till",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "3 (defect check): a language CHOSEN while the display is reconnecting (the lane's how-to step 5: choose ไทย, then English), timed under 15 s",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "phone",
+      "at": "6: SCRUM-956 the phone till (reception, 390x844 then 360x740): the long-named child's family screen",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "6: SCRUM-956 the phone till (reception, 390x844 then 360x740): the long-named child's family screen",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "9 (953-4): the ZZ TEST party made in the OTO App with a 1000 deposit; Take balance, Settle party, partial 100 cash, close",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgrPhone",
+      "at": "9 (953-4): the ZZ TEST party made in the OTO App with a 1000 deposit; Take balance, Settle party, partial 100 cash, close",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "9 (953-4): the desk manager refunds the 100 taken on the settlement from History; the Payments card after",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "9 (953-4): the desk manager refunds the 100 taken on the settlement from History; the Payments card after",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/wallets/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [
+    {
+      "till": "till",
+      "at": "8 (953-6): family A finishes on the display (ticks, Done), cash; the door check-in dialog repeats the success line under its title",
+      "status": 200,
+      "id": "01a1d0c1-e262-7027-b2a3-853b001e854f",
+      "finishedAt": "2026-11-12T17:15:29.878Z"
+    },
+    {
+      "till": "till",
+      "at": "6 (956): family L on the desk till's customer half: the long-named child, cash, Check in now",
+      "status": 200,
+      "id": "01a1d0c7-ee54-7b9e-9900-d1c22e869e3c",
+      "finishedAt": "2026-11-12T17:22:06.161Z"
+    },
+    {
+      "till": "phone",
+      "at": "5: the phone till: the parent fills the whole form on the phone (camera, guardian, number, ticks), Done; cash; the child registered with the photo",
+      "status": 200,
+      "id": "01a1d0cb-3e6f-7034-8280-151d516156c0",
+      "finishedAt": "2026-11-12T17:25:43.264Z"
+    },
+    {
+      "till": "till",
+      "at": "7 (953-5): family C, two drop-off children (6 and 9), the ZZ TEST 10% code at the ticket step, cash",
+      "status": 200,
+      "id": "01a1d0cb-e83f-7ed2-97ff-aad94a5ef211",
+      "finishedAt": "2026-11-12T17:26:26.739Z"
+    },
+    {
+      "till": "till",
+      "at": "7 (953-5): family D, two drop-off children (6 and 9), the ZZ TEST 10% code at the ticket step, cash; the door dialog's line read at once and 4 s later",
+      "status": 200,
+      "id": "01a1d0cc-d367-7ebc-a2bf-38b0dd549cd2",
+      "finishedAt": "2026-11-12T17:27:26.940Z"
+    },
+    {
+      "till": "till",
+      "at": "10: Thai: care (two photos, an allergy with the keys), agreements (guardian with the keys, ticks, the only blue Done), Done; cash; Check in now",
+      "status": 200,
+      "id": "01a1d0d5-04bf-7ceb-8f9b-91c2f896e52e",
+      "finishedAt": "2026-11-12T17:36:23.865Z"
+    }
+  ],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "main",
+        "id": "01a1d0b9-e191-77fd-83fd-457754a4f502",
+        "revoked": true
+      },
+      {
+        "label": "thai",
+        "id": "01a1d0d4-2b2b-7a29-b75a-9eb9dde28783",
+        "revoked": true
+      }
+    ],
+    "signOuts": {
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgrPhone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "party1": {
+      "id": "8efbc1a7-54a5-4d14-a2d1-02f558bcff56",
+      "delete": 204,
+      "readBack": 404
+    },
+    "registrations": [
+      {
+        "fam": "A",
+        "released": [
+          {
+            "child": "Zz Test Aya",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "Zz Test Aya: out"
+        ]
+      },
+      {
+        "fam": "L",
+        "released": [
+          {
+            "child": "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956: out"
+        ]
+      },
+      {
+        "fam": "P",
+        "released": [
+          {
+            "child": "ZZ TEST PHONE P",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "ZZ TEST PHONE P: out"
+        ]
+      },
+      {
+        "fam": "C",
+        "released": [
+          {
+            "child": "ZZ TEST Mint C 954",
+            "status": 200
+          },
+          {
+            "child": "ZZ TEST Nok C 954",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "ZZ TEST Mint C 954: out",
+          "ZZ TEST Nok C 954: out"
+        ]
+      },
+      {
+        "fam": "D",
+        "released": [
+          {
+            "child": "ZZ TEST Mint D 954",
+            "status": 200
+          },
+          {
+            "child": "ZZ TEST Nok D 954",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "ZZ TEST Mint D 954: out",
+          "ZZ TEST Nok D 954: out"
+        ]
+      },
+      {
+        "fam": "T",
+        "released": [
+          {
+            "child": "Zz Test Thai A",
+            "status": 200
+          },
+          {
+            "child": "Zz Test Thai B",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "Zz Test Thai A: out",
+          "Zz Test Thai B: out"
+        ]
+      }
+    ],
+    "refunds": [
+      {
+        "receipt": "Z95401-000006",
+        "gross": 1040,
+        "status": 200,
+        "errorCode": null,
+        "refund": 1040,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": "Z95401-000005",
+        "gross": 1830,
+        "status": 200,
+        "errorCode": null,
+        "refund": 1830,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "skipped": true
+      },
+      {
+        "receipt": "Z95401-000004",
+        "gross": 1444.5,
+        "status": 200,
+        "errorCode": null,
+        "refund": 1444.5,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": "Z95401-000003",
+        "gross": 1605,
+        "status": 200,
+        "errorCode": null,
+        "refund": 1605,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": "Z95401-000002",
+        "gross": 915,
+        "status": 200,
+        "errorCode": null,
+        "refund": 915,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": "Z95401-000001",
+        "gross": 915,
+        "status": 200,
+        "errorCode": null,
+        "refund": 915,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      },
+      {
+        "receipt": "Z95402-000001",
+        "gross": 915,
+        "status": 200,
+        "errorCode": null,
+        "refund": 915,
+        "saleStatus": "refunded",
+        "refundStatus": "refunded",
+        "refundable": 0
+      }
+    ],
+    "party": {
+      "settlementBefore": "voided",
+      "depositBefore": 1000,
+      "delete": 204,
+      "readBack": {
+        "app": 404,
+        "till": 404
+      },
+      "appSignOut": 200
+    },
+    "members": [
+      {
+        "n": "0898954010",
+        "name": "Zz Test Parent A",
+        "archive": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "n": "0898954011",
+        "member": null
+      },
+      {
+        "n": "0898954012",
+        "name": "ZZ TEST 954 guardian L",
+        "archive": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "n": "0898954013",
+        "member": null
+      },
+      {
+        "n": "0898954014",
+        "name": "ZZ TEST 954 guardian C",
+        "archive": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "n": "0898954015",
+        "name": "ZZ TEST 954 guardian D",
+        "archive": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "n": "0898954016",
+        "name": "Zz Test Parent Thai",
+        "archive": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "n": "0898954017",
+        "member": null
+      },
+      {
+        "n": "0898954018",
+        "member": null
+      },
+      {
+        "n": "0898954019",
+        "member": null
+      }
+    ],
+    "code": {
+      "code": "ZZTEST954A",
+      "archive": 200,
+      "archived": true,
+      "active": false,
+      "usedCount": 0,
+      "inLiveList": false
+    },
+    "creditWallet": {
+      "status": 200,
+      "state": [
+        "\"expiresAt\":\"2026-11-12T22:00:00.000Z\"",
+        "\"status\":\"active\"",
+        "\"balanceSatang\":35000",
+        "\"expiresAt\":\"2026-11-12T22:00:00.000Z\""
+      ]
+    },
+    "stations": [
+      {
+        "prefix": "Z95401",
+        "patch": 200,
+        "del": 200,
+        "archived": true,
+        "devices": 0
+      },
+      {
+        "prefix": "Z95402",
+        "patch": 200,
+        "del": 200,
+        "archived": true,
+        "devices": 0
+      }
+    ],
+    "admin": {
+      "signOut": 200,
+      "me": 401
+    }
+  },
+  "checks": {
+    "numbersCheckedUnused": 30,
+    "first": "0898954010",
+    "last": "0898954039"
+  },
+  "pageErrorsGrouped": {
+    "till | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "setup: numbers, own till, code, sign in the desk till (reception, 1680x1050)",
+        "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "setup: numbers, own till, code, sign in the desk till (reception, 1680x1050)",
+        "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out"
+      ]
+    },
+    "display-main | console.error | Failed to load resource: net::ERR_INTERNET_DISCONNECTED": {
+      "n": 79,
+      "at": [
+        "3: SCRUM-954 (3) the display offline: the reconnecting line under the language button, the button opens its list, nothing moves, a letter typed offline reaches the till",
+        "3: inspect the display after Thai was chosen offline (the language button did not take a tap)"
+      ]
+    },
+    "phone | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "6: SCRUM-956 the phone till (reception, 390x844 then 360x740): the long-named child's family screen",
+        "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)"
+      ]
+    },
+    "phone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "6: SCRUM-956 the phone till (reception, 390x844 then 360x740): the long-named child's family screen",
+        "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)"
+      ]
+    },
+    "mgrPhone | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+        "9 (953-4): the ZZ TEST party made in the OTO App with a 1000 deposit; Take balance, Settle party, partial 100 cash, close"
+      ]
+    },
+    "mgrPhone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "7/8: the phone as manager (390x844): History > the coded sale D > Ticket lines; the long-named sale L > Refund > By item (backed out)",
+        "9 (953-4): the ZZ TEST party made in the OTO App with a 1000 deposit; Take balance, Settle party, partial 100 cash, close"
+      ]
+    },
+    "mgr | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "9 (953-4): the desk manager refunds the 100 taken on the settlement from History; the Payments card after",
+        "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out"
+      ]
+    },
+    "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "9 (953-4): the desk manager refunds the 100 taken on the settlement from History; the Payments card after",
+        "clean up: sessions signed out, the two own tills retired, displays read back, the read-back picture, the admin signed out"
+      ]
+    }
+  },
+  "finishedAt": "2026-11-12T17:39:01.339Z",
+  "passed": "every point passed; one defect found beside point 3 (a language chosen while reconnecting locks the form)"
+}
