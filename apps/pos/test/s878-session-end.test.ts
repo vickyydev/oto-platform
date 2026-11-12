@@ -75,6 +75,8 @@ let who: { id: string; name: string; branchId: string; operatorId: string; imper
   ...ANN, branchId: 'zz-test-park', operatorId: 'zz-test-operator',
 };
 let grants: string[] = ['pos:sale:create', 'pos:sale:read'];
+/** The account is on a temporary password (SCRUM-235): issuing one ends every session. */
+let owesPasswordChange = false;
 /** The platform's own end for the session `/me` describes: twelve hours after the sign-in. */
 let signedInAt = T0;
 
@@ -101,9 +103,10 @@ beforeEach(() => {
   writes.length = 0;
   who = { ...ANN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
   grants = ['pos:sale:create', 'pos:sale:read'];
+  owesPasswordChange = false;
   signedInAt = T0;
   seam.me.mockImplementation(async () => ({
-    account: { id: who.id, phone: 'ZZ TEST', mustChangePassword: false, operatorId: who.operatorId },
+    account: { id: who.id, phone: 'ZZ TEST', mustChangePassword: owesPasswordChange, operatorId: who.operatorId },
     employee: { name: who.name }, branch: { id: who.branchId, code: 'zz-test-park' }, sessionLocked: false,
     impersonation: who.impersonation ?? null,
     sessionEnd: {
@@ -432,6 +435,38 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
         who = { ...ANN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
       }
     }
+  });
+
+  it('a temporary password issued mid-shift (it ends every session): the same person’s sign-in is a fresh one, the station is not taken again', async () => {
+    const { hook, value, seat } = await endedMidCart();
+    try {
+      owesPasswordChange = true;
+      await value().signIn('ZZ TEST phone', 'ZZ TEST temporary password');
+      expect(value().operator?.id).toBe(ANN.id);
+      expect(value().mustChangePassword).toBe(true);
+      // The change-password form, and nothing else: no line, no offer, a new screen.
+      expect(value().locked).toBe(false);
+      expect(value().sessionEnded).toBeNull();
+      expect(value().keptOffer).toBeNull();
+      expect(value().tillSeat).not.toBe(seat);
+      expect(value().tillSeat?.startsWith(`${ANN.id}#`)).toBe(true);
+      // Never asks the platform for the station while it refuses every station question.
+      expect(value().reseat).toBe(0);
+    } finally { hook.unmount(); }
+  });
+
+  it('a temporary password for a different person: no offer, a fresh screen, no station taken again', async () => {
+    const { hook, value, seat } = await endedMidCart();
+    try {
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      owesPasswordChange = true;
+      await value().signIn('ZZ TEST other phone', 'ZZ TEST temporary password');
+      expect(value().operator?.id).toBe(BEN.id);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(false);
+      expect(value().tillSeat).not.toBe(seat);
+      expect(value().reseat).toBe(0);
+    } finally { hook.unmount(); }
   });
 
   it('the trading day ends: the next morning’s sign-in starts fresh, even for the same person', async () => {

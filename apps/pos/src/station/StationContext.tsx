@@ -404,9 +404,13 @@ export function StationProvider({ children }: { children: ReactNode }) {
   pickedRef.current = picked;
   const fleetRef = useRef(fleetAvailable);
   fleetRef.current = fleetAvailable;
+  // A temporary password: the platform refuses every station question until
+  // it is replaced, and the main question above is asked again once it is.
+  const mustChangeRef = useRef(mustChangePassword);
+  mustChangeRef.current = mustChangePassword;
   useEffect(() => {
     const held = pickedRef.current;
-    if (!reseat || !held || !fleetRef.current) return;
+    if (!reseat || !held || !fleetRef.current || mustChangeRef.current) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -419,6 +423,12 @@ export function StationProvider({ children }: { children: ReactNode }) {
         if (err instanceof NetworkError || (err instanceof ApiError
           && ((err.status === 502 && err.code === 'UPSTREAM_UNAVAILABLE')
             || (err.status === 503 && err.code === 'STATION_FORCED_OFFLINE')))) return;
+        // Not an answer about the station either: the session owes a password
+        // change (the whole question is asked again once it is replaced), or
+        // is locked (SCRUM-744). The station stays this device's and nothing
+        // is said, as for no answer at all above.
+        if (refusedWhileLocked(err)
+          || (err instanceof ApiError && err.status === 403 && err.code === 'MUST_CHANGE_PASSWORD')) return;
         if (err instanceof ApiError && (err.status === 403 || err.status === 404
           || ['STATION_NOT_READY', 'STATION_HAS_NO_BOX'].includes(err.code))) {
           forgetRemembered(branch.id);

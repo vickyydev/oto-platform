@@ -463,7 +463,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
    * MUST_CHANGE_PASSWORD refusal, so they answer for such an account; the
    * catalog load does not, which is why its failure has never been fatal here.
    */
-  const hydrate = useCallback(async (): Promise<{ operator: Operator; sessionLocked: boolean; held: ReadonlySet<string> }> => {
+  const hydrate = useCallback(async (): Promise<{
+    operator: Operator;
+    sessionLocked: boolean;
+    held: ReadonlySet<string>;
+    mustChangePassword: boolean;
+  }> => {
     const me = await authApi.me();
     // SCRUM-878 — when this session ends, counted from this answer, and where it sits.
     sessionEnds.current = {
@@ -500,7 +505,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     // SCRUM-878 — the same session keeps its screen; a sign-in decides for itself.
     if (tillSeatRef.current === null) freshSeat(op.id);
     applyThemePrefs(op.id, me);
-    return { operator: op, sessionLocked: me.sessionLocked, held };
+    return { operator: op, sessionLocked: me.sessionLocked, held, mustChangePassword: me.account.mustChangePassword };
   }, [applyThemePrefs, freshSeat]);
 
   const signIn = useCallback(
@@ -515,7 +520,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // The screen a session left under the lock, if any: `hydrate` gives a
       // fresh one only when there is none.
       const screenBefore = tillSeatRef.current;
-      const { operator: op, held } = await hydrate();
+      const { operator: op, held, mustChangePassword: owesPasswordChange } = await hydrate();
       /**
        * SCRUM-878 — the screen an ended session left under the lock. The same
        * person carries on with it; a different person who may sell is asked
@@ -524,6 +529,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
        */
       const ended = keptTill.current;
       keptTill.current = null;
+      if (owesPasswordChange) {
+        // A temporary password (issuing one ends every session, which is how
+        // this till got here) opens the change-password form and nothing else:
+        // the platform refuses the station and the sale until it is replaced.
+        // As `endSession` rules, an account owing a change has no selling
+        // screen to keep, so the sign-in is a fresh one: no offer, and no
+        // station taken again for a screen that is not carried on.
+        setSessionEnded(null);
+        setKeptOffer(null);
+        if (screenBefore !== null) freshSeat(op.id);
+        setLocked(false);
+        return op;
+      }
       // A screen left since (another page opened from the sign-in form) holds no sale any more.
       const kept = ended && ended.saleSince !== null && saleOpenSince() === null ? { ...ended, saleSince: null } : ended;
       setSessionEnded(null);

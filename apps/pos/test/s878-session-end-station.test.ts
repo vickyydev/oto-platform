@@ -140,6 +140,52 @@ describe('SCRUM-878 — the station of a screen carried on by a new session', ()
     } finally { hook.unmount(); }
   });
 
+  it('a session that owes a password change asks nothing: the remembered station is kept, nothing is said, and it is taken again after the change', async () => {
+    const { hook, value, pick, memory, set } = await atTheStation();
+    try {
+      // The platform refuses every station question while a temporary password is held.
+      let owes = false;
+      pick.mockImplementation(async () => {
+        if (owes) throw new ApiError(403, 'MUST_CHANGE_PASSWORD', 'Change your password before continuing');
+        return picked;
+      });
+      owes = true;
+      set({ locked: true });
+      set({ locked: false, mustChangePassword: true, reseat: 1 });
+      await flush();
+      await flush();
+      expect(pick).toHaveBeenCalledTimes(1);
+      expect(memory.has(key)).toBe(true);
+      expect(value().notice).toBeNull();
+      expect(value().station).toBeNull();
+
+      // The password is changed: the whole question is asked again, and the remembered station taken.
+      owes = false;
+      set({ mustChangePassword: false });
+      await vi.waitFor(() => expect(value().station?.stationId).toBe(STATION));
+      expect(pick).toHaveBeenCalledTimes(2);
+      expect(pick.mock.calls[1]).toEqual([STATION]);
+      expect(value().notice).toBeNull();
+      expect(memory.has(key)).toBe(true);
+    } finally { hook.unmount(); }
+  });
+
+  it.each([
+    ['owes a password change', new ApiError(403, 'MUST_CHANGE_PASSWORD', 'Change your password before continuing')],
+    ['is locked', new ApiError(423, 'SESSION_LOCKED', 'Session is locked')],
+  ])('the new session %s when the station is asked for: no answer, the station is kept and nothing is said', async (_why, refusal) => {
+    const { hook, value, pick, memory, set } = await atTheStation();
+    try {
+      pick.mockRejectedValueOnce(refusal);
+      set({ reseat: 1 });
+      await vi.waitFor(() => expect(pick).toHaveBeenCalledTimes(2));
+      await flush();
+      expect(value().station?.stationId).toBe(STATION);
+      expect(value().notice).toBeNull();
+      expect(memory.has(key)).toBe(true);
+    } finally { hook.unmount(); }
+  });
+
   it('any other sign-in is a new seat: the whole question is asked again, as before', async () => {
     const { hook, value, pick, set } = await atTheStation();
     try {
