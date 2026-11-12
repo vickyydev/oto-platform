@@ -384,6 +384,19 @@ function usePressId() {
   };
 }
 
+/**
+ * SCRUM-927: the deposit the BEO asks and has not received (billing's deposit required, the
+ * amount the AI fill's approval or staff wrote), in whole baht; null when it asks none.
+ */
+export function depositAskedOf(billing: Pick<BeoEventBilling, "depositRequired" | "depositAmount" | "depositPaid"> | null | undefined): number | null {
+  if (!billing?.depositRequired || billing.depositPaid) return null;
+  return typeof billing.depositAmount === "number" && billing.depositAmount > 0 ? billing.depositAmount : null;
+}
+
+/** SCRUM-927: what the box says while the BEO asks a deposit and no payment link has been sent. */
+export const depositAskedWords = (baht: number): string =>
+  `The BEO asks a ฿${baht.toLocaleString("en-US")} deposit. No payment link has been sent yet: request it below and the assistant posts the link in the family's chat and confirms when it is paid.`;
+
 /** apiRequest throws an ApiError carrying the status when the server answered; a 4xx is the press refused, and over. */
 const pressRefused = (err: unknown): boolean => {
   const status = err instanceof Error ? (err as { status?: unknown }).status : undefined;
@@ -415,6 +428,7 @@ export function DepositRequestPanel({
   loading,
   isManager,
   onChanged,
+  asked = null,
 }: {
   eventId: string;
   reading: PartyDepositReading | undefined;
@@ -422,8 +436,17 @@ export function DepositRequestPanel({
   isManager: boolean;
   /** After a press the platform answered — made, or refused: the state and the till's figures are read again. */
   onChanged?: () => void;
+  /**
+   * SCRUM-927: the deposit the BEO asks (billing's deposit required, whole baht) and not yet
+   * received, so this box agrees with the BEO while no payment link has been sent; null with none.
+   */
+  asked?: number | null;
 }) {
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(asked && asked > 0 ? String(asked) : "");
+  // The BEO's asked deposit, read after the box opened, fills an empty amount (never a typed one).
+  useEffect(() => {
+    if (asked && asked > 0) setAmount((typed) => (typed === "" ? String(asked) : typed));
+  }, [asked]);
   const [busy, setBusy] = useState<"request" | "resend" | "cancel" | "menu" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -527,7 +550,12 @@ export function DepositRequestPanel({
                 )}
               </div>
             )}
-            {!words && (
+            {!words && asked !== null && asked > 0 && (
+              <p className="text-sm text-muted-foreground" data-testid="text-deposit-request-asked">
+                {depositAskedWords(asked)}
+              </p>
+            )}
+            {!words && !(asked !== null && asked > 0) && (
               <p className="text-sm text-muted-foreground" data-testid="text-deposit-request-none">
                 No deposit asked yet. The assistant posts the payment link in the family's chat and confirms when it is paid.
               </p>
@@ -689,6 +717,7 @@ export function BeoBillingSection({
         reading={depositRequest.data}
         loading={depositRequest.isLoading}
         isManager={isManager}
+        asked={depositAskedOf(billing)}
         onChanged={() => {
           void queryClient.invalidateQueries({ queryKey: depositRequestKey(eventId) });
           void queryClient.invalidateQueries({ queryKey: tillBillingKey(eventId) });

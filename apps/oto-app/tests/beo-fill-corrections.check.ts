@@ -32,7 +32,9 @@
 //   9. SCRUM-927's points: another WhatsApp number is written with its stored
 //      international form (whatsapp_phone_e164) by the app's own phone rule;
 //      the Kitchen Plan does not say "Selections received" when no parent
-//      answered the menu link (the choices are marked as read from the chat).
+//      answered the menu link (the choices are marked as read from the chat);
+//      Billing's "Deposit from the family's chat" box agrees with the BEO (the
+//      deposit asked, not "No deposit asked yet").
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -67,6 +69,7 @@ type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
+const { DepositRequestPanel, depositAskedOf, depositAskedWords } = await import("../client/src/components/beo/beo-till-billing");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
 const { emptyBeoAiDetails, foodNamesFor, choicesFromChatOnly, SET_MENU_CHOSEN_FROM_CHAT } = await import("../shared/beoAiFill");
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
@@ -89,7 +92,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 10;
+const CHECKS = 11;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -610,6 +613,31 @@ try {
     assert.equal(editor.split("choicesFromChatOnly(setMenuSelection.selections)").length - 1, 4, "the badge, the date line and the dialog's two lines");
     assert.ok(editor.includes("{choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : \"Selections received\"}"));
     assert.equal(SET_MENU_CHOSEN_FROM_CHAT, "Chosen from the chat");
+  });
+
+  // --- 9c. Billing's deposit box agrees with the BEO ------------------------------------------
+  await check("theDepositBoxSaysTheDepositTheBeoAsks", async () => {
+    // The proof's thread E: the team asked 3,000 in the chat; the approval wrote it as asked.
+    const res = await approve(ev.chosen, bodyOf({ deposit: { amount: 3000, paid: false, date: null } }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const [billing] = await q("select deposit_required, deposit_amount, deposit_paid from beo_event_billing where event_id = $1", [ev.chosen]);
+    const asked = depositAskedOf({ depositRequired: billing!.deposit_required, depositAmount: billing!.deposit_amount, depositPaid: billing!.deposit_paid });
+    assert.equal(asked, 3000);
+    const reading = { status: "ok", answer: { eventId: ev.chosen, hasConversation: true, current: null, history: [] }, readAt: at(5) } as any;
+    const html = renderToStaticMarkup(React.createElement(DepositRequestPanel, { eventId: ev.chosen, reading, isManager: true, asked }));
+    assert.ok(html.includes("The BEO asks a ฿3,000 deposit. No payment link has been sent yet"), "the BEO's deposit, not 'No deposit asked yet'");
+    assert.ok(!html.includes("No deposit asked yet"));
+    assert.ok(html.includes('value="3000"'), "the amount to ask is the BEO's");
+    assert.equal(depositAskedWords(3000).startsWith("The BEO asks a ฿3,000 deposit."), true);
+    // With nothing asked (or the deposit received), the box says so as before.
+    const none = renderToStaticMarkup(React.createElement(DepositRequestPanel, { eventId: ev.chosen, reading, isManager: true }));
+    assert.ok(none.includes("No deposit asked yet."));
+    assert.equal(depositAskedOf({ depositRequired: true, depositAmount: 3000, depositPaid: true }), null, "received: nothing asked");
+    assert.equal(depositAskedOf({ depositRequired: false, depositAmount: 3000, depositPaid: false }), null);
+    assert.equal(depositAskedOf(null), null);
+    // The billing section hands the box the BEO's billing.
+    const billingFile = readFileSync(new URL("../client/src/components/beo/beo-till-billing.tsx", import.meta.url), "utf8");
+    assert.ok(billingFile.includes("asked={depositAskedOf(billing)}"));
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
