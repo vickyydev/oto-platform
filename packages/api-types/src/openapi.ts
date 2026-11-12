@@ -25782,7 +25782,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. SCRUM-805 — and its kitchen and bar slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per station and every run), null for a party with no plan. */
+        /** @description One of the branch's parties: the OTO App's booking and bill, laid under the edits a till made that the app has not taken yet, with the tab's POS ledgers — the walk-ups, the charges and the payments — the till's edit stamp and the bill (total = base + charges; outstanding = total − deposit − payments, never below zero). 404 for anything that is not one of the branch's parties. SCRUM-804 — with the plan the OTO App published for it (`plan`: the package with its limits and prices, the counts, the add-ons, the entertainment, the set menu, the food times and the deposit, money in satang), or null and the reason (`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit are that sale's, the bill is the tab's own charges and payments. SCRUM-805 — and its kitchen and bar slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per station and every run), null for a party with no plan. SCRUM-906 — and its whole kitchen plan (`kitchenPlan`: every food line, coded or typed, with where it came from, its entered price and whether the till sells it; the bar lines; the cake; the food, bar and slip times), with or without a package, null when the OTO App has none; a party with a kitchen plan and no package has its slips too. */
         get: {
             parameters: {
                 query: {
@@ -26017,25 +26017,95 @@ export interface paths {
                                     /** @enum {string} */
                                     audience?: "kids" | "adults";
                                     adultsNote?: string;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
                                 }[];
                                 barItems: {
                                     productCode: string | null;
                                     name: string;
                                     qty: number;
+                                    note?: string | null;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
                                 }[];
                                 kitchen: {
                                     kidsFoodTime: string | null;
                                     adultsFoodTime: string | null;
                                     readyOffsetMinutes: number | null;
                                     slipsTime: string | null;
+                                    barServiceTime?: string | null;
                                 } | null;
                                 settlement: {
                                     depositSatang: number;
                                     posSaleId: string | null;
                                 };
+                                cake?: {
+                                    /** @enum {string} */
+                                    type: "our" | "own";
+                                    qty: number;
+                                    time: string | null;
+                                    note: string | null;
+                                } | null;
                             } | null;
                             /** @enum {string} */
                             planStatus?: "ready" | "no_package" | "seam_missing" | "seam_not_granted";
+                            kitchenPlan?: {
+                                eventId: string;
+                                partyDate: string;
+                                startTime: string | null;
+                                endTime: string | null;
+                                counts: {
+                                    kidsExpected: number | null;
+                                    adultsExpected: number | null;
+                                };
+                                setMenu: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number | null;
+                                    choiceGroup: string | null;
+                                    chosenOption: string | null;
+                                    note: string | null;
+                                    /** @enum {string} */
+                                    audience?: "kids" | "adults";
+                                    adultsNote?: string;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                barItems: {
+                                    productCode: string | null;
+                                    name: string;
+                                    qty: number;
+                                    note?: string | null;
+                                    lineId?: string;
+                                    /** @enum {string} */
+                                    origin?: "set_menu" | "extra" | "party_only";
+                                    unitPriceSatang?: number;
+                                    onTillMenu?: boolean;
+                                }[];
+                                kitchen: {
+                                    kidsFoodTime: string | null;
+                                    adultsFoodTime: string | null;
+                                    readyOffsetMinutes: number | null;
+                                    slipsTime: string | null;
+                                    barServiceTime?: string | null;
+                                } | null;
+                                cake?: {
+                                    /** @enum {string} */
+                                    type: "our" | "own";
+                                    qty: number;
+                                    time: string | null;
+                                    note: string | null;
+                                } | null;
+                            } | null;
                             slips?: {
                                 partyDate: string;
                                 slipsTime: string;
