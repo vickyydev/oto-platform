@@ -35,7 +35,7 @@ import {
   type CheckInEdits,
 } from '@/api/checkin';
 import { useBranch } from '@/branch/BranchContext';
-import { remainingMinutes, dueState } from '@/lib/dropoff';
+import { remainingMinutes, dueState, familyBoardTabs, earliestArrival } from '@/lib/dropoff';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { setBookingRedeemHandoff, setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useStation } from '@/station/StationContext';
@@ -106,15 +106,8 @@ function tabOf(c: CheckIn): Tab {
   return 'registered';
 }
 
-/**
- * Canonical tab for a family: use the highest-priority status tab among its
- * children. Priority: in_park > registered (upcoming, timed or not) > out.
- */
-function familyTab(family: CheckIn[]): Tab {
-  if (family.some((c) => c.status === 'in_park')) return 'in_park';
-  if (family.some((c) => c.status === 'registered')) return 'registered';
-  return 'out';
-}
+// SCRUM-938 — the tabs a family's card is listed under: `familyBoardTabs`
+// (lib/dropoff), Upcoming as well as In Park while a sibling still waits.
 
 // S2-20 E1 — the events board's day is the branch's trading day, not the UTC
 // date (plan §4).
@@ -524,7 +517,7 @@ export default function DropOff() {
 
     const families: CheckIn[][] = [];
     for (const children of allByReg.values()) {
-      if (familyTab(children) !== tab) continue;
+      if (!familyBoardTabs(children).includes(tab)) continue;
       if (serviceFilter !== 'all' && !children.some((c) => c.serviceType === serviceFilter)) continue;
       if (tab === 'in_park' && dueOnly) {
         if (!children.some((c) => dueState(remainingMinutes(c)) !== 'ok')) continue;
@@ -556,9 +549,7 @@ export default function DropOff() {
     // Upcoming (not yet checked in): earliest booked time first so the soonest
     // arrivals are at the top; walk-ins with no booked time fall to the bottom.
     if (tab === 'registered') {
-      const earliest = (fam: CheckIn[]) =>
-        Math.min(...fam.map((c) => (c.scheduledFor ? new Date(c.scheduledFor).getTime() : Infinity)));
-      families.sort((a, b) => earliest(a) - earliest(b));
+      families.sort((a, b) => earliestArrival(a) - earliestArrival(b));
     }
 
     return families;

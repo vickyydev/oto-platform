@@ -70,6 +70,37 @@ export function familyCheckInNames(family: readonly CheckIn[]): {
   };
 }
 
+/**
+ * SCRUM-938 — THE BOARD TABS A FAMILY'S CARD IS LISTED UNDER, desk and phone.
+ *
+ * The prototype lists a family once, under its first tab of In Park, Upcoming
+ * and Out (`familyTab` in its `DropOff.tsx`), while each tab counts children.
+ * So a family with one child in the park and a sibling still to come was
+ * counted under Upcoming but listed only under In Park, and staff looking
+ * for the waiting child among the arrivals did not find it (SCRUM-909's proof,
+ * picture 02h). Such a family is now listed under both tabs: the same card,
+ * every child on it with its own status line and every action it had, so a
+ * check-in, a cancel or a check-out works as before from either tab. A family
+ * whose children are all in one state is listed exactly as before, and Out is
+ * unchanged.
+ */
+export function familyBoardTabs(family: readonly Pick<CheckIn, 'status'>[]): CheckIn['status'][] {
+  const inPark = family.some((c) => c.status === 'in_park');
+  const waiting = family.some((c) => c.status === 'registered');
+  if (inPark) return waiting ? ['registered', 'in_park'] : ['in_park'];
+  return waiting ? ['registered'] : ['out'];
+}
+
+/**
+ * When the earliest of a family's waiting children is booked for, for the
+ * Upcoming tab's order (soonest first; no booked time sorts last). A child
+ * already in the park is not an arrival, so its booked time does not count.
+ */
+export function earliestArrival(family: readonly Pick<CheckIn, 'status' | 'scheduledFor'>[]): number {
+  const waiting = family.filter((c) => c.status === 'registered');
+  return Math.min(...(waiting.length ? waiting : family).map((c) => (c.scheduledFor ? new Date(c.scheduledFor).getTime() : Infinity)));
+}
+
 /** Children's names as a card says them: "Bua", "Bua & Nok", "Bua, Nok & Mai" (SCRUM-741). */
 export function childNames(children: readonly CheckIn[]): string {
   const names = children.map((c) => c.childName);

@@ -25,7 +25,7 @@ import {
 } from '@/api/checkin';
 import { releaseApi } from '@/api/release';
 import { CheckInBookedModal, type BookedCheckInItem } from '@/components/dropoff/CheckInBookedModal';
-import { familyCheckInActions, remainingMinutes, dueState } from '@/lib/dropoff';
+import { familyCheckInActions, remainingMinutes, dueState, familyBoardTabs, earliestArrival } from '@/lib/dropoff';
 import { setBookingRedeemHandoff, setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { useStation } from '@/station/StationContext';
@@ -87,11 +87,8 @@ function tabOf(c: CheckIn): Tab {
   return 'registered';
 }
 
-function familyTab(family: CheckIn[]): Tab {
-  if (family.some((c) => c.status === 'in_park')) return 'in_park';
-  if (family.some((c) => c.status === 'registered')) return 'registered';
-  return 'out';
-}
+// SCRUM-938 — the tabs a family is listed under: `familyBoardTabs`
+// (lib/dropoff), Upcoming as well as In Park while a sibling still waits.
 
 /** The platform's refusal, in its own words (they are written for the counter). */
 function messageOf(err: unknown): string {
@@ -255,7 +252,7 @@ export function MobileDropOffBoard() {
     const families: CheckIn[][] = [];
 
     for (const children of allByReg.values()) {
-      if (familyTab(children) !== tab) continue;
+      if (!familyBoardTabs(children).includes(tab)) continue;
 
       if (serviceFilter !== 'all' && !children.some((c) => c.serviceType === serviceFilter)) continue;
 
@@ -292,9 +289,7 @@ export function MobileDropOffBoard() {
 
     // Upcoming: soonest booked arrival first; walk-ins with no booked time last.
     if (tab === 'registered') {
-      const earliest = (fam: CheckIn[]) =>
-        Math.min(...fam.map((c) => (c.scheduledFor ? new Date(c.scheduledFor).getTime() : Infinity)));
-      families.sort((a, b) => earliest(a) - earliest(b));
+      families.sort((a, b) => earliestArrival(a) - earliestArrival(b));
     }
 
     return families;
