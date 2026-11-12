@@ -187,16 +187,24 @@ Render API and read back: 46 on the api, 24 on the app, 1 on the launcher.
 
 ## Left to do
 
-1. The owner: a name and an email for the administrator's HR app profile;
-   then the in-app proof.
-2. The owner: phone numbers for the 14 people without one (or they are added
-   in the old app before the final dump).
-3. One real staff sign-in on the live link.
-4. The owner's call on landing `production-bootstrap.ts`.
-5. Before the till goes live on production: the real 2C2P merchant details,
-   the virtual box role, `OTOAPP_DIRECTORY_KEY`, and the till's own
-   configuration (packages, prices, tax), none of which is in the dump.
-6. The domain switch above.
+Each is a ticket under SCRUM-110 (P7 Cutover), filed 12 November:
+
+1. SCRUM-920 (the administrator's profile inside the HR app, then the app's
+   screens): the owner gives a name and an email; then the in-app proof.
+2. SCRUM-921 (14 active people have no phone number): the owner gives the
+   numbers, or they are added in the old app before the final dump.
+3. SCRUM-922 (one real staff member signs in on the live link).
+4. SCRUM-923 (switch the domains): the steps above, when DNS access is there.
+5. SCRUM-924 (land the one-off set-up script): the owner's call on landing
+   `production-bootstrap.ts`.
+6. SCRUM-925 (before the till goes live on production): the real 2C2P
+   merchant details, the virtual box role, `OTOAPP_DIRECTORY_KEY`, the till's
+   own configuration (packages, prices, tax), none of which is in the dump,
+   and a bucket of production's own.
+
+Status in Jira: SCRUM-110 (P7 Cutover), SCRUM-12 (migrate and reconcile data
+from the existing system) and SCRUM-113 (agree the cutover and rollback plan)
+are In Progress; nothing is Done.
 
 ## Where things are
 
