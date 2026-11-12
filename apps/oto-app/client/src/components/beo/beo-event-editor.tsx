@@ -98,7 +98,7 @@ import { depositMovedWords, type DepositSaveNote, type OneDeposit } from "@share
 import { beoBillingMutationScope } from "@/lib/beo-deposit-buffer";
 import { bahtOfSatang, tillFiguresOf } from "@shared/tillBilling";
 import type { PartyMenuLine } from "@shared/partyMenuItem";
-import { lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
+import { isTemplateSetMenuLine, lineWithTillItem, lineWithoutTillItem } from "@shared/tillMenu";
 import { TillCodeMark, TillMenuContext, TillMenuPick, tillCodeTitle, useTillMenu, useTillMenuIndex } from "./till-menu-picker";
 import { isStartTime, needsStartTimeLine } from "@shared/eventStartTime";
 import { ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenListsEqual, sameKitchenDishNames } from "@shared/kitchenAdults";
@@ -503,13 +503,16 @@ function MenuLineItemRow({ item, idx, menuItems, setMenuItems, menuTab }: {
           placeholder="Item name"
           data-testid={`input-menu-name-${menuTab}-${idx}`}
         />
-        {/* SCRUM-905: the till's own item for this line: its name and code written on, free typing kept. */}
-        <TillMenuPick
-          code={item.productCode}
-          onPick={(picked) => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
-          onClear={() => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
-          testId={`button-till-menu-${menuTab}-${idx}`}
-        />
+        {/* SCRUM-905: the till's own item for this line: its name and code written on, free typing kept.
+            Not on a set-menu dish the template resolved: its code is the template's (Settings > Set menu templates). */}
+        {!isTemplateSetMenuLine(item) && (
+          <TillMenuPick
+            code={item.productCode}
+            onPick={(picked) => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithTillItem(line, picked) : line)))}
+            onClear={() => setMenuItems(prev => prev.map((line, i) => (i === idx ? lineWithoutTillItem(line) : line)))}
+            testId={`button-till-menu-${menuTab}-${idx}`}
+          />
+        )}
         {item.source === "set_menu" && item.notes?.trim() && (
           <span className="text-xs text-muted-foreground shrink-0">{item.notes.trim()}</span>
         )}

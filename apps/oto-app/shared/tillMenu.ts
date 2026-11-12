@@ -106,17 +106,35 @@ export function tillCodeState(index: TillMenuIndex, code: string | null | undefi
 export const TILL_CODE_DEAD = "No longer on the till";
 
 /**
+ * A set-menu dish the template resolved (`server/lib/setMenuResolve.ts`: an
+ * always-included item or a parent's choice, `source` "set_menu" with the
+ * template item's `groupId`), and the adults' copy of one. Its till code is
+ * the template's (Settings > Set menu templates), which the till's plan view
+ * already reads for it (app migration 0048, part 0); a code on the line as
+ * well would send the dish to the till a second time (part 1 emits every
+ * coded line), and a pick would write over the parent's choice. So no till
+ * item is picked on it. A line added on the set menu block ("+ Add item", no
+ * `groupId`) is not the template's and takes a pick like any other.
+ */
+export function isTemplateSetMenuLine(line: { source?: string | null; groupId?: string | null }): boolean {
+  return line.source === "set_menu" && typeof line.groupId === "string" && line.groupId.length > 0;
+}
+
+/**
  * A BEO line once a till item is picked for it: the till's name and code; an
  * EXTRA (a line the badge shows as EXTRA, not the set menu's) also takes the
  * till's weekday price as its price, which is what it is charged at (the
  * owner's decision of 12 November: "charge it according to the right entered
- * price"). A set-menu line is part of the package and keeps its price.
- * Everything else on the line (its count, its note, its badge) stays.
+ * price"). A set-menu line added on the set menu block is part of the package
+ * and keeps its price. A set-menu dish the template resolved is returned as it
+ * was (`isTemplateSetMenuLine`): its code lives on the template. Everything
+ * else on the line (its count, its note, its badge) stays.
  */
-export function lineWithTillItem<L extends { itemName: string; price: number; source?: string; productCode?: string }>(
+export function lineWithTillItem<L extends { itemName: string; price: number; source?: string; groupId?: string | null; productCode?: string }>(
   line: L,
   item: Pick<TillMenuItem, "code" | "name" | "priceSatang">,
 ): L {
+  if (isTemplateSetMenuLine(line)) return line;
   const extra = line.source !== "set_menu";
   return {
     ...line,

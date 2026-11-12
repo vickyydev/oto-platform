@@ -19,6 +19,10 @@
 //      through Save, a dead code marked;
 //   5. a till that does not answer: the search says so and no line is marked;
 //      a read-only BEO offers no search and still marks a dead code;
+//   5b. a set menu the parent chose: a dish the template resolved offers no
+//      search (its code is the template's), in the kids' list and in the
+//      adults' copy; a line added on the set menu block and an EXTRA do, and
+//      Save leaves the parent's choice as it was;
 //   6. Settings > Set menu templates: a dead code marked in the list and in
 //      the form; the search beside a Code box writes the till's code, fills an
 //      empty name with the till's and never renames one; Save sends the codes.
@@ -109,19 +113,21 @@ const okReading = (parkId: string): Reading => ({
 });
 let tillAnswer: (parkId: string | null) => Reading = (parkId) => okReading(parkId ?? PARK);
 
-type Line = { id: string; itemName: string; quantity: number; notes: string; included: boolean; price: number; source?: string; productCode?: string };
+type Line = { id: string; itemName: string; quantity: number; notes: string; included: boolean; price: number; source?: string; groupId?: string; productCode?: string };
 const line = (id: string, itemName: string, over: Partial<Line> = {}): Line => ({ id, itemName, quantity: 1, notes: "", included: false, price: 0, ...over });
 
 type Asked = { method: string; path: string; search: string; body: Record<string, unknown> };
 const asked: Asked[] = [];
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-const BEOS = new Map<string, { kids: Line[]; bar: Line[] }>();
+const BEOS = new Map<string, { kids: Line[]; bar: Line[]; setMenuTemplateId?: string }>();
+/** A parent's submitted set menu choices, per party. */
+const SELECTIONS = new Map<string, Record<string, unknown>>();
 const beoOf = (eventId: string) => {
-  const held = BEOS.get(eventId) ?? { kids: [], bar: [] };
+  const held: { kids: Line[]; bar: Line[]; setMenuTemplateId?: string } = BEOS.get(eventId) ?? { kids: [], bar: [] };
   return {
     id: eventId, title: "ZZ TEST BEO 905", eventDate: "2099-03-14", startTime: "13:00", endTime: "16:00", numChildren: 10, numAdults: 4,
     childName: "Mali", bookingName: "Nok", branchId: PARK, locationText: "Party room 1",
-    kitchenPlan: { foodRequired: true, cakeMode: "NONE", setMenuEnabled: false, setMenuTemplateId: null, menus: { kids: held.kids, adults: [], kidsFoodTime: "14:00", adultsFoodTime: "" }, serviceSchedule: [] },
+    kitchenPlan: { foodRequired: true, cakeMode: "NONE", setMenuEnabled: !!held.setMenuTemplateId, setMenuTemplateId: held.setMenuTemplateId ?? null, menus: { kids: held.kids, adults: [], kidsFoodTime: "14:00", adultsFoodTime: "" }, serviceSchedule: [] },
     setupPlan: null, barPlan: { serviceTime: "14:00", items: held.bar }, partyDetails: null, partyHost: null, timeline: [], beoTasks: [],
   };
 };
@@ -142,6 +148,8 @@ g.fetch = async (input: string | URL | Request, init?: RequestInit) => {
   if (url.pathname === "/api/user") return json(USER);
   if (/\/beo\/billing$/.test(url.pathname)) return json(null);
   if (url.pathname === "/api/beo/set-menu-templates" && method === "GET") return json(templates);
+  const selection = /^\/api\/beo\/set-menu-selections\/([^/]+)$/.exec(url.pathname);
+  if (selection && method === "GET") return SELECTIONS.has(selection[1]!) ? json(SELECTIONS.get(selection[1]!)) : json({ error: "Not found" }, 404);
   if (/^\/api\/beo\/set-menu-templates\/[^/]+$/.test(url.pathname) && method === "PUT") return json({ ok: true });
   return json([]);
 };
@@ -328,6 +336,58 @@ await check("a till that does not answer: the search says so and no line is mark
   assert.equal(text("text-menu-code-dead-kids-0"), "No longer on the till");
 });
 
+await check("a set menu the parent chose: no search on a dish the template resolved, kids' or adults' copy; an added line and an EXTRA keep theirs", async () => {
+  const E3 = "55555555-5555-4555-8555-555555555905";
+  queryClient.clear();
+  templates = [{
+    id: "tpl3", name: "ZZ TEST set 905", isActive: true, createdAt: "2026-11-12T00:00:00Z", updatedAt: "2026-11-12T00:00:00Z",
+    items: [
+      { id: "g1", type: "always_included", label: "Veggie sticks", qty: 10 },
+      { id: "g2", type: "choice_group", label: "Pizza", options: ["Margherita", "Hawaiian"], allowMultiple: false },
+    ],
+  }];
+  SELECTIONS.set(E3, {
+    id: "sel3", eventId: E3, templateId: "tpl3", token: "zz-905-token", isSubmitted: true, submittedAt: "2026-11-12T06:00:00.000Z",
+    selections: [{ groupId: "g2", chosenOptions: ["Margherita"] }],
+  });
+  BEOS.set(E3, {
+    setMenuTemplateId: "tpl3",
+    kids: [
+      line("set_g1", "Veggie sticks", { quantity: 10, included: true, source: "set_menu", groupId: "g1" }),
+      line("set_g2_Margherita", "Margherita", { quantity: 10, notes: "(Pizza)", included: true, source: "set_menu", groupId: "g2" }),
+      line("menu_add", "garlic bread", { quantity: 2, included: true, source: "set_menu" }),
+      line("x1", "fries", { quantity: 3, source: "additional" }),
+    ],
+    bar: [],
+  });
+  await openBeo(E3);
+  await click("accordion-kitchen-plan");
+  for (const i of [0, 1]) {
+    assert.ok(byTestId(`menu-item-kids-${i}`), `the template's dish ${i} is on the screen, editable`);
+    absent(`button-till-menu-kids-${i}`, `no search on the template's dish ${i}`);
+  }
+  assert.ok(byTestId("button-till-menu-kids-2"), "a line added on the set menu block keeps the search");
+  assert.ok(byTestId("button-till-menu-kids-3"), "an EXTRA keeps the search");
+  await pick("button-till-menu-kids-2", "haw", "CF-25");
+  await pick("button-till-menu-kids-3", "fries", "CF-12");
+  const kids = (await saved()).kitchenPlan.menus.kids;
+  assert.deepEqual(kids.map((l) => [l.itemName, l.notes, l.groupId ?? null, l.productCode ?? null, l.price]), [
+    ["Veggie sticks", "", "g1", null, 0],
+    ["Margherita", "(Pizza)", "g2", null, 0],
+    ["Hawaiian", "", null, "CF-25", 0],
+    ["French fries", "", null, "CF-12", 120],
+  ], "the parent's choice as it was; the added line part of the package, the EXTRA at the till's price");
+
+  await click("button-menu-tab-adults");
+  await click("switch-adults-differ");
+  for (const i of [0, 1]) {
+    assert.ok(byTestId(`menu-item-adults-${i}`), `the adults' copy of the template's dish ${i} is on the screen`);
+    absent(`button-till-menu-adults-${i}`, `no search on the adults' copy of the template's dish ${i}`);
+  }
+  assert.ok(byTestId("button-till-menu-adults-2"));
+  assert.ok(byTestId("button-till-menu-adults-3"));
+});
+
 // ─── Settings > Set menu templates ───────────────────────────────────────────
 
 await check("Settings: the till's menu at every park asked once; a dead code marked in the list, an option's by its name", async () => {
@@ -383,4 +443,4 @@ await check("Settings: the search beside a Code box writes the till's code, fill
 
 await act(async () => { root.unmount(); });
 console.log(`till-menu-ui.check: ${checks} checks passed`);
-process.exit(checks === 8 ? 0 : 1);
+process.exit(checks === 9 ? 0 : 1);

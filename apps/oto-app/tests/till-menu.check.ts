@@ -21,7 +21,11 @@
 //     refused before the platform is asked; nothing written to the app's
 //     tables;
 //   - a picked line keeps its code through the BEO's Save — a bar line too —
-//     and the till's plan view names a picked kitchen line by its code.
+//     and the till's plan view names a picked kitchen line by its code;
+//   - a set menu the parent chose through the link: a dish the template
+//     resolved takes no pick (its code is the template's), so the till's
+//     plan view names each set-menu dish once and keeps the parent's choice;
+//     a line added on the set menu block and an EXTRA, picked, reach it once.
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/till-menu.check.ts
@@ -37,6 +41,7 @@ import pg from "pg";
 import { TILL_MENU_CACHE_MS, forgetTillMenus, readTillMenu } from "../server/lib/tillMenu";
 import {
   bahtOfSatang,
+  isTemplateSetMenuLine,
   lineWithTillItem,
   lineWithoutTillItem,
   tillCodeState,
@@ -95,6 +100,19 @@ await check("a pick writes the till's name and code; an EXTRA takes the till's p
   const picked = lineWithTillItem(extra, PIZZA);
   assert.deepEqual(lineWithoutTillItem(picked), { ...extra, itemName: "Margherita", price: 290 }, "the name and the price stay, the code goes");
   assert.equal("productCode" in lineWithoutTillItem(picked), false);
+});
+
+await check("a set-menu dish the template resolved takes no pick: its code is the template's; a line added on the set menu block does", () => {
+  const chosen = { id: "set_g2_Veggie", itemName: "Veggie", quantity: 10, notes: "(Fried rice)", included: true, price: 0, source: "set_menu", groupId: "g2" };
+  assert.equal(isTemplateSetMenuLine(chosen), true);
+  assert.equal(lineWithTillItem(chosen, PIZZA), chosen, "the parent's choice as it was: no name, no code");
+  const always = { id: "set_g1", itemName: "Veggie sticks", quantity: 10, notes: "", included: true, price: 0, source: "set_menu", groupId: "g1" };
+  assert.equal(lineWithTillItem(always, PIZZA), always);
+  const added = { id: "menu_1", itemName: "", quantity: 2, notes: "", included: true, price: 0, source: "set_menu" };
+  assert.equal(isTemplateSetMenuLine(added), false, "+ Add item: no groupId");
+  assert.equal(isTemplateSetMenuLine({ ...added, groupId: "" }), false);
+  assert.equal(isTemplateSetMenuLine({ source: "additional", groupId: "g1" }), false, "an EXTRA is never the template's");
+  assert.deepEqual(lineWithTillItem(added, PIZZA), { ...added, itemName: "Margherita", productCode: "CF-24" });
 });
 
 // ─── The stand-in platform ────────────────────────────────────────────────────
@@ -242,6 +260,15 @@ const managerA = await user(A, "manager");
 const staffA = await user(A, "staff");
 const adminC = await user(C, "admin");
 const partyA = await party(A, floresta.id);
+const partySet = await party(A, floresta.id);
+const SET_MENU_ID = randomUUID();
+await q("insert into beo_set_menu_templates (id, tenant_id, name, items) values ($1, $2, $3, $4)", [
+  SET_MENU_ID, A, `ZZ TEST 905 set menu ${run}`,
+  JSON.stringify([
+    { id: "zz905-veg", type: "always_included", label: "Veggie sticks", qty: 10, productCode: "CF-12" },
+    { id: "zz905-pizza", type: "choice_group", label: "Pizza", options: ["Margherita", "Hawaiian"], allowMultiple: false, optionProductCodes: { Margherita: "CF-24", Hawaiian: "CF-25" } },
+  ]),
+]);
 
 // ─── The app ──────────────────────────────────────────────────────────────────
 
@@ -417,10 +444,63 @@ try {
     );
   });
 
+  await check("a set menu the parent chose: its dishes reach the till's plan once, the choice kept; an added line and an EXTRA, picked, once each", async () => {
+    // The editor's Save sends the parent's submit time it read (setMenuSelectionSubmittedAt),
+    // as here; without it the server keeps its own set-menu lines over the staff's.
+    const setPlan = (kids: unknown[], setMenuSelectionSubmittedAt: string | null = null) => ({
+      foodRequired: true, cakeMode: "NONE", setMenuEnabled: true, setMenuTemplateId: SET_MENU_ID, setMenuSelectionSubmittedAt,
+      menus: { kids, adults: [], adultsDiffer: false, kidsFoodTime: "14:00", adultsFoodTime: "" }, serviceSchedule: [],
+    });
+    assert.equal((await call(keyed, "PUT", `/api/events/${partySet}/beo`, manager, { kitchenPlan: setPlan([]) })).status, 200);
+    const link = await call(keyed, "POST", "/api/beo/set-menu-selections", manager, { eventId: partySet, templateId: SET_MENU_ID });
+    assert.equal(link.status, 201, JSON.stringify(link.body));
+    const submitted = await fetch(`${keyed}/api/beo/set-menu-selections/public/${link.body.token}/submit`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ selections: [{ groupId: "zz905-pizza", chosenOptions: ["Margherita"] }] }),
+    });
+    assert.equal(submitted.status, 200, await submitted.text());
+    const viewOf = async () =>
+      (await q<{ set_menu: Array<Record<string, unknown>> }>("select set_menu from otoapp_v.event_packages where event_id = $1", [partySet]))[0]?.set_menu ?? [];
+    const before = await viewOf();
+    assert.deepEqual(before.map((l) => [l.product_code, l.name, l.chosen_option]), [["CF-12", "Veggie sticks", null], ["CF-24", "Pizza", "Margherita"]],
+      "before any pick: the template's dishes, each once, by the template's codes");
+    type Kid = { id: string; itemName: string; quantity: number; notes: string; included: boolean; price: number; source?: string; groupId?: string; productCode?: string };
+    const opened = (await call(keyed, "GET", `/api/events/${partySet}/beo`, manager)).body.kitchenPlan;
+    const submittedAt = opened.setMenuSelectionStatus?.submittedAt as string;
+    assert.equal(typeof submittedAt, "string", "the BEO names the parent's submit");
+    const resolved = opened.menus.kids as Kid[];
+    assert.deepEqual(resolved.map((l) => [l.itemName, l.source, l.groupId, l.productCode ?? null]), [
+      ["Veggie sticks", "set_menu", "zz905-veg", null], ["Margherita", "set_menu", "zz905-pizza", null],
+    ], "the parent's submit wrote the template's dishes, with no code");
+
+    // The screen: a pick tried on every line keeps the template's dishes as they were; one line is
+    // added on the set menu block and one EXTRA, each picked from the till's menu.
+    const GARLIC: TillMenuItem = { code: "CF-31", name: "Garlic bread", category: "Sides", parentCategory: "Food", station: "kitchen", priceSatang: 9_000, priceWeekendSatang: 9_000, beoOnly: false };
+    const kids: Kid[] = [
+      ...resolved.map((l) => lineWithTillItem(l, PIZZA)),
+      lineWithTillItem<Kid>({ id: "menu_905_add", itemName: "", quantity: 2, notes: "", included: true, price: 0, source: "set_menu" }, GARLIC),
+      lineWithTillItem<Kid>({ id: "menu_905_extra", itemName: "juice", quantity: 10, notes: "", included: false, price: 0, source: "additional" }, JUICE),
+    ];
+    assert.deepEqual(kids.slice(0, 2), resolved, "no pick on a dish the template resolved");
+    assert.equal((await call(keyed, "PUT", `/api/events/${partySet}/beo`, manager, { kitchenPlan: setPlan(kids, submittedAt) })).status, 200);
+
+    const shown = (await call(keyed, "GET", `/api/events/${partySet}/beo`, manager)).body.kitchenPlan.menus.kids as Kid[];
+    assert.deepEqual(shown.map((l) => [l.itemName, l.notes, l.productCode ?? null, l.price]), [
+      ["Veggie sticks", "", null, 0], ["Margherita", "(Pizza)", null, 0], ["Garlic bread", "", "CF-31", 0], ["Kids juice Apple", "", "CF-66-1", 90.5],
+    ], "the parent's choice keeps its name on the BEO");
+    const after = await viewOf();
+    assert.deepEqual(after.slice(0, before.length), before, "the template's dishes as before the picks");
+    const codesOf = (code: string) => after.filter((l) => l.product_code === code).length;
+    assert.equal(codesOf("CF-12"), 1, `the veggie sticks once: ${JSON.stringify(after)}`);
+    assert.equal(codesOf("CF-24"), 1, `the pizza once: ${JSON.stringify(after)}`);
+    assert.equal(after.filter((l) => l.name === "Margherita" || l.name === "Veggie sticks").length, 1, "no second line for a set-menu dish");
+    assert.equal(after.find((l) => l.product_code === "CF-24")?.chosen_option, "Margherita", "the parent's choice kept");
+    assert.deepEqual(after.slice(before.length).map((l) => [l.product_code, l.name, l.qty]), [["CF-31", "Garlic bread", 2], ["CF-66-1", "Kids juice Apple", 10]]);
+  });
+
   console.log(`till-menu.check: ${checks} checks passed`);
 } finally {
   for (const child of children) child.kill();
   platform.close();
   await pool.end();
 }
-process.exit(checks === 11 ? 0 : 1);
+process.exit(checks === 13 ? 0 : 1);
