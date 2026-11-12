@@ -28,6 +28,7 @@ Settlement charges only BEO-only codes (apps/api/src/services/party-settlement.t
 ## THE OWNER'S DECISIONS (12 Nov; his words in quotes)
 1. Hand-typed lines not on the till: allowed, printed to the kitchen by name, marked "not on the till menu". (the recommendation, accepted)
 2. A till item added as an EXTRA is charged at settlement: "Not 0 baht, charge it according to the right entered price". Reading: an EXTRA line is charged at the price entered on that line in the BEO; where no price was entered and the line is a till item, the till's price; a set-menu (included) line stays part of the package. If the code shows a case this reading does not settle, report it as a question for the owner; never invent a price.
+   **Ruled on 12 November 17:35, when the review asked whether the entered price is for one item or for the whole line: "its price per item."** The charge is the entered price times the quantity.
 3. Staff change a choice after the parent submitted: "Every record should get updated in this POS and BEO entries accordingly". The latest change wins, and the BEO, the till's party page, the slips and the parent's own view all show the same choice.
 4. The cake: "Follow according to selected choice from beo form". The party page and the kitchen slip show the cake exactly as the BEO's cake choice says (its type, notes and time); nothing when the BEO says no cake.
 5. The older set menus: "Dont remove any menu". Nothing is retired, renamed or deleted.
