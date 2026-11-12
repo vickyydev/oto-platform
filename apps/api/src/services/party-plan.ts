@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { product } from '@oto/db';
 import {
+  PARTY_PLAN_LINE_QTY_MAX,
   PartyKitchenPlanSchema,
   PartyPlanSchema,
   isPartyMenuCode,
@@ -57,6 +58,11 @@ const maybe = (v: unknown): number | null => {
   const n = whole(v);
   return n === null ? null : Math.max(0, n);
 };
+/**
+ * SCRUM-906: a kitchen-plan line's quantity, held to the bound the view reads
+ * one with (`PARTY_PLAN_LINE_QTY_MAX`), so one line can never fail the plan.
+ */
+const lineQty = (n: number): number => Math.min(n, PARTY_PLAN_LINE_QTY_MAX);
 /** "HH:MM" from a time the view gives as "HH:MM:SS". */
 const clock = (v: unknown): string | null => {
   const t = text(v);
@@ -99,10 +105,11 @@ function menuItemOf(m: Json, whole906: boolean): PartyPlanMenuItem {
   const productCode = text(m.product_code);
   const price = whole906 ? enteredPrice(m.unit_price_satang) : null;
   const lineId = whole906 ? text(m.line_id) : null;
+  const qty = maybe(m.qty);
   return {
     productCode,
     name: text(m.name) ?? '',
-    qty: maybe(m.qty),
+    qty: qty === null ? null : lineQty(qty),
     choiceGroup: text(m.choice_group),
     chosenOption: text(m.chosen_option),
     note: text(m.note),
@@ -127,7 +134,7 @@ function barItemOf(b: Json, whole906: boolean): PartyPlanBarItem {
   return {
     productCode,
     name: text(b.name) ?? '',
-    qty: nonNegative(b.qty),
+    qty: lineQty(nonNegative(b.qty)),
     ...(whole906
       ? {
           note: text(b.note),
@@ -146,7 +153,7 @@ function cakeOf(v: unknown): PartyPlanCake | null {
   const type = c.mode === 'INTERNAL' ? 'our' : c.mode === 'EXTERNAL' ? 'own' : null;
   if (!type) return null;
   const qty = whole(c.qty);
-  return { type, qty: qty !== null && qty > 0 ? Math.min(qty, 10_000) : 1, time: clock(c.time), note: text(c.notes) };
+  return { type, qty: qty !== null && qty > 0 ? lineQty(qty) : 1, time: clock(c.time), note: text(c.notes) };
 }
 
 /** The menu, the bar, the cake and the times of a row, from the whole kitchen plan when the view gives it. */

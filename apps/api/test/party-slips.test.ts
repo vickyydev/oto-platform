@@ -22,6 +22,7 @@ import {
   PARTY_CANCELLED,
   PARTY_CHOICE_NOT_MADE,
   PARTY_PLAN_CHANGED,
+  PARTY_PLAN_LINE_QTY_MAX,
   PARTY_KIDS_ONLY,
   PARTY_NO_KIDS_FOOD_TIME,
   PARTY_NOT_ON_TILL_MENU,
@@ -47,6 +48,7 @@ import {
 } from '@oto/shared';
 import { loadEnv } from '../src/env';
 import { buildDefaultJobs } from '../src/services/jobs';
+import { partyKitchenOfRow, partyPlanOfRow } from '../src/services/party-plan';
 import { PARTY_SLIPS_JOB, runPartySlipsJob } from '../src/services/party-slips';
 import { buildPrintDocument } from '../src/services/sale-printing';
 import {
@@ -1139,6 +1141,40 @@ describe('SCRUM-906 — the slip composed from the whole kitchen plan', () => {
     expect(setMenuOnly).toEqual({ kitchen: null, bar: null });
   });
 
+  it('a line’s quantity past the view’s bound is held to it, never failing the plan; the bound is the view’s, 999,999', () => {
+    const row = {
+      eventId: newId(),
+      branchId: newId(),
+      partyDate: '2026-11-20',
+      startTime: '13:00:00',
+      endTime: '16:00:00',
+      package: { name: 'Floresta Birthday', price_weekday_satang: 1_690_000, price_weekend_satang: 1_690_000 },
+      counts: { kids_expected: 10, adults_expected: 4 },
+      addOns: [],
+      entertainment: [],
+      setMenu: [],
+      barItems: [],
+      kitchen: { kids_food_time: '14:00:00', slips_time: '11:00:00' },
+      settlement: {},
+      kitchenPlan: {
+        version: 1,
+        lines: [
+          { line_id: 'k1', source: 'extra', name: 'Mango sticky rice', qty: 999_999 },
+          { line_id: 'k2', source: 'extra', name: 'Spring rolls', qty: 5_000_000 },
+        ],
+        bar_lines: [{ line_id: 'b1', source: 'extra', name: 'Juice pitcher', qty: 2_000_000 }],
+        cake: { mode: 'INTERNAL', qty: 3_000_000 },
+      },
+    };
+    const planned = partyPlanOfRow(row);
+    expect(planned).not.toBeNull();
+    expect(planned?.setMenu.map((m) => m.qty)).toEqual([999_999, PARTY_PLAN_LINE_QTY_MAX]);
+    expect(planned?.barItems.map((b) => b.qty)).toEqual([PARTY_PLAN_LINE_QTY_MAX]);
+    expect(planned?.cake?.qty).toBe(PARTY_PLAN_LINE_QTY_MAX);
+    // With no package, the kitchen plan alone is just as whole.
+    expect(partyKitchenOfRow({ ...row, package: null })?.setMenu.map((m) => m.qty)).toEqual([999_999, PARTY_PLAN_LINE_QTY_MAX]);
+  });
+
   it('a chosen dish under its group, "Fried rice: Veggie"; an open choice is not marked off the menu; a typed extra is', () => {
     const slips = compose(
       plan({
@@ -1211,6 +1247,37 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     await runPartySlipsJob(ctx.db, atBangkok(T, '16:00'));
     const rows = await slipsOf(id);
     expect((rows[0]!.document as PartySlipDocument).lines[0]).toEqual({ qty: 3, name: 'Pizza: Hawaiian' });
+  });
+
+  it('a very large quantity on one BEO line (a typo) shows on that line and never blanks the party’s plan', async () => {
+    const id = await appParty({
+      id: newId(),
+      title: "Lek's 5th",
+      date: T,
+      bar: [{ itemName: 'Juice pitcher', quantity: 999_999 }],
+    });
+    // A typed EXTRA line staff meant as 25 and saved as 250000, and one past what the view reads (seven digits).
+    await ctx.db.execute(sql`
+      update otoapp.beo_kitchen_plans
+         set menus = jsonb_set(menus, '{kids}', (menus -> 'kids') || ${JSON.stringify([
+           { id: 'k-typo', itemName: 'Mango sticky rice', quantity: 250_000, notes: '', included: false, price: 120 },
+           { id: 'k-past', itemName: 'Spring rolls', quantity: 1_000_000, notes: '', included: false, price: 0 },
+         ])}::jsonb)
+       where event_id = ${id}`);
+    const page = await detail(id);
+    expect(page.status, JSON.stringify(page.body)).toBe(200);
+    expect(page.body.planStatus).toBe('ready');
+    expect(page.body.plan).not.toBeNull();
+    expect(page.body.kitchenPlan).not.toBeNull();
+    // The schema takes every quantity the view can publish; the view reads a longer one as its default, 1.
+    expect(PARTY_PLAN_LINE_QTY_MAX).toBe(999_999);
+    expect(page.body.kitchenPlan?.setMenu.find((m) => m.lineId === 'k-typo')).toMatchObject({ name: 'Mango sticky rice', qty: 250_000 });
+    expect(page.body.kitchenPlan?.setMenu.find((m) => m.lineId === 'k-past')).toMatchObject({ name: 'Spring rolls', qty: 1 });
+    expect(page.body.kitchenPlan?.barItems).toMatchObject([{ name: 'Juice pitcher', qty: 999_999 }]);
+    expect(page.body.plan?.setMenu.find((m) => m.lineId === 'k-typo')?.qty).toBe(250_000);
+    // The rest of the plan is all there: the chosen pizza still reaches the till.
+    expect(page.body.kitchenPlan?.setMenu.find((m) => m.choiceGroup === 'Pizza')).toMatchObject({ chosenOption: 'Margherita', qty: 3 });
+    expect(page.body.slips).not.toBeNull();
   });
 
   it('decision 8: a party with a kitchen plan and no package shows it, prints its slips with the cake and the typed lines marked', async () => {

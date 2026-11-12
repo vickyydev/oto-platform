@@ -104,6 +104,16 @@ const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Satang = z.number().int().min(0).max(10_000_000_000);
 const Count = z.number().int().min(0).max(10_000);
 
+/**
+ * SCRUM-906: the largest quantity a kitchen-plan line (food, bar or cake) may
+ * hold. It is the bound the OTO App's plan view reads a quantity with
+ * (`^[1-9][0-9]{0,5}$`, app migrations 0048 and 0050), so the plan accepts
+ * every quantity the view can publish: one typo in a BEO line shows that line
+ * with its quantity, and never blanks the party's whole plan.
+ */
+export const PARTY_PLAN_LINE_QTY_MAX = 999_999;
+const LineCount = z.number().int().min(0).max(PARTY_PLAN_LINE_QTY_MAX);
+
 export const PartyPlanPackageSchema = z.object({
   templateId: z.string().nullable(),
   name: z.string(),
@@ -176,7 +186,7 @@ export const PartyPlanMenuItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
   /** Null when the menu prints none, or splits one group's portions over several choices. */
-  qty: Count.nullable(),
+  qty: LineCount.nullable(),
   choiceGroup: z.string().nullable(),
   chosenOption: z.string().nullable(),
   note: z.string().nullable(),
@@ -205,7 +215,7 @@ export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 export const PartyPlanBarItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
-  qty: Count,
+  qty: LineCount,
   /** SCRUM-906: the bar line's note, its id, its badge, its entered price and whether the till sells it. */
   note: z.string().nullable().optional(),
   lineId: z.string().optional(),
@@ -233,7 +243,7 @@ export const PARTY_CAKE_TYPES = ['our', 'own'] as const;
 export type PartyCakeType = (typeof PARTY_CAKE_TYPES)[number];
 export const PartyPlanCakeSchema = z.object({
   type: z.enum(PARTY_CAKE_TYPES),
-  qty: Count,
+  qty: LineCount,
   time: z.string().nullable(),
   note: z.string().nullable(),
 });

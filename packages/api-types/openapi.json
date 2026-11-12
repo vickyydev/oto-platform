@@ -63133,7 +63133,7 @@
                               "qty": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 10000,
+                                "maximum": 999999,
                                 "nullable": true
                               },
                               "choiceGroup": {
@@ -63204,7 +63204,7 @@
                               "qty": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 10000
+                                "maximum": 999999
                               },
                               "note": {
                                 "type": "string",
@@ -63303,7 +63303,7 @@
                             "qty": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 10000
+                              "maximum": 999999
                             },
                             "time": {
                               "type": "string",
@@ -63405,7 +63405,7 @@
                               "qty": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 10000,
+                                "maximum": 999999,
                                 "nullable": true
                               },
                               "choiceGroup": {
@@ -63476,7 +63476,7 @@
                               "qty": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 10000
+                                "maximum": 999999
                               },
                               "note": {
                                 "type": "string",
@@ -63556,7 +63556,7 @@
                             "qty": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 10000
+                              "maximum": 999999
                             },
                             "time": {
                               "type": "string",
