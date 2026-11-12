@@ -362,6 +362,36 @@ describe('an Add time prints the extended bands again, with the new leave time',
     expect(latest.data.duration).toMatch(new RegExp(` \\+ 3 hours · valid until ${plusMinutes(validUntil, 180)}$`));
   });
 
+  it('a selected band replaced and reselected before the charge is paid: the replacement gets the copy, the replaced band none', async () => {
+    const source = await admission(oneHourId, 2, 1);
+    const [first, second] = source.bands.filter((b) => b.kind === 'kid');
+    const adult = source.bands.find((b) => b.kind === 'adult')!;
+    const made = await extend(source.id, 'ext-60', [first!.id, adult.id]);
+    // The first child's band is replaced at the till before the charge is
+    // paid, and staff choose the replacement bracelet ("Choose the
+    // replacement bracelets"): the ledger row moves, the selection does not.
+    await ctx.db.update(band).set({ status: 'replaced' }).where(eq(band.id, first!.id));
+    const repaired = await ctx.app.inject({ method: 'POST', url: `/sales/${source.id}/extensions/${made.extension.id}/bands`, headers: { cookie },
+      payload: { actionId: newId(), stationId, bandIds: [second!.id, adult.id] } });
+    expect(repaired.statusCode, repaired.body).toBe(200);
+
+    const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${made.sale.id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
+    expect(closed.statusCode, closed.body).toBe(200);
+    const answer = closed.json() as { finalised: boolean; printing: { jobs: Array<{ kind: string; role: string | null; deviceId: string | null; subjectType: string | null; subjectId: string | null; reprintOf: string | null; reprintReason: string | null }>; notes: string[] } };
+    expect(answer.finalised).toBe(true);
+    const copies = answer.printing.jobs.filter((j) => j.subjectType === 'band');
+    expect(copies.map((j) => [j.kind, j.role, j.deviceId, j.subjectId, j.reprintOf, j.reprintReason]).sort()).toEqual([
+      ['adult_wristband', 'adult_band', adultPrinterId, adult.id, adult.printedJobId, 'Extra time added (+60 min)'],
+      ['kids_wristband', 'kids_band', kidsPrinterId, second!.id, second!.printedJobId, 'Extra time added (+60 min)'],
+    ]);
+    expect(answer.printing.notes).toEqual([]);
+    // The replaced band keeps only its first print; the replacement reads the added hour.
+    expect(await jobsOfBand(first!.id)).toHaveLength(1);
+    const secondJobs = await jobsOfBand(second!.id);
+    expect(secondJobs).toHaveLength(2);
+    expect((await documentOf(secondJobs[1]!.id)).data.duration).toMatch(/\+ 1 hour · valid until /);
+  });
+
   it('a voided extension charge prints nothing again, and the band goes back to its old time', async () => {
     const source = await admission(oneHourId, 1, 1);
     const kid = source.bands.find((b) => b.kind === 'kid')!;

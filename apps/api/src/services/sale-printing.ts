@@ -758,6 +758,10 @@ export async function queueEventBandPrints(
  * the ledger when it prints, carries the added minutes
  * (`SalePrintBand.extraMinutes`).
  *
+ * The bands are read from the extension's ledger (`sale_extension_band`),
+ * which a band replacement rewrites, never from `selection`, which keeps the
+ * bands as first chosen: a replaced band's successor gets the copy.
+ *
  * An extension by COUNT names no band (`selection.mode === 'count'`), so
  * there is nothing to print again and the till's own words say nothing
  * either; the owner has the question. Under a savepoint like a sale's own
@@ -787,11 +791,25 @@ export async function queueExtensionBandReprints(
       if (!source || !stationRow?.boxId) {
         return { jobs: [], notes: ['Bands not printed again — this station is not attached to a box'] };
       }
-      const bands = await sp
-        .select()
-        .from(band)
-        .where(and(inArray(band.id, selection.bandIds), eq(band.saleId, source.id), eq(band.status, 'active')))
-        .orderBy(asc(band.createdAt), asc(band.id));
+      // The ledger, not the selection: a band replaced after the extension was
+      // taken (the till's "Choose the replacement bracelets", the offline
+      // replacement) moves its `sale_extension_band` row to the new band and
+      // leaves `selection` as first taken, so the copy follows the row.
+      const bands = (
+        await sp
+          .select({ band })
+          .from(saleExtensionBand)
+          .innerJoin(band, eq(band.id, saleExtensionBand.bandId))
+          .where(
+            and(
+              eq(saleExtensionBand.extensionId, extension.id),
+              isNull(saleExtensionBand.revokedAt),
+              eq(band.saleId, source.id),
+              eq(band.status, 'active'),
+            ),
+          )
+          .orderBy(asc(band.createdAt), asc(band.id))
+      ).map((row) => row.band);
       const scope: JobScope = {
         operatorId: source.operatorId,
         branchId: source.branchId,
