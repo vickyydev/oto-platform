@@ -146,3 +146,24 @@ Left: the Health page's summary dot for a printer with no address; the phone til
 8. Should staging's Robinson Chalong "Receipt Printer 1" be given an address, or left for you to set?
 9. Is the example address 192.0.2.10:9100 all right in the Console's hint and placeholder?
 10. On a till that does only F&B or only parties, a save at the till now keeps the kids, adult and drop-off printers whose cards are hidden; before, the kids and adult printers were cleared. For information.
+
+## The family's form lane landed (12 November 21:42, main 03fc3f75f)
+Tickets: SCRUM-893, 894, 914, 915, the lock-screen part of 942, and 943. Services: the platform and both tills; no migration. The counter display takes everything from the web deploy; only the lock screen's "The family has pressed Done" line on Till 1 (Pi) needs the counter box's next release.
+Left: a lost Done or Ask the team reply still shows the older Retry banner in the page flow; the camera report is marked sent when sent, not when the till takes it; the keyboard is letters only.
+
+### Questions for the owner from this lane
+1. On the phone till the family's form opens on the phone itself, handed to the parent, and the parent gives the number-confirmation tick there. Keep?
+2. On the phone, the family's Done goes to the next step (Review, or the nanny step), not straight to payment. Do you want straight to payment?
+3. A phone till with a display paired to its station keeps the form on the phone, and the display shows "Please follow the staff screen". Keep?
+4. The display cannot tell when the till is locked, so "Thank you. The team will be with you in a moment." shows whenever the family's Done is waiting for the till (under a second on an unlocked till). Keep?
+5. Do you want the till kept awake while a family fills the form (SCRUM-942), or is the lock screen's line enough?
+6. On the paired display a complete number drops the 0 after +66, matching the till's copy and the board; the till's own customer half still shows it as typed with the stored form beside it. Should the half follow the display?
+7. Is this staff line right: "The display does not take the photo at this station. Take each child's photo with the family here, in Private child details."? It also shows on Till 1, where the display is never asked for photos.
+8. On screens shorter than 700 pixels the form's subtitle is hidden and the keys are slightly shorter (also the first screen's nickname keys). The standing counter display is unchanged. Keep?
+9. The on-screen keyboard has letters only: a family cannot type "2 puffs", "peanuts, eggs" or Thai on the counter display. Do you want a fuller keyboard?
+10. On the board only a new number is checked against the messaging rule, and the warning appears whenever the number or channel changes. Keep?
+11. The automatic resend with no Retry applies only to the family's typing; a lost Done or Ask the team keeps the Retry banner. Keep?
+12. On the till's read-only copy Continue is greyed out together with Done, Back and Ask the team. Keep?
+13. On the phone the wide button under the family's form reads "Return phone to staff" and only hands the phone back. Keep, hide it until the form is done, or make it register the children when the form is complete?
+14. The till's customer half stops at the display's lengths (500 for allergies, 200 for dietary) only when the on-screen keys are on. Cap it with a real keyboard too?
+15. On the parent's check-in screen on the phone (a dark screen) with the light staff theme, the camera notice now shows as a pale panel; both lines read. Keep, or keep the old amber look there?
