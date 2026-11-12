@@ -966,6 +966,46 @@ describe('SCRUM-861 — a plan changed after the slips printed sends VOID and UP
     expect(await changesOf(id)).toEqual([]);
   });
 
+  it('the OTO App’s plans view away for a tick is not a cancellation: nothing is sent while it is away, nor when it is back', async () => {
+    const id = await appParty({ id: newId(), title: 'Seam away', date: T });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:24'));
+    expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
+    const allBefore = (await ctx.db.select({ id: prepSlipPrint.id }).from(prepSlipPrint)).length;
+
+    // A staging restore or an OTO App migration window: the view is not there.
+    await ctx.db.execute(sql`alter view otoapp_v.event_packages rename to event_packages_861_away`);
+    try {
+      const summary = await runPartySlipsJob(ctx.db, atBangkok(T, '11:25'));
+      expect(summary.failed).toBe(0);
+      expect(summary.changes).toBe(0);
+      expect(summary.changesUnknown).toBeGreaterThanOrEqual(1);
+      expect((await ctx.db.select({ id: prepSlipPrint.id }).from(prepSlipPrint)).length).toBe(allBefore);
+    } finally {
+      await ctx.db.execute(sql`alter view otoapp_v.event_packages_861_away rename to event_packages`);
+    }
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:26'));
+    expect(await changesOf(id)).toEqual([]);
+  });
+
+  it('the OTO App’s events view away for a tick says nothing of the party either: no slip is sent', async () => {
+    const id = await appParty({ id: newId(), title: 'Events away', date: T });
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:27'));
+    expect((await slipsOf(id)).map((r) => r.status)).toEqual(['printed', 'printed']);
+    const allBefore = (await ctx.db.select({ id: prepSlipPrint.id }).from(prepSlipPrint)).length;
+
+    await ctx.db.execute(sql`alter view otoapp_v.events rename to events_861_away`);
+    try {
+      // Another party of the day may fail its own slip-time look meanwhile;
+      // what matters here is that no change slip is written.
+      await runPartySlipsJob(ctx.db, atBangkok(T, '11:28')).catch(() => undefined);
+      expect((await ctx.db.select({ id: prepSlipPrint.id }).from(prepSlipPrint)).length).toBe(allBefore);
+    } finally {
+      await ctx.db.execute(sql`alter view otoapp_v.events_861_away rename to events`);
+    }
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:29'));
+    expect(await changesOf(id)).toEqual([]);
+  });
+
   it('with no station named, a change is recorded "no printer" once and queues nothing', async () => {
     await nameStation(null);
     try {

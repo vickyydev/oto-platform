@@ -38,7 +38,14 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { JobFailedError } from './job-failure';
 import { resolveItemPrepStations } from './menu';
-import { getBranchEvent, listEventPackagesOn, OtoAppSeamNotGrantedError, type SeamEvent } from './otoapp-events';
+import {
+  eventStandingAtBranches,
+  getBranchEvent,
+  getEventAtBranches,
+  listEventPackagesOn,
+  OtoAppSeamNotGrantedError,
+  type SeamEvent,
+} from './otoapp-events';
 import { partyPlanOfRow, readPartyPlan } from './party-plan';
 import { overlayPartyEdits, partyLedgersOf } from './party-tab';
 import { nextPartyChangeRun, partySlipsLastGiven, writePrepSlips } from './prep-slips';
@@ -441,6 +448,13 @@ export type PrintPartySlipChangesResult =
   | { outcome: 'not_printed_yet' }
   /** Every station holds the slip the plan would print now. */
   | { outcome: 'unchanged' }
+  /**
+   * The OTO App could not say for certain what the party now is — the plans
+   * view missing, the events view not installed, or the party's row not read
+   * soundly — so nothing is sent: a plan that cannot be read is never a
+   * cancelled party. The next look, once the seam is back, decides.
+   */
+  | { outcome: 'unknown' }
   | { outcome: 'printed'; run: number; cancelled: boolean; slips: PrepSlipRow[] };
 
 /**
@@ -479,8 +493,16 @@ export async function printPartySlipChanges(
     const missing = new OtoAppSeamNotGrantedError(['SELECT on the OTO App event packages view']);
     throw new AppError(503, 'EVENTS_SEAM_NOT_GRANTED', missing.message, { missing: missing.missing });
   }
+  // The plans view not here (a restore, an OTO App migration window): what
+  // the plan is cannot be said, and saying "cancelled" would tell the
+  // kitchen a child's party is off when it is not.
+  if (read.status !== 'ready' && read.status !== 'no_package') return { outcome: 'unknown' };
   const plan = read.plan;
   const party = await partyShown(tx, input.branchId, eventId);
+  // No party row read: gone only when the Events module answers for certain.
+  if (!party && !(await partyDefinitelyGone(tx, input.operatorId, input.branchId, eventId))) {
+    return { outcome: 'unknown' };
+  }
   // No package any more, moved to another day, cancelled, archived or gone:
   // whatever the kitchen holds for today is not to be made.
   const cancelled =
@@ -540,6 +562,32 @@ export async function printPartySlipChanges(
   return { outcome: 'printed', run, cancelled, slips: rows };
 }
 
+/**
+ * A party the branch's events read did not answer for is GONE only when the
+ * Events module says so for certain (`eventStandingAtBranches`, the SCRUM-820
+ * reader that keeps "gone" apart from "unknown"): the seam installed and
+ * readable and no event of that id at any branch, or the event now at another
+ * of the operator's parks. A seam that is not installed, a row that is not
+ * read soundly, or an id at no branch of the operator is not known, and the
+ * kitchen is told nothing.
+ */
+async function partyDefinitelyGone(db: Exec, operatorId: string, branchId: string, eventId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(eq(branch.operatorId, operatorId));
+  const branchIds = rows.map((r) => r.id);
+  const standing = await eventStandingAtBranches(db, { branchIds, eventId });
+  if (standing === 'gone') return true;
+  if (standing === 'unknown') return false;
+  const here = branchId.toLowerCase();
+  const elsewhere = await getEventAtBranches(db, {
+    branchIds: branchIds.filter((id) => id.toLowerCase() !== here),
+    eventId,
+  });
+  return elsewhere !== null;
+}
+
 /** The branch's parties whose slips printed for a day, by the OTO App's id. */
 async function partiesWithSlipsOn(db: Exec, q: { branchId: string; date: string }): Promise<string[]> {
   const rows = await db
@@ -566,6 +614,8 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
   changes: number;
   changePrinted: number;
   changeNoPrinter: number;
+  /** SCRUM-861 — looks the OTO App could not answer for certain (its seam away): nothing sent. */
+  changesUnknown: number;
   failed: number;
 }
 
@@ -602,6 +652,7 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
     changes: 0,
     changePrinted: 0,
     changeNoPrinter: 0,
+    changesUnknown: 0,
     failed: 0,
   };
   for (const b of branches) {
@@ -683,6 +734,7 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
               now,
             }),
         );
+        if (result.outcome === 'unknown') summary.changesUnknown += 1;
         if (result.outcome !== 'printed') continue;
         summary.changes += 1;
         for (const s of result.slips) {
