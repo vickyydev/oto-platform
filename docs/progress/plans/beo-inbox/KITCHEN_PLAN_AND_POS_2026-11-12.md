@@ -145,3 +145,11 @@ A server-to-server door on the OTO App for the platform to write a party's kitch
 12. On the release day every slip printed before the release is taken as already printed (composer 3), so a real BEO change made in the minute around the deploy is not sent as VOID/UPDATED. Accept, with a reprint check that day?
 13. The phone till has no Edit form and no Settle view (the prototype has neither), so nothing was added there. Should the phone get the kitchen edit?
 14. A party whose BEO was last saved before "Different for adults" existed and whose adults' list repeats the kids' dishes shows each dish twice on the till (the plan view's reading); the BEO editor reads the same BEO as one list; the first save, in the BEO or on the till, settles it. Should such older BEOs be re-saved in one go?
+
+## State, 13 November 01:18: LANE B2 LANDED (SCRUM-907, 950, 951), main b229f96e2
+- Nineteen commits; no platform migration, no app migration. Deploy order, running: the OTO App (the door POST /api/directory/events/:id/kitchen-plan and GET .../kitchen-plan/choices), then the platform (its pre-deploy sync gives branch managers pos:party:kitchen_update), then both tills. The counter box needs no release (slips are composed on the platform).
+- Left and ticketed: SCRUM-966 (the BEO's "kitchen required" switch does not reach the till or the slips; the extras' amounts where a park adds a service charge; the release-day slip mark; a kids' drink at the bar; three older BEO editor points).
+
+### Two more questions for the owner from this lane (they follow the fourteen above)
+15. A till user can still add an extra after the party is settled, as the BEO already can; the kitchen makes it and nobody charges it. Should the till's kitchen edit be refused once a party is settled?
+16. The BEO's own "Kitchen required" switch never reaches the till or the slips: a BEO switched to no kitchen service still prints its lines, and the till's card shows "needed" when the plan has food or a cake. Should the switch reach the till and the slips? It needs a change to the OTO App's plan view.
