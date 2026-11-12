@@ -542,8 +542,9 @@ describe('A. fences and seams', () => {
       // lines (writeResolvedSetMenu); where the BEO's documents live is unchanged.
       // SCRUM-970: an adults' set-menu line that becomes the kids' dish in its group drops its own till code
       // (writeResolvedSetMenu, withAdultsDiffer), and the BEO PDF route hands the PDF the park's time zone and
-      // the party's park's till menu (readFillTillMenu); where the BEO's documents live is unchanged.
-      'beo-routes.ts': '6c3372cba1a912568a0ddc1990700aedd9b4c435f04628b03788444a08001c0b',
+      // the party's park's till menu (readFillTillMenu, for a party and only when a line's charge needs
+      // it); where the BEO's documents live is unchanged.
+      'beo-routes.ts': '38982914480db566904fb552f192ff91448a56bb6dce007f839c9d4bb0d887a1',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
