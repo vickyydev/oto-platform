@@ -85,6 +85,11 @@ import { withTx, type Exec, type OpContext } from './tx';
  *     special cake, a dish the family asked for), found by their codes like
  *     every set-menu line: a priced one at its till product's price, a free /
  *     included / alternate one as a 0-baht line (`partyMenuChargesOf`);
+ *   - SCRUM-906: the kitchen plan's EXTRA lines (the owner's decision 2: "Not
+ *     0 baht, charge it according to the right entered price"): a line the BEO
+ *     badges EXTRA is charged at the price entered on it; one with no price
+ *     entered that is a till item, at the till's price for the party's date;
+ *     a set-menu (SET) line stays the package's (`partyExtraChargesOf`);
  *   - the deposit already paid in the app recorded on the sale as "Deposit
  *     (paid in advance)", so the receipt reads the balance, which the till then
  *     takes through its ordinary payment stage.
@@ -125,7 +130,9 @@ async function rateModeOf(db: Exec, branchId: string, date: string): Promise<Rat
 
 /** One item the BEO added, as the settlement charges it. */
 interface PartyMenuCharge {
-  code: string;
+  /** The add-on's id on the sale line: the code's, or the BEO line's for a line with none. */
+  id: string;
+  code: string | null;
   name: string;
   qty: number;
   unitSatang: number;
@@ -181,11 +188,84 @@ async function partyMenuChargesOf(
       continue;
     }
     charges.set(row.code, {
+      id: `party_menu:${row.code}`,
       code: row.code,
       name: row.name,
       qty,
       unitSatang: rateMode === 'weekend' ? (row.priceWeekendSatang ?? row.priceSatang) : row.priceSatang,
       taxCategory: itemTaxCategory(row.kind === 'merch' ? 'merch' : 'menu', areas.get(row.id)),
+    });
+  }
+  return [...charges.values()];
+}
+
+/**
+ * SCRUM-906 — THE KITCHEN PLAN'S EXTRA LINES, as the settlement charges them
+ * (the owner's decision 2 of 12 November: "Not 0 baht, charge it according to
+ * the right entered price").
+ *
+ * Which lines: the food and bar lines the BEO badges EXTRA (`origin` `extra`,
+ * published with the whole kitchen plan, app migration 0050). A SET line is
+ * part of the package and is not charged; an item made for the party alone
+ * (a `PARTY-` code) is charged by `partyMenuChargesOf` above, as before; a plan
+ * published before the whole kitchen plan names no badge, and nothing more is
+ * charged on it than before.
+ *
+ * The price: the one entered on the BEO line (per unit, its quantity times);
+ * where none was entered and a live till product carries the line's code, the
+ * product's price for the party's date, as the till prices any menu item.
+ * A line with neither — typed by hand with no price — is not charged: no price
+ * is invented for it; it prints for the kitchen, marked not on the till menu.
+ *
+ * Taxed as the product's own category resolves; a line no product carries, as
+ * the menu's food (`fnb`) for a food line and the bar's (`bar`) for a bar line.
+ * One charge per code and price, or per BEO line for a line with no code, in
+ * the order the plan names them.
+ */
+async function partyExtraChargesOf(
+  db: Exec,
+  operatorId: string,
+  plan: Pick<PartyPlan, 'setMenu' | 'barItems'>,
+  rateMode: RateMode,
+): Promise<PartyMenuCharge[]> {
+  type Extra = { productCode: string | null; name: string; qty: number; unitPriceSatang?: number | undefined; lineId?: string | undefined };
+  const extras: { line: Extra; area: 'fnb' | 'bar'; place: number }[] = [
+    ...plan.setMenu.flatMap((m, i) =>
+      m.origin === 'extra' ? [{ line: { ...m, qty: m.qty ?? 1 }, area: 'fnb' as const, place: i }] : [],
+    ),
+    ...plan.barItems.flatMap((b, i) => (b.origin === 'extra' ? [{ line: b, area: 'bar' as const, place: i }] : [])),
+  ];
+  if (extras.length === 0) return [];
+  const codes = [...new Set(extras.map((e) => e.line.productCode).filter((c): c is string => !!c))];
+  const rows = codes.length
+    ? await db
+        .select()
+        .from(product)
+        .where(and(eq(product.operatorId, operatorId), inArray(product.code, codes), isNull(product.archivedAt)))
+    : [];
+  const areas = await resolveItemTaxCategories(db, rows);
+  const byCode = new Map(rows.flatMap((row) => (row.code ? [[row.code, row] as const] : [])));
+  const charges = new Map<string, PartyMenuCharge>();
+  for (const { line, area, place } of extras) {
+    const qty = line.qty;
+    if (qty <= 0) continue;
+    const row = line.productCode ? byCode.get(line.productCode) : undefined;
+    const tillPrice = row ? (rateMode === 'weekend' ? (row.priceWeekendSatang ?? row.priceSatang) : row.priceSatang) : null;
+    const unit = line.unitPriceSatang ?? tillPrice;
+    if (unit === null || unit === undefined) continue;
+    const key = row?.code ? `code:${row.code}:${unit}` : `line:${area}:${line.lineId ?? place}`;
+    const held = charges.get(key);
+    if (held) {
+      held.qty += qty;
+      continue;
+    }
+    charges.set(key, {
+      id: row?.code ? `party_extra:${row.code}:${unit}` : `party_extra_line:${area}:${line.lineId ?? place}`,
+      code: row?.code ?? null,
+      name: row?.name ?? (line.name.trim() || 'Extra'),
+      qty,
+      unitSatang: unit,
+      taxCategory: row ? itemTaxCategory(row.kind === 'merch' ? 'merch' : 'menu', areas.get(row.id)) : area,
     });
   }
   return [...charges.values()];
@@ -235,7 +315,10 @@ async function buildSettlement(
   if (socksGiven > 0 && !socksProductId) {
     throw errors.conflict('PARTY_NO_SOCKS', 'This park sells no Regular Socks, so socks cannot be handed out on this party');
   }
-  const partyMenu = await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode);
+  const partyMenu = [
+    ...(await partyMenuChargesOf(db, actor.operatorId, plan.setMenu, c.rateMode)),
+    ...(await partyExtraChargesOf(db, actor.operatorId, plan, c.rateMode)),
+  ];
 
   const lineId = (name: string) => deriveId(settlementId, `party-settlement:${name}`);
   const pkg = plan.package;
@@ -333,7 +416,7 @@ async function buildSettlement(
     // SCRUM-828: what the add-ons come to includes a priced item the BEO added;
     // a free one is one of what the package covers, at 0.
     ...partyMenu.map((m) => ({
-      id: `party_menu:${m.code}`,
+      id: m.id,
       name: m.name,
       unitSatang: m.unitSatang,
       quantity: m.qty,

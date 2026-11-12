@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
   branch,
   employee,
+  partySlipBaseline,
   partySlipPrint,
   prepSlipPrint,
   printJob,
@@ -11,6 +12,7 @@ import {
   type Db,
 } from '@oto/db';
 import {
+  PARTY_SLIP_COMPOSER,
   PARTY_SLIP_STATIONS,
   businessDate,
   clockMinutes,
@@ -21,7 +23,9 @@ import {
   partySlipsTime,
   reprintRootOf,
   wallClockMinutesInTz,
-  type PartyPlan,
+  type PartyKitchenPlan,
+  type PartySlipHeld,
+  type PartySlipLine,
   type PartySlipRecordView,
   type PartySlipStation,
   type PartySlipStatus,
@@ -46,7 +50,7 @@ import {
   OtoAppSeamNotGrantedError,
   type SeamEvent,
 } from './otoapp-events';
-import { partyPlanOfRow, readPartyPlan } from './party-plan';
+import { partyKitchenOfRow, partyPlanSourceOf, readPartyPlan, type PartyPlanSource } from './party-plan';
 import { overlayPartyEdits, partyLedgersOf } from './party-tab';
 import { nextPartyChangeRun, partySlipsLastGiven, writePrepSlips } from './prep-slips';
 import { routeOnBox } from './print';
@@ -81,6 +85,10 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  * for the party's day, it leaves the party alone. A press of "Print party
  * slips now" is a reprint and never stands in for that run: the plan prints at
  * the slip time and keeps the button for a reprint (§5). A press always prints.
+ *
+ * SCRUM-906 — the slips are composed from the party's KITCHEN PLAN, with or
+ * without a package (the owner's decision 8): every line, the cake, the bar's
+ * lines (`readPartyPlan`'s `kitchen`). A party with none has nothing to print.
  */
 
 /** Named once: the runner, the tests, the Health page. */
@@ -140,6 +148,18 @@ async function partyShown(db: Exec, branchId: string, eventId: string): Promise<
   const ledgers = (await partyLedgersOf(db, { branchId, eventIds: [event.id] })).get(event.id);
   return ledgers ? overlayPartyEdits(event, ledgers.edits) : event;
 }
+
+/**
+ * SCRUM-906 — the composer a station's slip is read under: the slip composer's
+ * generation and the shape the OTO App published the plan in. Either changing
+ * makes an unchanged plan print differently, so neither is ever taken for a
+ * change of the plan (see `printPartySlipChanges`).
+ */
+export const partySlipComposerOf = (source: PartyPlanSource): string => `${PARTY_SLIP_COMPOSER}:${source}`;
+
+/** The till codes a kitchen plan names, set menu and bar alike. */
+const codesOf = (kitchen: Pick<PartyKitchenPlan, 'setMenu' | 'barItems'>): string[] =>
+  [...kitchen.setMenu, ...kitchen.barItems].map((m) => m.productCode).filter((c): c is string => !!c);
 
 /**
  * Where each till product the set menu names prints, by its code: the item's
@@ -222,7 +242,7 @@ function recordViewOf(
  */
 export async function partySlipsView(
   db: Exec,
-  q: { operatorId: string; branchId: string; eventId: string; plan: Pick<PartyPlan, 'partyDate' | 'kitchen'> },
+  q: { operatorId: string; branchId: string; eventId: string; plan: Pick<PartyKitchenPlan, 'partyDate' | 'kitchen'> },
 ): Promise<PartySlipsView> {
   const b = await branchOf(db, q.operatorId, q.branchId);
   const named = await slipStationOf(db, b);
@@ -253,17 +273,111 @@ export interface PrintPartySlipsInput {
 }
 
 export type PrintPartySlipsResult =
-  | { outcome: 'printed'; run: number; partyDate: string; plan: PartyPlan; slips: SlipRow[]; replayed: boolean }
+  | { outcome: 'printed'; run: number; partyDate: string; plan: PartyKitchenPlan; slips: SlipRow[]; replayed: boolean }
   /** The job found its own scheduled run already recorded for the party's day. */
   | { outcome: 'already' }
   /** The job leaves a cancelled or archived party alone. */
   | { outcome: 'skipped' };
 
-/** Refused: the OTO App publishes no plan for this party, so there is nothing to print. */
+/** Refused: the OTO App publishes no kitchen plan for this party, so there is nothing to print. */
 export const PARTY_NO_PLAN = {
   code: 'PARTY_NO_PLAN',
-  message: 'The OTO App has no birthday package for this party, so it has no kitchen or bar slips to print',
+  message: 'The OTO App has no kitchen plan or package for this party, so it has no kitchen or bar slips to print',
 } as const;
+
+// --- What each station holds, and under which composer (SCRUM-906) ------------------
+
+type BaselineRow = typeof partySlipBaseline.$inferSelect;
+interface HeldLines {
+  lines: PartySlipLine[];
+  orderRef: string;
+}
+
+/**
+ * Which slip each station was last given for a party on its day — the rule
+ * `partySlipsLastGiven` (`prep-slips.ts`) reads the slip by: the newest
+ * printing of the party's slips, or its newest change run when that is as new
+ * or newer — named "print:<run>", "change:<run>", or "none".
+ */
+async function heldSourcesOf(db: Exec, q: { eventId: string; partyDate: string }): Promise<Record<PartySlipStation, string>> {
+  const eventId = q.eventId.toLowerCase();
+  const printed = await db
+    .select({ station: partySlipPrint.station, run: partySlipPrint.run, createdAt: partySlipPrint.createdAt })
+    .from(partySlipPrint)
+    .where(and(eq(partySlipPrint.eventId, eventId), eq(partySlipPrint.partyDate, q.partyDate)))
+    .orderBy(asc(partySlipPrint.createdAt), asc(partySlipPrint.run));
+  const changed = await db
+    .select({ station: prepSlipPrint.station, run: prepSlipPrint.run, createdAt: prepSlipPrint.createdAt })
+    .from(prepSlipPrint)
+    .where(and(eq(prepSlipPrint.eventId, eventId), eq(prepSlipPrint.partyDate, q.partyDate)))
+    .orderBy(asc(prepSlipPrint.createdAt), asc(prepSlipPrint.run));
+  const out: Record<PartySlipStation, string> = { kitchen: 'none', bar: 'none' };
+  for (const st of PARTY_SLIP_STATIONS) {
+    const lastPrinted = printed.filter((r) => r.station === st).at(-1);
+    const runs = changed.filter((r) => r.station === st);
+    const lastRun = runs.at(-1)?.run ?? null;
+    const changeAt = lastRun === null ? null : (runs.find((r) => r.run === lastRun)?.createdAt ?? null);
+    const printedAt = lastPrinted?.createdAt ?? null;
+    if (lastRun !== null && changeAt && (!printedAt || changeAt.getTime() >= printedAt.getTime())) {
+      out[st] = `change:${lastRun}`;
+    } else if (lastPrinted) {
+      out[st] = `print:${lastPrinted.run}`;
+    }
+  }
+  return out;
+}
+
+async function baselinesOf(db: Exec, q: { eventId: string; partyDate: string }): Promise<Partial<Record<PartySlipStation, BaselineRow>>> {
+  const rows = await db
+    .select()
+    .from(partySlipBaseline)
+    .where(and(eq(partySlipBaseline.eventId, q.eventId.toLowerCase()), eq(partySlipBaseline.partyDate, q.partyDate)));
+  return Object.fromEntries(rows.map((r) => [r.station, r]));
+}
+
+/** What a slip holds, as a mark keeps it. */
+const heldOf = (document: Pick<PartySlipDocument, 'lines' | 'orderRef'> | null): HeldLines | null =>
+  document ? { lines: [...document.lines], orderRef: document.orderRef } : null;
+
+/**
+ * Mark what each station holds and under which composer: beside every slip this
+ * release puts on paper (`rebased` false), and for a slip printed before it
+ * that a look takes as the plan composes now (`rebased` true).
+ */
+async function markHeld(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; eventId: string; partyDate: string },
+  marks: { station: PartySlipStation; composer: string; source: string; rebased: boolean; fingerprint: string; held: HeldLines | null }[],
+): Promise<void> {
+  for (const m of marks) {
+    await tx
+      .insert(partySlipBaseline)
+      .values({
+        id: newId(),
+        operatorId: scope.operatorId,
+        branchId: scope.branchId,
+        eventId: scope.eventId.toLowerCase(),
+        partyDate: scope.partyDate,
+        station: m.station,
+        composer: m.composer,
+        source: m.source,
+        rebased: m.rebased,
+        fingerprint: m.fingerprint,
+        held: m.held,
+      })
+      .onConflictDoUpdate({
+        target: [partySlipBaseline.eventId, partySlipBaseline.partyDate, partySlipBaseline.station],
+        set: {
+          composer: m.composer,
+          source: m.source,
+          rebased: m.rebased,
+          fingerprint: m.fingerprint,
+          held: m.held,
+          updatedAt: new Date(),
+        },
+      });
+  }
+}
 
 /**
  * ONE RUN of a party's slips, inside the caller's transaction: the kitchen
@@ -276,7 +390,7 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
     const missing = new OtoAppSeamNotGrantedError(['SELECT on the OTO App event packages view']);
     throw new AppError(503, 'EVENTS_SEAM_NOT_GRANTED', missing.message, { missing: missing.missing });
   }
-  const plan = read.plan;
+  const plan = read.kitchen;
   if (!plan) throw new AppError(409, PARTY_NO_PLAN.code, PARTY_NO_PLAN.message);
   const eventId = plan.eventId.toLowerCase();
   const partyDate = plan.partyDate;
@@ -302,8 +416,7 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
 
   const b = await branchOf(tx, input.operatorId, input.branchId);
   const named = await slipStationOf(tx, b);
-  const codes = plan.setMenu.map((m) => m.productCode).filter((c): c is string => !!c);
-  const prep = await prepStationsByCode(tx, input.operatorId, codes);
+  const prep = await prepStationsByCode(tx, input.operatorId, codesOf(plan));
   const documents = composePartySlips({
     plan,
     partyName: party.title,
@@ -384,6 +497,19 @@ export async function printPartySlips(tx: Tx, input: PrintPartySlipsInput): Prom
       .returning();
     slips.push(row!);
   }
+  // SCRUM-906: what each station now holds, under the composer that printed it.
+  await markHeld(
+    tx,
+    { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate },
+    PARTY_SLIP_STATIONS.map((st) => ({
+      station: st,
+      composer: partySlipComposerOf(read.source),
+      source: `print:${run}`,
+      rebased: false,
+      fingerprint: partySlipFingerprint(documents[st]),
+      held: heldOf(documents[st]),
+    })),
+  );
 
   await audit.record(tx, {
     actorAccountId: input.actorAccountId,
@@ -449,13 +575,19 @@ export type PrintPartySlipChangesResult =
   /** Every station holds the slip the plan would print now. */
   | { outcome: 'unchanged' }
   /**
+   * SCRUM-906 — every station that differed holds a slip composed before this
+   * release: what the plan composes now is taken as what it holds, and nothing
+   * prints. The next change of the plan prints as any change does.
+   */
+  | { outcome: 'rebased'; stations: PartySlipStation[] }
+  /**
    * The OTO App could not say for certain what the party now is — the plans
    * view missing, the events view not installed, or the party's row not read
    * soundly — so nothing is sent: a plan that cannot be read is never a
    * cancelled party. The next look, once the seam is back, decides.
    */
   | { outcome: 'unknown' }
-  | { outcome: 'printed'; run: number; cancelled: boolean; slips: PrepSlipRow[] };
+  | { outcome: 'printed'; run: number; cancelled: boolean; slips: PrepSlipRow[]; rebased?: PartySlipStation[] };
 
 /**
  * ONE LOOK at a party whose slips printed today (the owner, 12 November:
@@ -473,6 +605,18 @@ export type PrintPartySlipChangesResult =
  * one correction; the row keeps the fingerprint of the slip the station now
  * holds, and the next look finds it unchanged and writes nothing. Under the
  * same lock as the slip time's run and a press of "Print party slips now".
+ *
+ * SCRUM-906 — A RELEASE IS NOT A CHANGE. Each station's newest slip is marked
+ * with the composer that printed it (`pos.party_slip_baseline`, written beside
+ * every slip this release prints). A station whose newest slip carries no mark
+ * of the composer the plan is read under now — a slip printed before the
+ * release that made the whole kitchen plan reach the till, or before the OTO
+ * App published it — is never compared with what the plan composes now: more
+ * lines arriving, "Fried rice: Veggie" for "Veggie", the cake, are the
+ * release's, not the BEO's. That composition is taken as what the station
+ * holds (a `rebased` mark, nothing printed, an audit row), and the next real
+ * change of the plan is compared with it and printed as before. A cancelled
+ * party is not taken so: what the kitchen holds is voided, whoever composed it.
  */
 export async function printPartySlipChanges(
   tx: Tx,
@@ -497,7 +641,7 @@ export async function printPartySlipChanges(
   // the plan is cannot be said, and saying "cancelled" would tell the
   // kitchen a child's party is off when it is not.
   if (read.status !== 'ready' && read.status !== 'no_package') return { outcome: 'unknown' };
-  const plan = read.plan;
+  const plan = read.kitchen;
   const party = await partyShown(tx, input.branchId, eventId);
   // No party row read: gone only when the Events module answers for certain.
   if (!party && !(await partyDefinitelyGone(tx, input.operatorId, input.branchId, eventId))) {
@@ -511,8 +655,7 @@ export async function printPartySlipChanges(
   const time = clockAt(input.now, b.timezone);
   let after: Record<PartySlipStation, PartySlipDocument | null> = { kitchen: null, bar: null };
   if (!cancelled && plan && party) {
-    const codes = plan.setMenu.map((m) => m.productCode).filter((c): c is string => !!c);
-    const prep = await prepStationsByCode(tx, input.operatorId, codes);
+    const prep = await prepStationsByCode(tx, input.operatorId, codesOf(plan));
     after = composePartySlips({
       plan,
       partyName: party.title,
@@ -521,9 +664,53 @@ export async function printPartySlipChanges(
       printedAt: time,
     });
   }
-  const before = await partySlipsLastGiven(tx, { eventId, partyDate });
+  const before: Record<PartySlipStation, PartySlipHeld | null> = await partySlipsLastGiven(tx, { eventId, partyDate });
+  // SCRUM-906: a station's slip is compared with the plan only under the composer that printed it.
+  const composer = partySlipComposerOf(read.source);
+  const sources = await heldSourcesOf(tx, { eventId, partyDate });
+  const marks = await baselinesOf(tx, { eventId, partyDate });
+  const rebased: PartySlipStation[] = [];
+  for (const st of PARTY_SLIP_STATIONS) {
+    const mark = marks[st];
+    if (mark && mark.composer === composer && mark.source === sources[st]) {
+      if (mark.rebased) {
+        const held = mark.held as HeldLines | null;
+        before[st] = held ? { fingerprint: mark.fingerprint, lines: held.lines, orderRef: held.orderRef } : null;
+      }
+      continue;
+    }
+    if (cancelled) continue;
+    // Printed before this composer: what the plan composes now is what the station is taken to hold.
+    const now = after[st];
+    before[st] = now ? { fingerprint: partySlipFingerprint(now), lines: now.lines, orderRef: now.orderRef } : null;
+    rebased.push(st);
+  }
+  if (rebased.length > 0) {
+    await markHeld(
+      tx,
+      { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate },
+      rebased.map((st) => ({
+        station: st,
+        composer,
+        source: sources[st],
+        rebased: true,
+        fingerprint: partySlipFingerprint(after[st]),
+        held: heldOf(after[st]),
+      })),
+    );
+    await audit.record(tx, {
+      actorAccountId: null,
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      action: 'party.slips_rebase',
+      entityType: 'party',
+      entityId: eventId,
+      actionId: input.actionId,
+      after: { partyDate, composer, stations: rebased.map((st) => ({ station: st, source: sources[st] })) },
+    });
+  }
   const targets = prepSlipTargets(partyPrepSlips({ before, after, cancelled, time }));
-  if (targets.length === 0) return { outcome: 'unchanged' };
+  if (targets.length === 0) return rebased.length > 0 ? { outcome: 'rebased', stations: rebased } : { outcome: 'unchanged' };
 
   const named = await slipStationOf(tx, b);
   const run = await nextPartyChangeRun(tx, { eventId, partyDate });
@@ -543,6 +730,20 @@ export async function printPartySlipChanges(
     },
     targets.map((t) => ({ ...t, stationRow: named })),
   );
+  // SCRUM-906: what each station sent a slip now holds, under the composer that composed it.
+  const sent = [...new Set(rows.map((r) => r.station))];
+  await markHeld(
+    tx,
+    { operatorId: input.operatorId, branchId: input.branchId, eventId, partyDate },
+    sent.map((st) => ({
+      station: st,
+      composer,
+      source: `change:${run}`,
+      rebased: false,
+      fingerprint: partySlipFingerprint(cancelled ? null : after[st]),
+      held: cancelled ? null : heldOf(after[st]),
+    })),
+  );
   await audit.record(tx, {
     actorAccountId: null,
     operatorId: input.operatorId,
@@ -559,7 +760,7 @@ export async function printPartySlipChanges(
       slips: rows.map((s) => ({ id: s.id, station: s.station, variant: s.variant, status: s.status, printJobId: s.printJobId })),
     },
   });
-  return { outcome: 'printed', run, cancelled, slips: rows };
+  return { outcome: 'printed', run, cancelled, slips: rows, ...(rebased.length > 0 ? { rebased } : {}) };
 }
 
 /**
@@ -616,6 +817,8 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
   changeNoPrinter: number;
   /** SCRUM-861 — looks the OTO App could not answer for certain (its seam away): nothing sent. */
   changesUnknown: number;
+  /** SCRUM-906 — looks that took a slip printed before this composer as the plan now composes it, printing nothing. */
+  changesRebased: number;
   failed: number;
 }
 
@@ -653,6 +856,7 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
     changePrinted: 0,
     changeNoPrinter: 0,
     changesUnknown: 0,
+    changesRebased: 0,
     failed: 0,
   };
   for (const b of branches) {
@@ -660,7 +864,8 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
     const clock = wallClockMinutesInTz(now, b.timezone);
     for (const row of await listEventPackagesOn(db, { branchId: b.id, date })) {
       summary.parties += 1;
-      const plan = partyPlanOfRow(row);
+      // SCRUM-906: a party's kitchen plan prints with or without a package.
+      const plan = partyKitchenOfRow(row);
       if (!plan) {
         summary.skipped += 1;
         continue;
@@ -735,6 +940,7 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
             }),
         );
         if (result.outcome === 'unknown') summary.changesUnknown += 1;
+        if (result.outcome === 'rebased' || (result.outcome === 'printed' && result.rebased)) summary.changesRebased += 1;
         if (result.outcome !== 'printed') continue;
         summary.changes += 1;
         for (const s of result.slips) {

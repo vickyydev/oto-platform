@@ -19,7 +19,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { chargeParty, getParty, payParty, startPartyTender, updateParty } from '../services/parties';
-import { readPartyPlan } from '../services/party-plan';
+import { markTillMenu, readPartyPlan } from '../services/party-plan';
 import { previewPartySettlement, settleParty } from '../services/party-settlement';
 import { partySlipsView, printPartySlipsNow } from '../services/party-slips';
 import { queueDrawerKick } from '../services/payments/drawer';
@@ -88,7 +88,10 @@ export async function partyRoutes(app: App): Promise<void> {
           '(`planStatus`); and its settlement sale (`event.party.settlement`): while the package and its deposit ' +
           'are that sale\'s, the bill is the tab\'s own charges and payments. SCRUM-805 — and its kitchen and bar ' +
           'slips on its day (`slips`: the slip time, the station the park names for them, the newest slip per ' +
-          'station and every run), null for a party with no plan.',
+          'station and every run), null for a party with no plan. SCRUM-906 — and its whole kitchen plan ' +
+          '(`kitchenPlan`: every food line, coded or typed, with where it came from, its entered price and whether ' +
+          'the till sells it; the bar lines; the cake; the food, bar and slip times), with or without a package, ' +
+          'null when the OTO App has none; a party with a kitchen plan and no package has its slips too.',
         params: PartyParams,
         querystring: PartyQuerySchema,
         response: { 200: PartyDetailWithSlipsAnswerSchema },
@@ -103,16 +106,22 @@ export async function partyRoutes(app: App): Promise<void> {
         date: req.query.date,
         now: new Date(),
       });
-      const { plan, status } = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
-      const slips = plan
+      const read = await readPartyPlan(app.db, { branchId: req.query.branchId, eventId: answer.event.id });
+      // SCRUM-906: the whole kitchen plan, each line marked with whether the till sells it.
+      const kitchenPlan = read.kitchen ? await markTillMenu(app.db, auth.operatorId, read.kitchen) : null;
+      const plan =
+        read.plan && kitchenPlan
+          ? { ...read.plan, setMenu: kitchenPlan.setMenu, barItems: kitchenPlan.barItems }
+          : read.plan;
+      const slips = kitchenPlan
         ? await partySlipsView(app.db, {
             operatorId: auth.operatorId,
             branchId: req.query.branchId,
             eventId: answer.event.id,
-            plan,
+            plan: kitchenPlan,
           })
         : null;
-      return { ...answer, plan, planStatus: status, slips };
+      return { ...answer, plan, planStatus: read.status, kitchenPlan, slips };
     },
   );
 
