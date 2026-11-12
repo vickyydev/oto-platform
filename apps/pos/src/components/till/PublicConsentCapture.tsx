@@ -361,7 +361,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     if (prompt.slots.some((slot) => slot.id === first!.slotId && slot.photo !== undefined)) {
       onAction({ ...fence, action: 'photo', slotId: first!.slotId, fileId: first!.fileId });
     }
-  }, [busy, prompt, photosToName]); // eslint-disable-line react-hooks/exhaustive-deps -- `fence` and `onAction` follow `prompt` and the parent's render
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the fence and the answer callback follow the prompt and the parent's render
+  }, [busy, prompt, photosToName]);
   const uploadFor = (slotId: string) => async (dataUrl: string): Promise<string> => {
     const key = `${slotId}\n${dataUrl}`;
     const id = photoIds.current.get(key) ?? crypto.randomUUID();
