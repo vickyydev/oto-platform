@@ -21,6 +21,7 @@ import { foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, type BeoAi
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
+import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
 import { applyPackageSnapshot, type DbExecutor } from "./packageSnapshot";
@@ -143,6 +144,18 @@ const minutes = (t: string) => {
   const [h, m] = t.split(":").map(Number);
   return h! * 60 + m!;
 };
+/**
+ * SCRUM-927: a WhatsApp number's stored columns, by the app's own phone rule
+ * (server/phone-utils.ts): the international form (a Thai number without its
+ * +66 takes it) and whether it parsed; one the rule cannot read keeps no
+ * international form and says why, as an event saved with such a number does.
+ */
+export function whatsappColumnsOf(raw: string): Pick<typeof coreEvents.$inferInsert, "whatsappPhoneE164" | "whatsappParseValid" | "whatsappParseError"> {
+  const checked = validatePhoneInput(raw);
+  if (!checked.valid) return { whatsappPhoneE164: null, whatsappParseValid: false, whatsappParseError: checked.error ?? "The number could not be read" };
+  return { whatsappPhoneE164: normalizeThaiPhone(raw), whatsappParseValid: true, whatsappParseError: null };
+}
+
 /**
  * SCRUM-946: the price a dish or drink line is written with, in baht for each item (a BEO line
  * keeps baht; the till charges an EXTRA at it times the quantity, SCRUM-906): the one the review
@@ -332,6 +345,9 @@ export async function approveBeoAiFill(
       const v = body.event[key];
       if (v !== undefined) (eventUpdates as Record<string, unknown>)[key] = v;
     }
+    // SCRUM-927: another WhatsApp number is written with its stored international form too, so
+    // the links that use it reach the new number.
+    if (body.event.whatsappPhoneRaw !== undefined) Object.assign(eventUpdates, whatsappColumnsOf(body.event.whatsappPhoneRaw));
     if (body.event.internalStaffNotes && !(ev?.internalStaffNotes ?? "").trim()) {
       eventUpdates.internalStaffNotes = body.event.internalStaffNotes;
     }

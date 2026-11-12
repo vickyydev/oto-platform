@@ -29,6 +29,8 @@
 //      Activities as text too.
 //   8. the cake is ticked "In the package" only when the chat or the package
 //      says so, never by default.
+//   9. SCRUM-927's points: another WhatsApp number is written with its stored
+//      international form (whatsapp_phone_e164) by the app's own phone rule.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -84,7 +86,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 8;
+const CHECKS = 9;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -93,7 +95,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -560,6 +562,27 @@ try {
     const held = await approve(ev.cakeHeld, body);
     assert.equal(held.status, 200, JSON.stringify(held.body));
     assert.equal((await kitchenOf(ev.cakeHeld)).menus.cakeIncluded, true);
+  });
+
+  // --- 9a. The WhatsApp number's stored international form -----------------------------------
+  await check("anotherWhatsAppNumberIsStoredInItsInternationalForm", async () => {
+    const phoneRow = async () => (await q("select whatsapp_phone_raw, whatsapp_phone_e164, whatsapp_parse_valid, whatsapp_parse_error from core_events where id = $1", [ev.phone]))[0]!;
+    await q("update core_events set whatsapp_phone_raw = '+66811111111', whatsapp_phone_e164 = '+66811111111' where id = $1", [ev.phone]);
+    let res = await approve(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "089 870 0417" } }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    let row = await phoneRow();
+    assert.deepEqual([row.whatsapp_phone_raw, row.whatsapp_phone_e164, row.whatsapp_parse_valid, row.whatsapp_parse_error], ["089 870 0417", "+66898700417", true, null], "the new number, both forms");
+    res = await approve(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "+44 20 7946 0958" } }));
+    row = await phoneRow();
+    assert.equal(row.whatsapp_phone_e164, "+442079460958", "an international number as written");
+    res = await approve(ev.phone, bodyOf({ event: { whatsappPhoneRaw: "1234" } }));
+    assert.equal(res.status, 200);
+    row = await phoneRow();
+    assert.deepEqual([row.whatsapp_phone_raw, row.whatsapp_phone_e164, row.whatsapp_parse_valid], ["1234", null, false], "a number the rule cannot read: kept raw, said so, never the old number's link");
+    assert.ok(typeof row.whatsapp_parse_error === "string" && row.whatsapp_parse_error.length > 0);
+    // An approval that sends no number leaves both as they are.
+    await approve(ev.phone, bodyOf({ event: { numChildren: 12 } }));
+    assert.equal((await phoneRow()).whatsapp_phone_raw, "1234");
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
