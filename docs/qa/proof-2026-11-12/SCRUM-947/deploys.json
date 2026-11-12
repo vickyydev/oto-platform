@@ -1,0 +1,152 @@
+{
+  "note": "SCRUM-947 landed on main at 0ab361a86c8200eea85d85bdaadfeda3461fdb79. Both deploys were triggered at that commit at 22:19 Bangkok (15:19Z). Read-only reads of the Render API; no service was changed by this proof.",
+  "whileWaiting": {
+    "readAt": "2026-11-12T15:23:37.203Z",
+    "services": {
+      "oto-api-staging": {
+        "named": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "update_in_progress",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqt05hsrm7s738s5vr0",
+          "sha": "03fc3f75f56d6500197ac61f498122c9dfa43eda",
+          "createdAt": "2026-11-12T14:41:27.017781Z",
+          "finishedAt": "2026-11-12T14:47:23.641246Z"
+        },
+        "latest": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "update_in_progress",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z"
+        }
+      },
+      "oto-inbox-staging": {
+        "named": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z"
+        },
+        "latest": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z"
+        }
+      }
+    },
+    "bothLiveOnTheNamedDeploys": false
+  },
+  "atStart": {
+    "readAt": "2026-11-12T15:25:04.540Z",
+    "services": {
+      "oto-api-staging": {
+        "named": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "finishedAt": "2026-11-12T15:24:30.793406Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "finishedAt": "2026-11-12T15:24:30.793406Z"
+        },
+        "latest": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z"
+        }
+      },
+      "oto-inbox-staging": {
+        "named": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z"
+        },
+        "latest": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z"
+        }
+      }
+    },
+    "bothLiveOnTheNamedDeploys": true
+  },
+  "after": {
+    "readAt": "2026-11-12T15:39:24.449Z",
+    "services": {
+      "oto-api-staging": {
+        "named": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "finishedAt": "2026-11-12T15:24:30.793406Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z",
+          "finishedAt": "2026-11-12T15:24:30.793406Z"
+        },
+        "latest": {
+          "id": "dep-dbqti049v7es73c9lvtg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:28.410848Z"
+        }
+      },
+      "oto-inbox-staging": {
+        "named": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z",
+          "trigger": "api"
+        },
+        "live": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z",
+          "finishedAt": "2026-11-12T15:20:35.571294Z"
+        },
+        "latest": {
+          "id": "dep-dbqti09srm7s73991tgg",
+          "status": "live",
+          "sha": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+          "createdAt": "2026-11-12T15:19:29.97393Z"
+        }
+      }
+    },
+    "bothLiveOnTheNamedDeploys": true
+  }
+}

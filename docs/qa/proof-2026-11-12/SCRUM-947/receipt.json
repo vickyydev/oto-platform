@@ -1,0 +1,1115 @@
+{
+  "unit": "SCRUM-947 staging proof",
+  "ticket": "SCRUM-947",
+  "title": "Book Date reads a Thai chat's kids count once: a time such as 13:00 is not a count",
+  "landedCommit": "0ab361a86c8200eea85d85bdaadfeda3461fdb79",
+  "deploys": "see deploys.json (oto-api-staging dep-dbqti049v7es73c9lvtg, oto-inbox-staging dep-dbqti09srm7s73991tgg)",
+  "startedAt": "2026-11-12T15:23:24.574Z",
+  "finishedAt": "2026-11-12T15:38:52.437Z",
+  "browser": "Chromium [number]",
+  "rules": "ZZ TEST conversations on the inbox simulator only, each from a new ZZ TEST simulator number; invented names and numbers; Book Date always closed with Cancel (no event); one Book Date read per point; no direct database write; staff names masked in pictures and kept out of this file",
+  "inboxViewer": {
+    "roles": [
+      "owner"
+    ],
+    "birthdaysTeams": [
+      {
+        "id": "01a1562e-64eb-77d2-9a87-cc57f6806498",
+        "name": "Birthdays & Events",
+        "branchId": null,
+        "member": false
+      }
+    ]
+  },
+  "conversations": {
+    "P1": {
+      "id": "01a1d05c-d8eb-7419-9f05-dbec2b018e88",
+      "name": "ZZ TEST 947 Thai",
+      "language": "th",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "สวัสดีค่ะ อยากจองงานวันเกิดให้ลูกชาย ZZ Test Niko ครบ 5 ขวบ วันเสาร์ที่ 12 ธันวาคม 11:00-13:00 เด็ก 8 คน ผู้ใหญ่ 4 คน (ZZ TEST)",
+          "at": "2026-11-12T15:25:07.742Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "th",
+            "message": "สวัสดีค่ะ อยากจองงานวันเกิดให้ลูกชาย ZZ Test Niko ครบ 5 ขวบ วันเสาร์ที่ 12 ธันวาคม 11:00-13:00 เด็ก 8 คน ผู้ใหญ่ 4 คน (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "P2": {
+      "id": "01a1d05c-e354-7a4a-a90e-9caaa5c18c01",
+      "name": "ZZ TEST 947 Thai F",
+      "language": "th",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "สวัสดีค่ะ จองงานวันเกิด ZZ Test Pim ครบ 4 ขวบ วันอาทิตย์ที่ 27 ธันวาคม 14:00-16:00 เด็ก 10 คน ผู้ใหญ่ 5 คน แพ็กเกจวันเกิด Floresta ข้าวผัดสำหรับผู้ใหญ่ค่ะ (ZZ TEST)",
+          "at": "2026-11-12T15:25:10.393Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "th",
+            "message": "สวัสดีค่ะ จองงานวันเกิด ZZ Test Pim ครบ 4 ขวบ วันอาทิตย์ที่ 27 ธันวาคม 14:00-16:00 เด็ก 10 คน ผู้ใหญ่ 5 คน แพ็กเกจวันเกิด Floresta ข้าวผัดสำหรับผู้ใหญ่ค่ะ (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "P3": {
+      "id": "01a1d05c-ed68-7a27-9b98-f7b269b857ac",
+      "name": "ZZ TEST 947 Russian",
+      "language": "ru",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Здравствуйте! ZZ TEST день рождения 19 декабря с 11.00 до 13.00 детей 10, взрослых 4, сыну исполняется 6, бюджет 1500 бат, телефон 089 870 0947 (invented) (ZZ TEST)",
+          "at": "2026-11-12T15:25:12.971Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "ru",
+            "message": "Здравствуйте! ZZ TEST день рождения 19 декабря с 11.00 до 13.00 детей 10, взрослых 4, сыну исполняется 6, бюджет 1500 бат, телефон 089 870 0947 (invented) (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "P4": {
+      "id": "01a1d05c-f796-7db1-8e54-6ea68a9b6494",
+      "name": "ZZ TEST 947 English",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Party on Saturday 12 December 14:00-16:30, 12 kids and 8 adults, she turns 6, budget 20,000 baht, call 089 870 0948 (invented) (ZZ TEST)",
+          "at": "2026-11-12T15:25:15.583Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "Party on Saturday 12 December 14:00-16:30, 12 kids and 8 adults, she turns 6, budget 20,000 baht, call 089 870 0948 (invented) (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "P5": {
+      "id": "01a1d05d-01a7-7d0f-be01-50b22875ac7e",
+      "name": "ZZ TEST 947 dash",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Party at 14:00 - 12 kids and 6 adults (ZZ TEST)",
+          "at": "2026-11-12T15:25:18.174Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "Party at 14:00 - 12 kids and 6 adults (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_replied"
+          ],
+          "aiState": "ready"
+        }
+      ]
+    },
+    "P6": {
+      "id": "01a1d05d-[number]bd-e63b89036952",
+      "name": "ZZ TEST 947 changed count",
+      "language": "en",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "Hi, a party on 12 December at 13:00 for 10 kids (ZZ TEST)",
+          "at": "2026-11-12T15:25:22.742Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "Hi, a party on 12 December at 13:00 for 10 kids (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        },
+        {
+          "n": 2,
+          "by": "customer",
+          "text": "sorry, 12 kids, not 10 (ZZ TEST)",
+          "at": "2026-11-12T15:27:14.003Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "en",
+            "message": "sorry, 12 kids, not 10 (ZZ TEST)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 0,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        },
+        {
+          "afterLine": 2,
+          "kinds": [],
+          "aiState": "left_for_team"
+        }
+      ]
+    },
+    "P7": {
+      "id": "01a1d05d-1e35-7857-ae50-213f232a5895",
+      "name": "ZZ TEST 947 Thai adults first",
+      "language": "th",
+      "from": "a new ZZ TEST simulator number of this run",
+      "lines": [
+        {
+          "n": 1,
+          "by": "customer",
+          "text": "ZZ TEST งานวันเกิด วันที่ 19 ธันวาคม 14:00-16:00 น. ผู้ใหญ่ 4 คน เด็ก 8 คน ราคา 1,500 บาท โทร 089-870-0949 (invented)",
+          "at": "2026-11-12T15:25:25.543Z",
+          "path": "the inbox UI: Settings › Simulator · test only › A customer writes › Send as the customer (its own POST /api/inbox/simulator/inbound)",
+          "formState": {
+            "account": "Demo WhatsApp · Central Floresta · WhatsApp",
+            "category": "Birthdays & Events",
+            "language": "th",
+            "message": "ZZ TEST งานวันเกิด วันที่ 19 ธันวาคม 14:00-16:00 น. ผู้ใหญ่ 4 คน เด็ก 8 คน ราคา 1,500 บาท โทร 089-870-0949 (invented)"
+          },
+          "status": 200,
+          "outcome": "processed",
+          "conversationsCreated": 1,
+          "reopened": 0
+        }
+      ],
+      "assistant": [
+        {
+          "afterLine": 1,
+          "kinds": [
+            "ai_handover"
+          ],
+          "aiState": "left_for_team"
+        }
+      ]
+    }
+  },
+  "bookDate": {
+    "P1": {
+      "at": "2026-11-12T15:29:40.770Z",
+      "conversationId": "01a1d05c-d8eb-7419-9f05-dbec2b018e88",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 4946,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 Thai",
+        "fields": {
+          "date": {
+            "value": "2026-12-12",
+            "hint": "The chat says “วันเสาร์ที่ 12 ธันวาคม”from the family"
+          },
+          "startTime": {
+            "value": "11:00",
+            "hint": "The chat says “11:00-13:00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "8",
+            "hint": "The chat says “เด็ก 8 คน”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “ผู้ใหญ่ 4 คน”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 Thai",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Niko",
+            "hint": "The chat says “ZZ Test Niko”from the family"
+          },
+          "childAge": {
+            "value": "5",
+            "hint": "Turning (age) The chat says “ครบ 5 ขวบ”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          "The chat says “11:00-13:00”from "
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:30:47.169Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "01-p1-thai-thread-c-kids-8-read-once.png"
+    },
+    "P2": {
+      "at": "2026-11-12T15:30:58.673Z",
+      "conversationId": "01a1d05c-e354-7a4a-a90e-9caaa5c18c01",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 5447,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 Thai F",
+        "fields": {
+          "date": {
+            "value": "2026-12-27",
+            "hint": "The chat says “วันอาทิตย์ที่ 27 ธันวาคม”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “14:00-16:00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare The chat says “Floresta”from the family"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “เด็ก 10 คน”from the family"
+          },
+          "adults": {
+            "value": "5",
+            "hint": "The chat says “ผู้ใหญ่ 5 คน”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 Thai F",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "ZZ Test Pim",
+            "hint": "The chat says “ZZ Test Pim”from the family"
+          },
+          "childAge": {
+            "value": "4",
+            "hint": "Turning (age) The chat says “ครบ 4 ขวบ”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          "The chat says “14:00-16:00”from "
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:32:05.571Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "02-p2-thai-thread-f-kids-10-adults-5.png"
+    },
+    "P3": {
+      "at": "2026-11-12T15:32:16.040Z",
+      "conversationId": "01a1d05c-ed68-7a27-9b98-f7b269b857ac",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 4433,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 Russian",
+        "fields": {
+          "date": {
+            "value": "2026-12-19",
+            "hint": "The chat says “19 декабря”from the family"
+          },
+          "startTime": {
+            "value": "11:00",
+            "hint": "The chat says “с 11.00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "10",
+            "hint": "The chat says “детей 10”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “взрослых 4”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 Russian",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "",
+            "hint": null
+          },
+          "childAge": {
+            "value": "6",
+            "hint": "Turning (age) The chat says “сыну исполняется 6”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          "e chat says “с 11.00”from the fa"
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:33:21.945Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "03-p3-russian-time-age-price-phone-kids-10-adults-4.png"
+    },
+    "P4": {
+      "at": "2026-11-12T15:33:32.140Z",
+      "conversationId": "01a1d05c-f796-7db1-8e54-6ea68a9b6494",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 5446,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 English",
+        "fields": {
+          "date": {
+            "value": "2026-12-12",
+            "hint": "The chat says “Saturday 12 December”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “14:00-16:30”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "12",
+            "hint": "The chat says “12 kids”from the family"
+          },
+          "adults": {
+            "value": "8",
+            "hint": "The chat says “8 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 English",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "",
+            "hint": null
+          },
+          "childAge": {
+            "value": "6",
+            "hint": "Turning (age) The chat says “she turns 6”from the family"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          "The chat says “14:00-16:30”from "
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:34:38.963Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "04-p4-english-time-age-price-phone-kids-12-adults-8.png"
+    },
+    "P5": {
+      "at": "2026-11-12T15:34:49.422Z",
+      "conversationId": "01a1d05d-01a7-7d0f-be01-50b22875ac7e",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 3899,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 dash",
+        "fields": {
+          "date": {
+            "value": "",
+            "hint": "The chat names no date"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “at 14:00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "12",
+            "hint": "The chat says “12 kids”from the family"
+          },
+          "adults": {
+            "value": "6",
+            "hint": "The chat says “6 adults”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 dash",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "",
+            "hint": null
+          },
+          "childAge": {
+            "value": "",
+            "hint": "Turning (age)"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          " chat says “at 14:00”from the fa"
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:35:54.744Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "05-p5-english-count-after-a-dash-kids-12.png"
+    },
+    "P6": {
+      "at": "2026-11-12T15:36:05.456Z",
+      "conversationId": "01a1d05d-[number]bd-e63b89036952",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 3879,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 changed count",
+        "fields": {
+          "date": {
+            "value": "2026-12-12",
+            "hint": "The chat says “12 December”from the family"
+          },
+          "startTime": {
+            "value": "13:00",
+            "hint": "The chat says “at 13:00”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "",
+            "hint": "The chat reads two ways: choose one 12 “12 kids” from the family 10",
+            "choice": [
+              "12 “12 kids” from the family",
+              "10"
+            ]
+          },
+          "adults": {
+            "value": "",
+            "hint": null
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 changed count",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "",
+            "hint": null
+          },
+          "childAge": {
+            "value": "",
+            "hint": "Turning (age)"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": true,
+        "choiceButtons": [
+          "12 “12 kids” from the family",
+          "10"
+        ],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          " chat says “at 13:00”from the fa"
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:37:10.792Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "06-p6-english-10-then-12-kids-still-two-ways.png"
+    },
+    "P7": {
+      "at": "2026-11-12T15:37:20.978Z",
+      "conversationId": "01a1d05d-1e35-7857-ae50-213f232a5895",
+      "buttonsBefore": [
+        "Book Date",
+        "Create BEO"
+      ],
+      "readWaitedMs": 4912,
+      "proposalRoute": {
+        "route": "GET /api/inbox/conversations/:id/book-date-proposal",
+        "status": 200
+      },
+      "dialog": {
+        "title": "Book Date — ZZ TEST 947 Thai adults first",
+        "fields": {
+          "date": {
+            "value": "2026-12-19",
+            "hint": "The chat says “วันที่ 19 ธันวาคม”from the family"
+          },
+          "startTime": {
+            "value": "14:00",
+            "hint": "The chat says “14:00-16:00 น.”from the family"
+          },
+          "park": {
+            "value": "Central Floresta",
+            "hint": "Choose the park Central Floresta Robinson Chalong Demo Branch 2 ZZ TEST Print Bare"
+          },
+          "kids": {
+            "value": "8",
+            "hint": "The chat says “เด็ก 8 คน”from the family"
+          },
+          "adults": {
+            "value": "4",
+            "hint": "The chat says “ผู้ใหญ่ 4 คน”from the family"
+          },
+          "bookingName": {
+            "value": "ZZ TEST 947 Thai adults first",
+            "hint": null
+          },
+          "phone": {
+            "value": "[number]",
+            "hint": null
+          },
+          "childName": {
+            "value": "",
+            "hint": null
+          },
+          "childAge": {
+            "value": "",
+            "hint": "Turning (age)"
+          }
+        },
+        "header": {
+          "reading": false,
+          "read": true,
+          "readLine": "Read the whole chat",
+          "fetchButton": "Fetch from chat",
+          "fetchButtonEnabled": true,
+          "fetchButtonTitle": "Read the chat again as it is now. What you typed here stays.",
+          "fetchedLine": null
+        },
+        "footer": [
+          "Cancel",
+          "Book date"
+        ],
+        "refusal": null
+      },
+      "check": {
+        "readsTwoWays": false,
+        "choiceButtons": [],
+        "zeroZeroAsAValue": false,
+        "zeroZeroAnywhere": [
+          "The chat says “14:00-16:00 น.”fr"
+        ]
+      },
+      "cancelled": {
+        "at": "2026-11-12T15:38:27.333Z",
+        "dialogHidden": true
+      },
+      "afterCancel": {
+        "route": "GET /api/inbox/conversations/:id",
+        "status": 200,
+        "event": null,
+        "buttons": [
+          "Book Date",
+          "Create BEO"
+        ]
+      },
+      "picture": "07-p7-thai-adults-first-kids-8-adults-4.png"
+    }
+  },
+  "cleanup": {
+    "at": "2026-11-12T15:38:35.542Z",
+    "conversations": {
+      "P1": {
+        "id": "01a1d05c-d8eb-7419-9f05-dbec2b018e88",
+        "name": "ZZ TEST 947 Thai",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:36.518Z",
+          "event": null
+        }
+      },
+      "P2": {
+        "id": "01a1d05c-e354-7a4a-a90e-9caaa5c18c01",
+        "name": "ZZ TEST 947 Thai F",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:38.024Z",
+          "event": null
+        }
+      },
+      "P3": {
+        "id": "01a1d05c-ed68-7a27-9b98-f7b269b857ac",
+        "name": "ZZ TEST 947 Russian",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:39.487Z",
+          "event": null
+        }
+      },
+      "P4": {
+        "id": "01a1d05c-f796-7db1-8e54-6ea68a9b6494",
+        "name": "ZZ TEST 947 English",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:40.881Z",
+          "event": null
+        }
+      },
+      "P5": {
+        "id": "01a1d05d-01a7-7d0f-be01-50b22875ac7e",
+        "name": "ZZ TEST 947 dash",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:41.910Z",
+          "event": null
+        }
+      },
+      "P6": {
+        "id": "01a1d05d-[number]bd-e63b89036952",
+        "name": "ZZ TEST 947 changed count",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:42.905Z",
+          "event": null
+        }
+      },
+      "P7": {
+        "id": "01a1d05d-1e35-7857-ae50-213f232a5895",
+        "name": "ZZ TEST 947 Thai adults first",
+        "handle": {
+          "route": "POST /api/inbox/conversations/:id/handle",
+          "status": 200,
+          "error": null
+        },
+        "readBack": {
+          "route": "GET /api/inbox/conversations/:id",
+          "status": 200,
+          "state": "handled",
+          "handledAt": "2026-11-12T15:38:44.717Z",
+          "event": null
+        }
+      }
+    }
+  },
+  "signOut": {
+    "at": "2026-11-12T15:38:52.437Z",
+    "inboxContext": {
+      "inboxSignOut": {
+        "route": "POST /api/auth/sign-out (inbox)",
+        "status": 200
+      },
+      "beoTabAppLogout": {
+        "route": "POST /api/logout (OTO App, the BEO tab)",
+        "status": 200
+      },
+      "launcherSignOut": {
+        "route": "POST /api/auth/sign-out (launcher)",
+        "status": 200
+      },
+      "readBack": {
+        "inboxMe": 401,
+        "appUser": 401,
+        "launcherMe": 401
+      }
+    }
+  },
+  "images": [
+    {
+      "file": "01-p1-thai-thread-c-kids-8-read-once.png",
+      "at": "2026-11-12T15:30:47.125Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "02-p2-thai-thread-f-kids-10-adults-5.png",
+      "at": "2026-11-12T15:32:05.509Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "03-p3-russian-time-age-price-phone-kids-10-adults-4.png",
+      "at": "2026-11-12T15:33:21.901Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "04-p4-english-time-age-price-phone-kids-12-adults-8.png",
+      "at": "2026-11-12T15:34:38.905Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 41,
+      "masks": 1
+    },
+    {
+      "file": "05-p5-english-count-after-a-dash-kids-12.png",
+      "at": "2026-11-12T15:35:54.696Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 47,
+      "masks": 1
+    },
+    {
+      "file": "06-p6-english-10-then-12-kids-still-two-ways.png",
+      "at": "2026-11-12T15:37:10.743Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 47,
+      "masks": 1
+    },
+    {
+      "file": "07-p7-thai-adults-first-kids-8-adults-4.png",
+      "at": "2026-11-12T15:38:27.286Z",
+      "shows": "Book Date opened on the ZZ TEST thread: the dialog as it read the chat (date, time, kids, adults, child, age), before anything is typed",
+      "namesMasked": 47,
+      "masks": 1
+    }
+  ]
+}
