@@ -380,6 +380,8 @@ export async function runBeoFill(
         existingData: input.existingData,
         from: input.fallbackFrom ?? { source: "team", at: null, line: null },
         event: input.event,
+        // SCRUM-904: each value read from the ruling message quotes its own words there.
+        rulingText: ruling,
       });
     }
   }
@@ -401,11 +403,17 @@ export async function runBeoFill(
   const proposals: TeamProposals =
     run.ok && input.event && anyNamed ? proposeTeam(named, await deps.teamCandidates(input.event)) : NO_TEAM_PROPOSALS;
   // A name the conversation gave carries its line (the review's reason line); one the ruling's read
-  // gave is the ruling message's, which the review already holds.
+  // gave is the ruling message's, quoting the name's own words there.
   for (const field of ["partyHost", "entertainmentHost", "setupResponsible"] as const) {
     const p = proposals[field];
-    const from = chatNamed[field]?.value === p?.asked ? chatNamed[field]?.from : undefined;
-    if (p && from) proposals[field] = { ...p, from };
+    if (!p) continue;
+    const fromRuling = (): BeoAiFrom | undefined => {
+      if (ruling === null || !input.fallbackFrom) return undefined;
+      const quote = quoteOf(p.asked, ruling, [p.asked]);
+      return { source: input.fallbackFrom.source, at: input.fallbackFrom.at, line: input.fallbackFrom.line, ...(quote ? { quote } : {}) };
+    };
+    const from = chatNamed[field]?.value === p.asked ? chatNamed[field]?.from : fromRuling();
+    if (from) proposals[field] = { ...p, from };
   }
   const purpose: BeoFillPurpose = input.purpose ?? "fill";
   log().info(

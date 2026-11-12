@@ -900,7 +900,8 @@ export function approvedMarksOf(sources: BeoAiApproveBody["sources"]): ApprovedM
 /** The editor's sections, and the approved fields each one wears the "from the chat" chip for. */
 export const APPROVED_SECTIONS: Record<string, (field: string) => boolean> = {
   "event-info": (f) => ["title", "childName", "numChildren", "numAdults", "startTime", "endTime", "eventDate", "bookingName", "locationText", "specialRequests", "activities", "decoration", "kidTurningAge", "whatsapp"].includes(f),
-  "party-host": (f) => f.startsWith("team:partyHost") || f.startsWith("team:entertainmentHost"),
+  // SCRUM-904: the shows approved are the Party Host section's Entertainment Acts too.
+  "party-host": (f) => f.startsWith("team:partyHost") || f.startsWith("team:entertainmentHost") || f.startsWith("entertainment:"),
   "birthday-package": (f) => f === "package" || f.startsWith("addOn:") || f.startsWith("entertainment:"),
   "party-details": (f) => f.startsWith("pos") || f === "deposit",
   "setup-plan": (f) => f.startsWith("setup") || f === "team:setupResponsible",

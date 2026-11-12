@@ -602,6 +602,39 @@ export function beoAiMatchLabel(said: string, matchedName: string | null, code: 
   return said.trim() && said.trim() !== matchedName ? `${said.trim()} → ${target}` : target;
 }
 
+/**
+ * SCRUM-926: which of the names a till code carries the chat means. A
+ * set menu whose options share one code ("Fried rice" with Veggie, Chicken
+ * and Pork all CF-43) names the code once per option; the chat's words
+ * ("chicken fried rice") pick the option they name, by the words that tell
+ * the names apart. The first name when the words name none of them, or
+ * when the code has one name. The review shows and the approval writes
+ * this one name, so the two never differ.
+ */
+export function foodNameFor(names: string[], said: string | null | undefined): string {
+  const first = names[0] ?? "";
+  if (names.length < 2 || !said?.trim()) return first;
+  const words = (t: string) => t.normalize("NFC").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const saidText = said.normalize("NFC").toLowerCase();
+  const saidWords = words(said);
+  const all = names.map(words);
+  // A word is the chat's when one of its words starts with it; a word in a
+  // script written without spaces (Thai) is the chat's when the words hold it.
+  const holds = (w: string) => saidWords.some((s) => s.startsWith(w)) || (!/[a-z]/.test(w) && saidText.includes(w));
+  let best = 0;
+  let bestScore = 0;
+  all.forEach((own, i) => {
+    // The words this name has that not every other name has: "chicken" of "Fried rice (Chicken)".
+    const telling = own.filter((w) => !all.every((other) => other.includes(w)));
+    const score = telling.filter(holds).length;
+    if (score > bestScore) {
+      best = i;
+      bestScore = score;
+    }
+  });
+  return names[best] ?? first;
+}
+
 /** The small mark beside a filled field. */
 export function beoAiSourceLabel(source: BeoAiOrigin | "staff"): string {
   switch (source) {

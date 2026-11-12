@@ -13,6 +13,7 @@ import {
   BEO_AI_REQUEST_KINDS,
   beoEventTitleOf,
   emptyBeoAiDetails,
+  foodNameFor,
   laterLineWins,
   type BeoAiCatalogueView,
   type BeoAiDetails,
@@ -238,15 +239,95 @@ const clipQuote = (t: string) => {
  * own words for it when the line really holds them, else the line itself,
  * each clipped to `BEO_AI_QUOTE_MAX` characters. Null with no line.
  */
-export function quoteOf(words: string | null | undefined, lineText: string | null | undefined): string | null {
+export function quoteOf(
+  words: string | null | undefined,
+  lineText: string | null | undefined,
+  /**
+   * SCRUM-904: the value itself ("Party Room", 15, "11:00", 3000), to find
+   * in a line too long to quote whole when the model's words are not in it.
+   */
+  hints: ReadonlyArray<string | number | null | undefined> = [],
+): string | null {
   if (!lineText || !lineText.trim()) return null;
   const said = words?.trim();
-  return said && foldQuote(lineText).includes(foldQuote(said)) ? clipQuote(said) : clipQuote(lineText);
+  if (said && foldQuote(lineText).includes(foldQuote(said))) return clipQuote(said);
+  const one = lineText.replace(/\s+/g, " ").trim();
+  if (one.length <= BEO_AI_QUOTE_MAX) return one;
+  // SCRUM-904: a long line (a team's whole confirmation) is quoted around the value's own words,
+  // not by its first characters, which can stop before the words that matter.
+  const found = findInLine(one, [said, ...hints]);
+  return found ? quoteAround(one, found.start, found.end) : clipQuote(one);
+}
+
+const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Where in the line a value is written: its words, a number however grouped, a time however written. */
+function findInLine(line: string, hints: ReadonlyArray<string | number | null | undefined>): { start: number; end: number } | null {
+  const at = (re: RegExp) => {
+    const m = re.exec(line);
+    return m ? { start: m.index, end: m.index + m[0].length } : null;
+  };
+  for (const hint of hints) {
+    if (hint === null || hint === undefined) continue;
+    const text = String(hint).replace(/\s+/g, " ").trim();
+    if (!text) continue;
+    const time = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(text);
+    if (time) {
+      const h = Number(time[1]);
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const mm = time[2]!;
+      const hours = [...new Set([String(h), String(h).padStart(2, "0"), String(h12)])].join("|");
+      const found =
+        at(new RegExp(`(?<!\\d)(?:${hours})[:.]${mm}(?!\\d)`)) ??
+        (mm === "00" ? at(new RegExp(`(?<!\\d)(?:${hours})\\s*(?:am|pm|a\\.m\\.|p\\.m\\.|h\\b|o'clock)`, "i")) : null);
+      if (found) return found;
+      continue;
+    }
+    if (/^\d+$/.test(text)) {
+      // 3000 as "3,000", "3 000" or "3.000".
+      const found = at(new RegExp(`(?<!\\d)${text.split("").map(escapeRe).join("[,.\\s]?")}(?!\\d)`));
+      if (found) return found;
+      continue;
+    }
+    const whole = at(new RegExp(escapeRe(text).replace(/ /g, "\\s+"), "iu"));
+    if (whole) return whole;
+    // Words the model put in other words: the longest word of them the line holds.
+    const words = text.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4).sort((a, b) => b.length - a.length);
+    for (const w of words) {
+      const found = at(new RegExp(escapeRe(w), "iu"));
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** The part of a long line around [start, end), at most `BEO_AI_QUOTE_MAX` characters, "…" where it is cut. */
+function quoteAround(line: string, start: number, end: number): string {
+  const room = BEO_AI_QUOTE_MAX - 2;
+  if (end - start >= room) return `${start > 0 ? "…" : ""}${line.slice(start, start + room - 1).trimEnd()}…`;
+  let from = Math.max(0, start - Math.floor((room - (end - start)) / 2));
+  let to = Math.min(line.length, from + room);
+  from = Math.max(0, to - room);
+  // Whole words at both ends where one is near.
+  if (from > 0) {
+    const space = line.indexOf(" ", from);
+    if (space >= 0 && space < start && space - from <= 15) from = space + 1;
+  }
+  if (to < line.length) {
+    const space = line.lastIndexOf(" ", to);
+    if (space > end && to - space <= 15) to = space;
+  }
+  return `${from > 0 ? "…" : ""}${line.slice(from, to).trim()}${to < line.length ? "…" : ""}`;
 }
 
 /** `from` with the chat's words for the value, when its line is known. */
-const withQuote = (from: BeoAiFrom, words: string | null | undefined, lineText: string | null | undefined): BeoAiFrom => {
-  const quote = quoteOf(words, lineText);
+const withQuote = (
+  from: BeoAiFrom,
+  words: string | null | undefined,
+  lineText: string | null | undefined,
+  hints?: ReadonlyArray<string | number | null | undefined>,
+): BeoAiFrom => {
+  const quote = quoteOf(words, lineText, hints);
   return quote ? { ...from, quote } : from;
 };
 
@@ -661,6 +742,11 @@ const PosItemAnswer = z.object({
   ...ref,
 });
 const dishNotes = optStr(1000).describe("the conversation's own note on that dish, exactly as written");
+// SCRUM-904: the entries the rest of the form adds keys to, read whole: a plain entry schema would
+// strip the dish's note and the show's time before the resolver sees them.
+const ChoiceWithNotes = ChoiceAnswer.extend({ notes: dishNotes });
+const MenuLineWithNotes = MenuLineAnswer.extend({ notes: dishNotes });
+const EntertainmentWithTime = EntertainmentAnswer.extend({ time: optTime });
 
 /**
  * SCRUM-904: what the conversation's read answers — the catalogue section,
@@ -670,9 +756,9 @@ const dishNotes = optStr(1000).describe("the conversation's own note on that dis
  * leniently, entry by entry, as the catalogue's own keys are.
  */
 export const BeoConversationAnswerShape = BeoCatalogueAnswerShape.extend({
-  menuLines: z.array(MenuLineAnswer.extend({ notes: dishNotes })),
-  setMenu: SetMenuAnswer.extend({ choices: z.array(ChoiceAnswer.extend({ notes: dishNotes })).optional() }),
-  entertainment: z.array(EntertainmentAnswer.extend({ time: optTime })),
+  menuLines: z.array(MenuLineWithNotes),
+  setMenu: SetMenuAnswer.extend({ choices: z.array(ChoiceWithNotes).optional() }),
+  entertainment: z.array(EntertainmentWithTime),
   event: z
     .object({
       childName: SourcedText,
@@ -778,15 +864,16 @@ export function resolveCatalogueAnswer(
   /** SCRUM-904: the text of the line a value names (the ruling message read alone: its text). */
   const lineTextOf = (entry: { line?: number }): string | null =>
     (entry.line ? refs.find((r) => r.line === entry.line)?.text : undefined) ?? (refs.length === 0 ? fallbackText ?? null : null);
-  const fromOf = (entry: { line?: number; source?: BeoAiSource }, words?: string | null): BeoAiFrom => {
+  // SCRUM-904: `hints`, the value itself, for a line too long to quote whole (`quoteOf`).
+  const fromOf = (entry: { line?: number; source?: BeoAiSource }, words?: string | null, ...hints: Array<string | number | null | undefined>): BeoAiFrom => {
     const known = entry.line ? refs.find((r) => r.line === entry.line) : undefined;
-    if (known) return withQuote({ source: known.source, at: known.at, line: known.line }, words, known.text);
+    if (known) return withQuote({ source: known.source, at: known.at, line: known.line }, words, known.text, hints);
     // The ruling message read alone: its words for the value when it holds them, else the message.
-    if (fallback) return fallbackText ? withQuote({ source: fallback.source, at: fallback.at, line: fallback.line }, words, fallbackText) : fallback;
+    if (fallback) return fallbackText ? withQuote({ source: fallback.source, at: fallback.at, line: fallback.line }, words, fallbackText, hints) : fallback;
     // A conversation holding only the team's lines (the ruling alone): the team's.
     if (allTeam) {
       return refs.length === 1
-        ? withQuote({ source: "team", at: refs[0]!.at, line: refs[0]!.line }, words, refs[0]!.text)
+        ? withQuote({ source: "team", at: refs[0]!.at, line: refs[0]!.line }, words, refs[0]!.text, hints)
         : { source: "team", at: null, line: null };
     }
     return { source: "family", at: null, line: null };
@@ -844,18 +931,19 @@ export function resolveCatalogueAnswer(
     // SCRUM-903: the choices of a set menu the catalogue lacks (with an empty catalogue, every
     // one) are dishes of their own for staff to keep or leave out, as an unlisted option is:
     // never dropped unseen.
-    for (const c of readMany(ChoiceAnswer, setAnswer.choices)) {
+    for (const c of readMany(ChoiceWithNotes, setAnswer.choices)) {
       const itemName = c.said ?? c.option;
       if (!itemName) continue;
       proposal.menuLines.push({
-        menu: "kids", itemName, quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: fromOf(c, itemName),
+        menu: "kids", itemName, quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null,
+        ...(c.notes ? { notes: c.notes } : {}), from: fromOf(c, itemName),
       });
     }
   }
   if (menu) {
     const from = named && setAnswer ? fromOf(setAnswer, setAnswer.said) : proposal.package!.from;
-    const chosen: Array<{ itemId: string; option: string; said: string | null; from: BeoAiFrom }> = [];
-    for (const c of readMany(ChoiceAnswer, setAnswer?.choices)) {
+    const chosen: Array<{ itemId: string; option: string; said: string | null; notes?: string; from: BeoAiFrom }> = [];
+    for (const c of readMany(ChoiceWithNotes, setAnswer?.choices)) {
       const group = menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as
         | Extract<BeoAiSetMenuItem, { type: "choice_group" }>
         | undefined;
@@ -866,7 +954,8 @@ export function resolveCatalogueAnswer(
         const itemName = c.said ?? c.option;
         if (itemName) {
           proposal.menuLines.push({
-            menu: "kids", itemName, quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null, from: cFrom,
+            menu: "kids", itemName, quantity: 1, productCode: null, matchedName: null, notInMenu: true, chatPrice: null,
+            ...(c.notes ? { notes: c.notes } : {}), from: cFrom,
           });
         }
         continue;
@@ -874,8 +963,7 @@ export function resolveCatalogueAnswer(
       // A group of one choice holds one option (the later line's, whoever wrote it);
       // a group of several holds each option once, its source the same way.
       // SCRUM-904: the chat's note on the dish rides with it.
-      const notes = readOne(z.object({ notes: dishNotes }), c)?.notes;
-      const entry = { itemId: group.id, option, said: c.said ?? null, ...(notes ? { notes } : {}), from: cFrom };
+      const entry = { itemId: group.id, option, said: c.said ?? null, ...(c.notes ? { notes: c.notes } : {}), from: cFrom };
       merge(chosen, entry, (x) => x.itemId === group.id && (!group.allowMultiple || x.option === option));
     }
     proposal.setMenu = { templateId: menu.id, from, choices: chosen };
@@ -883,26 +971,28 @@ export function resolveCatalogueAnswer(
 
   // Dishes and drinks beyond the set menu.
   const codes = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
-  for (const m of readMany(MenuLineAnswer, answer.menuLines, 100)) {
+  for (const m of readMany(MenuLineWithNotes, answer.menuLines, 100)) {
     const food = m.productCode ? codes.get(m.productCode.trim().toUpperCase()) : undefined;
     const itemName = m.itemName ?? food?.names[0];
     if (!itemName) continue;
     const menu = (m.menu ?? "kids") as BeoAiMenu;
-    // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
-    const notes = readOne(z.object({ notes: dishNotes }), m)?.notes;
+    // SCRUM-926: of the names one code carries (a set menu's options sharing it), the one the chat names.
+    const matchedName = food ? foodNameFor(food.names, m.itemName) : null;
     const line = {
       menu,
       itemName,
       quantity: m.quantity ?? 1,
       productCode: food?.code ?? null,
-      matchedName: food?.names[0] ?? null,
+      matchedName,
       notInMenu: !food,
       chatPrice: m.chatPrice ?? null,
-      ...(notes ? { notes } : {}),
+      // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
+      ...(m.notes ? { notes: m.notes } : {}),
       from: fromOf(m, m.itemName),
     };
-    // A dish the menu codes is one line per list; one it lacks stays as the conversation said it.
-    if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.menu === menu);
+    // A dish the menu codes is one line per list (per option, when options share the code);
+    // one it lacks stays as the conversation said it.
+    if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.matchedName === matchedName && x.menu === menu);
     // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.
     else merge(proposal.menuLines, line, (x) => x.productCode === null && x.menu === menu && fold(x.itemName) === fold(itemName));
   }
@@ -914,9 +1004,12 @@ export function resolveCatalogueAnswer(
     proposal.menuLines = proposal.menuLines.filter((l) => {
       if (l.menu !== "kids") return true;
       const same = choices.find((c) => {
-        const code = group(c)?.optionProductCodes[c.option] ?? null;
+        const g = group(c);
+        const code = g?.optionProductCodes[c.option] ?? null;
         if (code && l.productCode && code.toUpperCase() === l.productCode.toUpperCase()) return true;
-        return [c.option, c.said].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
+        // SCRUM-926: options sharing the group's code are told apart by name ("Fried rice (Chicken)").
+        const named = g ? `${g.label} (${c.option})` : null;
+        return [c.option, c.said, named].some((n) => !!n && (fold(n) === fold(l.itemName) || (!!l.matchedName && fold(n) === fold(l.matchedName))));
       });
       if (!same) return true;
       if (l.notes && !same.notes) same.notes = l.notes;
@@ -925,12 +1018,12 @@ export function resolveCatalogueAnswer(
   }
 
   // Entertainment: one line per entertainment the menu has; a free line as said.
-  for (const e of readMany(EntertainmentAnswer, answer.entertainment, 30)) {
+  for (const e of readMany(EntertainmentWithTime, answer.entertainment, 30)) {
     const t = e.templateId ? catalogue.entertainment.find((x) => x.id === e.templateId) : undefined;
     const name = t?.name ?? e.said;
     if (!name) continue;
-    // SCRUM-904: the show's time, when the chat gives one: an Entertainment Act at that time.
-    const time = readOne(z.object({ time: optTime }), e)?.time;
+    // SCRUM-904: the show's time, when the chat gives one: the Entertainment Act's time.
+    const time = e.time;
     const entry = {
       templateId: t?.id ?? null,
       name,
@@ -948,14 +1041,16 @@ export function resolveCatalogueAnswer(
   // The event's own fields.
   const ev = answer.event && typeof answer.event === "object" ? (answer.event as Record<string, unknown>) : {};
   const childName = readOne(SourcedText, ev.childName);
-  if (childName?.value) proposal.event.childName = { value: childName.value, from: fromOf(childName) };
+  if (childName?.value) proposal.event.childName = { value: childName.value, from: fromOf(childName, null, childName.value) };
   for (const key of ["numChildren", "numAdults"] as const) {
     const v = readOne(SourcedCount, ev[key]);
-    if (v && v.value !== undefined) proposal.event[key] = { value: v.value, from: fromOf(v) };
+    // SCRUM-904: the count's own words in a long line ("15 kids"), else the number.
+    const words = key === "numChildren" ? ["kid", "child"] : ["adult"];
+    if (v && v.value !== undefined) proposal.event[key] = { value: v.value, from: fromOf(v, null, ...words.map((w) => `${v.value} ${w}`), v.value) };
   }
   for (const key of ["startTime", "endTime"] as const) {
     const v = readOne(SourcedTime, ev[key]);
-    if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v) };
+    if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, null, v.value) };
   }
   // SCRUM-904: the rest of the event the conversation gives, each with the chat's words for it.
   const date = readOne(SaidDay, ev.eventDate);
@@ -963,13 +1058,13 @@ export function resolveCatalogueAnswer(
     proposal.event.eventDate = { value: date.value, said: date.said ?? null, from: fromOf(date, date.said) };
   }
   const age = readOne(SaidCount, ev.childAge);
-  if (age && age.value !== undefined && age.value <= 120) proposal.event.childAge = { value: age.value, from: fromOf(age, age.said) };
+  if (age && age.value !== undefined && age.value <= 120) proposal.event.childAge = { value: age.value, from: fromOf(age, age.said, age.value) };
   // A number the chat writes out: its digits are in the line it names, never one the model made up.
   const phone = readOne(SaidText(60, ""), ev.whatsapp);
   if (phone?.value && phoneInLine(phone.value, lineTextOf(phone))) proposal.event.whatsapp = { value: phone.value, from: fromOf(phone, phone.said ?? phone.value) };
   for (const key of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
     const v = readOne(SaidTime, ev[key]);
-    if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, v.said) };
+    if (v?.value) proposal.event[key] = { value: v.value, from: fromOf(v, v.said, v.value) };
   }
 
   // SCRUM-787: a cake the conversation times or describes without saying who brings it
@@ -988,13 +1083,13 @@ export function resolveCatalogueAnswer(
       ...(cakeQuantity !== undefined ? { quantity: cakeQuantity } : {}),
       ...(cakeMore?.included !== undefined ? { included: cakeMore.included } : {}),
       ...(cakePrice !== undefined ? { price: cakePrice } : {}),
-      from: fromOf(cake, cake.notes),
+      from: fromOf(cake, cake.notes, cake.time),
     };
   }
 
   const deposit = readOne(DepositAnswer, answer.deposit);
   if (deposit && deposit.amount !== undefined && deposit.amount > 0) {
-    proposal.deposit = { amount: Math.round(deposit.amount), paid: deposit.paid === true, date: deposit.date ?? null, from: fromOf(deposit) };
+    proposal.deposit = { amount: Math.round(deposit.amount), paid: deposit.paid === true, date: deposit.date ?? null, from: fromOf(deposit, null, Math.round(deposit.amount)) };
   }
 
   // SCRUM-827: the chat's requests, one entry each; the same words again are the later line's.
@@ -1011,7 +1106,7 @@ export function resolveCatalogueAnswer(
     if (!t.time || !t.label) continue;
     const label = fold(t.label);
     if (timedShows.some((s) => s.time === t.time && s.names.some((n) => n.includes(label) || label.includes(n)))) continue;
-    const entry = { time: t.time, label: t.label, from: fromOf(t, t.label) };
+    const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
   }
   proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));
@@ -1019,14 +1114,14 @@ export function resolveCatalogueAnswer(
   // SCRUM-904: the rest of the form the conversation gives — the booking name, the location,
   // the setup plan, the POS box and the hosts — each with the chat's words for it.
   const sourced = (v: { value?: string; said?: string; line?: number; source?: BeoAiSource } | null): BeoAiSourced<string> | null =>
-    v?.value ? { value: v.value, from: fromOf(v, v.said ?? v.value) } : null;
+    v?.value ? { value: v.value, from: fromOf(v, v.said ?? v.value, v.value) } : null;
   const bookingName = sourced(readOne(SaidText(200, ""), ev.bookingName));
   if (bookingName) proposal.details.bookingName = bookingName;
   const locationText = sourced(readOne(SaidText(300, ""), ev.locationText));
   if (locationText) proposal.details.locationText = locationText;
   const setup = answer.setup && typeof answer.setup === "object" ? (answer.setup as Record<string, unknown>) : {};
   const readyBy = readOne(SaidTime, setup.readyBy);
-  if (readyBy?.value) proposal.details.setup.readyBy = { value: readyBy.value, from: fromOf(readyBy, readyBy.said) };
+  if (readyBy?.value) proposal.details.setup.readyBy = { value: readyBy.value, from: fromOf(readyBy, readyBy.said, readyBy.value) };
   const responsible = sourced(readOne(SaidText(200, ""), setup.responsible));
   if (responsible) proposal.details.setup.responsible = responsible;
   const setupNotes = sourced(readOne(SaidText(4000, ""), setup.notes));
@@ -1116,15 +1211,25 @@ const sameText = (a: string | null | undefined, b: string | null | undefined) =>
 export function detailsFromFill(
   proposal: BeoAiProposal,
   fill: BeoFill,
-  input: { existingData: unknown; from: BeoAiFrom; event: { childName?: string | null; kidTurningAge?: number | null; eventType?: string | null } | null },
+  input: {
+    existingData: unknown;
+    from: BeoAiFrom;
+    event: { childName?: string | null; kidTurningAge?: number | null; eventType?: string | null } | null;
+    /**
+     * SCRUM-904: the ruling message's text: each value read from it quotes its own words there
+     * (or the part of a long message around them), not the message's first characters.
+     */
+    rulingText?: string | null;
+  },
 ): BeoAiDetails {
   const existing = asRecord(input.existingData);
   const formEvent = asRecord(existing.event);
   const formSetup = asRecord(existing.setupPlan);
   const formPos = asRecord(existing.partyDetails);
-  const from = input.from;
+  const bare: BeoAiFrom = { source: input.from.source, at: input.from.at, line: input.from.line };
+  const fromFor = (value: string): BeoAiFrom => (input.rulingText ? withQuote(bare, value, input.rulingText, [value]) : input.from);
   const details: BeoAiDetails = { ...proposal.details, setup: { ...proposal.details.setup }, pos: { ...proposal.details.pos } };
-  const sourced = (value: string | undefined, held: unknown) => (value && !sameText(value, heldText(held)) ? { value, from } : null);
+  const sourced = (value: string | undefined, held: unknown) => (value && !sameText(value, heldText(held)) ? { value, from: fromFor(value) } : null);
 
   const child = proposal.event.childName?.value ?? fill.event?.childName ?? heldText(formEvent.childName) ?? input.event?.childName ?? null;
   const kind = input.event?.eventType ?? heldText(formEvent.eventType);
@@ -1141,7 +1246,7 @@ export function detailsFromFill(
   details.setup.tasks = proposal.details.setup.tasks.filter((t) => !heldTasks.some((h) => sameText(h, t.itemLabel)));
   for (const t of fill.setupPlan?.simplifiedTasks ?? []) {
     if (heldTasks.some((h) => sameText(h, t.itemLabel)) || details.setup.tasks.some((x) => sameText(x.itemLabel, t.itemLabel))) continue;
-    details.setup.tasks.push({ itemLabel: t.itemLabel, notes: t.notes ?? null, from });
+    details.setup.tasks.push({ itemLabel: t.itemLabel, notes: t.notes ?? null, from: fromFor(t.itemLabel) });
   }
   const heldItems = (Array.isArray(formPos.items) ? formPos.items : []).map((i) => heldText(asRecord(i).description));
   details.pos.items = proposal.details.pos.items.filter((i) => !heldItems.some((h) => sameText(h, i.description)));
@@ -1149,7 +1254,7 @@ export function detailsFromFill(
     if (heldItems.some((h) => sameText(h, i.description)) || details.pos.items.some((x) => sameText(x.description, i.description))) continue;
     // SCRUM-904: a price only when the message names one for the item.
     const price = typeof i.price === "number" && i.price > 0 ? { price: Math.round(i.price) } : {};
-    details.pos.items.push({ description: i.description, type: i.type === "extra" ? "extra" : "included", ...price, from });
+    details.pos.items.push({ description: i.description, type: i.type === "extra" ? "extra" : "included", ...price, from: fromFor(i.description) });
   }
 
   // The ruling's own request fields, only where the conversation's read holds no such words.
@@ -1161,13 +1266,13 @@ export function detailsFromFill(
     ["activity", fill.event?.activities, formEvent.activities],
   ] as const) {
     if (!value || sameText(value, heldText(held)) || covered(value)) continue;
-    details.requests.push({ kind, text: value, from });
+    details.requests.push({ kind, text: value, from: fromFor(value) });
   }
   details.timeline = [...proposal.details.timeline];
   if (details.timeline.length === 0) {
     for (const t of fill.timeline ?? []) {
       if (details.timeline.some((x) => sameText(x.label, t.label))) continue;
-      details.timeline.push({ time: t.time, label: t.label, from });
+      details.timeline.push({ time: t.time, label: t.label, from: fromFor(t.label) });
     }
     details.timeline.sort((a, b) => a.time.localeCompare(b.time));
   }

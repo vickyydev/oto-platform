@@ -17,7 +17,7 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import type { BeoAiApproveBody, BeoAiSetMenuChoices, BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { foodNameFor, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
@@ -411,10 +411,12 @@ export async function approveBeoAiFill(
       }
       const lineOf = (l: BeoAiApproveBody["menuLines"][number]): KitchenLine => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        if (matched) matches.push({ kind: "menu", code: matched.code, name: matched.names[0] });
+        // SCRUM-926: the option the chat names when options share one code, as the review showed it.
+        const matchedName = matched ? foodNameFor(matched.names, l.itemName) : null;
+        if (matched) matches.push({ kind: "menu", code: matched.code, name: matchedName! });
         return {
           id: `ai_${randomUUID()}`,
-          itemName: matched ? matched.names[0] : l.itemName,
+          itemName: matchedName ?? l.itemName,
           quantity: l.quantity,
           notes: [matched ? matched.code : "Not in the menu", l.notes?.trim() || null].filter(Boolean).join(" · "),
           included: false,
@@ -489,10 +491,11 @@ export async function approveBeoAiFill(
     if (barLines.length > 0) {
       const items = barLines.map((l) => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        if (matched) matches.push({ kind: "bar", code: matched.code, name: matched.names[0] });
+        const matchedName = matched ? foodNameFor(matched.names, l.itemName) : null;
+        if (matched) matches.push({ kind: "bar", code: matched.code, name: matchedName! });
         return {
           id: `ai_${randomUUID()}`,
-          itemName: matched ? matched.names[0] : l.itemName,
+          itemName: matchedName ?? l.itemName,
           quantity: l.quantity,
           notes: [matched ? matched.code : null, l.notes?.trim() || null].filter(Boolean).join(" · "),
           included: false,
@@ -543,33 +546,33 @@ export async function approveBeoAiFill(
       }
       written.entertainment = body.entertainment.length;
 
-      // SCRUM-904: a show the chat gives a time for is an Entertainment Act at that time as well
-      // (the BEO's Entertainment Acts, which put it on the Timeline). An act the BEO holds by the
-      // same name keeps its own time; one with no time yet takes the chat's.
-      const timed = body.entertainment.filter((e) => e.time);
-      if (timed.length > 0) {
-        const acts = await tx
-          .select({ id: beoEntertainmentItems.id, customName: beoEntertainmentItems.customName, startTime: beoEntertainmentItems.startTime })
-          .from(beoEntertainmentItems)
-          .where(eq(beoEntertainmentItems.eventId, event.id));
-        let actOrder = acts.length;
-        let added = 0;
-        for (const e of timed) {
-          const name = e.templateId ? (catalogue.entertainment.find((t) => t.id === e.templateId)?.name ?? e.name) : e.name;
-          const held = acts.find((a) => fold(a.customName) === fold(name));
-          if (held) {
-            if (!held.startTime) {
-              await tx.update(beoEntertainmentItems).set({ startTime: e.time!, updatedAt: input.now }).where(eq(beoEntertainmentItems.id, held.id));
-              added += 1;
-            }
-            continue;
+      // SCRUM-904: every show approved is an Entertainment Act as well (the BEO's Entertainment
+      // Acts, where the form shows it), at the time the chat gives it, which puts it on the
+      // Timeline; with no time the act waits for one ("no time"), as an act added by hand does.
+      // An act the BEO holds by the same name is not added again: it keeps its own time, and
+      // one with no time yet takes the chat's.
+      const acts = await tx
+        .select({ id: beoEntertainmentItems.id, customName: beoEntertainmentItems.customName, startTime: beoEntertainmentItems.startTime })
+        .from(beoEntertainmentItems)
+        .where(eq(beoEntertainmentItems.eventId, event.id));
+      let actOrder = acts.length;
+      let added = 0;
+      for (const e of body.entertainment) {
+        const name = e.templateId ? (catalogue.entertainment.find((t) => t.id === e.templateId)?.name ?? e.name) : e.name;
+        const held = acts.find((a) => fold(a.customName) === fold(name));
+        if (held) {
+          if (!held.startTime && e.time) {
+            await tx.update(beoEntertainmentItems).set({ startTime: e.time, updatedAt: input.now }).where(eq(beoEntertainmentItems.id, held.id));
+            held.startTime = e.time;
+            added += 1;
           }
-          await tx.insert(beoEntertainmentItems).values({ eventId: event.id, tenantId: event.tenantId, customName: name, startTime: e.time!, sortOrder: actOrder++ });
-          acts.push({ id: "", customName: name, startTime: e.time! });
-          added += 1;
+          continue;
         }
-        written.entertainmentActs = added;
+        await tx.insert(beoEntertainmentItems).values({ eventId: event.id, tenantId: event.tenantId, customName: name, startTime: e.time ?? null, sortOrder: actOrder++ });
+        acts.push({ id: "", customName: name, startTime: e.time ?? null });
+        added += 1;
       }
+      if (added > 0) written.entertainmentActs = added;
     }
 
     // SCRUM-827: the setup plan — ready-by, who (a person or a department of the park when

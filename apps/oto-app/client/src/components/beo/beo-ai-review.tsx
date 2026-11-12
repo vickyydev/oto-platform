@@ -901,14 +901,16 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={e.from} indent={false} />
-              {/* SCRUM-904: a show the chat times is an Entertainment Act at that time as well, on the Timeline. */}
-              {e.time !== undefined && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-act">
-                  <span>Act at</span>
-                  <Input type="time" className="h-8 w-28" value={e.time} onChange={(ev) => update({ time: ev.target.value })} data-testid="input-ai-review-entertainment-time" />
-                  <span>{e.time ? "— added to Entertainment Acts, which puts it on the Timeline." : "— no time: not added as an act."}</span>
-                </div>
-              )}
+              {/* SCRUM-904: every show approved is an Entertainment Act as well; at the chat's time it is on the Timeline. */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-act">
+                <span>Act at</span>
+                <Input type="time" className="h-8 w-28" value={e.time ?? ""} onChange={(ev) => update({ time: ev.target.value })} data-testid="input-ai-review-entertainment-time" />
+                <span>
+                  {e.time
+                    ? "— added to Entertainment Acts, which puts it on the Timeline."
+                    : "— added to Entertainment Acts with no time: the chat gives none."}
+                </span>
+              </div>
               <PriceBeside chat={e.chatPrice} catalogue={t ? [t.price] : []} />
               {e.notInCatalogue && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
@@ -1066,6 +1068,8 @@ export function BeoAiReviewDialog({
           ["/api/events", eventId, "beo", "timeline"],
           ["/api/beo/events", eventId, "package-snapshot"],
           ["/api/beo/events", eventId, "entertainment-selections"],
+          // SCRUM-904: the shows approved are Entertainment Acts as well.
+          ["/api/events", eventId, "beo", "entertainment-items"],
           ["/api/beo/set-menu-selections", eventId],
           ["/api/admin/events"],
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
