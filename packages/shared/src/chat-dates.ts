@@ -1020,3 +1020,153 @@ export function readChatPartyDate(
     timePhrase: time?.phrase ?? '',
   };
 }
+
+// --- A number that counts no guests (SCRUM-947) ------------------------------------------
+
+/**
+ * WHICH NUMBERS IN A CHAT CAN COUNT GUESTS (SCRUM-947).
+ *
+ * Book Date read "11:00-13:00 เด็ก 8 คน" as 8 kids and as "00" kids: the
+ * prototype's "<n> kids" pattern took the minutes of 13:00, right before
+ * "เด็ก", for a count, and staff were asked to choose between the two. A guest
+ * count is a whole number of its own. This reads every number a text writes
+ * and says which can be one, by this module's own reading of dates and times,
+ * so the two never disagree. A number counts no guests when it is part of:
+ *   - a clock time: "13:00", "13.00", "13:00 น.", "13 น.", "1 pm", "в 14:00",
+ *     "บ่าย 2 โมง", "14 часов";
+ *   - a date: "12 ธันวาคม", "27/12", "2026-12-12", "the 21st", "15-го",
+ *     "วันที่ 27", "วันเสาร์ที่ 12";
+ *   - a price: "ราคา 590", "฿1,500", "590 บาท", "1500 руб";
+ *   - a phone number: "0812345678", "081-234-5678", "+66 81 234 5678";
+ *   - an age: "5 ขวบ", "7 years", "6 лет", "turning 7", "อายุ 5", "исполняется 6";
+ *   - another number it is written into ("1,500", "12.5", "1/2"), or a range
+ *     with one of these ("5-6 ขวบ", "11:00-13:00").
+ * A range of counts stays counts ("8-10 kids"), and a zero the text writes is
+ * one ("0 kids"). Thai and Arabic-Indic digits are read as the digits they are.
+ *
+ * What it does not do: say what a count counts. The caller's own words do,
+ * as the prototype's "<n> kids" did.
+ */
+
+export interface ChatNumber {
+  /** Its digits as written, in ASCII ("8" for "๘", "08" for "08"). */
+  digits: string;
+  value: number;
+  /** Where its digits are in the reading's `text`. */
+  start: number;
+  end: number;
+  /** It can count guests: it is no part of a clock time, a date, a price, a phone number or an age. */
+  count: boolean;
+}
+
+export interface ChatNumbersReading {
+  /** The text as read: NFC, every digit ASCII one for one; the numbers' places are in it. */
+  text: string;
+  numbers: ChatNumber[];
+}
+
+/** Thai, Arabic-Indic and Persian digits as ASCII, one for one, so every index stays the text's own. */
+function everyDigitAscii(text: string): string {
+  return text.replace(/[๐-๙٠-٩۰-۹]/gu, (c) => {
+    const code = c.charCodeAt(0);
+    return String(code - (code >= 0x0e50 ? 0x0e50 : code >= 0x06f0 ? 0x06f0 : 0x0660));
+  });
+}
+
+/** Between two numbers, one of these makes them one: a time, a date, a price, a decimal ("13:00", "12/12", "1,500"). */
+const WRITTEN_INTO = ':.,/';
+/** Between two numbers, a dash makes a range ("8-10", "11:00 - 13:00"). */
+const RANGE_GAP = /^\s*[-–—~]\s*$/u;
+/** Between the groups of a phone number: one space, dash or dot, or a bracket. */
+const PHONE_GAP = /^(?:[\s.-]|\)\s?|\s?\(|\)-)$/u;
+/** A price before the number: "฿500", "THB 500", "ราคา 590", "price: 590", "цена 590". */
+const PRICE_BEFORE_NUMBER =
+  /(?:[฿$€£₽]|(?:^|[^\p{L}])(?:thb|usd|rub|price|cost)|ราคา|(?:^|[^\p{L}])(?:цен[аеуы]|стоимост\p{L}*))\s*(?:[:=]|is|of)?\s*$/iu;
+/** An age before the number: "turning 7", "aged 5", "อายุ 5", "исполняется 6". */
+const AGE_BEFORE_NUMBER = /(?:(?:^|[^\p{L}])(?:turn(?:s|ing|ed)?|aged?)|อายุ|(?:^|[^\p{L}])(?:исполн\p{L}*|возраст\p{L}*))\s*[:=]?\s*$/iu;
+/** An age after the number: "5 ขวบ", "5 ปี", "7 years", "5-year-old", "5 y.o.", "6 лет", "5-летие", "2 года". */
+const AGE_AFTER_NUMBER =
+  /^\s*-?\s*(?:ขวบ|ปี|(?:years?|yrs?|y\.?\s?o\.?)(?![a-z])|лет(?:и\p{L}*)?(?!\p{L})|год(?:а|ик\p{L}*)?(?!\p{L}))/iu;
+/** An ordinal: "21st", "15-го", "5-й" — a day, a place, never a count. */
+const ORDINAL_AFTER_NUMBER = /^(?:(?:st|nd|rd|th)(?![a-z])|-?(?:го|ого|ое|ой|ый|ий|й|е|я)(?!\p{L}))/iu;
+/** The Thai day of the month: "วันที่ 27", "วันเสาร์ที่ 12" (a date even when the kids are named after it). */
+const THAI_DAY_BEFORE_NUMBER = /(?:วัน|จันทร์|อังคาร|พุธ|พฤหัส(?:บดี)?|ศุกร์|เสาร์|อาทิตย์)\s*ที่\s*$/u;
+/** A clock time's mark after the hour: "13 น.", "13 น", "2 o'clock". Not "น้อง": a Thai letter goes on. */
+const TIME_AFTER_NUMBER = /^\s*(?:น(?:\.|(?![฀-๿]))|o['’]?clock(?![a-z]))/iu;
+
+interface DigitRun {
+  start: number;
+  end: number;
+  digits: string;
+}
+
+/**
+ * The runs that make a phone number: from "+" or a leading 0, groups of digits
+ * with one separator between, nine digits or more and no more than a number
+ * has (ten from a 0, twelve from a "+"), so a count written after it stays one.
+ */
+function phoneRuns(t: string, runs: readonly DigitRun[]): Set<number> {
+  const phone = new Set<number>();
+  for (let i = 0; i < runs.length; i++) {
+    const first = runs[i]!;
+    const plus = /\+\s?\(?$/u.test(t.slice(Math.max(0, first.start - 3), first.start));
+    if (!plus && !first.digits.startsWith('0')) continue;
+    if (!numberStartsAt(t, first.start)) continue;
+    const most = plus ? 12 : 10;
+    let total = first.digits.length;
+    let j = i;
+    while (j + 1 < runs.length) {
+      const next = runs[j + 1]!;
+      if (!PHONE_GAP.test(t.slice(runs[j]!.end, next.start)) || total + next.digits.length > most) break;
+      total += next.digits.length;
+      j += 1;
+    }
+    if (total >= 9) {
+      for (let k = i; k <= j; k++) phone.add(k);
+      i = j;
+    }
+  }
+  return phone;
+}
+
+/** Every number a text writes, in order, each with whether it can count guests (see above). */
+export function readChatNumbers(text: string): ChatNumbersReading {
+  const t = everyDigitAscii((text ?? '').normalize('NFC'));
+  const runs: DigitRun[] = [...t.matchAll(/[0-9]+/gu)].map((m) => ({ start: m.index, end: m.index + m[0].length, digits: m[0] }));
+  if (runs.length === 0) return { text: t, numbers: [] };
+  const spans: Array<{ start: number; end: number }> = [...timesIn(t), ...datesIn(t, null)];
+  const phone = phoneRuns(t, runs);
+  const notCount = runs.map((r, i) => {
+    if (spans.some((s) => r.start < s.end && r.end > s.start)) return true;
+    if (phone.has(i) || r.digits.length >= 5) return true;
+    const before = t.slice(Math.max(0, r.start - 24), r.start);
+    const after = t.slice(r.end);
+    if (WRITTEN_INTO.includes(t[r.start - 1] ?? '') && isDigit(t[r.start - 2])) return true;
+    if (WRITTEN_INTO.includes(t[r.end] ?? '') && isDigit(t[r.end + 1])) return true;
+    return (
+      PRICE_BEFORE_NUMBER.test(before) ||
+      PRICE_AFTER.test(after) ||
+      AGE_BEFORE_NUMBER.test(before) ||
+      AGE_AFTER_NUMBER.test(after) ||
+      ORDINAL_AFTER_NUMBER.test(after) ||
+      THAI_DAY_BEFORE_NUMBER.test(before) ||
+      TIME_AFTER_NUMBER.test(after)
+    );
+  });
+  // A range is of one kind: "5-6 ขวบ" are two ages, "11:00 - 13:00" two times, "8-10 kids" two counts.
+  for (const order of [1, -1] as const) {
+    for (let k = 1; k < runs.length; k++) {
+      const i = order === 1 ? k : runs.length - 1 - k;
+      const a = Math.min(i, i - order);
+      const b = Math.max(i, i - order);
+      if (RANGE_GAP.test(t.slice(runs[a]!.end, runs[b]!.start)) && (notCount[a] || notCount[b])) {
+        notCount[a] = true;
+        notCount[b] = true;
+      }
+    }
+  }
+  return {
+    text: t,
+    numbers: runs.map((r, i) => ({ digits: r.digits, value: Number(r.digits), start: r.start, end: r.end, count: !notCount[i] })),
+  };
+}
