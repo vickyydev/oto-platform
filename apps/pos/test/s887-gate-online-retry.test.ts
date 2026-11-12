@@ -486,7 +486,7 @@ describe('SCRUM-887: the till holds its gate', () => {
   const gate = src.slice(src.indexOf('const resolveSupervisionGate'), src.indexOf('const handleDoneAdding'));
 
   it('notes every gate write and holds each press, released when the press ends', () => {
-    expect(src).toMatch(/const \[gateOnline\] = useState\(\(\) => gateOnlineHold\(\(\) => toast\(GATE_RETRYING\)\)\)/);
+    expect(src).toMatch(/const \[gateOnline\] = useState\(\(\) => gateOnlineHold\(\(words\) => toast\(words\)\)\)/);
     expect(gate.indexOf('gateOnline.beginPress()')).toBeGreaterThan(-1);
     expect(gate.indexOf('gateOnline.beginPress()')).toBeLessThan(gate.indexOf('saveGateChildren('));
     // member create, each child, the visit, the registration
