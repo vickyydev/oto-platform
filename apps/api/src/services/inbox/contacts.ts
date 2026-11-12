@@ -181,6 +181,9 @@ export async function renameContact(
     profileName: locked.profileName,
     nameSetByAccountId: locked.nameSetByAccountId,
     nameSetAt: locked.nameSetAt?.toISOString() ?? null,
+    // The thread the rename was made from, on both sides, so the activity log
+    // does not show it as a change.
+    conversationId: conv.id,
   };
 
   let patch: Partial<typeof contact.$inferInsert>;

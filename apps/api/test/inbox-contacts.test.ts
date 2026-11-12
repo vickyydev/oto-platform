@@ -345,6 +345,8 @@ describe('the name staff set', () => {
     expect(set.branchId).toBe(central);
     expect(set.before).toMatchObject({ displayName: GUEST_NAME, profileName: GUEST_NAME, nameSetByAccountId: null });
     expect(set.after).toMatchObject({ displayName: STAFF_NAME, nameSetByAccountId: people.recCentral, conversationId: guestConversation });
+    // The thread is the same on both sides: the activity log shows no false change.
+    expect(set.before).toMatchObject({ conversationId: guestConversation });
     const clear = rows.at(-1)!;
     expect(clear.before).toMatchObject({ displayName: STAFF_NAME, nameSetByAccountId: people.recCentral });
     expect(clear.after).toMatchObject({ displayName: 'Somchai J.', nameSetByAccountId: null, nameSetAt: null });
