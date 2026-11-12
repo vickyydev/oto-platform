@@ -368,7 +368,7 @@ describe('SCRUM-887: the till carries its gate to the sale', () => {
     expect(gate).toMatch(/setSupervisionResolved\(true\);\s*gateOnline\.carryToSale\(\);/);
     expect(src).toMatch(/saleWriter\.state\.kind === 'written' \|\| saleWriter\.state\.kind === 'unwritten'\) gateOnline\.endSale\(\);/);
     expect(src).toMatch(/useEffect\(\(\) => \(\) => gateOnline\.reset\(\), \[gateOnline\]\);/);
-    const reset = src.slice(src.indexOf('const resetSale = () => {'), src.indexOf('const resetSale = () => {') + 200);
+    const reset = src.slice(src.indexOf('const resetSale = () => {'), src.indexOf('const resetSale = () => {') + 400);
     expect(reset).toMatch(/gateOnline\.reset\(\);/);
     expect(src).toMatch(/state=\{gateSaleFailure\(saleWriter\.state, gateOnline\.startedOnline\)\}/);
   });

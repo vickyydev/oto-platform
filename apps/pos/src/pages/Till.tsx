@@ -846,9 +846,9 @@ export default function Till() {
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
-    gateOnline.reset();
     setResumed(null);
     if (station?.stationId) forgetSaleOnScreen(station.stationId);
+    gateOnline.reset();
     saleKeyRef.current = crypto.randomUUID();
     setCompletionRetry(null);
     voucher.reset();
