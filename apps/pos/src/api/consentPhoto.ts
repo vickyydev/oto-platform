@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@oto/api-types';
 import { DISPLAY_CONSENT_PHOTO_TYPES, type DisplayConsentPhotoUpload } from '@oto/shared';
 import { api } from './client';
 import { DisplayError, displayRequest } from './display';
@@ -30,7 +31,7 @@ export async function sendDisplayConsentPhoto(bearer: string, form: DisplayPhoto
   const photo = photoOfDataUrl(dataUrl);
   if (!photo) throw new DisplayError(400, 'BAD_REQUEST', 'The photo could not be read. Please take it again.');
   const body: DisplayConsentPhotoUpload = { ...form, ...photo };
-  const answer = await displayRequest<{ fileId: string }>(bearer, 'POST', '/consent-photos', body);
+  const answer = await displayRequest<ApiResponse<'/display/consent-photos', 'post'>>(bearer, 'POST', '/consent-photos', body);
   return answer.fileId;
 }
 
@@ -40,7 +41,7 @@ export async function collectDisplayConsentPhoto(
   form: { fileId: string; visitorId: string; slotId: string },
 ): Promise<string> {
   const query = new URLSearchParams({ visitorId: form.visitorId, slotId: form.slotId });
-  const answer = await api.get<{ dataUrl: string }>(
+  const answer = await api.get<ApiResponse<'/stations/{id}/consent-photos/{fileId}', 'get'>>(
     `/stations/${encodeURIComponent(stationId)}/consent-photos/${encodeURIComponent(form.fileId)}?${query.toString()}`,
   );
   if (!photoOfDataUrl(answer.dataUrl)) throw new Error('The photo from the display could not be read.');

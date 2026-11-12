@@ -214,6 +214,9 @@ interface Wrapper {
 
 const WRAPPERS: Record<string, Wrapper> = {
   'apps/pos/src/api/display.ts#displayRequest': { prefix: '/display', method: 1, path: 2, body: 3 },
+  // SCRUM-857 — the family's photo goes through the display's own transport,
+  // imported where the photo's wire shape lives.
+  'apps/pos/src/api/consentPhoto.ts#displayRequest': { prefix: '/display', method: 1, path: 2, body: 3 },
   'apps/pos/src/api/kiosk.ts#kioskRequest': { prefix: '', method: 1, path: 2, body: 4 },
   'apps/pos/src/api/bridge.ts#request': {
     prefix: `${STATION_BRIDGE_BASE}/${HOLE}/`,
