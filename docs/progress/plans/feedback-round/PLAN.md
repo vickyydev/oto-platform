@@ -69,3 +69,16 @@ noted for the owner on SCRUM-864).
 | lane/historyfu876-20261112 | SCRUM-876, 877 | A party settlement left open can be cancelled; a part-paid food or shop sale can be refunded from History |
 | with SCRUM-857 | SCRUM-874, 875 | The family's form survives a connection drop; the screen says why Done is not available |
 | not started | SCRUM-878 | A staff session ending in a long shift: plan on the ticket, session length is the owner's decision |
+
+## Second wave, 12 November 13:00 (all on Opus)
+
+| Lane | Tickets | What | Workflow run |
+|---|---|---|---|
+| dropconfirm857, dropflow857, dropphoto857, dropdone857 | SCRUM-857 (with 874, 875) | Part 1 number confirmation lands first; parts 2 live mirror, 3 the family's photo, 4 the family's Done are joined, reviewed twice and fixed | wf_a4c5373d-1aa |
+| settle889-20261112 | SCRUM-889, 890, 891 | An open party settlement resumes on its party page; History says part-paid; one refund status | wf_f18a81db-8c4 |
+| printfollow-20261112 | SCRUM-898, 899, 900 | Console station form never opens stale after a save and the server refuses an older version; a printer needs an address; a refund tells the till when a VOID slip could not go | wf_303b010e-e75 |
+| lanefollow897-20261112 | SCRUM-897 | After an online drop-off sale, promo usage, wallet credit, the box note and held sales follow where the sale is | wf_324bffac-42f |
+| smallui885-20261112 | SCRUM-885, 888 | A just-created member's greeting (prototype first); the Cancel booking button fits at 1680 | wf_b2b1f4cf-74e |
+| hunt/xland-20261112 (report only) | none yet | A defect hunt across today's landings, where lanes touched the same files | agent |
+
+Queued behind SCRUM-857 because they edit the same form or till layout: SCRUM-893 (allergies box opens the on-screen keyboard), 894 (short screen keeps the typed field in view), 884 (split view at 1440). Waiting for the owner: SCRUM-878 (session length), 892 (phone QR size), 895 (proved only on the real Pi), 896 (webcam permission choice).
