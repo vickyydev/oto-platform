@@ -86,6 +86,20 @@ const promptObject = z.object({
    * the `fill` is never tripped.
    */
   familyStep: formStep.optional(),
+  /**
+   * SCRUM-857 — the family's Done moves the sale on by itself (the owner's
+   * ruling of 8 November: no staff confirmation once every check passes).
+   * `finishing` is sent on the finished form while the till writes the
+   * registration and moves to what follows, so the family's screen says so
+   * instead of asking them to wait for the team. `notSaved` is sent on the
+   * form again when that write was refused or could not be made (a form that
+   * changed meanwhile, a child already registered, the connection): the
+   * family's screen says the team is checking it with them. Both optional and
+   * additive: an older till never sends them, and a station or display from
+   * before them reads the form as it always did (the till still moves on).
+   */
+  finishing: z.boolean().optional(),
+  notSaved: z.boolean().optional(),
   /** What the drop-off service and a nanny cost, from the till's own drop-off pricing, for the requirement notes. */
   fees: z.object({ nannyHourlyTHB: z.number().nonnegative(), dropOffFeeTHB: z.number().nonnegative() }).optional(),
   staffReady: z.boolean(), canContinue: z.boolean(), completed: z.boolean(),
@@ -114,6 +128,14 @@ function validatePrompt(value: z.infer<typeof promptObject>, ctx: z.RefinementCt
   // finished without it.
   if (value.completed && value.contactConfirmed === false) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['contactConfirmed'], message: 'Consent completion requires the messaging number to be confirmed' });
+  }
+  // SCRUM-857 — only a finished form is being saved, and only an unfinished
+  // one says its last Done was not saved.
+  if (value.finishing && !value.completed) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['finishing'], message: 'Only a finished form can be saving' });
+  }
+  if (value.notSaved && value.completed) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['notSaved'], message: 'A form whose Done was not saved is open again' });
   }
 }
 
