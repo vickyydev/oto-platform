@@ -635,6 +635,17 @@ try {
     assert.ok(changes.every((c) => c.from === null || c.from.source === "family" || c.from.source === "default"), "every change from the family's lines");
     // Typed text that already holds the chat's line is offered nothing.
     assert.equal(fetchChangesOf({ fill: familyFill, review }, { ...form, specialRequests: "ZZ typed\nallergic to peanuts" }).find((c) => c.field === "specialRequests"), undefined);
+    // The conversation's notes on the bill go beside the POS notes staff typed, never in their place.
+    const withNotes = (value: string): BeoAiReview => ({
+      ...review,
+      proposal: { ...review.proposal, details: { ...review.proposal.details, pos: { ...review.proposal.details.pos, notes: { value, from: family(5) } } } },
+    });
+    const typedPos = "ZZ typed by staff: VIP family, manager discount approved";
+    const posNotes = (r: BeoAiReview, packageNotes: string) => fetchChangesOf({ fill: familyFill, review: r }, { ...form, packageNotes }).find((c) => c.field === "packageNotes");
+    assert.equal(posNotes(withNotes("pay the rest in cash on the day"), typedPos)?.value, `${typedPos}\npay the rest in cash on the day`, "beside the typed notes");
+    assert.equal(posNotes(withNotes("pay the rest in cash on the day"), "")?.value, "pay the rest in cash on the day", "an empty field takes the chat's");
+    assert.equal(posNotes(withNotes(`${typedPos}. Pay the rest in cash`), typedPos)?.value, `${typedPos}. Pay the rest in cash`, "a line holding every typed word stands in their place: nothing lost or twice");
+    assert.equal(posNotes(withNotes("pay the rest in cash on the day"), `${typedPos}\npay the rest in cash on the day`), undefined, "notes holding the chat's line: nothing offered");
     // SCRUM-926: the Veggie fried rice the BEO holds is not the Chicken the chat names.
     const listed = fetchCatalogueChangesOf(review, {
       package: null, packageItems: [], setMenuTemplateId: cat.setMenu,

@@ -242,11 +242,16 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
    * stays, the chat's lines it lacks are added under it — never in its
    * place; nothing when the form holds every line already.
    */
-  const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
+  const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes" | "packageNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
     const held = (form[field] ?? "").trim();
     const missing = lines.filter((l) => !holds(held, l.text));
     if (missing.length === 0) return;
-    const value = [held, ...missing.map((l) => l.text)].filter(Boolean).join("\n");
+    // A line that already holds every typed word (a read with the form as its baseline) stands in
+    // the typed text's place, so the typed text is neither lost nor written twice.
+    const container = held ? missing.find((l) => foldText(l.text).includes(foldText(held))) : undefined;
+    const value = container
+      ? [container.text, ...missing.filter((l) => l !== container).map((l) => l.text)].join("\n")
+      : [held, ...missing.map((l) => l.text)].filter(Boolean).join("\n");
     offer(field, shownText(held), value, value, missing.reduce((a, l) => (laterLineWins(l.from, a) ? l.from : a), missing[0]!.from));
   };
   // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line (SCRUM-904: allergies first).
@@ -379,8 +384,16 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   if (deposit.date && deposit.date !== form.depositDate) {
     offer("depositDate", form.depositDate ? dayLabel(form.depositDate) : NONE, dayLabel(deposit.date), deposit.date, deposit.from);
   }
-  const notes = detail(proposal?.details.pos.notes, party.notes);
-  if (notes.value && !sameText(form.packageNotes, notes.value)) offer("packageNotes", shownText(form.packageNotes), notes.value, notes.value, notes.from);
+  // SCRUM-904: the conversation's notes on the bill (it never sees the form) go BESIDE what is
+  // typed, never in its place; the ruling message's own read, with the form as its baseline, is
+  // offered as before only where the proposal holds none.
+  const posNotes = proposal?.details.pos.notes;
+  if (posNotes?.value.trim()) {
+    beside("packageNotes", [{ text: posNotes.value.trim(), from: posNotes.from }]);
+  } else {
+    const notes = { value: str(party.notes), from: ruling };
+    if (notes.value && !sameText(form.packageNotes, notes.value)) offer("packageNotes", shownText(form.packageNotes), notes.value, notes.value, notes.from);
+  }
 
   return changes.sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field));
 }
