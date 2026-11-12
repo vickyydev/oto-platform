@@ -19,7 +19,9 @@ import {
   unpricedReason,
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, sortedConfirmations } from '@/lib/supervision';
+import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
+import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { taxRowsOf, ticketTotals } from '@/lib/cartWire';
@@ -436,6 +438,15 @@ export default function MobileTill() {
   const [superConsentAck, setSuperConsentAck] = useState(false);
   const [superAcknowledgedConfirmationIds, setSuperAcknowledgedConfirmationIds] = useState<string[]>([]);
   const [supervisionResolved, setSupervisionResolved] = useState(false);
+  /**
+   * SCRUM-915 — the family's confirmation that the number is the one for the
+   * channel, given on the form on this phone (the counter's tick, SCRUM-857):
+   * it stands for the number and channel it was given for, and any change of
+   * either withdraws it until they tick again (SCRUM-914).
+   */
+  const [mobileContactConfirmation, setMobileContactConfirmation] = useState<ContactConfirmation | null>(null);
+  /** SCRUM-915 — the family's Done on this phone could not be saved: their form says the team will check it. */
+  const [familyDoneNotSaved, setFamilyDoneNotSaved] = useState(false);
 
   const dropOffPricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
   // Subscribe to catalog mutations so live Admin edits to the supervision
@@ -1268,6 +1279,8 @@ export default function MobileTill() {
     refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
+    setMobileContactConfirmation(null);
+    setFamilyDoneNotSaved(false);
     setMStep('supervision');
   };
 
@@ -1295,31 +1308,52 @@ export default function MobileTill() {
     );
 
   /**
-   * Mobile-specific supervision continue: redirects to the consent handoff if
-   * any supervised child still needs photo + consent before resolving the gate.
-   * After consent is captured, a second tap on "Continue" runs the full
-   * handleSupervisionContinue logic with mobile-specific step transitions.
+   * SCRUM-915 — THE FAMILY'S FORM ON THE PHONE ITSELF. The phone till has no
+   * customer screen: the drop-off and nanny form the counter shows on its
+   * customer half opens here, on the phone handed to the parent (the
+   * hand-to-customer overlay), with the phone's camera for the photo, the
+   * number confirmation tick, the "Still needed" line and Done. What the form
+   * still needs is the counter's own reading (`consentMissing`): each child
+   * named and aged, the name and consent, the confirmations, the number
+   * confirmed for its channel, a photo of each child in care.
+   */
+  const mobileContactConfirmed = contactConfirmationStands(mobileContactConfirmation, customerPhone, customerContactChannel);
+  const mobileContactProblem = messagingPhoneProblem(customerPhone);
+  const mobileFamilyMissing = () => {
+    const known = superSlots.filter((s) => slotAge(s) !== null);
+    const byId = new Map(resolveGroupRequirements(known.map((s) => ({ id: s.id, age: slotAge(s)! })), supervisionPolicy)
+      .map((r) => [r.id, r]));
+    const rows = superSlots.map((s) => ({ slot: s, needsConsent: slotAge(s) !== null
+      && resolveSupervisionOutcome(byId.get(s.id)?.requirement ?? 'none', s.waived, s.optIn).needsConsent }));
+    return consentMissing({
+      children: superSlots.map((s) => ({ name: s.name, ageYears: slotAge(s) })),
+      consentRequired: rows.some((r) => r.needsConsent),
+      guardianName: superParentName,
+      consentAcknowledged: superConsentAck,
+      confirmations: sortedConfirmations(supervisionPolicy).map((c) => ({ required: c.required,
+        acknowledged: superAcknowledgedConfirmationIds.includes(c.id) })),
+      contact: { confirmed: mobileContactConfirmed, problem: mobileContactProblem },
+      photosTaken: rows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl),
+    });
+  };
+  // SCRUM-914 — a change of the number or the channel on the form withdraws the family's tick.
+  const changeFormPhone = (next: string) => {
+    if (consentFormPhone(next) !== consentFormPhone(customerPhone)) setMobileContactConfirmation(null);
+    setCustomerPhone(next);
+  };
+  const changeFormChannel = (next: ContactChannel) => {
+    if (next !== customerContactChannel) setMobileContactConfirmation(null);
+    handleCustomerContactChannelChange(next);
+  };
+
+  /**
+   * Mobile-specific supervision continue: opens the family's form on the
+   * phone while it still needs anything (SCRUM-915: before, the gate's
+   * Continue stayed grey until the form was done, and it was the only way to
+   * open the form). With everything given, it resolves the gate as before.
    */
   const handleMobileSupervisionContinue = () => {
-    const resolvedReqs = resolveGroupRequirements(
-      superSlots
-        .filter((s) => slotAge(s) !== null)
-        .map((s) => ({ id: s.id, age: slotAge(s)! })),
-      supervisionPolicy,
-    );
-    const byId = new Map(resolvedReqs.map((r) => [r.id, r]));
-
-    const needsConsentCapture = superSlots.some((s) => {
-      if (slotAge(s) === null) return false;
-      const r = byId.get(s.id);
-      const outcome = resolveSupervisionOutcome(r?.requirement ?? 'none', s.waived, s.optIn);
-      return (
-        outcome.needsConsent &&
-        (!s.childPhotoUrl || !superConsentAck || !superParentName.trim())
-      );
-    }) || (superSlots.length > 0 && !confirmationsSatisfied(supervisionPolicy, superAcknowledgedConfirmationIds));
-
-    if (needsConsentCapture) {
+    if (mobileFamilyMissing().length > 0) {
       setHandoffMode('consent');
       return;
     }
@@ -1332,8 +1366,25 @@ export default function MobileTill() {
     void resolveMobileSupervisionGate().finally(() => setGateSaving(false));
   };
 
-  const resolveMobileSupervisionGate = async () => {
-    if (!tier || !operator) return;
+  /**
+   * SCRUM-915 — the family's Done on the form on this phone: once nothing is
+   * missing it writes the registration and moves the sale on through the same
+   * gate staff's Continue runs (as the counter's customer half does), and the
+   * phone comes back to staff on the step that follows. A Done that could not
+   * be saved leaves the form open, saying the team will check it.
+   */
+  const handleFamilyDone = () => {
+    if (gateSaving || mobileFamilyMissing().length > 0) return;
+    setGateSaving(true);
+    setFamilyDoneNotSaved(false);
+    void resolveMobileSupervisionGate().then((saved) => {
+      if (saved) setHandoffMode(null);
+      else setFamilyDoneNotSaved(true);
+    }).finally(() => setGateSaving(false));
+  };
+
+  const resolveMobileSupervisionGate = async (): Promise<boolean> => {
+    if (!tier || !operator) return false;
     const epoch = saleEpochRef.current;
     const policy = supervisionPolicy;
     const resolved2 = resolveGroupRequirements(
@@ -1378,7 +1429,7 @@ export default function MobileTill() {
         description: `${TILL_NOT_LINKED} Nobody has been checked in or charged — the details are still on screen.`,
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     /**
@@ -1405,6 +1456,11 @@ export default function MobileTill() {
           guardianName: superParentName.trim(),
           guardianPhone: customerPhone.trim() || null,
           contactChannel: customerContactChannel,
+          // SCRUM-915 — the family's tick on the form on this phone, when it
+          // stands for the number and channel sent above.
+          contactConfirmation: mobileContactConfirmation && contactConfirmationStands(mobileContactConfirmation, customerPhone, customerContactChannel)
+            ? { confirmedAt: mobileContactConfirmation.at, by: mobileContactConfirmation.by }
+            : null,
           consentAcknowledged: superConsentAck,
           acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
           children: supervised.map(({ slot, service }, i) => ({
@@ -1470,10 +1526,10 @@ export default function MobileTill() {
         description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
         variant: 'destructive',
       });
-      return;
+      return false;
     }
     // A Cancel pressed while the registration was being written wins.
-    if (saleEpochRef.current !== epoch) return;
+    if (saleEpochRef.current !== epoch) return false;
 
     const sourceIds = new Set(superSlots.map((s) => s.sourceLineId));
     const carryExtras = new Map<string, { socks: number; addOns: SelectedAddOn[] }>();
@@ -1532,6 +1588,7 @@ export default function MobileTill() {
       setActiveLineId(null);
       setMStep('review');
     }
+    return true;
   };
 
   const handleDoneAdding = () => {
@@ -2472,6 +2529,10 @@ export default function MobileTill() {
               onBack={() => setMStep('tickets')}
               onContinue={handleMobileSupervisionContinue}
               busy={gateSaving}
+              // SCRUM-915 — Continue opens the family's form on this phone.
+              continueOpensForm
+              contactConfirmed={mobileContactConfirmed}
+              contactPhoneProblem={mobileContactProblem}
             />
           </div>
         );
@@ -2612,13 +2673,23 @@ export default function MobileTill() {
             policy={supervisionPolicy}
             parentPhone={customerPhone}
             parentContactMethod={customerContactChannel}
-            onParentPhoneChange={setCustomerPhone}
-            onParentContactMethodChange={handleCustomerContactChannelChange}
+            onParentPhoneChange={changeFormPhone}
+            onParentContactMethodChange={changeFormChannel}
             onParentNameChange={setSuperParentName}
             onConsentAckChange={setSuperConsentAck}
             onUpdateChild={handleUpdateSlot}
             acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
             onToggleConfirmation={handleToggleConfirmation}
+            // SCRUM-915 — the counter's customer half, on the phone: the number
+            // confirmation, the "Still needed" line and the family's Done.
+            contactConfirmed={mobileContactConfirmed}
+            onContactConfirmedChange={(confirmed) => setMobileContactConfirmation(confirmed
+              ? { at: new Date().toISOString(), by: 'family', phone: consentFormPhone(customerPhone), channel: customerContactChannel }
+              : null)}
+            onDone={handleFamilyDone}
+            doneReady={mobileFamilyMissing().length === 0 && !gateSaving}
+            doneBusy={gateSaving}
+            doneNotSaved={familyDoneNotSaved}
           />
         );
       case 'qr':

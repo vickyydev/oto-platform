@@ -723,7 +723,8 @@ export function MobileDropOffBoard() {
       if (!res || res.contact?.status !== 'pending') await boardApi.contactTest(c.registrationId);
       toast({
         title: 'Number updated & re-sent',
-        description: `Confirmation resent to ${c.parentName} (${newPhone}).`,
+        // SCRUM-914 — and, when it did, that the change withdrew the family's confirmation.
+        description: [`Confirmation resent to ${c.parentName} (${newPhone}).`, ...(res?.warnings ?? [])].join(' '),
       });
     } catch (err) {
       toast({ title: 'Could not save', description: messageOf(err), variant: 'destructive' });

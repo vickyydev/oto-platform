@@ -16,6 +16,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChangeLogEntry, CheckIn } from '@/types';
 import { boardApi, nannyChoicesFor, type ApiNanny, type CheckInEdits } from '@/api/checkin';
 import { Pencil, History, Save, ArrowRight, Baby, AlertTriangle } from 'lucide-react';
+import { normalizePhone } from '@oto/shared';
+import { messagingPhoneProblem } from '@/lib/consentForm';
 
 interface EditCheckInModalProps {
   open: boolean;
@@ -74,6 +76,18 @@ export function EditCheckInModal({
   }, [open, checkIn.id, checkIn.changeLog]);
   // Over the suggested ratio once SHE also covers this child (current load + 1).
   const overRatio = !!selectedNanny && selectedNanny.load + 1 > softMax;
+  /**
+   * SCRUM-914 — the number the child's messages go to, held to the family's
+   * form's rule (a mobile that can take WhatsApp, Telegram or LINE): a new
+   * number that cannot is said under the field and not saved. The number
+   * already on the registration is never questioned. And a change of the
+   * number or the channel says, before it is saved, that it withdraws the
+   * family's confirmation of the number.
+   */
+  const stored = (phone: string) => normalizePhone(phone) ?? phone.trim();
+  const phoneChanged = stored(form.phone) !== stored(checkIn.phone ?? '');
+  const phoneProblem = phoneChanged && form.phone.trim() ? messagingPhoneProblem(form.phone) : null;
+  const contactChanged = phoneChanged || form.contactMethod !== checkIn.contactMethod;
 
   useEffect(() => {
     if (open) setForm(toForm(checkIn));
@@ -144,6 +158,17 @@ export function EditCheckInModal({
                 channel={form.contactMethod}
                 onChannelChange={(c) => set('contactMethod', c)}
               />
+              {phoneProblem === 'invalid' && (
+                <div className="flex items-start gap-2 text-xs text-amber-300 bg-amber-300/10 rounded-lg px-3 py-2" data-testid="edit-phone-invalid">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>That number doesn't look like a mobile that can receive WhatsApp, Telegram or LINE messages — check it with the guardian.</span>
+                </div>
+              )}
+              {contactChanged && phoneProblem === null && (
+                <p className="text-xs text-muted-foreground" data-testid="edit-confirmation-withdrawn">
+                  Saving a new number or channel withdraws the family's confirmation of their messaging number, if they gave one: ask them to confirm the new one.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -296,7 +321,7 @@ export function EditCheckInModal({
         <div className="pt-3 shrink-0">
           <Button
             className="w-full h-14 text-lg gap-2"
-            disabled={!form.childName.trim() || !form.parentName.trim()}
+            disabled={!form.childName.trim() || !form.parentName.trim() || phoneProblem === 'invalid'}
             onClick={handleSave}
           >
             <Save className="w-5 h-5" />

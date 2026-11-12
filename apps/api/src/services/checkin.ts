@@ -305,6 +305,13 @@ async function registrationViewOf(db: Exec, row: RegistrationRow): Promise<Regis
  * SCRUM-857 — why a guardian's number was refused as one to message them on,
  * in the words the till shows staff beside the form.
  */
+/**
+ * SCRUM-914 — what staff are told when a board edit of the number or the
+ * channel withdrew the family's confirmation of it.
+ */
+export const CONFIRMATION_WITHDRAWN =
+  "The family's confirmation of their messaging number was withdrawn by this change — ask them to confirm the new number.";
+
 export function messagingPhoneRefusal(problem: 'empty' | 'not_a_number' | 'not_valid' | 'not_mobile'): string {
   switch (problem) {
     case 'not_mobile':
@@ -2069,6 +2076,14 @@ export async function editCheckin(
       if (input.guardianPhone?.trim()) {
         phone = normalizePhone(input.guardianPhone);
         if (!phone) throw errors.badRequest("That phone number doesn't look right — check it with the guardian.");
+        // SCRUM-914 — a new number is held to the form's rule: one the park
+        // can message the family on (not a landline or a service line). The
+        // number already on the registration, sent back unchanged, is kept.
+        if (phone !== reg.guardianPhone) {
+          const checked = validateMessagingPhone(input.guardianPhone);
+          if (!checked.ok) throw errors.badRequest(messagingPhoneRefusal(checked.problem));
+          phone = checked.e164;
+        }
       } else {
         phone = null;
       }
@@ -2097,6 +2112,8 @@ export async function editCheckin(
       rBefore.contactConfirmedBy = reg.contactConfirmedBy ?? null;
       rAfter.contactConfirmedAt = null;
       rAfter.contactConfirmedBy = null;
+      // SCRUM-914 — staff are told plainly, with the save.
+      warnings.push(CONFIRMATION_WITHDRAWN);
     }
     if (Object.keys(rAfter).length) {
       changed += Object.keys(rAfter).length - (withdrawn ? 2 : 0);

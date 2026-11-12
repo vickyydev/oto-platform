@@ -106,6 +106,13 @@ interface SupervisionGateProps {
    */
   contactConfirmed?: boolean;
   contactPhoneProblem?: 'empty' | 'invalid' | null;
+  /**
+   * SCRUM-915 — the phone till has no customer screen beside this gate: its
+   * Continue is how the family's form opens on the phone itself (handed to
+   * the parent), so it can be pressed while the form still needs something,
+   * and the till decides whether it opens the form or moves the sale on.
+   */
+  continueOpensForm?: boolean;
 }
 
 /**
@@ -130,6 +137,7 @@ export function SupervisionGate({
   busy = false,
   contactConfirmed,
   contactPhoneProblem,
+  continueOpensForm = false,
 }: SupervisionGateProps) {
   // Only resolve children with a valid age — feeding a placeholder age for a
   // not-yet-typed child would trip the policy's "no band" warning on every
@@ -312,7 +320,7 @@ export function SupervisionGate({
         <Button
           size="lg"
           className="h-14 flex-1 rounded-2xl text-lg font-bold"
-          disabled={!canContinue || busy}
+          disabled={!(canContinue || continueOpensForm) || busy}
           onClick={onContinue}
         >
           {busy ? 'Saving…' : 'Continue to payment'}
