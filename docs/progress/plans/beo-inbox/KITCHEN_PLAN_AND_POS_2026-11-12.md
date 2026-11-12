@@ -123,3 +123,25 @@ A server-to-server door on the OTO App for the platform to write a party's kitch
 19. The parent's link page now lists the choices as the team currently has them. Acceptable?
 20. The till's party page re-reads the plan every minute and when the till comes back to the front, and pauses while Settle or Edit is open. Right?
 21. The BEO PDF prints an EXTRA line's price as "120฿ each". Is that wording right?
+
+## State, 12 November 23:47: LANE B2 is built and reviewed (SCRUM-907, 950, 951); land preparation running
+- Lane partyedit907 (C:/oto-lanes/partyedit907-20261112, run wf_80dfdf8a-b3c, 13 commits, tip 1f617acaf before the rebase). No platform migration and no app migration. Its full report is in the planner's scratchpad, l907/build-report.json.
+- Deploy order when it lands: the OTO App first (the new door POST /api/directory/events/:id/kitchen-plan and GET .../kitchen-plan/choices), then the platform (its pre-deploy sync gives branch managers the new permission pos:party:kitchen_update), then both tills. In the other order nothing breaks: the till says the BEO could not be changed.
+- Fixed from the reviews: with "Different for adults" on, a count change or a removal on the till carries the adults' copy of the dish. Being fixed in the land preparation: the Settle form's new rows grouped like its other figures; a refusal reads the party again; the Kitchen card shows the BEO's own "needed" state; the combined Save's messages; a test of the platform's real calls to the door.
+- Left for a follow-up ticket: a named extra's amount is price times count, not the engine's priced line (differs only where a park adds a service charge or exclusive VAT to food); on the release day every slip printed before it is taken as already printed; a kids' drink that prints at the bar gets the bar's service time.
+
+### Questions for the owner from this lane
+1. No existing permission is held by a manager and not by reception (pos:party:update is reception's too), so a new pos:party:kitchen_update was added for branch managers and admins only. Right?
+2. The door uses the platform's existing OTO App directory key (events:write, tenant-bound) because the provisioning key only works app-to-platform. Acceptable?
+3. A dish added on the till is written with no price, so Settle party charges the till's own price for the party's day (the weekend price on weekends). The BEO's own picker writes the weekday price onto the line instead. Should a till-added dish carry a price into the BEO (SCRUM-949)?
+4. Food added on the till goes on the kids' list, as the BEO's '+ EXTRA' does. With 'Different for adults' on, it is marked 'kids only'. Should the till also offer the adults' list?
+5. Only EXTRA lines can be removed on the till. A set-menu dish is refused because it comes back from the template. Right?
+6. A choice changed on the till also changes the adults' own copy of that choice when 'Different for adults' is on, as the parent's submit keeps it. Right?
+7. The till changes counts, notes, extras, set-menu choices and the cake's time and note only. The food and bar times, the cake's kind and count, the set menu template and a line's SET/EXTRA badge stay BEO-only. Right?
+8. The 'changed on the till by …' record is in the Activity Logbook, not on the BEO page itself. Should the BEO page show it too?
+9. Settle party: the Add-ons row now shows only the plan's own add-ons, and each kitchen extra is its own row. A ฿0 party-only item lists as '1 × ฿0 ฿0'. Right?
+10. The new Settle rows use lib/bahtText.ts as the brief asked (ungrouped '฿1200'), while the form's existing figures use the grouped '฿1,200'. Which format should the form use throughout?
+11. The bar slip prints the bar service time itself as READY BY, with no ready offset taken off. When the BEO has a bar time and no kids' food time, the bar slip still prints the bar time. Right?
+12. On the release day every slip printed before the release is taken as already printed (composer 3), so a real BEO change made in the minute around the deploy is not sent as VOID/UPDATED. Accept, with a reprint check that day?
+13. The phone till has no Edit form and no Settle view (the prototype has neither), so nothing was added there. Should the phone get the kitchen edit?
+14. A party whose BEO was last saved before "Different for adults" existed and whose adults' list repeats the kids' dishes shows each dish twice on the till (the plan view's reading); the BEO editor reads the same BEO as one list; the first save, in the BEO or on the till, settles it. Should such older BEOs be re-saved in one go?
