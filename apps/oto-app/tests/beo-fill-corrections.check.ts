@@ -13,6 +13,10 @@
 //   2. the chat's price for an extra dish ("2 more at 450 each") is written on
 //      its line as an EXTRA at that price for each item, shown so in the
 //      review; a cake's price stays where the form keeps it.
+//   3. Fetch from chat compares by what is said, not by the wording: a line
+//      the form already says (a lead-in such as "Important", the case and the
+//      punctuation aside) is not offered again; each new line is offered on
+//      its own and can be accepted alone.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -45,6 +49,10 @@ const { loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
+const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
+const { emptyBeoAiDetails } = await import("../shared/beoAiFill");
+type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
+type BeoAiProposal = import("../shared/beoAiFill").BeoAiProposal;
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
 type AiCompleteOptions = import("../server/lib/anthropic").AiCompleteOptions;
@@ -63,7 +71,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 2;
+const CHECKS = 3;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -149,6 +157,36 @@ const fill = (eventId: string, existingData: Record<string, unknown> = { event: 
 const approve = (eventId: string, body: unknown) => post(`/api/events/${eventId}/beo/ai-fill/approve`, body);
 const bodyOf = (over: Partial<BeoAiApproveBody>): BeoAiApproveBody => ({
   conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [], ...over,
+});
+/** A family line of the chat, for a value's reason. */
+const familyFrom = (line: number, quote?: string) => ({ source: "family" as const, at: at(line - 1), line, ...(quote ? { quote } : {}) });
+/** A review read from the chat alone (no team confirmation), for the pure helpers. */
+function reviewOf(over: Partial<BeoAiProposal> = {}, details: Partial<BeoAiProposal["details"]> = {}): BeoAiReview {
+  return {
+    origin: "inbox",
+    proposal: {
+      package: null, addOns: [], setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null,
+      ...over,
+      details: { ...emptyBeoAiDetails(), ...details },
+    },
+    catalogue: { packages: [], setMenus: [], entertainment: [], food: [] },
+    finalMessage: null,
+    ruling: null,
+    conversationId: null,
+    timeZone: "Asia/Bangkok",
+    transcript: { lines: 5, cut: false },
+    replaces: [],
+    parentSelection: null,
+  };
+}
+/** The form, empty but for what a check gives it. */
+const formOf = (over: Partial<FetchFormValues> = {}): FetchFormValues => ({
+  title: "ZZ TEST", childName: "", bookingName: "", numChildren: null, numAdults: null, startTime: "", endTime: "", eventDate: "",
+  locationText: "", specialRequests: "", activities: "", decoration: "", setupReadyBy: "", setupResponsible: "",
+  cakeMode: "NONE", cakeNotes: "", cakeTime: "", prepaymentReceived: 0, depositDate: "", packageName: "", packageNotes: "",
+  whatsappPhoneRaw: "", kidTurningAge: null, setupNotes: "", cakeQuantity: 1, cakeIncluded: "", cakePrice: 0,
+  kidsFoodTime: "", adultsFoodTime: "", barServiceTime: "",
+  ...over,
 });
 const kitchenOf = async (eventId: string) => (await q("select * from beo_kitchen_plans where event_id = $1", [eventId]))[0] ?? null;
 const viewLinesOf = async (eventId: string) =>
@@ -266,6 +304,39 @@ try {
     const changed = { ...state, menuLines: state.menuLines.map((l) => ({ ...l, price: 420, priceFrom: "staff" as const })) };
     assert.equal(approveBodyOf(review, changed, { conversationId: null, messageId: null }).menuLines[0]?.price, 420);
     assert.ok(menuLinePriceWords(changed.menuLines[0]!).endsWith("— changed here."));
+  });
+
+  // --- 3. Fetch from chat: nothing offered twice, each new line on its own --------------------
+  await check("fetchFromChatComparesByWhatIsSaid", () => {
+    const held = "Allergy: she is allergic to peanuts\nZZ typed by staff: grandma needs a seat near the door";
+    // The proof's fetch 4: the same allergy with a lead-in, a new one, and the new one said twice.
+    const review = reviewOf({}, {
+      requests: [
+        { kind: "allergy", text: "Important: she is allergic to peanuts", from: familyFrom(4) },
+        { kind: "allergy", text: "one of the kids is lactose intolerant", from: familyFrom(5) },
+        { kind: "special_request", text: "Also: one of the kids is lactose intolerant!", from: familyFrom(5) },
+        { kind: "special_request", text: "a high chair for the baby", from: familyFrom(5) },
+      ],
+    });
+    const changes = fetchChangesOf({ fill: {}, review }, formOf({ specialRequests: held }));
+    const requests = changes.filter((c) => c.field === "specialRequests");
+    assert.deepEqual(requests.map((c) => c.line), ["Allergy: one of the kids is lactose intolerant", "a high chair for the baby"], "the held allergy is not offered again; the lactose line once");
+    assert.equal(requests[0]!.value, `${held}\nAllergy: one of the kids is lactose intolerant`, "each offered under what the form holds");
+    assert.notEqual(changeKey(requests[0]!), changeKey(requests[1]!), "each line its own row");
+    // Accepted alone, a new line is added on its own; accepted together, both.
+    assert.deepEqual(applyFetchChanges([requests[1]!]), { specialRequests: `${held}\na high chair for the baby` });
+    assert.deepEqual(applyFetchChanges(requests), { specialRequests: `${held}\nAllergy: one of the kids is lactose intolerant\na high chair for the baby` });
+    // Declined, a line is held back on this chat; the other is still offered.
+    const declined = rememberDeclined(NO_DECLINED, "mark-5", [requests[0]!], [requests[1]!]);
+    assert.deepEqual(offeredChanges(requests, declined, "mark-5").offered.map((c) => c.line), ["a high chair for the baby"]);
+    // Case, punctuation and a lead-in aside; the words in their order.
+    assert.equal(saysAlready("allergy - SHE IS ALLERGIC TO PEANUTS!", "Allergy: Important: she is allergic to peanuts"), true);
+    assert.equal(saysAlready("Allergy: ลูกแพ้ถั่วลิสง", "Allergy: ลูกแพ้ถั่วลิสง"), true, "a Thai line with its marks");
+    assert.equal(saysAlready("she is allergic to peanuts", "she is not allergic to peanuts"), false, "other words are another line");
+    assert.equal(saysAlready("peanuts allergic", "allergic to peanuts"), false);
+    // A form that already says every line: nothing offered.
+    const all = fetchChangesOf({ fill: {}, review }, formOf({ specialRequests: `${held}\nOne of the kids is lactose intolerant.\nA high chair for the baby` }));
+    assert.equal(all.filter((c) => c.field === "specialRequests").length, 0);
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

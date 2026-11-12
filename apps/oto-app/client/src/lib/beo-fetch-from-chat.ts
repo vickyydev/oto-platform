@@ -99,6 +99,14 @@ export interface FetchChange {
   from: BeoAiFrom | null;
   /** The chat's own words, where the read gives them (the date). */
   said: string | null;
+  /**
+   * SCRUM-946: a line of the chat's added under what a text field holds (a
+   * request, a note), offered on its own so each can be accepted alone: the
+   * line, and the text it is added under. The lines accepted for one field are
+   * added together (`applyFetchChanges`).
+   */
+  line?: string;
+  base?: string;
 }
 
 /**
@@ -201,10 +209,33 @@ const day = (v: unknown): string | null => {
 const sameText = (a: string, b: string) => a.normalize("NFC").trim() === b.normalize("NFC").trim();
 /** SCRUM-904: whether typed text already holds a line, case and spacing aside (an allergy's line with or without its "Allergy: "). */
 const foldText = (t: string) => t.normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
-const holds = (held: string, line: string) => {
-  const h = foldText(held);
-  return !!h && (h.includes(foldText(line)) || h.includes(foldText(line.replace(/^Allergy:\s*/, ""))));
-};
+/**
+ * SCRUM-946: the words a line says, in order, case and punctuation aside (a
+ * Thai word keeps its marks), with the lead-in words before what it says left
+ * out: "Allergy: Important: she is allergic to peanuts" says "she is allergic
+ * to peanuts".
+ */
+const LEAD_IN = new Set(["allergy", "allergies", "important", "note", "notes", "nb", "please", "pls", "also", "and", "ps", "fyi", "btw", "attention", "reminder", "สำคัญ", "หมายเหตุ", "важно", "внимание", "также", "примечание"]);
+const wordsOf = (t: string): string[] => t.normalize("NFC").toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+export function saidWordsOf(line: string): string[] {
+  const words = wordsOf(line);
+  let at = 0;
+  while (at < words.length - 1 && LEAD_IN.has(words[at]!)) at += 1;
+  return words.slice(at);
+}
+/**
+ * SCRUM-946: whether typed text already says a line — the line's words (its
+ * lead-in aside) stand in the text in that order, whatever the case, the
+ * punctuation or the lead-in either is written with (the 12 November proof:
+ * "Allergy: Important: she is allergic to peanuts" was offered beside
+ * "Allergy: she is allergic to peanuts").
+ */
+export function saysAlready(held: string, line: string): boolean {
+  const said = saidWordsOf(line).join(" ");
+  if (!said) return true;
+  return ` ${wordsOf(held).join(" ")} `.includes(` ${said} `);
+}
+const holds = saysAlready;
 const CAKE_INCLUDED: Record<"included" | "extra", string> = { included: "In the package", extra: "Extra" };
 const shownText = (v: string) => (v.trim() ? v.trim() : NONE);
 const cakeLabel = (mode: string) => (mode in AI_FILL_CAKE_TYPE ? AI_FILL_CAKE_TYPE[mode as keyof typeof AI_FILL_CAKE_TYPE] : mode || NONE);
@@ -244,15 +275,23 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
    */
   const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes" | "packageNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
     const held = (form[field] ?? "").trim();
-    const missing = lines.filter((l) => !holds(held, l.text));
+    // SCRUM-946: by what is said, never twice (two lines of the chat saying one thing are one).
+    const missing: typeof lines = [];
+    for (const l of lines) if (!holds(held, l.text) && !missing.some((m) => saysAlready(m.text, l.text))) missing.push(l);
     if (missing.length === 0) return;
     // A line that already holds every typed word (a read with the form as its baseline) stands in
     // the typed text's place, so the typed text is neither lost nor written twice.
     const container = held ? missing.find((l) => foldText(l.text).includes(foldText(held))) : undefined;
-    const value = container
-      ? [container.text, ...missing.filter((l) => l !== container).map((l) => l.text)].join("\n")
-      : [held, ...missing.map((l) => l.text)].filter(Boolean).join("\n");
-    offer(field, shownText(held), value, value, missing.reduce((a, l) => (laterLineWins(l.from, a) ? l.from : a), missing[0]!.from));
+    if (container) {
+      const value = [container.text, ...missing.filter((l) => l !== container).map((l) => l.text)].join("\n");
+      offer(field, shownText(held), value, value, missing.reduce((a, l) => (laterLineWins(l.from, a) ? l.from : a), missing[0]!.from));
+      return;
+    }
+    // SCRUM-946: each new line on its own, so one can be accepted without another.
+    for (const l of missing) {
+      const value = [held, l.text].filter(Boolean).join("\n");
+      changes.push({ field, label: FETCH_LABELS[field], was: shownText(held), now: value, value, from: l.from, said: null, line: l.text, base: held });
+    }
   };
   // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line (SCRUM-904: allergies first).
   const requests = (kind: Exclude<BeoAiRequestKind, "allergy">) =>
@@ -486,19 +525,24 @@ export const CATALOGUE_CHANGES_LINE =
  * the chat gives it next (the proof of 11 November: "Adults → 6" declined,
  * "Adults → 5" slipped through), until the chat has a new line.
  */
-export const changeKey = (change: Pick<FetchChange, "field">): FetchField => change.field;
+export const changeKey = (change: Pick<FetchChange, "field" | "line">): string =>
+  change.line !== undefined ? `${change.field}:${saidWordsOf(change.line).join(" ")}` : change.field;
 
-/** The fields declined on a fetch, held until the chat changes (its newest line moves). */
+/**
+ * The fields declined on a fetch, held until the chat changes (its newest line
+ * moves). SCRUM-946: a line added under a text field is held on its own
+ * (`changeKey`: the field and the line's words).
+ */
 export interface DeclinedChanges {
   chatMark: string | null;
-  fields: readonly FetchField[];
+  fields: readonly string[];
 }
 export const NO_DECLINED: DeclinedChanges = { chatMark: null, fields: [] };
 
 /** The changes to offer: the fields declined on the same chat are held back, and counted. */
 export function offeredChanges(changes: FetchChange[], declined: DeclinedChanges, chatMark: string | null): { offered: FetchChange[]; held: number } {
   if (declined.fields.length === 0 || declined.chatMark !== chatMark) return { offered: changes, held: 0 };
-  const offered = changes.filter((c) => !declined.fields.includes(c.field));
+  const offered = changes.filter((c) => !declined.fields.includes(changeKey(c)));
   return { offered, held: changes.length - offered.length };
 }
 
@@ -517,7 +561,18 @@ export function rememberDeclined(declined: DeclinedChanges, chatMark: string | n
 /** The accepted changes as a patch of the form. */
 export function applyFetchChanges(accepted: FetchChange[]): Partial<FetchFormValues> {
   const patch: Record<string, string | number> = {};
-  for (const c of accepted) patch[c.field] = c.value;
+  // SCRUM-946: the lines accepted for one field, added together under what it holds.
+  const lines = new Map<FetchField, { base: string; lines: string[] }>();
+  for (const c of accepted) {
+    if (c.line === undefined) {
+      patch[c.field] = c.value;
+      continue;
+    }
+    const held = lines.get(c.field) ?? { base: c.base ?? "", lines: [] };
+    held.lines.push(c.line);
+    lines.set(c.field, held);
+  }
+  for (const [field, { base, lines: added }] of lines) patch[field] = [base, ...added].filter(Boolean).join("\n");
   return patch as Partial<FetchFormValues>;
 }
 
