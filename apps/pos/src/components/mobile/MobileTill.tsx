@@ -20,7 +20,7 @@ import {
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, sortedConfirmations } from '@/lib/supervision';
-import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
+import { consentFormPhone, contactChangeWithdraws, contactConfirmationStands, messagingPhoneProblem, type ContactConfirmation } from '@/lib/consentForm';
 import { consentMissing } from '@/lib/consentFinish';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
@@ -1337,12 +1337,13 @@ export default function MobileTill() {
     });
   };
   // SCRUM-914 — a change of the number or the channel on the form withdraws the family's tick.
+  const formContact = { phone: customerPhone, channel: customerContactChannel };
   const changeFormPhone = (next: string) => {
-    if (consentFormPhone(next) !== consentFormPhone(customerPhone)) setMobileContactConfirmation(null);
+    if (contactChangeWithdraws(formContact, { ...formContact, phone: next })) setMobileContactConfirmation(null);
     setCustomerPhone(next);
   };
   const changeFormChannel = (next: ContactChannel) => {
-    if (next !== customerContactChannel) setMobileContactConfirmation(null);
+    if (contactChangeWithdraws(formContact, { ...formContact, channel: next })) setMobileContactConfirmation(null);
     handleCustomerContactChannelChange(next);
   };
 

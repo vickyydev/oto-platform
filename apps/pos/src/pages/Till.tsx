@@ -29,7 +29,7 @@ import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
-import { consentSlotPhoto, staffCameraLine } from '@/lib/consentForm';
+import { consentSlotPhoto, contactChangeWithdraws, staffCameraLine } from '@/lib/consentForm';
 import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
 import { setSaleOpen } from '@/pwa/openSale';
@@ -3666,12 +3666,13 @@ export default function Till() {
    * confirmation until they tick again, as the paired display does: changing
    * back to the number or channel they confirmed does not bring it back.
    */
+  const formContact = { phone: superParentPhone, channel: superParentContactMethod };
   const changeGuardianPhone = (next: string) => {
-    if (consentFormPhone(next) !== consentFormPhone(superParentPhone)) setSuperContactConfirmation(null);
+    if (contactChangeWithdraws(formContact, { ...formContact, phone: next })) setSuperContactConfirmation(null);
     setSuperParentPhone(next);
   };
   const changeGuardianChannel = (next: ContactChannel) => {
-    if (next !== superParentContactMethod) setSuperContactConfirmation(null);
+    if (contactChangeWithdraws(formContact, { ...formContact, channel: next })) setSuperContactConfirmation(null);
     setSuperParentContactMethod(next);
   };
   /**

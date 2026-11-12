@@ -84,6 +84,19 @@ export function contactConfirmationStands(
 }
 
 /**
+ * SCRUM-914 — a change on the form that withdraws the family's confirmation:
+ * any other number (as the form keeps it) or any other channel. The tick is
+ * then cleared and stays cleared until the family ticks again, on every
+ * screen alike, however the number or channel is changed back afterwards.
+ */
+export function contactChangeWithdraws(
+  from: { phone: string; channel: ContactChannel },
+  to: { phone: string; channel: ContactChannel },
+): boolean {
+  return consentFormPhone(to.phone) !== consentFormPhone(from.phone) || to.channel !== from.channel;
+}
+
+/**
  * SCRUM-857 — why the number on the form cannot be confirmed yet, in the
  * form's own terms: nothing typed, or something that cannot take a family's
  * messages (the shared check, which the api repeats). Null when it can.
