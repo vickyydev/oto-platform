@@ -13,8 +13,19 @@ import { lookupSales, parseHistorySearch, type HistorySearch, type HistoryTxn } 
  * so a phone number is not looked up digit by digit.
  */
 
-/** What History's search box says while it is empty. */
-export const HISTORY_SEARCH_PLACEHOLDER = 'Search by name, receipt number, bracelet, phone, operator, amount…';
+/**
+ * What History's search box says while it is empty.
+ *
+ * SCRUM-959 — it named everything the box finds ("Search by name, receipt
+ * number, bracelet, phone, operator, amount…", 525px of text), in a field the
+ * trading-day control (SCRUM-238) leaves 346px at a desk window of 1280 or
+ * more and 298px at 1024, so it read "…bracelet, p" (staging's 14f). The
+ * prototype's own words ("Search by name, order number, operator, amount…",
+ * 386px) are cut there too. These fit at every desk width; the box still
+ * finds a phone, an operator or an amount typed into it, and the phone and
+ * the bracelet have their own buttons beside it.
+ */
+export const HISTORY_SEARCH_PLACEHOLDER = 'Search by name, receipt, bracelet…';
 
 /** Why the lookup could not answer, in the words the rest of History uses. */
 export function explainLookup(err: unknown, by: 'band' | 'phone'): string {

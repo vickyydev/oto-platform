@@ -644,7 +644,9 @@ export default function History() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={HISTORY_SEARCH_PLACEHOLDER}
-                    className="w-full h-12 pl-12 pr-12 rounded-xl bg-muted/50 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    // SCRUM-959 — the right-hand room is the clear button's, which shows
+                    // only with a query: while the placeholder shows, it has that room.
+                    className="w-full h-12 pl-12 pr-12 placeholder-shown:pr-4 rounded-xl bg-muted/50 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   {query && (
                     <button

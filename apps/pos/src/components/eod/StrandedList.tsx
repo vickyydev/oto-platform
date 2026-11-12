@@ -25,9 +25,14 @@ function RowDetail({ row }: { row: EodStrandedRow }) {
   if (row.kind === 'checkin' && row.bandCode) parts.push(`Band ${row.bandCode}`);
   if (row.sale?.receiptNumber) parts.push(`Sale ${row.sale.receiptNumber}`);
   const guardian = [row.guardian?.name, row.guardian?.phone].filter(Boolean).join(' · ');
+  // SCRUM-960 — a band's code has no break in it (staging's ran to 47
+  // characters): `wrap-anywhere` lets it break inside its line, so the row is
+  // never wider than the card. Without it the phone's End of Day was drawn as
+  // wide as the code, and Close Day, Download CSV and the notice under it ran
+  // off the right of the screen (picture 17b). Words still wrap between words.
   return (
     <div className="min-w-0">
-      <div className="text-sm font-medium">
+      <div className="text-sm font-medium wrap-anywhere">
         {title}
         {row.childrenWithBand > 0 && (
           <span className="font-normal text-muted-foreground">
@@ -36,7 +41,7 @@ function RowDetail({ row }: { row: EodStrandedRow }) {
           </span>
         )}
       </div>
-      {parts.length > 0 && <div className="text-xs text-muted-foreground">{parts.join(' · ')}</div>}
+      {parts.length > 0 && <div className="text-xs text-muted-foreground wrap-anywhere">{parts.join(' · ')}</div>}
       {guardian && <div className="text-xs text-muted-foreground">Guardian: {guardian}</div>}
     </div>
   );
