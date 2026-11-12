@@ -2406,7 +2406,13 @@ export async function createDevice(
   if (claim.replay) return markReplay({ device: deviceView(claim.row) });
   assertTerminalProtocol(input.kind, input.protocol);
   // A printer's address is kept as the box reads it, without the spaces around it.
-  const address = isPrinterKind(input.kind) ? input.address?.trim() || null : (input.address ?? null);
+  // SCRUM-932 — an empty address is no address, for any kind: a printer's is
+  // then refused in the printer-address words rather than by the schema.
+  const address = isPrinterKind(input.kind)
+    ? input.address?.trim() || null
+    : input.address?.trim()
+      ? input.address
+      : null;
   assertPrinterAddress(input.kind, address);
   const id = claim.id;
   try {
@@ -2480,6 +2486,9 @@ export async function updateDevice(
     const address = patch.address?.trim() || null;
     if (address !== before.address) assertPrinterAddress(before.kind, address);
     set = { ...patch, address };
+  } else if (typeof patch.address === 'string' && !patch.address.trim()) {
+    // SCRUM-932 — an empty address on any other device is no address.
+    set = { ...patch, address: null };
   }
   try {
     return await withTx(db, ctx, 'device.update', async (tx) => {

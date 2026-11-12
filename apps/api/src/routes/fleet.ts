@@ -929,7 +929,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A printer (any `*_printer` kind) needs the `address` the box prints to, `host:port` or `host` (port 9100): its address on the park network, `127.0.0.1:9100` for a USB printer through the box’s bridge, or the address a simulated printer is found by. Without one it is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID` (SCRUM-899). A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
+          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A printer (any `*_printer` kind) needs the `address` the box prints to, `host:port` or `host` (port 9100): its address on the park network, `127.0.0.1:9100` for a USB printer through the box’s bridge, or the address a simulated printer is found by. Without one (an empty `address` included) it is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID` (SCRUM-899, SCRUM-932); an empty address on any other device is saved as none. A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
         params: BoxIdParams,
         body: z.object({
           /**
@@ -941,7 +941,9 @@ export async function fleetRoutes(app: App): Promise<void> {
           kind: z.enum(DEVICE_KINDS),
           label: z.string().min(1),
           transport: z.enum(DEVICE_TRANSPORTS),
-          address: z.string().min(1).nullable().optional(),
+          // SCRUM-932 — no minimum: an empty address is judged by the service,
+          // so a printer hears the printer-address line, not the schema's.
+          address: z.string().nullable().optional(),
           model: z.string().nullable().optional(),
           protocol: z.string().nullable().optional(),
           serialNumber: z.string().nullable().optional(),
@@ -968,12 +970,13 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. A printer’s `address` follows the rule of its creation when it CHANGES: clearing it is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID`; a printer saved without one still renames and archives (SCRUM-899). `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll.',
+          'Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. A printer’s `address` follows the rule of its creation when it CHANGES: clearing it (null or empty) is refused 400 `PRINTER_ADDRESS_REQUIRED`, and an address the box cannot open 400 `PRINTER_ADDRESS_INVALID`; a printer saved without one still renames and archives (SCRUM-899, SCRUM-932). An empty address on any other device is saved as none. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll.',
         params: IdParams,
         body: z
           .object({
             label: z.string().min(1).optional(),
-            address: z.string().min(1).nullable().optional(),
+            // SCRUM-932 — judged by the service, as on creation.
+            address: z.string().nullable().optional(),
             model: z.string().nullable().optional(),
             protocol: z.string().nullable().optional(),
             serialNumber: z.string().nullable().optional(),
