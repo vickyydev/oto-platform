@@ -30,6 +30,11 @@ export interface CancellableBooking {
    * collected: the platform refuses a cancel while one is, so the till says so.
    */
   checkedIn?: readonly string[];
+  /**
+   * SCRUM-909 — cancel only `children`, on their own (`cancelAloneOf`): the
+   * booking also has a child paid for or checked in, who stays as they are.
+   */
+  alone?: boolean;
 }
 
 /**
@@ -56,6 +61,32 @@ export function cancelBookingBlockedBy(
 }
 
 /**
+ * SCRUM-909 — the waiting children a family's "Cancel booking" cannot take
+ * because a sibling is paid for or already checked in, offered on their own:
+ * one of two siblings went home (their line refunded by item, or never paid
+ * for) while the other stays. The whole press stays refused, with its line
+ * (`cancelBookingBlockedBy`); this one names only the unpaid children, and
+ * the platform cancels just those (`checkinIds`). Null when the whole press
+ * is open, when no waiting child is unpaid, or while one is on this sale.
+ */
+export function cancelAloneOf<T extends CancellableBooking>(
+  group: T,
+  attached: ReadonlySet<string>,
+): (T & { alone: true }) | null {
+  const chargeable = group.children.filter((c) => !c.paidOnline && !c.paidAtTill);
+  if (chargeable.length === 0 || chargeable.some((c) => attached.has(c.id))) return null;
+  const paidSibling = chargeable.length < group.children.length;
+  const checkedInSibling = (group.checkedIn?.length ?? 0) > 0;
+  if (!paidSibling && !checkedInSibling) return null;
+  return { ...group, children: chargeable, alone: true };
+}
+
+/** SCRUM-909 — "Cancel Nok's booking": the press that cancels children on their own. */
+export function cancelAloneLabel(booking: Pick<CancellableBooking, 'children'>): string {
+  return `Cancel ${booking.children.map((c) => c.childName).join(' & ')}'s booking`;
+}
+
+/**
  * SCRUM-886 — the Check-in board's family as a cancellable booking: its
  * waiting children, and the names of any already in the park or collected —
  * on the card, or on an earlier day (`bookingCheckedIn`: the card holds only
@@ -78,6 +109,31 @@ export function boardBookingOf(family: readonly CheckIn[]): CancellableBooking |
       ]),
     ],
   };
+}
+
+/**
+ * SCRUM-909 — the board family's waiting children that can be cancelled on
+ * their own (`cancelAloneOf`), a sibling in the park included: the whole
+ * press is not offered on that card (`boardBookingOf`), but a child who went
+ * home is still taken off the list.
+ */
+export function boardCancelAloneOf(family: readonly CheckIn[]): CancellableBooking | null {
+  const waiting = family.filter((c) => c.status === 'registered');
+  if (waiting.length === 0) return null;
+  return cancelAloneOf(
+    {
+      registrationId: waiting[0]!.registrationId,
+      parentName: waiting[0]!.parentName,
+      children: waiting,
+      checkedIn: [
+        ...new Set([
+          ...family.filter((c) => c.status === 'in_park' || c.status === 'out').map((c) => c.childName),
+          ...family.flatMap((c) => c.bookingCheckedIn ?? []),
+        ]),
+      ],
+    },
+    new Set(),
+  );
 }
 
 /** SCRUM-886 — "Booked for 5 Oct": the other day(s) a waiting family is for, or null when it is today's. */
@@ -128,7 +184,16 @@ export function CancelBookingDialog({
     if (!group || !reason || cancelBusy) return;
     setCancelBusy(true);
     try {
-      await checkinApi.cancelRegistration(group.registrationId, reason);
+      if (group.alone) {
+        // SCRUM-909 — only these children; their paid or checked-in sibling stays.
+        await checkinApi.cancelRegistration(
+          group.registrationId,
+          reason,
+          group.children.map((c) => c.id),
+        );
+      } else {
+        await checkinApi.cancelRegistration(group.registrationId, reason);
+      }
       onClose();
       onCancelled(group);
     } catch (err) {
@@ -151,11 +216,13 @@ export function CancelBookingDialog({
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cancel this waiting booking</DialogTitle>
+          <DialogTitle>{booking?.alone ? cancelAloneLabel(booking) : 'Cancel this waiting booking'}</DialogTitle>
           <DialogDescription>
             {booking
               ? `${booking.parentName || 'Booking'}'s booking: ${booking.children.map((c) => c.childName).join(', ')} ` +
-                "leave the waiting list and can't be added to a sale. The signed form stays on record."
+                "leave the waiting list and can't be added to a sale" +
+                (booking.alone ? '; the rest of the booking stays as it is' : '') +
+                '. The signed form stays on record.'
               : ''}
           </DialogDescription>
         </DialogHeader>

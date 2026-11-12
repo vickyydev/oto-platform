@@ -26,6 +26,8 @@ import { WaActionPanel } from '@/components/dropoff/WaActionPanel';
 import {
   bookedForLabel,
   boardBookingOf,
+  boardCancelAloneOf,
+  cancelAloneLabel,
   cancelBookingBlockedBy,
   type CancellableBooking,
 } from '@/components/dropoff/CancelBookingDialog';
@@ -278,6 +280,8 @@ export function MobileChildDetail({
   // SCRUM-886 — the picker's Cancel booking and its refusals, as on the desk board.
   const cancellable = onCancelBooking ? boardBookingOf(family) : null;
   const cancelBlock = cancellable ? cancelBookingBlockedBy(cancellable, NO_SALE) : null;
+  // SCRUM-909 — a child who went home, cancelled on their own, as on the desk board.
+  const alone = onCancelBooking ? boardCancelAloneOf(family) : null;
   const bookedFor = bookedForLabel(family);
 
   const headerTitle = isMulti
@@ -485,6 +489,13 @@ export function MobileChildDetail({
             </Button>
             {cancelBlock && <p className="text-xs text-muted-foreground">{cancelBlock}</p>}
           </>
+        )}
+
+        {alone && (
+          <Button variant="outline" className="w-full h-12 gap-2" onClick={() => onCancelBooking?.(alone)}>
+            <Ban className="w-4 h-4" />
+            {cancelAloneLabel(alone)}
+          </Button>
         )}
       </div>
     </div>

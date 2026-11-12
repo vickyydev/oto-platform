@@ -16,7 +16,7 @@ import { useBranch } from '@/branch/BranchContext';
 import { toast } from '@/hooks/use-toast';
 import { apiCheckinToCheckIn, checkinApi, TILL_NOT_LINKED, type ApiRegistration } from '@/api/checkin';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
-import { CancelBookingDialog, cancelBookingBlockedBy } from '@/components/dropoff/CancelBookingDialog';
+import { CancelBookingDialog, cancelAloneLabel, cancelAloneOf, cancelBookingBlockedBy } from '@/components/dropoff/CancelBookingDialog';
 import { Baby, AlertTriangle, Ban, UserPlus, Phone, X, CheckCircle2, HandHeart, UserCheck } from 'lucide-react';
 
 /** One waiting registration as the picker lists it (prototype `RegistrationGroup`). */
@@ -59,7 +59,9 @@ export { cancelBookingBlockedBy };
  * SCRUM-862 — "Cancel booking" takes a waiting, unpaid family off the list for
  * good, after one confirm with a reason (`onCancel`); hidden for a family every
  * child of which is paid, disabled (with the reason) while any child is paid or
- * a child is on this sale.
+ * a child is on this sale. SCRUM-909 — beside a press so refused over a paid
+ * or checked-in sibling, "Cancel <child>'s booking" takes the unpaid children
+ * off the list on their own (`cancelAloneOf`); the sibling stays.
  */
 export function WaitingFamily({
   group,
@@ -76,6 +78,7 @@ export function WaitingFamily({
   const fresh = chargeable.filter((c) => !attached.has(c.id));
   const allPaid = group.children.length > 0 && chargeable.length === 0;
   const cancelBlock = onCancel && !allPaid ? cancelBookingBlockedBy(group, attached) : undefined;
+  const alone = cancelBlock ? cancelAloneOf(group, attached) : null;
   const paidLabel = group.children.every((c) => c.paidOnline)
     ? 'Paid online'
     : group.children.every((c) => !c.paidOnline)
@@ -127,6 +130,18 @@ export function WaitingFamily({
                 >
                   <Ban className="w-4 h-4" />
                   Cancel booking
+                </Button>
+              )}
+              {alone && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => onCancel?.(alone)}
+                >
+                  <Ban className="w-4 h-4" />
+                  {cancelAloneLabel(alone)}
                 </Button>
               )}
             </div>

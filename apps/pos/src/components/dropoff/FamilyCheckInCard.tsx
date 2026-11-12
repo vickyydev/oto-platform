@@ -5,7 +5,14 @@ import { CheckIn, ContactChannel } from '@/types';
 import { childNames, familyCheckInActions, familyCheckInNames, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from './WaChip';
-import { bookedForLabel, boardBookingOf, cancelBookingBlockedBy, type CancellableBooking } from './CancelBookingDialog';
+import {
+  bookedForLabel,
+  boardBookingOf,
+  boardCancelAloneOf,
+  cancelAloneLabel,
+  cancelBookingBlockedBy,
+  type CancellableBooking,
+} from './CancelBookingDialog';
 import {
   MessageCircle,
   UserPlus,
@@ -245,6 +252,9 @@ export function FamilyCheckInCard({
   // a sibling is already checked in. The board holds no sale of its own.
   const cancellable = onCancelBooking ? boardBookingOf(family) : null;
   const cancelBlock = cancellable ? cancelBookingBlockedBy(cancellable, NO_SALE) : null;
+  // SCRUM-909 — a child who went home, cancelled on their own while a sibling
+  // paid for or in the park stays.
+  const alone = onCancelBooking ? boardCancelAloneOf(family) : null;
   const bookedFor = bookedForLabel(family);
 
   return (
@@ -408,6 +418,13 @@ export function FamilyCheckInCard({
           >
             <Ban className="w-4 h-4" />
             Cancel booking
+          </Button>
+        )}
+
+        {alone && (
+          <Button variant="outline" size="sm" className="h-11 gap-1.5" onClick={() => onCancelBooking?.(alone)}>
+            <Ban className="w-4 h-4" />
+            {cancelAloneLabel(alone)}
           </Button>
         )}
       </div>

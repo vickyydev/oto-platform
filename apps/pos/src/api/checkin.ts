@@ -394,10 +394,19 @@ export const checkinApi = {
    * refuses), and the till reads nothing from the answer. A hand-written
    * `ApiRegistration` here was the one hand-typed call over this file's
    * allowance.
+   *
+   * SCRUM-909 — `checkinIds` cancels only those waiting children, on their
+   * own: a sibling paid for or checked in stays. Without it, the whole
+   * booking, as before.
    */
-  cancelRegistration: (registrationId: string, reason: string): Promise<unknown> =>
+  cancelRegistration: (registrationId: string, reason: string, checkinIds?: readonly string[]): Promise<unknown> =>
     viaLane(
-      () => api.post(`/checkin/registrations/${registrationId}/cancel`, { reason }, { idempotencyKey: idemKey() }),
+      () =>
+        api.post(
+          `/checkin/registrations/${registrationId}/cancel`,
+          { reason, ...(checkinIds ? { checkinIds: [...checkinIds] } : {}) },
+          { idempotencyKey: idemKey() },
+        ),
       async () => {
         throw needsInternet('Cancelling a waiting booking');
       },
