@@ -114,7 +114,8 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
         </button>
         <div className="flex-1 min-w-0">
           <div className="font-bold truncate">{state.heading}</div>
-          <div className="text-xs text-primary font-mono">{txn.reference}</div>
+          {/* SCRUM-953 — not the heading's words a second time (a settlement with no receipt number yet). */}
+          {txn.reference !== state.heading && <div className="text-xs text-primary font-mono">{txn.reference}</div>}
         </div>
         <StatusBadge status={badge} />
       </div>

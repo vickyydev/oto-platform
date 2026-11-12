@@ -644,7 +644,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-bold">-฿{bahtText(sd.amount)}</span>
+                <span className="font-bold whitespace-nowrap">-฿{bahtText(sd.amount)}</span>
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-600" onClick={() => onRemoveDiscount(sd.code)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>

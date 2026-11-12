@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toTxn, type ApiSaleDetail, type ApiSaleListItem } from '@/api/history';
@@ -68,5 +70,26 @@ describe('SCRUM-917 — the settlement detail', () => {
 
   it('an ordinary ticket sale is headed as before', async () => {
     expect(await headingOf(row({ id: 'sale-ticket' }))).toBe('Ticket sale');
+  });
+
+  /**
+   * SCRUM-953 — a settlement with no receipt number yet is referred to by the
+   * heading's own words, and the detail read "Party settlement Party
+   * settlement" (desk) and printed them on two lines (phone). Both screens
+   * write the reference only when it is not the heading.
+   */
+  it('is not headed twice while it has no receipt number; a number still shows', async () => {
+    const open = row({ note: 'Party: ZZ TEST SCRUM-953 party', partySettlement: { eventId: 'e', settlementId: 's' } });
+    expect(open.reference).toBe(await headingOf(open));
+    const paid = row({
+      note: 'Party: ZZ TEST SCRUM-953 party', partySettlement: { eventId: 'e', settlementId: 's' },
+      receiptNumber: 'T1-000001', status: 'finalised', finalisedAt: '2026-11-12T06:05:00.000Z',
+    });
+    expect(paid.reference).toBe('T1-000001');
+    expect(paid.reference).not.toBe(await headingOf(paid));
+    const desk = readFileSync(resolve(__dirname, '../src/components/history/SaleDetail.tsx'), 'utf8');
+    const phone = readFileSync(resolve(__dirname, '../src/components/mobile/history/MobileTransactionDetail.tsx'), 'utf8');
+    expect(desk.includes('{txn.reference !== heading && ')).toBe(true);
+    expect(phone.includes('{txn.reference !== state.heading && ')).toBe(true);
   });
 });

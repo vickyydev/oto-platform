@@ -1409,7 +1409,10 @@ export function SaleDetail(props: SaleDetailProps) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-2xl font-black leading-tight tracking-tight">
-                {heading} <span className="text-primary">{txn.reference}</span>
+                {/* SCRUM-953 — a settlement with no receipt number yet is referred to by the
+                    heading's own words (history.ts), so they are written once. */}
+                {heading}
+                {txn.reference !== heading && <> <span className="text-primary">{txn.reference}</span></>}
               </div>
               <div className="text-lg font-semibold flex items-center gap-2 mt-1.5">
                 <UserIcon className="w-5 h-5 text-primary shrink-0" />
