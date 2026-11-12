@@ -593,6 +593,13 @@ export interface ApiSale {
    * ticket order: it is finished on the party page (`lib/leftBehindSale.ts`).
    */
   partySettlement?: { eventId: string; settlementId: string } | null;
+  /**
+   * SCRUM-917 — what the sale was made of, on a list row: its line kinds
+   * (`kids`, `fnb_item`, `merch_item`, ...), as History's card reads them. The
+   * left-behind card reads it so the Tickets tab never picks an F&B or shop
+   * order it cannot open (`lib/leftBehindSale.ts`). Absent on the detail.
+   */
+  lineKinds?: string[];
 }
 
 export interface SaleCommitResult {

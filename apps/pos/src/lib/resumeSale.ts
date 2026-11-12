@@ -75,8 +75,12 @@ export interface ResumedCart {
   eventPass: boolean;
 }
 
-/** The ledger kinds a ticket cart line is made of; anything else is another counter's. */
-const TICKET_KINDS = new Set([
+/**
+ * The ledger kinds a ticket cart line is made of; anything else is another
+ * counter's. SCRUM-917 — the left-behind list reads it too, off a list row's
+ * `lineKinds`, so the Tickets tab never picks a sale this rebuild refuses.
+ */
+export const TICKET_KINDS: ReadonlySet<string> = new Set([
   'kids',
   'adults_paid',
   'adults_free',

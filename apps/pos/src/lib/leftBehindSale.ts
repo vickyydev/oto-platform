@@ -4,6 +4,7 @@ import { salesApi, type ApiSale } from '@/api/sales';
 import type { RungUpSale } from '@/lib/tillVoucher';
 import { branchTradingDate } from '@/lib/pricingMode';
 import { saleOnScreen } from '@/lib/saleOnScreen';
+import { TICKET_KINDS } from '@/lib/resumeSale';
 
 /**
  * SCRUM-407 (audit C1 remainder, T7) — AN UNPAID SALE LEFT AT THIS TILL.
@@ -45,7 +46,26 @@ import { saleOnScreen } from '@/lib/saleOnScreen';
  * is nobody's to continue: the family it was rung up for has gone, and
  * opening it on the next customer's payment screen is exactly the mistake
  * this list exists to prevent. It stays in History, where it can be voided.
+ *
+ * AN F&B OR SHOP ORDER IS NOT THE TICKETS TAB'S (SCRUM-917). The restaurant
+ * and shop counters ring up at the same station, so an order left part-paid
+ * there is one of this station's unpaid sales too. The Tickets tab cannot
+ * open it (`rebuildResumedSale` finds no ticket line), and picking it by
+ * itself put a red "That sale is not a ticket sale" on screen before staff
+ * had pressed anything. The list row names what the sale was made of
+ * (`lineKinds`); a sale with no ticket line is left off this list and stays
+ * where it is finished — F&B or Shop, and History. A row that names no kinds
+ * (an older platform) is listed as before, and the resume still refuses it.
  */
+
+/**
+ * SCRUM-917 — whether the Tickets tab can open a listed sale: it has a ticket
+ * line (`TICKET_KINDS`, what the resume rebuilds), or its row names no kinds.
+ */
+export function opensOnTicketsTab(sale: Pick<ApiSale, 'lineKinds'>): boolean {
+  if (!sale.lineKinds) return true;
+  return sale.lineKinds.some((kind) => TICKET_KINDS.has(kind));
+}
 
 /** The void's reason, as the voids report reads it. */
 export const VOIDED_LEFT_BEHIND = 'Left unpaid at the till (page reloaded or left mid-payment)';
@@ -152,6 +172,9 @@ export function useLeftBehindSales(opts: {
         const listed = found
           // SCRUM-774 — a held sale waits in Held sales, where any till takes it back.
           .filter((s) => s.status === 'tendering' && s.stationId === stationId && !ownsRef.current(s.id) && !s.hold)
+          // SCRUM-917 — an F&B or shop order is finished at its own counter;
+          // a party's settlement keeps its card here (SCRUM-889).
+          .filter((s) => !!partySettlementOf(s) || opensOnTicketsTab(s))
           .map((s): LeftBehindSale => {
             const party = partySettlementOf(s);
             return {
