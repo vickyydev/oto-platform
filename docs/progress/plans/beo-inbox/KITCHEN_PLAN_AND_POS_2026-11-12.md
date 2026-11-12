@@ -94,3 +94,32 @@ A server-to-server door on the OTO App for the platform to write a party's kitch
 14. The parent's submitted link page now lists the choices as the team currently has them (a small list under 'Submitted on'). Is that addition acceptable?
 15. The till's party page re-reads the plan every minute and on focus, and pauses while the Settle or Edit form is open. Correct?
 16. The 'included' flag the AI fill puts on a line is ignored; only the SET/EXTRA badge decides whether a line is charged. Correct?
+
+## State, 12 November 20:04: LANE B (SCRUM-906) LANDED
+- On main at f17359759. Deploy order kept: the OTO App first (its migration 0050), then the platform (migrations 0123_party_slip_baseline and 0124_party_slip_schedule_start), then both tills. The counter box needs nothing.
+- Fixed in the land preparation: every bar-plan line prints (on the kitchen slip only when its till item is a kitchen dish, otherwise on the bar slip, bottled water included); one quantity bound (999,999) for the plan and its view, so a mistyped quantity cannot blank a party's plan.
+- On the release day: the Health page's job:parties.slips line shows notCaughtUp and changesRebased and no burst of prints; one pos.party_slip_schedule_start row per live park; today's parties with no package whose 11:00 slip time has passed do not print by themselves (staff press "Print party slips now").
+- Next: the staging proof; then LANE B2 (SCRUM-907, a manager or admin edits a party's kitchen plan on the till and the BEO is updated).
+
+## Questions that stand after SCRUM-906 landed (these replace the sixteen above; the first of those, the price per item, is answered)
+1. Should a cake marked EXTRA be charged at its BEO price? Today it is not charged.
+2. A hand-typed EXTRA line with no price is not charged; it only prints for the kitchen, marked "not on the till menu". Right?
+3. A BEO line saved before the SET/EXTRA badge existed counts as EXTRA, so it is charged if it has a price or a till code. Right?
+4. A hand-typed EXTRA line with a price is charged under its own name at that price, as food (a kitchen line) or bar (a bar line). Right?
+5. A till item added as EXTRA with no price is charged at the till's price for the party's day (the weekend price on weekends and holidays). Right?
+6. A price of 0 on a till item's EXTRA line is treated as "no price", so the till's price is charged. Right?
+7. An item made for one party (a PARTY- code) is charged at the till's price for it, even if the BEO line shows a different price. Right?
+8. Only the SET/EXTRA badge decides what is charged; the AI fill's "included" mark is ignored. Right?
+9. Drinks go to the bar slip by their till code. The set menu's uncoded Juice and Mors stay on the kitchen slip, marked, until someone codes them. A bar line coded as a kitchen dish prints on the kitchen slip. A bar line whose till item prints nowhere (bottled water) prints on the bar slip. Acceptable?
+10. "Not on the till menu" also marks a line whose code the till no longer sells. Right?
+11. Should "Own Cake" (the family's cake) print on the kitchen slip with its time and notes?
+12. A party with a kitchen plan but no package prints its slips at 11:00. Is 11:00 right?
+13. When several dishes are chosen in one choice group, each shows with no count. Right?
+14. On the release day, a BEO change made in the minute around the switch is not sent as VOID/UPDATED, and a choice staff changed after the slips printed but before the release is taken as already printed. Accept both, with a reprint check that day?
+15. On the release day, a party with no package whose slip time has already passed is not printed by the schedule; staff press "Print party slips now". Right?
+16. Should the schedule ever skip a party that is already over? Today a party with a package entered after its slip time still prints at the next tick.
+17. Older BEOs whose adults' list repeats the kids' list show every dish twice on the till, and a priced extra is charged twice. Should a repeated adults' list be skipped?
+18. A set-menu dish staff deleted from the BEO comes back from the template on the till and the slip. Should it stay off?
+19. The parent's link page now lists the choices as the team currently has them. Acceptable?
+20. The till's party page re-reads the plan every minute and when the till comes back to the front, and pauses while Settle or Edit is open. Right?
+21. The BEO PDF prints an EXTRA line's price as "120฿ each". Is that wording right?
