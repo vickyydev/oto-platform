@@ -26,6 +26,9 @@
 //   6. the Timeline holds each moment once: no "party starts" or "party ends"
 //      step beside the automatic Guests arrive, no setup task again as a step,
 //      and one cake line at the cake's time (SCRUM-941).
+//   6b. (the lane's reviews) a step of the party after its start is not a
+//      setup task because its words are part of a task's: "15:30 Games"
+//      beside "Set up the games corner" is kept.
 //   7. a show that becomes an Entertainment Act is not written into
 //      Activities as text too.
 //   8. the cake is ticked "In the package" only when the chat or the package
@@ -103,7 +106,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 16;
+const CHECKS = 17;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -702,6 +705,41 @@ try {
     const refs: TranscriptRef[] = texts.map((text, i) => ({ line: i + 1, id: `t${i}`, source: "family", at: at(i), ruling: false, text }));
     const read = resolveCatalogueAnswer(answers.get("TIMELINE-946") ? (answers.get("TIMELINE-946") as any).catalogue : {}, review.catalogue, refs);
     assert.deepEqual(read.details.timeline.map((t) => t.label), ["welcome drinks", "Games"]);
+  });
+
+  // --- 6b. A moment of the party is not a setup task (the lane's reviews) ----------------------
+  await check("aStepOfThePartyIsNotASetupTask", async () => {
+    const setupOf = (...labels: string[]) => ({ ...emptyBeoAiDetails().setup, readyBy: { value: "13:30", from: familyFrom(2) }, tasks: labels.map((itemLabel) => ({ itemLabel, notes: null, from: familyFrom(2) })) });
+    const proposal = {
+      entertainment: [],
+      event: { startTime: { value: "14:00", from: familyFrom(1) }, endTime: { value: "16:30", from: familyFrom(1) } },
+      details: { ...emptyBeoAiDetails(), setup: setupOf("Set up the games corner", "Food table") },
+    };
+    // The probe's steps: moments of the party, after its start, whose words are part of a task's.
+    assert.equal(timedElsewhere({ time: "15:30", label: "Games" }, proposal), false, "the games at 15:30 are kept");
+    assert.equal(timedElsewhere({ time: "15:00", label: "Food" }, proposal), false, "the food at 15:00 is kept");
+    assert.equal(timedElsewhere({ time: "15:00", label: "food table" }, proposal), false, "after the start: the party's moment");
+    // A step before the party that holds a whole task is that task (SCRUM-946 point 6 as before).
+    assert.equal(timedElsewhere({ time: "13:00", label: "Set up the games corner" }, proposal), true);
+    assert.equal(timedElsewhere({ time: "13:30", label: "food table ready" }, proposal), true, "at the setup's ready-by");
+    assert.equal(timedElsewhere({ time: "13:00", label: "Games" }, proposal), false, "part of a task's words only: kept");
+    // The resolver keeps them: the chat's times are never lost unseen.
+    const texts = ["Party from 14:00 to 16:30. STEP-946", "Set up the games corner and the food table by 13:30. Games at 15:30, food at 15:00. STEP-946"];
+    const refs: TranscriptRef[] = texts.map((text, i) => ({ line: i + 1, id: `s${i}`, source: "family", at: at(i), ruling: false, text }));
+    const read = resolveCatalogueAnswer(
+      {
+        event: { startTime: { value: "14:00", line: 1 }, endTime: { value: "16:30", line: 1 } },
+        setup: { readyBy: { value: "13:30", said: "by 13:30", line: 2 }, tasks: [{ label: "Set up the games corner", line: 2 }, { label: "Food table", line: 2 }] },
+        timeline: [
+          { time: "15:30", label: "Games", line: 2 },
+          { time: "15:00", label: "Food", line: 2 },
+          { time: "13:30", label: "Set up the games corner", line: 2 },
+        ],
+      },
+      { packages: [], setMenus: [], entertainment: [], food: [] },
+      refs,
+    );
+    assert.deepEqual(read.details.timeline.map((t) => [t.time, t.label]), [["15:00", "Food"], ["15:30", "Games"]]);
   });
 
   // --- 7. A show is an Entertainment Act, not Activities' text too ----------------------------

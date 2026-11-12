@@ -1297,8 +1297,13 @@ export function timedElsewhere(
   const cake = proposal.cake;
   if (cake?.time && cake.mode !== "NONE" && CAKE_WORDS.test(step.label)) return true;
   // A setup task, which the Timeline places before the start itself, and the setup's ready-by.
+  // The lane's reviews: only a step before the party (at or before its start, or at the setup's
+  // ready-by) whose words hold the whole task's: "15:30 Games" beside the task "Set up the games
+  // corner" is a moment of the party, kept.
   const setup = proposal.details?.setup;
-  if (setup?.tasks.some((t) => { const task = fold(t.itemLabel); return !!task && (label.includes(task) || task.includes(label)); })) return true;
+  const start = proposal.event.startTime?.value ?? null;
+  const beforeParty = (!!start && step.time <= start) || setup?.readyBy?.value === step.time;
+  if (beforeParty && setup?.tasks.some((t) => { const task = fold(t.itemLabel); return !!task && label.includes(task); })) return true;
   return setup?.readyBy?.value === step.time && SETUP_WORDS.test(step.label);
 }
 
