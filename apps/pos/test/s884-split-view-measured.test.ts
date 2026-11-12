@@ -284,6 +284,102 @@ describe.skipIf(!browser)('SCRUM-901: a long check-in label stays inside its but
   }
 });
 
+const PHONES = [{ width: 390, height: 844 }, { width: 360, height: 740 }] as const;
+
+describe.skipIf(!browser)('SCRUM-956: the phone family screen is as wide as the phone', () => {
+  /** The body's scroll area: its content's width against the phone's, and any sideways scroll. */
+  const body = () => harness.page.evaluate(() => {
+    const viewport = document.querySelector<HTMLElement>('#region [data-radix-scroll-area-viewport]')!;
+    const content = viewport.firstElementChild as HTMLElement;
+    return {
+      viewport: viewport.clientWidth, content: Math.round(content.getBoundingClientRect().width * 10) / 10,
+      scrolls: viewport.scrollWidth > viewport.clientWidth, page: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+
+  for (const size of PHONES) {
+    it(`a long child name at ${size.width}x${size.height}: every line whole, the names wrapped, nothing sideways`, async () => {
+      const reading = await harness.read('screen=phone-card-long', size);
+      reported[`phone-card-long@${size.width}`] = reading;
+      await shoot(`phone-card-long@${size.width}`);
+      const child = 'ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956';
+      // The proof's cut lines among them: "WhatsApp confirmed", "May order food: No".
+      // The bar at the top keeps the prototype's one-line title (a long name
+      // ends in "…" there): that one cut is allowed; the body under it names
+      // the child in full (read on its own just below).
+      expect(faultsOf(reading).filter((f) => !f.startsWith(`clipped: ${child} — `))).toEqual([]);
+      const named = await harness.page.evaluate((name) => {
+        const heading = [...document.querySelectorAll('#region h3')].find((h) => h.textContent === name)!;
+        const range = document.createRange();
+        range.selectNodeContents(heading);
+        const right = Math.max(...[...range.getClientRects()].map((r) => r.right));
+        return { right, inside: right <= window.innerWidth, clips: heading.scrollWidth > heading.clientWidth };
+      }, child);
+      expect([named.inside, named.clips], JSON.stringify(named)).toEqual([true, false]);
+      const seen = await body();
+      expect(seen.content, JSON.stringify(seen)).toBeLessThanOrEqual(seen.viewport);
+      expect([seen.scrolls, seen.page]).toEqual([false, false]);
+      // Long names wrap between their words (no word is broken: no fault above).
+      expect(reading.textLines[child]).toBeGreaterThan(1);
+      expect(reading.textLines['ZZ TEST guardian Chanthawongsakul Long Family 956']).toBeGreaterThan(1);
+      // The proof's two cut lines, each whole once scrolled to (WaChip writes
+      // "{channel} confirmed": two pieces of text).
+      for (const [line, pieces] of [['WhatsApp confirmed', ['WhatsApp', 'confirmed']], ['May order food', ['May order food', 'No']]] as const) {
+        await harness.page.getByText(line, { exact: true }).first().scrollIntoViewIfNeeded();
+        const again = await harness.page.evaluate(() => window.__readSplitView!());
+        for (const piece of pieces) expect(again.textInView[piece], `"${piece}" whole on screen`).toBe(true);
+      }
+    }, 120_000);
+
+    it(`the proof's family (SCRUM-886) at ${size.width}x${size.height}: the scrolling body too, every line whole`, async () => {
+      const reading = await harness.read('screen=phone-card', size);
+      expect(faultsOf(reading)).toEqual([]);
+      const seen = await body();
+      expect(seen.content, JSON.stringify(seen)).toBeLessThanOrEqual(seen.viewport);
+      expect([seen.scrolls, seen.page]).toEqual([false, false]);
+    }, 120_000);
+  }
+});
+
+describe.skipIf(!browser)('SCRUM-953: the phone refund’s By item rows wrap a long name', () => {
+  const longRow = 'ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 · 2 Hours Play · 1 ppl'.slice(0, 60);
+  for (const size of PHONES) {
+    it(`at ${size.width}x${size.height}`, async () => {
+      await harness.read('screen=phone-refund', size);
+      const reading = await harness.pressAndRead('By item');
+      reported[`phone-refund@${size.width}`] = reading;
+      await shoot(`phone-refund@${size.width}`);
+      expect(faultsOf(reading)).toEqual([]);
+      expect(reading.textLines[longRow]).toBeGreaterThan(1);
+      // Each row's amount stays whole beside it ("฿" and the figure are two pieces of text).
+      for (const amount of ['823.50', '621']) expect(reading.textInView[amount], amount).toBe(true);
+    }, 120_000);
+  }
+});
+
+describe.skipIf(!browser)('SCRUM-954: the phone till’s supervision gate keeps the side gutter', () => {
+  for (const size of PHONES) {
+    it(`"Continue to payment" inside the phone's 16px gutter at ${size.width}x${size.height}`, async () => {
+      const reading = await harness.read('screen=phone-gate', size);
+      reported[`phone-gate@${size.width}`] = reading;
+      await shoot(`phone-gate@${size.width}`);
+      const go = control(reading, 'Continue to payment');
+      const back = control(reading, 'Back');
+      expect(go, 'Continue to payment').toBeDefined();
+      expect(go!.box.right, JSON.stringify(go!.box)).toBeLessThanOrEqual(size.width - 16 + 0.5);
+      expect(back!.box.left).toBeGreaterThanOrEqual(16 - 0.5);
+      expect(go!.inView).toBe(true);
+      expect(faultsOf(reading).filter((f) => /Continue to payment|Back/.test(f))).toEqual([]);
+    }, 120_000);
+  }
+
+  it('where its words fit, they stay on one line', async () => {
+    const reading = await harness.read('screen=phone-gate', { width: 1024, height: 768 });
+    expect(reading.textLines['Continue to payment']).toBe(1);
+    expect(control(reading, 'Continue to payment')?.box.height).toBe(56);
+  }, 120_000);
+});
+
 describe("the harness draws the till's own frame", () => {
   // If Till.tsx's frame changes, the measurement above is of the wrong frame:
   // this fails first, and the harness's `TillFrame` is brought back in line.

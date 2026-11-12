@@ -93,8 +93,8 @@ describe.skipIf(!harness)('every box of the form on the paired display opens the
         await type(page, 'PEA NUT');
         await expect.poll(() => page.getByTestId(field.testId).inputValue()).toBe('Pea Nut');
         await expect.poll(async () => field.till(await till(page)), { timeout: 5_000 }).toBe('Pea Nut');
-        // Done puts the keys away.
-        await keys(page).getByRole('button', { name: 'Done', exact: true }).click();
+        // The keys' own button puts them away (SCRUM-954: it reads Hide, the form's Done is the only Done).
+        await keys(page).getByRole('button', { name: 'Hide', exact: true }).click();
         await expect.poll(() => keys(page).count()).toBe(0);
       }, TAPS);
     }
@@ -269,4 +269,212 @@ describe.skipIf(!harness)('the camera notice on the display (SCRUM-943 a, f)', (
     const none = await harness!.open('screen=display&step=care&camera=none', { width: 600, height: 1024 });
     await expect.poll(async () => (await till(none)).heard?.camera, { timeout: 5_000 }).toBe('none');
   }, TAPS);
+});
+
+// --- SCRUM-954: the small points from the counter display and phone proofs ------------------
+
+describe.skipIf(!harness)('SCRUM-954 (2): one Done on the counter display', () => {
+  it('with the keys open the form’s Done is the only Done, and the keys’ own button is a plain key', async () => {
+    const page = await harness!.open('screen=display&keyboard=screen&step=agreements', { width: 600, height: 1024 });
+    await page.getByTestId('consent-guardian').click();
+    await expect.poll(() => keys(page).count()).toBe(1);
+    const seen = await page.evaluate(() => {
+      const keyboard = document.querySelector('[data-testid="screen-keyboard"]')!;
+      const named = (name: string) => [...document.querySelectorAll('button')].filter((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === name);
+      const done = named('Done');
+      const hide = keyboard.querySelector('[data-testid="screen-keyboard-hide"]')!;
+      const space = keyboard.querySelector('[aria-label="Space"]')!;
+      const paint = (el: Element) => getComputedStyle(el).backgroundColor;
+      return {
+        dones: done.length, doneInKeys: done.some((b) => keyboard.contains(b)),
+        hideName: hide.getAttribute('aria-label'), hideWords: hide.textContent?.trim(),
+        hidePaint: paint(hide), spacePaint: paint(space), donePaint: done[0] ? paint(done[0]) : '',
+      };
+    });
+    expect(seen.dones).toBe(1);
+    expect(seen.doneInKeys).toBe(false);
+    expect([seen.hideName, seen.hideWords]).toEqual(['Hide', 'Hide']);
+    // Drawn as Space is, not as the blue Done below.
+    expect(seen.hidePaint).toBe(seen.spacePaint);
+    expect(seen.hidePaint).not.toBe(seen.donePaint);
+    // It still puts the keys away.
+    await keys(page).getByRole('button', { name: 'Hide', exact: true }).click();
+    await expect.poll(() => keys(page).count()).toBe(0);
+  }, TAPS);
+});
+
+/** The language button's name in each language the test reads. */
+const LANGUAGE_BUTTON: Record<'en' | 'th', string> = { en: 'Change language', th: 'เปลี่ยนภาษา' };
+
+async function lineAndButton(page: Page, lang: 'en' | 'th') {
+  return page.evaluate((label) => {
+    const line = document.querySelector<HTMLElement>('[data-testid="display-form-reconnecting"]')!;
+    const button = document.querySelector(`[aria-label="${label}"]`)!;
+    const range = document.createRange();
+    range.selectNodeContents(line);
+    const words = [...range.getClientRects()].filter((r) => r.width > 0);
+    const b = button.getBoundingClientRect();
+    const wordsOverButton = words.some((r) => !(r.right <= b.left || b.right <= r.left || r.bottom <= b.top || b.bottom <= r.top));
+    // What is drawn on top at the button's middle: the line takes no touch,
+    // so it is made to take one for this reading only.
+    line.style.pointerEvents = 'auto';
+    const hit = document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+    line.style.pointerEvents = '';
+    const style = getComputedStyle(line);
+    return {
+      wordsOverButton, buttonOnTop: !!hit && button.contains(hit), position: style.position, touch: style.pointerEvents,
+      detail: `button ${Math.round(b.left)},${Math.round(b.top)}-${Math.round(b.right)},${Math.round(b.bottom)}; words ${words.map((r) => `${Math.round(r.left)},${Math.round(r.top)}-${Math.round(r.right)},${Math.round(r.bottom)}`).join(' ')}; hit ${hit?.tagName}`,
+    };
+  }, LANGUAGE_BUTTON[lang]);
+}
+
+const headingTop = (page: Page) => page.evaluate(() => [...document.querySelectorAll('span')]
+  .find((span) => /^(Playing with us today|มาเล่นกับเราวันนี้)$/.test(span.textContent ?? ''))!.getBoundingClientRect().top);
+
+describe.skipIf(!harness)('SCRUM-954 (3): the reconnecting line leaves the language button in sight', () => {
+  for (const shape of SHAPES) {
+    it(`${shape.name}: the button is drawn over the line, the line's words clear of it, and the form not moved`, async () => {
+      const page = await harness!.open('screen=display&keyboard=screen&step=agreements&reconnecting=1', shape);
+      const seen = await lineAndButton(page, 'en');
+      expect(seen.buttonOnTop, seen.detail).toBe(true);
+      expect(seen.wordsOverButton, seen.detail).toBe(false);
+      // SCRUM-943: still laid over the form, taking no touch.
+      expect([seen.position, seen.touch]).toEqual(['absolute', 'none']);
+      const withLine = await headingTop(page);
+      const plain = await harness!.open('screen=display&keyboard=screen&step=agreements', shape);
+      expect(withLine).toBe(await headingTop(plain));
+    }, TAPS);
+  }
+
+  it('the button can be pressed while the line shows, and the line follows into Thai, still clear of it', async () => {
+    const page = await harness!.open('screen=display&step=agreements&reconnecting=1', { width: 600, height: 1024 });
+    await page.getByRole('button', { name: LANGUAGE_BUTTON.en, exact: true }).click();
+    await page.getByRole('button', { name: 'ไทย', exact: true }).click();
+    await expect.poll(() => page.getByTestId('display-form-reconnecting').textContent()).toContain('กำลังเชื่อมต่อใหม่');
+    const seen = await lineAndButton(page, 'th');
+    expect(seen.buttonOnTop, seen.detail).toBe(true);
+    expect(seen.wordsOverButton, seen.detail).toBe(false);
+  }, TAPS);
+});
+
+/** Heights of the presses SCRUM-954 (4) names, as the browser drew them. */
+async function pressHeights(page: Page) {
+  return page.evaluate((label) => {
+    const height = (el: Element) => Math.round(el.getBoundingClientRect().height * 10) / 10;
+    const language = document.querySelector(`[aria-label="${label}"]`);
+    const pills = [...document.querySelectorAll('[data-testid="consent-steps"] button')];
+    const done = document.querySelector('[data-testid="consent-done-bar"]');
+    const bar = done ?? [...document.querySelectorAll('button')].find((b) => b.textContent === 'Ask the team')?.parentElement ?? null;
+    const presses = bar ? [...bar.querySelectorAll('button')] : [];
+    return {
+      language: language ? height(language) : null,
+      pills: pills.map(height),
+      bar: presses.map((b) => `${b.textContent?.trim()} ${height(b)}`),
+      barHeights: presses.map(height),
+    };
+  }, LANGUAGE_BUTTON.en);
+}
+
+describe.skipIf(!harness)('SCRUM-954 (4): every press of the display’s form is a finger’s height', () => {
+  for (const shape of SHAPES) {
+    for (const step of ['children', 'care', 'agreements'] as const) {
+      it(`${shape.name}, ${step}: the bar's buttons, the step pills and the language button are 44px or taller`, async () => {
+        const page = await harness!.open(`screen=display&keyboard=screen&step=${step}`, shape);
+        const seen = await pressHeights(page);
+        const detail = JSON.stringify(seen);
+        expect(seen.language, detail).toBeGreaterThanOrEqual(44);
+        expect(seen.pills, detail).toHaveLength(3);
+        for (const pill of seen.pills) expect(pill, detail).toBeGreaterThanOrEqual(44);
+        expect(seen.barHeights.length, detail).toBeGreaterThanOrEqual(2);
+        for (const press of seen.barHeights) expect(press, detail).toBeGreaterThanOrEqual(44);
+      }, TAPS);
+    }
+  }
+
+  it('the till’s own customer half keeps its sizes, at a desk and at phone width', async () => {
+    for (const size of [{ width: 1180, height: 820 }, { width: 1680, height: 1050 }, { width: 390, height: 844 }]) {
+      const page = await harness!.open('screen=half', size);
+      const seen = await pressHeights(page);
+      expect(seen, `${size.width}x${size.height}`).toEqual({ language: 34, pills: [], bar: ['Done 38'], barHeights: [38] });
+    }
+  }, TAPS);
+});
+
+/** The age picker's look against the look of the screen its button sits on. */
+async function pickerLook(page: Page) {
+  await page.locator('button', { hasText: /yrs|Tap to set age/ }).first().click();
+  await page.getByRole('dialog').waitFor({ timeout: 10_000 });
+  return page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]')!;
+    const trigger = [...document.querySelectorAll('button')].find((b) => /yrs|Tap to set age/.test(b.textContent ?? ''))!;
+    const token = (el: Element) => getComputedStyle(el).getPropertyValue('--background').trim();
+    const surface = trigger.closest('.dark, .light');
+    return { dialog: token(dialog), screen: token(trigger), surface: surface?.classList.contains('dark') ? 'dark' : 'light',
+      dialogPaint: getComputedStyle(dialog).backgroundColor };
+  });
+}
+
+describe.skipIf(!harness)('SCRUM-954 (5): the age picker wears the display’s look', () => {
+  for (const screen of ['display', 'half'] as const) {
+    for (const theme of ['dark', 'light'] as const) {
+      it(`${screen}, ${theme}: the picker is drawn ${theme}, as its screen is`, async () => {
+        const size = screen === 'display' ? { width: 600, height: 1024 } : { width: 1180, height: 820 };
+        const look = await pickerLook(await harness!.open(`screen=${screen}&step=children&theme=${theme}`, size));
+        expect(look.surface).toBe(theme);
+        expect(look.dialog, JSON.stringify(look)).toBe(look.screen);
+      }, TAPS);
+    }
+  }
+
+  it('on a dark display the picker is not the light one it was', async () => {
+    const dark = await pickerLook(await harness!.open('screen=display&step=children&theme=dark', { width: 600, height: 1024 }));
+    const light = await pickerLook(await harness!.open('screen=display&step=children&theme=light', { width: 600, height: 1024 }));
+    expect(dark.dialogPaint).not.toBe(light.dialogPaint);
+  }, TAPS);
+});
+
+describe.skipIf(!harness)('SCRUM-954 (6): the phone till’s form has the phone', () => {
+  const PHONES = [{ width: 390, height: 844 }, { width: 360, height: 740 }] as const;
+  /** Where an element is once scrolled to, and whether it is what a finger there would touch. */
+  async function reachable(page: Page, target: { testId: string } | { name: string }) {
+    const found = 'testId' in target ? page.getByTestId(target.testId).first() : page.getByRole('button', { name: target.name, exact: true }).first();
+    await found.scrollIntoViewIfNeeded();
+    return found.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+      // A disabled button takes no touch: what is under it must then be its own bar.
+      const holder = (el as HTMLButtonElement).disabled ? el.parentElement! : el;
+      return {
+        inside: r.top >= -1 && r.left >= -1 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1,
+        reached: !!hit && (el.contains(hit) || holder.contains(hit)),
+        box: `${Math.round(r.left)},${Math.round(r.top)}-${Math.round(r.right)},${Math.round(r.bottom)}`,
+      };
+    });
+  }
+
+  for (const phone of PHONES) {
+    it(`${phone.width}x${phone.height}: the form scrolls in most of the screen, and every press is reachable`, async () => {
+      const page = await harness!.open('screen=phone', phone);
+      await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+      await page.getByTestId('consent-child-name').waitFor();
+      const share = await page.evaluate(() => {
+        let scroller = document.querySelector('[data-testid="consent-child-name"]')!.parentElement;
+        while (scroller && getComputedStyle(scroller).overflowY !== 'auto') scroller = scroller.parentElement;
+        const r = scroller!.getBoundingClientRect();
+        return { share: scroller!.clientHeight / innerHeight, box: `${Math.round(r.top)}-${Math.round(r.bottom)} of ${innerHeight}`,
+          sideways: document.documentElement.scrollWidth > innerWidth };
+      });
+      // The heading, the bar and "Return phone to staff" left the form under half of a 390x844 phone.
+      expect(share.share, share.box).toBeGreaterThan(0.6);
+      expect(share.sideways).toBe(false);
+      for (const target of [
+        { name: 'Start camera' }, { testId: 'consent-contact-confirm' }, { testId: 'consent-missing' },
+        { name: 'Done' }, { name: 'Return phone to staff' },
+      ]) {
+        const where = await reachable(page, target);
+        expect(where.inside, `${JSON.stringify(target)} at ${where.box}`).toBe(true);
+        expect(where.reached, `${JSON.stringify(target)} at ${where.box}`).toBe(true);
+      }
+    }, TAPS);
+  }
 });

@@ -6,11 +6,13 @@ import { StepPayment } from '@/components/till/StepPayment';
 import { HoldSaleButtons } from '@/components/till/HeldSales';
 import { FamilyCheckInCard } from '@/components/dropoff/FamilyCheckInCard';
 import { MobileChildDetail } from '@/components/mobile/dropoff/MobileChildDetail';
+import { MobileRefundFlow } from '@/components/mobile/history/MobileRefundFlow';
+import { SupervisionGate, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { loadSellableStock } from '@/api/stock';
 import { getTicketTypes } from '@/mockApi';
 import { usePaymentStage } from '@/lib/usePaymentStage';
 import { partPaidShown } from '@/lib/heldSales';
-import type { CartLine, CheckIn, Member } from '@/types';
+import type { CartLine, CheckIn, Member, SupervisionPolicy } from '@/types';
 import { readSplitView } from './measure';
 import '@/fonts.css';
 import '@/index.css';
@@ -44,6 +46,13 @@ import '@/index.css';
  * card at `w=` px wide; `screen=phone-card` the phone's family screen. Their
  * family is SCRUM-886 picture 07a's: one child paid for, three long-named
  * siblings to pay, Cancel booking beside them.
+ *
+ * SCRUM-956 / SCRUM-953 / SCRUM-954 — three more phone screens:
+ * `screen=phone-card-long` the family screen with a child whose name is
+ * long (an allergy, a dietary note, WhatsApp confirmed, food not allowed);
+ * `screen=phone-refund` the phone's refund, whose By item rows carry long
+ * names; `screen=phone-gate` the phone till's supervision gate in its step's
+ * frame (`MobileTill.tsx`, `h-full overflow-y-auto p-4`).
  */
 const params = new URLSearchParams(window.location.search);
 const screen = params.get('screen') ?? 'configure';
@@ -221,6 +230,60 @@ function PhoneCard() {
     h(MobileChildDetail, { family: family496Online, onBack: noop, onMarkArrived: noop, ...cardHandlers }));
 }
 
+// SCRUM-956 — a child whose name is long, in the park, as the proof's was.
+const familyLong: CheckIn[] = [
+  {
+    ...familyBase, id: 'long-956', registrationId: 'zz-test-956', status: 'in_park', childAge: 7,
+    childName: 'ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956',
+    parentName: 'ZZ TEST guardian Chanthawongsakul Long Family 956',
+    allergiesMedical: 'Peanuts and tree nuts, carries an EpiPen in the blue bag',
+    foodRestrictions: 'No pork, no seafood',
+    checkedInAt: '2026-11-12T03:00:00.000Z', bookedDurationMinutes: 60,
+  },
+] as CheckIn[];
+
+function PhoneCardLong() {
+  return h('div', { id: 'region', className: 'min-h-[100dvh]' },
+    h(MobileChildDetail, { family: familyLong, onBack: noop, onMarkArrived: noop, ...cardHandlers }));
+}
+
+/** SCRUM-953 — the phone's refund, By item: each row a child's name and the ticket, as History builds them. */
+function PhoneRefund() {
+  return h('div', { id: 'region', className: 'h-[100dvh]' },
+    h(MobileRefundFlow, {
+      maxRefund: 1444.5, restorableCredit: 0, reasons: ['Service recovery'], operatorName: 'ZZ TEST manager',
+      lines: [
+        { id: 'r-1', label: 'ZZ TEST Phongsakorn Wattanachaiyaphum Long Name 956 · 2 Hours Play · 1 ppl', amount: 823.5 },
+        { id: 'r-2', label: 'ZZ TEST Nok B 934 · 1 Hour Play · 1 ppl', amount: 621 },
+      ],
+      onConfirm: noop, onCancel: noop,
+    }));
+}
+
+const gatePolicy: SupervisionPolicy = {
+  bands: [
+    { id: 'band-0-4', label: '0–4', minAge: 0, maxAge: 4, requirement: 'nanny' },
+    { id: 'band-5-8', label: '5–8', minAge: 5, maxAge: 8, requirement: 'drop_off' },
+    { id: 'band-9-up', label: '9+', minAge: 9, maxAge: null, requirement: 'none' },
+  ],
+  siblingWaiver: { enabled: true, guardianMinAge: 9, waivableRequirement: 'drop_off', staffOnly: true },
+  confirmations: [{ id: 'confirm-15min', text: 'I will remain within 15 minutes of the venue', required: true, order: 0 }],
+};
+const gateSlot: SupervisedSlot = {
+  id: 'zz-gate', sourceLineId: 'zz-line', ticketType: {} as SupervisedSlot['ticketType'],
+  name: 'ZZ TEST PHONE', age: '6', waived: false, allergiesMedical: '', foodRestrictions: '', mayOrderFood: false, optIn: true,
+};
+
+/** SCRUM-954 — the phone till's gate, in its step's frame. */
+function PhoneGate() {
+  return h('div', { id: 'region', className: 'h-[100dvh] overflow-y-auto p-4' },
+    h(SupervisionGate, {
+      slots: [gateSlot], parentName: '', consentAck: false, policy: gatePolicy, acknowledgedConfirmationIds: [],
+      onUpdateSlot: noop, onToggleWaiver: noop, onBack: noop, onContinue: noop, continueOpensForm: true,
+      contactConfirmed: false, contactPhoneProblem: 'empty',
+    }));
+}
+
 // --- The page ----------------------------------------------------------------------
 
 function Page() {
@@ -231,6 +294,9 @@ function Page() {
   }, []);
   if (screen === 'card' || screen === 'card-single') return h(BoardCard);
   if (screen === 'phone-card') return h(PhoneCard);
+  if (screen === 'phone-card-long') return h(PhoneCardLong);
+  if (screen === 'phone-refund') return h(PhoneRefund);
+  if (screen === 'phone-gate') return h(PhoneGate);
   if (screen === 'party-payment') return h(PartyFrame);
   return h(TillFrame);
 }

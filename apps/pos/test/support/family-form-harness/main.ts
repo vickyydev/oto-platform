@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import type { ConsentAction, ConsentFormStep, ConsentPrompt } from '@oto/shared';
 import { ConsentCapture } from '../../../src/components/till/ConsentCapture';
 import { PublicConsentCapture } from '../../../src/components/till/PublicConsentCapture';
+import { FORM_RECONNECTING_LINE } from '../../../src/components/till/consentFormLayout';
+import { HandToCustomer } from '../../../src/components/mobile/HandToCustomer';
 import type { SupervisedSlot } from '../../../src/components/till/SupervisionGate';
-import { LanguageProvider } from '../../../src/i18n/LanguageContext';
+import { LanguageProvider, useLanguage } from '../../../src/i18n/LanguageContext';
 import type { ContactChannel, SupervisionPolicy } from '../../../src/types';
 import '../../../src/index.css';
 
@@ -16,10 +18,13 @@ import '../../../src/index.css';
  *
  *  ?screen=display   the paired display (Display.tsx's frame round the form)
  *  ?screen=half      the till's own customer half (Till.tsx, step 7, split view)
+ *  ?screen=phone     the phone till's form, handed to the parent (MobileTill.tsx:
+ *                    HandToCustomer round ConsentCapture with `phoneScroll`)
  *  &keyboard=screen  the counter's touch monitor: no keyboard (kioskFlags)
  *  &step=children|care|agreements   where the display's form opens
  *  &theme=light|dark  the display's look
  *  &camera=none|refused  a display with no camera, or one whose camera is refused
+ *  &reconnecting=1   the display's reconnecting line over the form, as Display.tsx draws it
  *
  * `#till` holds what the till has: the display's last fill, or the half's state.
  */
@@ -28,6 +33,7 @@ const screen = query.get('screen') ?? 'display';
 const step = (query.get('step') ?? 'children') as ConsentFormStep;
 const theme = query.get('theme') === 'light' ? 'light' : 'dark';
 const camera = query.get('camera');
+const reconnecting = query.get('reconnecting') === '1';
 
 if (camera === 'none' || camera === 'refused') {
   const refused = Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' });
@@ -87,11 +93,18 @@ function DisplayForm() {
       confirmations: current.confirmations.map((item) => ({ ...item, acknowledged: action.acknowledgedConfirmationIds.includes(item.id) })),
     }));
   };
-  // Display.tsx's frame: the page, then the form filling what is left of it.
+  // Display.tsx's frame: the page, then the form filling what is left of it,
+  // with the reconnecting line laid over it as Display.tsx lays it.
   return h('div', { className: `${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`, id: 'ready' },
     h('output', { id: 'till', className: 'sr-only' }, JSON.stringify({ prompt, heard })),
     h('div', { className: 'relative flex-1 min-h-0' },
+      reconnecting ? h(ReconnectingLine) : null,
       h(PublicConsentCapture, { prompt, busy: false, answerPending: false, onAction: take, sendPhoto: async () => 'zz-file' })));
+}
+
+function ReconnectingLine() {
+  const { t } = useLanguage();
+  return h('p', { role: 'status', 'data-testid': 'display-form-reconnecting', className: FORM_RECONNECTING_LINE }, t('display.reconnectingSendsItself'));
 }
 
 const halfSlot: SupervisedSlot = {
@@ -99,28 +112,53 @@ const halfSlot: SupervisedSlot = {
   name: '', age: '6', waived: false, allergiesMedical: '', foodRestrictions: '', mayOrderFood: false, optIn: true,
 };
 
-/** The till's own customer half: the form writes the till's state as the family types. */
-function HalfForm() {
+/** The till's state behind its own form: the form writes it as the family types. */
+function useTillForm() {
   const [slots, setSlots] = useState<SupervisedSlot[]>([halfSlot]);
   const [parentName, setParentName] = useState('');
   const [phone, setPhone] = useState('+66898930001');
   const [channel, setChannel] = useState<ContactChannel>('whatsapp');
   const [consentAck, setConsentAck] = useState(false);
   const [acknowledged, setAcknowledged] = useState<string[]>([]);
-  return h('div', { className: 'flex h-[100dvh] min-h-0 bg-background', id: 'ready' },
-    h('output', { id: 'till', className: 'sr-only' }, JSON.stringify({ slots, parentName, phone, channel })),
-    h('div', { className: 'w-1/2 h-full border-r border-foreground/10 max-[520px]:hidden' }),
-    h('div', { className: `w-1/2 max-[520px]:w-full h-full min-w-0 ${theme}` },
-      h(ConsentCapture, {
-        slots, parentName, consentAck, policy, parentPhone: phone, parentContactMethod: channel,
-        onParentPhoneChange: setPhone, onParentContactMethodChange: setChannel, onParentNameChange: setParentName,
-        onConsentAckChange: setConsentAck,
-        onUpdateChild: (id: string, patch: Partial<SupervisedSlot>) => setSlots((all) => all.map((slot) => slot.id === id ? { ...slot, ...patch } : slot)),
-        acknowledgedConfirmationIds: acknowledged,
-        onToggleConfirmation: (id: string) => setAcknowledged((all) => all.includes(id) ? all.filter((x) => x !== id) : [...all, id]),
-        contactConfirmed: false, onContactConfirmedChange: () => undefined,
-        onDone: () => undefined, doneReady: false,
-      })));
+  const [contactConfirmed, setContactConfirmed] = useState(false);
+  const state = h('output', { id: 'till', className: 'sr-only' }, JSON.stringify({ slots, parentName, phone, channel }));
+  const props = {
+    slots, parentName, consentAck, policy, parentPhone: phone, parentContactMethod: channel,
+    onParentPhoneChange: setPhone, onParentContactMethodChange: setChannel, onParentNameChange: setParentName,
+    onConsentAckChange: setConsentAck,
+    onUpdateChild: (id: string, patch: Partial<SupervisedSlot>) => setSlots((all) => all.map((slot) => slot.id === id ? { ...slot, ...patch } : slot)),
+    acknowledgedConfirmationIds: acknowledged,
+    onToggleConfirmation: (id: string) => setAcknowledged((all) => all.includes(id) ? all.filter((x) => x !== id) : [...all, id]),
+    contactConfirmed, onContactConfirmedChange: setContactConfirmed,
+    onDone: () => undefined, doneReady: false,
+  };
+  return { state, props };
 }
 
-createRoot(document.getElementById('root')!).render(h(LanguageProvider, null, screen === 'half' ? h(HalfForm) : h(DisplayForm)));
+/** The till's own customer half: the form writes the till's state as the family types. */
+function HalfForm() {
+  const { state, props } = useTillForm();
+  return h('div', { className: 'flex h-[100dvh] min-h-0 bg-background', id: 'ready' },
+    state,
+    h('div', { className: 'w-1/2 h-full border-r border-foreground/10 max-[520px]:hidden' }),
+    h('div', { className: `w-1/2 max-[520px]:w-full h-full min-w-0 ${theme}` },
+      h(ConsentCapture, props)));
+}
+
+/**
+ * SCRUM-954 — the phone till's form as `MobileTill.tsx` hands it to the
+ * parent: HandToCustomer's customer screen round the form, "Return phone to
+ * staff" under it, the form told it is on a phone (`phoneScroll`).
+ */
+function PhoneForm() {
+  const { state, props } = useTillForm();
+  const { t } = useLanguage();
+  return h('div', { className: 'h-[100dvh] bg-background', id: 'ready' },
+    state,
+    h(HandToCustomer, { title: t('handToCustomer.consentTitle'), subtitle: t('handToCustomer.consentSubtitle'),
+      handBackLabel: t('handToCustomer.returnPhone'), onDone: () => undefined, onCancel: () => undefined },
+    h(ConsentCapture, { ...props, phoneScroll: true })));
+}
+
+createRoot(document.getElementById('root')!).render(h(LanguageProvider, null,
+  screen === 'half' ? h(HalfForm) : screen === 'phone' ? h(PhoneForm) : h(DisplayForm)));
