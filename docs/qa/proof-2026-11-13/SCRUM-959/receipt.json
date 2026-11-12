@@ -1,0 +1,4180 @@
+{
+  "tickets": [
+    "SCRUM-959",
+    "SCRUM-960",
+    "SCRUM-952"
+  ],
+  "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+  "startedAt": "2026-11-12T21:17:43.065Z",
+  "deploys": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbr2mhjtqb8s73cojm6g",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:30.047739Z",
+        "finishedAt": "2026-11-12T21:11:53.394512Z"
+      },
+      "serving": {
+        "id": "dep-dbr2mhjtqb8s73cojm6g",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:30.047739Z",
+        "finishedAt": "2026-11-12T21:11:53.394512Z"
+      },
+      "readAt": "2026-11-12T21:17:09.582Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbr2mh0m7kps73eqhtmg",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:28.681254Z",
+        "finishedAt": "2026-11-12T21:14:51.060182Z"
+      },
+      "serving": {
+        "id": "dep-dbr2mh0m7kps73eqhtmg",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:28.681254Z",
+        "finishedAt": "2026-11-12T21:14:51.060182Z"
+      },
+      "readAt": "2026-11-12T21:17:10.148Z"
+    }
+  },
+  "numbers": {
+    "M": "0898959010",
+    "F1440": "0898959011",
+    "H": "0898959012"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d1a0-0aa9-758f-85be-529b22543033",
+      "name": "ZZ TEST SCRUM-959 proof till 1794518288013",
+      "prefix": "Z95901"
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST959A",
+      "id": "01a1d1a0-0b4e-70b5-bf34-caa0783cd263",
+      "valueBp": 1000,
+      "usageLimit": 10,
+      "validOn": "2026-11-13"
+    },
+    {
+      "kind": "member",
+      "name": "ZZ TEST 959 Expat Verified Member",
+      "number": "0898959010",
+      "id": "01a1d1a0-c4b5-72f2-9a45-859081f6ff88",
+      "status": 200
+    },
+    {
+      "kind": "ticket-sale-1440x900",
+      "id": "01a1d1a1-d649-72b4-9a84-0bb29a091601"
+    },
+    {
+      "kind": "ticket-sale-1680x1050",
+      "id": "01a1d1a2-d31c-7d86-b91e-6216fe53dd24"
+    },
+    {
+      "kind": "fnb-part-paid-sale-till",
+      "id": "01a1d1a5-86a6-7c9a-9ece-3d0413f0f753"
+    },
+    {
+      "kind": "qr-attempt",
+      "id": "01a1d1a5-a973-7004-b8d6-d99e5f8aa71a",
+      "route": "gateway",
+      "status": 200
+    },
+    {
+      "kind": "promo-code-dates-widened",
+      "code": "ZZTEST959A",
+      "validFrom": "2026-11-12",
+      "validUntil": "2026-11-13",
+      "why": "business date before 05:00 Bangkok is the previous day"
+    },
+    {
+      "kind": "fnb-part-paid-sale-till",
+      "id": "01a1d1a7-f0db-7d8a-8cb8-87d5918b9f25"
+    },
+    {
+      "kind": "fnb-whole-cash-sale",
+      "id": "01a1d1a8-fc63-721b-8588-df192fce840f"
+    },
+    {
+      "kind": "shop-part-paid-sale-till",
+      "id": "01a1d1ab-774e-7baf-b143-4f47f51bc747"
+    },
+    {
+      "kind": "ticket-sale-full-1440x900",
+      "id": "01a1d1ae-1ba8-70d7-9eb9-c623776a9b0b"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 959 guardian H",
+      "id": "01a1d1b1-6178-7393-80df-29f0d690a238",
+      "stays": [
+        {
+          "id": "01a1d1b1-6178-7393-80df-29f181efdd5b",
+          "name": "ZZ TEST Mali 959 H"
+        },
+        {
+          "id": "01a1d1b1-6178-7393-80df-29f2f082ac80",
+          "name": "ZZ TEST Nok 959 H"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-H",
+      "id": "01a1d1b1-66ff-7213-a4fa-e87d7562523d"
+    },
+    {
+      "kind": "checked-in",
+      "registration": "01a1d1b1-6178-7393-80df-29f0d690a238",
+      "child": "ZZ TEST Mali 959 H",
+      "status": 200
+    },
+    {
+      "kind": "fnb-part-paid-sale-phone",
+      "id": "01a1d1b4-30ae-7a51-9d59-a719d8e2c088"
+    }
+  ],
+  "cancelled": [],
+  "points": {
+    "1-rates-1440-two-line-name": {
+      "pass": true,
+      "pictures": [
+        "01-1440x900-split-show-all-rates-three-cards.png"
+      ],
+      "seen": "name on 2 lines; card bottoms Tourist 624, Expat 732, Thai 848 of 900 (Thai last line \"Proof required — verify now\" at 835); \"Passport — no proof needed\" on 1 line; the 7 overdue bar present"
+    },
+    "2-membership-check-labels": {
+      "pass": true,
+      "pictures": [
+        "00-1440x900-split-signed-in-tickets-landing.png",
+        "02a-1440x900-split-membership-check-phone-nickname-close-up.png"
+      ],
+      "seen": "Phone label right 131.1 inside card right 171; Nickname label right 318.2 inside card right 334 (cards 147 wide, 12px padding)"
+    },
+    "3-payment-successful": {
+      "pass": true,
+      "pictures": [
+        "03b-1440x900-split-payment-successful-paid-in-cash.png",
+        "03c-1440x900-split-payment-successful-columns-close-up.png",
+        "04b-1680x1050-split-payment-successful-paid-in-cash.png",
+        "04c-1680x1050-split-payment-successful-columns-close-up.png"
+      ],
+      "seen": "caption \"1 Hour • 1 Hour Play\" whole (2 lines at 1440, 1 at 1680); \"Credit Grants Issued\" ends 30.3px (1440) and 84.8px (1680) left of \"1 TOTAL\"; sales Z95901-000001 and -000002, ฿1040 cash"
+    },
+    "4-fnb-split": {
+      "pass": true,
+      "pictures": [
+        "05a-1440x900-split-fnb-categories-one-row-tiles.png",
+        "05b-1440x900-split-fnb-categories-scrolled-to-the-last.png",
+        "05c-1440x900-split-fnb-item-added-badge-and-plus.png",
+        "05d-1440x900-split-fnb-item-tile-close-up.png",
+        "07a-1680x1050-split-fnb-categories-one-row-tiles.png",
+        "07b-1680x1050-split-fnb-categories-scrolled-to-the-last.png"
+      ],
+      "seen": "1440: 24 categories in one row, 3362px in 306px, scrolled to \"Free Drinks Menu\"; tiles 1 a row, 290 wide; first dish 286-398 of 900; French fries badge 130.6px clear of the name, plus 174.6px clear of the price and inside the tile; 1680: 2 a row, 199 wide"
+    },
+    "5-shop-split": {
+      "pass": true,
+      "pictures": [
+        "06a-1440x900-split-shop-categories-one-row-tiles.png",
+        "06b-1440x900-split-shop-categories-scrolled-to-the-last.png",
+        "06c-1440x900-split-shop-item-added-badge-and-plus.png",
+        "06d-1440x900-split-shop-item-tile-close-up.png",
+        "11a-1440x900-split-shop-emoji-toy-balloon-code-applied-cart.png",
+        "11b-1440x900-split-shop-customer-half-your-sale-and-language-button.png",
+        "07sa-1680x1050-split-shop-categories-one-row-tiles.png",
+        "07sb-1680x1050-split-shop-categories-scrolled-to-the-last.png"
+      ],
+      "seen": "\"School Admission Ticket\" whole on 1 line, badge 19.1px clear, plus inside the tile; \"Your Sale\" right 1296, English button left 1326.6 (30.6px clear); 1680: 2 a row"
+    },
+    "6-history-placeholder": {
+      "pass": true,
+      "pictures": [
+        "13-1440x900-history-search-placeholder.png",
+        "13-1024x768-history-search-placeholder.png"
+      ],
+      "seen": "\"Search by name, receipt, bracelet…\" needs 268.6px of 361.9 (1440) and of 313.9 (1024)"
+    },
+    "7-unchanged-for-owner": {
+      "pass": true,
+      "pictures": [
+        "00-1440x900-split-signed-in-tickets-landing.png",
+        "03a-1440x900-split-1-hour-play-current-order-socks-line.png",
+        "04a-1680x1050-split-1-hour-play-current-order-socks-line.png",
+        "11a-1440x900-split-shop-emoji-toy-balloon-code-applied-cart.png",
+        "04b-1680x1050-split-payment-successful-paid-in-cash.png"
+      ],
+      "seen": "tabs 782px in 473 at 1440 (on Tickets: History cut, Today and Messages off), 782 in 567 at 1680 (Today and Messages off); \"Regular So…\" shows 88 of 95px; cart \"Merch Blue E…\" 126 of 167, \"Helium Balloo…\" 126 of 153: as left for the owner"
+    },
+    "8-full-width": {
+      "pass": true,
+      "pictures": [
+        "14a-1440x900-full-width-three-rate-cards.png",
+        "14b-1440x900-full-width-ticket-list.png",
+        "14c-1440x900-full-width-1-hour-play-addons-two-a-row.png",
+        "14d-1440x900-full-width-payment-methods.png",
+        "14e-1440x900-full-width-cash-confirm-at-the-panel-foot.png",
+        "14f-1440x900-full-width-paid-in-cash.png",
+        "16a-1440x900-full-fnb-categories-one-row-tiles.png",
+        "16sa-1440x900-full-shop-categories-one-row-tiles.png",
+        "17a-1024x768-full-rates.png",
+        "17b-1024x768-full-fnb.png",
+        "17c-1024x768-full-shop.png",
+        "18b-900x800-full-fnb.png",
+        "18c-900x800-full-shop.png"
+      ],
+      "seen": "1440 Tickets: every box equal to the SCRUM-884 full-1440x900 read; F&B and Shop 3 a row with wrapping categories at 1440 and 1024, as the lane base pictures; 900 wide: categories one sideways row, 2 a row, header tabs on a row of their own"
+    },
+    "9-desk-part-paid": {
+      "pass": true,
+      "pictures": [
+        "09d-1440x900-split-fnb-part-paid-tabs-and-back-held-save-as-partly-paid.png",
+        "09g-1440x900-split-fnb-save-as-partly-paid-dialog.png",
+        "09h-1440x900-split-fnb-saved-counter-back-at-the-start.png",
+        "09i-1440x900-split-fnb-tickets-tab-works-no-toast.png",
+        "09j-1440x900-split-fnb-history-tab-partly-paid-card.png",
+        "09k-1440x900-split-fnb-history-detail-partly-paid-balance.png",
+        "10a-1440x900-split-fnb-code-applied-cart.png",
+        "10d-1440x900-split-fnb-part-paid-tabs-and-back-held-save-as-partly-paid.png",
+        "10g-1440x900-split-fnb-save-as-partly-paid-dialog.png",
+        "10j-1440x900-split-fnb-history-tab-partly-paid-card.png",
+        "10k-1440x900-split-fnb-history-detail-partly-paid-balance.png",
+        "12d-1440x900-split-shop-part-paid-tabs-and-back-held-save-as-partly-paid.png",
+        "12g-1440x900-split-shop-save-as-partly-paid-dialog.png",
+        "12h-1440x900-split-shop-saved-counter-back-at-the-start.png",
+        "12j-1440x900-split-shop-history-tab-partly-paid-card.png",
+        "12k-1440x900-split-shop-history-detail-partly-paid-balance.png"
+      ],
+      "seen": "reads partpaid-fnb-till (the coded order) and partpaid-shop-till; the first order (no code, the code refused before 05:00) is in the same pictures 09*"
+    },
+    "10-phone-part-paid": {
+      "pass": true,
+      "pictures": [
+        "20c-phone-390x844-fnb-partial-payment-50.png",
+        "20d-phone-390x844-fnb-part-paid-bars-inert-back-shut-save-as-partly-paid.png",
+        "20e-phone-390x844-fnb-save-as-partly-paid-dialog.png",
+        "20f-phone-390x844-fnb-saved-back-at-scan.png",
+        "20g-phone-390x844-tickets-tab-works.png",
+        "20h-phone-390x844-history-partly-paid.png"
+      ],
+      "seen": "read partpaid-phone; the phone cart has no promo-code field, so no code"
+    },
+    "11-qr-in-flight": {
+      "pass": true,
+      "pictures": [
+        "09e-1440x900-split-fnb-qr-in-flight-save-as-partly-paid-shut.png",
+        "09f-1440x900-split-fnb-qr-cancelled-save-as-partly-paid-offered-again.png"
+      ],
+      "seen": "QR route gateway (staging simulator), ฿125: button disabled with \"A payment is in progress — finish or cancel it first.\"; after Cancel payment QR (attempt cancelled) offered again"
+    },
+    "12-discount-row": {
+      "pass": true,
+      "pictures": [
+        "10a-1440x900-split-fnb-code-applied-cart.png",
+        "10b-1440x900-split-fnb-payment-screen-discount-row.png",
+        "11a-1440x900-split-shop-emoji-toy-balloon-code-applied-cart.png",
+        "12b-1440x900-split-shop-payment-screen-discount-row.png",
+        "15a-1440x900-split-fnb-whole-baht-no-code-cart.png",
+        "15b-1440x900-split-fnb-whole-cash-tender-no-save-as-partly-paid.png"
+      ],
+      "seen": "F&B: French fries ฿175, \"Discount code −฿17.50\", Total ฿157.50 (order and payment); Shop: both lines, \"Discount code −฿16.50\", Total ฿148.50; no code: no row"
+    },
+    "13-overdue": {
+      "pass": true,
+      "pictures": [
+        "21a-1440x900-split-board-family-h-overdue-desk-card.png",
+        "21b-1440x900-split-board-family-h-overdue-desk-card-close-up.png",
+        "21c-phone-390x844-board-family-h-overdue-card.png",
+        "21d-phone-390x844-family-h-screen-overdue.png"
+      ],
+      "seen": "\"Overdue · 04:37\" on the desk card (read 04:41:23), the phone board card (04:41:31) and the phone family screen (04:41:33); booked 04:37:09"
+    },
+    "14-phone-eod": {
+      "pass": true,
+      "pictures": [
+        "22a-phone-390-end-of-day-band-code-in-its-card.png",
+        "22b-phone-390-end-of-day-close-day-and-csv.png",
+        "23a-phone-360-end-of-day-band-code-in-its-card.png",
+        "23b-phone-360-end-of-day-close-day-and-csv.png"
+      ],
+      "seen": "band code wraps to 3 lines inside its row; document scrollWidth 390 and 360, equal to the window; Close Day 358/328 wide and Download CSV whole"
+    },
+    "15-nothing-else-moved": {
+      "pass": true,
+      "pictures": [
+        "14f-1440x900-full-width-paid-in-cash.png",
+        "15b-1440x900-split-fnb-whole-cash-tender-no-save-as-partly-paid.png",
+        "15c-1440x900-split-fnb-paid-whole-in-cash.png"
+      ],
+      "seen": "full-width ticket sale Z95901-000004 ฿1040 finalised in cash; F&B Z95901-000003 ฿175 paid whole in cash with no \"Save as partly paid\""
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "savePartPaid": 7,
+      "itemPartPaid": 3,
+      "historyPlaceholder": 1,
+      "discountCode": 1,
+      "inFlight": 2
+    },
+    "landing1440": {
+      "bundle": {
+        "files": 1,
+        "savePartPaid": 7,
+        "itemPartPaid": 3,
+        "historyPlaceholder": 1,
+        "discountCode": 1,
+        "inFlight": 2
+      },
+      "split": "Hide customer display",
+      "overdueBar": {
+        "text": "7 overdue Review →",
+        "box": [
+          16,
+          158,
+          1408,
+          48
+        ]
+      },
+      "membership": [
+        {
+          "t": "Phone",
+          "labelLeft": 89,
+          "labelRight": 131.1,
+          "cardLeft": 24,
+          "cardRight": 171,
+          "roomPx": 39.9,
+          "inside": true,
+          "elWhole": true,
+          "ellipsis": "clip",
+          "cardPadding": "12px",
+          "cardWidth": 147
+        },
+        {
+          "t": "Nickname",
+          "labelLeft": 252,
+          "labelRight": 318.2,
+          "cardLeft": 187,
+          "cardRight": 334,
+          "roomPx": 15.8,
+          "inside": true,
+          "elWhole": true,
+          "ellipsis": "clip",
+          "cardPadding": "12px",
+          "cardWidth": 147
+        }
+      ],
+      "nav": {
+        "navBox": [
+          465,
+          59,
+          473,
+          44
+        ],
+        "scrollWidth": 782,
+        "clientWidth": 473,
+        "scrolls": true,
+        "scrollLeft": 0,
+        "overflowX": "auto",
+        "offScreen": [
+          {
+            "t": "History",
+            "cut": true
+          },
+          {
+            "t": "History",
+            "cut": true
+          },
+          {
+            "t": "Today",
+            "cut": false
+          },
+          {
+            "t": "Today",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          }
+        ],
+        "tabs": [
+          "F&B",
+          "F&B",
+          "Shop",
+          "Shop",
+          "Events",
+          "Events",
+          "Check-in",
+          "Check-in",
+          "History",
+          "History",
+          "Today",
+          "Today",
+          "7 Messages",
+          "7 Messages"
+        ]
+      },
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 473,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [
+          "Waiting for the customer…",
+          "Issue a voucher…"
+        ],
+        "problems": true
+      }
+    },
+    "rates-1440x900": {
+      "banner": {
+        "name": "ZZ TEST 959 Expat Verified Member",
+        "nameLines": 2,
+        "nameBox": [
+          105,
+          371,
+          212,
+          56
+        ],
+        "badge": "Expat · verified"
+      },
+      "overdueBar": "7 overdue Review →",
+      "showAllRates": true,
+      "cards": {
+        "cards": [
+          {
+            "tier": "Tourist",
+            "text": "Tourist Standard pricing",
+            "top": 544,
+            "bottom": 624,
+            "windowHeight": 900,
+            "roomBelowPx": 276,
+            "lastLine": {
+              "text": "Standard pricing",
+              "bottom": 611
+            },
+            "columnBottom": 876,
+            "insideColumn": true,
+            "whole": true
+          },
+          {
+            "tier": "Expat",
+            "text": "Verified Expat Resident pricing Passport — no proof needed",
+            "top": 628,
+            "bottom": 732,
+            "windowHeight": 900,
+            "roomBelowPx": 168,
+            "lastLine": {
+              "text": "Passport — no proof needed",
+              "bottom": 719
+            },
+            "columnBottom": 876,
+            "insideColumn": true,
+            "whole": true
+          },
+          {
+            "tier": "Thai",
+            "text": "Thai Local pricing Proof required — verify now",
+            "top": 744,
+            "bottom": 848,
+            "windowHeight": 900,
+            "roomBelowPx": 52,
+            "lastLine": {
+              "text": "Proof required — verify now",
+              "bottom": 835
+            },
+            "columnBottom": 876,
+            "insideColumn": true,
+            "whole": true
+          }
+        ],
+        "column": null
+      },
+      "proofLine": {
+        "text": "Passport — no proof needed",
+        "lines": 1
+      },
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 473,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [
+          "Issue a voucher…"
+        ],
+        "problems": true
+      }
+    },
+    "paid-1440x900": {
+      "pics": [
+        "03a-1440x900-split-1-hour-play-current-order-socks-line.png",
+        "03b-1440x900-split-payment-successful-paid-in-cash.png",
+        "03c-1440x900-split-payment-successful-columns-close-up.png"
+      ],
+      "orderCut": {
+        "heading": "Current Order",
+        "colWidth": 312,
+        "cut": [
+          {
+            "text": "1 Hour Play\nEDITING\n฿1040\nKids\n฿690 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿60 ",
+            "shownWidth": 312,
+            "fullWidth": 319
+          },
+          {
+            "text": "Regular Socks",
+            "shownWidth": 88,
+            "fullWidth": 95
+          }
+        ]
+      },
+      "amountDue": "฿1040",
+      "paid": {
+        "cols": [
+          {
+            "heading": "Bracelets to Print",
+            "headingTextRight": 220.6,
+            "headingLines": 2,
+            "count": "2 TOTAL",
+            "countLeft": 261.7,
+            "countLines": 1,
+            "gapPx": 41.1,
+            "overlap": false,
+            "cardWidth": 323
+          },
+          {
+            "heading": "Credit Grants Issued",
+            "headingTextRight": 581.2,
+            "headingLines": 2,
+            "count": "1 TOTAL",
+            "countLeft": 611.5,
+            "countLines": 1,
+            "gapPx": 30.3,
+            "overlap": false,
+            "cardWidth": 323
+          }
+        ],
+        "captions": [
+          {
+            "text": "1 Hour • 1 Hour Play",
+            "title": "1 Hour • 1 Hour Play",
+            "whole": true,
+            "lines": 2,
+            "textMatchesTitle": true
+          },
+          {
+            "text": "1 Hour • 1 Hour Play",
+            "title": "1 Hour • 1 Hour Play",
+            "whole": true,
+            "lines": 2,
+            "textMatchesTitle": true
+          }
+        ],
+        "viewport": [
+          1440,
+          900
+        ]
+      },
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z95901-000001",
+        "gross": 1040,
+        "payments": []
+      }
+    },
+    "paid-1680x1050": {
+      "pics": [
+        "04a-1680x1050-split-1-hour-play-current-order-socks-line.png",
+        "04b-1680x1050-split-payment-successful-paid-in-cash.png",
+        "04c-1680x1050-split-payment-successful-columns-close-up.png"
+      ],
+      "orderCut": {
+        "heading": "Current Order",
+        "colWidth": 312,
+        "cut": [
+          {
+            "text": "1 Hour Play\nEDITING\n฿1040\nKids\n฿690 each\n1\nAdults\n฿350 each\n1\nRegular Socks\n฿60 ",
+            "shownWidth": 312,
+            "fullWidth": 319
+          },
+          {
+            "text": "Regular Socks",
+            "shownWidth": 88,
+            "fullWidth": 95
+          }
+        ]
+      },
+      "amountDue": "฿1040",
+      "paid": {
+        "cols": [
+          {
+            "heading": "Bracelets to Print",
+            "headingTextRight": 285.8,
+            "headingLines": 1,
+            "count": "2 TOTAL",
+            "countLeft": 321.7,
+            "countLines": 1,
+            "gapPx": 35.9,
+            "overlap": false,
+            "cardWidth": 383
+          },
+          {
+            "heading": "Credit Grants Issued",
+            "headingTextRight": 646.6,
+            "headingLines": 2,
+            "count": "1 TOTAL",
+            "countLeft": 731.5,
+            "countLines": 1,
+            "gapPx": 84.8,
+            "overlap": false,
+            "cardWidth": 383
+          }
+        ],
+        "captions": [
+          {
+            "text": "1 Hour • 1 Hour Play",
+            "title": "1 Hour • 1 Hour Play",
+            "whole": true,
+            "lines": 1,
+            "textMatchesTitle": true
+          },
+          {
+            "text": "1 Hour • 1 Hour Play",
+            "title": "1 Hour • 1 Hour Play",
+            "whole": true,
+            "lines": 1,
+            "textMatchesTitle": true
+          }
+        ],
+        "viewport": [
+          1680,
+          1050
+        ]
+      },
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z95901-000002",
+        "gross": 1040,
+        "payments": []
+      }
+    },
+    "menu-fnb-1440x900": {
+      "pics": [
+        "16a-1440x900-full-fnb-categories-one-row-tiles.png"
+      ],
+      "before": {
+        "containerWidth": 1011,
+        "viewport": [
+          1440,
+          900
+        ],
+        "cats": null,
+        "tiles": {
+          "gridWidth": 1011,
+          "perRow": 3,
+          "count": 9,
+          "first": {
+            "name": "Big breakfast",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 454,
+            "bottom": 605,
+            "width": 329,
+            "height": 151
+          },
+          "firstWhollyAboveFold": true,
+          "seenWithoutScrolling": [
+            "Big breakfast",
+            "Vegetarian breakfast",
+            "Smashed avocado + bruschetta",
+            "Waffles",
+            "Pancakes",
+            "Porridge",
+            "Yogurt",
+            "Syrniki",
+            "Smoked salmon toast"
+          ],
+          "cutNames": [],
+          "sample": [
+            {
+              "name": "Big breakfast",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 454,
+              "bottom": 605,
+              "width": 329,
+              "height": 151
+            },
+            {
+              "name": "Vegetarian breakfast",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 454,
+              "bottom": 605,
+              "width": 329,
+              "height": 151
+            },
+            {
+              "name": "Smashed avocado + bruschetta",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 706,
+              "top": 454,
+              "bottom": 605,
+              "width": 329,
+              "height": 151
+            },
+            {
+              "name": "Waffles",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 617,
+              "bottom": 729,
+              "width": 329,
+              "height": 112
+            },
+            {
+              "name": "Pancakes",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 617,
+              "bottom": 729,
+              "width": 329,
+              "height": 112
+            },
+            {
+              "name": "Porridge",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 706,
+              "top": 617,
+              "bottom": 729,
+              "width": 329,
+              "height": 112
+            },
+            {
+              "name": "Yogurt",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 741,
+              "bottom": 853,
+              "width": 329,
+              "height": 112
+            },
+            {
+              "name": "Syrniki",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 741,
+              "bottom": 853,
+              "width": 329,
+              "height": 112
+            }
+          ]
+        }
+      },
+      "scrolled": null,
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 473,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [],
+        "problems": true
+      }
+    },
+    "partpaid-fnb-till": {
+      "pics": [
+        "10a-1440x900-split-fnb-code-applied-cart.png",
+        "10b-1440x900-split-fnb-payment-screen-discount-row.png",
+        "10c-1440x900-split-fnb-partial-payment-50.png",
+        "10d-1440x900-split-fnb-part-paid-tabs-and-back-held-save-as-partly-paid.png",
+        "10g-1440x900-split-fnb-save-as-partly-paid-dialog.png",
+        "10h-1440x900-split-fnb-saved-counter-back-at-the-start.png",
+        "10i-1440x900-split-fnb-tickets-tab-works-no-toast.png",
+        "10j-1440x900-split-fnb-history-tab-partly-paid-card.png",
+        "10k-1440x900-split-fnb-history-detail-partly-paid-balance.png"
+      ],
+      "cart": {
+        "charge": "Charge ฿157.50",
+        "customer": "English O Oto Play Park Your Order 1 French fries ฿175 base ฿175 Discount code −฿17.50 VAT included ฿10.30 Total ฿157.50",
+        "customerOrder": {
+          "at": [
+            {
+              "w": "French fries",
+              "i": 37
+            },
+            {
+              "w": "Discount code",
+              "i": 65
+            },
+            {
+              "w": "−฿17.50",
+              "i": 79
+            },
+            {
+              "w": "Total",
+              "i": 107
+            },
+            {
+              "w": "฿157.50",
+              "i": 113
+            }
+          ],
+          "inOrder": true
+        }
+      },
+      "payment": {
+        "amountDue": "Amount due ฿157.50",
+        "customer": "English O Oto Play Park Your Order 1 French fries ฿175 base ฿175 Discount code −฿17.50 VAT included ฿10.30 Total ฿157.50 Amount to pay To pay ฿157.50 Please pay our staff to confirm your order",
+        "customerOrder": {
+          "at": [
+            {
+              "w": "French fries",
+              "i": 37
+            },
+            {
+              "w": "Discount code",
+              "i": 65
+            },
+            {
+              "w": "−฿17.50",
+              "i": 79
+            },
+            {
+              "w": "Total",
+              "i": 107
+            },
+            {
+              "w": "฿157.50",
+              "i": 113
+            }
+          ],
+          "inOrder": true
+        }
+      },
+      "partialSavePartPaidBefore": 0,
+      "held": {
+        "navInert": true,
+        "tabsInert": [
+          {
+            "t": "Tickets",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Shop",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Events",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Check-in",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "History",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Today",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "7\nMessages",
+            "inert": true,
+            "pointer": "auto"
+          }
+        ],
+        "back": {
+          "disabled": true,
+          "inert": false
+        },
+        "save": {
+          "text": "Save as partly paid",
+          "disabled": false
+        },
+        "reason": null,
+        "amountDue": "Amount due\n฿107.50",
+        "stillUnpaid": "Order total ฿157.50; the amount above is still unpaid."
+      },
+      "dialog": {
+        "title": "Save as partly paid",
+        "words": "฿50 paid, balance ฿107.50. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.",
+        "buttons": [
+          {
+            "t": "Back",
+            "disabled": false
+          },
+          {
+            "t": "Save as partly paid",
+            "disabled": false
+          },
+          {
+            "t": "Close",
+            "disabled": false
+          }
+        ]
+      },
+      "saleApi": {
+        "status": "tendering",
+        "gross": 157.5,
+        "total": 0,
+        "outstanding": 0,
+        "payments": []
+      },
+      "after": {
+        "toast": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks | Saved as partly paid ฿50 paid, balance ฿107.50. In History as Partly paid. | Notification Saved as partly paid฿50 paid, balance ฿107.50. In History as Partly paid.",
+        "state": {
+          "navInert": false,
+          "url": "/order-station",
+          "savePartPaid": false,
+          "paymentScreen": false,
+          "start": "Scan Wristband Scan or type a wristband code to load t",
+          "cartEmpty": false
+        },
+        "tickets": {
+          "url": "/",
+          "refusal": null,
+          "destructiveToasts": 0,
+          "landing": true,
+          "leftUnpaid": null
+        },
+        "rowApi": {
+          "status": "tendering",
+          "partPaid": {
+            "paidSatang": 5000,
+            "balanceSatang": 10750
+          },
+          "gross": 157.5,
+          "time": "04:26",
+          "receipt": null
+        },
+        "historyCard": "No receipt number 13 Nov, 04:26 [staff] Partly paid BALANCE DUE ฿107.50 of ฿157.50",
+        "detail": {
+          "label": "Balance due",
+          "amount": "฿107.50",
+          "partly": "Partly paid F&B order No receipt number Walk-in 13 Nov, 04:26 · sold by"
+        },
+        "saleApi": {
+          "status": "tendering",
+          "gross": 157.5,
+          "outstandingSatang": null,
+          "payments": [],
+          "keys": [
+            "timeExtension",
+            "sale",
+            "correctionBandShortCode",
+            "refundStatus",
+            "refundableSatang",
+            "refunds",
+            "printJobs",
+            "bands",
+            "grants",
+            "issuedVouchers",
+            "pickupCode",
+            "attempts",
+            "taxBreakdown",
+            "taxConfig",
+            "lines",
+            "discounts"
+          ]
+        }
+      }
+    },
+    "fnb-whole-cash": {
+      "pics": [
+        "15a-1440x900-split-fnb-whole-baht-no-code-cart.png",
+        "15b-1440x900-split-fnb-whole-cash-tender-no-save-as-partly-paid.png",
+        "15c-1440x900-split-fnb-paid-whole-in-cash.png"
+      ],
+      "cart": {
+        "charge": "Charge ฿175",
+        "customer": "English O Oto Play Park Your Order 1 French fries ฿175 base ฿175 VAT included ฿11.45 Total ฿175",
+        "discountRow": false
+      },
+      "payment": {
+        "customer": "English O Oto Play Park Your Order 1 French fries ฿175 base ฿175 VAT included ฿11.45 Total ฿175 Amount to pay To pay ฿175 Please pay our staff to confirm your order",
+        "savePartPaid": 0,
+        "partialButton": 1,
+        "discountRow": false
+      },
+      "done": {
+        "finaliseStatus": 200,
+        "savePartPaid": 0,
+        "staff": "English Thank you! Your order is on its way — enjoy! Your pick-up code 61 YOUR ORDER 1× French fries ฿175 Total ฿175 Cash ฿175"
+      },
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z95901-000003",
+        "gross": 175
+      }
+    },
+    "menu-shop-1440x900": {
+      "pics": [
+        "16sa-1440x900-full-shop-categories-one-row-tiles.png"
+      ],
+      "before": {
+        "containerWidth": 1011,
+        "viewport": [
+          1440,
+          900
+        ],
+        "cats": null,
+        "tiles": {
+          "gridWidth": 1011,
+          "perRow": 3,
+          "count": 31,
+          "first": {
+            "name": "Golden Ticket",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 230,
+            "bottom": 365,
+            "width": 329,
+            "height": 135
+          },
+          "firstWhollyAboveFold": true,
+          "seenWithoutScrolling": [
+            "Golden Ticket",
+            "School Admission Ticket",
+            "Thai-International Admission Ticket",
+            "Helium Balloon (65)",
+            "Helium Balloon (75)",
+            "Helium Foil Balloon S",
+            "Helium Foil Balloon M",
+            "Helium Foil Balloon L",
+            "Merch Little OTO",
+            "Merch Potato Head Toy",
+            "Merch Glasses Necklace",
+            "Merch Kids Beaded Necklace"
+          ],
+          "cutNames": [],
+          "sample": [
+            {
+              "name": "Golden Ticket",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 230,
+              "bottom": 365,
+              "width": 329,
+              "height": 135
+            },
+            {
+              "name": "School Admission Ticket",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 230,
+              "bottom": 365,
+              "width": 329,
+              "height": 135
+            },
+            {
+              "name": "Thai-International Admission Ticket",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 706,
+              "top": 230,
+              "bottom": 365,
+              "width": 329,
+              "height": 135
+            },
+            {
+              "name": "Helium Balloon (65)",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 377,
+              "bottom": 505,
+              "width": 329,
+              "height": 128
+            },
+            {
+              "name": "Helium Balloon (75)",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 377,
+              "bottom": 505,
+              "width": 329,
+              "height": 128
+            },
+            {
+              "name": "Helium Foil Balloon S",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 706,
+              "top": 377,
+              "bottom": 505,
+              "width": 329,
+              "height": 128
+            },
+            {
+              "name": "Helium Foil Balloon M",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 517,
+              "bottom": 645,
+              "width": 329,
+              "height": 128
+            },
+            {
+              "name": "Helium Foil Balloon L",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 365,
+              "top": 517,
+              "bottom": 645,
+              "width": 329,
+              "height": 128
+            }
+          ]
+        }
+      },
+      "scrolled": null,
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 473,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [],
+        "problems": true
+      }
+    },
+    "shop-prep": {
+      "pics": [
+        "11a-1440x900-split-shop-emoji-toy-balloon-code-applied-cart.png",
+        "11b-1440x900-split-shop-customer-half-your-sale-and-language-button.png"
+      ],
+      "merchItems": [
+        "Merch Little OTO",
+        "฿490",
+        "Merch Potato Head Toy",
+        "฿700",
+        "Merch Glasses Necklace",
+        "฿650",
+        "Merch Kids Beaded Necklace",
+        "฿200",
+        "Merch Frozen Bracelet Set",
+        "฿150",
+        "Merch Frozen Kids Backpack",
+        "฿1500",
+        "Merch Princess Jewelry Set",
+        "฿300",
+        "Merch Round Sunglasses",
+        "฿800",
+        "Merch Wooden Twist Animal",
+        "฿200",
+        "Merch Peppa Pig Figures",
+        "฿150"
+      ],
+      "cart": {
+        "charge": "Charge ฿148.50",
+        "customer": "English O Oto Play Park Your Sale 1 Merch Blue Emoji Toy ฿100 each ฿100 1 Helium Balloon (65) ฿65 each ฿65 Discount code −฿16.50 VAT included ฿9.71 Total ฿148.50",
+        "customerOrder": {
+          "at": [
+            {
+              "w": "Merch Blue Emoji Toy",
+              "i": 36
+            },
+            {
+              "w": "Helium Balloon (65)",
+              "i": 74
+            },
+            {
+              "w": "Discount code",
+              "i": 107
+            },
+            {
+              "w": "Total",
+              "i": 148
+            }
+          ],
+          "inOrder": true
+        }
+      },
+      "header": {
+        "yourSale": [
+          1215.4,
+          189,
+          1296,
+          210
+        ],
+        "language": {
+          "text": "English",
+          "box": [
+            1326.6,
+            162,
+            1424,
+            196
+          ]
+        },
+        "gapPx": 30.6,
+        "leftOfButton": true,
+        "overlap": false
+      },
+      "cartCut": [
+        {
+          "text": "Merch Blue Emoji Toy",
+          "shownWidth": 126,
+          "fullWidth": 167
+        },
+        {
+          "text": "Helium Balloon (65)",
+          "shownWidth": 126,
+          "fullWidth": 153
+        },
+        {
+          "text": "ZZ TEST SCRUM-959 proof ZZTEST959A",
+          "shownWidth": 183,
+          "fullWidth": 318
+        }
+      ]
+    },
+    "partpaid-shop-till": {
+      "pics": [
+        "12a-1440x900-split-shop-code-applied-cart.png",
+        "12b-1440x900-split-shop-payment-screen-discount-row.png",
+        "12c-1440x900-split-shop-partial-payment-50.png",
+        "12d-1440x900-split-shop-part-paid-tabs-and-back-held-save-as-partly-paid.png",
+        "12g-1440x900-split-shop-save-as-partly-paid-dialog.png",
+        "12h-1440x900-split-shop-saved-counter-back-at-the-start.png",
+        "12i-1440x900-split-shop-tickets-tab-works-no-toast.png",
+        "12j-1440x900-split-shop-history-tab-partly-paid-card.png",
+        "12k-1440x900-split-shop-history-detail-partly-paid-balance.png"
+      ],
+      "cart": {
+        "charge": "Charge ฿148.50",
+        "customer": "English O Oto Play Park Your Sale 1 Merch Blue Emoji Toy ฿100 each ฿100 1 Helium Balloon (65) ฿65 each ฿65 Discount code −฿16.50 VAT included ฿9.71 Total ฿148.50",
+        "customerOrder": {
+          "at": [
+            {
+              "w": "Merch Blue Emoji Toy",
+              "i": 36
+            },
+            {
+              "w": "Discount code",
+              "i": 107
+            },
+            {
+              "w": "−฿16.50",
+              "i": 121
+            },
+            {
+              "w": "Total",
+              "i": 148
+            },
+            {
+              "w": "฿148.50",
+              "i": 154
+            }
+          ],
+          "inOrder": true
+        }
+      },
+      "payment": {
+        "amountDue": "Amount due ฿148.50",
+        "customer": "English O Oto Play Park Your Sale 1 Merch Blue Emoji Toy ฿100 each ฿100 1 Helium Balloon (65) ฿65 each ฿65 Discount code −฿16.50 VAT included ฿9.71 Total ฿148.50 Amount to pay To pay ฿148.50 Please pay our staff to confirm your sale",
+        "customerOrder": {
+          "at": [
+            {
+              "w": "Merch Blue Emoji Toy",
+              "i": 36
+            },
+            {
+              "w": "Discount code",
+              "i": 107
+            },
+            {
+              "w": "−฿16.50",
+              "i": 121
+            },
+            {
+              "w": "Total",
+              "i": 148
+            },
+            {
+              "w": "฿148.50",
+              "i": 154
+            }
+          ],
+          "inOrder": true
+        }
+      },
+      "partialSavePartPaidBefore": 0,
+      "held": {
+        "navInert": true,
+        "tabsInert": [
+          {
+            "t": "Tickets",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "F&B",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Events",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Check-in",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "History",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "Today",
+            "inert": true,
+            "pointer": "auto"
+          },
+          {
+            "t": "7\nMessages",
+            "inert": true,
+            "pointer": "auto"
+          }
+        ],
+        "back": {
+          "disabled": true,
+          "inert": false
+        },
+        "save": {
+          "text": "Save as partly paid",
+          "disabled": false
+        },
+        "reason": null,
+        "amountDue": "Amount due\n฿98.50",
+        "stillUnpaid": "Order total ฿148.50; the amount above is still unpaid."
+      },
+      "dialog": {
+        "title": "Save as partly paid",
+        "words": "฿50 paid, balance ฿98.50. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.",
+        "buttons": [
+          {
+            "t": "Back",
+            "disabled": false
+          },
+          {
+            "t": "Save as partly paid",
+            "disabled": false
+          },
+          {
+            "t": "Close",
+            "disabled": false
+          }
+        ]
+      },
+      "saleApi": {
+        "status": "tendering",
+        "gross": 148.5,
+        "total": 0,
+        "outstanding": 0,
+        "payments": []
+      },
+      "after": {
+        "toast": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks | Saved as partly paid ฿50 paid, balance ฿98.50. In History as Partly paid. | Notification Saved as partly paid฿50 paid, balance ฿98.50. In History as Partly paid.",
+        "state": {
+          "navInert": false,
+          "url": "/merch-station",
+          "savePartPaid": false,
+          "paymentScreen": false,
+          "start": "Scan a wristband to put the sale on the customer's tab, ",
+          "cartEmpty": false
+        },
+        "tickets": {
+          "url": "/",
+          "refusal": null,
+          "destructiveToasts": 0,
+          "landing": true,
+          "leftUnpaid": null
+        },
+        "rowApi": {
+          "status": "tendering",
+          "partPaid": {
+            "paidSatang": 5000,
+            "balanceSatang": 9850
+          },
+          "gross": 148.5,
+          "time": "04:30",
+          "receipt": null
+        },
+        "historyCard": "No receipt number 13 Nov, 04:30 [staff] Partly paid BALANCE DUE ฿98.50 of ฿148.50",
+        "detail": {
+          "label": "Balance due",
+          "amount": "฿98.50",
+          "partly": "Partly paid Retail sale No receipt number Walk-in 13 Nov, 04:30 · sold "
+        },
+        "saleApi": {
+          "status": "tendering",
+          "gross": 148.5,
+          "outstandingSatang": null,
+          "payments": [],
+          "keys": [
+            "timeExtension",
+            "sale",
+            "correctionBandShortCode",
+            "refundStatus",
+            "refundableSatang",
+            "refunds",
+            "printJobs",
+            "bands",
+            "grants",
+            "issuedVouchers",
+            "pickupCode",
+            "attempts",
+            "taxBreakdown",
+            "taxConfig",
+            "lines",
+            "discounts"
+          ]
+        }
+      }
+    },
+    "history-search-1440x900": {
+      "placeholder": "Search by name, receipt, bracelet…",
+      "value": "",
+      "inputWidth": 428,
+      "paddingLeft": "48px",
+      "paddingRight": "16px",
+      "contentWidth": 361.9,
+      "placeholderTextWidth": 268.6,
+      "roomPx": 93.3,
+      "whole": true,
+      "viewport": [
+        1440,
+        900
+      ],
+      "nav": {
+        "navBox": [
+          465,
+          10,
+          473,
+          44
+        ],
+        "scrollWidth": 782,
+        "clientWidth": 473,
+        "scrolls": true,
+        "scrollLeft": 99,
+        "overflowX": "auto",
+        "offScreen": [
+          {
+            "t": "Tickets",
+            "cut": true
+          },
+          {
+            "t": "Tickets",
+            "cut": true
+          },
+          {
+            "t": "Today",
+            "cut": true
+          },
+          {
+            "t": "Today",
+            "cut": true
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          }
+        ],
+        "tabs": [
+          "Tickets",
+          "Tickets",
+          "F&B",
+          "F&B",
+          "Shop",
+          "Shop",
+          "Events",
+          "Events",
+          "Check-in",
+          "Check-in",
+          "Today",
+          "Today",
+          "7 Messages",
+          "7 Messages"
+        ]
+      },
+      "pic": "13-1440x900-history-search-placeholder.png"
+    },
+    "full-1440x900": {
+      "pics": [
+        "14a-1440x900-full-width-three-rate-cards.png",
+        "14b-1440x900-full-width-ticket-list.png",
+        "14c-1440x900-full-width-1-hour-play-addons-two-a-row.png",
+        "14d-1440x900-full-width-payment-methods.png",
+        "14e-1440x900-full-width-cash-confirm-at-the-panel-foot.png",
+        "14f-1440x900-full-width-paid-in-cash.png"
+      ],
+      "toggle": "Show customer display",
+      "customerHalfGone": true,
+      "cards": [
+        {
+          "tier": "Tourist",
+          "box": [
+            24,
+            416,
+            328,
+            266
+          ],
+          "icon": [
+            80,
+            80
+          ],
+          "iconAboveTitle": true
+        },
+        {
+          "tier": "Expat",
+          "box": [
+            376,
+            416,
+            328,
+            266
+          ],
+          "icon": [
+            80,
+            80
+          ],
+          "iconAboveTitle": true
+        },
+        {
+          "tier": "Thai",
+          "box": [
+            727,
+            416,
+            328,
+            266
+          ],
+          "icon": [
+            80,
+            80
+          ],
+          "iconAboveTitle": true
+        }
+      ],
+      "cardsOneRow": true,
+      "list": {
+        "stepWidth": 1031,
+        "cards": [
+          [
+            "1 Hour Play",
+            24,
+            326,
+            506
+          ],
+          [
+            "2 Hours Play",
+            546,
+            326,
+            506
+          ],
+          [
+            "Full Day Pass",
+            24,
+            460,
+            506
+          ],
+          [
+            "Eat & Play Kids Pass",
+            546,
+            460,
+            506
+          ],
+          [
+            "1 Kid + 1 Adult (1 hour)",
+            24,
+            594,
+            506
+          ]
+        ]
+      },
+      "addons": {
+        "gridWidth": 1027,
+        "cards": [
+          {
+            "name": "Free Socks",
+            "whole": true,
+            "left": 24,
+            "top": 530,
+            "width": 506
+          },
+          {
+            "name": "Regular Socks",
+            "whole": true,
+            "left": 546,
+            "top": 530,
+            "width": 506
+          },
+          {
+            "name": "Grip Socks",
+            "whole": true,
+            "left": 24,
+            "top": 646,
+            "width": 506
+          },
+          {
+            "name": "Locker Rental",
+            "whole": true,
+            "left": 546,
+            "top": 646,
+            "width": 506
+          },
+          {
+            "name": "Refillable Drink Cup",
+            "whole": true,
+            "left": 24,
+            "top": 762,
+            "width": 506
+          },
+          {
+            "name": "Glow Band",
+            "whole": true,
+            "left": 546,
+            "top": 762,
+            "width": 506
+          }
+        ],
+        "perRow": 2
+      },
+      "participants": [
+        [
+          "Kids",
+          44,
+          44
+        ],
+        [
+          "Adults",
+          44,
+          44
+        ]
+      ],
+      "buttons": {
+        "addAnother": {
+          "text": "Add Another Ticket",
+          "box": [
+            24,
+            812,
+            507.5,
+            64
+          ],
+          "button": [
+            24,
+            812,
+            507.5,
+            64
+          ],
+          "textInsideButton": true,
+          "insideWindow": true,
+          "whole": true
+        },
+        "cont": {
+          "text": "Continue",
+          "box": [
+            547.5,
+            812,
+            507.5,
+            64
+          ],
+          "button": [
+            547.5,
+            812,
+            507.5,
+            64
+          ],
+          "textInsideButton": true,
+          "insideWindow": true,
+          "whole": true
+        }
+      },
+      "amountDue": "฿1040",
+      "foot": {
+        "position": "static",
+        "background": "rgba(0, 0, 0, 0)",
+        "image": "none",
+        "confirm": [
+          168,
+          836,
+          887,
+          64
+        ],
+        "back": [
+          24,
+          836,
+          128,
+          64
+        ],
+        "stepBottom": 876,
+        "confirmToStepBottom": -24,
+        "viewportH": 900
+      },
+      "sale": {
+        "status": "finalised",
+        "receipt": "Z95901-000004",
+        "gross": 1040
+      },
+      "fit": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 473,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [],
+        "problems": true
+      }
+    },
+    "full-1024x768": {
+      "pics": [
+        "17a-1024x768-full-rates.png",
+        "17b-1024x768-full-fnb.png",
+        "17c-1024x768-full-shop.png"
+      ],
+      "toggle": "Show customer display",
+      "cards": [
+        {
+          "tier": "Tourist",
+          "box": [
+            24,
+            440,
+            189,
+            286
+          ],
+          "whole": true
+        },
+        {
+          "tier": "Expat",
+          "box": [
+            237,
+            440,
+            189,
+            286
+          ],
+          "whole": true
+        },
+        {
+          "tier": "Thai",
+          "box": [
+            450,
+            440,
+            189,
+            286
+          ],
+          "whole": true
+        }
+      ],
+      "membership": [
+        {
+          "t": "Phone",
+          "found": false
+        },
+        {
+          "t": "Nickname",
+          "found": false
+        }
+      ],
+      "fnb": {
+        "width": 595,
+        "cats": null,
+        "catsWrapNotScroll": true,
+        "tiles": {
+          "perRow": 3,
+          "gridWidth": 595,
+          "first": {
+            "name": "Big breakfast",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 622,
+            "bottom": 796,
+            "width": 190,
+            "height": 174
+          },
+          "seen": [],
+          "cut": []
+        }
+      },
+      "shop": {
+        "width": 595,
+        "cats": null,
+        "catsWrapNotScroll": true,
+        "tiles": {
+          "perRow": 3,
+          "gridWidth": 595,
+          "first": {
+            "name": "Golden Ticket",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 286,
+            "bottom": 466,
+            "width": 190,
+            "height": 180
+          },
+          "seen": [
+            "Golden Ticket",
+            "School Admission Ticket",
+            "Thai-International Admission Ticket",
+            "Helium Balloon (65)",
+            "Helium Balloon (75)",
+            "Helium Foil Balloon S",
+            "Helium Foil Balloon M",
+            "Helium Foil Balloon L",
+            "Merch Little OTO"
+          ],
+          "cut": []
+        }
+      },
+      "fit": {
+        "viewport": [
+          1024,
+          768
+        ],
+        "pageSideways": false,
+        "truncated": [
+          {
+            "tag": "SPAN",
+            "text": "Test harness — staff station (left) + customer display (right) share one live sale. In pro",
+            "sw": 938,
+            "cw": 793
+          }
+        ],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [
+          {
+            "text": "Today",
+            "left": 972,
+            "right": 1059.5
+          },
+          {
+            "text": "Today",
+            "left": 972,
+            "right": 1059.5
+          },
+          {
+            "text": "7 Messages",
+            "left": 1063.5,
+            "right": 1178.8
+          },
+          {
+            "text": "7 Messages",
+            "left": 1063.5,
+            "right": 1178.8
+          }
+        ],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 254,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          }
+        ],
+        "dotdot": [],
+        "problems": true
+      },
+      "nav": {
+        "navBox": [
+          412,
+          59,
+          254,
+          44
+        ],
+        "scrollWidth": 782,
+        "clientWidth": 254,
+        "scrolls": true,
+        "scrollLeft": 11,
+        "overflowX": "auto",
+        "offScreen": [
+          {
+            "t": "Tickets",
+            "cut": true
+          },
+          {
+            "t": "Tickets",
+            "cut": true
+          },
+          {
+            "t": "Events",
+            "cut": false
+          },
+          {
+            "t": "Events",
+            "cut": false
+          },
+          {
+            "t": "Check-in",
+            "cut": false
+          },
+          {
+            "t": "Check-in",
+            "cut": false
+          },
+          {
+            "t": "History",
+            "cut": false
+          },
+          {
+            "t": "History",
+            "cut": false
+          },
+          {
+            "t": "Today",
+            "cut": false
+          },
+          {
+            "t": "Today",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          }
+        ],
+        "tabs": [
+          "Tickets",
+          "Tickets",
+          "F&B",
+          "F&B",
+          "Events",
+          "Events",
+          "Check-in",
+          "Check-in",
+          "History",
+          "History",
+          "Today",
+          "Today",
+          "7 Messages",
+          "7 Messages"
+        ]
+      }
+    },
+    "full-900x800": {
+      "pics": [
+        "18b-900x800-full-fnb.png",
+        "18c-900x800-full-shop.png"
+      ],
+      "fnb": {
+        "width": 471,
+        "cats": {
+          "scrollWidth": 3362,
+          "clientWidth": 487,
+          "scrolls": true,
+          "wraps": "nowrap",
+          "oneRow": true,
+          "count": 24,
+          "seen": [
+            "Breakfast",
+            "Sides",
+            "Sharing"
+          ],
+          "cutAtEdge": [
+            "Soup"
+          ],
+          "scrollbarPx": 0
+        },
+        "catsWrapNotScroll": false,
+        "tiles": {
+          "perRow": 2,
+          "gridWidth": 471,
+          "first": {
+            "name": "Big breakfast",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 342,
+            "bottom": 469,
+            "width": 230,
+            "height": 127
+          },
+          "seen": [
+            "Big breakfast",
+            "Vegetarian breakfast",
+            "Smashed avocado + bruschetta",
+            "Waffles",
+            "Pancakes",
+            "Porridge"
+          ],
+          "cut": []
+        }
+      },
+      "shop": {
+        "width": 471,
+        "cats": {
+          "scrollWidth": 658,
+          "clientWidth": 487,
+          "scrolls": true,
+          "wraps": "nowrap",
+          "oneRow": true,
+          "count": 5,
+          "seen": [
+            "All",
+            "Tickets & passes",
+            "Balloons"
+          ],
+          "cutAtEdge": [
+            "Merchandise"
+          ],
+          "scrollbarPx": 0
+        },
+        "catsWrapNotScroll": false,
+        "tiles": {
+          "perRow": 2,
+          "gridWidth": 471,
+          "first": {
+            "name": "Golden Ticket",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 286,
+            "bottom": 421,
+            "width": 230,
+            "height": 135
+          },
+          "seen": [
+            "Golden Ticket",
+            "School Admission Ticket",
+            "Thai-International Admission Ticket",
+            "Helium Balloon (65)",
+            "Helium Balloon (75)",
+            "Helium Foil Balloon S"
+          ],
+          "cut": []
+        }
+      },
+      "fit": {
+        "viewport": [
+          900,
+          800
+        ],
+        "pageSideways": false,
+        "truncated": [
+          {
+            "tag": "SPAN",
+            "text": "Test harness — staff station (left) + customer display (right) share one live sale. In pro",
+            "sw": 938,
+            "cw": 669
+          }
+        ],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "DIV",
+            "cls": "flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/merch:flex-nowrap md:@max-xl/merch:overflow-",
+            "sw": 658,
+            "cw": 487,
+            "text": "All Tickets & passes Balloons Merchandise Workshop"
+          }
+        ],
+        "dotdot": [],
+        "problems": true
+      },
+      "nav": {
+        "navBox": [
+          59,
+          112,
+          782,
+          44
+        ],
+        "scrollWidth": 782,
+        "clientWidth": 782,
+        "scrolls": false,
+        "scrollLeft": 0,
+        "overflowX": "auto",
+        "offScreen": [],
+        "tabs": [
+          "Tickets",
+          "Tickets",
+          "F&B",
+          "F&B",
+          "Events",
+          "Events",
+          "Check-in",
+          "Check-in",
+          "History",
+          "History",
+          "Today",
+          "Today",
+          "7 Messages",
+          "7 Messages"
+        ]
+      }
+    },
+    "menu-fnb-1680x1050": {
+      "pics": [
+        "07a-1680x1050-split-fnb-categories-one-row-tiles.png",
+        "07b-1680x1050-split-fnb-categories-scrolled-to-the-last.png"
+      ],
+      "before": {
+        "containerWidth": 410,
+        "viewport": [
+          1680,
+          1050
+        ],
+        "cats": {
+          "rowBox": [
+            16,
+            226,
+            426,
+            48
+          ],
+          "scrollWidth": 3362,
+          "clientWidth": 426,
+          "scrolls": true,
+          "scrollLeft": 0,
+          "overflowX": "auto",
+          "wraps": "nowrap",
+          "scrollbarPx": 0,
+          "count": 24,
+          "oneRow": true,
+          "seen": [
+            "Breakfast",
+            "Sides",
+            "Sharing"
+          ],
+          "cutAtEdge": [
+            "Soup"
+          ],
+          "offScreen": [
+            "Salads",
+            "Pasta",
+            "Pizza",
+            "Mains",
+            "Asian Food",
+            "Kids",
+            "Desserts",
+            "Coffee",
+            "Iced Coffee",
+            "Chocolate",
+            "Soda",
+            "Smoothies",
+            "Juice",
+            "Tea pot",
+            "Soft drinks",
+            "Kids juice",
+            "Wine",
+            "Beer",
+            "Specials",
+            "Free Drinks Menu"
+          ],
+          "last": "Free Drinks Menu",
+          "lastWhole": false
+        },
+        "tiles": {
+          "gridWidth": 410,
+          "perRow": 2,
+          "count": 9,
+          "first": {
+            "name": "Big breakfast",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 286,
+            "bottom": 413,
+            "width": 199,
+            "height": 127
+          },
+          "firstWhollyAboveFold": true,
+          "seenWithoutScrolling": [
+            "Big breakfast",
+            "Vegetarian breakfast",
+            "Smashed avocado + bruschetta",
+            "Waffles",
+            "Pancakes",
+            "Porridge",
+            "Yogurt",
+            "Syrniki",
+            "Smoked salmon toast"
+          ],
+          "cutNames": [],
+          "sample": [
+            {
+              "name": "Big breakfast",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 286,
+              "bottom": 413,
+              "width": 199,
+              "height": 127
+            },
+            {
+              "name": "Vegetarian breakfast",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 235,
+              "top": 286,
+              "bottom": 413,
+              "width": 199,
+              "height": 127
+            },
+            {
+              "name": "Smashed avocado + bruschetta",
+              "nameWhole": true,
+              "nameLines": 3,
+              "left": 24,
+              "top": 425,
+              "bottom": 599,
+              "width": 199,
+              "height": 174
+            },
+            {
+              "name": "Waffles",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 235,
+              "top": 425,
+              "bottom": 599,
+              "width": 199,
+              "height": 174
+            },
+            {
+              "name": "Pancakes",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 611,
+              "bottom": 723,
+              "width": 199,
+              "height": 112
+            },
+            {
+              "name": "Porridge",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 235,
+              "top": 611,
+              "bottom": 723,
+              "width": 199,
+              "height": 112
+            },
+            {
+              "name": "Yogurt",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 735,
+              "bottom": 847,
+              "width": 199,
+              "height": 112
+            },
+            {
+              "name": "Syrniki",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 235,
+              "top": 735,
+              "bottom": 847,
+              "width": 199,
+              "height": 112
+            }
+          ]
+        }
+      },
+      "scrolled": {
+        "rowBox": [
+          16,
+          226,
+          426,
+          48
+        ],
+        "scrollWidth": 3362,
+        "clientWidth": 426,
+        "scrolls": true,
+        "scrollLeft": 2936,
+        "overflowX": "auto",
+        "wraps": "nowrap",
+        "scrollbarPx": 0,
+        "count": 24,
+        "oneRow": true,
+        "seen": [
+          "Specials",
+          "Free Drinks Menu"
+        ],
+        "cutAtEdge": [],
+        "offScreen": [
+          "Breakfast",
+          "Sides",
+          "Sharing",
+          "Soup",
+          "Salads",
+          "Pasta",
+          "Pizza",
+          "Mains",
+          "Asian Food",
+          "Kids",
+          "Desserts",
+          "Coffee",
+          "Iced Coffee",
+          "Chocolate",
+          "Soda",
+          "Smoothies",
+          "Juice",
+          "Tea pot",
+          "Soft drinks",
+          "Kids juice",
+          "Wine",
+          "Beer"
+        ],
+        "last": "Free Drinks Menu",
+        "lastWhole": true
+      },
+      "fit": {
+        "viewport": [
+          1680,
+          1050
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [
+          {
+            "text": "Iced Coffee",
+            "left": 1607.8,
+            "right": 1767.5
+          },
+          {
+            "text": "Chocolate",
+            "left": 1775.5,
+            "right": 1925.2
+          },
+          {
+            "text": "Soda",
+            "left": 1933.2,
+            "right": 2042.9
+          },
+          {
+            "text": "Smoothies",
+            "left": 2050.9,
+            "right": 2204.3
+          },
+          {
+            "text": "Juice",
+            "left": 2212.3,
+            "right": 2324.9
+          },
+          {
+            "text": "Tea pot",
+            "left": 2332.9,
+            "right": 2460.8
+          },
+          {
+            "text": "Soft drinks",
+            "left": 2468.8,
+            "right": 2623.7
+          },
+          {
+            "text": "Kids juice",
+            "left": 2631.7,
+            "right": 2778.1
+          },
+          {
+            "text": "Wine",
+            "left": 2786.1,
+            "right": 2896.5
+          },
+          {
+            "text": "Beer",
+            "left": 2904.5,
+            "right": 3010.7
+          },
+          {
+            "text": "Specials",
+            "left": 3018.7,
+            "right": 3155.1
+          },
+          {
+            "text": "Free Drinks Menu",
+            "left": 3163.1,
+            "right": 3370
+          }
+        ],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 567,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          },
+          {
+            "tag": "DIV",
+            "cls": "flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/menu:flex-nowrap md:@max-xl/menu:overflow-x-",
+            "sw": 3362,
+            "cw": 426,
+            "text": "Breakfast Sides Sharing Soup Salads Pasta Pizza Mains Asian "
+          }
+        ],
+        "dotdot": [
+          "Staff are adding your items now…"
+        ],
+        "problems": true
+      }
+    },
+    "menu-shop-1680x1050": {
+      "pics": [
+        "07sa-1680x1050-split-shop-categories-one-row-tiles.png",
+        "07sb-1680x1050-split-shop-categories-scrolled-to-the-last.png"
+      ],
+      "before": {
+        "containerWidth": 410,
+        "viewport": [
+          1680,
+          1050
+        ],
+        "cats": {
+          "rowBox": [
+            16,
+            170,
+            426,
+            48
+          ],
+          "scrollWidth": 658,
+          "clientWidth": 426,
+          "scrolls": true,
+          "scrollLeft": 0,
+          "overflowX": "auto",
+          "wraps": "nowrap",
+          "scrollbarPx": 0,
+          "count": 5,
+          "oneRow": true,
+          "seen": [
+            "All",
+            "Tickets & passes",
+            "Balloons"
+          ],
+          "cutAtEdge": [
+            "Merchandise"
+          ],
+          "offScreen": [
+            "Workshop"
+          ],
+          "last": "Workshop",
+          "lastWhole": false
+        },
+        "tiles": {
+          "gridWidth": 410,
+          "perRow": 2,
+          "count": 31,
+          "first": {
+            "name": "Golden Ticket",
+            "nameWhole": true,
+            "nameLines": 1,
+            "left": 24,
+            "top": 230,
+            "bottom": 388,
+            "width": 199,
+            "height": 158
+          },
+          "firstWhollyAboveFold": true,
+          "seenWithoutScrolling": [
+            "Golden Ticket",
+            "School Admission Ticket",
+            "Thai-International Admission Ticket",
+            "Helium Balloon (65)",
+            "Helium Balloon (75)",
+            "Helium Foil Balloon S",
+            "Helium Foil Balloon M",
+            "Helium Foil Balloon L",
+            "Merch Little OTO",
+            "Merch Potato Head Toy"
+          ],
+          "cutNames": [],
+          "sample": [
+            {
+              "name": "Golden Ticket",
+              "nameWhole": true,
+              "nameLines": 1,
+              "left": 24,
+              "top": 230,
+              "bottom": 388,
+              "width": 199,
+              "height": 158
+            },
+            {
+              "name": "School Admission Ticket",
+              "nameWhole": true,
+              "nameLines": 3,
+              "left": 235,
+              "top": 230,
+              "bottom": 388,
+              "width": 199,
+              "height": 158
+            },
+            {
+              "name": "Thai-International Admission Ticket",
+              "nameWhole": true,
+              "nameLines": 4,
+              "left": 24,
+              "top": 400,
+              "bottom": 580,
+              "width": 199,
+              "height": 180
+            },
+            {
+              "name": "Helium Balloon (65)",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 235,
+              "top": 400,
+              "bottom": 580,
+              "width": 199,
+              "height": 180
+            },
+            {
+              "name": "Helium Balloon (75)",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 24,
+              "top": 592,
+              "bottom": 727,
+              "width": 199,
+              "height": 135
+            },
+            {
+              "name": "Helium Foil Balloon S",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 235,
+              "top": 592,
+              "bottom": 727,
+              "width": 199,
+              "height": 135
+            },
+            {
+              "name": "Helium Foil Balloon M",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 24,
+              "top": 739,
+              "bottom": 874,
+              "width": 199,
+              "height": 135
+            },
+            {
+              "name": "Helium Foil Balloon L",
+              "nameWhole": true,
+              "nameLines": 2,
+              "left": 235,
+              "top": 739,
+              "bottom": 874,
+              "width": 199,
+              "height": 135
+            }
+          ]
+        }
+      },
+      "scrolled": {
+        "rowBox": [
+          16,
+          170,
+          426,
+          48
+        ],
+        "scrollWidth": 658,
+        "clientWidth": 426,
+        "scrolls": true,
+        "scrollLeft": 232,
+        "overflowX": "auto",
+        "wraps": "nowrap",
+        "scrollbarPx": 0,
+        "count": 5,
+        "oneRow": true,
+        "seen": [
+          "Balloons",
+          "Merchandise",
+          "Workshop"
+        ],
+        "cutAtEdge": [],
+        "offScreen": [
+          "All",
+          "Tickets & passes"
+        ],
+        "last": "Workshop",
+        "lastWhole": true
+      },
+      "fit": {
+        "viewport": [
+          1680,
+          1050
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "clamped": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [
+          {
+            "tag": "NAV",
+            "cls": "max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1",
+            "sw": 782,
+            "cw": 567,
+            "text": "Tickets F&B Shop Events Check-in History Today 7 Messages"
+          },
+          {
+            "tag": "DIV",
+            "cls": "flex gap-2 mb-3 shrink-0 flex-wrap md:@max-xl/merch:flex-nowrap md:@max-xl/merch:overflow-",
+            "sw": 658,
+            "cw": 426,
+            "text": "All Tickets & passes Balloons Merchandise Workshop"
+          }
+        ],
+        "dotdot": [
+          "Staff are adding your items now…"
+        ],
+        "problems": true
+      }
+    },
+    "partpaid-phone": {
+      "pics": [
+        "20c-phone-390x844-fnb-partial-payment-50.png",
+        "20d-phone-390x844-fnb-part-paid-bars-inert-back-shut-save-as-partly-paid.png",
+        "20e-phone-390x844-fnb-save-as-partly-paid-dialog.png",
+        "20f-phone-390x844-fnb-saved-back-at-scan.png",
+        "20g-phone-390x844-tickets-tab-works.png"
+      ],
+      "handOver": "Checkout, pick-up code 62, Customer is ready, Customer confirmed — return phone to staff (done by hand before this step)",
+      "held": {
+        "bar": [
+          {
+            "t": "Tickets",
+            "inert": true
+          },
+          {
+            "t": "F&B",
+            "inert": true
+          },
+          {
+            "t": "Shop",
+            "inert": true
+          },
+          {
+            "t": "Check-in",
+            "inert": true
+          },
+          {
+            "t": "Events",
+            "inert": true
+          },
+          {
+            "t": "History",
+            "inert": true
+          },
+          {
+            "t": "Today",
+            "inert": true
+          }
+        ],
+        "top": [
+          {
+            "a": "Lock screen",
+            "inert": true
+          },
+          {
+            "a": "Theme and station setup",
+            "inert": true
+          }
+        ],
+        "back": {
+          "disabled": true,
+          "inert": false
+        },
+        "save": {
+          "text": "Save as partly paid",
+          "disabled": false
+        },
+        "reason": null,
+        "amountDue": "Amount due\n฿125",
+        "sideways": false
+      },
+      "dialog": {
+        "title": "Save as partly paid",
+        "words": "฿50 paid, balance ฿125. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.",
+        "buttons": [
+          "Back",
+          "Save as partly paid",
+          "Close"
+        ],
+        "box": {
+          "left": 0,
+          "right": 390,
+          "width": 390,
+          "inside": true
+        }
+      },
+      "toast": "",
+      "after": {
+        "text": "1 no gate Oto Play Park, Central Floresta [staff] Scan Wristband Scan or type a wristband code to load the customer's tab. Load Tab DEMO WRISTBANDS Mama [staff] #1001 credit ฿0 Nong Fah #1002 credit ฿0 [staff] [staff] #1003 cre",
+        "held": {
+          "bar": [
+            {
+              "t": "Tickets",
+              "inert": false
+            },
+            {
+              "t": "F&B",
+              "inert": false
+            },
+            {
+              "t": "Shop",
+              "inert": false
+            },
+            {
+              "t": "Check-in",
+              "inert": false
+            },
+            {
+              "t": "Events",
+              "inert": false
+            },
+            {
+              "t": "History",
+              "inert": false
+            },
+            {
+              "t": "Today",
+              "inert": false
+            }
+          ],
+          "top": [
+            {
+              "a": "Lock screen",
+              "inert": false
+            },
+            {
+              "a": "Theme and station setup",
+              "inert": false
+            }
+          ],
+          "back": null,
+          "save": null,
+          "reason": null,
+          "amountDue": null,
+          "sideways": false
+        },
+        "ticketsUrl": "/",
+        "ticketsText": "1 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default To",
+        "refusal": null
+      },
+      "rowApi": {
+        "status": "tendering",
+        "partPaid": {
+          "paidSatang": 5000,
+          "balanceSatang": 12500
+        },
+        "gross": 175,
+        "time": "04:40"
+      },
+      "historyText": "1 no gate Oto Play Park, Central Floresta [staff] Today Yesterday This week All time Scan bracelet Find by phone All Tickets F&B 169 sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. No receipt number 13 Nov, 04:40 [staff] Partly paid BALANCE DUE ฿125 of ฿175 Z95901-000005 · ZZ TEST 959 guardian H 13 Nov, 04:37 [staff] Paid ฿183",
+      "historyHasPartly": true
+    },
+    "overdue": {
+      "pics": [
+        "21a-1440x900-split-board-family-h-overdue-desk-card.png",
+        "21b-1440x900-split-board-family-h-overdue-desk-card-close-up.png",
+        "21c-phone-390x844-board-family-h-overdue-card.png",
+        "21d-phone-390x844-family-h-screen-overdue.png"
+      ],
+      "deskToggle": "no toggle: locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  -",
+      "desk": {
+        "at": "04:41:23",
+        "text": "ZZ TEST 959 guardian H 2 children +66898959012 Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898959012 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST Mali 959 H 6 yrs DROP-OFF 56m left ZZ TEST Nok 959 H 7 yrs DROP-OFF Overdue · 04:37 Booked & paid · no payment needed Check in Check Out",
+        "lines": [
+          "Overdue · 04:37"
+        ],
+        "colour": null
+      },
+      "phoneCard": {
+        "at": "04:41:31",
+        "listed": 1,
+        "text": "ZZ TEST 959 guardian H 2 kids Awaiting confirmation ZZ TEST Mali 959 H 6 yrs DROP-OFF 56m left ZZ TEST Nok 959 H 7 yrs DROP-OFF Overdue · 04:37",
+        "lines": [
+          "Overdue · 04:37"
+        ]
+      },
+      "phoneFamily": {
+        "at": "04:41:33",
+        "lines": [
+          "Overdue · 04:37"
+        ],
+        "text": "ZZ TEST 959 guardian H · 2 kids ZZ TEST 959 guardian H 2 children +66898959012 WHATSAPP CONNECTION Awaiting confirmation Waiting for the parent to tap \"Confirm received\" in WhatsApp. Parent's number 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898959012 Save & re-send Resend confirmation Sim: parent confirms Couldn't reach ZZ TEST Mali 959 H 6 yrs DROP-OFF May order food No 56m left ZZ TEST Nok 9"
+      },
+      "booked": [
+        {
+          "name": "ZZ TEST Mali 959 H",
+          "status": "in_park",
+          "scheduledFor": null
+        },
+        {
+          "name": "ZZ TEST Nok 959 H",
+          "status": "registered",
+          "scheduledFor": "04:37:09"
+        }
+      ]
+    },
+    "eod-phone-390": {
+      "pics": [
+        "22a-phone-390-end-of-day-band-code-in-its-card.png",
+        "22b-phone-390-end-of-day-close-day-and-csv.png"
+      ],
+      "read": {
+        "viewport": [
+          390,
+          844
+        ],
+        "docScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "pageAsWideAsPhone": true,
+        "stillInside": "Still counted inside· resolve each before Close Day",
+        "rows": 1,
+        "band": {
+          "text": "Checked in 04:37 · Band Z95901229PF8HP5B2F4AX9RVB7W68FZJR.CAJEBZPNGWRW · Sale Z95901-000005",
+          "lineBox": [
+            45,
+            345
+          ],
+          "lines": 3,
+          "wrap": "anywhere",
+          "rowBox": [
+            33,
+            357
+          ],
+          "cardBox": [
+            16,
+            374
+          ],
+          "insideRow": true,
+          "insideWindow": true,
+          "textRight": 344.4
+        },
+        "closeDay": {
+          "text": "Close Day",
+          "box": [
+            16,
+            3808.3,
+            358,
+            56
+          ],
+          "insideWindow": true,
+          "textInside": true,
+          "disabled": true
+        },
+        "downloadCsv": {
+          "text": "Download CSV",
+          "box": [
+            222.9,
+            1132,
+            134.1,
+            38
+          ],
+          "insideWindow": true,
+          "textInside": true,
+          "disabled": false
+        },
+        "widest": 390
+      },
+      "after": {
+        "docScrollWidth": 390,
+        "vw": 390,
+        "scrollX": 0
+      }
+    },
+    "eod-phone-360": {
+      "pics": [
+        "23a-phone-360-end-of-day-band-code-in-its-card.png",
+        "23b-phone-360-end-of-day-close-day-and-csv.png"
+      ],
+      "read": {
+        "viewport": [
+          360,
+          780
+        ],
+        "docScrollWidth": 360,
+        "bodyScrollWidth": 360,
+        "pageAsWideAsPhone": true,
+        "stillInside": "Still counted inside· resolve each before Close Day",
+        "rows": 1,
+        "band": {
+          "text": "Checked in 04:37 · Band Z95901229PF8HP5B2F4AX9RVB7W68FZJR.CAJEBZPNGWRW · Sale Z95901-000005",
+          "lineBox": [
+            45,
+            315
+          ],
+          "lines": 3,
+          "wrap": "anywhere",
+          "rowBox": [
+            33,
+            327
+          ],
+          "cardBox": [
+            16,
+            344
+          ],
+          "insideRow": true,
+          "insideWindow": true,
+          "textRight": 315
+        },
+        "closeDay": {
+          "text": "Close Day",
+          "box": [
+            16,
+            3915.7,
+            328,
+            56
+          ],
+          "insideWindow": true,
+          "textInside": true,
+          "disabled": true
+        },
+        "downloadCsv": {
+          "text": "Download CSV",
+          "box": [
+            192.9,
+            1194,
+            134.1,
+            38
+          ],
+          "insideWindow": true,
+          "textInside": true,
+          "disabled": false
+        },
+        "widest": 360
+      },
+      "after": {
+        "docScrollWidth": 360,
+        "vw": 360,
+        "scrollX": 0
+      }
+    },
+    "huntRow": {
+      "rowBox": {
+        "x": 16,
+        "y": 226,
+        "width": 306,
+        "height": 48
+      },
+      "afterVerticalWheel": 0,
+      "afterShiftWheel": 400,
+      "afterSidewaysWheel": 400,
+      "afterNineTabs": {
+        "scrollLeft": 1100,
+        "focused": "Kids"
+      },
+      "hint": {
+        "scrollbarPx": 0,
+        "scrollbarWidth": "auto",
+        "maskImage": "none",
+        "siblings": 3
+      },
+      "coffee": {
+        "offsetLeft": 1477,
+        "rowWidth": 306,
+        "screensAway": 4.8
+      }
+    },
+    "history-search-1024x768": {
+      "placeholder": "Search by name, receipt, bracelet…",
+      "value": "",
+      "inputWidth": 380,
+      "paddingLeft": "48px",
+      "paddingRight": "16px",
+      "contentWidth": 313.9,
+      "placeholderTextWidth": 268.6,
+      "roomPx": 45.3,
+      "whole": true,
+      "viewport": [
+        1024,
+        768
+      ],
+      "nav": {
+        "navBox": [
+          412,
+          10,
+          254,
+          44
+        ],
+        "scrollWidth": 782,
+        "clientWidth": 254,
+        "scrolls": true,
+        "scrollLeft": 318,
+        "overflowX": "auto",
+        "offScreen": [
+          {
+            "t": "Tickets",
+            "cut": false
+          },
+          {
+            "t": "Tickets",
+            "cut": false
+          },
+          {
+            "t": "F&B",
+            "cut": false
+          },
+          {
+            "t": "F&B",
+            "cut": false
+          },
+          {
+            "t": "Shop",
+            "cut": false
+          },
+          {
+            "t": "Shop",
+            "cut": false
+          },
+          {
+            "t": "Events",
+            "cut": true
+          },
+          {
+            "t": "Events",
+            "cut": true
+          },
+          {
+            "t": "Today",
+            "cut": true
+          },
+          {
+            "t": "Today",
+            "cut": true
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          },
+          {
+            "t": "7 Messages",
+            "cut": false
+          }
+        ],
+        "tabs": [
+          "Tickets",
+          "Tickets",
+          "F&B",
+          "F&B",
+          "Shop",
+          "Shop",
+          "Events",
+          "Events",
+          "Check-in",
+          "Check-in",
+          "Today",
+          "Today",
+          "7 Messages",
+          "7 Messages"
+        ]
+      },
+      "pic": "13-1024x768-history-search-placeholder.png"
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "sign in desk till 1440x900, split; Membership Check and header tabs",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "sign in desk till 1440x900, split; Membership Check and header tabs",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "the phone till signs in (390x844)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "the phone till signs in (390x844)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "960 (3): phone End of Day at 360",
+      "kind": "http",
+      "text": "GET /api/checkin/board 423"
+    },
+    {
+      "page": "till",
+      "at": "960 (3): phone End of Day at 360",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: the manager refunds the part-paid orders through History",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: the manager refunds the part-paid orders through History",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: sales read-back, End of Day, member, code, sign-outs, till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 409,
+      "errorCode": "CHECKIN_CANCEL_PAID"
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "family": {
+      "release": [
+        {
+          "child": "ZZ TEST Mali 959 H",
+          "status": 200
+        }
+      ],
+      "cancel": {
+        "status": 409,
+        "code": "CHECKIN_CANCEL_PAID"
+      },
+      "children": [
+        "ZZ TEST Mali 959 H: out",
+        "ZZ TEST Nok 959 H: registered"
+      ],
+      "cancelAfterRefund": {
+        "status": 200,
+        "code": null
+      },
+      "childrenAfter": [
+        "ZZ TEST Mali 959 H: out",
+        "ZZ TEST Nok 959 H: cancelled"
+      ]
+    },
+    "partPaidRefunds": [
+      {
+        "id": "e2c088",
+        "hhmm": "04:40",
+        "gross": 175,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      },
+      {
+        "id": "1bc747",
+        "hhmm": "04:30",
+        "gross": 148.5,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      },
+      {
+        "id": "8b9f25",
+        "hhmm": "04:26",
+        "gross": 157.5,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      },
+      {
+        "id": "f0f753",
+        "hhmm": "04:24",
+        "gross": 175,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      }
+    ],
+    "refunds": [
+      {
+        "receipt": "Z95901-000005",
+        "gross": 1830,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      },
+      {
+        "receipt": "Z95901-000004",
+        "gross": 1040,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      },
+      {
+        "receipt": "Z95901-000003",
+        "gross": 175,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      },
+      {
+        "receipt": "Z95901-000002",
+        "gross": 1040,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      },
+      {
+        "receipt": "Z95901-000001",
+        "gross": 1040,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      }
+    ],
+    "signOuts": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "sales": [
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 175,
+        "refunded": 50
+      },
+      {
+        "receipt": "Z95901-000005",
+        "status": "refunded",
+        "gross": 1830,
+        "refunded": 1830
+      },
+      {
+        "receipt": "Z95901-000004",
+        "status": "refunded",
+        "gross": 1040,
+        "refunded": 1040
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 148.5,
+        "refunded": 50
+      },
+      {
+        "receipt": "Z95901-000003",
+        "status": "refunded",
+        "gross": 175,
+        "refunded": 175
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 157.5,
+        "refunded": 50
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 175,
+        "refunded": 50
+      },
+      {
+        "receipt": "Z95901-000002",
+        "status": "refunded",
+        "gross": 1040,
+        "refunded": 1040
+      },
+      {
+        "receipt": "Z95901-000001",
+        "status": "refunded",
+        "gross": 1040,
+        "refunded": 1040
+      }
+    ],
+    "voidedAtCleanup": [],
+    "endOfDay": {
+      "2026-11-12": {
+        "status": 200,
+        "openSalesOfThisTill": 0,
+        "strandedOfThisRun": 0
+      },
+      "2026-11-13": {
+        "status": 200,
+        "openSalesOfThisTill": 0,
+        "strandedOfThisRun": 0
+      }
+    },
+    "boardAfter": [
+      {
+        "guardian": "ZZ TEST 959 guardian H",
+        "children": [
+          "out"
+        ]
+      }
+    ],
+    "members": [
+      {
+        "key": "M",
+        "archived": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "key": "F1440",
+        "member": null
+      },
+      {
+        "key": "H",
+        "archived": 200,
+        "lookupAfter": "gone"
+      }
+    ],
+    "code": {
+      "code": "ZZTEST959A",
+      "archive": 200,
+      "archived": true,
+      "active": false,
+      "usedCount": 0,
+      "inLiveList": false
+    },
+    "signOutsFinal": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "retire": {
+      "devicesCleared": 200,
+      "retired": 200
+    },
+    "station": {
+      "archived": true,
+      "devices": 0
+    },
+    "adminMe": 401
+  },
+  "checks": {
+    "numbersCheckedUnused": 30,
+    "routing": {
+      "qr": "gateway",
+      "card": "manual"
+    }
+  },
+  "pageErrorsGrouped": {
+    "till | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "sign in desk till 1440x900, split; Membership Check and header tabs",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "sign in desk till 1440x900, split; Membership Check and header tabs",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    },
+    "phone | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "the phone till signs in (390x844)",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    },
+    "phone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "the phone till signs in (390x844)",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    },
+    "till | http | GET /api/checkin/board 423": {
+      "n": 1,
+      "at": [
+        "960 (3): phone End of Day at 360"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 423 ()": {
+      "n": 1,
+      "at": [
+        "960 (3): phone End of Day at 360"
+      ]
+    },
+    "mgr | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "clean up: the manager refunds the part-paid orders through History",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    },
+    "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "clean up: the manager refunds the part-paid orders through History",
+        "clean up: sales read-back, End of Day, member, code, sign-outs, till"
+      ]
+    }
+  },
+  "finishedAt": "2026-11-12T21:46:41.204Z",
+  "headroom": {
+    "gateRuns": 4,
+    "waits": 0,
+    "note": "every wait-headroom.sh 6 1.5 30 run exited 0 at its first check (13.9-14.9 GB commit headroom, 2.9-3.9 GB free)"
+  },
+  "defects": [
+    {
+      "what": "End of Day refusal tells staff to \"Take the balance at that counter\" for an F&B or Shop order saved as partly paid, which the counter cannot reopen; only the manager refund in History closes it",
+      "where": "packages/shared/src/sale-hold.ts:183-186 (WAYS_OUT.other) via partPaidCloseRefusal",
+      "pictures": [
+        "22b-phone-390-end-of-day-close-day-and-csv.png",
+        "23b-phone-360-end-of-day-close-day-and-csv.png"
+      ]
+    }
+  ]
+}
