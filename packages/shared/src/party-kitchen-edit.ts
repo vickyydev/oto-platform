@@ -41,8 +41,8 @@ const Note = z.string().max(500);
 const Clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
 
 export const PartyKitchenChangeSchema = z.discriminatedUnion('op', [
-  z.object({ op: z.literal('set'), lineId: LineId, qty: Qty.optional(), note: Note.nullable().optional() }),
-  z.object({ op: z.literal('remove'), lineId: LineId }),
+  z.object({ op: z.literal('set'), lineId: LineId, qty: Qty.optional(), note: Note.nullable().optional() }).strict(),
+  z.object({ op: z.literal('remove'), lineId: LineId }).strict(),
   z.object({
     op: z.literal('add'),
     /** The new line's id, minted by the till: the same change sent twice is one line. */
@@ -53,15 +53,16 @@ export const PartyKitchenChangeSchema = z.discriminatedUnion('op', [
     productCode: z.string().trim().min(1).max(64).nullable(),
     qty: Qty,
     note: Note.nullable().optional(),
-  }),
+  }).strict(),
   z.object({
     op: z.literal('choose'),
     choiceGroup: z.string().trim().min(1).max(200),
     /** The line that holds the group's choice now; null for an open group no line holds. */
     lineId: LineId.nullable(),
     option: z.string().trim().min(1).max(200),
-  }),
-  z.object({ op: z.literal('cake'), time: Clock.nullable().optional(), note: Note.nullable().optional() }),
+  }).strict(),
+  // Never a price: where an EXTRA's price is entered is the owner's open question (SCRUM-949).
+  z.object({ op: z.literal('cake'), time: Clock.nullable().optional(), note: Note.nullable().optional() }).strict(),
 ]);
 export type PartyKitchenChange = z.infer<typeof PartyKitchenChangeSchema>;
 
