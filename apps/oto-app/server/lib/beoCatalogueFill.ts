@@ -1704,8 +1704,9 @@ function clauseAround(sentence: string, start: number, end: number): string {
  *     other fold is (`dish` is then the set menu's name);
  *   - no fold when the sentence gives the adults something else: another option of the group, a
  *     line of their own the read gave from it, "but", "instead", "except", a denial; nor for a
- *     group the proposal holds an adults' line of their own in; nor a fold already said for the
- *     same dish from the same line (`existing`, the read's own adults' line folded).
+ *     group the proposal holds an adults' line of their own in; nor a second fold of a dish
+ *     already folded (`existing`, the read's own adults' line folded, or another line saying
+ *     it again: the family's words and the team's confirming them are one repeat).
  */
 export function adultsSameAsKidsFolds(
   lines: ReadonlyArray<{ text: string; from: BeoAiFrom }>,
@@ -1742,9 +1743,8 @@ export function adultsSameAsKidsFolds(
       const kids = (d: SentenceDish) => !d.itemId || choices.some((c) => c.itemId === d.itemId && c.option === d.option);
       if (dishes.some((d) => !kids(d) || (!!d.itemId && adultsOwnGroups.has(d.itemId)))) continue;
       for (const d of dishes) {
-        const dup = [...existing, ...out].some(
-          (f) => f.from.line === from.line && (d.itemId ? f.itemId === d.itemId && f.option === d.option : !f.itemId && fold(f.dish) === fold(d.dish)),
-        );
+        // One fold per dish: the family's words and the team's confirming them are one repeat of the kids' menu.
+        const dup = [...existing, ...out].some((f) => (d.itemId ? f.itemId === d.itemId && f.option === d.option : !f.itemId && fold(f.dish) === fold(d.dish)));
         if (dup) continue;
         out.push({ dish: d.dish, from: withQuote(from, clauseAround(sentence, d.start, d.end), text), ...(d.itemId ? { itemId: d.itemId, option: d.option } : {}) });
       }

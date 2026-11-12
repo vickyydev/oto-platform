@@ -435,6 +435,17 @@ try {
     assert.deepEqual(said("The adults also want a Caesar salad."), [], "a dish of their own");
     assert.deepEqual(said("Pepperoni pizza for the adults too."), [], "another option than the kids'");
     assert.deepEqual(said("12 kids and 8 adults, the same day as last year."), [], "a headcount");
+    const twice = adultsSameAsKidsFolds(
+      [
+        { text: "Margherita for the kids and the Margherita for the adults too.", from: { source: "family", at: at(1), line: 2 } },
+        { text: "Confirmed: the Margherita for the kids, the Margherita for the adults as well.", from: { source: "team", at: at(2), line: 3 } },
+      ],
+      menu,
+      [{ itemId: PIZZA, option: "Margherita" }],
+      [],
+      [],
+    );
+    assert.deepEqual(twice.map((x) => [x.dish, x.from.line]), [["Margherita", 2]], "the family's words and the team's confirming them: one fold");
   });
 
   // --- 2. Thread I: the chat's total, in every shape the read gave ------------------------------

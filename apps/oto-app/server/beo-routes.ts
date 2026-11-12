@@ -39,6 +39,8 @@ import { generateBeoPdf, type BeoPdfData } from "./pdf";
 import { readingFor } from "./party-billing-routes";
 import { readFillTillMenu } from "./lib/beoFillTillMenu";
 import { tillMenuIndexOf } from "@shared/tillMenu";
+import { isTillPartyEventType } from "@shared/tillBilling";
+import { isPartyItemCode } from "@shared/beoExtras";
 import { partyPackageTotal } from "@shared/partyPackageTotal";
 import { currentDeposit, depositOfBillingColumns, sameDeposit, writePartyDeposit } from "./lib/partyDeposit";
 import {
@@ -190,6 +192,20 @@ function withAdultsDiffer(value: unknown): KitchenMenuCollection {
   // till's kitchen edit) carries no till code of its own, as the kids' line does not.
   const adults = Array.isArray(menus.adults) ? { adults: adultsSetCopiesUncoded(asMenuItems(menus.kids), asMenuItems(menus.adults)) } : {};
   return { ...menus, ...adults, adultsDiffer: typeof menus.adultsDiffer === "boolean" ? menus.adultsDiffer : adultsDifferOf(menus) };
+}
+
+/**
+ * SCRUM-970: whether the BEO PDF needs the till's menu to say what an EXTRA line costs: a line
+ * not on the set menu with a till code and no price entered (the till's price is charged), or an
+ * item made for the party (the till's own price, whatever is typed). Otherwise nothing is asked.
+ */
+function pdfExtrasNeedTill(menus: unknown, barItems: unknown): boolean {
+  const m = asMenuCollection(menus);
+  return [...asMenuItems(m.kids), ...asMenuItems(m.adults), ...asMenuItems(barItems)].some((line) => {
+    const code = typeof line.productCode === "string" ? line.productCode.trim() : "";
+    if (!code || line.source === "set_menu") return false;
+    return isPartyItemCode(code) || !(typeof line.price === "number" && line.price > 0);
+  });
 }
 
 function isStaleSetMenuSubmission(
@@ -2911,7 +2927,11 @@ export function registerBeoRoutes(app: Express) {
         parkTimeZone: branch?.timezone || undefined,
         // SCRUM-970: what the till charges each EXTRA line, read as the BEO editor reads it (the party's
         // park's till menu, held a minute); not read: a coded line with no price prints its badge alone.
-        extrasTill: tillMenuIndexOf([{ ...(await readFillTillMenu(db, { tenantId: event.tenantId, branchId: event.branchId }, req.requestId)), parkId: event.branchId ?? "", parkName: "", readAt: null }]),
+        // Asked only for a party the till settles, and only when a line's charge needs it (a coded EXTRA
+        // with no price entered, or an item made for the party): the platform is asked nothing else.
+        ...(isTillPartyEventType(event.eventType) && pdfExtrasNeedTill(kitchenPlan?.menus, pdfBarPlan?.items)
+          ? { extrasTill: tillMenuIndexOf([{ ...(await readFillTillMenu(db, { tenantId: event.tenantId, branchId: event.branchId }, req.requestId)), parkId: event.branchId ?? "", parkName: "", readAt: null }]) }
+          : {}),
       };
 
       const pdfBuffer = await generateBeoPdf(pdfData);
