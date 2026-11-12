@@ -1,0 +1,126 @@
+import { createElement as h, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import type { ConsentAction, ConsentFormStep, ConsentPrompt } from '@oto/shared';
+import { ConsentCapture } from '../../../src/components/till/ConsentCapture';
+import { PublicConsentCapture } from '../../../src/components/till/PublicConsentCapture';
+import type { SupervisedSlot } from '../../../src/components/till/SupervisionGate';
+import { LanguageProvider } from '../../../src/i18n/LanguageContext';
+import type { ContactChannel, SupervisionPolicy } from '../../../src/types';
+import '../../../src/index.css';
+
+/**
+ * SCRUM-893 / 894 / 943 — the family's drop-off form, drawn by the till's own
+ * components in a real browser, at the size of the screen it is on. Only the
+ * fixture and a stand-in for the till (which takes each `fill` and answers
+ * with its newer copy, as the till does) are supplied here.
+ *
+ *  ?screen=display   the paired display (Display.tsx's frame round the form)
+ *  ?screen=half      the till's own customer half (Till.tsx, step 7, split view)
+ *  &keyboard=screen  the counter's touch monitor: no keyboard (kioskFlags)
+ *  &step=children|care|agreements   where the display's form opens
+ *  &theme=light|dark  the display's look
+ *  &camera=none|refused  a display with no camera, or one whose camera is refused
+ *
+ * `#till` holds what the till has: the display's last fill, or the half's state.
+ */
+const query = new URLSearchParams(location.search);
+const screen = query.get('screen') ?? 'display';
+const step = (query.get('step') ?? 'children') as ConsentFormStep;
+const theme = query.get('theme') === 'light' ? 'light' : 'dark';
+const camera = query.get('camera');
+
+if (camera === 'none' || camera === 'refused') {
+  const refused = Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' });
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+    enumerateDevices: async () => (camera === 'none' ? [{ kind: 'audioinput' }] : [{ kind: 'videoinput' }]),
+    getUserMedia: async () => { throw refused; },
+  } });
+}
+
+const policy: SupervisionPolicy = {
+  bands: [
+    { id: 'band-0-4', label: '0–4', minAge: 0, maxAge: 4, requirement: 'nanny' },
+    { id: 'band-5-8', label: '5–8', minAge: 5, maxAge: 8, requirement: 'drop_off' },
+    { id: 'band-9-up', label: '9+', minAge: 9, maxAge: null, requirement: 'none' },
+  ],
+  siblingWaiver: { enabled: true, guardianMinAge: 9, waivableRequirement: 'drop_off', staffOnly: true },
+  confirmations: [
+    { id: 'confirm-15min', text: 'I will remain within 15 minutes of the venue', required: true, order: 0 },
+    { id: 'confirm-no-refund', text: 'I understand early pickup does not qualify for refund', required: true, order: 1 },
+    { id: 'confirm-evac', text: 'I acknowledge the emergency evacuation point', required: true, order: 2 },
+  ],
+};
+
+const firstPrompt: ConsentPrompt = {
+  kind: 'consent', requestId: 'zz-form-1', visitorId: 'zz-form-visitor',
+  slots: [{ id: 'zz-slot', name: '', ageYears: 6, requirement: 'drop_off', dateOfBirth: null, allergiesMedical: '', foodRestrictions: '',
+    ...(camera ? { photo: 'needed' as const } : {}) }],
+  guardianName: '', guardianPhone: '+66898930001', contactChannel: 'whatsapp', contactConfirmed: false, familyStep: step,
+  consentRequired: true, consentAcknowledged: false,
+  confirmations: policy.confirmations.map((item) => ({ id: item.id, text: item.text, required: item.required, acknowledged: false })),
+  fees: { nannyHourlyTHB: 300, dropOffFeeTHB: 225 },
+  ...(camera ? { reportsCamera: true } : {}),
+  staffReady: false, canContinue: false, completed: false,
+};
+
+/** The till's side: each fill taken in, and the newer copy published back. */
+function DisplayForm() {
+  const [prompt, setPrompt] = useState(firstPrompt);
+  const [heard, setHeard] = useState<ConsentAction | null>(null);
+  const take = (action: ConsentAction) => {
+    setHeard(action);
+    if (action.action !== 'fill') return;
+    setPrompt((current) => ({
+      ...current,
+      requestId: `zz-form-${Number(current.requestId.split('-').at(-1)) + 1}`,
+      slots: current.slots.map((slot) => {
+        const filled = action.slots.find((item) => item.id === slot.id);
+        return filled ? { ...slot, name: filled.name, ageYears: filled.ageYears, dateOfBirth: filled.dateOfBirth,
+          allergiesMedical: filled.allergiesMedical, foodRestrictions: filled.foodRestrictions } : slot;
+      }),
+      guardianName: action.guardianName,
+      ...(action.guardianPhone !== undefined ? { guardianPhone: action.guardianPhone } : {}),
+      ...(action.contactChannel !== undefined ? { contactChannel: action.contactChannel } : {}),
+      ...(action.contactConfirmed !== undefined ? { contactConfirmed: action.contactConfirmed } : {}),
+      ...(action.step ? { familyStep: action.step } : {}),
+      consentAcknowledged: action.consentAcknowledged,
+      confirmations: current.confirmations.map((item) => ({ ...item, acknowledged: action.acknowledgedConfirmationIds.includes(item.id) })),
+    }));
+  };
+  // Display.tsx's frame: the page, then the form filling what is left of it.
+  return h('div', { className: `${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`, id: 'ready' },
+    h('output', { id: 'till', className: 'sr-only' }, JSON.stringify({ prompt, heard })),
+    h('div', { className: 'relative flex-1 min-h-0' },
+      h(PublicConsentCapture, { prompt, busy: false, answerPending: false, onAction: take, sendPhoto: async () => 'zz-file' })));
+}
+
+const halfSlot: SupervisedSlot = {
+  id: 'zz-slot', sourceLineId: 'zz-line', ticketType: {} as SupervisedSlot['ticketType'],
+  name: '', age: '6', waived: false, allergiesMedical: '', foodRestrictions: '', mayOrderFood: false, optIn: true,
+};
+
+/** The till's own customer half: the form writes the till's state as the family types. */
+function HalfForm() {
+  const [slots, setSlots] = useState<SupervisedSlot[]>([halfSlot]);
+  const [parentName, setParentName] = useState('');
+  const [phone, setPhone] = useState('+66898930001');
+  const [channel, setChannel] = useState<ContactChannel>('whatsapp');
+  const [consentAck, setConsentAck] = useState(false);
+  const [acknowledged, setAcknowledged] = useState<string[]>([]);
+  return h('div', { className: 'flex h-[100dvh] min-h-0 bg-background', id: 'ready' },
+    h('output', { id: 'till', className: 'sr-only' }, JSON.stringify({ slots, parentName, phone, channel })),
+    h('div', { className: 'w-1/2 h-full border-r border-foreground/10 max-[520px]:hidden' }),
+    h('div', { className: `w-1/2 max-[520px]:w-full h-full min-w-0 ${theme}` },
+      h(ConsentCapture, {
+        slots, parentName, consentAck, policy, parentPhone: phone, parentContactMethod: channel,
+        onParentPhoneChange: setPhone, onParentContactMethodChange: setChannel, onParentNameChange: setParentName,
+        onConsentAckChange: setConsentAck,
+        onUpdateChild: (id: string, patch: Partial<SupervisedSlot>) => setSlots((all) => all.map((slot) => slot.id === id ? { ...slot, ...patch } : slot)),
+        acknowledgedConfirmationIds: acknowledged,
+        onToggleConfirmation: (id: string) => setAcknowledged((all) => all.includes(id) ? all.filter((x) => x !== id) : [...all, id]),
+        contactConfirmed: false, onContactConfirmedChange: () => undefined,
+        onDone: () => undefined, doneReady: false,
+      })));
+}
+
+createRoot(document.getElementById('root')!).render(h(LanguageProvider, null, screen === 'half' ? h(HalfForm) : h(DisplayForm)));

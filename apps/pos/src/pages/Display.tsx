@@ -19,6 +19,12 @@ const GRACE_MS = 15_000;
 /** The gap between polls when no stream is open; a stream replaces polling altogether. */
 const POLL_GAP_MS = 1_000;
 const PAIRING_POLL_GAP_MS = 2_000;
+/** SCRUM-943 — a family's fill whose reply was lost goes again after this long, while the box answers. */
+export const FILL_RESEND_MS = 3_000;
+/** The family form's answer kind (`fill`, `done`, …) of an intent or answer payload. */
+function actionOf(value: unknown): unknown {
+  return (value as { action?: unknown } | null | undefined)?.action;
+}
 
 function asDisplayError(failure: unknown): unknown {
   if (failure instanceof DisplayError) return failure;
@@ -400,7 +406,6 @@ export default function Display() {
    * that is locked takes it when staff unlock it): the line says the team
    * will be with them in a moment, not that a change waits to be confirmed.
    */
-  const actionOf = (value: unknown): unknown => (value as { action?: unknown } | null | undefined)?.action;
   const consentDoneWaiting = actionOf((answer as { payload?: unknown } | undefined)?.payload) === 'done'
     || pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'done';
   /**
@@ -412,6 +417,18 @@ export default function Display() {
   const onConsentForm = !!session && connection !== 'paused' && !!view?.consent;
   const fillWaiting = pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'fill';
   const formReconnecting = onConsentForm && (connection === 'reconnecting' || !!error && fillWaiting);
+  /**
+   * SCRUM-943 — and it does go by itself: a fill whose reply was lost while
+   * the box still answers (no reconnect to send it again on, above) is sent
+   * again every few seconds until it is taken, where a Retry used to wait.
+   */
+  useEffect(() => {
+    const intent = pending.current;
+    if (connection !== 'connected' || !error || busy || !intent || intent.type !== 'display.consent'
+      || actionOf(intent.payload) !== 'fill') return;
+    const timer = setTimeout(() => { void send(intent.type, intent.payload, true); }, FILL_RESEND_MS);
+    return () => clearTimeout(timer);
+  }, [connection, error, busy, send]);
   // SCRUM-762 — on the details screen, a number the till already holds was
   // given on the first screen: it is shown there, not asked for again.
   const keptPhone = view?.stage === 'input' && document?.prompt?.kind === 'contact'

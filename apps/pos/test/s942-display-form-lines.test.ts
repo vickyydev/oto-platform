@@ -34,7 +34,7 @@ vi.mock('@/api/display', async () => ({
   readDisplayCredential: () => 'zz-credential', rememberDisplayCredential: () => true,
 }));
 
-import Display from '@/pages/Display';
+import Display, { FILL_RESEND_MS } from '@/pages/Display';
 import { tFor } from '@/i18n/LanguageContext';
 import { settle } from './support/fixtures';
 import { renderHook } from './support/hooks';
@@ -136,6 +136,27 @@ describe('a dropped connection on the family’s form (SCRUM-943)', () => {
     expect(display.text()).not.toContain(t('display.retry'));
     expect(display.text()).not.toContain('Please retry when the connection returns');
     expect(nodes(display.tree()).filter((node) => node.props.role === 'alert')).toHaveLength(0);
+    display.hook.unmount();
+  });
+
+  it('and it does go by itself: a fill whose reply was lost while the box still answers is sent again', async () => {
+    mock.session.mockResolvedValue({ station, device, document: frame(1) });
+    const display = mount();
+    await settle();
+    mock.intent.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValue({ document: frame(2) });
+    const form = nodes(display.tree()).find((node) => typeof node.props.onAction === 'function' && node.props.prompt)!;
+    (form.props.onAction as (action: unknown) => void)({ action: 'fill', requestId: 'zz-942', visitorId: 'zz-942-visitor',
+      slots: [], guardianName: 'ZZ TEST Ploy', consentAcknowledged: true, acknowledgedConfirmationIds: [] });
+    await settle();
+    expect(mock.intent).toHaveBeenCalledTimes(1);
+    expect(words(display.byTestId('display-form-reconnecting'))).toBe(t('display.reconnectingSendsItself'));
+    await vi.advanceTimersByTimeAsync(FILL_RESEND_MS + 10);
+    expect(mock.intent).toHaveBeenCalledTimes(2);
+    // The same fill, as it was: the station takes it once.
+    expect(mock.intent.mock.calls[1]![2]).toMatchObject({ type: 'display.consent', payload: { action: 'fill', guardianName: 'ZZ TEST Ploy' } });
+    await settle();
+    expect(display.byTestId('display-form-reconnecting')).toBeUndefined();
     display.hook.unmount();
   });
 });
