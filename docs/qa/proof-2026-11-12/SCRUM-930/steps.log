@@ -1,0 +1,1089 @@
+
+=== 2026-11-12T14:09:15.437Z setup: four ZZ TEST printers and the ZZ TEST till on Virtual box 1
+S.phase = 'setup: four ZZ TEST printers and the ZZ TEST till on Virtual box 1';
+return await S.setup();
+--> {
+ "ok": true,
+ "value": {
+  "box": "Virtual box 1",
+  "prefix": "Z93001",
+  "numbersFree": 10,
+  "configVersion": 1,
+  "devices": {
+   "adult_band": "ZZ TEST 930 adult band printer",
+   "kids_band": "ZZ TEST 930 kids band printer",
+   "receipt": "ZZ TEST 930 receipt printer"
+  },
+  "capabilities": []
+ }
+}
+
+=== 2026-11-12T14:09:26.435Z 1: the till's Station settings as a manager: the Drop-off bracelet printer card
+S.phase = '1: the till\'s Station settings as a manager: the Drop-off bracelet printer card';
+const till = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD');
+S.till = till;
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const r = {};
+r.cardTitles = await till.locator('h3').allInnerTexts();
+r.printerCards = r.cardTitles.filter(t => /printer/i.test(t));
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+S.dropCard = card;
+r.cardText = S.flat(await card.innerText());
+r.options = [];
+for (const b of await card.locator('button.rounded-xl').all()) r.options.push({ label: S.flat(await b.locator('span.font-semibold').innerText()), selected: (await b.getAttribute('class')).includes('border-primary') });
+r.testEnabled = await card.getByRole('button', { name: 'Test print', exact: true }).isEnabled();
+r.clearShown = await card.getByRole('button', { name: 'Clear', exact: true }).count();
+await card.scrollIntoViewIfNeeded();
+await till.mouse.wheel(0, -200);
+await till.waitForTimeout(600);
+const access = till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]');
+await S.shot(till, '01-till-station-settings-dropoff-card-none-selected.png', [access]);
+S.receipt.reads.p1 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "cardTitles": [
+   "Station capabilities",
+   "Station name",
+   "Box",
+   "Receipt printer",
+   "Kids bracelet printer",
+   "Adult bracelet printer",
+   "Drop-off bracelet printer",
+   "Kitchen printer",
+   "Bar printer",
+   "Wristband scanner",
+   "Who may use this station"
+  ],
+  "printerCards": [
+   "Receipt printer",
+   "Kids bracelet printer",
+   "Adult bracelet printer",
+   "Drop-off bracelet printer",
+   "Kitchen printer",
+   "Bar printer"
+  ],
+  "cardText": "Drop-off bracelet printer Test print Optional — leave unset to print drop-off bracelets on the kids bracelet printer. Band Printer (adults) Simulated on Virtual box 1 Band Printer (kids) Simulated on Virtual box 1 ZZ TEST 930 adult band printer Simulated on Virtual box 1 ZZ TEST 930 drop-off band printer Simulated on Virtual box 1 ZZ TEST 930 kids band printer Simulated on Virtual box 1",
+  "options": [
+   {
+    "label": "Band Printer (adults)",
+    "selected": false
+   },
+   {
+    "label": "Band Printer (kids)",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 930 adult band printer",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 930 drop-off band printer",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 930 kids band printer",
+    "selected": false
+   }
+  ],
+  "testEnabled": false,
+  "clearShown": 0
+ }
+}
+
+=== 2026-11-12T14:09:49.878Z 2: the Console sets the drop-off band printer; the till reopens its settings
+S.phase = '2: the Console sets the drop-off band printer; the till reopens its settings';
+const c = await S.consoleIn('console');
+await S.goStations(c);
+let d = await S.openDrawer(c);
+const r = { before: { version: await S.versionShown(d), dropoff: await S.field(d, /^Drop-off band printer/).inputValue() } };
+await S.field(d, /^Drop-off band printer/).selectOption(S.dev.dropoff_band.id);
+const saved = await S.saveDrawer(c, d);
+r.save = { status: saved.status, version: saved.body?.station?.configVersion, expectedConfigVersionSent: saved.sent.expectedConfigVersion ?? null };
+await expect(d).toHaveCount(0, { timeout: 10000 });
+d = await S.openDrawer(c);
+await S.field(d, /^Drop-off band printer/).scrollIntoViewIfNeeded();
+r.consoleAfter = { version: await S.versionShown(d), dropoffIsZz: (await S.field(d, /^Drop-off band printer/).inputValue()) === S.dev.dropoff_band.id };
+await S.shot(c, '02a-console-dropoff-band-printer-set.png');
+await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+const till = S.till;
+await S.unlock('mgr');
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+r.tillOptions = [];
+for (const b of await card.locator('button.rounded-xl').all()) r.tillOptions.push({ label: S.flat(await b.locator('span.font-semibold').innerText()), selected: (await b.getAttribute('class')).includes('border-primary') });
+r.testEnabled = await card.getByRole('button', { name: 'Test print', exact: true }).isEnabled();
+await card.scrollIntoViewIfNeeded();
+const access = till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]');
+await S.shot(till, '02b-till-settings-dropoff-printer-selected.png', [access]);
+r.api = S.rolesOf(await S.stationRow());
+S.receipt.reads.p2 = r;
+return r;
+--> {
+ "ok": false,
+ "error": "ReferenceError: expect is not defined"
+}
+
+=== 2026-11-12T14:10:08.679Z 2: the Console sets the drop-off band printer; the till reopens its settings
+S.phase = '2: the Console sets the drop-off band printer; the till reopens its settings';
+const { expect } = S;
+const c = S.pages.console.page;
+const row = await S.stationRow();
+const r = { apiAfterFirstTry: { version: row.configVersion, roles: S.rolesOf(row) }, firstTryNote: 'the first try saved in the Console (PATCH) and stopped on a harness error (expect undefined) before its picture' };
+await c.reload(); await S.goStations(c);
+let d = await S.openDrawer(c);
+await S.field(d, /^Drop-off band printer/).scrollIntoViewIfNeeded();
+r.consoleAfter = { version: await S.versionShown(d), dropoffIsZz: (await S.field(d, /^Drop-off band printer/).inputValue()) === S.dev.dropoff_band.id };
+await S.shot(c, '02a-console-dropoff-band-printer-set.png');
+await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+const till = S.till;
+await S.unlock('mgr');
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+r.tillOptions = [];
+for (const b of await card.locator('button.rounded-xl').all()) r.tillOptions.push({ label: S.flat(await b.locator('span.font-semibold').innerText()), selected: (await b.getAttribute('class')).includes('border-primary') });
+r.testEnabled = await card.getByRole('button', { name: 'Test print', exact: true }).isEnabled();
+await card.scrollIntoViewIfNeeded();
+const access = till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]');
+await S.shot(till, '02b-till-settings-dropoff-printer-selected.png', [access]);
+S.receipt.reads.p2 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "apiAfterFirstTry": {
+   "version": 2,
+   "roles": {
+    "adult_band": "ZZ TEST 930 adult band printer",
+    "dropoff_band": "ZZ TEST 930 drop-off band printer",
+    "kids_band": "ZZ TEST 930 kids band printer",
+    "receipt": "ZZ TEST 930 receipt printer"
+   }
+  },
+  "firstTryNote": "the first try saved in the Console (PATCH) and stopped on a harness error (expect undefined) before its picture",
+  "consoleAfter": {
+   "version": 2,
+   "dropoffIsZz": true
+  },
+  "tillOptions": [
+   {
+    "label": "Band Printer (adults)",
+    "selected": false
+   },
+   {
+    "label": "Band Printer (kids)",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 930 adult band printer",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 930 drop-off band printer",
+    "selected": true
+   },
+   {
+    "label": "ZZ TEST 930 kids band printer",
+    "selected": false
+   }
+  ],
+  "testEnabled": true
+ }
+}
+
+=== 2026-11-12T14:10:33.815Z 2: Test print on the till's drop-off card
+S.phase = '2: Test print on the till\'s drop-off card';
+const { expect } = S;
+const till = S.till;
+await S.unlock('mgr');
+const seen = { dropoff: (await S.printouts('dropoff_band')).map(S.keyOf), kids: (await S.printouts('kids_band')).map(S.keyOf) };
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+const [res] = await Promise.all([
+  till.waitForResponse(r => r.request().method() === 'POST' && /\/api\/stations\/[^/]+\/test-print/.test(new URL(r.url()).pathname), { timeout: 30000 }),
+  card.getByRole('button', { name: 'Test print', exact: true }).click(),
+]);
+const body = await res.json().catch(() => null);
+const r = { status: res.status(), path: new URL(res.url()).pathname.replace(S.ID, ':id'), sent: res.request().postDataJSON?.() ?? null, job: body?.printJob ? { kind: body.printJob.kind, role: body.printJob.role, status: body.printJob.status, onDropoff: body.printJob.deviceId === S.dev.dropoff_band.id } : body };
+await till.waitForTimeout(800);
+r.toast = S.flat(await till.locator('[role="status"], li[role="status"], [data-sonner-toast], ol li').allInnerTexts().then(a => a.join(' | ')).catch(() => ''));
+await S.shot(till, '02c-till-dropoff-card-test-print-sent.png', [till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]')]);
+let fresh = [];
+await expect.poll(async () => { fresh = (await S.printouts('dropoff_band')).filter(p => !seen.dropoff.includes(S.keyOf(p))); return fresh.length; }, { timeout: 90000, intervals: [3000] }).toBeGreaterThan(0);
+r.dropoffNewPrintouts = fresh.map(p => ({ seq: p.seq, at: p.at, kind: p.kind ?? p.jobKind ?? null }));
+r.kidsNewPrintouts = (await S.printouts('kids_band')).filter(p => !seen.kids.includes(S.keyOf(p))).length;
+const prev = await S.admin.get(`/api/devices/${S.dev.dropoff_band.id}/printouts/${fresh[0].seq}/preview.png`);
+r.preview = prev.status();
+if (prev.status() === 200) S.writeFileSync(S.resolve(S.out, '02d-dropoff-printer-test-page-preview.png'), await prev.body());
+S.receipt.reads.p2test = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "status": 200,
+  "path": "/api/stations/:id/test-print",
+  "sent": {
+   "kind": "test_page",
+   "role": "dropoff_band"
+  },
+  "job": {
+   "kind": "test_page",
+   "role": "dropoff_band",
+   "status": "queued",
+   "onDropoff": true
+  },
+  "toast": "Test print queued Virtual box 1 runs it on its next poll and records the result in its Printing panel. | Notification Test print queuedVirtual box 1 runs it on its next poll and records the result in its Printing panel.",
+  "dropoffNewPrintouts": [
+   {
+    "seq": 1,
+    "at": "2026-11-12T14:10:36.906Z",
+    "kind": null
+   }
+  ],
+  "kidsNewPrintouts": 0,
+  "preview": 200
+ }
+}
+
+=== 2026-11-12T14:10:59.885Z 3: the till picks another drop-off printer and saves; the Console shows it
+S.phase = '3: the till picks another drop-off printer and saves; the Console shows it';
+const { expect } = S;
+const till = S.till;
+await S.unlock('mgr');
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const before = await S.stationRow();
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+await card.locator('button.rounded-xl').filter({ hasText: 'ZZ TEST 930 kids band printer' }).click();
+const [res] = await Promise.all([
+  till.waitForResponse(r => r.request().method() === 'PATCH' && new RegExp(`^/api/stations/${S.station.id}$`).test(new URL(r.url()).pathname), { timeout: 30000 }),
+  till.getByRole('button', { name: 'Save changes', exact: true }).click(),
+]);
+const sent = res.request().postDataJSON();
+const r = { before: { version: before.configVersion, dropoff: S.rolesOf(before).dropoff_band }, status: res.status(), expectedConfigVersionSent: sent.expectedConfigVersion ?? null, devicesSent: (sent.devices ?? []).map(d => d.role + '=' + (S.devName(d.deviceId))) };
+await till.waitForTimeout(2500);
+await S.shot(till, '03a-till-dropoff-changed-to-kids-band-saved.png');
+const after = await S.stationRow();
+r.apiAfter = { version: after.configVersion, roles: S.rolesOf(after) };
+const c = S.pages.console.page;
+await c.reload(); await S.goStations(c);
+const d = await S.openDrawer(c);
+await S.field(d, /^Drop-off band printer/).scrollIntoViewIfNeeded();
+r.consoleShows = { version: await S.versionShown(d), dropoff: S.devName(await S.field(d, /^Drop-off band printer/).inputValue()) };
+await S.shot(c, '03b-console-shows-till-change-kids-band.png');
+await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+S.receipt.reads.p3 = r;
+S.point('3', r.status === 200 && r.apiAfter.roles.dropoff_band === 'ZZ TEST 930 kids band printer' && r.consoleShows.dropoff === 'ZZ TEST 930 kids band printer' && r.consoleShows.version === r.apiAfter.version, ['03a-till-dropoff-changed-to-kids-band-saved.png', '03b-console-shows-till-change-kids-band.png'], r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "version": 2,
+   "dropoff": "ZZ TEST 930 drop-off band printer"
+  },
+  "status": 200,
+  "expectedConfigVersionSent": 2,
+  "devicesSent": [
+   "receipt=ZZ TEST 930 receipt printer",
+   "kids_band=ZZ TEST 930 kids band printer",
+   "adult_band=ZZ TEST 930 adult band printer",
+   "dropoff_band=ZZ TEST 930 kids band printer"
+  ],
+  "apiAfter": {
+   "version": 3,
+   "roles": {
+    "adult_band": "ZZ TEST 930 adult band printer",
+    "dropoff_band": "ZZ TEST 930 kids band printer",
+    "kids_band": "ZZ TEST 930 kids band printer",
+    "receipt": "ZZ TEST 930 receipt printer"
+   }
+  },
+  "consoleShows": {
+   "version": 3,
+   "dropoff": "ZZ TEST 930 kids band printer"
+  }
+ }
+}
+
+=== 2026-11-12T14:11:30.671Z 4: the Console renames the till while its settings are open on the till; the till saves
+S.phase = '4: the Console renames the till while its settings are open on the till; the till saves';
+const { expect } = S;
+const till = S.till;
+await S.unlock('mgr');
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const opened = await S.stationRow();
+const r = { tillOpenedAt: { version: opened.configVersion, name: opened.name } };
+const c = S.pages.console.page;
+let d = await S.openDrawer(c);
+const newName = 'ZZ TEST 930 till renamed';
+await d.getByLabel(/^Name/).first().fill(newName);
+const saved = await S.saveDrawer(c, d);
+r.consoleRename = { status: saved.status, version: saved.body?.station?.configVersion, name: saved.body?.station?.name };
+S.station.name = newName;
+await expect(d).toHaveCount(0, { timeout: 10000 });
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+await card.locator('button.rounded-xl').filter({ hasText: 'ZZ TEST 930 drop-off band printer' }).click();
+const [res] = await Promise.all([
+  till.waitForResponse(rr => rr.request().method() === 'PATCH' && new RegExp(`^/api/stations/${S.station.id}$`).test(new URL(rr.url()).pathname), { timeout: 30000 }),
+  till.getByRole('button', { name: 'Save changes', exact: true }).click(),
+]);
+const body = await res.json().catch(() => null);
+r.tillSave = { status: res.status(), errorCode: body?.error?.code ?? null, apiMessage: body?.error?.message ?? null, expectedConfigVersionSent: res.request().postDataJSON().expectedConfigVersion ?? null };
+await till.waitForTimeout(1200);
+const words = 'This station was changed since you opened it. Close it and open it again.';
+r.wordsOnScreen = (await till.getByText(words).count()) > 0;
+r.screenText = S.flat(await till.locator('[role="status"], [role="alert"], ol li').allInnerTexts().then(a => a.join(' | ')).catch(() => ''));
+r.stillOnSettings = await till.getByRole('button', { name: 'Save changes', exact: true }).isVisible();
+const access = till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]');
+await S.shot(till, '04-till-stale-save-refused-station-changed.png', [access]);
+const after = await S.stationRow();
+r.apiAfter = { version: after.configVersion, name: after.name, dropoff: S.rolesOf(after).dropoff_band };
+r.nothingWritten = after.configVersion === r.consoleRename.version && after.name === newName && S.rolesOf(after).dropoff_band === 'ZZ TEST 930 kids band printer';
+S.receipt.reads.p4 = r;
+S.point('4', r.consoleRename.status === 200 && r.tillSave.status === 409 && r.tillSave.errorCode === 'STATION_CHANGED' && r.wordsOnScreen && r.nothingWritten, ['04-till-stale-save-refused-station-changed.png'], r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "tillOpenedAt": {
+   "version": 3,
+   "name": "ZZ TEST 930 till"
+  },
+  "consoleRename": {
+   "status": 200,
+   "version": 4,
+   "name": "ZZ TEST 930 till renamed"
+  },
+  "tillSave": {
+   "status": 409,
+   "errorCode": "STATION_CHANGED",
+   "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+   "expectedConfigVersionSent": 3
+  },
+  "wordsOnScreen": true,
+  "screenText": "Couldn't save the station This station was changed since you opened it. Close it and open it again.",
+  "stillOnSettings": true,
+  "apiAfter": {
+   "version": 4,
+   "name": "ZZ TEST 930 till renamed",
+   "dropoff": "ZZ TEST 930 kids band printer"
+  },
+  "nothingWritten": true
+ }
+}
+
+=== 2026-11-12T14:11:59.386Z 5: drop-off set in the Console; the till ticks only F&B orders and saves
+S.phase = '5: drop-off set in the Console; the till ticks only F&B orders and saves';
+const { expect } = S;
+const r = {};
+S.point('1', S.receipt.reads.p1.printerCards.join('|') === 'Receipt printer|Kids bracelet printer|Adult bracelet printer|Drop-off bracelet printer|Kitchen printer|Bar printer' && S.receipt.reads.p1.options.every(o => !o.selected) && ['ZZ TEST 930 kids band printer','ZZ TEST 930 adult band printer','ZZ TEST 930 drop-off band printer'].every(l => S.receipt.reads.p1.options.some(o => o.label === l)), ['01-till-station-settings-dropoff-card-none-selected.png'], S.receipt.reads.p1);
+const p2 = S.receipt.reads.p2, t2 = S.receipt.reads.p2test;
+S.point('2', p2.consoleAfter.dropoffIsZz && p2.tillOptions.find(o => o.selected)?.label === 'ZZ TEST 930 drop-off band printer' && p2.tillOptions.filter(o => o.selected).length === 1 && t2.status === 200 && t2.job.role === 'dropoff_band' && t2.job.onDropoff && t2.dropoffNewPrintouts.length === 1 && t2.kidsNewPrintouts === 0, ['02a-console-dropoff-band-printer-set.png', '02b-till-settings-dropoff-printer-selected.png', '02c-till-dropoff-card-test-print-sent.png', '02d-dropoff-printer-test-page-preview.png'], { ...p2, testPrint: t2 });
+const c = S.pages.console.page;
+await c.reload(); await S.goStations(c);
+let d = await S.openDrawer(c);
+await S.field(d, /^Drop-off band printer/).selectOption(S.dev.dropoff_band.id);
+const saved = await S.saveDrawer(c, d);
+r.consoleSet = { status: saved.status, version: saved.body?.station?.configVersion };
+await expect(d).toHaveCount(0, { timeout: 10000 });
+const till = S.till;
+await S.unlock('mgr');
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+await till.getByText('F&B orders', { exact: true }).click();
+await till.waitForTimeout(800);
+r.cardsAfterTick = (await till.locator('h3').allInnerTexts()).filter(t => /printer/i.test(t));
+await till.getByText('Station capabilities', { exact: true }).scrollIntoViewIfNeeded();
+await S.shot(till, '05a-till-only-fnb-ticked-bracelet-cards-gone.png', [till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]')]);
+const [res] = await Promise.all([
+  till.waitForResponse(rr => rr.request().method() === 'PATCH' && new RegExp(`^/api/stations/${S.station.id}$`).test(new URL(rr.url()).pathname), { timeout: 30000 }),
+  till.getByRole('button', { name: 'Save changes', exact: true }).click(),
+]);
+const sent = res.request().postDataJSON();
+r.tillSave = { status: res.status(), capabilitiesSent: sent.capabilities, devicesSent: (sent.devices ?? []).map(x => x.role + '=' + S.devName(x.deviceId)), expectedConfigVersionSent: sent.expectedConfigVersion ?? null };
+await till.waitForTimeout(2000);
+const after = await S.stationRow();
+r.apiAfter = { version: after.configVersion, capabilities: after.capabilities, roles: S.rolesOf(after) };
+await c.reload(); await S.goStations(c);
+d = await S.openDrawer(c);
+await S.field(d, /^Drop-off band printer/).scrollIntoViewIfNeeded();
+r.consoleShows = { version: await S.versionShown(d), dropoff: S.devName(await S.field(d, /^Drop-off band printer/).inputValue()), kids: S.devName(await S.field(d, /^Kids' band printer/i).inputValue().catch(() => null)), adult: S.devName(await S.field(d, /^Adult band printer/).inputValue()) };
+await S.shot(c, '05b-console-after-fnb-only-save-band-printers-kept.png');
+await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+const back = await S.call('PATCH', `/stations/${S.station.id}`, { capabilities: [] });
+r.restored = { status: back.status, capabilities: back.body?.station?.capabilities, roles: S.rolesOf(back.body?.station) };
+S.receipt.reads.p5 = r;
+const want = { dropoff_band: 'ZZ TEST 930 drop-off band printer', kids_band: 'ZZ TEST 930 kids band printer', adult_band: 'ZZ TEST 930 adult band printer' };
+S.point('5', r.tillSave.status === 200 && !r.cardsAfterTick.some(t => /bracelet/i.test(t)) && Object.entries(want).every(([k, v]) => r.apiAfter.roles[k] === v) && r.consoleShows.dropoff === want.dropoff_band && r.restored.status === 200, ['05a-till-only-fnb-ticked-bracelet-cards-gone.png', '05b-console-after-fnb-only-save-band-printers-kept.png'], r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "consoleSet": {
+   "status": 200,
+   "version": 5
+  },
+  "cardsAfterTick": [
+   "Receipt printer",
+   "Kitchen printer",
+   "Bar printer"
+  ],
+  "tillSave": {
+   "status": 200,
+   "capabilitiesSent": [
+    "fnb"
+   ],
+   "devicesSent": [
+    "receipt=ZZ TEST 930 receipt printer",
+    "adult_band=ZZ TEST 930 adult band printer",
+    "dropoff_band=ZZ TEST 930 drop-off band printer",
+    "kids_band=ZZ TEST 930 kids band printer"
+   ],
+   "expectedConfigVersionSent": 5
+  },
+  "apiAfter": {
+   "version": 6,
+   "capabilities": [
+    "fnb"
+   ],
+   "roles": {
+    "adult_band": "ZZ TEST 930 adult band printer",
+    "dropoff_band": "ZZ TEST 930 drop-off band printer",
+    "kids_band": "ZZ TEST 930 kids band printer",
+    "receipt": "ZZ TEST 930 receipt printer"
+   }
+  },
+  "consoleShows": {
+   "version": 6,
+   "dropoff": "ZZ TEST 930 drop-off band printer",
+   "kids": "ZZ TEST 930 kids band printer",
+   "adult": "ZZ TEST 930 adult band printer"
+  },
+  "restored": {
+   "status": 200,
+   "capabilities": [],
+   "roles": {
+    "adult_band": "ZZ TEST 930 adult band printer",
+    "dropoff_band": "ZZ TEST 930 drop-off band printer",
+    "kids_band": "ZZ TEST 930 kids band printer",
+    "receipt": "ZZ TEST 930 receipt printer"
+   }
+  }
+ }
+}
+
+=== 2026-11-12T14:12:35.804Z 6: a walk-in sale, 1 Hour Play, 1 child + 1 adult, cash
+S.phase = '6: a walk-in sale, 1 Hour Play, 1 child + 1 adult, cash';
+const { expect } = S;
+const r = {};
+r.mgrClosed = await S.close('mgr');
+const till = await S.signIn('rec', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.till = till;
+S.receipt.numbers.ticket = S.free[0];
+const seen = {}; for (const k of ['receipt', 'kids_band', 'adult_band', 'dropoff_band']) seen[k] = (await S.printouts(k)).map(S.keyOf);
+await S.walkIn(till, S.free[0]);
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('ticket-sale');
+S.ticketSale = sale.id;
+await S.payCash(till);
+await till.waitForTimeout(4000);
+const creditH = till.getByRole('heading', { name: 'Credit Grants Issued', exact: true });
+await creditH.waitFor({ timeout: 20000 }).catch(() => {});
+r.creditHeading = await creditH.count();
+r.oldHeading = await till.getByText('Credit Grants to Print').count();
+r.creditColumn = r.creditHeading ? S.flat(await creditH.locator('xpath=ancestor::div[contains(@class,"p-6")][1]').innerText()) : null;
+r.braceletColumn = S.flat(await till.getByRole('heading', { name: 'Bracelets to Print', exact: true }).locator('xpath=ancestor::div[contains(@class,"p-6")][1]').innerText().catch(() => ''));
+await S.shot(till, '06a-till-paid-credit-grants-issued.png', [till.locator('span.font-mono')]);
+await expect.poll(async () => { const j = (await S.sale(sale.id)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 90000, intervals: [3000] }).toBe(true).catch(() => {});
+const s = await S.sale(sale.id);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100 };
+r.printJobs = (s.printJobs ?? []).map(S.jobFacts);
+r.noCreditVoucherJob = !(s.printJobs ?? []).some(j => /credit|voucher/i.test(j.kind));
+const fresh = {}; for (const k of Object.keys(seen)) fresh[k] = (await S.printouts(k)).filter(p => !seen[k].includes(S.keyOf(p)));
+r.newPrintouts = Object.fromEntries(Object.entries(fresh).map(([k, v]) => [k, v.length]));
+if (fresh.receipt[0]) { const p = await S.admin.get(`/api/devices/${S.dev.receipt.id}/printouts/${fresh.receipt[0].seq}/preview.png`); r.preview = p.status(); if (p.status() === 200) S.writeFileSync(S.resolve(S.scratch, 'raw', 'receipt-preview.png'), await p.body()); }
+S.receipt.reads.p6 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "mgrClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "creditHeading": 1,
+  "oldHeading": 0,
+  "creditColumn": "Credit Grants Issued 1 TOTAL Credit ฿350 credit #1",
+  "braceletColumn": "Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93001-72VT8M 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z93001-DRPS9P 1 HOUR",
+  "sale": {
+   "receipt": "Z93001-000001",
+   "status": "finalised",
+   "gross": 1040
+  },
+  "printJobs": [
+   {
+    "kind": "adult_wristband",
+    "role": "adult_band",
+    "device": "ZZ TEST 930 adult band printer",
+    "status": "printed",
+    "error": null
+   },
+   {
+    "kind": "kids_wristband",
+    "role": "kids_band",
+    "device": "ZZ TEST 930 kids band printer",
+    "status": "printed",
+    "error": null
+   },
+   {
+    "kind": "receipt",
+    "role": "receipt",
+    "device": "ZZ TEST 930 receipt printer",
+    "status": "printed",
+    "error": null
+   }
+  ],
+  "noCreditVoucherJob": true,
+  "newPrintouts": {
+   "receipt": 2,
+   "kids_band": 1,
+   "adult_band": 1,
+   "dropoff_band": 0
+  },
+  "preview": 200
+ }
+}
+
+=== 2026-11-12T14:13:10.904Z 6: the receipt preview, the staff name boxed out; the two receipt printouts
+S.phase = '6: the receipt preview, the staff name boxed out; the two receipt printouts';
+const list = await S.printouts('receipt');
+const r = { receiptPrintouts: list.map(p => ({ seq: p.seq, at: p.at, w: p.widthDots ?? null, h: p.heightDots ?? null, job: p.jobId ?? p.printJobId ?? null })) };
+const other = list.find(p => p.seq !== list[0].seq) ?? null;
+for (const p of list) { const res = await S.admin.get(`/api/devices/${S.dev.receipt.id}/printouts/${p.seq}/preview.png`); if (res.status() === 200) S.writeFileSync(S.resolve(S.scratch, 'raw', `receipt-seq${p.seq}.png`), await res.body()); }
+const ctx = await S.browser.newContext({ viewport: { width: 700, height: 1200 } });
+const page = await ctx.newPage();
+const b64 = S.readFileSync(S.resolve(S.scratch, 'raw', 'receipt-preview.png')).toString('base64');
+const outB64 = await page.evaluate(async (src) => {
+  const img = new Image(); img.src = 'data:image/png;base64,' + src; await img.decode();
+  const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  g.fillStyle = '#18181b'; g.fillRect(Math.round(c.width * 0.205), Math.round(c.height * 0.233), Math.round(c.width * 0.14), Math.round(c.height * 0.028));
+  return { w: c.width, h: c.height, data: c.toDataURL('image/png').split(',')[1] };
+}, b64);
+await ctx.close();
+S.writeFileSync(S.resolve(S.out, '06b-receipt-preview-credit-voucher-section.png'), Buffer.from(outB64.data, 'base64'));
+r.previewSize = { w: outB64.w, h: outB64.h };
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "receiptPrintouts": [
+   {
+    "seq": 1,
+    "at": "2026-11-12T14:12:47.066Z",
+    "w": 576,
+    "h": 1089,
+    "job": null
+   },
+   {
+    "seq": 2,
+    "at": "2026-11-12T14:12:47.294Z",
+    "w": 576,
+    "h": 0,
+    "job": null
+   }
+  ],
+  "previewSize": {
+   "w": 576,
+   "h": 1089
+  }
+ }
+}
+
+=== 2026-11-12T14:13:34.540Z 7: a drop-off sale for one ZZ TEST child, cash, then Check in now
+S.phase = '7: a drop-off sale for one ZZ TEST child, cash, then Check in now';
+const { expect } = S;
+const till = S.till;
+await S.unlock('rec');
+const r = {};
+S.point('6', S.receipt.reads.p6.creditHeading === 1 && S.receipt.reads.p6.oldHeading === 0 && /฿350/.test(S.receipt.reads.p6.creditColumn) && S.receipt.reads.p6.noCreditVoucherJob && S.receipt.reads.p6.printJobs.map(j => j.kind).sort().join(',') === 'adult_wristband,kids_wristband,receipt' && S.receipt.reads.p6.printJobs.every(j => j.status === 'printed'), ['06a-till-paid-credit-grants-issued.png', '06b-receipt-preview-credit-voucher-section.png'], { ...S.receipt.reads.p6, receiptPreview: 'CREDIT VOUCHER section: Credit loaded ฿350, For Walk-in guest, Band Z93001-DRPS9P, QR; the second printout on the receipt printer (seq 2, height 0) is the paper cut with no drawing' });
+const seen = {}; for (const k of ['receipt', 'kids_band', 'adult_band', 'dropoff_band']) seen[k] = (await S.printouts(k)).map(S.keyOf);
+S.receipt.numbers.dropoff = S.free[1];
+await S.walkIn(till, S.free[1]);
+await S.ticket(till, 1, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 930 child D1'], 'ZZ TEST 930 guardian D');
+S.reg = reg.id;
+const sale = await S.saleWritten('dropoff-sale');
+S.dropSale = sale.id;
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await till.waitForTimeout(1500);
+const braceletCol = till.getByRole('heading', { name: 'Bracelets to Print', exact: true }).locator('xpath=ancestor::div[contains(@class,"p-6")][1]');
+r.paidBehindDialog = { bracelets: S.flat(await braceletCol.innerText().catch(() => '')), customer: S.flat(await S.halfOf(till.getByRole('heading', { name: 'Thank you!' }).first()).innerText().catch(() => '')).slice(0, 300) };
+await S.shot(till, '07a-till-paid-dropoff-check-in-prompt.png', [till.locator('span.font-mono')]);
+const resp = till.waitForResponse(rr => /\/api\/checkin\//.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 });
+await now.click();
+const cr = await resp;
+r.checkIn = { status: cr.status(), path: new URL(cr.url()).pathname.replace(S.ID, ':id') };
+await till.waitForTimeout(3000);
+r.paidAfter = { bracelets: S.flat(await braceletCol.innerText().catch(() => '')), heading: S.flat(await till.getByRole('heading', { name: /Bracelets to Print/ }).first().innerText().catch(() => '')), customerBracelets: S.flat(await till.getByText(/Child bracelet/).allInnerTexts().then(a => a.join(' | '))), creditHeading: await till.getByRole('heading', { name: 'Credit Grants Issued', exact: true }).count() };
+r.customerDisplay = S.flat(await S.halfOf(till.getByRole('heading', { name: 'Thank you!' }).first()).innerText().catch(() => '')).slice(0, 300);
+await S.shot(till, '07b-till-paid-dropoff-bracelets-to-print-1-prints-at-check-in.png', [till.locator('span.font-mono')]);
+await expect.poll(async () => { const j = (await S.sale(sale.id)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 90000, intervals: [3000] }).toBe(true).catch(() => {});
+await S.sleep(8000);
+const s = await S.sale(sale.id);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: (s.bands ?? []).map(b => b.kind + ' ' + b.status) };
+r.printJobs = (s.printJobs ?? []).map(S.jobFacts);
+const fresh = {}; for (const k of Object.keys(seen)) fresh[k] = (await S.printouts(k)).filter(p => !seen[k].includes(S.keyOf(p)));
+r.newPrintouts = Object.fromEntries(Object.entries(fresh).map(([k, v]) => [k, v.length]));
+if (fresh.dropoff_band[0]) { const p = await S.admin.get(`/api/devices/${S.dev.dropoff_band.id}/printouts/${fresh.dropoff_band[0].seq}/preview.png`); if (p.status() === 200) S.writeFileSync(S.resolve(S.scratch, 'raw', 'dropoff-band.png'), await p.body()); r.bandPreview = p.status(); }
+const rg = await S.registration(reg.id);
+r.reg = rg.children.map(c => ({ child: c.childName, status: c.status, linked: c.saleId === sale.id }));
+S.receipt.reads.p7 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "paidBehindDialog": {
+   "bracelets": "",
+   "customer": ""
+  },
+  "checkIn": {
+   "status": 200,
+   "path": "/api/checkin/check-in-now"
+  },
+  "paidAfter": {
+   "bracelets": "Bracelets to Print 1 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Prints at check-in 1 HOUR",
+   "heading": "Bracelets to Print",
+   "customerBracelets": "1× Child bracelet | Child bracelet",
+   "creditHeading": 0
+  },
+  "customerDisplay": "English Customer ZZ TEST 930 guardian D Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 0 Adult bracelets",
+  "sale": {
+   "receipt": "Z93001-000002",
+   "status": "finalised",
+   "gross": 915,
+   "bands": [
+    "kid active"
+   ]
+  },
+  "printJobs": [
+   {
+    "kind": "kids_wristband",
+    "role": "dropoff_band",
+    "device": "ZZ TEST 930 drop-off band printer",
+    "status": "printed",
+    "error": null
+   },
+   {
+    "kind": "receipt",
+    "role": "receipt",
+    "device": "ZZ TEST 930 receipt printer",
+    "status": "printed",
+    "error": null
+   }
+  ],
+  "newPrintouts": {
+   "receipt": 2,
+   "kids_band": 0,
+   "adult_band": 0,
+   "dropoff_band": 1
+  },
+  "bandPreview": 200,
+  "reg": [
+   {
+    "child": "ZZ TEST 930 child D1",
+    "status": "in_park",
+    "linked": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:15:21.145Z 8: the station form open in two Console windows; A saves, then B
+S.phase = '8: the station form open in two Console windows; A saves, then B';
+const { expect } = S;
+const p7 = S.receipt.reads.p7;
+S.point('7', /Bracelets to Print 1 TOTAL 1× Child bracelet .*Prints at check-in/.test(p7.paidAfter.bracelets) && /1 Child bracelet/.test(p7.customerDisplay) && p7.checkIn.status === 200 && p7.printJobs.some(j => j.kind === 'kids_wristband' && j.role === 'dropoff_band' && j.device === 'ZZ TEST 930 drop-off band printer' && j.status === 'printed') && p7.newPrintouts.dropoff_band === 1 && p7.newPrintouts.kids_band === 0, ['07a-till-paid-dropoff-check-in-prompt.png', '07b-till-paid-dropoff-bracelets-to-print-1-prints-at-check-in.png'], p7);
+const r = { recClosed: await S.close('rec') };
+const A = S.pages.console.page;
+const B = await S.consoleIn('consoleB');
+await A.reload(); await S.goStations(A); await S.goStations(B);
+let dA = await S.openDrawer(A);
+let dB = await S.openDrawer(B);
+const before = await S.stationRow();
+r.before = { version: before.configVersion, name: before.name };
+r.opened = { A: { title: S.flat(await dA.getByRole('heading').first().innerText()), version: await S.versionShown(dA) }, B: { title: S.flat(await dB.getByRole('heading').first().innerText()), version: await S.versionShown(dB) } };
+await dA.getByLabel(/^Name/).first().fill('ZZ TEST 930 till A');
+const sa = await S.saveDrawer(A, dA);
+r.A = { status: sa.status, version: sa.body?.station?.configVersion, name: sa.body?.station?.name };
+S.station.name = 'ZZ TEST 930 till A';
+await dB.getByLabel(/^Name/).first().fill('ZZ TEST 930 till B');
+const sb = await S.saveDrawer(B, dB);
+r.B = { status: sb.status, errorCode: sb.body?.error?.code ?? null, message: sb.body?.error?.message ?? null, expectedConfigVersionSent: sb.sent.expectedConfigVersion ?? null };
+await B.waitForTimeout(3000);
+r.B.after = { drawerOpen: await dB.isVisible(), title: S.flat(await dB.getByRole('heading').first().innerText()), version: await S.versionShown(dB), words: S.flat(await dB.innerText()).includes('changed since you opened it'), typedKept: (await dB.getByLabel(/^Name/).first().inputValue()) === 'ZZ TEST 930 till B', listCardName: await B.getByRole('button', { name: 'ZZ TEST 930 till A', exact: true }).count() };
+const refusal = dB.getByText(/changed since you opened it/).first();
+await refusal.scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(B, '08-console-b-refused-title-matches-config-version.png');
+const after = await S.stationRow();
+r.apiAfter = { version: after.configVersion, name: after.name };
+await dB.getByRole('button', { name: 'Cancel', exact: true }).click();
+r.consoleBClosed = await S.close('consoleB');
+S.receipt.reads.p8 = r;
+S.point('8', r.A.status === 200 && r.B.status === 409 && r.B.errorCode === 'STATION_CHANGED' && r.B.after.title === r.opened.B.title && r.B.after.version === r.opened.B.version && r.B.after.title === before.name && r.B.after.version === before.configVersion && r.apiAfter.name === 'ZZ TEST 930 till A' && r.apiAfter.version === r.A.version, ['08-console-b-refused-title-matches-config-version.png'], r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "recClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "before": {
+   "version": 7,
+   "name": "ZZ TEST 930 till renamed"
+  },
+  "opened": {
+   "A": {
+    "title": "ZZ TEST 930 till renamed",
+    "version": 7
+   },
+   "B": {
+    "title": "ZZ TEST 930 till renamed",
+    "version": 7
+   }
+  },
+  "A": {
+   "status": 200,
+   "version": 8,
+   "name": "ZZ TEST 930 till A"
+  },
+  "B": {
+   "status": 409,
+   "errorCode": "STATION_CHANGED",
+   "message": "This station was changed since you opened it. Close it and open it again.",
+   "expectedConfigVersionSent": 7,
+   "after": {
+    "drawerOpen": true,
+    "title": "ZZ TEST 930 till renamed",
+    "version": 7,
+    "words": true,
+    "typedKept": true,
+    "listCardName": 1
+   }
+  },
+  "apiAfter": {
+   "version": 8,
+   "name": "ZZ TEST 930 till A"
+  },
+  "consoleBClosed": {
+   "signOut": 200,
+   "me": 401
+  }
+ }
+}
+
+=== 2026-11-12T14:16:02.037Z 9-11: an empty printer address; the Add a device placeholder; a printer with no address
+S.phase = '9-11: an empty printer address; the Add a device placeholder; a printer with no address';
+const { expect } = S;
+const r = {};
+const beforeDev = (await S.devicesOnBox()).find(d => d.id === S.dev.receipt.id);
+const p = await S.call('PATCH', `/devices/${S.dev.receipt.id}`, { address: '' });
+const afterDev = (await S.devicesOnBox()).find(d => d.id === S.dev.receipt.id);
+r.p9 = { status: p.status, code: p.body?.error?.code ?? null, message: p.body?.error?.message ?? null, addressBefore: beforeDev.address, addressAfter: afterDev.address };
+S.point('9', p.status === 400 && r.p9.code === 'PRINTER_ADDRESS_REQUIRED' && /address/i.test(r.p9.message ?? '') && !/String must contain|too_small|Expected/i.test(r.p9.message ?? '') && afterDev.address === '192.0.2.50:9100', [], r.p9);
+const c = S.pages.console.page;
+await c.reload();
+let box = await S.goBox(c, S.branchId, S.box.name);
+await box.getByRole('button', { name: 'Add a device', exact: true }).click();
+const form = box.locator('div.rounded-xl').filter({ has: c.getByRole('button', { name: 'Add it', exact: true }) }).last();
+await form.getByLabel(/^What it is/).selectOption('receipt_printer');
+const addr = form.getByLabel(/^Address/);
+await addr.scrollIntoViewIfNeeded();
+r.p10 = { placeholder: await addr.getAttribute('placeholder'), formText: S.flat(await form.innerText()), parkAddressInForm: (await form.innerHTML()).includes('192.168.88.204'), parkAddressInDrawer: (await box.innerHTML()).includes('192.168.88.204'), parkAddressOnPage: (await c.content()).includes('192.168.88.204') };
+await S.shot(c, '10-console-add-device-placeholder-example.png');
+await form.getByLabel(/^What it is/).selectOption('scanner').catch(() => {});
+r.p10.otherDeviceHint = S.flat(await form.locator('label').filter({ hasText: /^Address/ }).innerText().catch(() => ''));
+const cancel = form.getByRole('button', { name: 'Cancel', exact: true });
+if (await cancel.count()) await cancel.click();
+S.point('10', r.p10.placeholder === 'e.g. 192.0.2.10:9100' && !r.p10.parkAddressInForm && !r.p10.parkAddressInDrawer, ['10-console-add-device-placeholder-example.png'], r.p10);
+// 11: a ZZ printer with an address on Virtual box 1
+const zzRow = box.getByRole('listitem').filter({ hasText: 'ZZ TEST 930 receipt printer' }).first();
+await zzRow.scrollIntoViewIfNeeded();
+r.p11 = { zz: { text: S.flat(await zzRow.innerText()).slice(0, 200), paperOk: /paper ok/.test(await zzRow.innerText()), notSetUp: /not set up/.test(await zzRow.innerText()) } };
+await S.shot(c, '11a-console-zz-printer-with-address-paper-ok.png');
+const listed = (await S.devicesOnBox()).find(d => d.id === S.dev.receipt.id);
+r.p11.zz.api = { address: listed.address, paperStatus: listed.paperStatus ?? null, reachability: listed.reachability ?? null };
+await c.keyboard.press('Escape').catch(() => {});
+// Robinson Chalong, Virtual box 3, "Receipt Printer 1": READ only
+const branches = (await S.call('GET', '/branches')).body.branches;
+const chalong = branches.find(b => /Chalong/i.test(b.name));
+const boxes = (await S.call('GET', `/branches/${chalong.id}/boxes`)).body.boxes;
+const vb3 = boxes.find(b => b.name === 'Virtual box 3') ?? boxes.find(b => b.slot === 'virtual-3');
+const devs = await S.devicesOnBox(vb3.id);
+const rp1 = devs.find(d => d.label === 'Receipt Printer 1' && !d.archived);
+r.p11.chalong = { branch: chalong.name, box: vb3.name, device: rp1 ? { label: rp1.label, kind: rp1.kind, address: rp1.address ?? null, paperStatus: rp1.paperStatus ?? null, reachability: rp1.reachability ?? null, updatedAt: rp1.updatedAt ?? null } : 'not found' };
+await c.reload();
+box = await S.goBox(c, chalong.id, vb3.name);
+const row = box.getByRole('listitem').filter({ hasText: 'Receipt Printer 1' }).first();
+await row.scrollIntoViewIfNeeded();
+const rowText = await row.innerText();
+r.p11.chalong.row = { text: S.flat(rowText).slice(0, 300), notSetUp: /not set up/.test(rowText), paperOk: /paper ok/.test(rowText), markClass: await row.locator('span').first().getAttribute('class').catch(() => null), markStyle: await row.locator('span').first().getAttribute('style').catch(() => null) };
+await S.shot(c, '11b-console-chalong-receipt-printer-1-not-set-up.png');
+await c.keyboard.press('Escape').catch(() => {});
+const after = (await S.devicesOnBox(vb3.id)).find(d => d.id === rp1.id);
+r.p11.chalong.unchanged = JSON.stringify({ a: after.address ?? null, l: after.label, u: after.updatedAt ?? null }) === JSON.stringify({ a: rp1.address ?? null, l: rp1.label, u: rp1.updatedAt ?? null });
+S.receipt.reads.p9to11 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "p9": {
+   "status": 400,
+   "code": "PRINTER_ADDRESS_REQUIRED",
+   "message": "A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.",
+   "addressBefore": "192.0.2.50:9100",
+   "addressAfter": "192.0.2.50:9100"
+  },
+  "p10": {
+   "placeholder": "e.g. 192.0.2.10:9100",
+   "formText": "WHAT IT IS Receipt printer Band printer Kitchen printer Bar printer Scanner Payment terminal Gate Gate reader Cash drawer LABEL HOW THE BOX REACHES IT LAN USB Serial Bluetooth Simulated ADDRESS Required for a printer. The address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. MODEL PROTOCOL escpos, tspl2, hid. PAPER WIDTH 576 dots (most 80 mm printers) 512 dots (some units — see the self-test page) A 512-dot unit cuts the right edge of every slip otherwise. Cancel Add it",
+   "parkAddressInForm": false,
+   "parkAddressInDrawer": false,
+   "parkAddressOnPage": false,
+   "otherDeviceHint": "ADDRESS For example 192.0.2.10:9100, or /dev/ttyACM0."
+  },
+  "p11": {
+   "zz": {
+    "text": "ZZ TEST 930 receipt printer Receipt printer Simulated paper ok Edit Xprinter XP-80 escpos 192.0.2.50:9100 seen 39s ago",
+    "paperOk": true,
+    "notSetUp": false,
+    "api": {
+     "address": "192.0.2.50:9100",
+     "paperStatus": "ok",
+     "reachability": "reachable"
+    }
+   },
+   "chalong": {
+    "branch": "Oto Play Park, Robinson Chalong",
+    "box": "Virtual box 3",
+    "device": {
+     "label": "Receipt Printer 1",
+     "kind": "receipt_printer",
+     "address": null,
+     "paperStatus": "ok",
+     "reachability": "reachable",
+     "updatedAt": null
+    },
+    "row": {
+     "text": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to.",
+     "notSetUp": true,
+     "paperOk": false,
+     "markClass": "text-sm font-semibold min-w-0 break-words",
+     "markStyle": null
+    },
+    "unchanged": true
+   }
+  }
+ }
+}
+
+=== 2026-11-12T14:16:35.876Z 9-11: an empty printer address; the Add a device placeholder; a printer with no address
+S.need = (await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs')).need; return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T14:16:35.913Z clean up: release the drop-off child, the manager refunds both sales
+S.phase = 'clean up: release the drop-off child, the manager refunds both sales';
+const r9 = S.receipt.reads.p9to11;
+S.point('11', r9.p11.chalong.row.notSetUp && !r9.p11.chalong.row.paperOk && r9.p11.chalong.device.address === null && r9.p11.chalong.unchanged && r9.p11.zz.paperOk && !r9.p11.zz.notSetUp, ['11a-console-zz-printer-with-address-paper-ok.png', '11b-console-chalong-receipt-printer-1-not-set-up.png'], { ...r9.p11, note: 'the not-set-up row\'s dot is the red "down" mark (picture 11b); the API still reports Receipt Printer 1 paperStatus ok and reachable, which the Console now overrides' });
+const out = {};
+const reg = S.receipt.created.find(i => i.kind === 'registration');
+out.released = await S.releaseOwn(reg.id, reg.guardian);
+out.regAfter = (await S.registration(reg.id)).children.map(c => ({ child: c.childName, status: c.status }));
+const mgr = await S.pw.request.newContext({ baseURL: S.pos });
+const si = await mgr.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } });
+out.mgrSignIn = si.status();
+out.refunds = [];
+for (const id of [S.ticketSale, S.dropSale]) {
+  const s = await S.sale(id);
+  S.assert.equal(s.sale.stationId ?? S.station.id, S.station.id);
+  const res = await mgr.post(`/api/sales/${id}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST SCRUM-930 proof cleanup' } });
+  const b = await res.json().catch(() => null);
+  out.refunds.push({ receipt: s.sale.receiptNumber, status: res.status(), code: b?.error?.code ?? null, message: res.status() >= 400 ? (b?.error?.message ?? null) : null, amount: b?.refund?.amountSatang != null ? b.refund.amountSatang / 100 : null });
+}
+const so = await mgr.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+out.mgrSignOut = { status: so.status(), me: (await mgr.get('/api/me')).status() };
+await mgr.dispose();
+const sales = await S.stationSales();
+out.sales = sales.map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals.grossSatang / 100, refunded: (s.totals.refundedSatang ?? 0) / 100, refundStatus: s.refundStatus ?? null }));
+S.receipt.cleanup.salesAndFamily = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "released": [
+   {
+    "child": "ZZ TEST 930 child D1",
+    "status": 200
+   }
+  ],
+  "regAfter": [
+   {
+    "child": "ZZ TEST 930 child D1",
+    "status": "out"
+   }
+  ],
+  "mgrSignIn": 200,
+  "refunds": [
+   {
+    "receipt": "Z93001-000001",
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 1040
+   },
+   {
+    "receipt": "Z93001-000002",
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 915
+   }
+  ],
+  "mgrSignOut": {
+   "status": 200,
+   "me": 401
+  },
+  "sales": [
+   {
+    "receipt": "Z93001-000002",
+    "status": "refunded",
+    "gross": 915,
+    "refunded": 915,
+    "refundStatus": null
+   },
+   {
+    "receipt": "Z93001-000001",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040,
+    "refundStatus": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T14:16:47.301Z clean up: members, the till retired, the printers archived, read back
+S.phase = 'clean up: members, the till retired, the printers archived, read back';
+const out = { members: [] };
+for (const [key, phone] of Object.entries(S.receipt.numbers)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+  if (m) {
+    S.assert.ok(`${m.nickname ?? ''} ${m.name ?? ''}`.includes('ZZ TEST'), 'only own named test members');
+    const d = await S.call('DELETE', `/members/${m.id}`);
+    out.members.push({ key, archived: d.status, lookupAfter: (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ? 'still found' : 'not found' });
+  } else out.members.push({ key, member: 'none' });
+}
+const row = await S.stationRow();
+S.assert.ok(row.name.startsWith('ZZ TEST 930 '), 'own till');
+out.devicesCleared = (await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status;
+out.retired = (await S.call('DELETE', `/stations/${S.station.id}`)).status;
+const st = await S.stationRow();
+out.stationReadBack = { name: st.name, archived: Boolean(st.archived), devices: st.devices.length };
+out.printers = [];
+for (const [role, d] of Object.entries(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 930 '), 'own printer');
+  const del = now.archived ? { status: 'already' } : await S.call('DELETE', `/devices/${d.id}`);
+  out.printers.push({ role, delete: del.status, stillAssignedTo: (del.body?.stillAssignedTo ?? []).length });
+}
+const after = (await S.devicesOnBox()).filter(x => Object.values(S.dev).some(d => d.id === x.id));
+out.printersReadBack = after.map(x => ({ label: x.label, archived: Boolean(x.archived) }));
+out.consoleA = await S.close('console');
+out.openPages = Object.keys(S.pages);
+S.receipt.cleanup.records = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "members": [
+   {
+    "key": "ticket",
+    "member": "none"
+   },
+   {
+    "key": "dropoff",
+    "archived": 200,
+    "lookupAfter": "not found"
+   }
+  ],
+  "devicesCleared": 200,
+  "retired": 200,
+  "stationReadBack": {
+   "name": "ZZ TEST 930 till A",
+   "archived": true,
+   "devices": 0
+  },
+  "printers": [
+   {
+    "role": "receipt",
+    "delete": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "role": "kids_band",
+    "delete": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "role": "adult_band",
+    "delete": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "role": "dropoff_band",
+    "delete": 200,
+    "stillAssignedTo": 0
+   }
+  ],
+  "printersReadBack": [
+   {
+    "label": "ZZ TEST 930 adult band printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 930 drop-off band printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 930 kids band printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 930 receipt printer",
+    "archived": true
+   }
+  ],
+  "consoleA": {
+   "signOut": 200,
+   "me": 401
+  },
+  "openPages": []
+ }
+}

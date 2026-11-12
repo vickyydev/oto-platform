@@ -1,0 +1,1774 @@
+{
+  "tickets": [
+    "SCRUM-930",
+    "SCRUM-931",
+    "SCRUM-932"
+  ],
+  "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+  "startedAt": "2026-11-12T14:08:58.843Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqseelckfvc73dbp0qg",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "atLandedCommit": true,
+        "createdAt": "2026-11-12T14:03:38.577253Z",
+        "finishedAt": "2026-11-12T14:08:26.060285Z"
+      },
+      "live": {
+        "id": "dep-dbqseelckfvc73dbp0qg",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "createdAt": "2026-11-12T14:03:38.577253Z",
+        "finishedAt": "2026-11-12T14:08:26.060285Z"
+      },
+      "latest": {
+        "id": "dep-dbqseelckfvc73dbp0qg",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+      },
+      "readAt": "2026-11-12T14:08:56.055Z"
+    },
+    "oto-console-staging": {
+      "named": {
+        "id": "dep-dbqsefqfngtc738ho28g",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "atLandedCommit": true,
+        "createdAt": "2026-11-12T14:03:43.314187Z",
+        "finishedAt": "2026-11-12T14:04:51.09559Z"
+      },
+      "live": {
+        "id": "dep-dbqsefqfngtc738ho28g",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "createdAt": "2026-11-12T14:03:43.314187Z",
+        "finishedAt": "2026-11-12T14:04:51.09559Z"
+      },
+      "latest": {
+        "id": "dep-dbqsefqfngtc738ho28g",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+      },
+      "readAt": "2026-11-12T14:08:56.646Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqsefdbedkc73ejmm5g",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "atLandedCommit": true,
+        "createdAt": "2026-11-12T14:03:41.768225Z",
+        "finishedAt": "2026-11-12T14:04:58.163859Z"
+      },
+      "live": {
+        "id": "dep-dbqsefdbedkc73ejmm5g",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "createdAt": "2026-11-12T14:03:41.768225Z",
+        "finishedAt": "2026-11-12T14:04:58.163859Z"
+      },
+      "latest": {
+        "id": "dep-dbqsefdbedkc73ejmm5g",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+      },
+      "readAt": "2026-11-12T14:08:57.232Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqsef3m8hqs73eoavug",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "atLandedCommit": true,
+        "createdAt": "2026-11-12T14:03:40.330841Z",
+        "finishedAt": "2026-11-12T14:07:31.663118Z"
+      },
+      "live": {
+        "id": "dep-dbqsef3m8hqs73eoavug",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+        "createdAt": "2026-11-12T14:03:40.330841Z",
+        "finishedAt": "2026-11-12T14:07:31.663118Z"
+      },
+      "latest": {
+        "id": "dep-dbqsef3m8hqs73eoavug",
+        "status": "live",
+        "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+      },
+      "readAt": "2026-11-12T14:08:57.807Z"
+    },
+    "allLiveAtLandedCommit": true
+  },
+  "numbers": {
+    "ticket": "0898930010",
+    "dropoff": "0898930011"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "role": "receipt",
+      "id": "7ca4a75b-1140-46eb-b063-cf2e5270d8ae",
+      "label": "ZZ TEST 930 receipt printer"
+    },
+    {
+      "kind": "device",
+      "role": "kids_band",
+      "id": "f5501614-a24f-481e-9d9d-f993a5701e08",
+      "label": "ZZ TEST 930 kids band printer"
+    },
+    {
+      "kind": "device",
+      "role": "adult_band",
+      "id": "40be53df-0c39-4109-bdbb-90b38ba37f50",
+      "label": "ZZ TEST 930 adult band printer"
+    },
+    {
+      "kind": "device",
+      "role": "dropoff_band",
+      "id": "c3dd9b91-4788-49c4-9d6b-c41724da5913",
+      "label": "ZZ TEST 930 drop-off band printer"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d017-6964-777c-b382-8e005dbc29b3",
+      "name": "ZZ TEST 930 till",
+      "prefix": "Z93001"
+    },
+    {
+      "kind": "ticket-sale",
+      "id": "01a1d01a-8a58-717a-824c-afb31db0b708"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 930 guardian D",
+      "id": "01a1d01b-6fb0-731e-b5cc-cb8252999bbd",
+      "stays": [
+        {
+          "id": "01a1d01b-6fb0-731e-b5cc-cb8305c92feb",
+          "name": "ZZ TEST 930 child D1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale",
+      "id": "01a1d01b-7340-7839-87b7-ce99b54afc3b"
+    }
+  ],
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "pictures": [
+        "01-till-station-settings-dropoff-card-none-selected.png"
+      ],
+      "seen": {
+        "cardTitles": [
+          "Station capabilities",
+          "Station name",
+          "Box",
+          "Receipt printer",
+          "Kids bracelet printer",
+          "Adult bracelet printer",
+          "Drop-off bracelet printer",
+          "Kitchen printer",
+          "Bar printer",
+          "Wristband scanner",
+          "Who may use this station"
+        ],
+        "printerCards": [
+          "Receipt printer",
+          "Kids bracelet printer",
+          "Adult bracelet printer",
+          "Drop-off bracelet printer",
+          "Kitchen printer",
+          "Bar printer"
+        ],
+        "cardText": "Drop-off bracelet printer Test print Optional — leave unset to print drop-off bracelets on the kids bracelet printer. Band Printer (adults) Simulated on Virtual box 1 Band Printer (kids) Simulated on Virtual box 1 ZZ TEST 930 adult band printer Simulated on Virtual box 1 ZZ TEST 930 drop-off band printer Simulated on Virtual box 1 ZZ TEST 930 kids band printer Simulated on Virtual box 1",
+        "options": [
+          {
+            "label": "Band Printer (adults)",
+            "selected": false
+          },
+          {
+            "label": "Band Printer (kids)",
+            "selected": false
+          },
+          {
+            "label": "ZZ TEST 930 adult band printer",
+            "selected": false
+          },
+          {
+            "label": "ZZ TEST 930 drop-off band printer",
+            "selected": false
+          },
+          {
+            "label": "ZZ TEST 930 kids band printer",
+            "selected": false
+          }
+        ],
+        "testEnabled": false,
+        "clearShown": 0
+      }
+    },
+    "2": {
+      "verdict": "PASS",
+      "pictures": [
+        "02a-console-dropoff-band-printer-set.png",
+        "02b-till-settings-dropoff-printer-selected.png",
+        "02c-till-dropoff-card-test-print-sent.png",
+        "02d-dropoff-printer-test-page-preview.png"
+      ],
+      "seen": {
+        "apiAfterFirstTry": {
+          "version": 2,
+          "roles": {
+            "adult_band": "ZZ TEST 930 adult band printer",
+            "dropoff_band": "ZZ TEST 930 drop-off band printer",
+            "kids_band": "ZZ TEST 930 kids band printer",
+            "receipt": "ZZ TEST 930 receipt printer"
+          }
+        },
+        "firstTryNote": "the first try saved in the Console (PATCH) and stopped on a harness error (expect undefined) before its picture",
+        "consoleAfter": {
+          "version": 2,
+          "dropoffIsZz": true
+        },
+        "tillOptions": [
+          {
+            "label": "Band Printer (adults)",
+            "selected": false
+          },
+          {
+            "label": "Band Printer (kids)",
+            "selected": false
+          },
+          {
+            "label": "ZZ TEST 930 adult band printer",
+            "selected": false
+          },
+          {
+            "label": "ZZ TEST 930 drop-off band printer",
+            "selected": true
+          },
+          {
+            "label": "ZZ TEST 930 kids band printer",
+            "selected": false
+          }
+        ],
+        "testEnabled": true,
+        "testPrint": {
+          "status": 200,
+          "path": "/api/stations/:id/test-print",
+          "sent": {
+            "kind": "test_page",
+            "role": "dropoff_band"
+          },
+          "job": {
+            "kind": "test_page",
+            "role": "dropoff_band",
+            "status": "queued",
+            "onDropoff": true
+          },
+          "toast": "Test print queued Virtual box 1 runs it on its next poll and records the result in its Printing panel. | Notification Test print queuedVirtual box 1 runs it on its next poll and records the result in its Printing panel.",
+          "dropoffNewPrintouts": [
+            {
+              "seq": 1,
+              "at": "2026-11-12T14:10:36.906Z",
+              "kind": null
+            }
+          ],
+          "kidsNewPrintouts": 0,
+          "preview": 200
+        }
+      }
+    },
+    "3": {
+      "verdict": "PASS",
+      "pictures": [
+        "03a-till-dropoff-changed-to-kids-band-saved.png",
+        "03b-console-shows-till-change-kids-band.png"
+      ],
+      "seen": {
+        "before": {
+          "version": 2,
+          "dropoff": "ZZ TEST 930 drop-off band printer"
+        },
+        "status": 200,
+        "expectedConfigVersionSent": 2,
+        "devicesSent": [
+          "receipt=ZZ TEST 930 receipt printer",
+          "kids_band=ZZ TEST 930 kids band printer",
+          "adult_band=ZZ TEST 930 adult band printer",
+          "dropoff_band=ZZ TEST 930 kids band printer"
+        ],
+        "apiAfter": {
+          "version": 3,
+          "roles": {
+            "adult_band": "ZZ TEST 930 adult band printer",
+            "dropoff_band": "ZZ TEST 930 kids band printer",
+            "kids_band": "ZZ TEST 930 kids band printer",
+            "receipt": "ZZ TEST 930 receipt printer"
+          }
+        },
+        "consoleShows": {
+          "version": 3,
+          "dropoff": "ZZ TEST 930 kids band printer"
+        }
+      }
+    },
+    "4": {
+      "verdict": "PASS",
+      "pictures": [
+        "04-till-stale-save-refused-station-changed.png"
+      ],
+      "seen": {
+        "tillOpenedAt": {
+          "version": 3,
+          "name": "ZZ TEST 930 till"
+        },
+        "consoleRename": {
+          "status": 200,
+          "version": 4,
+          "name": "ZZ TEST 930 till renamed"
+        },
+        "tillSave": {
+          "status": 409,
+          "errorCode": "STATION_CHANGED",
+          "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+          "expectedConfigVersionSent": 3
+        },
+        "wordsOnScreen": true,
+        "screenText": "Couldn't save the station This station was changed since you opened it. Close it and open it again.",
+        "stillOnSettings": true,
+        "apiAfter": {
+          "version": 4,
+          "name": "ZZ TEST 930 till renamed",
+          "dropoff": "ZZ TEST 930 kids band printer"
+        },
+        "nothingWritten": true
+      }
+    },
+    "5": {
+      "verdict": "PASS",
+      "pictures": [
+        "05a-till-only-fnb-ticked-bracelet-cards-gone.png",
+        "05b-console-after-fnb-only-save-band-printers-kept.png"
+      ],
+      "seen": {
+        "consoleSet": {
+          "status": 200,
+          "version": 5
+        },
+        "cardsAfterTick": [
+          "Receipt printer",
+          "Kitchen printer",
+          "Bar printer"
+        ],
+        "tillSave": {
+          "status": 200,
+          "capabilitiesSent": [
+            "fnb"
+          ],
+          "devicesSent": [
+            "receipt=ZZ TEST 930 receipt printer",
+            "adult_band=ZZ TEST 930 adult band printer",
+            "dropoff_band=ZZ TEST 930 drop-off band printer",
+            "kids_band=ZZ TEST 930 kids band printer"
+          ],
+          "expectedConfigVersionSent": 5
+        },
+        "apiAfter": {
+          "version": 6,
+          "capabilities": [
+            "fnb"
+          ],
+          "roles": {
+            "adult_band": "ZZ TEST 930 adult band printer",
+            "dropoff_band": "ZZ TEST 930 drop-off band printer",
+            "kids_band": "ZZ TEST 930 kids band printer",
+            "receipt": "ZZ TEST 930 receipt printer"
+          }
+        },
+        "consoleShows": {
+          "version": 6,
+          "dropoff": "ZZ TEST 930 drop-off band printer",
+          "kids": "ZZ TEST 930 kids band printer",
+          "adult": "ZZ TEST 930 adult band printer"
+        },
+        "restored": {
+          "status": 200,
+          "capabilities": [],
+          "roles": {
+            "adult_band": "ZZ TEST 930 adult band printer",
+            "dropoff_band": "ZZ TEST 930 drop-off band printer",
+            "kids_band": "ZZ TEST 930 kids band printer",
+            "receipt": "ZZ TEST 930 receipt printer"
+          }
+        }
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "pictures": [
+        "06a-till-paid-credit-grants-issued.png",
+        "06b-receipt-preview-credit-voucher-section.png"
+      ],
+      "seen": {
+        "mgrClosed": {
+          "signOut": 200,
+          "me": 401
+        },
+        "creditHeading": 1,
+        "oldHeading": 0,
+        "creditColumn": "Credit Grants Issued 1 TOTAL Credit ฿350 credit #1",
+        "braceletColumn": "Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93001-72VT8M 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z93001-DRPS9P 1 HOUR",
+        "sale": {
+          "receipt": "Z93001-000001",
+          "status": "finalised",
+          "gross": 1040
+        },
+        "printJobs": [
+          {
+            "kind": "adult_wristband",
+            "role": "adult_band",
+            "device": "ZZ TEST 930 adult band printer",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "kids_wristband",
+            "role": "kids_band",
+            "device": "ZZ TEST 930 kids band printer",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "ZZ TEST 930 receipt printer",
+            "status": "printed",
+            "error": null
+          }
+        ],
+        "noCreditVoucherJob": true,
+        "newPrintouts": {
+          "receipt": 2,
+          "kids_band": 1,
+          "adult_band": 1,
+          "dropoff_band": 0
+        },
+        "preview": 200,
+        "receiptPreview": "CREDIT VOUCHER section: Credit loaded ฿350, For Walk-in guest, Band Z93001-DRPS9P, QR; the second printout on the receipt printer (seq 2, height 0) is the paper cut with no drawing"
+      }
+    },
+    "7": {
+      "verdict": "PASS",
+      "pictures": [
+        "07a-till-paid-dropoff-check-in-prompt.png",
+        "07b-till-paid-dropoff-bracelets-to-print-1-prints-at-check-in.png"
+      ],
+      "seen": {
+        "paidBehindDialog": {
+          "bracelets": "",
+          "customer": ""
+        },
+        "checkIn": {
+          "status": 200,
+          "path": "/api/checkin/check-in-now"
+        },
+        "paidAfter": {
+          "bracelets": "Bracelets to Print 1 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Prints at check-in 1 HOUR",
+          "heading": "Bracelets to Print",
+          "customerBracelets": "1× Child bracelet | Child bracelet",
+          "creditHeading": 0
+        },
+        "customerDisplay": "English Customer ZZ TEST 930 guardian D Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 0 Adult bracelets",
+        "sale": {
+          "receipt": "Z93001-000002",
+          "status": "finalised",
+          "gross": 915,
+          "bands": [
+            "kid active"
+          ]
+        },
+        "printJobs": [
+          {
+            "kind": "kids_wristband",
+            "role": "dropoff_band",
+            "device": "ZZ TEST 930 drop-off band printer",
+            "status": "printed",
+            "error": null
+          },
+          {
+            "kind": "receipt",
+            "role": "receipt",
+            "device": "ZZ TEST 930 receipt printer",
+            "status": "printed",
+            "error": null
+          }
+        ],
+        "newPrintouts": {
+          "receipt": 2,
+          "kids_band": 0,
+          "adult_band": 0,
+          "dropoff_band": 1
+        },
+        "bandPreview": 200,
+        "reg": [
+          {
+            "child": "ZZ TEST 930 child D1",
+            "status": "in_park",
+            "linked": true
+          }
+        ]
+      }
+    },
+    "8": {
+      "verdict": "PASS",
+      "pictures": [
+        "08-console-b-refused-title-matches-config-version.png"
+      ],
+      "seen": {
+        "recClosed": {
+          "signOut": 200,
+          "me": 401
+        },
+        "before": {
+          "version": 7,
+          "name": "ZZ TEST 930 till renamed"
+        },
+        "opened": {
+          "A": {
+            "title": "ZZ TEST 930 till renamed",
+            "version": 7
+          },
+          "B": {
+            "title": "ZZ TEST 930 till renamed",
+            "version": 7
+          }
+        },
+        "A": {
+          "status": 200,
+          "version": 8,
+          "name": "ZZ TEST 930 till A"
+        },
+        "B": {
+          "status": 409,
+          "errorCode": "STATION_CHANGED",
+          "message": "This station was changed since you opened it. Close it and open it again.",
+          "expectedConfigVersionSent": 7,
+          "after": {
+            "drawerOpen": true,
+            "title": "ZZ TEST 930 till renamed",
+            "version": 7,
+            "words": true,
+            "typedKept": true,
+            "listCardName": 1
+          }
+        },
+        "apiAfter": {
+          "version": 8,
+          "name": "ZZ TEST 930 till A"
+        },
+        "consoleBClosed": {
+          "signOut": 200,
+          "me": 401
+        }
+      }
+    },
+    "9": {
+      "verdict": "PASS",
+      "pictures": [],
+      "seen": {
+        "status": 400,
+        "code": "PRINTER_ADDRESS_REQUIRED",
+        "message": "A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.",
+        "addressBefore": "192.0.2.50:9100",
+        "addressAfter": "192.0.2.50:9100"
+      }
+    },
+    "10": {
+      "verdict": "PASS",
+      "pictures": [
+        "10-console-add-device-placeholder-example.png"
+      ],
+      "seen": {
+        "placeholder": "e.g. 192.0.2.10:9100",
+        "formText": "WHAT IT IS Receipt printer Band printer Kitchen printer Bar printer Scanner Payment terminal Gate Gate reader Cash drawer LABEL HOW THE BOX REACHES IT LAN USB Serial Bluetooth Simulated ADDRESS Required for a printer. The address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. MODEL PROTOCOL escpos, tspl2, hid. PAPER WIDTH 576 dots (most 80 mm printers) 512 dots (some units — see the self-test page) A 512-dot unit cuts the right edge of every slip otherwise. Cancel Add it",
+        "parkAddressInForm": false,
+        "parkAddressInDrawer": false,
+        "parkAddressOnPage": false,
+        "otherDeviceHint": "ADDRESS For example 192.0.2.10:9100, or /dev/ttyACM0."
+      }
+    },
+    "11": {
+      "verdict": "PASS",
+      "pictures": [
+        "11a-console-zz-printer-with-address-paper-ok.png",
+        "11b-console-chalong-receipt-printer-1-not-set-up.png"
+      ],
+      "seen": {
+        "zz": {
+          "text": "ZZ TEST 930 receipt printer Receipt printer Simulated paper ok Edit Xprinter XP-80 escpos 192.0.2.50:9100 seen 39s ago",
+          "paperOk": true,
+          "notSetUp": false,
+          "api": {
+            "address": "192.0.2.50:9100",
+            "paperStatus": "ok",
+            "reachability": "reachable"
+          }
+        },
+        "chalong": {
+          "branch": "Oto Play Park, Robinson Chalong",
+          "box": "Virtual box 3",
+          "device": {
+            "label": "Receipt Printer 1",
+            "kind": "receipt_printer",
+            "address": null,
+            "paperStatus": "ok",
+            "reachability": "reachable",
+            "updatedAt": null
+          },
+          "row": {
+            "text": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to.",
+            "notSetUp": true,
+            "paperOk": false,
+            "markClass": "text-sm font-semibold min-w-0 break-words",
+            "markStyle": null
+          },
+          "unchanged": true
+        },
+        "note": "the not-set-up row's dot is the red \"down\" mark (picture 11b); the API still reports Receipt Printer 1 paperStatus ok and reachable, which the Console now overrides"
+      }
+    }
+  },
+  "reads": {
+    "setup": {
+      "box": "Virtual box 1",
+      "prefix": "Z93001",
+      "numbersFree": 10,
+      "configVersion": 1,
+      "devices": {
+        "adult_band": "ZZ TEST 930 adult band printer",
+        "kids_band": "ZZ TEST 930 kids band printer",
+        "receipt": "ZZ TEST 930 receipt printer"
+      },
+      "capabilities": []
+    },
+    "p1": {
+      "cardTitles": [
+        "Station capabilities",
+        "Station name",
+        "Box",
+        "Receipt printer",
+        "Kids bracelet printer",
+        "Adult bracelet printer",
+        "Drop-off bracelet printer",
+        "Kitchen printer",
+        "Bar printer",
+        "Wristband scanner",
+        "Who may use this station"
+      ],
+      "printerCards": [
+        "Receipt printer",
+        "Kids bracelet printer",
+        "Adult bracelet printer",
+        "Drop-off bracelet printer",
+        "Kitchen printer",
+        "Bar printer"
+      ],
+      "cardText": "Drop-off bracelet printer Test print Optional — leave unset to print drop-off bracelets on the kids bracelet printer. Band Printer (adults) Simulated on Virtual box 1 Band Printer (kids) Simulated on Virtual box 1 ZZ TEST 930 adult band printer Simulated on Virtual box 1 ZZ TEST 930 drop-off band printer Simulated on Virtual box 1 ZZ TEST 930 kids band printer Simulated on Virtual box 1",
+      "options": [
+        {
+          "label": "Band Printer (adults)",
+          "selected": false
+        },
+        {
+          "label": "Band Printer (kids)",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 930 adult band printer",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 930 drop-off band printer",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 930 kids band printer",
+          "selected": false
+        }
+      ],
+      "testEnabled": false,
+      "clearShown": 0
+    },
+    "p2": {
+      "apiAfterFirstTry": {
+        "version": 2,
+        "roles": {
+          "adult_band": "ZZ TEST 930 adult band printer",
+          "dropoff_band": "ZZ TEST 930 drop-off band printer",
+          "kids_band": "ZZ TEST 930 kids band printer",
+          "receipt": "ZZ TEST 930 receipt printer"
+        }
+      },
+      "firstTryNote": "the first try saved in the Console (PATCH) and stopped on a harness error (expect undefined) before its picture",
+      "consoleAfter": {
+        "version": 2,
+        "dropoffIsZz": true
+      },
+      "tillOptions": [
+        {
+          "label": "Band Printer (adults)",
+          "selected": false
+        },
+        {
+          "label": "Band Printer (kids)",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 930 adult band printer",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 930 drop-off band printer",
+          "selected": true
+        },
+        {
+          "label": "ZZ TEST 930 kids band printer",
+          "selected": false
+        }
+      ],
+      "testEnabled": true
+    },
+    "p2test": {
+      "status": 200,
+      "path": "/api/stations/:id/test-print",
+      "sent": {
+        "kind": "test_page",
+        "role": "dropoff_band"
+      },
+      "job": {
+        "kind": "test_page",
+        "role": "dropoff_band",
+        "status": "queued",
+        "onDropoff": true
+      },
+      "toast": "Test print queued Virtual box 1 runs it on its next poll and records the result in its Printing panel. | Notification Test print queuedVirtual box 1 runs it on its next poll and records the result in its Printing panel.",
+      "dropoffNewPrintouts": [
+        {
+          "seq": 1,
+          "at": "2026-11-12T14:10:36.906Z",
+          "kind": null
+        }
+      ],
+      "kidsNewPrintouts": 0,
+      "preview": 200
+    },
+    "p3": {
+      "before": {
+        "version": 2,
+        "dropoff": "ZZ TEST 930 drop-off band printer"
+      },
+      "status": 200,
+      "expectedConfigVersionSent": 2,
+      "devicesSent": [
+        "receipt=ZZ TEST 930 receipt printer",
+        "kids_band=ZZ TEST 930 kids band printer",
+        "adult_band=ZZ TEST 930 adult band printer",
+        "dropoff_band=ZZ TEST 930 kids band printer"
+      ],
+      "apiAfter": {
+        "version": 3,
+        "roles": {
+          "adult_band": "ZZ TEST 930 adult band printer",
+          "dropoff_band": "ZZ TEST 930 kids band printer",
+          "kids_band": "ZZ TEST 930 kids band printer",
+          "receipt": "ZZ TEST 930 receipt printer"
+        }
+      },
+      "consoleShows": {
+        "version": 3,
+        "dropoff": "ZZ TEST 930 kids band printer"
+      }
+    },
+    "p4": {
+      "tillOpenedAt": {
+        "version": 3,
+        "name": "ZZ TEST 930 till"
+      },
+      "consoleRename": {
+        "status": 200,
+        "version": 4,
+        "name": "ZZ TEST 930 till renamed"
+      },
+      "tillSave": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+        "expectedConfigVersionSent": 3
+      },
+      "wordsOnScreen": true,
+      "screenText": "Couldn't save the station This station was changed since you opened it. Close it and open it again.",
+      "stillOnSettings": true,
+      "apiAfter": {
+        "version": 4,
+        "name": "ZZ TEST 930 till renamed",
+        "dropoff": "ZZ TEST 930 kids band printer"
+      },
+      "nothingWritten": true
+    },
+    "p5": {
+      "consoleSet": {
+        "status": 200,
+        "version": 5
+      },
+      "cardsAfterTick": [
+        "Receipt printer",
+        "Kitchen printer",
+        "Bar printer"
+      ],
+      "tillSave": {
+        "status": 200,
+        "capabilitiesSent": [
+          "fnb"
+        ],
+        "devicesSent": [
+          "receipt=ZZ TEST 930 receipt printer",
+          "adult_band=ZZ TEST 930 adult band printer",
+          "dropoff_band=ZZ TEST 930 drop-off band printer",
+          "kids_band=ZZ TEST 930 kids band printer"
+        ],
+        "expectedConfigVersionSent": 5
+      },
+      "apiAfter": {
+        "version": 6,
+        "capabilities": [
+          "fnb"
+        ],
+        "roles": {
+          "adult_band": "ZZ TEST 930 adult band printer",
+          "dropoff_band": "ZZ TEST 930 drop-off band printer",
+          "kids_band": "ZZ TEST 930 kids band printer",
+          "receipt": "ZZ TEST 930 receipt printer"
+        }
+      },
+      "consoleShows": {
+        "version": 6,
+        "dropoff": "ZZ TEST 930 drop-off band printer",
+        "kids": "ZZ TEST 930 kids band printer",
+        "adult": "ZZ TEST 930 adult band printer"
+      },
+      "restored": {
+        "status": 200,
+        "capabilities": [],
+        "roles": {
+          "adult_band": "ZZ TEST 930 adult band printer",
+          "dropoff_band": "ZZ TEST 930 drop-off band printer",
+          "kids_band": "ZZ TEST 930 kids band printer",
+          "receipt": "ZZ TEST 930 receipt printer"
+        }
+      }
+    },
+    "p6": {
+      "mgrClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "creditHeading": 1,
+      "oldHeading": 0,
+      "creditColumn": "Credit Grants Issued 1 TOTAL Credit ฿350 credit #1",
+      "braceletColumn": "Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z93001-72VT8M 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z93001-DRPS9P 1 HOUR",
+      "sale": {
+        "receipt": "Z93001-000001",
+        "status": "finalised",
+        "gross": 1040
+      },
+      "printJobs": [
+        {
+          "kind": "adult_wristband",
+          "role": "adult_band",
+          "device": "ZZ TEST 930 adult band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "kids_wristband",
+          "role": "kids_band",
+          "device": "ZZ TEST 930 kids band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "device": "ZZ TEST 930 receipt printer",
+          "status": "printed",
+          "error": null
+        }
+      ],
+      "noCreditVoucherJob": true,
+      "newPrintouts": {
+        "receipt": 2,
+        "kids_band": 1,
+        "adult_band": 1,
+        "dropoff_band": 0
+      },
+      "preview": 200
+    },
+    "p7": {
+      "paidBehindDialog": {
+        "bracelets": "",
+        "customer": ""
+      },
+      "checkIn": {
+        "status": 200,
+        "path": "/api/checkin/check-in-now"
+      },
+      "paidAfter": {
+        "bracelets": "Bracelets to Print 1 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Prints at check-in 1 HOUR",
+        "heading": "Bracelets to Print",
+        "customerBracelets": "1× Child bracelet | Child bracelet",
+        "creditHeading": 0
+      },
+      "customerDisplay": "English Customer ZZ TEST 930 guardian D Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 0 Adult bracelets",
+      "sale": {
+        "receipt": "Z93001-000002",
+        "status": "finalised",
+        "gross": 915,
+        "bands": [
+          "kid active"
+        ]
+      },
+      "printJobs": [
+        {
+          "kind": "kids_wristband",
+          "role": "dropoff_band",
+          "device": "ZZ TEST 930 drop-off band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "device": "ZZ TEST 930 receipt printer",
+          "status": "printed",
+          "error": null
+        }
+      ],
+      "newPrintouts": {
+        "receipt": 2,
+        "kids_band": 0,
+        "adult_band": 0,
+        "dropoff_band": 1
+      },
+      "bandPreview": 200,
+      "reg": [
+        {
+          "child": "ZZ TEST 930 child D1",
+          "status": "in_park",
+          "linked": true
+        }
+      ]
+    },
+    "p8": {
+      "recClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "before": {
+        "version": 7,
+        "name": "ZZ TEST 930 till renamed"
+      },
+      "opened": {
+        "A": {
+          "title": "ZZ TEST 930 till renamed",
+          "version": 7
+        },
+        "B": {
+          "title": "ZZ TEST 930 till renamed",
+          "version": 7
+        }
+      },
+      "A": {
+        "status": 200,
+        "version": 8,
+        "name": "ZZ TEST 930 till A"
+      },
+      "B": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "message": "This station was changed since you opened it. Close it and open it again.",
+        "expectedConfigVersionSent": 7,
+        "after": {
+          "drawerOpen": true,
+          "title": "ZZ TEST 930 till renamed",
+          "version": 7,
+          "words": true,
+          "typedKept": true,
+          "listCardName": 1
+        }
+      },
+      "apiAfter": {
+        "version": 8,
+        "name": "ZZ TEST 930 till A"
+      },
+      "consoleBClosed": {
+        "signOut": 200,
+        "me": 401
+      }
+    },
+    "p9to11": {
+      "p9": {
+        "status": 400,
+        "code": "PRINTER_ADDRESS_REQUIRED",
+        "message": "A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.",
+        "addressBefore": "192.0.2.50:9100",
+        "addressAfter": "192.0.2.50:9100"
+      },
+      "p10": {
+        "placeholder": "e.g. 192.0.2.10:9100",
+        "formText": "WHAT IT IS Receipt printer Band printer Kitchen printer Bar printer Scanner Payment terminal Gate Gate reader Cash drawer LABEL HOW THE BOX REACHES IT LAN USB Serial Bluetooth Simulated ADDRESS Required for a printer. The address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. MODEL PROTOCOL escpos, tspl2, hid. PAPER WIDTH 576 dots (most 80 mm printers) 512 dots (some units — see the self-test page) A 512-dot unit cuts the right edge of every slip otherwise. Cancel Add it",
+        "parkAddressInForm": false,
+        "parkAddressInDrawer": false,
+        "parkAddressOnPage": false,
+        "otherDeviceHint": "ADDRESS For example 192.0.2.10:9100, or /dev/ttyACM0."
+      },
+      "p11": {
+        "zz": {
+          "text": "ZZ TEST 930 receipt printer Receipt printer Simulated paper ok Edit Xprinter XP-80 escpos 192.0.2.50:9100 seen 39s ago",
+          "paperOk": true,
+          "notSetUp": false,
+          "api": {
+            "address": "192.0.2.50:9100",
+            "paperStatus": "ok",
+            "reachability": "reachable"
+          }
+        },
+        "chalong": {
+          "branch": "Oto Play Park, Robinson Chalong",
+          "box": "Virtual box 3",
+          "device": {
+            "label": "Receipt Printer 1",
+            "kind": "receipt_printer",
+            "address": null,
+            "paperStatus": "ok",
+            "reachability": "reachable",
+            "updatedAt": null
+          },
+          "row": {
+            "text": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to.",
+            "notSetUp": true,
+            "paperOk": false,
+            "markClass": "text-sm font-semibold min-w-0 break-words",
+            "markStyle": null
+          },
+          "unchanged": true
+        }
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "mgr",
+      "at": "1: the till's Station settings as a manager: the Drop-off bracelet printer card",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "1: the till's Station settings as a manager: the Drop-off bracelet printer card",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "2: the Console sets the drop-off band printer; the till reopens its settings",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "2: the Console sets the drop-off band printer; the till reopens its settings",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "4: the Console renames the till while its settings are open on the till; the till saves",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "mgr",
+      "at": "4: the Console renames the till while its settings are open on the till; the till saves",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "rec",
+      "at": "6: a walk-in sale, 1 Hour Play, 1 child + 1 adult, cash",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec",
+      "at": "6: a walk-in sale, 1 Hour Play, 1 child + 1 adult, cash",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "consoleB",
+      "at": "8: the station form open in two Console windows; A saves, then B",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "consoleB",
+      "at": "8: the station form open in two Console windows; A saves, then B",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "consoleB",
+      "at": "8: the station form open in two Console windows; A saves, then B",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "consoleB",
+      "at": "8: the station form open in two Console windows; A saves, then B",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "salesAndFamily": {
+      "released": [
+        {
+          "child": "ZZ TEST 930 child D1",
+          "status": 200
+        }
+      ],
+      "regAfter": [
+        {
+          "child": "ZZ TEST 930 child D1",
+          "status": "out"
+        }
+      ],
+      "mgrSignIn": 200,
+      "refunds": [
+        {
+          "receipt": "Z93001-000001",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040
+        },
+        {
+          "receipt": "Z93001-000002",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 915
+        }
+      ],
+      "mgrSignOut": {
+        "status": 200,
+        "me": 401
+      },
+      "sales": [
+        {
+          "receipt": "Z93001-000002",
+          "status": "refunded",
+          "gross": 915,
+          "refunded": 915,
+          "refundStatus": null
+        },
+        {
+          "receipt": "Z93001-000001",
+          "status": "refunded",
+          "gross": 1040,
+          "refunded": 1040,
+          "refundStatus": null
+        }
+      ]
+    },
+    "records": {
+      "members": [
+        {
+          "key": "ticket",
+          "member": "none"
+        },
+        {
+          "key": "dropoff",
+          "archived": 200,
+          "lookupAfter": "not found"
+        }
+      ],
+      "devicesCleared": 200,
+      "retired": 200,
+      "stationReadBack": {
+        "name": "ZZ TEST 930 till A",
+        "archived": true,
+        "devices": 0
+      },
+      "printers": [
+        {
+          "role": "receipt",
+          "delete": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "role": "kids_band",
+          "delete": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "role": "adult_band",
+          "delete": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "role": "dropoff_band",
+          "delete": 200,
+          "stillAssignedTo": 0
+        }
+      ],
+      "printersReadBack": [
+        {
+          "label": "ZZ TEST 930 adult band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 930 drop-off band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 930 kids band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 930 receipt printer",
+          "archived": true
+        }
+      ],
+      "consoleA": {
+        "signOut": 200,
+        "me": 401
+      },
+      "openPages": []
+    },
+    "adminMe": 401
+  },
+  "sessions": [
+    {
+      "label": "mgr",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T14:12:36.243Z"
+    },
+    {
+      "label": "rec",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T14:15:21.568Z"
+    },
+    {
+      "label": "consoleB",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T14:15:39.550Z"
+    },
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T14:16:51.047Z"
+    }
+  ],
+  "finishedAt": "2026-11-12T14:16:57.736Z",
+  "notes": [
+    "Point 2: the first try of the step saved the drop-off printer in the Console (config v2) and then stopped on a harness error (expect not taken from S) before its picture; the rerun read the saved state and took the pictures.",
+    "Point 5: picture 05a shows the capabilities with only F&B ticked; the printer cards left on the page were read from it: Receipt printer, Kitchen printer, Bar printer (no bracelet cards).",
+    "Demo: the test page the drop-off card printed (02d) is a fixed sample: Device Main counter, Welltech G4, Address 192.168.88.202:9100, not the ZZ printer it ran on.",
+    "Demo: on the paid screen the heading Credit Grants Issued runs into its 1 TOTAL count with no gap at the desk width (06a).",
+    "Demo: the Console refusal reads This till was changed since you opened it...; the till and the api read This station was changed since you opened it...",
+    "Each receipt job left two printouts on the simulated receipt printer, the second with height 0 (as in the SCRUM-898 run).",
+    "Virtual box 1 still lists seeded simulated printers with park-network addresses (192.168.88.202, .206, .207); the placeholder no longer carries one.",
+    "Chalong Receipt Printer 1: the api still reports paperStatus ok and reachable; the Console shows not set up over it. Read only, unchanged (label, address, updatedAt read back the same).",
+    "A headless Edge started 20:46 by another driver (node pid 24392) was running before this run and was left alone."
+  ]
+}

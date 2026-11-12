@@ -1,0 +1,91 @@
+{
+  "oto-api-staging": {
+    "named": {
+      "id": "dep-dbqseelckfvc73dbp0qg",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "atLandedCommit": true,
+      "createdAt": "2026-11-12T14:03:38.577253Z",
+      "finishedAt": "2026-11-12T14:08:26.060285Z"
+    },
+    "live": {
+      "id": "dep-dbqseelckfvc73dbp0qg",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "createdAt": "2026-11-12T14:03:38.577253Z",
+      "finishedAt": "2026-11-12T14:08:26.060285Z"
+    },
+    "latest": {
+      "id": "dep-dbqseelckfvc73dbp0qg",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+    },
+    "readAt": "2026-11-12T14:08:56.055Z"
+  },
+  "oto-console-staging": {
+    "named": {
+      "id": "dep-dbqsefqfngtc738ho28g",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "atLandedCommit": true,
+      "createdAt": "2026-11-12T14:03:43.314187Z",
+      "finishedAt": "2026-11-12T14:04:51.09559Z"
+    },
+    "live": {
+      "id": "dep-dbqsefqfngtc738ho28g",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "createdAt": "2026-11-12T14:03:43.314187Z",
+      "finishedAt": "2026-11-12T14:04:51.09559Z"
+    },
+    "latest": {
+      "id": "dep-dbqsefqfngtc738ho28g",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+    },
+    "readAt": "2026-11-12T14:08:56.646Z"
+  },
+  "oto-pos-staging": {
+    "named": {
+      "id": "dep-dbqsefdbedkc73ejmm5g",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "atLandedCommit": true,
+      "createdAt": "2026-11-12T14:03:41.768225Z",
+      "finishedAt": "2026-11-12T14:04:58.163859Z"
+    },
+    "live": {
+      "id": "dep-dbqsefdbedkc73ejmm5g",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "createdAt": "2026-11-12T14:03:41.768225Z",
+      "finishedAt": "2026-11-12T14:04:58.163859Z"
+    },
+    "latest": {
+      "id": "dep-dbqsefdbedkc73ejmm5g",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+    },
+    "readAt": "2026-11-12T14:08:57.232Z"
+  },
+  "oto-pos-web-staging": {
+    "named": {
+      "id": "dep-dbqsef3m8hqs73eoavug",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "atLandedCommit": true,
+      "createdAt": "2026-11-12T14:03:40.330841Z",
+      "finishedAt": "2026-11-12T14:07:31.663118Z"
+    },
+    "live": {
+      "id": "dep-dbqsef3m8hqs73eoavug",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6",
+      "createdAt": "2026-11-12T14:03:40.330841Z",
+      "finishedAt": "2026-11-12T14:07:31.663118Z"
+    },
+    "latest": {
+      "id": "dep-dbqsef3m8hqs73eoavug",
+      "status": "live",
+      "sha": "d880f8f30ecc7999280d4f2f04bc94bf658a09c6"
+    },
+    "readAt": "2026-11-12T14:08:57.807Z"
+  },
+  "allLiveAtLandedCommit": true
+}
