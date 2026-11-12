@@ -209,7 +209,10 @@ describe('(f) the camera notice on a light display', () => {
 
   it('keeps the dark look as it was: amber-300, the note at half strength, no veil', () => {
     const dark = block('.dark {');
-    expect(dark).toContain('--cd-camera-notice: #fcd34d;');
+    // The very amber the notice's text-amber-300 drew: Tailwind's own value.
+    const tailwind = readFileSync(path.resolve(import.meta.dirname, '../node_modules/tailwindcss/theme.css'), 'utf8');
+    const amber300 = tailwind.match(/--color-amber-300: ([^;]+);/)![1]!;
+    expect(dark).toContain(`--cd-camera-notice: ${amber300};`);
     expect(dark).toContain('--cd-camera-note: hsl(var(--foreground) / 0.5);');
     expect(dark).toContain('--cd-camera-veil: transparent;');
   });

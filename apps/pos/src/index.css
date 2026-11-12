@@ -192,9 +192,10 @@
   --cd-violet: #c4b5fd;
   --cd-sky: #7dd3fc;
   --cd-amber: #fde68a;
-  /* The camera notice as it always was in dark: amber-300, the note at half
+  /* The camera notice as it always was in dark: amber-300 (Tailwind's own
+     value, which the notice's text-amber-300 drew), the note at half
      strength, no veil over the frame. */
-  --cd-camera-notice: #fcd34d;
+  --cd-camera-notice: oklch(87.9% 0.169 91.605);
   --cd-camera-note: hsl(var(--foreground) / 0.5);
   --cd-camera-veil: transparent;
 

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Page } from '@playwright/test';
 import { startFamilyFormHarness } from './support/family-form-harness/server';
@@ -215,7 +217,18 @@ describe.skipIf(!harness)('the camera notice on the display (SCRUM-943 a, f)', (
   it('on a dark display the look is as it was: amber-300 on the frame, the note at half strength, no veil', async () => {
     const page = await harness!.open('screen=display&step=care&theme=dark&camera=refused', { width: 600, height: 1024 });
     const seen = await cameraNotice(page);
-    expect(seen.title.slice(0, 3)).toEqual([252, 211, 77]);
+    // The very colour the notice's text-amber-300 drew: Tailwind's amber-300, as this browser computes it.
+    const amber300 = readFileSync(path.resolve(import.meta.dirname, '../node_modules/tailwindcss/theme.css'), 'utf8')
+      .match(/--color-amber-300: ([^;]+);/)![1]!;
+    const drawn = await page.evaluate((color) => {
+      const probe = document.createElement('span');
+      probe.style.color = color;
+      document.body.append(probe);
+      const computed = getComputedStyle(probe).color;
+      probe.remove();
+      return computed;
+    }, amber300);
+    expect(seen.title.slice(0, 3)).toEqual(drawn.match(/[\d.]+/g)!.map(Number).slice(0, 3));
     expect(seen.veil[3]).toBe(0);
     expect(seen.note[3]).toBeCloseTo(0.5, 2);
   }, TAPS);
