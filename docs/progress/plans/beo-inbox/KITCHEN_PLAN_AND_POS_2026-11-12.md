@@ -55,3 +55,19 @@ A server-to-server door on the OTO App for the platform to write a party's kitch
 - The AI fill part (Phase C of the BEO fill plan) comes AFTER the fill's Phases A and B land, in its own lane: the fill gets the till's food and drink as its menu and writes the code as the line's product code (beoCatalogueFill.ts, beoAiApprove.ts). Do not touch those two files in Lane A.
 - Tests: the api door (key-only, branch-scoped, archived left out), a UI check for the picker.
 - Deploys: oto-app and api.
+
+## State, 12 November 17:50
+- LANE A (SCRUM-905, the POS menu inside the BEO) landed on main at 4392efbfe at 17:42 and is deployed to staging (api and the OTO App); its staging proof is running. Ticket in Testing.
+- LANE B (SCRUM-906, the whole kitchen plan reaches the till) is in its fix round, with the owner's ruling of 12 November that an EXTRA's price is per item. SCRUM-907 (Lane B2) follows it.
+
+## Questions from the SCRUM-905 build, to put to the owner together (the build uses the default named in each)
+1. Items taken off sale are not offered, and a BEO line carrying such a code shows "No longer on the till". Should an item off sale count as gone, or stay pickable?
+2. Items with no till code are not offered, because a BEO line is matched to the till by its code. Should every food and drink item be given a code in the Console? (The number of uncoded items at Floresta was not measured.)
+3. "Food and drink" means menu items made at the kitchen or the bar. Items that print nowhere (pre-packed snacks), merchandise and ticket add-ons are left out. Right?
+4. Items made from a BEO for another party are offered too, in their own group at the end, "Made for a party (BEO only)". Hide them instead?
+5. A picked EXTRA takes the till's WEEKDAY price, even for a weekend or holiday party. Should a weekend party take the weekend price?
+6. The price is written only when the line's badge says EXTRA; a SET line keeps its price. If staff flip the badge after picking, the price does not change. Right?
+7. Typing a new name over a picked line keeps the till code; "Not from the till" removes it. Should typing a different name remove the code by itself?
+8. In Set menu templates a pick writes only the code, and fills the name only when an always-included item has none; a choice group's name and an existing name are never changed. Right?
+9. Settings checks a code against every park the manager may open (a template belongs to the whole group), so a code on sale at any park counts as live. Right?
+10. The search shows for the roles that may save a BEO (global admin, operator admin, admin, manager). Should staff see it too?

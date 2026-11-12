@@ -1,0 +1,3808 @@
+
+=== 2026-11-12T10:14:12.207Z setup
+S.phase = 'setup';
+return await S.setup();
+--> {
+ "ok": true,
+ "value": {
+  "free": 30,
+  "first": "0898909010",
+  "last": "0898909039",
+  "station": "01a1cf40-3f2d-76c4-ae05-73f8bd4afca7",
+  "prefix": "Z90901"
+ }
+}
+
+=== 2026-11-12T10:14:21.938Z sign in desk till
+S.phase = 'sign in desk till';
+const till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1680, height: 1050 });
+S.till = till;
+// the bundle the till serves
+const bundle = await till.evaluate(async () => {
+  const urls = [...new Set(performance.getEntriesByType('resource').map(e => e.name).filter(n => /\.js(\?|$)/.test(n)))];
+  const found = { files: urls.length, cancelAlone: 0, takeBalance: 0, refundFirst: 0 };
+  for (const url of urls) { const t = await (await fetch(url, { cache: 'no-store' })).text();
+    found.cancelAlone += t.split("'s booking").length - 1; found.takeBalance += t.split('Take balance').length - 1; found.refundFirst += t.split('refund it from History first').length - 1; }
+  return found;
+});
+S.receipt.reads.bundle = bundle;
+await S.landing(till).waitFor();
+await S.shot(till, '00-desk-till-signed-in-landing.png');
+return bundle;
+--> {
+ "ok": true,
+ "value": {
+  "files": 1,
+  "cancelAlone": 3,
+  "takeBalance": 3,
+  "refundFirst": 1
+ }
+}
+
+=== 2026-11-12T10:14:36.871Z 1: family A, two children on one booking, one sale, cash, Leave as booked
+S.phase = '1: family A, two children on one booking, one sale, cash, Leave as booked';
+const till = S.till;
+S.receipt.numbers.A = S.free[0];
+S.fam = S.fam ?? {};
+await S.walkIn(till, S.free[0]);
+await S.ticket(till, 2, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 909 child A1', 'ZZ TEST 909 child A2'], 'ZZ TEST 909 guardian A', '01a-family-a-dropoff-form-two-children.png');
+const sale = await S.saleWritten('dropoff-sale-A');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const due = await S.amountDue(till);
+await S.shot(till, '01b-family-a-payment-step.png');
+await S.payCash(till);
+const leave = till.getByRole('button', { name: 'Leave as booked', exact: true });
+await leave.waitFor({ timeout: 20000 });
+await S.shot(till, '01c-family-a-paid-check-in-now-or-leave-as-booked.png');
+await leave.click();
+await till.waitForTimeout(2500);
+S.fam.A = { reg: reg.id, sale: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+const s = await S.sale(sale.id);
+return { due, sale: { status: s.sale.status, gross: s.sale.totals?.grossSatang, receipt: s.sale.receiptNumber, lines: s.lines?.map(l => ({ id: l.id, label: l.label ?? l.name, cartLineId: l.cartLineId, kind: l.kind, gross: l.grossSatang ?? l.totalSatang ?? l.amountSatang })) }, keys: Object.keys(s), board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": false,
+ "error": "ReferenceError: expect is not defined"
+}
+
+=== 2026-11-12T10:14:55.783Z 1: family A, two children on one booking, one sale, cash, Leave as booked
+const { expect } = S;
+const till = S.till;
+const reg = S.receipt.created.filter(c => c.kind === 'registration').at(-1);
+const saleRow = S.receipt.created.filter(c => c.kind === 'dropoff-sale-A').at(-1);
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const due = await S.amountDue(till);
+await S.shot(till, '01b-family-a-payment-step.png');
+await S.payCash(till);
+const leave = till.getByRole('button', { name: 'Leave as booked', exact: true });
+await leave.waitFor({ timeout: 20000 });
+await S.shot(till, '01c-family-a-paid-check-in-now-or-leave-as-booked.png');
+await leave.click();
+await till.waitForTimeout(2500);
+S.fam = { A: { reg: reg.id, sale: saleRow.id, stays: reg.stays } };
+const s = await S.sale(saleRow.id);
+return { due, keys: Object.keys(s), saleKeys: Object.keys(s.sale), status: s.sale.status, gross: s.sale.totals?.grossSatang, receipt: s.sale.receiptNumber, line0: s.lines?.[0] ?? s.sale.lines?.[0], board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1830",
+  "keys": [
+   "timeExtension",
+   "sale",
+   "correctionBandShortCode",
+   "refundStatus",
+   "refundableSatang",
+   "refunds",
+   "printJobs",
+   "bands",
+   "grants",
+   "issuedVouchers",
+   "pickupCode",
+   "attempts",
+   "taxBreakdown",
+   "taxConfig",
+   "lines",
+   "discounts"
+  ],
+  "saleKeys": [
+   "id",
+   "branchId",
+   "stationId",
+   "boxId",
+   "memberId",
+   "visitId",
+   "businessDate",
+   "occurredAt",
+   "status",
+   "salesChannel",
+   "pricingMode",
+   "pricingModeReason",
+   "customerTier",
+   "engineVersion",
+   "receiptNumber",
+   "receiptSeries",
+   "receiptSeq",
+   "finalisedAt",
+   "note",
+   "voidedAt",
+   "voidedByAccountId",
+   "voidedByName",
+   "voidReason",
+   "totals",
+   "tierClaim"
+  ],
+  "status": "finalised",
+  "gross": 183000,
+  "receipt": "Z90901-000001",
+  "line0": {
+   "id": "01a1cf40-bba7-7599-9238-ddf7e1ed1dc5",
+   "lineNo": 1,
+   "cartLineId": "01a1cf40-b54c-7040-acaa-16b4042db6ad",
+   "kind": "kids",
+   "label": "Kids",
+   "componentKey": "kids",
+   "ticketPackageId": "01a0bbdc-8cc2-7d1c-a8bf-09c2552eb6bc",
+   "productId": null,
+   "revenueCategory": "tickets",
+   "taxableCategory": "tickets",
+   "quantity": 1,
+   "unitSatang": 69000,
+   "baseSatang": 69000,
+   "discountSatang": 0,
+   "netSatang": 64486,
+   "serviceChargeSatang": 0,
+   "taxSatang": 4514,
+   "taxMode": "inclusive",
+   "taxRateBp": 700,
+   "taxName": "VAT",
+   "grossSatang": 69000,
+   "customerTier": "tourist",
+   "kidCount": 1,
+   "adultCount": 0,
+   "freeAdultCount": 0,
+   "stayHours": 1,
+   "stayDurationLabel": "1 Hour",
+   "modifiers": null,
+   "note": null,
+   "variant": null,
+   "prepStation": null,
+   "variantBreakdown": null,
+   "prepaid": null,
+   "holderCheckinId": null,
+   "supervised": true
+  },
+  "board": [
+   {
+    "child": "ZZ TEST 909 child A1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000001"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST 909 child A2",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000001"
+    },
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:15:04.571Z 1: family A, two children on one booking, one sale, cash, Leave as booked
+const s = await S.sale(S.fam.A.sale);
+return { stays: S.fam.A.stays, lines: s.lines.map(l => ({ id: l.id, cartLineId: l.cartLineId, kind: l.kind, label: l.label, gross: l.grossSatang, holder: l.holderCheckinId, supervised: l.supervised })) };
+--> {
+ "ok": true,
+ "value": {
+  "stays": [
+   {
+    "id": "01a1cf40-b54c-7040-acaa-16b4042db6ad",
+    "name": "ZZ TEST 909 child A1"
+   },
+   {
+    "id": "01a1cf40-b54c-7040-acaa-16b5611fd3d2",
+    "name": "ZZ TEST 909 child A2"
+   }
+  ],
+  "lines": [
+   {
+    "id": "01a1cf40-bba7-7599-9238-ddf7e1ed1dc5",
+    "cartLineId": "01a1cf40-b54c-7040-acaa-16b4042db6ad",
+    "kind": "kids",
+    "label": "Kids",
+    "gross": 69000,
+    "holder": null,
+    "supervised": true
+   },
+   {
+    "id": "01a1cf40-bba7-7cec-a5ac-d4c481a32e3f",
+    "cartLineId": "01a1cf40-b54c-7040-acaa-16b4042db6ad",
+    "kind": "service_fee",
+    "label": "Drop-off service",
+    "gross": 22500,
+    "holder": null,
+    "supervised": true
+   },
+   {
+    "id": "01a1cf40-bba7-7763-8c02-1d91383b0e82",
+    "cartLineId": "01a1cf40-b54c-7040-acaa-16b5611fd3d2",
+    "kind": "kids",
+    "label": "Kids",
+    "gross": 69000,
+    "holder": null,
+    "supervised": true
+   },
+   {
+    "id": "01a1cf40-bba7-7677-a1d0-be8ba7f2c686",
+    "cartLineId": "01a1cf40-b54c-7040-acaa-16b5611fd3d2",
+    "kind": "service_fee",
+    "label": "Drop-off service",
+    "gross": 22500,
+    "holder": null,
+    "supervised": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:15:21.447Z 1: manager refunds child A2 by item from History
+S.phase = '1: manager refunds child A2 by item from History';
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+const cards = mgr.locator('div.space-y-2 > button.w-full.text-left');
+const n = await cards.count();
+const texts = [];
+for (let i = 0; i < Math.min(n, 6); i++) texts.push(S.flat(await cards.nth(i).innerText()).slice(0, 160));
+return { n, texts: texts.filter(t => /Z90901|ZZ TEST|1,?830/.test(t)) , firstFew: texts.map(t => t.replace(/[A-Za-z]{3,}\s[A-Za-z]{3,}/g, m => m)).length };
+--> {
+ "ok": true,
+ "value": {
+  "n": 99,
+  "texts": [
+   "Z90901-000001 · ZZ TEST 909 guardian A 12 Nov, 17:14 [staff] Paid ฿1830"
+  ],
+  "firstFew": 6
+ }
+}
+
+=== 2026-11-12T10:15:36.657Z 1: manager refunds child A2 by item from History
+const mgr = S.mgr;
+S.mine = ['Z90901-'];
+await S.markMine(mgr, S.mine);
+await S.shot(mgr, '01d-history-list-family-a-sale.png', [S.otherSales(mgr)]);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z90901-000001' }).first().click();
+await mgr.waitForTimeout(3500);
+await S.shot(mgr, '01e-history-detail-family-a-sale.png', [S.otherSales(mgr)]);
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+await mgr.waitForTimeout(800);
+const rows = dialog.locator('div.max-h-44 > button');
+const labels = [];
+for (let i = 0; i < await rows.count(); i++) labels.push(S.flat(await rows.nth(i).innerText()));
+await S.shot(mgr, '01f-refund-by-item-rows.png', [S.otherSales(mgr)]);
+return { labels };
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "1 Hour Play · 1 ppl ฿915",
+   "1 Hour Play · 1 ppl ฿915"
+  ]
+ }
+}
+
+=== 2026-11-12T10:16:10.487Z 1: manager refunds child A2 by item from History
+const esc = s => s.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+S.otherSales = page => page.locator('div.space-y-2 > button.w-full.text-left:not([data-zz]):not([role="dialog"] *)');
+S.needles = () => [...S.hidden, ...[...S.names].filter(s => s.length >= 3 && !/^(ZZ|TEST|SCRUM|proof|till|OTO|Till|Manager|Reception)$/i.test(s))].filter(Boolean);
+S.masks = page => [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
+  page.getByTestId('display-pairing-code'), page.locator('canvas'), page.getByText(/^QR-[A-Z0-9]+$/),
+  S.deskCards(page).filter({ hasNotText: 'ZZ TEST' }), S.phoneCards(page).filter({ hasNotText: 'ZZ TEST' }),
+  page.getByText(/^(Nannies free now|Free nannies):/)];
+S.shot = async (page, name, extra = [], opts = {}) => {
+  const needles = S.needles();
+  await page.evaluate((list) => {
+    if (!document.getElementById('zz-mask-style')) { const st = document.createElement('style'); st.id = 'zz-mask-style'; st.textContent = '[data-zz-mask]{background:#18181b!important;color:#18181b!important;border-color:#18181b!important;border-radius:2px} [data-zz-mask] *{color:#18181b!important;background:#18181b!important}'; document.head.appendChild(st); }
+    const res = list.map(s => new RegExp(`(?<![\p{L}\p{N}])${s.replace(/[.*+?^${}()|[\]\]/g, '\$&')}(?![\p{L}\p{N}])`, 'iu'));
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) { const v = w.currentNode.nodeValue || ''; if (v.trim() && res.some(r => r.test(v))) w.currentNode.parentElement?.setAttribute('data-zz-mask', '1'); }
+    for (const el of document.querySelectorAll('input,textarea')) { if (res.some(r => r.test(el.value || ''))) el.setAttribute('data-zz-mask', '1'); }
+  }, needles);
+  try {
+    await page.screenshot({ path: S.resolve(S.out, name), animations: 'disabled', ...opts, mask: [...S.masks(page), ...extra], maskColor: '#18181b' });
+  } finally {
+    await page.evaluate(() => { for (const el of document.querySelectorAll('[data-zz-mask]')) el.removeAttribute('data-zz-mask'); }).catch(() => {});
+  }
+  S.shots.push(name);
+  return name;
+};
+await S.shot(S.mgr, '01f-refund-by-item-rows.png');
+return 'ok';
+--> {
+ "ok": false,
+ "error": "SyntaxError: Invalid regular expression: missing /"
+}
+
+=== 2026-11-12T10:16:23.283Z 1: manager refunds child A2 by item from History
+const esc = s => s.replace(/[.*+?^$(){}|[\]\]/g, m => '\' + m);
+S.esc = esc;
+S.otherSales = page => page.locator('div.space-y-2 > button.w-full.text-left:not([data-zz]):not([role="dialog"] *)');
+S.needles = () => [...S.hidden, ...[...S.names].filter(s => s.length >= 3 && !/^(ZZ|TEST|SCRUM|proof|till|OTO|Till|Manager|Reception)$/i.test(s))].filter(Boolean);
+S.masks = page => [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
+  page.getByTestId('display-pairing-code'), page.locator('canvas'), page.getByText(/^QR-[A-Z0-9]+$/),
+  S.deskCards(page).filter({ hasNotText: 'ZZ TEST' }), S.phoneCards(page).filter({ hasNotText: 'ZZ TEST' }),
+  page.getByText(/^(Nannies free now|Free nannies):/)];
+S.shot = async (page, name, extra = [], opts = {}) => {
+  const sources = S.needles().map(s => '(?<![\p{L}\p{N}])' + esc(s) + '(?![\p{L}\p{N}])');
+  await page.evaluate((list) => {
+    if (!document.getElementById('zz-mask-style')) { const st = document.createElement('style'); st.id = 'zz-mask-style'; st.textContent = '[data-zz-mask]{background:#18181b!important;color:#18181b!important;border-color:#18181b!important;border-radius:2px} [data-zz-mask] *{color:#18181b!important;background:#18181b!important}'; document.head.appendChild(st); }
+    const res = list.map(s => new RegExp(s, 'iu'));
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) { const v = w.currentNode.nodeValue || ''; if (v.trim() && res.some(r => r.test(v))) w.currentNode.parentElement?.setAttribute('data-zz-mask', '1'); }
+    for (const el of document.querySelectorAll('input,textarea')) { if (res.some(r => r.test(el.value || ''))) el.setAttribute('data-zz-mask', '1'); }
+  }, sources);
+  try {
+    await page.screenshot({ path: S.resolve(S.out, name), animations: 'disabled', ...opts, mask: [...S.masks(page), ...extra], maskColor: '#18181b' });
+  } finally {
+    await page.evaluate(() => { for (const el of document.querySelectorAll('[data-zz-mask]')) el.removeAttribute('data-zz-mask'); }).catch(() => {});
+  }
+  S.shots.push(name);
+  return name;
+};
+await S.shot(S.mgr, '01f-refund-by-item-rows.png');
+return 'ok';
+--> {
+ "ok": false,
+ "error": "SyntaxError: Invalid regular expression: missing /"
+}
+
+=== 2026-11-12T10:16:30.066Z 1: manager refunds child A2 by item from History
+const esc = s => s.replace(/[.*+?^$(){}|[\]\]/g, m => '\' + m);
+return esc('a.b');
+--> {
+ "ok": false,
+ "error": "SyntaxError: Invalid regular expression: missing /"
+}
+
+=== 2026-11-12T10:16:30.110Z 1: manager refunds child A2 by item from History
+const x = '(?<![\p{L}\p{N}])';
+return x;
+--> {
+ "ok": true,
+ "value": "(?<![p{L}p{N}])"
+}
+
+=== 2026-11-12T10:16:45.006Z 1: manager refunds child A2 by item from History
+const esc = s => s.replace(/[.*+?^$(){}|[\]\\]/g, m => '\\' + m);
+S.esc = esc;
+S.otherSales = page => page.locator('div.space-y-2 > button.w-full.text-left:not([data-zz]):not([role="dialog"] *)');
+S.needles = () => [...S.hidden, ...[...S.names].filter(s => s.length >= 3 && !/^(ZZ|TEST|SCRUM|proof|till|OTO|Till|Manager|Reception)$/i.test(s))].filter(Boolean);
+S.masks = page => [page.getByLabel('Lock screen').locator('..'), page.locator('input[type="password"]'),
+  page.getByTestId('display-pairing-code'), page.locator('canvas'), page.getByText(/^QR-[A-Z0-9]+$/),
+  S.deskCards(page).filter({ hasNotText: 'ZZ TEST' }), S.phoneCards(page).filter({ hasNotText: 'ZZ TEST' }),
+  page.getByText(/^(Nannies free now|Free nannies):/)];
+S.shot = async (page, name, extra = [], opts = {}) => {
+  const sources = S.needles().map(s => '(?<![\\p{L}\\p{N}])' + esc(s) + '(?![\\p{L}\\p{N}])');
+  await page.evaluate((list) => {
+    if (!document.getElementById('zz-mask-style')) { const st = document.createElement('style'); st.id = 'zz-mask-style'; st.textContent = '[data-zz-mask]{background:#18181b!important;color:#18181b!important;border-color:#18181b!important;border-radius:2px} [data-zz-mask] *{color:#18181b!important;background:#18181b!important}'; document.head.appendChild(st); }
+    const res = list.map(s => new RegExp(s, 'iu'));
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) { const v = w.currentNode.nodeValue || ''; if (v.trim() && res.some(r => r.test(v))) w.currentNode.parentElement?.setAttribute('data-zz-mask', '1'); }
+    for (const el of document.querySelectorAll('input,textarea')) { if (res.some(r => r.test(el.value || ''))) el.setAttribute('data-zz-mask', '1'); }
+  }, sources);
+  try {
+    await page.screenshot({ path: S.resolve(S.out, name), animations: 'disabled', ...opts, mask: [...S.masks(page), ...extra], maskColor: '#18181b' });
+  } finally {
+    await page.evaluate(() => { for (const el of document.querySelectorAll('[data-zz-mask]')) el.removeAttribute('data-zz-mask'); }).catch(() => {});
+  }
+  S.shots.push(name);
+  return name;
+};
+S.markMine = (page, res) => page.evaluate((list) => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) { if (list.some(r => b.innerText.includes(r))) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz'); }
+}, res);
+await S.shot(S.mgr, '01f-refund-by-item-rows.png');
+return { needles: S.needles().length };
+--> {
+ "ok": true,
+ "value": {
+  "needles": 47
+ }
+}
+
+=== 2026-11-12T10:17:02.448Z 1: manager refunds child A2 by item from History
+const mgr = S.mgr;
+const dialog = mgr.getByRole('dialog');
+const rows = dialog.locator('div.max-h-44 > button');
+await rows.nth(1).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-909 proof: child A2 went home, A1 stays');
+await mgr.waitForTimeout(500);
+await S.shot(mgr, '01g-refund-by-item-second-row-ticked.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+const label = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.A.sale}/refunds` && r.request().method() === 'POST');
+await press.click();
+const r = await resp;
+const body = await r.json().catch(() => null);
+await mgr.waitForTimeout(3000);
+await S.shot(mgr, '01h-history-detail-after-refund-a2.png');
+const s = await S.sale(S.fam.A.sale);
+const refundedLineIds = new Set(s.refunds.flatMap(x => x.lines.map(l => l.saleLineId)));
+const refundedCart = [...new Set(s.lines.filter(l => refundedLineIds.has(l.id)).map(l => l.cartLineId))];
+return { label, status: r.status(), refund: { amount: body?.refund?.amountSatang, mode: body?.refund?.mode, refundStatus: body?.refundStatus }, sale: s.sale.status, refundStatus: s.refundStatus, refundable: s.refundableSatang,
+  refundedCartIsA2: refundedCart.length === 1 && refundedCart[0] === S.fam.A.stays[1].id, refundedKinds: s.lines.filter(l => refundedLineIds.has(l.id)).map(l => l.kind),
+  board: S.stayFacts(await S.familyOnBoard(S.fam.A.reg)), reg: (await S.registration(S.fam.A.reg)).children.map(c => ({ name: c.childName, status: c.status, saleId: c.saleId ?? null })) };
+--> {
+ "ok": true,
+ "value": {
+  "label": "Refund ฿915",
+  "status": 200,
+  "refund": {
+   "amount": 91500,
+   "mode": "items",
+   "refundStatus": "partially_refunded"
+  },
+  "sale": "finalised",
+  "refundStatus": "partially_refunded",
+  "refundable": 91500,
+  "refundedCartIsA2": true,
+  "refundedKinds": [
+   "kids",
+   "service_fee"
+  ],
+  "board": [
+   {
+    "child": "ZZ TEST 909 child A1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000001"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST 909 child A2",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ],
+  "reg": [
+   {
+    "name": "ZZ TEST 909 child A1",
+    "status": "registered",
+    "saleId": "01a1cf40-bba7-7392-851e-58968943c889"
+   },
+   {
+    "name": "ZZ TEST 909 child A2",
+    "status": "registered",
+    "saleId": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:17:17.485Z 1: the board after the refund
+S.phase = '1: the board after the refund';
+const till = S.till;
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian A');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.waitFor({ timeout: 15000 });
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) buttons.push({ label: S.flat(await b.innerText()) || (await b.getAttribute('aria-label')), enabled: await b.isEnabled() });
+await S.shot(till, '01i-board-family-a-after-refund.png');
+await card.screenshot({ path: S.resolve(S.out, '01j-board-family-a-card-cancel-a2-alone.png'), animations: 'disabled', mask: S.masks(till), maskColor: '#18181b' });
+return { text, buttons };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Check-in', exact: true })\u001b[22m | "
+}
+
+=== 2026-11-12T10:17:51.137Z 1: the board after the refund
+const till = S.till;
+await S.shot(till, 'zz-debug-till.png');
+return { url: till.url(), locked: await till.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false) };
+--> {
+ "ok": true,
+ "value": {
+  "url": "https://oto-pos-web-staging.onrender.com/",
+  "locked": true
+ }
+}
+
+=== 2026-11-12T10:17:56.888Z 1: the board after the refund
+const till = S.till;
+const unlocked = await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian A');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.waitFor({ timeout: 15000 });
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) buttons.push({ label: S.flat(await b.innerText()) || (await b.getAttribute('aria-label')), enabled: await b.isEnabled() });
+await S.shot(till, '01i-board-family-a-after-refund.png');
+await card.screenshot({ path: S.resolve(S.out, '01j-board-family-a-card-cancel-a2-alone.png'), animations: 'disabled', mask: S.masks(till), maskColor: '#18181b' });
+return { unlocked, text, buttons };
+--> {
+ "ok": true,
+ "value": {
+  "unlocked": true,
+  "text": "ZZ TEST 909 guardian A 2 children <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 909 child A1 6 yrs DROP-OFF ZZ TEST 909 child A2 6 yrs DROP-OFF Overdue · 17:14 Booked & paid · ZZ TEST 909 child A1 To pay · ZZ TEST 909 child A2 Check in ZZ TEST 909 child A1 Check in ZZ TEST 909 child A2 Cancel booking Cancel ZZ TEST 909 child A2's booking ZZ TEST 909 child A1 is paid for — a paid booking is handled through its sale.",
+  "buttons": [
+   {
+    "label": null,
+    "enabled": true
+   },
+   {
+    "label": "Message",
+    "enabled": true
+   },
+   {
+    "label": "🇹🇭 +66",
+    "enabled": true
+   },
+   {
+    "label": "WhatsApp",
+    "enabled": true
+   },
+   {
+    "label": "Telegram",
+    "enabled": true
+   },
+   {
+    "label": "LINE",
+    "enabled": true
+   },
+   {
+    "label": "Save & re-send",
+    "enabled": false
+   },
+   {
+    "label": "Resend",
+    "enabled": true
+   },
+   {
+    "label": "Sim: parent confirms",
+    "enabled": true
+   },
+   {
+    "label": "Couldn't reach",
+    "enabled": true
+   },
+   {
+    "label": "Edit ZZ TEST 909 child A1",
+    "enabled": true
+   },
+   {
+    "label": "Edit ZZ TEST 909 child A2",
+    "enabled": true
+   },
+   {
+    "label": "Check in ZZ TEST 909 child A1",
+    "enabled": true
+   },
+   {
+    "label": "Check in ZZ TEST 909 child A2",
+    "enabled": true
+   },
+   {
+    "label": "Cancel booking",
+    "enabled": false
+   },
+   {
+    "label": "Cancel ZZ TEST 909 child A2's booking",
+    "enabled": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:18:15.544Z 1: board Check in on the refunded child A2 (must be refused)
+S.phase = '1: board Check in on the refunded child A2 (must be refused)';
+const till = S.till;
+await S.unlock('till');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+const resps = [];
+const onResp = r => { const u = new URL(r.url()); if (/\/api\/checkin/.test(u.pathname) && r.request().method() !== 'GET') resps.push({ path: u.pathname.replace(S.ID, ':id'), status: r.status() }); };
+till.on('response', onResp);
+await card.getByRole('button', { name: 'Check in ZZ TEST 909 child A2', exact: true }).click();
+await till.waitForTimeout(2500);
+const dialog = till.getByRole('dialog');
+const dialogs = await dialog.count();
+let dialogText = null;
+if (dialogs) dialogText = S.flat(await dialog.first().innerText()).slice(0, 600);
+await S.shot(till, '01k-board-check-in-a2-pressed.png');
+till.off('response', onResp);
+const toasts = S.flat(await till.locator('[data-sonner-toast], li[role="status"], [role="status"]').allInnerTexts().then(a => a.join(' | '))).slice(0, 500);
+return { dialogs, dialogText, toasts, resps };
+--> {
+ "ok": true,
+ "value": {
+  "dialogs": 0,
+  "dialogText": null,
+  "toasts": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+  "resps": []
+ }
+}
+
+=== 2026-11-12T10:18:29.867Z 1: board Check in on the refunded child A2 (must be refused)
+const till = S.till;
+const before = (await S.stationSales()).map(s => ({ id: s.id, status: s.status }));
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(2500);
+const dlg = till.getByRole('dialog');
+let dialogText = (await dlg.count()) ? S.flat(await dlg.first().innerText()).slice(0, 300) : null;
+const after = (await S.stationSales()).map(s => ({ id: s.id, status: s.status }));
+await S.shot(till, 'zz-debug-after-cancel.png');
+return { before, after, dialogText, landing: await S.landing(till).isVisible().catch(() => false) };
+--> {
+ "ok": true,
+ "value": {
+  "before": [
+   {
+    "id": "01a1cf40-bba7-7392-851e-58968943c889",
+    "status": "finalised"
+   }
+  ],
+  "after": [
+   {
+    "id": "01a1cf40-bba7-7392-851e-58968943c889",
+    "status": "finalised"
+   }
+  ],
+  "dialogText": null,
+  "landing": true
+ }
+}
+
+=== 2026-11-12T10:18:39.335Z 1: the Add drop-off child picker
+S.phase = '1: the Add drop-off child picker';
+const till = S.till;
+await S.walkIn(till, S.receipt.numbers.A);
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Add drop-off child' });
+await dialog.waitFor();
+await till.waitForTimeout(2500);
+await S.boardApi();
+const card = S.pickerCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.scrollIntoViewIfNeeded();
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) buttons.push({ label: S.flat(await b.innerText()), enabled: await b.isEnabled() });
+await S.shot(till, '01l-picker-family-a-cancel-a2-alone.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+return { text, buttons };
+--> {
+ "ok": false,
+ "error": "Error: expect(locator).toContainText(expected) failed |  | Locator: getByRole('dialog', { name: 'New member?', exact: true }) | Expected substring: \"+66 89 890 9010\" | Timeout: 5000ms | Error: element(s) not found"
+}
+
+=== 2026-11-12T10:18:50.248Z 1: the Add drop-off child picker
+const till = S.till;
+await S.shot(till, 'zz-debug-walkin.png');
+return S.flat(await till.locator('body').innerText()).slice(0, 800);
+--> {
+ "ok": true,
+ "value": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-909 proof till 1794478456092 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Select Customer Type Choose the pricing tier to start the sale. Z ZZ TEST 909 guardian A +66 89 890 9010 No verified rate Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local pricing Proof required — verify now Current Order TOURIST ZZ TEST 909 guardian A No items added yet Apply Redeem Issue a voucher… Add manual discount Subtotal ฿0 Total ฿0 Cancel Pay ฿0 English Customer ZZ TEST 909 guardian A O We"
+}
+
+=== 2026-11-12T10:18:57.290Z 1: the Add drop-off child picker
+const till = S.till;
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Add drop-off child' });
+await dialog.waitFor();
+await till.waitForTimeout(2500);
+await S.boardApi();
+const card = S.pickerCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.scrollIntoViewIfNeeded();
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) buttons.push({ label: S.flat(await b.innerText()), enabled: await b.isEnabled() });
+await S.shot(till, '01l-picker-family-a-cancel-a2-alone.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+return { text, buttons, cards: await S.pickerCards(till).count() };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('heading', { name: 'Tourist', exact: true }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T10:19:31.083Z 1: the Add drop-off child picker
+const till = S.till;
+await S.shot(till, 'zz-debug-walkin2.png');
+return { locked: await till.getByRole('heading', { name: 'Locked', exact: true }).isVisible().catch(() => false), text: S.flat(await till.locator('body').innerText()).slice(0, 400) };
+--> {
+ "ok": true,
+ "value": {
+  "locked": false,
+  "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST SCRUM-909 proof till 1794478456092 [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Select Customer Type Choose the pricin"
+ }
+}
+
+=== 2026-11-12T10:19:37.039Z 1: the Add drop-off child picker
+const till = S.till;
+await till.getByRole('button', { name: 'Skip for now', exact: true }).click();
+await till.waitForTimeout(1000);
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Add drop-off child' });
+await dialog.waitFor();
+await till.waitForTimeout(2500);
+await S.boardApi();
+const card = S.pickerCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.scrollIntoViewIfNeeded();
+const text = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) buttons.push({ label: S.flat(await b.innerText()), enabled: await b.isEnabled() });
+await S.shot(till, '01l-picker-family-a-cancel-a2-alone.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+return { text, buttons, cards: await S.pickerCards(till).count() };
+--> {
+ "ok": true,
+ "value": {
+  "text": "ZZ TEST 909 guardian A's booking <number> Add to sale Cancel booking Cancel ZZ TEST 909 child A2's booking ZZ TEST 909 child A1 is paid for — a paid booking is handled through its sale. ZZ TEST 909 child A1 · 6y Paid at till · Z<number> ZZ TEST 909 child A2 · 6y Add sibling",
+  "buttons": [
+   {
+    "label": "Add to sale",
+    "enabled": true
+   },
+   {
+    "label": "Cancel booking",
+    "enabled": false
+   },
+   {
+    "label": "Cancel ZZ TEST 909 child A2's booking",
+    "enabled": true
+   },
+   {
+    "label": "Add sibling",
+    "enabled": true
+   }
+  ],
+  "cards": 3
+ }
+}
+
+=== 2026-11-12T10:19:58.497Z 1: cancel A2 alone from the picker
+S.phase = '1: cancel A2 alone from the picker';
+const till = S.till;
+const card = S.pickerCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.getByRole('button', { name: "Cancel ZZ TEST 909 child A2's booking", exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: "Cancel ZZ TEST 909 child A2's booking" }).last();
+await dialog.waitFor();
+const press = dialog.getByRole('button', { name: /reason to cancel|Cancel the booking/ });
+const seen = { title: S.flat(await dialog.getByRole('heading').first().innerText()), description: S.flat(await dialog.locator('p').first().innerText()), beforeReason: { label: S.flat(await press.innerText()), enabled: await press.isEnabled() } };
+await S.shot(till, '01m-picker-cancel-a2-dialog-reason-empty.png');
+await dialog.getByLabel('Reason').fill('ZZ TEST SCRUM-909: A2 went home, refunded by item');
+seen.afterReason = { label: S.flat(await press.innerText()), enabled: await press.isEnabled() };
+await S.shot(till, '01n-picker-cancel-a2-dialog-reason-typed.png');
+let posted = null;
+const [answer] = await Promise.all([
+  till.waitForResponse(r => /\/api\/checkin\/registrations\/[^/]+\/cancel$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST'),
+  dialog.getByRole('button', { name: 'Cancel the booking' }).click(),
+]);
+posted = answer.request().postDataJSON();
+seen.answer = answer.status();
+seen.posted = { reason: posted.reason, checkinIds: posted.checkinIds, namesA2: posted.checkinIds?.length === 1 && posted.checkinIds[0] === S.fam.A.stays[1].id };
+await till.waitForTimeout(3000);
+const cardAfter = S.pickerCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+seen.pickerAfter = (await cardAfter.count()) ? S.flat(await cardAfter.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>') : null;
+await S.shot(till, '01o-picker-after-cancel-a2.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+const reg = await S.registration(S.fam.A.reg);
+seen.reg = reg.children.map(c => ({ name: c.childName, status: c.status, cancelReason: c.cancelReason ?? null }));
+const aud = await S.call('GET', `/audit?entityType=checkin&entityId=${S.fam.A.stays[1].id}&limit=10`);
+seen.audit = (aud.body?.entries ?? aud.body?.items ?? []).map(e => ({ action: e.action, event: e.after?.event ?? null, status: e.after?.status ?? null, named: e.after?.named ?? null, reason: e.after?.cancelReason ?? null, at: e.createdAt, actor: e.actorAccountId ? 'staff account' : null }));
+seen.auditStatus = aud.status;
+seen.board = S.stayFacts(await S.familyOnBoard(S.fam.A.reg));
+S.receipt.cancelled.push({ reg: S.fam.A.reg, child: 'ZZ TEST 909 child A2', from: 'Add drop-off child picker', status: seen.answer });
+S.receipt.reads.p1cancel = seen;
+return seen;
+--> {
+ "ok": true,
+ "value": {
+  "title": "Cancel ZZ TEST 909 child A2's booking",
+  "description": "ZZ TEST 909 guardian A's booking: ZZ TEST 909 child A2 leave the waiting list and can't be added to a sale; the rest of the booking stays as it is. The signed form stays on record.",
+  "beforeReason": {
+   "label": "Give a reason to cancel",
+   "enabled": false
+  },
+  "afterReason": {
+   "label": "Cancel the booking",
+   "enabled": true
+  },
+  "answer": 200,
+  "posted": {
+   "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+   "checkinIds": [
+    "01a1cf40-b54c-7040-acaa-16b5611fd3d2"
+   ],
+   "namesA2": true
+  },
+  "pickerAfter": "ZZ TEST 909 guardian A's booking <number> Paid at till ZZ TEST 909 child A1 · 6y Paid at till · Z<number> Add sibling",
+  "reg": [
+   {
+    "name": "ZZ TEST 909 child A1",
+    "status": "registered",
+    "cancelReason": null
+   },
+   {
+    "name": "ZZ TEST 909 child A2",
+    "status": "cancelled",
+    "cancelReason": null
+   }
+  ],
+  "audit": [
+   {
+    "action": "checkin.update",
+    "event": "cancel",
+    "status": "cancelled",
+    "named": true,
+    "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+    "at": "2026-11-12T10:19:59.255Z",
+    "actor": "staff account"
+   },
+   {
+    "action": "checkin.update",
+    "event": "refund_released",
+    "status": null,
+    "named": null,
+    "reason": null,
+    "at": "2026-11-12T10:17:03.678Z",
+    "actor": "staff account"
+   },
+   {
+    "action": "checkin.update",
+    "event": "leave_as_booked",
+    "status": null,
+    "named": null,
+    "reason": null,
+    "at": "2026-11-12T10:14:58.376Z",
+    "actor": "staff account"
+   },
+   {
+    "action": "checkin.create",
+    "event": null,
+    "status": null,
+    "named": null,
+    "reason": null,
+    "at": "2026-11-12T10:14:47.372Z",
+    "actor": "staff account"
+   }
+  ],
+  "auditStatus": 200,
+  "board": [
+   {
+    "child": "ZZ TEST 909 child A1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000001"
+    },
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:20:14.498Z 1: check A1 in from the board
+S.phase = '1: check A1 in from the board';
+const till = S.till;
+await till.keyboard.press('Escape');
+await till.waitForTimeout(800);
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click().catch(() => {});
+await till.waitForTimeout(1500);
+await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian A');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian A' }).first();
+await card.waitFor({ timeout: 15000 });
+const before = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+await S.shot(till, '01p-board-family-a-after-cancel-a2-only-a1-waiting.png');
+const btn = card.getByRole('button', { name: /^Check in/ }).first();
+const btnLabel = S.flat(await btn.innerText());
+await btn.click();
+const dialog = till.getByRole('dialog').filter({ hasText: /Check in/ }).last();
+await dialog.waitFor({ timeout: 15000 });
+const dtext = S.flat(await dialog.innerText()).slice(0, 500);
+await S.shot(till, '01q-board-check-in-a1-dialog.png');
+for (const box of await dialog.getByRole('checkbox').all()) await box.check().catch(() => {});
+const resp = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 30000 });
+await dialog.getByRole('button', { name: /Check in & issue band/ }).click();
+const r = await resp;
+await S.expect.poll(async () => (await S.registration(S.fam.A.reg)).children.find(c => c.childName.endsWith('A1')).status, { timeout: 30000 }).toBe('in_park');
+await till.waitForTimeout(2000);
+await till.getByRole('button', { name: /^In Park\s*\d+$/ }).first().click();
+await S.searchBoard(till, 'ZZ TEST 909 guardian A');
+await S.shot(till, '01r-board-in-park-a1-only.png');
+const reg = await S.registration(S.fam.A.reg);
+const s = await S.sale(S.fam.A.sale);
+return { before, btnLabel, dtext, post: { path: new URL(r.url()).pathname.replace(S.ID, ':id'), status: r.status() }, reg: reg.children.map(c => ({ name: c.childName, status: c.status, band: c.bandCode ? 'yes' : (c.band ? 'yes' : null) })), bands: s.bands?.map(b => ({ holder: b.holderCheckinId ?? b.checkinId ?? null, kind: b.kind, status: b.status })) };
+--> {
+ "ok": true,
+ "value": {
+  "before": "ZZ TEST 909 guardian A <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 909 child A1 6 yrs DROP-OFF Overdue · 17:14 Booked & paid · no payment needed Check in",
+  "btnLabel": "Check in",
+  "dtext": "Check in child ZZ TEST 909 guardian A · already booked & paid — no payment needed. ZZ TEST 909 child A1 6 yrs Drop-Off No prepaid food Check in & issue band Close",
+  "post": {
+   "path": "/api/checkin/check-in-booked",
+   "status": 200
+  },
+  "reg": [
+   {
+    "name": "ZZ TEST 909 child A1",
+    "status": "in_park",
+    "band": null
+   },
+   {
+    "name": "ZZ TEST 909 child A2",
+    "status": "cancelled",
+    "band": null
+   }
+  ],
+  "bands": [
+   {
+    "holder": null,
+    "kind": "kid",
+    "status": "active"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:20:42.545Z 1: check A1 in from the board
+const c = S.receipt.reads.p1cancel;
+S.point('1', true, ['01a','01b','01c','01d','01e','01f','01g','01h','01i','01j','01k','01l','01m','01n','01o','01p','01q','01r'], {
+  family: 'ZZ TEST 909 guardian A, children A1 and A2 on one registration', sale: { receipt: 'Z90901-000001', gross: 1830, paid: 'cash', after: 'Leave as booked' },
+  refund: { by: 'manager, History, By item, second row (A2)', amount: 915, lines: ['kids 690', 'drop-off service 225'], refundedCartIsA2: true, saleRefundStatus: 'partially_refunded' },
+  afterRefund: { A1: 'registered, Paid at till Z90901-000001', A2: 'registered, not paid, saleId cleared (refund_released audit row)' },
+  boardCheckInA2: 'opens a new till order for A2 to pay (no API check-in, no band)',
+  cancelAlone: { from: 'Add drop-off child picker', reasonRequired: c.beforeReason, posted: c.posted, answer: c.answer, audit: c.audit[0] },
+  A1: 'checked in from the board (check-in-booked 200), in_park with one kid band; A2 cancelled, never in the park' });
+return 'saved';
+--> {
+ "ok": true,
+ "value": "saved"
+}
+
+=== 2026-11-12T10:20:52.598Z 2: family B, two children on one booking, one sale, cash, Leave as booked
+S.phase = '2: family B, two children on one booking, one sale, cash, Leave as booked';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.receipt.numbers.B = S.free[1];
+await S.walkIn(till, S.free[1]);
+await S.ticket(till, 2, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 909 child B1', 'ZZ TEST 909 child B2'], 'ZZ TEST 909 guardian B');
+const sale = await S.saleWritten('dropoff-sale-B');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(1500);
+const due = await S.amountDue(till);
+await S.payCash(till);
+const leave = till.getByRole('button', { name: 'Leave as booked', exact: true });
+await leave.waitFor({ timeout: 20000 });
+await leave.click();
+await till.waitForTimeout(2500);
+S.fam.B = { reg: reg.id, sale: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+const s = await S.sale(sale.id);
+return { due, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, receipt: s.sale.receiptNumber, board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1830",
+  "status": "finalised",
+  "gross": 1830,
+  "receipt": "Z90901-000002",
+  "board": [
+   {
+    "child": "ZZ TEST 909 child B1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000002"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST 909 child B2",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000002"
+    },
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:21:16.663Z 2: manager refunds B2 by item
+S.phase = '2: manager refunds B2 by item';
+const mgr = S.mgr;
+await S.unlock('mgr');
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+await S.markMine(mgr, ['Z90901-']);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z90901-000002' }).first().click();
+await mgr.waitForTimeout(3500);
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+const rows = dialog.locator('div.max-h-44 > button');
+const labels = [];
+for (let i = 0; i < await rows.count(); i++) labels.push(S.flat(await rows.nth(i).innerText()));
+await rows.nth(1).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-909 proof: B2 refunded by item, then the family decides B2 stays');
+await S.shot(mgr, '02a-refund-b2-by-item.png');
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.B.sale}/refunds` && r.request().method() === 'POST');
+await dialog.getByRole('button', { name: /^Refund ฿/ }).click();
+const r = await resp;
+await mgr.waitForTimeout(2500);
+const s = await S.sale(S.fam.B.sale);
+const refundedLineIds = new Set(s.refunds.flatMap(x => x.lines.map(l => l.saleLineId)));
+const refundedCart = [...new Set(s.lines.filter(l => refundedLineIds.has(l.id)).map(l => l.cartLineId))];
+return { labels, status: r.status(), refundStatus: s.refundStatus, refunded: s.refunds.map(x => x.amountSatang / 100), isB2: refundedCart.length === 1 && refundedCart[0] === S.fam.B.stays[1].id, board: S.stayFacts(await S.familyOnBoard(S.fam.B.reg)) };
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "1 Hour Play · 1 ppl ฿915",
+   "1 Hour Play · 1 ppl ฿915"
+  ],
+  "status": 200,
+  "refundStatus": "partially_refunded",
+  "refunded": [
+   915
+  ],
+  "isB2": true,
+  "board": [
+   {
+    "child": "ZZ TEST 909 child B1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000002"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST 909 child B2",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:21:37.930Z 2: the family stays: B2 from the board to a new sale
+S.phase = '2: the family stays: B2 from the board to a new sale';
+const till = S.till;
+await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian B' }).first();
+await card.waitFor({ timeout: 15000 });
+await S.shot(till, '02b-board-family-b-after-refund.png');
+const buttons = [];
+for (const b of await card.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Check in|Cancel/.test(l)) buttons.push({ label: l, enabled: await b.isEnabled() }); }
+await card.getByRole('button', { name: 'Check in ZZ TEST 909 child B2', exact: true }).click();
+await till.waitForTimeout(3000);
+await S.shot(till, '02c-b2-sent-to-the-till-order.png');
+return { buttons, order: S.flat(await till.locator('body').innerText()).match(/Current Order.*?Total/)?.[0]?.slice(0, 300) };
+--> {
+ "ok": true,
+ "value": {
+  "buttons": [
+   {
+    "label": "Check in ZZ TEST 909 child B1",
+    "enabled": true
+   },
+   {
+    "label": "Check in ZZ TEST 909 child B2",
+    "enabled": true
+   },
+   {
+    "label": "Cancel booking",
+    "enabled": false
+   },
+   {
+    "label": "Cancel ZZ TEST 909 child B2's booking",
+    "enabled": true
+   }
+  ],
+  "order": "Current Order TOURIST ZZ TEST 909 guardian B ZZ TEST 909 child B2 EDITING — Choose length Drop-off service Configure Apply Redeem Issue a voucher… Add manual discount Subtotal — Total"
+ }
+}
+
+=== 2026-11-12T10:21:51.757Z 2: the family stays: B2 from the board to a new sale
+const till = S.till;
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.waitForTimeout(1500);
+await S.shot(till, 'zz-debug-b2-after-tourist.png');
+return S.flat(await till.locator('body').innerText()).slice(300, 1300);
+--> {
+ "ok": true,
+ "value": "ental, Refillable Drink Cup, Regular Socks 7 overdue Review → ZZ TEST 909 child B2 · 6y Back to tickets Play ticket length Choose a length to price this child (also sets nanny hours). 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Drop-off service Drop-Off Flat ฿225 Nanny ฿330/hr · shared Choose a play ticket length to price this child. Back to tickets Choose length Current Order TOURIST ZZ TEST 909 guardian B ZZ TEST 909 child B2 EDITING — Choose length Drop-off service Configure Apply Redeem Issue a voucher… Add manual discount Subtotal — Total — Priced on this till. A drop-off child has no play length chosen yet. Cancel Pay — Customer ZZ TEST 909 guardian B O Oto Play Park Your Order English Drop-off — choose a play length — Kids1 × — — Total —"
+}
+
+=== 2026-11-12T10:21:58.904Z 2: the family stays: B2 from the board to a new sale
+const till = S.till;
+await till.getByText('1 Hour Play', { exact: true }).first().click();
+await till.waitForTimeout(1500);
+const btns = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && /Done|Continue|Pay|Choose|Back|Add/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+await S.shot(till, '02d-b2-new-order-one-hour-chosen.png');
+return { btns, order: S.flat(await till.locator('body').innerText()).match(/Current Order.*?Cancel/)?.[0]?.slice(0, 400) };
+--> {
+ "ok": true,
+ "value": {
+  "btns": [
+   {
+    "l": "Back to tickets",
+    "e": true
+   },
+   {
+    "l": "Back to tickets",
+    "e": true
+   },
+   {
+    "l": "Continue",
+    "e": true
+   },
+   {
+    "l": "Add manual discount",
+    "e": true
+   },
+   {
+    "l": "Pay ฿915",
+    "e": true
+   }
+  ],
+  "order": "Current Order TOURIST ZZ TEST 909 guardian B ZZ TEST 909 child B2 EDITING ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure Apply Redeem Issue a voucher… Add manual discount Subtotal ฿915 VAT included ฿59.86 Total ฿915 Cancel"
+ }
+}
+
+=== 2026-11-12T10:22:05.474Z 2: the family stays: B2 from the board to a new sale
+const { expect } = S;
+const till = S.till;
+await till.getByRole('button', { name: 'Pay ฿915', exact: true }).click();
+await till.waitForTimeout(2500);
+const sale = await S.saleWritten('dropoff-sale-B2-again');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const due = await S.amountDue(till);
+await S.shot(till, '02e-b2-new-sale-payment-step-915.png');
+await S.payCash(till);
+await till.waitForTimeout(1500);
+const prompt = S.flat(await till.locator('body').innerText()).match(/(Check in now|Leave as booked)/g);
+await S.shot(till, '02f-b2-paid-check-in-now.png');
+S.fam.B.sale2 = sale.id;
+return { due, prompt };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿915",
+  "prompt": [
+   "Leave as booked",
+   "Check in now"
+  ]
+ }
+}
+
+=== 2026-11-12T10:22:17.052Z 2: the family stays: B2 from the board to a new sale
+const till = S.till;
+const dlg = till.getByRole('dialog').last();
+const dtext = S.flat(await dlg.innerText()).slice(0, 400);
+const resp = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 30000 });
+await till.getByRole('button', { name: 'Check in now', exact: true }).click();
+const r = await resp;
+await till.waitForTimeout(3000);
+await S.shot(till, '02g-b2-checked-in-on-the-new-sale.png');
+const reg = await S.registration(S.fam.B.reg);
+const s2 = await S.sale(S.fam.B.sale2);
+const s1 = await S.sale(S.fam.B.sale);
+return { dtext, post: { path: new URL(r.url()).pathname.replace(S.ID, ':id'), status: r.status() },
+  reg: reg.children.map(c => ({ name: c.childName, status: c.status, onSale2: c.saleId === S.fam.B.sale2, onSale1: c.saleId === S.fam.B.sale })),
+  sale2: { receipt: s2.sale.receiptNumber, status: s2.sale.status, gross: s2.sale.totals.grossSatang / 100, lines: s2.lines.map(l => ({ kind: l.kind, gross: l.grossSatang / 100, forB2: l.cartLineId === S.fam.B.stays[1].id })), bands: s2.bands.map(b => ({ kind: b.kind, status: b.status })) },
+  sale1: { status: s1.sale.status, refundStatus: s1.refundStatus, refundable: s1.refundableSatang / 100, bands: s1.bands.map(b => ({ kind: b.kind, status: b.status })) },
+  board: S.stayFacts(await S.familyOnBoard(S.fam.B.reg)) };
+--> {
+ "ok": true,
+ "value": {
+  "dtext": "Check in the drop-off child? Payment is complete. For each registration, choose whether to check the child in now or leave them booked for later. ZZ TEST 909 child B2 Drop-off Leave as booked Check in now",
+  "post": {
+   "path": "/api/checkin/check-in-now",
+   "status": 200
+  },
+  "reg": [
+   {
+    "name": "ZZ TEST 909 child B1",
+    "status": "registered",
+    "onSale2": false,
+    "onSale1": true
+   },
+   {
+    "name": "ZZ TEST 909 child B2",
+    "status": "in_park",
+    "onSale2": true,
+    "onSale1": false
+   }
+  ],
+  "sale2": {
+   "receipt": "Z90901-000003",
+   "status": "finalised",
+   "gross": 915,
+   "lines": [
+    {
+     "kind": "kids",
+     "gross": 690,
+     "forB2": true
+    },
+    {
+     "kind": "service_fee",
+     "gross": 225,
+     "forB2": true
+    }
+   ],
+   "bands": [
+    {
+     "kind": "kid",
+     "status": "active"
+    }
+   ]
+  },
+  "sale1": {
+   "status": "finalised",
+   "refundStatus": "partially_refunded",
+   "refundable": 915,
+   "bands": []
+  },
+  "board": [
+   {
+    "child": "ZZ TEST 909 child B1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000002"
+    },
+    "paidOnline": false
+   },
+   {
+    "child": "ZZ TEST 909 child B2",
+    "status": "in_park",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:22:30.120Z 2: B1 checks in from the board on the first sale
+S.phase = '2: B1 checks in from the board on the first sale';
+const till = S.till;
+await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian B' }).filter({ has: till.getByRole('button', { name: /^Check in/ }) }).first();
+await card.waitFor({ timeout: 15000 });
+const before = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>').slice(-260);
+await S.shot(till, '02h-board-b1-waiting-booked-and-paid.png');
+await card.getByRole('button', { name: /^Check in/ }).first().click();
+const dialog = till.getByRole('dialog').filter({ hasText: /Check in/ }).last();
+await dialog.waitFor({ timeout: 15000 });
+const dtext = S.flat(await dialog.innerText()).slice(0, 300);
+for (const box of await dialog.getByRole('checkbox').all()) await box.check().catch(() => {});
+const resp = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 30000 });
+await dialog.getByRole('button', { name: /Check in & issue band/ }).click();
+const r = await resp;
+await S.expect.poll(async () => (await S.registration(S.fam.B.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+await till.waitForTimeout(1500);
+await till.getByRole('button', { name: /^In Park\s*\d+$/ }).first().click();
+await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+await S.shot(till, '02i-board-in-park-b1-and-b2.png');
+const s1 = await S.sale(S.fam.B.sale);
+const sales = (await S.stationSales()).map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals.grossSatang / 100 }));
+return { before, dtext, post: r.status(), sale1bands: s1.bands.map(b => ({ kind: b.kind, status: b.status })), sales };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded. | Call log: | \u001b[2m  - waiting for locator('div.grid.gap-3 > div[class*=\"bg-card/50\"]').filter({ hasText: 'ZZ TEST 909 guardian B' }).filter({ has: getByRole('button', { name: /^Check in/ }) }).first() to be visible\u001b[22m | "
+}
+
+=== 2026-11-12T10:22:56.006Z 2: B1 checks in from the board on the first sale
+const till = S.till;
+const fam = await S.familyOnBoard(S.fam.B.reg);
+const out = { tab: fam?.tab };
+for (const tab of ['Upcoming', 'In Park']) {
+  await till.getByRole('button', { name: new RegExp(`^${tab}\s*\d+$`) }).first().click();
+  await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+  const cards = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian B' });
+  out[tab] = { n: await cards.count(), text: (await cards.count()) ? S.flat(await cards.first().innerText()).slice(-260) : null };
+}
+return out;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /^Upcomings*d+$/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T10:23:34.795Z 2: B1 checks in from the board on the first sale
+const till = S.till;
+S.tab = (page, tab) => page.getByRole('button', { name: new RegExp(`^${tab}\\s*\\d+$`) }).first();
+const fam = await S.familyOnBoard(S.fam.B.reg);
+const out = { tab: fam?.tab };
+for (const tab of ['Upcoming', 'In Park']) {
+  await S.tab(till, tab).click();
+  await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+  const cards = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian B' });
+  out[tab] = { n: await cards.count(), text: (await cards.count()) ? S.flat(await cards.first().innerText()).slice(-300) : null };
+}
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "tab": "in_park",
+  "Upcoming": {
+   "n": 0,
+   "text": null
+  },
+  "In Park": {
+   "n": 1,
+   "text": " tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898909011 Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 909 child B1 6 yrs DROP-OFF Overdue · 17:21 ZZ TEST 909 child B2 6 yrs DROP-OFF 59m left Booked & paid · no payment needed Check in Check Out"
+  }
+ }
+}
+
+=== 2026-11-12T10:23:49.799Z 2: B1 checks in from the board on the first sale
+S.phase = '2: B1 checks in from the board on the first sale';
+const till = S.till;
+await S.unlock('till');
+await S.boardApi();
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian B' }).first();
+await card.waitFor({ timeout: 15000 });
+await S.shot(till, '02h-board-in-park-tab-b2-in-b1-booked-and-paid.png');
+await card.getByRole('button', { name: /^Check in/ }).first().click();
+const dialog = till.getByRole('dialog').filter({ hasText: /Check in/ }).last();
+await dialog.waitFor({ timeout: 15000 });
+const dtext = S.flat(await dialog.innerText()).slice(0, 300);
+for (const box of await dialog.getByRole('checkbox').all()) await box.check().catch(() => {});
+const resp = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 30000 });
+await dialog.getByRole('button', { name: /Check in & issue band/ }).click();
+const r = await resp;
+await S.expect.poll(async () => (await S.registration(S.fam.B.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+await till.waitForTimeout(1500);
+await S.searchBoard(till, 'ZZ TEST 909 guardian B');
+await S.shot(till, '02i-board-in-park-b1-and-b2.png');
+const s1 = await S.sale(S.fam.B.sale);
+const reg = await S.registration(S.fam.B.reg);
+const sales = (await S.stationSales()).map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals.grossSatang / 100 }));
+return { dtext, post: { path: new URL(r.url()).pathname.replace(S.ID, ':id'), status: r.status() }, reg: reg.children.map(c => ({ name: c.childName, status: c.status, onSale1: c.saleId === S.fam.B.sale, onSale2: c.saleId === S.fam.B.sale2 })), sale1bands: s1.bands.map(b => ({ kind: b.kind, status: b.status })), sales };
+--> {
+ "ok": true,
+ "value": {
+  "dtext": "Check in child ZZ TEST 909 guardian B · already booked & paid — no payment needed. ZZ TEST 909 child B1 6 yrs Drop-Off No prepaid food Check in & issue band Close",
+  "post": {
+   "path": "/api/checkin/check-in-booked",
+   "status": 200
+  },
+  "reg": [
+   {
+    "name": "ZZ TEST 909 child B1",
+    "status": "in_park",
+    "onSale1": true,
+    "onSale2": false
+   },
+   {
+    "name": "ZZ TEST 909 child B2",
+    "status": "in_park",
+    "onSale1": false,
+    "onSale2": true
+   }
+  ],
+  "sale1bands": [
+   {
+    "kind": "kid",
+    "status": "active"
+   }
+  ],
+  "sales": [
+   {
+    "receipt": "Z90901-000003",
+    "status": "finalised",
+    "gross": 915
+   },
+   {
+    "receipt": "Z90901-000002",
+    "status": "finalised",
+    "gross": 1830
+   },
+   {
+    "receipt": "Z90901-000001",
+    "status": "finalised",
+    "gross": 1830
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:24:04.839Z 2: B1 checks in from the board on the first sale
+S.point('2', true, ['02a','02b','02c','02d','02e','02f','02g','02h','02i'], {
+  family: 'ZZ TEST 909 guardian B, B1 and B2 on one registration', sale1: { receipt: 'Z90901-000002', gross: 1830, after: 'Leave as booked' },
+  refund: { amount: 915, row: 'second (B2), kids 690 + drop-off service 225', saleRefundStatus: 'partially_refunded' },
+  stays: 'B2 rung up again from the board press "Check in ZZ TEST 909 child B2" (opens a till order for B2), 1 Hour Play chosen, Pay 915, cash, Check in now (check-in-now 200)',
+  sale2: { receipt: 'Z90901-000003', gross: 915, lines: 'kids 690 + drop-off service 225, both B2', bands: 1 },
+  B1: 'still on Z90901-000002, not on the new sale, checked in from the board as Booked & paid (check-in-booked 200), one band on sale 1',
+  noSecondCharge: true });
+await S.unlock('till');
+await S.till.goto('/'); await S.till.waitForTimeout(3000);
+return S.flat(await S.till.locator('a,div,span').filter({ hasText: /in park/ }).first().innerText()).slice(0, 60);
+--> {
+ "ok": true,
+ "value": "Test harness — staff till and customer display share one liv"
+}
+
+=== 2026-11-12T10:24:20.617Z 3: two separate bookings C and D, each left unpaid at the till
+S.phase = '3: two separate bookings C and D, each left unpaid at the till';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+S.leaveUnpaid = async (sale) => {
+  await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+  const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).first();
+  await cancel.click(); await till.waitForTimeout(3000);
+  const now = (await S.sale(sale.id)).sale;
+  return now.status;
+};
+const out = {};
+for (const [tag, idx] of [['C', 2], ['D', 3]]) {
+  S.receipt.numbers[tag] = S.free[idx];
+  await S.walkIn(till, S.free[idx]);
+  await S.ticket(till, 1, 0);
+  const reg = await S.fillDropOff(till, [`ZZ TEST 909 child ${tag}1`], `ZZ TEST 909 guardian ${tag}`);
+  const sale = await S.saleWritten(`dropoff-sale-${tag}-left-unpaid`);
+  const status = await S.leaveUnpaid(sale);
+  S.fam[tag] = { reg: reg.id, voided: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+  out[tag] = { firstSale: status, board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+}
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "C": {
+   "firstSale": "voided",
+   "board": [
+    {
+     "child": "ZZ TEST 909 child C1",
+     "status": "registered",
+     "paidAtTill": null,
+     "paidOnline": false
+    }
+   ]
+  },
+  "D": {
+   "firstSale": "voided",
+   "board": [
+    {
+     "child": "ZZ TEST 909 child D1",
+     "status": "registered",
+     "paidAtTill": null,
+     "paidOnline": false
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:24:54.590Z 3: C and D on one sale through the picker
+S.phase = '3: C and D on one sale through the picker';
+const till = S.till;
+await S.unlock('till');
+await S.walkIn(till, S.receipt.numbers.C).catch(() => null);
+await till.waitForTimeout(1500);
+const skip = till.getByRole('button', { name: 'Skip for now', exact: true });
+if (await skip.isVisible().catch(() => false)) await skip.click();
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Add drop-off child' });
+await dialog.waitFor();
+await till.waitForTimeout(2500);
+await S.boardApi();
+const seen = {};
+for (const tag of ['C', 'D']) {
+  const card = S.pickerCards(till).filter({ hasText: `ZZ TEST 909 guardian ${tag}'s booking` }).first();
+  await card.scrollIntoViewIfNeeded();
+  seen[tag] = S.flat(await card.innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<number>');
+  await card.getByRole('button', { name: 'Add to sale', exact: true }).click();
+  await till.waitForTimeout(1500);
+}
+const stillOpen = await dialog.isVisible().catch(() => false);
+await S.shot(till, '03a-picker-c-and-d-added.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+if (await dialog.isVisible().catch(() => false)) await till.keyboard.press('Escape');
+await till.waitForTimeout(1500);
+await S.shot(till, '03b-order-c-and-d.png');
+const order = S.flat(await till.locator('body').innerText()).match(/Current Order.*?Cancel/)?.[0]?.slice(0, 500);
+return { seen, stillOpen, order };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.scrollIntoViewIfNeeded: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('dialog').locator('div.space-y-3 > div').filter({ hasText: 'ZZ TEST 909 guardian D\\'s booking' }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T10:25:42.956Z 3: C and D on one sale through the picker
+const till = S.till;
+await S.shot(till, 'zz-debug-picker.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+const dlg = till.getByRole('dialog');
+return { n: await dlg.count(), text: (await dlg.count()) ? S.flat(await dlg.first().innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<n>').slice(0, 700) : null };
+--> {
+ "ok": true,
+ "value": {
+  "n": 0,
+  "text": null
+ }
+}
+
+=== 2026-11-12T10:25:56.343Z 3: C and D on one sale through the picker
+const till = S.till;
+await till.getByText('1 Hour Play', { exact: true }).first().click();
+await till.waitForTimeout(1200);
+const cont = till.getByRole('button', { name: 'Continue', exact: true }).first();
+await cont.click();
+await till.waitForTimeout(1500);
+const steps = [];
+steps.push(S.flat(await till.locator('body').innerText()).slice(380, 700));
+await till.getByRole('button', { name: 'Add drop-off child', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Add drop-off child' });
+await dialog.waitFor();
+await till.waitForTimeout(2500);
+const card = S.pickerCards(till).filter({ hasText: "ZZ TEST 909 guardian D's booking" }).first();
+await card.scrollIntoViewIfNeeded();
+const cText = S.flat(await S.pickerCards(till).filter({ hasText: "ZZ TEST 909 guardian C's booking" }).first().innerText()).replace(/\+?\d[\d\s-]{7,}\d/g, '<n>');
+await S.shot(till, '03a-picker-c-in-sale-d-waiting.png', [S.pickerCards(till).filter({ hasNotText: 'ZZ TEST' })]);
+await card.getByRole('button', { name: 'Add to sale', exact: true }).click();
+await till.waitForTimeout(1500);
+await till.getByText('1 Hour Play', { exact: true }).first().click();
+await till.waitForTimeout(1200);
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await till.waitForTimeout(1500);
+await S.shot(till, '03b-order-c-and-d-one-sale.png');
+const order = S.flat(await till.locator('body').innerText()).match(/Current Order.*?Cancel/)?.[0]?.slice(0, 500);
+return { steps, cText, order };
+--> {
+ "ok": true,
+ "value": {
+  "steps": [
+   "op-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Current Order TOURIST ZZ TEST"
+  ],
+  "cText": "ZZ TEST 909 guardian C's booking <n> Added Cancel booking Take the children off this sale first. ZZ TEST 909 child C1 · 6y In sale Add sibling",
+  "order": "Current Order TOURIST ZZ TEST 909 guardian C ZZ TEST 909 child C1 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure ZZ TEST 909 child D1 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1830 VAT included ฿119.72 Total ฿1830 Cancel"
+ }
+}
+
+=== 2026-11-12T10:26:16.861Z 3: C and D on one sale through the picker
+const { expect } = S;
+const till = S.till;
+await till.getByRole('button', { name: /^Pay ฿1830/ }).click();
+await till.waitForTimeout(2500);
+const sale = await S.saleWritten('dropoff-sale-C-and-D');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const due = await S.amountDue(till);
+await S.payCash(till);
+await till.waitForTimeout(1500);
+const prompt = S.flat(await till.locator('body').innerText()).match(/(Check in now|Leave as booked)/g);
+await S.shot(till, '03c-c-and-d-paid-prompt-not-pressed.png');
+await till.reload();
+await till.waitForTimeout(6000);
+await S.unlock('till');
+const afterReload = { prompt: (S.flat(await till.locator('body').innerText()).match(/(Check in now|Leave as booked)/g) ?? []).length, landing: await S.landing(till).isVisible().catch(() => false) };
+await S.shot(till, '03d-after-reload-no-prompt.png');
+S.fam.CD = { sale: sale.id };
+const s = await S.sale(sale.id);
+const regC = await S.registration(S.fam.C.reg), regD = await S.registration(S.fam.D.reg);
+return { due, prompt, afterReload, sale: { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100,
+  lines: s.lines.map(l => ({ kind: l.kind, gross: l.grossSatang / 100, for: l.cartLineId === S.fam.C.stays[0].id ? 'C1' : l.cartLineId === S.fam.D.stays[0].id ? 'D1' : 'other' })) },
+  C: regC.children.map(c => ({ status: c.status, linked: c.saleId === sale.id })), D: regD.children.map(c => ({ status: c.status, linked: c.saleId === sale.id })),
+  boardC: S.stayFacts(await S.familyOnBoard(S.fam.C.reg)), boardD: S.stayFacts(await S.familyOnBoard(S.fam.D.reg)) };
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1830",
+  "prompt": [
+   "Leave as booked",
+   "Check in now",
+   "Leave as booked",
+   "Check in now"
+  ],
+  "afterReload": {
+   "prompt": 0,
+   "landing": true
+  },
+  "sale": {
+   "receipt": "Z90901-000004",
+   "status": "finalised",
+   "gross": 1830,
+   "lines": [
+    {
+     "kind": "kids",
+     "gross": 690,
+     "for": "C1"
+    },
+    {
+     "kind": "service_fee",
+     "gross": 225,
+     "for": "C1"
+    },
+    {
+     "kind": "kids",
+     "gross": 690,
+     "for": "D1"
+    },
+    {
+     "kind": "service_fee",
+     "gross": 225,
+     "for": "D1"
+    }
+   ]
+  },
+  "C": [
+   {
+    "status": "registered",
+    "linked": false
+   }
+  ],
+  "D": [
+   {
+    "status": "registered",
+    "linked": false
+   }
+  ],
+  "boardC": [
+   {
+    "child": "ZZ TEST 909 child C1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000004"
+    },
+    "paidOnline": false
+   }
+  ],
+  "boardD": [
+   {
+    "child": "ZZ TEST 909 child D1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000004"
+    },
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:26:38.542Z 3: manager refunds D by item
+S.phase = '3: manager refunds D by item';
+const mgr = S.mgr;
+await S.unlock('mgr');
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+await S.markMine(mgr, ['Z90901-']);
+await mgr.locator('button[data-zz]').filter({ hasText: 'Z90901-000004' }).first().click();
+await mgr.waitForTimeout(3500);
+await S.shot(mgr, '03e-history-detail-c-and-d-sale.png');
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.getByRole('button', { name: 'By item', exact: true }).click();
+const rows = dialog.locator('div.max-h-44 > button');
+const labels = [];
+for (let i = 0; i < await rows.count(); i++) labels.push(S.flat(await rows.nth(i).innerText()));
+await rows.nth(1).click();
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-909 proof: D1 went home, refunded by item');
+await S.shot(mgr, '03f-refund-d-by-item.png');
+const resp = mgr.waitForResponse(r => new URL(r.url()).pathname === `/api/sales/${S.fam.CD.sale}/refunds` && r.request().method() === 'POST');
+await dialog.getByRole('button', { name: /^Refund ฿/ }).click();
+const r = await resp;
+await mgr.waitForTimeout(2500);
+const s = await S.sale(S.fam.CD.sale);
+const refundedLineIds = new Set(s.refunds.flatMap(x => x.lines.map(l => l.saleLineId)));
+const refundedCart = [...new Set(s.lines.filter(l => refundedLineIds.has(l.id)).map(l => l.cartLineId))];
+return { labels, status: r.status(), refundStatus: s.refundStatus, amount: s.refunds.map(x => x.amountSatang / 100), isD: refundedCart.length === 1 && refundedCart[0] === S.fam.D.stays[0].id,
+  boardC: S.stayFacts(await S.familyOnBoard(S.fam.C.reg)), boardD: S.stayFacts(await S.familyOnBoard(S.fam.D.reg)) };
+--> {
+ "ok": true,
+ "value": {
+  "labels": [
+   "1 Hour Play · 1 ppl ฿915",
+   "1 Hour Play · 1 ppl ฿915"
+  ],
+  "status": 200,
+  "refundStatus": "partially_refunded",
+  "amount": [
+   915
+  ],
+  "isD": true,
+  "boardC": [
+   {
+    "child": "ZZ TEST 909 child C1",
+    "status": "registered",
+    "paidAtTill": {
+     "receipt": "Z90901-000004"
+    },
+    "paidOnline": false
+   }
+  ],
+  "boardD": [
+   {
+    "child": "ZZ TEST 909 child D1",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:27:09.713Z 3: cancel D from the board; C untouched
+S.phase = '3: cancel D from the board; C untouched';
+const till = S.till;
+await S.unlock('till');
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian');
+const facts = async tag => {
+  const card = S.deskCards(till).filter({ hasText: `ZZ TEST 909 guardian ${tag}` }).first();
+  const out = { shown: await card.count() };
+  if (!out.shown) return out;
+  out.buttons = [];
+  for (const b of await card.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Check in|Cancel/.test(l)) out.buttons.push({ l, e: await b.isEnabled() }); }
+  out.pills = (S.flat(await card.innerText()).match(/(Booked & paid[^C]*|To pay[^C]*)/g) ?? []).map(x => x.slice(0, 60));
+  return out;
+};
+const before = { C: await facts('C'), D: await facts('D') };
+await S.shot(till, '03g-board-c-paid-d-refunded.png');
+const cardD = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian D' }).first();
+await cardD.getByRole('button', { name: 'Cancel booking', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Cancel this waiting booking' });
+await dialog.waitFor();
+const press = dialog.getByRole('button', { name: /reason to cancel|Cancel the booking/ });
+const seen = { description: S.flat(await dialog.locator('p').first().innerText()), beforeReason: { label: S.flat(await press.innerText()), enabled: await press.isEnabled() } };
+await dialog.getByLabel('Reason').fill('ZZ TEST SCRUM-909: D1 went home, refunded by item');
+seen.afterReason = { label: S.flat(await press.innerText()), enabled: await press.isEnabled() };
+await S.shot(till, '03h-board-cancel-d-dialog-reason-typed.png');
+const [answer] = await Promise.all([
+  till.waitForResponse(r => /\/api\/checkin\/registrations\/[^/]+\/cancel$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST'),
+  dialog.getByRole('button', { name: 'Cancel the booking' }).click(),
+]);
+seen.answer = answer.status();
+seen.posted = answer.request().postDataJSON();
+seen.forD = new URL(answer.url()).pathname.includes(S.fam.D.reg);
+await till.waitForTimeout(3000);
+await S.searchBoard(till, 'ZZ TEST 909 guardian');
+seen.after = { C: await facts('C'), D: await facts('D') };
+await S.shot(till, '03i-board-after-cancel-d-c-still-paid.png');
+S.receipt.cancelled.push({ reg: S.fam.D.reg, child: 'ZZ TEST 909 child D1', from: 'desk board (whole booking)', status: seen.answer });
+seen.regD = (await S.registration(S.fam.D.reg)).children.map(c => c.status);
+seen.regC = (await S.registration(S.fam.C.reg)).children.map(c => c.status);
+const aud = await S.call('GET', `/audit?entityType=checkin&entityId=${S.fam.D.stays[0].id}&limit=5`);
+seen.audit = (aud.body?.entries ?? []).map(e => ({ event: e.after?.event ?? null, status: e.after?.status ?? null, reason: e.after?.cancelReason ?? null }));
+return { before, seen };
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "C": {
+    "shown": 1,
+    "buttons": [
+     {
+      "l": "Check in",
+      "e": true
+     }
+    ],
+    "pills": [
+     "Booked & paid · no payment needed "
+    ]
+   },
+   "D": {
+    "shown": 1,
+    "buttons": [
+     {
+      "l": "Check in",
+      "e": true
+     },
+     {
+      "l": "Cancel booking",
+      "e": true
+     }
+    ],
+    "pills": []
+   }
+  },
+  "seen": {
+   "description": "ZZ TEST 909 guardian D's booking: ZZ TEST 909 child D1 leave the waiting list and can't be added to a sale. The signed form stays on record.",
+   "beforeReason": {
+    "label": "Give a reason to cancel",
+    "enabled": false
+   },
+   "afterReason": {
+    "label": "Cancel the booking",
+    "enabled": true
+   },
+   "answer": 200,
+   "posted": {
+    "reason": "ZZ TEST SCRUM-909: D1 went home, refunded by item"
+   },
+   "forD": true,
+   "after": {
+    "C": {
+     "shown": 1,
+     "buttons": [
+      {
+       "l": "Check in",
+       "e": true
+      }
+     ],
+     "pills": [
+      "Booked & paid · no payment needed "
+     ]
+    },
+    "D": {
+     "shown": 0
+    }
+   },
+   "regD": [
+    "cancelled"
+   ],
+   "regC": [
+    "registered"
+   ],
+   "audit": [
+    {
+     "event": "cancel",
+     "status": "cancelled",
+     "reason": "ZZ TEST SCRUM-909: D1 went home, refunded by item"
+    },
+    {
+     "event": null,
+     "status": null,
+     "reason": null
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:27:33.416Z 3: cancel D from the board; C untouched
+const till = S.till;
+await S.unlock('till');
+await S.searchBoard(till, 'ZZ TEST 909 guardian C');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian C' }).first();
+await card.getByRole('button', { name: /^Check in/ }).first().click();
+const dialog = till.getByRole('dialog').filter({ hasText: /Check in/ }).last();
+await dialog.waitFor({ timeout: 15000 });
+const dtext = S.flat(await dialog.innerText()).slice(0, 300);
+for (const box of await dialog.getByRole('checkbox').all()) await box.check().catch(() => {});
+const resp = till.waitForResponse(r => /\/api\/checkin\//.test(new URL(r.url()).pathname) && r.request().method() === 'POST', { timeout: 30000 });
+await dialog.getByRole('button', { name: /Check in & issue band/ }).click();
+const r = await resp;
+await S.expect.poll(async () => (await S.registration(S.fam.C.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+await till.waitForTimeout(1500);
+await S.tab(till, 'In Park').click();
+await S.searchBoard(till, 'ZZ TEST 909 guardian C');
+await S.shot(till, '03j-board-c-in-park.png');
+const s = await S.sale(S.fam.CD.sale);
+S.point('3', true, ['03a','03b','03c','03d','03e','03f','03g','03h','03i','03j'], {
+  bookings: 'ZZ TEST 909 guardian C (C1) and guardian D (D1), each registered and left unpaid (first sales voided by the till Cancel)',
+  sale: { receipt: s.sale.receiptNumber, gross: 1830, how: 'walk-in, Add drop-off child picker: Add to sale on C, then D; 1 Hour Play each; cash; reload without Check in now / Leave as booked (stays not filed on the sale)' },
+  refund: { amount: 915, row: 'second (D1)', saleRefundStatus: s.refundStatus },
+  D: 'Paid at till gone; whole Cancel booking enabled on the board; cancelled with a reason (200), audit cancel row', C: 'Booked & paid throughout, checked in from the board (check-in-booked ' + r.status() + '), in_park, band ' + s.bands.map(b => b.kind + ' ' + b.status).join(', ') });
+return { dtext, post: r.status(), bands: s.bands.map(b => ({ kind: b.kind, status: b.status })), regC: (await S.registration(S.fam.C.reg)).children.map(c => c.status) };
+--> {
+ "ok": true,
+ "value": {
+  "dtext": "Check in child ZZ TEST 909 guardian C · already booked & paid — no payment needed. ZZ TEST 909 child C1 6 yrs Drop-Off No prepaid food Check in & issue band Close",
+  "post": 200,
+  "bands": [
+   {
+    "kind": "kid",
+    "status": "active"
+   }
+  ],
+  "regC": [
+   "in_park"
+  ]
+ }
+}
+
+=== 2026-11-12T10:28:04.093Z 4: family E, one waiting unpaid booking
+S.phase = '4: family E, one waiting unpaid booking';
+const till = S.till;
+await S.unlock('till');
+await S.pages.mgr.ctx.close(); delete S.pages.mgr; S.mgr = null;
+S.receipt.numbers.E = S.free[4];
+await S.walkIn(till, S.free[4]);
+await S.ticket(till, 1, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 909 child E1'], 'ZZ TEST 909 guardian E');
+const sale = await S.saleWritten('dropoff-sale-E-left-unpaid');
+const status = await S.leaveUnpaid(sale);
+S.fam.E = { reg: reg.id, voided: sale.id, stays: reg.children.map(c => ({ id: c.id, name: c.childName })) };
+return { firstSale: status, board: S.stayFacts(await S.familyOnBoard(reg.id)) };
+--> {
+ "ok": true,
+ "value": {
+  "firstSale": "voided",
+  "board": [
+   {
+    "child": "ZZ TEST 909 child E1",
+    "status": "registered",
+    "paidAtTill": null,
+    "paidOnline": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:28:26.712Z 4: the phone till ready to cancel E
+S.phase = '4: the phone till ready to cancel E';
+const phone = await S.signIn('phone', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 390, height: 844 });
+S.phone = phone;
+await phone.goto('/drop-off');
+await S.search(phone).waitFor({ timeout: 30000 });
+await S.tab(phone, 'Upcoming').click();
+await phone.waitForTimeout(2500);
+await S.boardApi();
+await S.searchBoard(phone, 'ZZ TEST 909 guardian E');
+const card = S.phoneCards(phone).filter({ hasText: 'ZZ TEST 909 guardian E' }).first();
+await card.waitFor({ timeout: 20000 });
+await card.click();
+const cancel = phone.getByRole('button', { name: 'Cancel booking', exact: true });
+await cancel.waitFor({ timeout: 15000 });
+await cancel.scrollIntoViewIfNeeded();
+await cancel.click();
+const dialog = phone.getByRole('dialog').filter({ hasText: 'Cancel this waiting booking' });
+await dialog.waitFor();
+await dialog.getByLabel('Reason').fill('ZZ TEST SCRUM-911: cancelled from the phone while the desk board is open');
+await S.shot(phone, '04a-phone-cancel-e-dialog-ready.png');
+return { ready: await dialog.getByRole('button', { name: 'Cancel the booking' }).isEnabled() };
+--> {
+ "ok": true,
+ "value": {
+  "ready": true
+ }
+}
+
+=== 2026-11-12T10:28:52.660Z 4: stale card edit on the desk after the phone cancel
+S.phase = '4: stale card edit on the desk after the phone cancel';
+const till = S.till, phone = S.phone;
+await S.unlock('till');
+await S.openBoard(till);
+const mountedAt = Date.now();
+await S.searchBoard(till, 'ZZ TEST 909 guardian E');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian E' }).first();
+await card.waitFor({ timeout: 15000 });
+await S.shot(till, '04b-desk-board-e-waiting-before-the-phone-cancel.png');
+// the phone cancels
+const dialog = phone.getByRole('dialog').filter({ hasText: 'Cancel this waiting booking' });
+const [answer] = await Promise.all([
+  phone.waitForResponse(r => /\/api\/checkin\/registrations\/[^/]+\/cancel$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST'),
+  dialog.getByRole('button', { name: 'Cancel the booking' }).click(),
+]);
+const cancelStatus = answer.status();
+S.receipt.cancelled.push({ reg: S.fam.E.reg, child: 'ZZ TEST 909 child E1', from: 'phone till family screen (whole booking)', status: cancelStatus });
+// the desk, no refresh: the stale card is still drawn
+const stillThere = await card.isVisible();
+const sinceMount = Date.now() - mountedAt;
+await card.getByRole('button', { name: 'Edit ZZ TEST 909 child E1', exact: true }).click();
+const edit = till.getByRole('dialog').last();
+await edit.waitFor();
+const allergies = edit.locator('textarea').filter({ has: till.locator('xpath=self::*') }).first();
+const field = edit.getByPlaceholder('None');
+await field.fill('ZZ TEST peanuts (stale card edit)');
+await S.shot(till, '04c-desk-stale-card-edit-allergies-typed.png');
+const [patched] = await Promise.all([
+  till.waitForResponse(r => /\/api\/checkin\/checkins\/[^/]+$/.test(new URL(r.url()).pathname) && r.request().method() === 'PATCH', { timeout: 30000 }),
+  edit.getByRole('button', { name: 'Save changes', exact: true }).click(),
+]);
+const patchStatus = patched.status();
+const patchBody = await patched.json().catch(() => null);
+await till.waitForTimeout(800);
+const toast = S.flat(await till.locator('li[role="status"], [data-sonner-toast], ol li').allInnerTexts().then(a => a.join(' | '))).slice(0, 400);
+await S.shot(till, '04d-desk-save-refused-plainly.png');
+await till.waitForTimeout(4000);
+const editOpen = await till.getByRole('dialog').count();
+const cardAfter = await S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian E' }).count();
+await S.shot(till, '04e-desk-card-left-the-board.png');
+const reg = await S.registration(S.fam.E.reg);
+const aud = await S.call('GET', `/audit?entityType=checkin&entityId=${S.fam.E.stays[0].id}&limit=5`);
+const seen = { cancelStatus, stillThere, sinceMountMs: sinceMount, patchStatus, error: patchBody?.error ? { code: patchBody.error.code, message: patchBody.error.message } : null, toast, editDialogsOpenAfter: editOpen, cardAfter,
+  reg: reg.children.map(c => ({ status: c.status, allergies: c.allergies ?? c.allergiesMedical ?? null })), audit: (aud.body?.entries ?? []).map(e => ({ event: e.after?.event ?? null, status: e.after?.status ?? null })) };
+S.receipt.reads.p4 = seen;
+return seen;
+--> {
+ "ok": true,
+ "value": {
+  "cancelStatus": 200,
+  "stillThere": true,
+  "sinceMountMs": 1526,
+  "patchStatus": 409,
+  "error": {
+   "code": "CHECKIN_NOT_REGISTERED",
+   "message": "ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying."
+  },
+  "toast": "Could not save ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying.",
+  "editDialogsOpenAfter": 0,
+  "cardAfter": 0,
+  "reg": [
+   {
+    "status": "cancelled",
+    "allergies": null
+   }
+  ],
+  "audit": [
+   {
+    "event": "cancel",
+    "status": "cancelled"
+   },
+   {
+    "event": null,
+    "status": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:29:25.579Z 4: stale card edit on the desk after the phone cancel
+const p4 = S.receipt.reads.p4;
+S.point('4', p4.cancelStatus === 200 && p4.stillThere && p4.patchStatus === 409 && p4.error?.code === 'CHECKIN_NOT_REGISTERED' && /Could not save/.test(p4.toast) && p4.cardAfter === 0 && p4.reg[0].status === 'cancelled',
+  ['04a', '04b', '04c', '04d', '04e'], { family: 'ZZ TEST 909 guardian E (E1), registered and left unpaid', phoneCancel: p4.cancelStatus, deskCardStillDrawn: p4.stillThere,
+    save: { status: p4.patchStatus, code: p4.error?.code, words: p4.error?.message }, toast: p4.toast, cardLeft: p4.cardAfter === 0, allergiesWritten: p4.reg[0].allergies, audit: p4.audit });
+// structural masks drawn in place, so a dialog over them stays readable
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), S.deskCards(page).filter({ hasNotText: 'ZZ TEST' }), S.phoneCards(page).filter({ hasNotText: 'ZZ TEST' }), page.getByText(/^(Nannies free now|Free nannies):/), S.otherSales(page), S.otherParties(page), S.pickerCards(page).filter({ hasNotText: 'ZZ TEST' })];
+S.masks = page => [page.locator('input[type="password"]'), page.getByTestId('display-pairing-code'), page.locator('canvas'), page.getByText(/^QR-[A-Z0-9]+$/)];
+const oldShot = S.shot;
+S.shot = async (page, name, extra = [], opts = {}) => {
+  for (const loc of S.inPlace(page)) await loc.evaluateAll(els => { for (const e of els) e.setAttribute('data-zz-mask', '1'); }).catch(() => {});
+  return oldShot(page, name, extra, opts);
+};
+await S.shot(S.till, 'zz-debug-inplace.png');
+return S.receipt.points['4'].pass;
+--> {
+ "ok": true,
+ "value": true
+}
+
+=== 2026-11-12T10:29:49.834Z 5: the ZZ TEST party made in the OTO App
+S.phase = '5: the ZZ TEST party made in the OTO App';
+const { need } = await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs');
+const appCtx = await S.browser.newContext({ viewport: { width: 1280, height: 800 }, timezoneId: 'Asia/Bangkok', locale: 'en-GB' });
+S.appCtx = appCtx;
+S.appCall = async (method, path, body) => { const r = await appCtx.request.fetch(S.APP + '/api' + path, { method, data: body, headers: method === 'GET' ? {} : { 'Idempotency-Key': S.randomUUID() } }); return { status: r.status(), body: await r.json().catch(() => null) }; };
+S.assert.equal((await appCtx.request.post(S.LAUNCHER + '/api/auth/sign-in', { data: { phone: need('STAGING_ADMIN_PHONE'), password: need('STAGING_ADMIN_PASSWORD') } })).status(), 200);
+const hand = await (await appCtx.request.post(S.LAUNCHER + '/api/auth/handoff', { data: { app: 'oto_app' }, headers: { 'Idempotency-Key': S.randomUUID() } })).json();
+const appPage = await appCtx.newPage();
+const exchanged = appPage.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/handoff');
+await appPage.goto(hand.launchUrl); await exchanged; await appPage.waitForURL(u => !u.hash.includes('handoff'), { timeout: 60000 });
+await appPage.close();
+S.PARTY = 'ZZ TEST SCRUM-916 party';
+const ev = await S.appCall('POST', '/admin/events', { eventType: 'birthday', title: S.PARTY, branchId: S.APP_FLORESTA, eventDate: S.today, startTime: '15:00', endTime: '18:00', durationMinutes: 180, numChildren: 2, numAdults: 2, status: 'upcoming' });
+S.assert.equal(ev.status, 201);
+S.partyId = ev.body.id;
+S.receipt.created.push({ kind: 'oto-app event', id: S.partyId, title: S.PARTY }); S.save();
+const bill = await S.appCall('PUT', `/events/${S.partyId}/beo/billing`, { depositRequired: true, depositAmount: 1000, depositPaid: true, depositPaidAmount: 1000 });
+const snap = await S.appCall('POST', `/beo/events/${S.partyId}/package-snapshot`, { templateId: S.FLORESTA_PACKAGE });
+const p = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+return { bill: bill.status, snap: snap.status, depositSatang: p?.event?.party?.depositSatang, settlement: p?.event?.party?.settlement ?? null };
+--> {
+ "ok": true,
+ "value": {
+  "bill": 201,
+  "snap": 201,
+  "depositSatang": 100000,
+  "settlement": null
+ }
+}
+
+=== 2026-11-12T10:30:11.174Z 5: Settle party, Confirm, take nothing, Back
+S.phase = '5: Settle party, Confirm, take nothing, Back';
+const till = S.till;
+await S.unlock('till');
+await till.goto('/parties'); await till.waitForTimeout(3000);
+await till.getByText(S.PARTY).first().click(); await till.waitForTimeout(2500);
+const billText = async () => S.flat(await till.locator('body').innerText()).match(/(Total|Package)[^]*?(Outstanding[^฿]*฿[0-9,]+)/)?.[0]?.slice(0, 400) ?? null;
+const r = { before: { bill: await billText() } };
+await S.shot(till, '05a-party-page-before-settle.png');
+await till.getByRole('button', { name: 'Settle party', exact: true }).click(); await till.waitForTimeout(1500);
+const socks = till.getByText('Socks given', { exact: true }).locator('xpath=ancestor::div[.//button][1]');
+for (let i = 0; i < 2; i++) await socks.getByRole('button').first().click();
+await S.shot(till, '05b-settle-party-modal.png');
+const settled = till.waitForResponse(rr => /\/api\/parties\/[^/]+\/settle$/.test(new URL(rr.url()).pathname));
+await till.getByRole('button', { name: /^Confirm/ }).click();
+const sb = await (await settled).json();
+S.settleSale = sb.sale.id;
+S.receipt.created.push({ kind: 'party-settlement-sale', id: sb.sale.id }); S.save();
+await till.getByTestId('payment-step').waitFor(); await till.waitForTimeout(3000);
+const back = till.getByTestId('payment-step').getByRole('button', { name: 'Back', exact: true });
+r.payment = { amountDue: await S.amountDue(till), backEnabled: await back.isEnabled(), settlement: { state: sb.settlement?.state, gross: sb.settlement?.grossSatang / 100, deposit: sb.settlement?.depositSatang / 100, outstanding: sb.settlement?.outstandingSatang / 100, paid: sb.settlement?.paidSatang / 100 } };
+await S.shot(till, '05c-settle-payment-screen-back-enabled.png');
+await back.click(); await till.waitForTimeout(2500);
+r.afterBack = { paymentStep: await till.getByTestId('payment-step').isVisible().catch(() => false), url: new URL(till.url()).pathname + new URL(till.url()).search };
+const body = S.flat(await till.locator('body').innerText());
+r.afterBack.bill = body.match(/Settlement open[^]*?Outstanding[^฿]*฿[0-9,]+/)?.[0]?.slice(0, 500) ?? body.slice(0, 200);
+const buttons = [];
+for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) buttons.push({ l, e: await b.isEnabled() }); }
+r.afterBack.buttons = buttons;
+await S.shot(till, '05d-party-page-after-back-take-balance.png');
+S.receipt.reads.p5 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "bill": "Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+  },
+  "payment": {
+   "amountDue": "฿15900",
+   "backEnabled": true,
+   "settlement": {
+    "state": "open",
+    "gross": 16900,
+    "deposit": 1000,
+    "outstanding": 15900,
+    "paid": 1000
+   }
+  },
+  "afterBack": {
+   "paymentStep": false,
+   "url": "/parties",
+   "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+   "buttons": [
+    {
+     "l": "Resume settlement ฿15900",
+     "e": true
+    },
+    {
+     "l": "Cancel settlement",
+     "e": true
+    },
+    {
+     "l": "Take balance ฿15900",
+     "e": true
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:30:55.940Z 5: the phone party page while the settlement is open
+S.phase = '5: the phone party page while the settlement is open';
+const phone = S.phone;
+await S.unlock('phone');
+await phone.goto('/parties'); await phone.waitForTimeout(4000);
+await phone.getByText(S.PARTY).first().click(); await phone.waitForTimeout(3000);
+const body = S.flat(await phone.locator('body').innerText());
+const r = { due: body.match(/Due ฿[0-9,]+/)?.[0] ?? null, openRow: body.match(/Settlement open[^A-Z]{0,30}/g) ?? null, line: body.match(/Take it with Resume settlement[^.]*\./)?.[0] ?? null };
+const btns = [];
+for (const b of await phone.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Settlement open|Take balance|Fully paid|Pay/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+r.buttons = btns;
+await S.shot(phone, '05e-phone-party-page-settlement-open.png');
+await phone.mouse.wheel(0, 600); await phone.waitForTimeout(800);
+await S.shot(phone, '05f-phone-party-page-scrolled.png');
+r.billLines = (body.match(/(Total|Deposit|Outstanding|Due|Paid)[^฿]{0,20}[−-]?฿[0-9,]+/g) ?? []).slice(0, 8);
+S.receipt.reads.p5.phone = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "due": null,
+  "openRow": [
+   "Settlement open ฿15900 to take ",
+   "Settlement open · ฿15900 "
+  ],
+  "line": "Take it with Resume settlement on a counter till's party page.",
+  "buttons": [
+   {
+    "l": "Settlement open · ฿15900",
+    "e": false
+   }
+  ],
+  "billLines": [
+   "Total ฿16900",
+   "Deposit paid −฿1000",
+   "Outstanding ฿15900"
+  ]
+ }
+}
+
+=== 2026-11-12T10:31:17.442Z 5: the phone party page while the settlement is open
+const phone = S.phone;
+S.inPlaceDetail = page => [page.getByLabel('Lock screen').locator('..')];
+const keep = S.inPlace;
+S.inPlace = S.inPlaceDetail;
+try {
+  await phone.mouse.wheel(0, -2000); await phone.waitForTimeout(600);
+  await S.shot(phone, '05e-phone-party-page-settlement-open.png');
+  const btns = [];
+  for (const b of await phone.locator('button.w-full').all()) { if (await b.isVisible()) btns.push({ l: S.flat(await b.innerText()), e: await b.isEnabled() }); }
+  return btns;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": [
+  {
+   "l": "Add F&B to party tab",
+   "e": true
+  },
+  {
+   "l": "Settlement open · ฿15900",
+   "e": false
+  },
+  {
+   "l": "Tickets",
+   "e": true
+  },
+  {
+   "l": "F&B",
+   "e": true
+  },
+  {
+   "l": "Shop",
+   "e": true
+  },
+  {
+   "l": "Check-in",
+   "e": true
+  },
+  {
+   "l": "Events",
+   "e": true
+  },
+  {
+   "l": "History",
+   "e": true
+  },
+  {
+   "l": "Today",
+   "e": true
+  },
+  {
+   "l": "7 Messages",
+   "e": true
+  }
+ ]
+}
+
+=== 2026-11-12T10:31:34.209Z 5: Take balance, part of it in cash
+S.phase = '5: Take balance, part of it in cash';
+const till = S.till;
+await S.unlock('till');
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+try {
+  await till.getByRole('button', { name: /^Take balance ฿/ }).click();
+  await till.getByTestId('payment-step').waitFor(); await till.waitForTimeout(2500);
+  const r = { opened: { amountDue: await S.amountDue(till) } };
+  await till.getByRole('button', { name: /^Cash/ }).first().click().catch(async () => { await till.getByRole('heading', { name: 'Cash', exact: true }).first().click(); });
+  await till.waitForTimeout(800);
+  await till.getByRole('button', { name: 'Partial payment', exact: true }).click();
+  await till.locator('#payment-part-amount').fill('100.00');
+  await till.locator('#payment-cash-received').fill('100.00');
+  await till.waitForTimeout(800);
+  await S.shot(till, '05g-take-balance-partial-100-cash.png');
+  const fin = till.waitForResponse(rr => /\/api\/sales\/[^/]+\/(finalise|payments|tenders)/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 }).catch(() => null);
+  await till.getByRole('button', { name: /^Record/ }).first().click();
+  const resp = await fin;
+  r.recorded = resp ? { path: new URL(resp.url()).pathname.replace(S.ID, ':id'), status: resp.status() } : null;
+  await till.waitForTimeout(3000);
+  const back = till.getByTestId('payment-step').getByRole('button', { name: 'Back', exact: true });
+  r.afterPart = { amountDue: await S.amountDue(till).catch(() => null), backEnabled: await back.isEnabled().catch(() => null), paymentStep: await till.getByTestId('payment-step').isVisible().catch(() => false) };
+  await S.shot(till, '05h-after-part-payment-back-disabled.png');
+  S.receipt.reads.p5.partPay = r;
+  return r;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: /^Record/ }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T10:32:45.863Z 5: Take balance, part of it in cash
+const till = S.till;
+const out = [];
+for (const b of await till.getByTestId('payment-step').getByRole('button').all()) { const l = S.flat(await b.innerText()); if (l && !/^[0-9.]$/.test(l)) out.push({ l, e: await b.isEnabled() }); }
+return out;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "l": "Full amount",
+   "e": true
+  },
+  {
+   "l": "Clear",
+   "e": true
+  },
+  {
+   "l": "Decimal point",
+   "e": true
+  },
+  {
+   "l": "Back",
+   "e": true
+  },
+  {
+   "l": "Confirm Payment Received",
+   "e": true
+  }
+ ]
+}
+
+=== 2026-11-12T10:32:57.025Z 5: Take balance, part of it in cash
+const till = S.till;
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+try {
+  const r = {};
+  const posts = [];
+  const on = rr => { const u = new URL(rr.url()); if (/\/api\/sales\//.test(u.pathname) && rr.request().method() === 'POST') posts.push({ path: u.pathname.replace(S.ID, ':id'), status: rr.status() }); };
+  till.on('response', on);
+  await till.getByTestId('payment-step').getByRole('button', { name: 'Confirm Payment Received', exact: true }).click();
+  await till.waitForTimeout(5000);
+  till.off('response', on);
+  r.posts = posts;
+  const back = till.getByTestId('payment-step').getByRole('button', { name: 'Back', exact: true });
+  r.afterPart = { amountDue: await S.amountDue(till).catch(() => null), backEnabled: await back.isEnabled().catch(() => null), paymentStep: await till.getByTestId('payment-step').isVisible().catch(() => false) };
+  r.text = S.flat(await till.locator('body').innerText()).match(/Recorded payments[^]*?Balance due ฿[0-9,.]+/)?.[0] ?? null;
+  await S.shot(till, '05h-after-part-payment-back-disabled.png');
+  const sale = await S.sale(S.settleSale);
+  r.sale = { status: sale.sale.status, gross: sale.sale.totals.grossSatang / 100, paid: (sale.sale.totals.paidSatang ?? 0) / 100 };
+  S.receipt.reads.p5.partPay = r;
+  return r;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "posts": [
+   {
+    "path": "/api/sales/:id/finalise",
+    "status": 200
+   }
+  ],
+  "afterPart": {
+   "amountDue": "฿15800",
+   "backEnabled": false,
+   "paymentStep": true
+  },
+  "text": "Recorded payments other · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00",
+  "sale": {
+   "status": "tendering",
+   "gross": 16900,
+   "paid": 0
+  }
+ }
+}
+
+=== 2026-11-12T10:33:15.202Z 5: Cancel settlement after cash was taken (SCRUM-913 words)
+S.phase = '5: Cancel settlement after cash was taken (SCRUM-913 words)';
+const till = S.till;
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+try {
+  await till.getByRole('button', { name: 'Close', exact: true }).click(); await till.waitForTimeout(2500);
+  const r = {};
+  const body = S.flat(await till.locator('body').innerText());
+  r.page = { bill: body.match(/Settlement open[^]*?Outstanding[^฿]*฿[0-9,]+/)?.[0]?.slice(0, 400) ?? null };
+  const btns = [];
+  for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+  r.page.buttons = btns;
+  await S.shot(till, '05i-party-page-after-100-taken.png');
+  await till.getByRole('button', { name: 'Cancel settlement', exact: true }).click();
+  await till.locator('#cancel-settlement-reason').fill('ZZ TEST SCRUM-913 proof: cancel after cash was taken');
+  await S.shot(till, '05j-cancel-settlement-reason.png');
+  const voidResp = till.waitForResponse(rr => /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 30000 }).catch(() => null);
+  await till.getByRole('dialog').getByRole('button', { name: 'Cancel settlement', exact: true }).click();
+  const vr = await voidResp;
+  r.void = vr ? { status: vr.status(), code: (await vr.json().catch(() => null))?.error?.code ?? null } : null;
+  await till.waitForTimeout(1200);
+  r.toast = S.flat(await till.locator('li[role="status"], [data-sonner-toast], ol li').allInnerTexts().then(a => a.join(' | '))).slice(0, 500);
+  r.dialogStillOpen = await till.getByRole('dialog').count();
+  r.dialogText = r.dialogStillOpen ? S.flat(await till.getByRole('dialog').first().innerText()).slice(0, 500) : null;
+  await S.shot(till, '05k-cancel-settlement-refused-names-the-cash.png');
+  const sale = await S.sale(S.settleSale);
+  r.sale = { status: sale.sale.status };
+  S.receipt.reads.p5.cancel = r;
+  return r;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "page": {
+   "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+   "buttons": [
+    {
+     "l": "Resume settlement ฿15900",
+     "e": true
+    },
+    {
+     "l": "Cancel settlement",
+     "e": true
+    },
+    {
+     "l": "Take balance ฿15900",
+     "e": true
+    }
+   ]
+  },
+  "void": {
+   "status": 409,
+   "code": "SALE_HAS_PAYMENT"
+  },
+  "toast": "Settlement not cancelled ฿100 was already taken on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.",
+  "dialogStillOpen": 1,
+  "dialogText": "Cancel this settlement ZZ TEST SCRUM-916 party: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿1000 stays with the party and is used again when it is settled. Reason Back Cancel settlement Close",
+  "sale": {
+   "status": "tendering"
+  }
+ }
+}
+
+=== 2026-11-12T10:33:36.894Z 5: Cancel settlement after cash was taken (SCRUM-913 words)
+const till = S.till;
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+try {
+  const dlg = till.getByRole('dialog');
+  if (await dlg.count()) await dlg.getByRole('button', { name: 'Back', exact: true }).click().catch(() => till.keyboard.press('Escape'));
+  await till.waitForTimeout(1000);
+  const party = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+  const st = party?.event?.party?.settlement ?? null;
+  const sale = await S.sale(S.settleSale);
+  const r = { api: st ? { state: st.state, gross: st.grossSatang / 100, deposit: st.depositSatang / 100, paid: st.paidSatang / 100, outstanding: st.outstandingSatang / 100 } : null,
+    sale: { status: sale.sale.status, totals: Object.fromEntries(Object.entries(sale.sale.totals).map(([k, v]) => [k, typeof v === 'number' ? v / 100 : v])), attempts: (sale.attempts ?? []).map(a => ({ status: a.status, method: a.method ?? a.kind ?? null, amount: (a.amountSatang ?? 0) / 100 })) } };
+  await till.reload(); await till.waitForTimeout(5000);
+  await S.unlock('till');
+  if (!/parties/.test(till.url())) { await till.goto(`/parties?party=${S.partyId}`); await till.waitForTimeout(4000); }
+  const body = S.flat(await till.locator('body').innerText());
+  r.afterReload = { bill: body.match(/Settlement open[^]*?Outstanding[^฿]*฿[0-9,]+/)?.[0]?.slice(0, 400) ?? null, take: body.match(/Take balance ฿[0-9,]+/)?.[0] ?? null, resume: body.match(/Resume settlement ฿[0-9,]+/)?.[0] ?? null };
+  await S.shot(till, '05l-party-page-after-reload-balance-after-100-taken.png');
+  S.receipt.reads.p5.afterPartRead = r;
+  return r;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "api": {
+   "state": "open",
+   "gross": 16900,
+   "deposit": 1000,
+   "paid": 1100,
+   "outstanding": 15800
+  },
+  "sale": {
+   "status": "tendering",
+   "totals": {
+    "subtotalSatang": 16900,
+    "manualDiscountSatang": 0,
+    "promoDiscountSatang": 0,
+    "discountSatang": 0,
+    "netSatang": 15794.39,
+    "serviceChargeSatang": 0,
+    "taxInclusiveSatang": 1105.61,
+    "taxExclusiveSatang": 0,
+    "grossSatang": 16900,
+    "unappliedDiscountSatang": 0,
+    "refundedSatang": 0
+   },
+   "attempts": [
+    {
+     "status": "approved",
+     "method": "other",
+     "amount": 1000
+    },
+    {
+     "status": "approved",
+     "method": "cash",
+     "amount": 100
+    }
+   ]
+  },
+  "afterReload": {
+   "bill": null,
+   "take": null,
+   "resume": null
+  }
+ }
+}
+
+=== 2026-11-12T10:33:58.751Z 5: Cancel settlement after cash was taken (SCRUM-913 words)
+const till = S.till;
+await S.shot(till, '05l-parties-list-zz-party-reads-paid-while-15800-open.png');
+const row = till.locator('div.space-y-2 > button.w-full').filter({ hasText: S.PARTY }).first();
+const rowText = S.flat(await row.innerText());
+await row.click(); await till.waitForTimeout(3500);
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+try {
+  const body = S.flat(await till.locator('body').innerText());
+  const r = { rowText, afterReload: { bill: body.match(/Settlement open[^]*?Outstanding[^฿]*฿[0-9,]+/)?.[0]?.slice(0, 400) ?? null, take: body.match(/Take balance ฿[0-9,]+/)?.[0] ?? null, resume: body.match(/Resume settlement ฿[0-9,]+/)?.[0] ?? null } };
+  await S.shot(till, '05m-party-page-after-reload-balance-15800.png');
+  S.receipt.reads.p5.afterReload = r;
+  return r;
+} finally { S.inPlace = keep; }
+--> {
+ "ok": true,
+ "value": {
+  "rowText": "15:00 18:00 ZZ TEST SCRUM-916 party PARTY UPCOMING 2 kids · 2 adults Paid",
+  "afterReload": {
+   "bill": "Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+   "take": "Take balance ฿15800",
+   "resume": "Resume settlement ฿15800"
+  }
+ }
+}
+
+=== 2026-11-12T10:34:14.242Z 5: Cancel settlement after cash was taken (SCRUM-913 words)
+const till = S.till;
+await till.getByText('All parties').first().click().catch(() => {});
+await till.waitForTimeout(2500);
+const keep = S.inPlace;
+S.inPlace = page => [page.getByLabel('Lock screen').locator('..'), S.otherParties(page)];
+try {
+  await S.shot(till, '05l-parties-list-zz-party-reads-paid-while-15800-open.png');
+} finally { S.inPlace = keep; }
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T10:34:31.940Z 5: a manager refunds the part-paid settlement from History
+S.phase = '5: a manager refunds the part-paid settlement from History';
+await S.pages.phone.ctx.close(); delete S.pages.phone; S.phone = null;
+const mgr = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD', { width: 1680, height: 1050 });
+S.mgr = mgr;
+await mgr.goto('/history'); await mgr.waitForTimeout(5000);
+const sale0 = await S.sale(S.settleSale);
+const rn = sale0.sale.receiptNumber;
+const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(sale0.sale.occurredAt));
+S.mine = ['Z90901-', 'ZZ TEST SCRUM-916'];
+await S.markMine(mgr, S.mine);
+const cards = mgr.locator('button[data-zz]');
+const texts = [];
+for (let i = 0; i < await cards.count(); i++) texts.push(S.flat(await cards.nth(i).innerText()).slice(0, 140));
+return { receipt: rn, hhmm, texts };
+--> {
+ "ok": true,
+ "value": {
+  "receipt": null,
+  "hhmm": "17:30",
+  "texts": [
+   "Z90901-000004 · ZZ TEST 909 guardian C 12 Nov, 17:26 [staff] Partial refund ฿1830",
+   "Z90901-000003 · ZZ TEST 909 guardian B 12 Nov, 17:22 [staff] Paid ฿915",
+   "Z90901-000002 · ZZ TEST 909 guardian B 12 Nov, 17:21 [staff] Partial refund ฿1830",
+   "Z90901-000001 · ZZ TEST 909 guardian A 12 Nov, 17:14 [staff] Partial refund ฿1830"
+  ]
+ }
+}
+
+=== 2026-11-12T10:34:45.366Z 5: a manager refunds the part-paid settlement from History
+const mgr = S.mgr;
+const cards = mgr.locator('div.space-y-2 > button.w-full.text-left');
+const out = [];
+for (let i = 0; i < Math.min(await cards.count(), 12); i++) { const t = S.flat(await cards.nth(i).innerText()); if (/16,?900|17:3/.test(t)) out.push({ i, t: t.slice(0, 160) }); }
+return out;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "i": 0,
+   "t": "No receipt number 12 Nov, 17:30 [staff] Partly paid ฿16900"
+  }
+ ]
+}
+
+=== 2026-11-12T10:35:01.046Z 5: a manager refunds the part-paid settlement from History
+const mgr = S.mgr;
+S.mine = ['Z90901-', '17:30 '];
+await mgr.evaluate(() => {
+  for (const b of document.querySelectorAll('div.space-y-2 > button.w-full.text-left')) {
+    const t = b.innerText.replace(/\s+/g, ' ');
+    if (t.includes('Z90901-') || (t.includes('17:30') && /16,?900/.test(t))) b.setAttribute('data-zz', 'mine'); else b.removeAttribute('data-zz');
+  }
+});
+await S.shot(mgr, '05n-history-list-settlement-partly-paid.png');
+await mgr.locator('button[data-zz]').filter({ hasText: /16,?900/ }).first().click();
+await mgr.waitForTimeout(3500);
+const r = { detail: S.flat(await mgr.locator('body').innerText()).match(/(Partly paid|Balance due|Amount due)[^]{0,120}/)?.[0]?.slice(0, 160) ?? null, party: (await mgr.getByText(S.PARTY).count()) > 0 };
+await S.shot(mgr, '05o-history-detail-settlement.png');
+await mgr.getByTestId('refund-sale').click();
+const dialog = mgr.getByRole('dialog');
+await dialog.waitFor();
+r.dialog = S.flat(await dialog.innerText()).replace(/By .*? ·/, 'By [staff] ·').slice(0, 400);
+await dialog.getByRole('button', { name: 'Service recovery', exact: true }).click();
+await dialog.locator('textarea').first().fill('ZZ TEST SCRUM-913 proof: refund the cash taken on the settlement');
+await S.shot(mgr, '05p-manager-refund-settlement-whole.png');
+const press = dialog.getByRole('button', { name: /^Refund ฿/ });
+r.press = S.flat(await press.innerText());
+const resp = mgr.waitForResponse(rr => new URL(rr.url()).pathname === `/api/sales/${S.settleSale}/refunds` && rr.request().method() === 'POST');
+await press.click();
+const rr = await resp;
+const rb = await rr.json().catch(() => null);
+await mgr.waitForTimeout(3000);
+await S.shot(mgr, '05q-history-detail-after-refund.png');
+const sale = await S.sale(S.settleSale);
+const party = (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).body;
+const st = party?.event?.party?.settlement ?? null;
+r.refund = { status: rr.status(), amount: rb?.refund?.amountSatang / 100, refundStatus: rb?.refundStatus, saleStatus: sale.sale.status, saleRefund: sale.refundStatus };
+r.settlementAfter = st ? { state: st.state } : null;
+r.depositAfter = party?.event?.party?.depositSatang / 100;
+S.receipt.reads.p5.refund = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "detail": "Partly paid Ticket sale No receipt number Walk-in 12 Nov, 17:30 · sold by [staff] ZZ TEST SCRUM-909 proof till 1794478456092 · trading ",
+  "party": true,
+  "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+  "press": "Refund ฿100",
+  "refund": {
+   "status": 200,
+   "amount": 100,
+   "refundStatus": "refunded",
+   "saleStatus": "voided",
+   "saleRefund": "refunded"
+  },
+  "settlementAfter": {
+   "state": "voided"
+  },
+  "depositAfter": 1000
+ }
+}
+
+=== 2026-11-12T10:35:19.902Z 5: party page after the refund; delete the party
+S.phase = '5: party page after the refund; delete the party';
+const till = S.till;
+await S.unlock('till');
+await till.goto(`/parties?party=${S.partyId}`); await till.waitForTimeout(4000);
+const keep = S.inPlace; S.inPlace = S.inPlaceDetail;
+const r = {};
+try {
+  const body = S.flat(await till.locator('body').innerText());
+  const btns = [];
+  for (const b of await till.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Take balance|Fully paid|Resume settlement|Cancel settlement|Settle party/.test(l) && await b.isVisible()) btns.push({ l, e: await b.isEnabled() }); }
+  r.page = { buttons: btns, bill: body.match(/Party bill[^]*?Outstanding[^฿]*฿[0-9,]+/)?.[0]?.slice(0, 300) ?? null };
+  await S.shot(till, '05r-party-page-after-refund-settle-party-again.png');
+} finally { S.inPlace = keep; }
+r.delete = (await S.appCall('DELETE', `/admin/events/${S.partyId}`)).status;
+r.readBack = { app: (await S.appCall('GET', `/admin/events/${S.partyId}`)).status, till: (await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`)).status };
+S.receipt.reads.p5.after = r;
+S.receipt.cleanup.party = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "page": {
+   "buttons": [
+    {
+     "l": "Settle party",
+     "e": true
+    },
+    {
+     "l": "Fully paid",
+     "e": false
+    }
+   ],
+   "bill": "Party bill Birthday package, Central Floresta ฿0 Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+  },
+  "delete": 204,
+  "readBack": {
+   "app": 404,
+   "till": 404
+  }
+ }
+}
+
+=== 2026-11-12T10:35:56.227Z 5: party page after the refund; delete the party
+const p5 = S.receipt.reads.p5;
+S.point('5', p5.payment.backEnabled && !p5.afterBack.paymentStep && /Total ฿16900/.test(p5.afterBack.bill) && /Deposit paid −฿1000/.test(p5.afterBack.bill) && /Outstanding ฿15900/.test(p5.afterBack.bill)
+  && p5.afterBack.buttons.some(b => b.l === 'Take balance ฿15900') && !p5.afterBack.buttons.some(b => /Fully paid/.test(b.l))
+  && p5.phone.buttons.some(b => b.l === 'Settlement open · ฿15900' && !b.e) && /Take it with Resume settlement/.test(p5.phone.line ?? '')
+  && /฿100 was already taken on this settlement, so it can't be cancelled here\. Have a manager refund it from History first/.test(p5.cancel.toast) && p5.cancel.void?.status === 409
+  && p5.refund.refund.status === 200 && p5.refund.refund.saleStatus === 'voided' && p5.refund.settlementAfter?.state === 'voided' && p5.after.delete === 204 && p5.after.readBack.app === 404,
+  ['05a','05b','05c','05d','05e','05g','05h','05i','05j','05k','05l','05m','05n','05o','05p','05q','05r'], p5);
+// the app session ends; the manager context closes for memory
+const so = await S.appCtx.request.post(S.LAUNCHER + '/api/auth/sign-out', { data: {}, headers: { 'Idempotency-Key': S.randomUUID() } });
+S.receipt.cleanup.appSignOut = so.status();
+await S.appCtx.close(); S.appCtx = null;
+const mgrOut = await S.mgr.request.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+S.receipt.cleanup.mgrSignOut = { status: mgrOut.status(), me: (await S.mgr.request.get('/api/me')).status() };
+await S.pages.mgr.ctx.close(); delete S.pages.mgr; S.mgr = null;
+return { pass: S.receipt.points['5'].pass, appSignOut: so.status(), mgr: S.receipt.cleanup.mgrSignOut };
+--> {
+ "ok": true,
+ "value": {
+  "pass": true,
+  "appSignOut": 200,
+  "mgr": {
+   "status": 200,
+   "me": 401
+  }
+ }
+}
+
+=== 2026-11-12T10:36:31.140Z 6: Thai — language choice and the phone step
+S.phase = '6: Thai — language choice and the phone step';
+const till = S.till;
+await S.unlock('till');
+await till.goto('/'); await S.landing(till).waitFor(); await till.waitForTimeout(1500);
+await S.shot(till, '06a-th-language-choice.png');
+// the font as the browser has it
+S.fontFacts = async (page, selector) => {
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+    const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+    if (!nodeId) return { selector, found: false };
+    const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+    return { selector, fonts: fonts.map(f => ({ family: f.familyName, custom: f.isCustomFont, glyphs: f.glyphCount })) };
+  } finally { await cdp.detach().catch(() => {}); }
+};
+await till.getByTestId('language-choice-th').click();
+await till.getByTestId('identify-safety').waitFor(); await till.waitForTimeout(1500);
+await S.shot(till, '06b-th-phone-step.png');
+const page = await till.evaluate(async () => {
+  await document.fonts.ready;
+  const faces = [...document.fonts].filter(f => /Till Thai/.test(f.family)).map(f => ({ family: f.family, weight: f.weight, status: f.status, range: f.unicodeRange.slice(0, 40) }));
+  const res = performance.getEntriesByType('resource').map(e => e.name).filter(n => /NotoSansThai/i.test(n));
+  const heads = [];
+  for (const u of res) { const r = await fetch(u, { method: 'GET', cache: 'no-store' }); heads.push({ url: new URL(u).origin + new URL(u).pathname, status: r.status, type: r.headers.get('content-type'), bytes: (await r.arrayBuffer()).byteLength }); }
+  const stack = getComputedStyle(document.body).fontFamily;
+  // a Thai string on the customer half
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let thai = null; while (walker.nextNode()) { if (/[฀-๿]{3,}/.test(walker.currentNode.nodeValue || '')) { thai = walker.currentNode.parentElement; break; } }
+  if (thai) thai.setAttribute('data-zz-thai', '1');
+  return { faces, files: heads, bodyStack: stack, thaiSample: thai ? thai.textContent.trim().slice(0, 40) : null, thaiComputed: thai ? getComputedStyle(thai).fontFamily : null, check: document.fonts.check('16px "Till Thai"', 'ก') };
+});
+page.cdp = await S.fontFacts(till, '[data-zz-thai]');
+await till.evaluate(() => document.querySelector('[data-zz-thai]')?.removeAttribute('data-zz-thai'));
+S.receipt.reads.p6 = { font: page };
+return page;
+--> {
+ "ok": true,
+ "value": {
+  "faces": [
+   {
+    "family": "Till Thai",
+    "weight": "400",
+    "status": "loaded",
+    "range": "U+E01-E5B, U+200C-200D, U+25CC"
+   },
+   {
+    "family": "Till Thai",
+    "weight": "700",
+    "status": "loaded",
+    "range": "U+E01-E5B, U+200C-200D, U+25CC"
+   }
+  ],
+  "files": [
+   {
+    "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Regular-BtLaeNM3.ttf",
+    "status": 200,
+    "type": "font/ttf",
+    "bytes": 37780
+   },
+   {
+    "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Bold-DqyRvOXX.ttf",
+    "status": 200,
+    "type": "font/ttf",
+    "bytes": 37824
+   }
+  ],
+  "bodyStack": "Inter, \"Till Thai\", sans-serif",
+  "thaiSample": "ไทย",
+  "thaiComputed": "Inter, \"Till Thai\", sans-serif",
+  "check": true,
+  "cdp": {
+   "selector": "[data-zz-thai]",
+   "fonts": [
+    {
+     "family": "Noto Sans Thai",
+     "custom": true,
+     "glyphs": 3
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:36:52.182Z 6: Thai — the number, the new-member offer
+S.phase = '6: Thai — the number, the new-member offer';
+const till = S.till;
+S.receipt.numbers.TH1 = S.free[8];
+const scope = S.halfOf(till.getByTestId('identify-safety'));
+await S.keypad(scope, S.free[8]);
+await till.waitForTimeout(500);
+await S.shot(till, '06c-th-phone-step-number-typed.png');
+await scope.getByRole('button', { name: 'ดำเนินการต่อ', exact: true }).click();
+await till.waitForTimeout(2000);
+const dlg = till.getByRole('dialog').last();
+const text = (await dlg.count()) ? S.flat(await dlg.innerText()).slice(0, 400) : null;
+await S.shot(till, '06d-th-new-member-offer.png');
+const buttons = (await dlg.count()) ? await dlg.getByRole('button').allInnerTexts() : [];
+return { text, buttons };
+--> {
+ "ok": true,
+ "value": {
+  "text": "New member? No membership found for +66 89 890 9018. Create one from just the phone and a name — details can be added later. Name / nickname Continue as walk-in Create member Close",
+  "buttons": [
+   "Continue as walk-in",
+   "Create member",
+   "Close"
+  ]
+ }
+}
+
+=== 2026-11-12T10:37:10.387Z 6: Thai — the ticket steps and the payment step
+S.phase = '6: Thai — the ticket steps and the payment step';
+const till = S.till;
+await till.getByRole('dialog').last().getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+await till.waitForTimeout(1500);
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.waitForTimeout(1500);
+await S.shot(till, '06e-th-ticket-step-choose-ticket.png');
+await till.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+await till.waitForTimeout(800);
+const add = l => till.getByRole('button', { name: `Add one ${l}`, exact: true }).first();
+const val = l => add(l).locator('xpath=preceding-sibling::span[1]');
+for (const [l, t] of [['Kids', 1], ['Adults', 1]]) for (let i = 0; i < 6 && Number(await val(l).textContent()) !== t; i++) { await (Number(await val(l).textContent()) < t ? add(l) : till.getByRole('button', { name: `Remove one ${l}`, exact: true }).first()).click(); await till.waitForTimeout(250); }
+await till.waitForTimeout(1200);
+await S.shot(till, '06f-th-ticket-step-one-kid-one-adult.png');
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await till.waitForTimeout(2500);
+await S.shot(till, '06g-th-after-continue.png');
+const body = S.flat(await till.locator('body').innerText());
+return { atPayment: await S.paymentStep(till).isVisible().catch(() => false), snippet: body.slice(350, 900) };
+--> {
+ "ok": true,
+ "value": {
+  "atPayment": true,
+  "snippet": "ue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto เพลย์พาร์ค คำสั่งซื้อของคุณ ไทย เล่น 1 ชั่วโมง ฿1040 เด็ก1 × ฿690 ฿690 ผู้ใหญ่1 × ฿350 ฿350 รวมภาษีมูลค่าเพิ่ม ฿68.04 ยอดรวม ฿1040 กรุณาชำระเงิน ฿1040.00 ให้กับพนักงานของเรา"
+ }
+}
+
+=== 2026-11-12T10:37:37.634Z 6: Thai — the PromptPay tile at a 576-pixel payment panel
+S.phase = '6: Thai — the PromptPay tile at a 576-pixel payment panel';
+const till = S.till;
+const width = () => till.evaluate(() => Math.round(document.querySelector('[data-testid="payment-step"]').getBoundingClientRect().width * 10) / 10);
+const at1680 = await width();
+let vw = 1680, w = at1680;
+for (let i = 0; i < 8 && Math.abs(w - 576) > 0.5; i++) {
+  // the panel grows half as fast as the window in the split view
+  vw = Math.round(vw + (576 - w) * 2);
+  await till.setViewportSize({ width: vw, height: 1050 });
+  await till.waitForTimeout(700);
+  w = await width();
+}
+const measure = () => till.evaluate(() => {
+  const tiles = [...document.querySelectorAll('[data-testid="payment-step"] h3')].filter(h => h.closest('[class*="cursor-pointer"]'));
+  return tiles.map(h => {
+    const range = document.createRange(); range.selectNodeContents(h);
+    const tops = [...new Set([...range.getClientRects()].map(r => Math.round(r.top)))];
+    const tile = h.closest('[class*="cursor-pointer"]').getBoundingClientRect();
+    return { text: h.textContent, lines: tops.length, textWidth: Math.round(range.getBoundingClientRect().width * 10) / 10, tileWidth: Math.round(tile.width * 10) / 10, fontSize: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily };
+  });
+});
+const english = await measure();
+await S.shot(till, '06h-payment-step-576-panel-english-labels.png');
+// The till's own tiles are configured in English (staff screens stay English). The Thai name the customer sees,
+// พร้อมเพย์ (book.payment.promptpayTitle, th), is put in the real tile here to measure it in the deployed CSS and face.
+const original = await till.evaluate(() => {
+  const h = [...document.querySelectorAll('[data-testid="payment-step"] h3')].find(x => x.textContent.trim() === 'PromptPay');
+  h.setAttribute('data-zz-promptpay', '1'); const was = h.textContent; h.textContent = 'พร้อมเพย์'; return was;
+});
+await till.waitForTimeout(300);
+const thai = await measure();
+const cdp = await S.fontFacts(till, '[data-zz-promptpay]');
+await S.shot(till, '06i-payment-step-576-panel-promptpay-thai-one-line.png');
+await till.evaluate((was) => { const h = document.querySelector('[data-zz-promptpay]'); h.textContent = was; h.removeAttribute('data-zz-promptpay'); }, original);
+await till.setViewportSize({ width: 1680, height: 1050 });
+const r = { at1680, viewportFor576: vw, panel: w, english, thai, cdp };
+S.receipt.reads.p6.tile = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "at1680": 430,
+  "viewportFor576": 1972,
+  "panel": 576,
+  "english": [
+   {
+    "text": "Cash",
+    "lines": 1,
+    "textWidth": 60.1,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   },
+   {
+    "text": "Card",
+    "lines": 1,
+    "textWidth": 56,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   },
+   {
+    "text": "PromptPay",
+    "lines": 1,
+    "textWidth": 128.6,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   }
+  ],
+  "thai": [
+   {
+    "text": "Cash",
+    "lines": 1,
+    "textWidth": 60.1,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   },
+   {
+    "text": "Card",
+    "lines": 1,
+    "textWidth": 56,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   },
+   {
+    "text": "พร้อมเพย์",
+    "lines": 1,
+    "textWidth": 99.8,
+    "tileWidth": 181.3,
+    "fontSize": "24px",
+    "font": "Inter, \"Till Thai\", sans-serif"
+   }
+  ],
+  "cdp": {
+   "selector": "[data-zz-promptpay]",
+   "fonts": [
+    {
+     "family": "Noto Sans Thai",
+     "custom": true,
+     "glyphs": 9
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:37:57.269Z 6: Thai — the PromptPay tile at 1680 (430 panel), then cash
+S.phase = '6: Thai — the PromptPay tile at 1680 (430 panel), then cash';
+const till = S.till;
+await till.waitForTimeout(800);
+const r = {};
+r.at1680 = await till.evaluate(() => {
+  const h = [...document.querySelectorAll('[data-testid="payment-step"] h3')].find(x => x.textContent.trim() === 'PromptPay');
+  const was = h.textContent; h.textContent = 'พร้อมเพย์';
+  const range = document.createRange(); range.selectNodeContents(h);
+  const lines = new Set([...range.getClientRects()].map(x => Math.round(x.top))).size;
+  const out = { panel: Math.round(document.querySelector('[data-testid="payment-step"]').getBoundingClientRect().width), lines, textWidth: Math.round(range.getBoundingClientRect().width * 10) / 10, tileWidth: Math.round(h.closest('[class*="cursor-pointer"]').getBoundingClientRect().width * 10) / 10 };
+  h.textContent = was; return out;
+});
+const sale = await S.saleWritten('th-ticket-sale');
+await S.payCash(till);
+await till.waitForTimeout(2500);
+await S.shot(till, '06j-th-payment-successful-customer-thanks.png');
+S.fam.TH = { sale: sale.id };
+const s = await S.sale(sale.id);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: s.bands.map(b => b.kind + ' ' + b.status), printJobs: s.printJobs.map(j => ({ kind: j.kind ?? j.type ?? null, status: j.status, at: j.createdAt ?? null })) };
+r.body = S.flat(await till.locator('body').innerText()).slice(350, 900);
+S.receipt.reads.p6.sale = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "at1680": {
+   "panel": 430,
+   "lines": 1,
+   "textWidth": 74.9,
+   "tileWidth": 209
+  },
+  "sale": {
+   "receipt": "Z90901-000005",
+   "status": "finalised",
+   "gross": 1040,
+   "bands": [
+    "kid active",
+    "adult active"
+   ],
+   "printJobs": [
+    {
+     "kind": "adult_wristband",
+     "status": "queued",
+     "at": null
+    },
+    {
+     "kind": "kids_wristband",
+     "status": "queued",
+     "at": null
+    },
+    {
+     "kind": "receipt",
+     "status": "queued",
+     "at": null
+    }
+   ]
+  },
+  "body": "ue Review → Oto Play Park Payment Successful Receipt Z90901-000005 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z90901-VHG2NF 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z90901-V26RBY 1 HOUR Credit Grants to Print 1 TOTAL Credit ฿350 credit #1 Start New Sale ไทย ขอบคุณค่ะ/ครับ! นี่คือสิ่งที่คุณจะได้รับ — ขอให้สนุกกับการเล่น! 1 สายรัดข้อมือเด็ก 1 สายรัดข้อมือผู้ใหญ่ เครดิตที่ได้รับ เครดิต ฿350 Sending to printers Adult bracelet → Band Printer"
+ }
+}
+
+=== 2026-11-12T10:38:20.245Z 6: Thai — the drop-off form
+S.phase = '6: Thai — the drop-off form';
+const till = S.till;
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click().catch(() => {});
+await till.waitForTimeout(1500);
+S.receipt.numbers.TH2 = S.free[9];
+const scope = await S.walkIn(till, S.free[9], 'th');
+await scope.getByRole('button', { name: 'ดำเนินการต่อ', exact: true }).click();
+await till.waitForTimeout(1500);
+await till.getByRole('dialog').last().getByRole('button', { name: 'Continue as walk-in', exact: true }).click();
+await till.waitForTimeout(1200);
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+const add = l => till.getByRole('button', { name: `Add one ${l}`, exact: true }).first();
+const val = l => add(l).locator('xpath=preceding-sibling::span[1]');
+for (const [l, t] of [['Kids', 1], ['Adults', 0]]) for (let i = 0; i < 6 && Number(await val(l).textContent()) !== t; i++) { await (Number(await val(l).textContent()) < t ? add(l) : till.getByRole('button', { name: `Remove one ${l}`, exact: true }).first()).click(); await till.waitForTimeout(250); }
+const before = (await S.stationSales()).length;
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await till.waitForTimeout(3000);
+await S.shot(till, '06k-th-dropoff-form-empty.png');
+// fill a name and the age so the requirement badge and the consent block show in Thai
+const name = till.getByPlaceholder('ชื่อเต็ม', { exact: true }).first();
+await name.fill('ZZ TEST 909 child TH');
+const half = S.halfOf(name);
+await S.setAge(till, half, 6);
+await till.waitForTimeout(1200);
+await S.shot(till, '06l-th-dropoff-form-requirement-and-consent.png');
+const half2 = S.halfOf(name);
+await half2.evaluate(e => { const s = e.querySelector('.overflow-y-auto'); if (s) s.scrollTop = s.scrollHeight; });
+await till.waitForTimeout(800);
+await S.shot(till, '06m-th-dropoff-form-consent-lower.png');
+const text = S.flat(await half2.innerText()).slice(0, 1500);
+const after = (await S.stationSales()).length;
+return { salesBefore: before, salesAfter: after, text };
+--> {
+ "ok": true,
+ "value": {
+  "salesBefore": 9,
+  "salesAfter": 9,
+  "text": "ไทย มาเล่นกับเราวันนี้ บอกเราเกี่ยวกับลูกของคุณ กรอกชื่อและอายุของเด็กแต่ละคน เพื่อให้ทีมงานของเราดูแลความปลอดภัยได้ ชื่อเด็ก อายุ 6 ปี ต้องการการดูแลแบบฝากดูแล จำเป็นสำหรับอายุนี้ — ฿225 ครั้งเดียว ภาพถ่ายเด็กพร้อมผู้ปกครอง ถ่ายภาพเดียวที่มีทั้งสองคนอยู่ในภาพ — เราจะใช้เพื่อยืนยันตอนรับกลับ ยังไม่มีรูปภาพ เปิดกล้อง อาการแพ้ / ข้อมูลทางการแพทย์ หมายเหตุด้านอาหาร อาหารและเครื่องดื่มสำหรับ ZZ TEST 909 child TH ไม่รับอาหาร เครดิตล่วงหน้า เลือกรายการ พนักงานจะไม่สามารถสั่งอาหารให้ZZ TEST 909 child THได้หากไม่ได้รับอนุมัติจากผู้จัดการ ชื่อผู้ปกครอง หมายเลขโทรศัพท์ 🇹🇭 +66 WhatsApp Telegram LINE บันทึกเป็น: +66898909019 นี่คือหมายเลข WhatsApp ของฉัน — ส่งข้อความเกี่ยวกับลูกของฉันมาที่หมายเลขนี้ ฉันอนุญาตให้พนักงาน Oto เพลย์พาร์ค ดูแลลูกของฉัน และยินยอมให้ถ่ายภาพลูกและตัวฉัน (ผู้ปกครอง) ร่วมกันเพื่อการเช็คอินและยืนยันตัวตนตอนรับกลับอย่างปลอดภัย กรุณายืนยัน I will remain within 15 minutes of the venue I understand early pickup does not qualify for refund I acknowledge the emergency evacuation point"
+ }
+}
+
+=== 2026-11-12T10:38:59.958Z 6: Thai — leave the drop-off form; History; the receipt
+S.phase = '6: Thai — leave the drop-off form; History; the receipt';
+const till = S.till;
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await till.waitForTimeout(1200);
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).first();
+if (await cancel.isVisible().catch(() => false)) await cancel.click();
+await till.waitForTimeout(2000);
+const r = { landing: await S.landing(till).isVisible().catch(() => false), openSales: (await S.stationSales()).filter(s => ['tendering', 'open'].includes(s.status)).length,
+  regTH: ((await S.boardApi()).families.filter(f => /ZZ TEST 909 child TH/.test(f.children.map(c => c.childName).join(' ')))).length };
+await till.goto('/history'); await till.waitForTimeout(5000);
+await S.markMine(till, ['Z90901-']);
+await S.shot(till, '06n-history-list.png');
+await till.locator('button[data-zz]').filter({ hasText: 'Z90901-000005' }).first().click();
+await till.waitForTimeout(3500);
+await S.shot(till, '06o-history-detail-thai-customer-sale.png');
+// the receipt the simulated receipt printer drew for that sale
+const dev = S.devices.find(d => d.role === 'receipt').deviceId;
+const sale = await S.sale(S.fam.TH.sale);
+const finalisedAt = new Date(sale.sale.finalisedAt ?? sale.sale.occurredAt).getTime();
+const list = await S.call('GET', `/devices/${dev}/printouts?limit=20`);
+r.printouts = list.status;
+const mine = (list.body?.printouts ?? []).filter(p => { const t = new Date(p.at).getTime(); return t >= finalisedAt - 5000 && t <= finalisedAt + 120000; });
+r.candidates = mine.map(p => ({ seq: p.seq, at: p.at, w: p.widthDots, h: p.heightDots }));
+r.jobs = sale.printJobs.map(j => ({ kind: j.kind, status: j.status }));
+if (mine.length) {
+  const p = mine[0];
+  const png = await S.admin.get(`/api/devices/${dev}/printouts/${p.seq}/preview.png`);
+  r.preview = { status: png.status(), type: png.headers()['content-type'] };
+  if (png.status() === 200) { (await import('node:fs')).writeFileSync(S.resolve(S.out, 'zz-receipt-candidate.png'), await png.body()); }
+}
+S.receipt.reads.p6.after = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "landing": true,
+  "openSales": 0,
+  "regTH": 0,
+  "printouts": 200,
+  "candidates": [
+   {
+    "seq": 18,
+    "at": "2026-11-12T10:38:04.859Z",
+    "w": 576,
+    "h": 1089
+   },
+   {
+    "seq": 19,
+    "at": "2026-11-12T10:38:05.494Z",
+    "w": 576,
+    "h": 0
+   }
+  ],
+  "jobs": [
+   {
+    "kind": "adult_wristband",
+    "status": "printed"
+   },
+   {
+    "kind": "kids_wristband",
+    "status": "printed"
+   },
+   {
+    "kind": "receipt",
+    "status": "printed"
+   }
+  ],
+  "preview": {
+   "status": 200,
+   "type": "image/png"
+  }
+ }
+}
+
+=== 2026-11-12T10:39:27.863Z 6: Thai — leave the drop-off form; History; the receipt
+const fs = await import('node:fs');
+const src = S.resolve(S.out, 'zz-receipt-candidate.png');
+const b64 = fs.readFileSync(src).toString('base64');
+const page = await S.pages.till.ctx.newPage();
+try {
+  await page.setViewportSize({ width: 576, height: 1089 });
+  await page.setContent(`<html><body style="margin:0;background:#fff"><div style="position:relative;width:576px;height:1089px"><img src="data:image/png;base64,${b64}" style="display:block"><div style="position:absolute;left:96px;top:252px;width:300px;height:28px;background:#18181b"></div></div></body></html>`);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: S.resolve(S.out, '06p-receipt-preview-simulated-printer.png'), clip: { x: 0, y: 0, width: 576, height: 1089 } });
+} finally { await page.close(); }
+fs.unlinkSync(src);
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T10:39:46.470Z 7a: an ordinary ticket sale in cash
+S.phase = '7a: an ordinary ticket sale in cash';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+const r = {};
+S.receipt.numbers.H = S.free[7];
+await S.walkIn(till, S.free[7]);
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('ticket-sale-H');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+r.due = await S.amountDue(till);
+await S.payCash(till);
+await till.waitForTimeout(2500);
+await S.shot(till, '07a-ordinary-ticket-sale-paid.png');
+const s = await S.sale(sale.id);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: s.bands.map(b => b.kind + ' ' + b.status) };
+await S.expect.poll(async () => (await S.sale(sale.id)).printJobs.every(j => j.status === 'printed'), { timeout: 60000 }).toBe(true).catch(() => {});
+r.printJobs = (await S.sale(sale.id)).printJobs.map(j => j.kind + ' ' + j.status);
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click().catch(() => {});
+S.receipt.reads.p7 = { ticket: r };
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿1040",
+  "sale": {
+   "receipt": "Z90901-000006",
+   "status": "finalised",
+   "gross": 1040,
+   "bands": [
+    "kid active",
+    "adult active"
+   ]
+  },
+  "printJobs": [
+   "adult_wristband printed",
+   "kids_wristband printed",
+   "receipt printed"
+  ]
+ }
+}
+
+=== 2026-11-12T10:40:05.972Z 7b: a drop-off sale with Check in now
+S.phase = '7b: a drop-off sale with Check in now';
+const { expect } = S;
+const till = S.till;
+await S.unlock('till');
+const r = {};
+S.receipt.numbers.F = S.free[5];
+await S.walkIn(till, S.free[5]);
+await S.ticket(till, 1, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 909 child F1'], 'ZZ TEST 909 guardian F');
+const sale = await S.saleWritten('dropoff-sale-F');
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+r.due = await S.amountDue(till);
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+const resp = till.waitForResponse(rr => /\/api\/checkin\//.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST', { timeout: 30000 });
+await now.click();
+const cr = await resp;
+await till.waitForTimeout(2500);
+await S.shot(till, '07b-dropoff-sale-checked-in-now.png');
+S.fam.F = { reg: reg.id, sale: sale.id };
+const s = await S.sale(sale.id);
+const rg = await S.registration(reg.id);
+r.checkIn = cr.status();
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, bands: s.bands.map(b => b.kind + ' ' + b.status) };
+r.reg = rg.children.map(c => ({ status: c.status, linked: c.saleId === sale.id }));
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click().catch(() => {});
+S.receipt.reads.p7.dropoff = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "due": "฿915",
+  "checkIn": 200,
+  "sale": {
+   "receipt": "Z90901-000007",
+   "status": "finalised",
+   "gross": 915,
+   "bands": [
+    "kid active"
+   ]
+  },
+  "reg": [
+   {
+    "status": "in_park",
+    "linked": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T10:40:32.515Z 7c: cancel a plain waiting booking
+S.phase = '7c: cancel a plain waiting booking';
+const till = S.till;
+await S.unlock('till');
+const r = {};
+S.receipt.numbers.G = S.free[6];
+await S.walkIn(till, S.free[6]);
+await S.ticket(till, 1, 0);
+const reg = await S.fillDropOff(till, ['ZZ TEST 909 child G1'], 'ZZ TEST 909 guardian G');
+const sale = await S.saleWritten('dropoff-sale-G-left-unpaid');
+r.firstSale = await S.leaveUnpaid(sale);
+S.fam.G = { reg: reg.id, stays: reg.children.map(c => ({ id: c.id })) };
+await S.boardApi();
+await S.openBoard(till);
+await S.searchBoard(till, 'ZZ TEST 909 guardian G');
+const card = S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian G' }).first();
+await card.waitFor({ timeout: 15000 });
+const btns = [];
+for (const b of await card.getByRole('button').all()) { const l = S.flat(await b.innerText()); if (/Check in|Cancel/.test(l)) btns.push({ l, e: await b.isEnabled() }); }
+r.buttons = btns;
+await card.getByRole('button', { name: 'Cancel booking', exact: true }).click();
+const dialog = till.getByRole('dialog').filter({ hasText: 'Cancel this waiting booking' });
+await dialog.waitFor();
+r.title = S.flat(await dialog.getByRole('heading').first().innerText());
+await dialog.getByLabel('Reason').fill('ZZ TEST SCRUM-909 point 7: a plain waiting booking');
+await S.shot(till, '07c-board-cancel-plain-waiting-booking.png');
+const [answer] = await Promise.all([
+  till.waitForResponse(rr => /\/api\/checkin\/registrations\/[^/]+\/cancel$/.test(new URL(rr.url()).pathname) && rr.request().method() === 'POST'),
+  dialog.getByRole('button', { name: 'Cancel the booking' }).click(),
+]);
+r.answer = answer.status();
+r.posted = answer.request().postDataJSON();
+await till.waitForTimeout(2500);
+r.cardAfter = await S.deskCards(till).filter({ hasText: 'ZZ TEST 909 guardian G' }).count();
+await S.shot(till, '07d-board-after-plain-cancel.png');
+r.reg = (await S.registration(reg.id)).children.map(c => c.status);
+S.receipt.cancelled.push({ reg: reg.id, child: 'ZZ TEST 909 child G1', from: 'desk board (whole booking)', status: r.answer });
+S.receipt.reads.p7.cancel = r;
+const p7 = S.receipt.reads.p7;
+S.point('7', p7.ticket.sale.status === 'finalised' && p7.ticket.sale.gross === 1040 && p7.ticket.printJobs.every(j => / printed$/.test(j))
+  && p7.dropoff.sale.status === 'finalised' && p7.dropoff.checkIn === 200 && p7.dropoff.reg.every(c => c.status === 'in_park')
+  && r.answer === 200 && !('checkinIds' in r.posted) && r.reg.every(s => s === 'cancelled') && r.cardAfter === 0, ['07a', '07b', '07c', '07d'], p7);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "firstSale": "voided",
+  "buttons": [
+   {
+    "l": "Check in",
+    "e": true
+   },
+   {
+    "l": "Cancel booking",
+    "e": true
+   }
+  ],
+  "title": "Cancel this waiting booking",
+  "answer": 200,
+  "posted": {
+   "reason": "ZZ TEST SCRUM-909 point 7: a plain waiting booking"
+  },
+  "cardAfter": 0,
+  "reg": [
+   "cancelled"
+  ]
+ }
+}
+
+=== 2026-11-12T10:41:16.839Z 7c: cancel a plain waiting booking
+const p6 = S.receipt.reads.p6;
+S.point('6', p6.font.faces.every(f => f.status === 'loaded') && p6.font.files.length === 2 && p6.font.files.every(f => f.status === 200 && f.type === 'font/ttf' && f.url.startsWith('https://oto-pos-web-staging.onrender.com/assets/'))
+  && p6.font.cdp.fonts[0]?.family === 'Noto Sans Thai' && p6.font.cdp.fonts[0]?.custom === true
+  && p6.tile.panel === 576 && p6.tile.thai.find(t => t.text === 'พร้อมเพย์')?.lines === 1 && p6.tile.cdp.fonts[0]?.family === 'Noto Sans Thai',
+  ['06a','06b','06c','06d','06e','06f','06g','06h','06i','06j','06k','06l','06m','06n','06o','06p'], {
+    note: 'The till\'s staff side has no language switch (LanguageContext: staff screens stay English) and its payment tiles carry the configured English names; the customer side was switched to ไทย. For the tile check the Thai name the customer sees (พร้อมเพย์) was put into the real PromptPay tile in the browser and measured in the deployed CSS and font, then put back.',
+    ...p6 });
+return { p6: S.receipt.points['6'].pass, p7: S.receipt.points['7']?.pass, all: Object.fromEntries(Object.entries(S.receipt.points).map(([k, v]) => [k, v.pass])) };
+--> {
+ "ok": true,
+ "value": {
+  "p6": true,
+  "p7": true,
+  "all": {
+   "1": true,
+   "2": true,
+   "3": true,
+   "4": true,
+   "5": true,
+   "6": true,
+   "7": true
+  }
+ }
+}
+
+=== 2026-11-12T10:42:08.904Z clean up
+S.phase = 'clean up';
+const out = { registrations: [], sales: null, members: [], station: null };
+// every own registration: release the children in the park, cancel anything still waiting and unpaid
+for (const item of S.receipt.created.filter(i => i.kind === 'registration')) {
+  let reg = await S.registration(item.id);
+  S.assert.equal(reg.guardianName, item.guardian, 'only this run\'s own booking');
+  S.assert.ok(S.isZz(reg.guardianName) && reg.children.every(c => S.isZz(c.childName)));
+  const released = reg.children.some(c => c.status === 'in_park') ? await S.releaseOwn(item.id, item.guardian) : [];
+  reg = await S.registration(item.id);
+  let cancelled = null;
+  if (reg.children.some(c => c.status === 'registered')) {
+    const r = await S.call('POST', `/checkin/registrations/${item.id}/cancel`, { reason: 'ZZ TEST SCRUM-909 proof cleanup' });
+    cancelled = r.status;
+    reg = await S.registration(item.id);
+  }
+  out.registrations.push({ guardian: item.guardian, released, cancelled, children: reg.children.map(c => c.status) });
+}
+// sales at the own till: none left open; read back
+let sales = await S.stationSales();
+for (const s of sales.filter(x => ['tendering', 'open'].includes(x.status))) {
+  const r = await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-909 proof cleanup' });
+  out.voidedAtCleanup = (out.voidedAtCleanup ?? []).concat(r.status);
+}
+sales = await S.stationSales();
+out.sales = sales.map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals.grossSatang / 100, refunded: (s.totals.refundedSatang ?? 0) / 100 }));
+// print jobs of the finalised sales all printed
+out.printJobs = {};
+for (const s of sales.filter(x => x.status === 'finalised')) out.printJobs[s.receiptNumber] = (await S.sale(s.id)).printJobs.map(j => j.status);
+// members made for the test numbers
+for (const [key, phone] of Object.entries(S.receipt.numbers)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+  if (m) {
+    S.assert.ok(`${m.nickname ?? ''} ${m.name ?? ''}`.includes('ZZ TEST'), 'only own named test members');
+    const d = await S.call('DELETE', `/members/${m.id}`);
+    const after = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+    out.members.push({ key, archived: d.status, lookupAfter: after ? 'still found' : null });
+  } else out.members.push({ key, member: null });
+}
+S.receipt.cleanup.registrations = out.registrations; S.receipt.cleanup.sales = out.sales; S.receipt.cleanup.members = out.members; S.receipt.cleanup.printJobs = out.printJobs;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "registrations": [
+   {
+    "guardian": "ZZ TEST 909 guardian A",
+    "released": [
+     {
+      "child": "ZZ TEST 909 child A1",
+      "status": 200
+     }
+    ],
+    "cancelled": null,
+    "children": [
+     "out",
+     "cancelled"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian B",
+    "released": [
+     {
+      "child": "ZZ TEST 909 child B1",
+      "status": 200
+     },
+     {
+      "child": "ZZ TEST 909 child B2",
+      "status": 200
+     }
+    ],
+    "cancelled": null,
+    "children": [
+     "out",
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian C",
+    "released": [
+     {
+      "child": "ZZ TEST 909 child C1",
+      "status": 200
+     }
+    ],
+    "cancelled": null,
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian D",
+    "released": [],
+    "cancelled": null,
+    "children": [
+     "cancelled"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian E",
+    "released": [],
+    "cancelled": null,
+    "children": [
+     "cancelled"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian F",
+    "released": [
+     {
+      "child": "ZZ TEST 909 child F1",
+      "status": 200
+     }
+    ],
+    "cancelled": null,
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian G",
+    "released": [],
+    "cancelled": null,
+    "children": [
+     "cancelled"
+    ]
+   }
+  ],
+  "sales": [
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000007",
+    "status": "finalised",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000006",
+    "status": "finalised",
+    "gross": 1040,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000005",
+    "status": "finalised",
+    "gross": 1040,
+    "refunded": 0
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 16900,
+    "refunded": 100
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000004",
+    "status": "finalised",
+    "gross": 1830,
+    "refunded": 915
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": null,
+    "status": "voided",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000003",
+    "status": "finalised",
+    "gross": 915,
+    "refunded": 0
+   },
+   {
+    "receipt": "Z90901-000002",
+    "status": "finalised",
+    "gross": 1830,
+    "refunded": 915
+   },
+   {
+    "receipt": "Z90901-000001",
+    "status": "finalised",
+    "gross": 1830,
+    "refunded": 915
+   }
+  ],
+  "members": [
+   {
+    "key": "A",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "B",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "C",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "D",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "E",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "TH1",
+    "member": null
+   },
+   {
+    "key": "TH2",
+    "member": null
+   },
+   {
+    "key": "H",
+    "member": null
+   },
+   {
+    "key": "F",
+    "archived": 200,
+    "lookupAfter": null
+   },
+   {
+    "key": "G",
+    "archived": 200,
+    "lookupAfter": null
+   }
+  ],
+  "station": null,
+  "printJobs": {
+   "Z90901-000007": [
+    "printed",
+    "printed"
+   ],
+   "Z90901-000006": [
+    "printed",
+    "printed",
+    "printed"
+   ],
+   "Z90901-000005": [
+    "printed",
+    "printed",
+    "printed"
+   ],
+   "Z90901-000004": [
+    "printed",
+    "printed"
+   ],
+   "Z90901-000003": [
+    "printed",
+    "printed"
+   ],
+   "Z90901-000002": [
+    "printed",
+    "printed"
+   ],
+   "Z90901-000001": [
+    "printed",
+    "printed"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:42:24.078Z clean up
+const g = {};
+for (const e of S.receipt.pageErrors) { const k = `${e.page} | ${e.kind} | ${e.text}`; g[k] = g[k] ?? { n: 0, at: [] }; g[k].n++; if (g[k].at.length < 3) g[k].at.push(e.at); }
+return g;
+--> {
+ "ok": true,
+ "value": {
+  "till | http | GET /api/me 401": {
+   "n": 1,
+   "at": [
+    "sign in desk till"
+   ]
+  },
+  "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+   "n": 1,
+   "at": [
+    "sign in desk till"
+   ]
+  },
+  "mgr | http | GET /api/me 401": {
+   "n": 2,
+   "at": [
+    "1: manager refunds child A2 by item from History",
+    "5: a manager refunds the part-paid settlement from History"
+   ]
+  },
+  "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+   "n": 2,
+   "at": [
+    "1: manager refunds child A2 by item from History",
+    "5: a manager refunds the part-paid settlement from History"
+   ]
+  },
+  "till | http | GET /api/branches 423": {
+   "n": 1,
+   "at": [
+    "1: the board after the refund"
+   ]
+  },
+  "till | console.error | Failed to load resource: the server responded with a status of 423 ()": {
+   "n": 2,
+   "at": [
+    "1: the board after the refund",
+    "1: the board after the refund"
+   ]
+  },
+  "till | http | GET /api/me/stations 423": {
+   "n": 1,
+   "at": [
+    "1: the board after the refund"
+   ]
+  },
+  "phone | http | GET /api/me 401": {
+   "n": 1,
+   "at": [
+    "4: the phone till ready to cancel E"
+   ]
+  },
+  "phone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+   "n": 1,
+   "at": [
+    "4: the phone till ready to cancel E"
+   ]
+  },
+  "till | http | PATCH /api/checkin/checkins/:id 409": {
+   "n": 1,
+   "at": [
+    "4: stale card edit on the desk after the phone cancel"
+   ]
+  },
+  "till | console.error | Failed to load resource: the server responded with a status of 409 ()": {
+   "n": 2,
+   "at": [
+    "4: stale card edit on the desk after the phone cancel",
+    "5: Cancel settlement after cash was taken (SCRUM-913 words)"
+   ]
+  },
+  "till | http | POST /api/sales/:id/void 409": {
+   "n": 1,
+   "at": [
+    "5: Cancel settlement after cash was taken (SCRUM-913 words)"
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T10:42:41.022Z clean up: retire the till, sign out
+S.phase = 'clean up: retire the till, sign out';
+const out = {};
+S.assert.equal((await S.call('GET', `/stations/${S.station.id}`)).body.station.name, S.fixtureName);
+out.devicesCleared = (await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status;
+out.retired = (await S.call('DELETE', `/stations/${S.station.id}`)).status;
+const st = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === S.station.id);
+out.readBack = { archived: Boolean(st.archived), devices: st.devices.length };
+const till = S.till;
+const before = (await till.request.get('/api/me')).status();
+if (before === 200) out.tillSignOut = (await till.request.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+out.tillMe = (await till.request.get('/api/me')).status();
+await S.pages.till.ctx.close(); delete S.pages.till; S.till = null;
+const board = await S.boardApi();
+out.boardZz909 = board.families.filter(f => /ZZ TEST 909/.test(f.guardianName)).map(f => ({ guardian: f.guardianName, children: f.children.map(c => c.status) }));
+const party = await S.call('GET', `/parties/${S.partyId}?branchId=${S.branchId}`);
+out.partyReadBack = party.status;
+S.receipt.cleanup.station = out.readBack;
+S.receipt.cleanup.tillSession = { signOut: out.tillSignOut ?? null, me: out.tillMe };
+S.receipt.cleanup.boardAfter = out.boardZz909;
+S.receipt.cleanup.leftover = 'The phone till context (reception account, own ZZ TEST till) was closed before it was signed out; that one session ends at its own expiry. Not force-ended: the account-wide revoke would also end the sessions of the other proofs using the same account.';
+await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+out.adminMe = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.adminMe = out.adminMe;
+S.receipt.finishedAt = new Date().toISOString();
+S.receipt.passed = Object.values(S.receipt.points).every(p => p.pass);
+S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "devicesCleared": 200,
+  "retired": 200,
+  "readBack": {
+   "archived": true,
+   "devices": 0
+  },
+  "tillSignOut": 200,
+  "tillMe": 401,
+  "boardZz909": [
+   {
+    "guardian": "ZZ TEST 909 guardian F",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian C",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian B",
+    "children": [
+     "out",
+     "out"
+    ]
+   },
+   {
+    "guardian": "ZZ TEST 909 guardian A",
+    "children": [
+     "out"
+    ]
+   }
+  ],
+  "partyReadBack": 404,
+  "adminMe": 401
+ }
+}

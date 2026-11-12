@@ -1,0 +1,3002 @@
+{
+  "tickets": [
+    "SCRUM-909",
+    "SCRUM-911",
+    "SCRUM-912",
+    "SCRUM-913",
+    "SCRUM-916"
+  ],
+  "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+  "startedAt": "2026-11-12T10:13:57.528Z",
+  "deploys": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "serving": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "readAt": "2026-11-12T10:08:03.198Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "serving": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "readAt": "2026-11-12T10:08:03.806Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "serving": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "readAt": "2026-11-12T10:08:04.436Z"
+    }
+  },
+  "numbers": {
+    "A": "0898909010",
+    "B": "0898909011",
+    "C": "0898909012",
+    "D": "0898909013",
+    "E": "0898909014",
+    "TH1": "0898909018",
+    "TH2": "0898909019",
+    "H": "0898909017",
+    "F": "0898909015",
+    "G": "0898909016"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cf40-3f2d-76c4-ae05-73f8bd4afca7",
+      "name": "ZZ TEST SCRUM-909 proof till 1794478456092",
+      "prefix": "Z90901"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian A",
+      "id": "01a1cf40-b54c-7040-acaa-16b320704082",
+      "stays": [
+        {
+          "id": "01a1cf40-b54c-7040-acaa-16b4042db6ad",
+          "name": "ZZ TEST 909 child A1"
+        },
+        {
+          "id": "01a1cf40-b54c-7040-acaa-16b5611fd3d2",
+          "name": "ZZ TEST 909 child A2"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-A",
+      "id": "01a1cf40-bba7-7392-851e-58968943c889"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian B",
+      "id": "01a1cf46-6df1-7135-a488-3433b672ce76",
+      "stays": [
+        {
+          "id": "01a1cf46-6df2-7e81-a36d-99fb1d417d48",
+          "name": "ZZ TEST 909 child B1"
+        },
+        {
+          "id": "01a1cf46-6df2-7e81-a36d-99fca883fb6a",
+          "name": "ZZ TEST 909 child B2"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-B",
+      "id": "01a1cf46-753b-7bd0-a7ee-434cdda822c8"
+    },
+    {
+      "kind": "dropoff-sale-B2-again",
+      "id": "01a1cf47-66c0-7277-b463-a28540dade2b"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian C",
+      "id": "01a1cf49-92e1-760c-877e-22d626a1c88e",
+      "stays": [
+        {
+          "id": "01a1cf49-92e1-760c-877e-22d73c58bac4",
+          "name": "ZZ TEST 909 child C1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-C-left-unpaid",
+      "id": "01a1cf49-969a-7d3a-8dc5-6c66d6067b27"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian D",
+      "id": "01a1cf49-c0d6-7179-a874-36ce047bbb7a",
+      "stays": [
+        {
+          "id": "01a1cf49-c0d6-7179-a874-36cf4aeada8f",
+          "name": "ZZ TEST 909 child D1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-D-left-unpaid",
+      "id": "01a1cf49-c483-74ee-a37d-dd87a298116b"
+    },
+    {
+      "kind": "dropoff-sale-C-and-D",
+      "id": "01a1cf4b-3cad-7308-a79e-86a51225a1d1"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian E",
+      "id": "01a1cf4c-fd26-71af-bd62-d1822345c40b",
+      "stays": [
+        {
+          "id": "01a1cf4c-fd26-71af-bd62-d183f19f0c4a",
+          "name": "ZZ TEST 909 child E1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-E-left-unpaid",
+      "id": "01a1cf4d-010d-7606-821b-d744f5700622"
+    },
+    {
+      "kind": "oto-app event",
+      "id": "600ad944-d606-4e8c-905a-4b713d98747f",
+      "title": "ZZ TEST SCRUM-916 party"
+    },
+    {
+      "kind": "party-settlement-sale",
+      "id": "01a1cf4e-ed24-72fa-ad27-05db0a7a734b"
+    },
+    {
+      "kind": "th-ticket-sale",
+      "id": "01a1cf55-4b46-754d-ba1e-faf2c323ff3d"
+    },
+    {
+      "kind": "ticket-sale-H",
+      "id": "01a1cf57-a758-74b9-b6a6-636c07a9c5eb"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian F",
+      "id": "01a1cf57-fede-7e52-b135-90e0c51a713b",
+      "stays": [
+        {
+          "id": "01a1cf57-fede-7e52-b135-90e18a6bffc4",
+          "name": "ZZ TEST 909 child F1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-F",
+      "id": "01a1cf58-0288-727c-b74e-f1cc7e0be3e1"
+    },
+    {
+      "kind": "registration",
+      "guardian": "ZZ TEST 909 guardian G",
+      "id": "01a1cf58-67c5-7398-aceb-e59ec3e5db66",
+      "stays": [
+        {
+          "id": "01a1cf58-67c5-7398-aceb-e59fa9eab66c",
+          "name": "ZZ TEST 909 child G1"
+        }
+      ]
+    },
+    {
+      "kind": "dropoff-sale-G-left-unpaid",
+      "id": "01a1cf58-6b93-7be5-9442-a840e950c241"
+    }
+  ],
+  "cancelled": [
+    {
+      "reg": "01a1cf40-b54c-7040-acaa-16b320704082",
+      "child": "ZZ TEST 909 child A2",
+      "from": "Add drop-off child picker",
+      "status": 200
+    },
+    {
+      "reg": "01a1cf49-c0d6-7179-a874-36ce047bbb7a",
+      "child": "ZZ TEST 909 child D1",
+      "from": "desk board (whole booking)",
+      "status": 200
+    },
+    {
+      "reg": "01a1cf4c-fd26-71af-bd62-d1822345c40b",
+      "child": "ZZ TEST 909 child E1",
+      "from": "phone till family screen (whole booking)",
+      "status": 200
+    },
+    {
+      "reg": "01a1cf58-67c5-7398-aceb-e59ec3e5db66",
+      "child": "ZZ TEST 909 child G1",
+      "from": "desk board (whole booking)",
+      "status": 200
+    }
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "pictures": [
+        "01a",
+        "01b",
+        "01c",
+        "01d",
+        "01e",
+        "01f",
+        "01g",
+        "01h",
+        "01i",
+        "01j",
+        "01k",
+        "01l",
+        "01m",
+        "01n",
+        "01o",
+        "01p",
+        "01q",
+        "01r"
+      ],
+      "seen": {
+        "family": "ZZ TEST 909 guardian A, children A1 and A2 on one registration",
+        "sale": {
+          "receipt": "Z90901-000001",
+          "gross": 1830,
+          "paid": "cash",
+          "after": "Leave as booked"
+        },
+        "refund": {
+          "by": "manager, History, By item, second row (A2)",
+          "amount": 915,
+          "lines": [
+            "kids 690",
+            "drop-off service 225"
+          ],
+          "refundedCartIsA2": true,
+          "saleRefundStatus": "partially_refunded"
+        },
+        "afterRefund": {
+          "A1": "registered, Paid at till Z90901-000001",
+          "A2": "registered, not paid, saleId cleared (refund_released audit row)"
+        },
+        "boardCheckInA2": "opens a new till order for A2 to pay (no API check-in, no band)",
+        "cancelAlone": {
+          "from": "Add drop-off child picker",
+          "reasonRequired": {
+            "label": "Give a reason to cancel",
+            "enabled": false
+          },
+          "posted": {
+            "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+            "checkinIds": [
+              "01a1cf40-b54c-7040-acaa-16b5611fd3d2"
+            ],
+            "namesA2": true
+          },
+          "answer": 200,
+          "audit": {
+            "action": "checkin.update",
+            "event": "cancel",
+            "status": "cancelled",
+            "named": true,
+            "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+            "at": "2026-11-12T10:19:59.255Z",
+            "actor": "staff account"
+          }
+        },
+        "A1": "checked in from the board (check-in-booked 200), in_park with one kid band; A2 cancelled, never in the park"
+      }
+    },
+    "2": {
+      "pass": true,
+      "pictures": [
+        "02a",
+        "02b",
+        "02c",
+        "02d",
+        "02e",
+        "02f",
+        "02g",
+        "02h",
+        "02i"
+      ],
+      "seen": {
+        "family": "ZZ TEST 909 guardian B, B1 and B2 on one registration",
+        "sale1": {
+          "receipt": "Z90901-000002",
+          "gross": 1830,
+          "after": "Leave as booked"
+        },
+        "refund": {
+          "amount": 915,
+          "row": "second (B2), kids 690 + drop-off service 225",
+          "saleRefundStatus": "partially_refunded"
+        },
+        "stays": "B2 rung up again from the board press \"Check in ZZ TEST 909 child B2\" (opens a till order for B2), 1 Hour Play chosen, Pay 915, cash, Check in now (check-in-now 200)",
+        "sale2": {
+          "receipt": "Z90901-000003",
+          "gross": 915,
+          "lines": "kids 690 + drop-off service 225, both B2",
+          "bands": 1
+        },
+        "B1": "still on Z90901-000002, not on the new sale, checked in from the board as Booked & paid (check-in-booked 200), one band on sale 1",
+        "noSecondCharge": true
+      }
+    },
+    "3": {
+      "pass": true,
+      "pictures": [
+        "03a",
+        "03b",
+        "03c",
+        "03d",
+        "03e",
+        "03f",
+        "03g",
+        "03h",
+        "03i",
+        "03j"
+      ],
+      "seen": {
+        "bookings": "ZZ TEST 909 guardian C (C1) and guardian D (D1), each registered and left unpaid (first sales voided by the till Cancel)",
+        "sale": {
+          "receipt": "Z90901-000004",
+          "gross": 1830,
+          "how": "walk-in, Add drop-off child picker: Add to sale on C, then D; 1 Hour Play each; cash; reload without Check in now / Leave as booked (stays not filed on the sale)"
+        },
+        "refund": {
+          "amount": 915,
+          "row": "second (D1)",
+          "saleRefundStatus": "partially_refunded"
+        },
+        "D": "Paid at till gone; whole Cancel booking enabled on the board; cancelled with a reason (200), audit cancel row",
+        "C": "Booked & paid throughout, checked in from the board (check-in-booked 200), in_park, band kid active"
+      }
+    },
+    "4": {
+      "pass": true,
+      "pictures": [
+        "04a",
+        "04b",
+        "04c",
+        "04d",
+        "04e"
+      ],
+      "seen": {
+        "family": "ZZ TEST 909 guardian E (E1), registered and left unpaid",
+        "phoneCancel": 200,
+        "deskCardStillDrawn": true,
+        "save": {
+          "status": 409,
+          "code": "CHECKIN_NOT_REGISTERED",
+          "words": "ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying."
+        },
+        "toast": "Could not save ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying.",
+        "cardLeft": true,
+        "allergiesWritten": null,
+        "audit": [
+          {
+            "event": "cancel",
+            "status": "cancelled"
+          },
+          {
+            "event": null,
+            "status": null
+          }
+        ]
+      }
+    },
+    "5": {
+      "pass": true,
+      "pictures": [
+        "05a",
+        "05b",
+        "05c",
+        "05d",
+        "05e",
+        "05g",
+        "05h",
+        "05i",
+        "05j",
+        "05k",
+        "05l",
+        "05m",
+        "05n",
+        "05o",
+        "05p",
+        "05q",
+        "05r"
+      ],
+      "seen": {
+        "before": {
+          "bill": "Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+        },
+        "payment": {
+          "amountDue": "฿15900",
+          "backEnabled": true,
+          "settlement": {
+            "state": "open",
+            "gross": 16900,
+            "deposit": 1000,
+            "outstanding": 15900,
+            "paid": 1000
+          }
+        },
+        "afterBack": {
+          "paymentStep": false,
+          "url": "/parties",
+          "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "buttons": [
+            {
+              "l": "Resume settlement ฿15900",
+              "e": true
+            },
+            {
+              "l": "Cancel settlement",
+              "e": true
+            },
+            {
+              "l": "Take balance ฿15900",
+              "e": true
+            }
+          ]
+        },
+        "phone": {
+          "due": null,
+          "openRow": [
+            "Settlement open ฿15900 to take ",
+            "Settlement open · ฿15900 "
+          ],
+          "line": "Take it with Resume settlement on a counter till's party page.",
+          "buttons": [
+            {
+              "l": "Settlement open · ฿15900",
+              "e": false
+            }
+          ],
+          "billLines": [
+            "Total ฿16900",
+            "Deposit paid −฿1000",
+            "Outstanding ฿15900"
+          ]
+        },
+        "partPay": {
+          "posts": [
+            {
+              "path": "/api/sales/:id/finalise",
+              "status": 200
+            }
+          ],
+          "afterPart": {
+            "amountDue": "฿15800",
+            "backEnabled": false,
+            "paymentStep": true
+          },
+          "text": "Recorded payments other · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00",
+          "sale": {
+            "status": "tendering",
+            "gross": 16900,
+            "paid": 0
+          }
+        },
+        "cancel": {
+          "page": {
+            "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+            "buttons": [
+              {
+                "l": "Resume settlement ฿15900",
+                "e": true
+              },
+              {
+                "l": "Cancel settlement",
+                "e": true
+              },
+              {
+                "l": "Take balance ฿15900",
+                "e": true
+              }
+            ]
+          },
+          "void": {
+            "status": 409,
+            "code": "SALE_HAS_PAYMENT"
+          },
+          "toast": "Settlement not cancelled ฿100 was already taken on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.",
+          "dialogStillOpen": 1,
+          "dialogText": "Cancel this settlement ZZ TEST SCRUM-916 party: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿1000 stays with the party and is used again when it is settled. Reason Back Cancel settlement Close",
+          "sale": {
+            "status": "tendering"
+          }
+        },
+        "afterPartRead": {
+          "api": {
+            "state": "open",
+            "gross": 16900,
+            "deposit": 1000,
+            "paid": 1100,
+            "outstanding": 15800
+          },
+          "sale": {
+            "status": "tendering",
+            "totals": {
+              "subtotalSatang": 16900,
+              "manualDiscountSatang": 0,
+              "promoDiscountSatang": 0,
+              "discountSatang": 0,
+              "netSatang": 15794.39,
+              "serviceChargeSatang": 0,
+              "taxInclusiveSatang": 1105.61,
+              "taxExclusiveSatang": 0,
+              "grossSatang": 16900,
+              "unappliedDiscountSatang": 0,
+              "refundedSatang": 0
+            },
+            "attempts": [
+              {
+                "status": "approved",
+                "method": "other",
+                "amount": 1000
+              },
+              {
+                "status": "approved",
+                "method": "cash",
+                "amount": 100
+              }
+            ]
+          },
+          "afterReload": {
+            "bill": null,
+            "take": null,
+            "resume": null
+          }
+        },
+        "afterReload": {
+          "rowText": "15:00 18:00 ZZ TEST SCRUM-916 party PARTY UPCOMING 2 kids · 2 adults Paid",
+          "afterReload": {
+            "bill": "Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+            "take": "Take balance ฿15800",
+            "resume": "Resume settlement ฿15800"
+          }
+        },
+        "refund": {
+          "detail": "Partly paid Ticket sale No receipt number Walk-in 12 Nov, 17:30 · sold by [staff] ZZ TEST SCRUM-909 proof till 1794478456092 · trading ",
+          "party": true,
+          "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+          "press": "Refund ฿100",
+          "refund": {
+            "status": 200,
+            "amount": 100,
+            "refundStatus": "refunded",
+            "saleStatus": "voided",
+            "saleRefund": "refunded"
+          },
+          "settlementAfter": {
+            "state": "voided"
+          },
+          "depositAfter": 1000
+        },
+        "after": {
+          "page": {
+            "buttons": [
+              {
+                "l": "Settle party",
+                "e": true
+              },
+              {
+                "l": "Fully paid",
+                "e": false
+              }
+            ],
+            "bill": "Party bill Birthday package, Central Floresta ฿0 Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+          },
+          "delete": 204,
+          "readBack": {
+            "app": 404,
+            "till": 404
+          }
+        }
+      }
+    },
+    "6": {
+      "pass": true,
+      "pictures": [
+        "06a",
+        "06b",
+        "06c",
+        "06d",
+        "06e",
+        "06f",
+        "06g",
+        "06h",
+        "06i",
+        "06j",
+        "06k",
+        "06l",
+        "06m",
+        "06n",
+        "06o",
+        "06p"
+      ],
+      "seen": {
+        "note": "The till's staff side has no language switch (LanguageContext: staff screens stay English) and its payment tiles carry the configured English names; the customer side was switched to ไทย. For the tile check the Thai name the customer sees (พร้อมเพย์) was put into the real PromptPay tile in the browser and measured in the deployed CSS and font, then put back.",
+        "font": {
+          "faces": [
+            {
+              "family": "Till Thai",
+              "weight": "400",
+              "status": "loaded",
+              "range": "U+E01-E5B, U+200C-200D, U+25CC"
+            },
+            {
+              "family": "Till Thai",
+              "weight": "700",
+              "status": "loaded",
+              "range": "U+E01-E5B, U+200C-200D, U+25CC"
+            }
+          ],
+          "files": [
+            {
+              "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Regular-BtLaeNM3.ttf",
+              "status": 200,
+              "type": "font/ttf",
+              "bytes": 37780
+            },
+            {
+              "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Bold-DqyRvOXX.ttf",
+              "status": 200,
+              "type": "font/ttf",
+              "bytes": 37824
+            }
+          ],
+          "bodyStack": "Inter, \"Till Thai\", sans-serif",
+          "thaiSample": "ไทย",
+          "thaiComputed": "Inter, \"Till Thai\", sans-serif",
+          "check": true,
+          "cdp": {
+            "selector": "[data-zz-thai]",
+            "fonts": [
+              {
+                "family": "Noto Sans Thai",
+                "custom": true,
+                "glyphs": 3
+              }
+            ]
+          }
+        },
+        "tile": {
+          "at1680": 430,
+          "viewportFor576": 1972,
+          "panel": 576,
+          "english": [
+            {
+              "text": "Cash",
+              "lines": 1,
+              "textWidth": 60.1,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            },
+            {
+              "text": "Card",
+              "lines": 1,
+              "textWidth": 56,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            },
+            {
+              "text": "PromptPay",
+              "lines": 1,
+              "textWidth": 128.6,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            }
+          ],
+          "thai": [
+            {
+              "text": "Cash",
+              "lines": 1,
+              "textWidth": 60.1,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            },
+            {
+              "text": "Card",
+              "lines": 1,
+              "textWidth": 56,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            },
+            {
+              "text": "พร้อมเพย์",
+              "lines": 1,
+              "textWidth": 99.8,
+              "tileWidth": 181.3,
+              "fontSize": "24px",
+              "font": "Inter, \"Till Thai\", sans-serif"
+            }
+          ],
+          "cdp": {
+            "selector": "[data-zz-promptpay]",
+            "fonts": [
+              {
+                "family": "Noto Sans Thai",
+                "custom": true,
+                "glyphs": 9
+              }
+            ]
+          }
+        },
+        "sale": {
+          "at1680": {
+            "panel": 430,
+            "lines": 1,
+            "textWidth": 74.9,
+            "tileWidth": 209
+          },
+          "sale": {
+            "receipt": "Z90901-000005",
+            "status": "finalised",
+            "gross": 1040,
+            "bands": [
+              "kid active",
+              "adult active"
+            ],
+            "printJobs": [
+              {
+                "kind": "adult_wristband",
+                "status": "queued",
+                "at": null
+              },
+              {
+                "kind": "kids_wristband",
+                "status": "queued",
+                "at": null
+              },
+              {
+                "kind": "receipt",
+                "status": "queued",
+                "at": null
+              }
+            ]
+          },
+          "body": "ue Review → Oto Play Park Payment Successful Receipt Z90901-000005 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z90901-VHG2NF 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z90901-V26RBY 1 HOUR Credit Grants to Print 1 TOTAL Credit ฿350 credit #1 Start New Sale ไทย ขอบคุณค่ะ/ครับ! นี่คือสิ่งที่คุณจะได้รับ — ขอให้สนุกกับการเล่น! 1 สายรัดข้อมือเด็ก 1 สายรัดข้อมือผู้ใหญ่ เครดิตที่ได้รับ เครดิต ฿350 Sending to printers Adult bracelet → Band Printer"
+        },
+        "after": {
+          "landing": true,
+          "openSales": 0,
+          "regTH": 0,
+          "printouts": 200,
+          "candidates": [
+            {
+              "seq": 18,
+              "at": "2026-11-12T10:38:04.859Z",
+              "w": 576,
+              "h": 1089
+            },
+            {
+              "seq": 19,
+              "at": "2026-11-12T10:38:05.494Z",
+              "w": 576,
+              "h": 0
+            }
+          ],
+          "jobs": [
+            {
+              "kind": "adult_wristband",
+              "status": "printed"
+            },
+            {
+              "kind": "kids_wristband",
+              "status": "printed"
+            },
+            {
+              "kind": "receipt",
+              "status": "printed"
+            }
+          ],
+          "preview": {
+            "status": 200,
+            "type": "image/png"
+          }
+        }
+      }
+    },
+    "7": {
+      "pass": true,
+      "pictures": [
+        "07a",
+        "07b",
+        "07c",
+        "07d"
+      ],
+      "seen": {
+        "ticket": {
+          "due": "฿1040",
+          "sale": {
+            "receipt": "Z90901-000006",
+            "status": "finalised",
+            "gross": 1040,
+            "bands": [
+              "kid active",
+              "adult active"
+            ]
+          },
+          "printJobs": [
+            "adult_wristband printed",
+            "kids_wristband printed",
+            "receipt printed"
+          ]
+        },
+        "dropoff": {
+          "due": "฿915",
+          "checkIn": 200,
+          "sale": {
+            "receipt": "Z90901-000007",
+            "status": "finalised",
+            "gross": 915,
+            "bands": [
+              "kid active"
+            ]
+          },
+          "reg": [
+            {
+              "status": "in_park",
+              "linked": true
+            }
+          ]
+        },
+        "cancel": {
+          "firstSale": "voided",
+          "buttons": [
+            {
+              "l": "Check in",
+              "e": true
+            },
+            {
+              "l": "Cancel booking",
+              "e": true
+            }
+          ],
+          "title": "Cancel this waiting booking",
+          "answer": 200,
+          "posted": {
+            "reason": "ZZ TEST SCRUM-909 point 7: a plain waiting booking"
+          },
+          "cardAfter": 0,
+          "reg": [
+            "cancelled"
+          ]
+        }
+      }
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "cancelAlone": 3,
+      "takeBalance": 3,
+      "refundFirst": 1
+    },
+    "p1cancel": {
+      "title": "Cancel ZZ TEST 909 child A2's booking",
+      "description": "ZZ TEST 909 guardian A's booking: ZZ TEST 909 child A2 leave the waiting list and can't be added to a sale; the rest of the booking stays as it is. The signed form stays on record.",
+      "beforeReason": {
+        "label": "Give a reason to cancel",
+        "enabled": false
+      },
+      "afterReason": {
+        "label": "Cancel the booking",
+        "enabled": true
+      },
+      "answer": 200,
+      "posted": {
+        "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+        "checkinIds": [
+          "01a1cf40-b54c-7040-acaa-16b5611fd3d2"
+        ],
+        "namesA2": true
+      },
+      "pickerAfter": "ZZ TEST 909 guardian A's booking <number> Paid at till ZZ TEST 909 child A1 · 6y Paid at till · Z<number> Add sibling",
+      "reg": [
+        {
+          "name": "ZZ TEST 909 child A1",
+          "status": "registered",
+          "cancelReason": null
+        },
+        {
+          "name": "ZZ TEST 909 child A2",
+          "status": "cancelled",
+          "cancelReason": null
+        }
+      ],
+      "audit": [
+        {
+          "action": "checkin.update",
+          "event": "cancel",
+          "status": "cancelled",
+          "named": true,
+          "reason": "ZZ TEST SCRUM-909: A2 went home, refunded by item",
+          "at": "2026-11-12T10:19:59.255Z",
+          "actor": "staff account"
+        },
+        {
+          "action": "checkin.update",
+          "event": "refund_released",
+          "status": null,
+          "named": null,
+          "reason": null,
+          "at": "2026-11-12T10:17:03.678Z",
+          "actor": "staff account"
+        },
+        {
+          "action": "checkin.update",
+          "event": "leave_as_booked",
+          "status": null,
+          "named": null,
+          "reason": null,
+          "at": "2026-11-12T10:14:58.376Z",
+          "actor": "staff account"
+        },
+        {
+          "action": "checkin.create",
+          "event": null,
+          "status": null,
+          "named": null,
+          "reason": null,
+          "at": "2026-11-12T10:14:47.372Z",
+          "actor": "staff account"
+        }
+      ],
+      "auditStatus": 200,
+      "board": [
+        {
+          "child": "ZZ TEST 909 child A1",
+          "status": "registered",
+          "paidAtTill": {
+            "receipt": "Z90901-000001"
+          },
+          "paidOnline": false
+        }
+      ]
+    },
+    "p4": {
+      "cancelStatus": 200,
+      "stillThere": true,
+      "sinceMountMs": 1526,
+      "patchStatus": 409,
+      "error": {
+        "code": "CHECKIN_NOT_REGISTERED",
+        "message": "ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying."
+      },
+      "toast": "Could not save ZZ TEST 909 child E1's drop-off booking was cancelled — register them again if they are staying.",
+      "editDialogsOpenAfter": 0,
+      "cardAfter": 0,
+      "reg": [
+        {
+          "status": "cancelled",
+          "allergies": null
+        }
+      ],
+      "audit": [
+        {
+          "event": "cancel",
+          "status": "cancelled"
+        },
+        {
+          "event": null,
+          "status": null
+        }
+      ]
+    },
+    "p5": {
+      "before": {
+        "bill": "Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+      },
+      "payment": {
+        "amountDue": "฿15900",
+        "backEnabled": true,
+        "settlement": {
+          "state": "open",
+          "gross": 16900,
+          "deposit": 1000,
+          "outstanding": 15900,
+          "paid": 1000
+        }
+      },
+      "afterBack": {
+        "paymentStep": false,
+        "url": "/parties",
+        "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+        "buttons": [
+          {
+            "l": "Resume settlement ฿15900",
+            "e": true
+          },
+          {
+            "l": "Cancel settlement",
+            "e": true
+          },
+          {
+            "l": "Take balance ฿15900",
+            "e": true
+          }
+        ]
+      },
+      "phone": {
+        "due": null,
+        "openRow": [
+          "Settlement open ฿15900 to take ",
+          "Settlement open · ฿15900 "
+        ],
+        "line": "Take it with Resume settlement on a counter till's party page.",
+        "buttons": [
+          {
+            "l": "Settlement open · ฿15900",
+            "e": false
+          }
+        ],
+        "billLines": [
+          "Total ฿16900",
+          "Deposit paid −฿1000",
+          "Outstanding ฿15900"
+        ]
+      },
+      "partPay": {
+        "posts": [
+          {
+            "path": "/api/sales/:id/finalise",
+            "status": 200
+          }
+        ],
+        "afterPart": {
+          "amountDue": "฿15800",
+          "backEnabled": false,
+          "paymentStep": true
+        },
+        "text": "Recorded payments other · ฿1000.00 Cash · ฿100.00 Balance due ฿15800.00",
+        "sale": {
+          "status": "tendering",
+          "gross": 16900,
+          "paid": 0
+        }
+      },
+      "cancel": {
+        "page": {
+          "bill": "Settlement open ฿15900 to take Total ฿16900 Deposit paid −฿1000 Outstanding ฿15900",
+          "buttons": [
+            {
+              "l": "Resume settlement ฿15900",
+              "e": true
+            },
+            {
+              "l": "Cancel settlement",
+              "e": true
+            },
+            {
+              "l": "Take balance ฿15900",
+              "e": true
+            }
+          ]
+        },
+        "void": {
+          "status": 409,
+          "code": "SALE_HAS_PAYMENT"
+        },
+        "toast": "Settlement not cancelled ฿100 was already taken on this settlement, so it can't be cancelled here. Have a manager refund it from History first: the refund closes the settlement. Nothing was changed.",
+        "dialogStillOpen": 1,
+        "dialogText": "Cancel this settlement ZZ TEST SCRUM-916 party: the settlement sale is closed as void and nothing was issued for it. Nothing is refunded — the deposit of ฿1000 stays with the party and is used again when it is settled. Reason Back Cancel settlement Close",
+        "sale": {
+          "status": "tendering"
+        }
+      },
+      "afterPartRead": {
+        "api": {
+          "state": "open",
+          "gross": 16900,
+          "deposit": 1000,
+          "paid": 1100,
+          "outstanding": 15800
+        },
+        "sale": {
+          "status": "tendering",
+          "totals": {
+            "subtotalSatang": 16900,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 15794.39,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 1105.61,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 16900,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "attempts": [
+            {
+              "status": "approved",
+              "method": "other",
+              "amount": 1000
+            },
+            {
+              "status": "approved",
+              "method": "cash",
+              "amount": 100
+            }
+          ]
+        },
+        "afterReload": {
+          "bill": null,
+          "take": null,
+          "resume": null
+        }
+      },
+      "afterReload": {
+        "rowText": "15:00 18:00 ZZ TEST SCRUM-916 party PARTY UPCOMING 2 kids · 2 adults Paid",
+        "afterReload": {
+          "bill": "Settlement open ฿15800 to take Total ฿16900 Deposit paid −฿1000 Payments taken −฿100 Outstanding ฿15800",
+          "take": "Take balance ฿15800",
+          "resume": "Resume settlement ฿15800"
+        }
+      },
+      "refund": {
+        "detail": "Partly paid Ticket sale No receipt number Walk-in 12 Nov, 17:30 · sold by [staff] ZZ TEST SCRUM-909 proof till 1794478456092 · trading ",
+        "party": true,
+        "dialog": "Refund By [staff] · up to ฿100 refundable · logged for the refunds report. Refund Whole sale By item Amount This sale was never fully paid — everything taken goes back and the sale is closed. Reason * Service recovery Staff / family Damaged item Manager comp Promotion Loyalty Other Note (optional) Refund amount −฿100 Choose a reason to refund Close",
+        "press": "Refund ฿100",
+        "refund": {
+          "status": 200,
+          "amount": 100,
+          "refundStatus": "refunded",
+          "saleStatus": "voided",
+          "saleRefund": "refunded"
+        },
+        "settlementAfter": {
+          "state": "voided"
+        },
+        "depositAfter": 1000
+      },
+      "after": {
+        "page": {
+          "buttons": [
+            {
+              "l": "Settle party",
+              "e": true
+            },
+            {
+              "l": "Fully paid",
+              "e": false
+            }
+          ],
+          "bill": "Party bill Birthday package, Central Floresta ฿0 Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+        },
+        "delete": 204,
+        "readBack": {
+          "app": 404,
+          "till": 404
+        }
+      }
+    },
+    "p6": {
+      "font": {
+        "faces": [
+          {
+            "family": "Till Thai",
+            "weight": "400",
+            "status": "loaded",
+            "range": "U+E01-E5B, U+200C-200D, U+25CC"
+          },
+          {
+            "family": "Till Thai",
+            "weight": "700",
+            "status": "loaded",
+            "range": "U+E01-E5B, U+200C-200D, U+25CC"
+          }
+        ],
+        "files": [
+          {
+            "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Regular-BtLaeNM3.ttf",
+            "status": 200,
+            "type": "font/ttf",
+            "bytes": 37780
+          },
+          {
+            "url": "https://oto-pos-web-staging.onrender.com/assets/NotoSansThai-Bold-DqyRvOXX.ttf",
+            "status": 200,
+            "type": "font/ttf",
+            "bytes": 37824
+          }
+        ],
+        "bodyStack": "Inter, \"Till Thai\", sans-serif",
+        "thaiSample": "ไทย",
+        "thaiComputed": "Inter, \"Till Thai\", sans-serif",
+        "check": true,
+        "cdp": {
+          "selector": "[data-zz-thai]",
+          "fonts": [
+            {
+              "family": "Noto Sans Thai",
+              "custom": true,
+              "glyphs": 3
+            }
+          ]
+        }
+      },
+      "tile": {
+        "at1680": 430,
+        "viewportFor576": 1972,
+        "panel": 576,
+        "english": [
+          {
+            "text": "Cash",
+            "lines": 1,
+            "textWidth": 60.1,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          },
+          {
+            "text": "Card",
+            "lines": 1,
+            "textWidth": 56,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          },
+          {
+            "text": "PromptPay",
+            "lines": 1,
+            "textWidth": 128.6,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          }
+        ],
+        "thai": [
+          {
+            "text": "Cash",
+            "lines": 1,
+            "textWidth": 60.1,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          },
+          {
+            "text": "Card",
+            "lines": 1,
+            "textWidth": 56,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          },
+          {
+            "text": "พร้อมเพย์",
+            "lines": 1,
+            "textWidth": 99.8,
+            "tileWidth": 181.3,
+            "fontSize": "24px",
+            "font": "Inter, \"Till Thai\", sans-serif"
+          }
+        ],
+        "cdp": {
+          "selector": "[data-zz-promptpay]",
+          "fonts": [
+            {
+              "family": "Noto Sans Thai",
+              "custom": true,
+              "glyphs": 9
+            }
+          ]
+        }
+      },
+      "sale": {
+        "at1680": {
+          "panel": 430,
+          "lines": 1,
+          "textWidth": 74.9,
+          "tileWidth": 209
+        },
+        "sale": {
+          "receipt": "Z90901-000005",
+          "status": "finalised",
+          "gross": 1040,
+          "bands": [
+            "kid active",
+            "adult active"
+          ],
+          "printJobs": [
+            {
+              "kind": "adult_wristband",
+              "status": "queued",
+              "at": null
+            },
+            {
+              "kind": "kids_wristband",
+              "status": "queued",
+              "at": null
+            },
+            {
+              "kind": "receipt",
+              "status": "queued",
+              "at": null
+            }
+          ]
+        },
+        "body": "ue Review → Oto Play Park Payment Successful Receipt Z90901-000005 • ฿1040 • Cash VAT included ฿68.04 Thank you for visiting! · Tax ID 0105500000000 Bracelets to Print 2 TOTAL 1× Child bracelet 1 Hour • 1 Hour Play Z90901-VHG2NF 1 HOUR 1× Adult bracelet 1 Hour • 1 Hour Play Z90901-V26RBY 1 HOUR Credit Grants to Print 1 TOTAL Credit ฿350 credit #1 Start New Sale ไทย ขอบคุณค่ะ/ครับ! นี่คือสิ่งที่คุณจะได้รับ — ขอให้สนุกกับการเล่น! 1 สายรัดข้อมือเด็ก 1 สายรัดข้อมือผู้ใหญ่ เครดิตที่ได้รับ เครดิต ฿350 Sending to printers Adult bracelet → Band Printer"
+      },
+      "after": {
+        "landing": true,
+        "openSales": 0,
+        "regTH": 0,
+        "printouts": 200,
+        "candidates": [
+          {
+            "seq": 18,
+            "at": "2026-11-12T10:38:04.859Z",
+            "w": 576,
+            "h": 1089
+          },
+          {
+            "seq": 19,
+            "at": "2026-11-12T10:38:05.494Z",
+            "w": 576,
+            "h": 0
+          }
+        ],
+        "jobs": [
+          {
+            "kind": "adult_wristband",
+            "status": "printed"
+          },
+          {
+            "kind": "kids_wristband",
+            "status": "printed"
+          },
+          {
+            "kind": "receipt",
+            "status": "printed"
+          }
+        ],
+        "preview": {
+          "status": 200,
+          "type": "image/png"
+        }
+      }
+    },
+    "p7": {
+      "ticket": {
+        "due": "฿1040",
+        "sale": {
+          "receipt": "Z90901-000006",
+          "status": "finalised",
+          "gross": 1040,
+          "bands": [
+            "kid active",
+            "adult active"
+          ]
+        },
+        "printJobs": [
+          "adult_wristband printed",
+          "kids_wristband printed",
+          "receipt printed"
+        ]
+      },
+      "dropoff": {
+        "due": "฿915",
+        "checkIn": 200,
+        "sale": {
+          "receipt": "Z90901-000007",
+          "status": "finalised",
+          "gross": 915,
+          "bands": [
+            "kid active"
+          ]
+        },
+        "reg": [
+          {
+            "status": "in_park",
+            "linked": true
+          }
+        ]
+      },
+      "cancel": {
+        "firstSale": "voided",
+        "buttons": [
+          {
+            "l": "Check in",
+            "e": true
+          },
+          {
+            "l": "Cancel booking",
+            "e": true
+          }
+        ],
+        "title": "Cancel this waiting booking",
+        "answer": 200,
+        "posted": {
+          "reason": "ZZ TEST SCRUM-909 point 7: a plain waiting booking"
+        },
+        "cardAfter": 0,
+        "reg": [
+          "cancelled"
+        ]
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "1: manager refunds child A2 by item from History",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "1: manager refunds child A2 by item from History",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "1: the board after the refund",
+      "kind": "http",
+      "text": "GET /api/branches 423"
+    },
+    {
+      "page": "till",
+      "at": "1: the board after the refund",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "till",
+      "at": "1: the board after the refund",
+      "kind": "http",
+      "text": "GET /api/me/stations 423"
+    },
+    {
+      "page": "till",
+      "at": "1: the board after the refund",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 423 ()"
+    },
+    {
+      "page": "phone",
+      "at": "4: the phone till ready to cancel E",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "4: the phone till ready to cancel E",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "4: stale card edit on the desk after the phone cancel",
+      "kind": "http",
+      "text": "PATCH /api/checkin/checkins/:id 409"
+    },
+    {
+      "page": "till",
+      "at": "4: stale card edit on the desk after the phone cancel",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "till",
+      "at": "5: Cancel settlement after cash was taken (SCRUM-913 words)",
+      "kind": "http",
+      "text": "POST /api/sales/:id/void 409"
+    },
+    {
+      "page": "till",
+      "at": "5: Cancel settlement after cash was taken (SCRUM-913 words)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "5: a manager refunds the part-paid settlement from History",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "5: a manager refunds the part-paid settlement from History",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/parties/:id",
+      "status": 404,
+      "errorCode": "NOT_FOUND"
+    }
+  ],
+  "cleanup": {
+    "party": {
+      "page": {
+        "buttons": [
+          {
+            "l": "Settle party",
+            "e": true
+          },
+          {
+            "l": "Fully paid",
+            "e": false
+          }
+        ],
+        "bill": "Party bill Birthday package, Central Floresta ฿0 Total ฿0 Deposit paid −฿1000 Outstanding ฿0"
+      },
+      "delete": 204,
+      "readBack": {
+        "app": 404,
+        "till": 404
+      }
+    },
+    "appSignOut": 200,
+    "mgrSignOut": {
+      "status": 200,
+      "me": 401
+    },
+    "registrations": [
+      {
+        "guardian": "ZZ TEST 909 guardian A",
+        "released": [
+          {
+            "child": "ZZ TEST 909 child A1",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "out",
+          "cancelled"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian B",
+        "released": [
+          {
+            "child": "ZZ TEST 909 child B1",
+            "status": 200
+          },
+          {
+            "child": "ZZ TEST 909 child B2",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "out",
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian C",
+        "released": [
+          {
+            "child": "ZZ TEST 909 child C1",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian D",
+        "released": [],
+        "cancelled": null,
+        "children": [
+          "cancelled"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian E",
+        "released": [],
+        "cancelled": null,
+        "children": [
+          "cancelled"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian F",
+        "released": [
+          {
+            "child": "ZZ TEST 909 child F1",
+            "status": 200
+          }
+        ],
+        "cancelled": null,
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian G",
+        "released": [],
+        "cancelled": null,
+        "children": [
+          "cancelled"
+        ]
+      }
+    ],
+    "sales": [
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000007",
+        "status": "finalised",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000006",
+        "status": "finalised",
+        "gross": 1040,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000005",
+        "status": "finalised",
+        "gross": 1040,
+        "refunded": 0
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 16900,
+        "refunded": 100
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000004",
+        "status": "finalised",
+        "gross": 1830,
+        "refunded": 915
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": null,
+        "status": "voided",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000003",
+        "status": "finalised",
+        "gross": 915,
+        "refunded": 0
+      },
+      {
+        "receipt": "Z90901-000002",
+        "status": "finalised",
+        "gross": 1830,
+        "refunded": 915
+      },
+      {
+        "receipt": "Z90901-000001",
+        "status": "finalised",
+        "gross": 1830,
+        "refunded": 915
+      }
+    ],
+    "members": [
+      {
+        "key": "A",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "B",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "C",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "D",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "E",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "TH1",
+        "member": null
+      },
+      {
+        "key": "TH2",
+        "member": null
+      },
+      {
+        "key": "H",
+        "member": null
+      },
+      {
+        "key": "F",
+        "archived": 200,
+        "lookupAfter": null
+      },
+      {
+        "key": "G",
+        "archived": 200,
+        "lookupAfter": null
+      }
+    ],
+    "printJobs": {
+      "Z90901-000007": [
+        "printed",
+        "printed"
+      ],
+      "Z90901-000006": [
+        "printed",
+        "printed",
+        "printed"
+      ],
+      "Z90901-000005": [
+        "printed",
+        "printed",
+        "printed"
+      ],
+      "Z90901-000004": [
+        "printed",
+        "printed"
+      ],
+      "Z90901-000003": [
+        "printed",
+        "printed"
+      ],
+      "Z90901-000002": [
+        "printed",
+        "printed"
+      ],
+      "Z90901-000001": [
+        "printed",
+        "printed"
+      ]
+    },
+    "station": {
+      "archived": true,
+      "devices": 0
+    },
+    "tillSession": {
+      "signOut": 200,
+      "me": 401
+    },
+    "boardAfter": [
+      {
+        "guardian": "ZZ TEST 909 guardian F",
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian C",
+        "children": [
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian B",
+        "children": [
+          "out",
+          "out"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST 909 guardian A",
+        "children": [
+          "out"
+        ]
+      }
+    ],
+    "leftover": "The phone till context (reception account, own ZZ TEST till) was closed before it was signed out; that one session ends at its own expiry. Not force-ended: the account-wide revoke would also end the sessions of the other proofs using the same account.",
+    "adminMe": 401
+  },
+  "checks": {
+    "numbersCheckedUnused": 30
+  },
+  "finishedAt": "2026-11-12T10:42:42.485Z",
+  "passed": true
+}

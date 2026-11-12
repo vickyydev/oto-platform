@@ -66,7 +66,7 @@ written in code, tests, tickets or these documents.
 
 Decided by the owner: B on the sandbox now. A can follow for the park's number.
 
-## What is built (lane `lane/twilio908b-20261112`, not yet landed on 12 November 16:15)
+## What is built (landed on main at d0045f1ef, 12 November 17:49; staging api and inbox deployed at that commit)
 
 - A Twilio WhatsApp adapter behind the inbox's channel contract
   (`packages/messaging/src/twilio.ts`), provider `twilio`, migration
@@ -82,10 +82,15 @@ Decided by the owner: B on the sandbox now. A can follow for the park's number.
 - A new line starts with the assistant off, as every number does; it is
   switched to live for this line at set-up, as the owner asked.
 - A production deployment refuses to start with the test line switched on.
-- Review points being corrected before landing: Start over left a booked party
-  linked to the cleared conversation; a message beginning "join" and one more
-  word was taken for the sandbox's join command; the allow-list is read with
-  the platform's phone rules; a PDF's caption is sent.
+- Review points corrected before landing: Start over lets go of a party booked
+  from the cleared conversation; only `join word-word` (and `stop` alone) is
+  taken for the sandbox's own command, so "join us at 3" reaches the chat; the
+  allow-list is read with the platform's phone rules (any normal spelling of
+  the number works; an entry that is not a phone number allows nobody).
+- Words sent with a file: Twilio's documentation says WhatsApp drops the text
+  body sent with a document, video or audio file. So an image keeps its
+  caption, and for the other files the words go first as their own message,
+  then the file. (https://www.twilio.com/docs/messaging/api/message-resource)
 
 ## Set-up, once it is deployed to staging
 
@@ -93,7 +98,10 @@ Decided by the owner: B on the sandbox now. A can follow for the park's number.
    `INBOX_TWILIO_ENABLED`, `INBOX_TWILIO_PUBLIC_URL` (the api's public https
    address, no path), `INBOX_TWILIO_ACCOUNT_SID_SANDBOX`,
    `INBOX_TWILIO_AUTH_TOKEN_SANDBOX`, `INBOX_TWILIO_ALLOWED_NUMBERS_SANDBOX`
-   (the tester's number as one run: plus sign, country code, no spaces).
+   (the tester's number in any normal spelling). The assistant's replies also
+   need `INBOX_AI_ENABLED` and `ANTHROPIC_API_KEY` on that service, as today.
+   After the settings are saved the api is deployed again at the same commit:
+   a running service keeps the settings it started with.
 2. Owner, in the Twilio Console: switch the WhatsApp sandbox on, note the join
    code, paste the one address into "When a message comes in" and "Status
    callback URL".
@@ -106,4 +114,6 @@ Decided by the owner: B on the sandbox now. A can follow for the park's number.
 
 - Should a hand-over on the test line notify the duty birthday manager on
   staging, as live would, or nobody?
+- Is it acceptable on the test line that the words sent with a PDF, video or
+  voice file arrive as a separate message just before the file?
 - The park's own number: option A, when and with which provider.
