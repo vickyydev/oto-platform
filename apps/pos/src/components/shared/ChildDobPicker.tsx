@@ -37,6 +37,12 @@ interface ChildDobPickerProps {
   // The customer's language, on a customer-facing screen only. Left out on a
   // staff screen, which stays in English whatever the display is set to (SCRUM-729).
   lang?: SupportedLang;
+  // SCRUM-954 — the picker opens in the light or dark look of the screen its
+  // button sits on (the family's form: the paired display, or the till's own
+  // customer half — `lib/displayTheme.ts`, SCRUM-929). Its dialog is drawn at
+  // the page's root, which wears the staff look (or none on a display), so
+  // without this a dark display opened a light picker. Left out, as before.
+  matchSurface?: boolean;
 }
 
 type Step = 'age' | 'month' | 'day' | 'confirm';
@@ -56,10 +62,17 @@ export function ChildDobPicker({
   childName,
   referenceDate,
   lang,
+  matchSurface = false,
 }: ChildDobPickerProps) {
   const t = tFor(lang ?? 'en');
   const monthLabels = MONTH_LABELS.map((_, index) => t(`dob.month.${index + 1}`));
   const [open, setOpen] = useState(false);
+  /** SCRUM-954 — the look of the screen the button sits on, read as the picker opens. */
+  const [surface, setSurface] = useState<'dark' | 'light' | null>(null);
+  const openPicker = (button: HTMLElement) => {
+    if (matchSurface) setSurface(surfaceThemeOf(button));
+    setOpen(true);
+  };
   const [step, setStep] = useState<Step>('age');
   const [pickedAge, setPickedAge] = useState<number | null>(null);
   const [pickedMonth, setPickedMonth] = useState<number | null>(null);
@@ -141,7 +154,7 @@ export function ChildDobPicker({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={(event) => openPicker(event.currentTarget)}
         className={cn(
           'flex w-full items-center justify-center gap-2 rounded-xl border border-foreground/15 bg-foreground/5 font-semibold text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50',
           triggerSizing,
@@ -159,7 +172,8 @@ export function ChildDobPicker({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md gap-0 border-foreground/10 bg-background p-0">
+        <DialogContent className={cn('max-w-md gap-0 border-foreground/10 bg-background p-0', surface && `${surface} text-foreground`)}
+          data-surface={surface ?? undefined}>
           {/* Header + step breadcrumb (tap a completed step to re-pick). */}
           <div className="flex items-center gap-3 border-b border-foreground/10 px-5 py-4">
             {step !== 'age' && (
@@ -279,6 +293,17 @@ export function ChildDobPicker({
       </Dialog>
     </>
   );
+}
+
+/**
+ * SCRUM-954 — the light or dark look of the screen an element sits on: the
+ * nearest wrapper that names one (the display page's root, the till's customer
+ * half), else the page root's; null where nothing names one.
+ */
+export function surfaceThemeOf(element: Element | null): 'dark' | 'light' | null {
+  const surface = element?.closest('.dark, .light') ?? null;
+  if (!surface) return null;
+  return surface.classList.contains('dark') ? 'dark' : 'light';
 }
 
 function Crumb({

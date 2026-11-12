@@ -1,4 +1,4 @@
-import { Delete } from 'lucide-react';
+import { Delete, KeyboardOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LETTER_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'] as const;
@@ -15,7 +15,9 @@ const KEY =
 interface ScreenKeyboardProps {
   value: string;
   onChange: (next: string) => void;
+  /** The keys' own button: puts the keys away. */
   onDone: () => void;
+  /** Its word; the form and the first screen pass `display.keyboard.hide` (SCRUM-954). */
   doneLabel: string;
   spaceLabel?: string;
   backspaceLabel?: string;
@@ -28,6 +30,12 @@ interface ScreenKeyboardProps {
  * backspace, done; English only. Names read as names, so a word starts with a
  * capital and carries on in lower case. The number keypad's companion, in its
  * design language.
+ *
+ * SCRUM-954 — the button that puts the keys away is a plain key like Space and
+ * Backspace, not the blue primary button: on the counter display the form's
+ * own Done in the bar below is the one way on, and two blue "Done" buttons on
+ * one screen sent a family to the wrong one. It keeps its place and its job,
+ * and reads "Hide" beside a closed-keyboard sign (`display.keyboard.hide`).
  */
 export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel = 'Space', backspaceLabel = 'Backspace', maxLength = 100 }: ScreenKeyboardProps) {
   const add = (text: string) => {
@@ -76,8 +84,11 @@ export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel 
         <button
           type="button"
           onClick={onDone}
-          className={`h-12 ${SHORT} min-w-0 flex-1 rounded-xl bg-primary text-primary-foreground text-lg font-bold transition-transform active:scale-95 hover:bg-primary/90`}
+          aria-label={doneLabel}
+          data-testid="screen-keyboard-hide"
+          className={cn(KEY, 'flex items-center justify-center gap-1.5 text-lg font-semibold text-foreground/70')}
         >
+          <KeyboardOff className="w-5 h-5 shrink-0" />
           {doneLabel}
         </button>
       </div>

@@ -11,9 +11,12 @@ import { LANGUAGES } from '@/i18n/types';
 export function LanguageSwitcher({
   variant = 'dark',
   className = '',
+  buttonClassName = '',
 }: {
   variant?: 'dark' | 'light';
   className?: string;
+  /** SCRUM-954 — added to the pill itself: the counter display's form makes it a finger's height. */
+  buttonClassName?: string;
 }) {
   const { lang, setLang, t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -45,7 +48,7 @@ export function LanguageSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-semibold transition-colors ${pillClass}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-semibold transition-colors ${pillClass}${buttonClassName ? ` ${buttonClassName}` : ''}`}
         aria-label={t('common.changeLanguage')}
       >
         <Globe className="w-4 h-4" />

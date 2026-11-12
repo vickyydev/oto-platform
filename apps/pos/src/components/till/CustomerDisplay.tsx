@@ -285,7 +285,8 @@ export function NicknameField({
           value={value}
           onChange={onChange}
           onDone={() => setOpen(false)}
-          doneLabel={t('common.done')}
+          // SCRUM-954 — the first screen has its own Done below: the keys' button reads Hide.
+          doneLabel={t('display.keyboard.hide')}
           spaceLabel={t('display.keyboard.space')}
           backspaceLabel={t('display.keyboard.backspace')}
         />

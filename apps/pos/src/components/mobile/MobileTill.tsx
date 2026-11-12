@@ -2693,6 +2693,8 @@ export default function MobileTill() {
             doneReady={mobileFamilyMissing().length === 0 && !gateSaving}
             doneBusy={gateSaving}
             doneNotSaved={familyDoneNotSaved}
+            // SCRUM-954 — the heading scrolls away, leaving the phone to the form.
+            phoneScroll
           />
         );
       case 'qr':

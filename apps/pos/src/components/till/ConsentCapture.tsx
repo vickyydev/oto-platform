@@ -11,7 +11,7 @@ import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
+import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, SHORT_HIDE } from './consentFormLayout';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CameraCapture } from '@/components/shared/CameraCapture';
@@ -103,6 +103,15 @@ interface ConsentCaptureProps {
   doneReady?: boolean;
   doneBusy?: boolean;
   doneNotSaved?: boolean;
+  /**
+   * SCRUM-954 — the phone till's form, handed to the parent: at phone width
+   * the heading (the language button, "Playing with us today", the title and
+   * its line) scrolls away with the form instead of standing over it, so the
+   * form has the screen between the top and the bar of "Still needed" and
+   * Done (and the phone's "Return phone to staff" under that). Wider than a
+   * phone, and everywhere else, the heading stands as before.
+   */
+  phoneScroll?: boolean;
 }
 
 /**
@@ -193,6 +202,7 @@ export function ConsentCapture({
   doneReady = false,
   doneBusy = false,
   doneNotSaved = false,
+  phoneScroll = false,
 }: ConsentCaptureProps) {
   const customer = useLanguage();
   // The till draws this form twice at once (the customer's half and the staff's
@@ -257,11 +267,20 @@ export function ConsentCapture({
     }), CHANNEL_LABEL[parentContactMethod])
     : null;
 
+  const language = (
+    <div className="absolute top-4 right-4 z-40">
+      <LanguageSwitcher variant="dark" />
+    </div>
+  );
   return (
     <div className="relative flex h-full w-full flex-col bg-[image:var(--cd-gradient)] text-foreground">
-      <div className="absolute top-4 right-4 z-40">
-        <LanguageSwitcher variant="dark" />
-      </div>
+      {!phoneScroll && language}
+      {/* SCRUM-954 — the heading and the form, one part that scrolls on the
+          phone till (`phoneScroll`), the language button going with the
+          heading; elsewhere the heading stands over the form's own scrolling
+          part, exactly as before. */}
+      <div className={cn('flex min-h-0 flex-1 flex-col', phoneScroll && `relative ${PHONE_SCROLL}`)} data-testid="consent-form-body">
+      {phoneScroll && language}
       <div className={cn('shrink-0 px-8 pt-8 pb-4 text-center', NARROW_HEAD)}>
         <div className="mb-2 inline-flex items-center gap-2 text-primary">
           <ShieldCheck className="h-6 w-6" />
@@ -275,7 +294,7 @@ export function ConsentCapture({
         </p>
       </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-8 pb-6">
+      <div className={cn('flex-1 space-y-5 overflow-y-auto px-8 pb-6', phoneScroll && PHONE_SCROLL_FORM)}>
         {rows.map(({ slot, aged, effective, needsConsent }) => {
         const meta = REQUIREMENT_META[effective];
         const ReqIcon = meta.icon;
@@ -306,6 +325,8 @@ export function ConsentCapture({
                     onUpdateChild(slot.id, { dateOfBirth, age: String(age) })
                   }
                   className="mt-2"
+                  // SCRUM-954 — the family's picker wears their screen's look.
+                  matchSurface={!staffScreen}
                 />
               </div>
             </div>
@@ -559,6 +580,7 @@ export function ConsentCapture({
             </p>
           </div>
         )}
+      </div>
       </div>
 
       {/* SCRUM-857 — the family's Done, on the till's own customer half. */}

@@ -62,6 +62,7 @@ import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildr
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/merch/PublicMerchCustomerDisplay';
 import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
+import { FORM_RECONNECTING_LINE } from '@/components/till/consentFormLayout';
 import { clearConsentDraft } from '@/lib/consentDraftStore';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
@@ -492,8 +493,8 @@ export default function Display() {
     </> : view?.consent ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="relative flex-1 min-h-0" inert={consentLocked}>
-        {formReconnecting && <p role="status" data-testid="display-form-reconnecting"
-          className="pointer-events-none absolute inset-x-0 top-0 z-50 border-b border-foreground/10 bg-background/95 px-4 py-2 text-center text-sm">
+        {/* SCRUM-954 — under the language button, its words clear of it. */}
+        {formReconnecting && <p role="status" data-testid="display-form-reconnecting" className={FORM_RECONNECTING_LINE}>
           {t('display.reconnectingSendsItself')}</p>}
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
           busy={consentLocked} answerPending={consentAnswerPending}

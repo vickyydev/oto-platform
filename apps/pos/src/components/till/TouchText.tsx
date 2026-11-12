@@ -89,7 +89,7 @@ export function TouchText({ value, onChange, placeholder, className, id, disable
           className={cn(className, 'md:text-2xl')} inputMode="none" autoComplete="off" spellCheck={false} data-testid={testId} />}
       {open && !disabled && (
         <ScreenKeyboard value={value} onChange={(next) => onChange(maxLength ? next.slice(0, maxLength) : next)}
-          onDone={() => setOpen(false)} doneLabel={t('common.done')} maxLength={maxLength}
+          onDone={() => setOpen(false)} doneLabel={t('display.keyboard.hide')} maxLength={maxLength}
           spaceLabel={t('display.keyboard.space')} backspaceLabel={t('display.keyboard.backspace')} />
       )}
     </div>

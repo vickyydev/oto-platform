@@ -9,7 +9,7 @@ import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
+import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, SHORT_HIDE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
@@ -365,6 +365,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const locked = busy || prompt.completed;
   /** SCRUM-943 — the till's copy for staff: nothing on it can be pressed, and it looks so. */
   const readOnly = !!mirror;
+  /** SCRUM-954 — the family's own screen: its presses a finger's height; the till's copy keeps its sizes. */
+  const touch = mirror ? undefined : DISPLAY_TOUCH;
   // SCRUM-857 — the family's photos: one file id per picture (a resend is the
   // same file), and each stored picture named to the till once the screen is
   // free to answer, the latest picture of a child replacing an earlier one.
@@ -590,7 +592,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     {mirror
       ? <div className="shrink-0 flex justify-center px-8 pt-4"><div className="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
         <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div></div>
-      : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" /></div>}
+      : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" buttonClassName={DISPLAY_TOUCH} /></div>}
     {/* SCRUM-943 — at phone width the language button sits above the heading, not over it. */}
     <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD}`)}>
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
@@ -601,7 +603,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         {STEPS.map((name, at) => (
           <button key={name} type="button" disabled={locked || at > index && !childrenComplete}
             onClick={() => { if (at !== index) goTo(name); }}
-            className={cn('rounded-full border px-4 py-1.5 text-base font-semibold transition-colors',
+            className={cn('rounded-full border px-4 py-1.5 text-base font-semibold transition-colors', touch,
               at === index ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 bg-foreground/5 text-foreground/70')}>
             {at + 1}. {t(name === 'children' ? 'superviseConsent.stepChildren' : name === 'care' ? 'superviseConsent.stepCare' : 'superviseConsent.stepAgreements')}
           </button>
@@ -626,7 +628,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             <div className="sm:w-40">
               <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
               <ChildDobPicker lang={lang} dateOfBirth={child.dateOfBirth ?? undefined} age={child.ageYears} childName={child.name}
-                disabled={locked} className="mt-2"
+                disabled={locked} className="mt-2" matchSurface
                 onChange={({ dateOfBirth, age }) => {
                   // An age is a choice, not typing: it goes to the till at once, so
                   // what this child needs is worked out there and shown here.
@@ -720,13 +722,13 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
         {helpAsked && <p role="status" className="mr-auto flex items-center gap-2 text-base text-foreground/70"><Users className="h-5 w-5" />{t('superviseConsent.teamComing')}</p>}
         {/* SCRUM-943 — on the till's read-only copy (`mirror`) the family's
             buttons are drawn as not available: only their screen presses them. */}
-        <Button variant="outline" disabled={readOnly || busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
-        {index > 0 && <Button variant="outline" disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
+        <Button variant="outline" className={touch} disabled={readOnly || busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
+        {index > 0 && <Button variant="outline" className={touch} disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
         {step !== 'agreements'
-          ? <Button disabled={readOnly || locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
+          ? <Button className={touch} disabled={readOnly || locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
           : saved
-            ? <Button disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
-            : <Button disabled={readOnly || locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
+            ? <Button className={touch} disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
+            : <Button className={touch} disabled={readOnly || locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
     </div>
   </div>;

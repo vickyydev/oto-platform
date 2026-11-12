@@ -308,18 +308,22 @@ export function SupervisionGate({
         </div>
       )}
 
+      {/* SCRUM-954 — on a phone "Continue to payment" was wider than what the
+          row left it and ran to the screen's edge: it may now take less than
+          its words (`min-w-0`) and wrap them, with a phone's padding. Where
+          the words fit, as on the counter till, nothing moves. */}
       <div className="mt-4 flex gap-3">
         <Button
           variant="outline"
           size="lg"
-          className="h-14 rounded-2xl px-6 text-lg"
+          className="h-14 shrink-0 rounded-2xl px-6 text-lg max-[520px]:px-4"
           onClick={onBack}
         >
           <ArrowLeft className="mr-2 h-5 w-5" /> Back
         </Button>
         <Button
           size="lg"
-          className="h-14 flex-1 rounded-2xl text-lg font-bold"
+          className="h-14 min-w-0 flex-1 whitespace-normal rounded-2xl text-lg font-bold max-[520px]:px-4 max-[520px]:leading-tight"
           disabled={!(canContinue || continueOpensForm) || busy}
           onClick={onContinue}
         >

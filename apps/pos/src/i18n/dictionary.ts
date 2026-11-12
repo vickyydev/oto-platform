@@ -546,6 +546,8 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'display.keyboard.space': { en: 'Space', zh: '空格', th: 'เว้นวรรค', ru: 'Пробел', fr: 'Espace' },
   'display.keypad.clear': { en: 'Clear', zh: '清除', th: 'ล้าง', ru: 'Очистить', fr: 'Effacer' },
   'display.keyboard.backspace': { en: 'Backspace', zh: '退格', th: 'ลบตัวอักษร', ru: 'Стереть', fr: 'Retour arrière' },
+  // SCRUM-954 — the on-screen keys' own button, which puts the keys away: a plain word, so the form's Done is the only Done.
+  'display.keyboard.hide': { en: 'Hide', zh: '收起', th: 'ซ่อน', ru: 'Скрыть', fr: 'Masquer' },
   'display.qr.ready': { en: 'Payment QR', zh: '付款二维码', th: 'คิวอาร์สำหรับชำระเงิน', ru: 'QR-код для оплаты', fr: 'QR de paiement' },
   'display.qr.waiting': { en: 'Waiting for payment QR', zh: '正在等待付款二维码', th: 'กำลังรอคิวอาร์สำหรับชำระเงิน', ru: 'Ожидание QR-кода для оплаты', fr: 'En attente du QR de paiement' },
   'display.order.reviewBelow': { en: 'Please review your items and total below.', zh: '请核对下方的商品和总额。', th: 'กรุณาตรวจสอบรายการและยอดรวมด้านล่าง', ru: 'Пожалуйста, проверьте позиции и итог ниже.', fr: 'Veuillez vérifier vos articles et le total ci-dessous.' },
