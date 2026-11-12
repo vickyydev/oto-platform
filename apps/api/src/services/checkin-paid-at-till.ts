@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
-import { checkin, paymentAttempt, sale, saleHold, saleLine } from '@oto/db';
+import { checkin, paymentAttempt, refund, sale, saleHold, saleLine } from '@oto/db';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import type { Exec } from './tx';
@@ -27,6 +27,14 @@ import type { Exec } from './tx';
  * Only a paid or finalised sale counts as paid for the views: a voided or
  * refunded sale still linked to a stay is refused at the money press (the
  * check-in would refuse it anyway) but is not shown as paid.
+ *
+ * SCRUM-909 — and only while the child's own kids line on it was not
+ * refunded. History refunds a sale BY ITEM: one child of two goes home, and
+ * the lines under that child's stay go back while the sale stays `finalised`
+ * for the other. That child is not paid for any more, linked or not: the
+ * picker offers them to charge again, the board does not check them in for
+ * nothing, and the booking can be cancelled. A linked one stays filed on its
+ * sale, as one whose whole sale was refunded does.
  */
 export interface PaidAtTill {
   saleId: string;
@@ -41,6 +49,17 @@ interface TillSaleOfStay extends PaidAtTill {
 
 const LIVE_SALE_STATUSES = ['paid', 'finalised'] as const;
 const isLive = (status: string) => (LIVE_SALE_STATUSES as readonly string[]).includes(status);
+
+/**
+ * SCRUM-909 — the lines of these sales any refund of them covered (a refund
+ * by item names its lines; a whole refund names every line still standing).
+ */
+export async function refundedLineIdsOf(db: Exec, saleIds: readonly string[]): Promise<Set<string>> {
+  const ids = [...new Set(saleIds)];
+  if (ids.length === 0) return new Set();
+  const rows = await db.select({ lines: refund.lines }).from(refund).where(inArray(refund.saleId, ids));
+  return new Set(rows.flatMap((r) => (r.lines ?? []).map((l) => l.saleLineId)));
+}
 
 /** The till sale each of these stays is already on, by stay id. */
 async function tillSalesOfStays(
@@ -58,9 +77,26 @@ async function tillSalesOfStays(
       .from(sale)
       .where(and(eq(sale.operatorId, operatorId), inArray(sale.id, [...new Set(linked.map((s) => s.saleId))])));
     const byId = new Map(rows.map((r) => [r.id, r]));
+    // SCRUM-909 — each stay's own kids line on the sale it names, and whether a refund covered it.
+    const saleIds = [...new Set(linked.map((s) => s.saleId))];
+    const ownLines = await db
+      .select({ id: saleLine.id, saleId: saleLine.saleId, stayId: saleLine.cartLineId })
+      .from(saleLine)
+      .where(
+        and(
+          inArray(saleLine.saleId, saleIds),
+          inArray(
+            saleLine.cartLineId,
+            linked.map((s) => s.id),
+          ),
+          eq(saleLine.kind, 'kids'),
+        ),
+      );
+    const refunded = await refundedLineIdsOf(db, saleIds);
+    const lineRefunded = new Set(ownLines.filter((l) => refunded.has(l.id)).map((l) => `${l.saleId}:${l.stayId}`));
     for (const s of linked) {
       const row = byId.get(s.saleId);
-      const status = row?.status ?? 'finalised';
+      const status = lineRefunded.has(`${s.saleId}:${s.id}`) ? 'refunded' : (row?.status ?? 'finalised');
       out.set(s.id, { saleId: s.saleId, receiptNumber: row?.receiptNumber ?? null, status, live: isLive(status) });
     }
   }
@@ -68,7 +104,7 @@ async function tillSalesOfStays(
   const unlinked = stays.filter((s) => !s.saleId).map((s) => s.id);
   if (unlinked.length > 0) {
     const rows = await db
-      .select({ stayId: saleLine.cartLineId, saleId: sale.id, receiptNumber: sale.receiptNumber, status: sale.status })
+      .select({ lineId: saleLine.id, stayId: saleLine.cartLineId, saleId: sale.id, receiptNumber: sale.receiptNumber, status: sale.status })
       .from(saleLine)
       .innerJoin(sale, eq(sale.id, saleLine.saleId))
       .where(
@@ -80,8 +116,13 @@ async function tillSalesOfStays(
         ),
       )
       .orderBy(asc(sale.createdAt), asc(sale.id));
+    // SCRUM-909 — a sale whose line for the child was refunded no longer holds them.
+    const refunded = await refundedLineIdsOf(
+      db,
+      rows.map((r) => r.saleId),
+    );
     for (const r of rows) {
-      if (out.has(r.stayId)) continue;
+      if (out.has(r.stayId) || refunded.has(r.lineId)) continue;
       out.set(r.stayId, { saleId: r.saleId, receiptNumber: r.receiptNumber, status: r.status, live: true });
     }
   }

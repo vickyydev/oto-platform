@@ -53,7 +53,7 @@ import {
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { paidOnlineRefusal, paidOnlineStaysOf, type PaidOnlineBooking } from './booking-supervision';
-import { openTillSalesOfStays, paidAtTillStaysOf, type PaidAtTill } from './checkin-paid-at-till';
+import { openTillSalesOfStays, paidAtTillStaysOf, refundedLineIdsOf, type PaidAtTill } from './checkin-paid-at-till';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { mirrorNotice } from './inbox/mirror';
@@ -1103,6 +1103,8 @@ async function loadChoice(
   for (const l of lines) {
     if (l.kind === 'kids' && !lineOf.has(l.cartLineId)) lineOf.set(l.cartLineId, l);
   }
+  // SCRUM-909 — a child whose own line History refunded by item is no longer paid for on this sale.
+  const refunded = await refundedLineIdsOf(tx, [saleRow.id]);
   for (const s of stays) {
     if (s.branchId !== saleRow.branchId) throw errors.conflict('CHECKIN_OTHER_PARK', `${s.childName} was registered at another park.`);
     if (s.status !== 'registered') throw notWaitingRefusal(s);
@@ -1113,6 +1115,13 @@ async function loadChoice(
     if (paid && saleRow.bookingId !== paid.bookingId) throw paidOnlineRefusal(s.childName, paid);
     if (!lineOf.has(s.id)) {
       throw errors.conflict('CHECKIN_NOT_ON_SALE', `${s.childName} is not on this sale — add their drop-off line and take the payment again.`);
+    }
+    if (refunded.has(lineOf.get(s.id)!.id)) {
+      throw errors.conflict(
+        'CHECKIN_LINE_REFUNDED',
+        `${s.childName}'s drop-off on this sale was refunded, so they are not paid for on it. Nothing was changed.`,
+        { checkinId: s.id, saleId: saleRow.id },
+      );
     }
   }
   return { saleRow, stays, lineOf };
