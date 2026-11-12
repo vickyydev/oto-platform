@@ -114,6 +114,46 @@ describe.skipIf(!markup)('SCRUM-882 — measured: every name whole, every langua
     expect(confirm).toEqual({ lines: 2, sameRow: true });
   });
 
+  // SCRUM-912 — CI's Linux Chromium broke "พร้อมเพย์" onto two lines at 576px:
+  // its runner has no Thai font, so Thai came from whatever the system found.
+  // The till now draws Thai from its own face ('Till Thai', src/fonts.css), so
+  // the platform's fonts are never asked: the label lays out exactly as it
+  // does when the page is told to use that face and nothing else.
+  it('Thai is drawn from the till\'s own face, whatever Thai font the platform has (SCRUM-912)', async () => {
+    await page.place(html(), 576);
+    const read = await page.page.evaluate(async (label) => {
+      const tile = Array.from(document.querySelectorAll('#markup .grid h3'))[2] as HTMLElement;
+      tile.textContent = label;
+      await document.fonts.load(`700 24px 'Till Thai'`, label);
+      await document.fonts.ready;
+      const measure = () => {
+        const probe = document.createElement('span');
+        probe.textContent = label;
+        probe.style.cssText = 'white-space:nowrap;font:inherit;position:absolute;visibility:hidden';
+        tile.appendChild(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        return width;
+      };
+      const stack = getComputedStyle(tile).fontFamily;
+      const asShown = measure();
+      tile.style.fontFamily = `'Till Thai'`;
+      const tillFaceOnly = measure();
+      tile.style.fontFamily = '';
+      const faces = Array.from(document.fonts)
+        .filter((f) => f.family.replace(/["']/g, '') === 'Till Thai')
+        .map((f) => `${f.weight} ${f.status}`)
+        .sort();
+      const lines = Math.round(tile.getBoundingClientRect().height / parseFloat(getComputedStyle(tile).lineHeight));
+      return { stack, asShown, tillFaceOnly, faces, lines, overflow: tile.scrollWidth - tile.clientWidth };
+    }, lookup('book.payment.promptpayTitle', 'th')!);
+    expect(read.stack).toMatch(/^Inter, "?Till Thai"?, sans-serif$/);
+    expect(read.faces).toContain('700 loaded');
+    expect(read.asShown).toBeCloseTo(read.tillFaceOnly, 1);
+    expect(read).toMatchObject({ lines: 1 });
+    expect(read.overflow).toBeLessThanOrEqual(1);
+  });
+
   it('the defect: with the old window-keyed classes, the split view broke the names mid-word', async () => {
     const old = html()
       .replace('grid gap-3 @xl:gap-4 grid-cols-2 @xl:grid-cols-3', 'grid gap-3 gap-4 grid-cols-3')

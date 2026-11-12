@@ -18,10 +18,9 @@
  *
  * SUBSETS. latin and latin-ext cover the park's English and the names it
  * types; cyrillic is here because Russian-speaking visitors are a real part of
- * Phuket's trade and the sprint's own fixtures carry a Cyrillic line. Thai is
- * NOT here: Inter has no Thai glyphs and never did, so Thai on screen falls to
- * the platform's Thai font exactly as it does today. Printed Thai is a
- * different path — `packages/print` rasterises it from Noto Sans Thai.
+ * Phuket's trade and the sprint's own fixtures carry a Cyrillic line. Inter
+ * has no Thai glyphs and never did: Thai is 'Till Thai', at the end of this
+ * file.
  */
 
 @font-face {
@@ -134,4 +133,40 @@
   src: url('./assets/fonts/inter-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
     U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * THAI, SERVED FROM THIS BUILD TOO (SCRUM-912).
+ *
+ * Thai used to fall to the platform's Thai font. A Windows counter has one
+ * (Leelawadee UI); a Linux Chromium may have none — the counter Pi's browser,
+ * and CI's, whose runner image carries no Thai font at all — and then Thai is
+ * drawn from whatever the system finds, wider than any Thai face, and the
+ * PromptPay tile's "พร้อมเพย์" broke onto two lines in the payment step's row
+ * of three. The booth found the same on the Pi (SCRUM-223) and builds this face
+ * in for the same reason.
+ *
+ * 'Till Thai' is Noto Sans Thai, unmodified, from the fonts the receipt printer
+ * already uses (packages/print/fonts, OFL 1.1; the notice travels there),
+ * built into the page and precached with it (`.ttf` in vite.config.ts), so a
+ * till draws Thai the same on every device and with no internet. It is named
+ * after Inter in `--app-font-sans` and covers Thai only (`unicode-range`), so
+ * nothing but Thai is drawn from it. There is no Medium or SemiBold file: 500
+ * is drawn Regular and 600 Bold, as the browser picks the nearest weight.
+ */
+@font-face {
+  font-family: 'Till Thai';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../../packages/print/fonts/NotoSansThai-Regular.ttf') format('truetype');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+@font-face {
+  font-family: 'Till Thai';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../../packages/print/fonts/NotoSansThai-Bold.ttf') format('truetype');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
 }

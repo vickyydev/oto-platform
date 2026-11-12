@@ -12,8 +12,11 @@ const port = Number(process.env.POS_PORT ?? process.env.PORT ?? 25741);
 const apiPort = Number(process.env.API_PORT ?? 3001);
 const basePath = process.env.BASE_PATH ?? '/';
 
-/** Extensions worth holding for an offline load; everything else is left alone. */
-const PRECACHE_EXTENSIONS = ['.js', '.css', '.woff2', '.woff', '.png', '.svg'];
+/**
+ * Extensions worth holding for an offline load; everything else is left alone.
+ * `.ttf` is the till's Thai face (src/fonts.css, SCRUM-912).
+ */
+const PRECACHE_EXTENSIONS = ['.js', '.css', '.woff2', '.woff', '.ttf', '.png', '.svg'];
 
 /**
  * Files copied verbatim from `public/` that the shell needs offline.
