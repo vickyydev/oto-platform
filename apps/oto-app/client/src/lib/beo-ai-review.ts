@@ -105,6 +105,12 @@ export interface ReviewMenuLine {
    * none chosen waits for staff to choose it (`undecidedOptions`).
    */
   options?: string[];
+  /**
+   * SCRUM-958: the set menu's choice group an adults' line is a dish of: the
+   * adults' own SET line of that dish (no price, not charged), its option
+   * `matchedName`. Absent on every other line.
+   */
+  setMenuItemId?: string;
 }
 
 export interface ReviewEntertainment {
@@ -387,6 +393,8 @@ export function initialReviewState(
         decision: null,
         ...(l.notes ? { notes: l.notes } : {}),
         ...(options.length > 1 ? { options } : {}),
+        // SCRUM-958: the adults' SET line of a set-menu dish.
+        ...(l.setMenuItemId ? { setMenuItemId: l.setMenuItemId } : {}),
         // SCRUM-946: the chat's price is the line's, per item, as it will be written. SCRUM-944: else
         // the till's weekday price for a dish or drink the till sells, as its picker writes an EXTRA.
         ...priceOfLine(review, l),
@@ -594,8 +602,19 @@ export function approvalResultWords(answer: ApproveAnswer): string {
  */
 export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue">, state: BeoAiReviewState): string | null {
   const kept = state.menuLines.filter((l) => (!l.notInMenu || l.decision === "keep") && l.itemName.trim() && l.quantity > 0);
-  const adults = kept.filter((l) => l.menu === "adults");
-  if (adults.length === 0) return null;
+  // SCRUM-958: an adults' SET line of a set-menu dish is the adults' own menu: nothing is folded.
+  const setLines = kept.filter((l) => !!adultsSetLineGroupOf(review, state, l));
+  const adults = kept.filter((l) => l.menu === "adults" && !setLines.includes(l));
+  if (adults.length === 0 || setLines.length > 0) return null;
+  return adultsLinesRepeatOf(review, state, kept, adults) === true ? adultsFoldedWords(adults.length) : null;
+}
+
+/**
+ * Whether the review's adults' lines only repeat the kids' menu (SCRUM-946's rule, the one the
+ * server applies, `adultsLinesRepeatKids`); null when the kids' list is the BEO's own (the review
+ * names neither a set menu nor a kids' dish): the server decides, and its toast says so.
+ */
+function adultsLinesRepeatOf(review: Pick<BeoAiReview, "catalogue">, state: BeoAiReviewState, kept: ReviewMenuLine[], adults: ReviewMenuLine[]): boolean | null {
   const nameOf = (l: ReviewMenuLine) => (l.notInMenu ? l.itemName.trim() : (l.matchedName ?? l.itemName).trim());
   const menu = state.setMenuId.value ? review.catalogue.setMenus.find((m) => m.id === state.setMenuId.value) : undefined;
   const kidsLines = kept.filter((l) => l.menu === "kids");
@@ -608,12 +627,25 @@ export function adultsFoldNoticeOf(review: Pick<BeoAiReview, "catalogue">, state
   });
   const kids = [...setLines, ...kidsLines.map((l) => ({ itemName: nameOf(l), quantity: l.quantity }))];
   const own = (l: ReviewMenuLine) => (l.priceFrom === "chat" || l.priceFrom === "staff" ? l.price : null);
-  const repeat = adultsLinesRepeatKids(
+  return adultsLinesRepeatKids(
     kids,
     adults.map((l) => ({ itemName: nameOf(l), quantity: l.quantity, price: own(l), said: [l.itemName, l.notes].filter(Boolean).join(" ") })),
     state.numAdults?.value ?? null,
   );
-  return repeat ? adultsFoldedWords(adults.length) : null;
+}
+
+/**
+ * SCRUM-958: the set menu's choice group a review line is the adults' SET line of: an adults'
+ * line marked so, on the set menu the review keeps. Undefined for every other line (moved to
+ * the kids' list or the bar, or the set menu changed): such a line is sent as any other.
+ */
+export function adultsSetLineGroupOf(
+  review: Pick<BeoAiReview, "catalogue">,
+  state: Pick<BeoAiReviewState, "setMenuId">,
+  line: Pick<ReviewMenuLine, "menu" | "setMenuItemId">,
+): Extract<BeoAiSetMenuItem, { type: "choice_group" }> | undefined {
+  if (!line.setMenuItemId || line.menu !== "adults" || !state.setMenuId.value) return undefined;
+  return choiceGroupsOf(review as BeoAiReview, state.setMenuId.value).find((g) => g.id === line.setMenuItemId);
 }
 
 /** The sources whose marks the form wears after an approval: not a step's, nor the deposit's, that was not written. */
@@ -804,8 +836,10 @@ export const thb = (baht: number) => `฿${baht.toLocaleString("en", { maximumFr
  */
 export function priceOfLine(
   review: Pick<BeoAiReview, "catalogue">,
-  line: Pick<BeoAiReview["proposal"]["menuLines"][number], "chatPrice" | "productCode" | "notInMenu">,
+  line: Pick<BeoAiReview["proposal"]["menuLines"][number], "chatPrice" | "productCode" | "notInMenu" | "setMenuItemId">,
 ): Pick<ReviewMenuLine, "price" | "priceFrom"> {
+  // SCRUM-958: the adults' SET line of a set-menu dish is part of the package: no price.
+  if (line.setMenuItemId) return { price: null, priceFrom: null };
   if (line.chatPrice !== null) return { price: line.chatPrice, priceFrom: "chat" };
   const till = line.notInMenu ? undefined : tillItemOf(review.catalogue, line.productCode);
   return till ? { price: Math.round(till.priceSatang) / 100, priceFrom: "till" } : { price: null, priceFrom: null };
@@ -965,6 +999,19 @@ export function approveBodyOf(
     .filter((l) => l.itemName.trim() && l.quantity > 0)
     .map((l, i) => {
       note(`menu:${i}`, l);
+      // SCRUM-958: the adults' SET line of a set-menu dish: its group and the option shown, no price.
+      const setGroup = adultsSetLineGroupOf(review, state, l);
+      if (setGroup) {
+        return {
+          menu: l.menu,
+          itemName: l.itemName.trim(),
+          quantity: Math.round(l.quantity),
+          productCode: l.notInMenu ? null : l.productCode,
+          notes: l.notes?.trim() || null,
+          setMenuItemId: setGroup.id,
+          ...(l.matchedName ? { option: l.matchedName } : {}),
+        };
+      }
       return {
         menu: l.menu,
         itemName: l.itemName.trim(),

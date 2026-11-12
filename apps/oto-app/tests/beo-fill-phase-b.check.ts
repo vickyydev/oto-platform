@@ -578,9 +578,11 @@ try {
     assert.deepEqual(Object.keys(p.event), [], "no time, number, day or age the chat does not give");
     assert.equal(p.cake, null, "a cake with nothing said is no cake");
     assert.deepEqual(p.details.pos.items, [{ description: "extra pizza", type: "included", from: p.details.pos.items[0]!.from }], "no price the chat does not name");
-    // The kids' chicken fried rice is the set menu's choice; the adults' options sharing CF-43 stay apart, one line each.
-    assert.deepEqual(p.setMenu?.choices.map((c) => [c.itemId, c.option]), [[RICE, "Chicken"]]);
-    assert.deepEqual(p.menuLines.map((l) => [l.menu, l.matchedName, l.quantity]), [["adults", "Fried rice (Veggie)", 1], ["adults", "Fried rice (Pork)", 2]]);
+    // SCRUM-958 (the owner's rule of 12 November): the chat says the chicken fried rice "for the adults",
+    // so it chooses nothing for the kids, though the model read it as the kids' choice and a kids' line:
+    // it is the adults' own dish of the set menu, once. The adults' options sharing CF-43 stay apart, one line each.
+    assert.deepEqual(p.setMenu?.choices.map((c) => [c.itemId, c.option]), []);
+    assert.deepEqual(p.menuLines.map((l) => [l.menu, l.matchedName, l.quantity]), [["adults", "Fried rice (Chicken)", 1], ["adults", "Fried rice (Veggie)", 1], ["adults", "Fried rice (Pork)", 2]]);
     assert.deepEqual(p.entertainment.map((e) => [e.name, e.notInCatalogue, e.time]), [["a magician", true, "15:30"]], "a free show keeps its time");
     // The option a shared code's names mean, from the chat's words.
     const rice = ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Pork)"];

@@ -19,6 +19,7 @@ import {
   foodOfSetMenus,
   foodOptionNamed,
   codedLineNameOf,
+  setMenuOptionOf,
   tillItemOf,
   laterLineWins,
   type BeoAiCatalogueView,
@@ -973,6 +974,8 @@ export function resolveCatalogueAnswer(
       });
     }
   }
+  // SCRUM-958: set-menu choices whose only words in the chat are said for the adults.
+  const adultsChoices: Array<{ group: Extract<BeoAiSetMenuItem, { type: "choice_group" }>; option: string; said: string | null; notes?: string; from: BeoAiFrom }> = [];
   if (menu) {
     const from = named && setAnswer ? fromOf(setAnswer, setAnswer.said) : proposal.package!.from;
     const chosen: Array<{ itemId: string; option: string; said: string | null; notes?: string; from: BeoAiFrom }> = [];
@@ -982,6 +985,13 @@ export function resolveCatalogueAnswer(
         | undefined;
       const option = group && c.option ? group.options.find((o) => fold(o) === fold(c.option!)) : undefined;
       const cFrom = fromOf(c, c.said ?? c.option);
+      // SCRUM-958 (the 12 November proof, thread A: "And chicken fried rice for the adults."):
+      // a choice the chat says only for the adults never chooses for the kids. It is the adults'
+      // own dish of the set menu (an adults' SET line, below); the kids' group stays unchosen.
+      if (group && option && saidForTheAdults(c.said, lineTextOf(c))) {
+        adultsChoices.push({ group, option, said: c.said ?? null, ...(c.notes ? { notes: c.notes } : {}), from: cFrom });
+        continue;
+      }
       if (!group || !option) {
         // A choice the set menu does not list: a dish of its own, for staff to decide.
         const itemName = c.said ?? c.option;
@@ -1015,7 +1025,9 @@ export function resolveCatalogueAnswer(
     const itemName = m.itemName ?? names[0] ?? till?.name;
     if (!itemName) continue;
     // SCRUM-944: a drink made at the bar goes to the bar plan, a dish to the kids' or the adults' list.
-    const said = (m.menu ?? "kids") as BeoAiMenu;
+    // SCRUM-958: a dish whose words in the chat are said only for the adults is never the kids'.
+    const asked = (m.menu ?? "kids") as BeoAiMenu;
+    const said: BeoAiMenu = asked === "kids" && saidForTheAdults(m.itemName, lineTextOf(m)) ? "adults" : asked;
     const menu: BeoAiMenu = till ? (till.station === "bar" ? "bar" : said === "bar" ? "kids" : said) : said;
     // SCRUM-926: of the names one code carries (a set menu's options sharing it), the option the
     // read names when it is one of them, else the one the chat's words name; none (null) when
@@ -1024,7 +1036,7 @@ export function resolveCatalogueAnswer(
     const shared = food ? foodOptionNamed(names, m.option) ?? foodNameFor(names, m.itemName) : null;
     const matchedName = food || till ? codedLineNameOf(names, till, shared) : null;
     const code = food?.code ?? till?.code ?? null;
-    const line = {
+    const line: BeoAiProposal["menuLines"][number] = {
       menu,
       itemName,
       quantity: m.quantity ?? 1,
@@ -1047,6 +1059,32 @@ export function resolveCatalogueAnswer(
     }
     // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.
     else merge(proposal.menuLines, line, (x) => x.productCode === null && x.menu === menu && fold(x.itemName) === fold(itemName));
+  }
+  // SCRUM-958: each choice said only for the adults, as the adults' line of that set-menu dish
+  // with its option, written as a SET line on their own menu (one line per group and option; an
+  // adults' line the read gave for the same dish is the same line, the later line's).
+  for (const a of adultsChoices) {
+    const code = a.group.optionProductCodes[a.option] ?? a.group.productCode ?? null;
+    const names = code ? foodNamesFor(catalogue, code, partyMenuId) : [];
+    const matchedName = names.find((n) => setMenuOptionOf(a.group, n) === a.option) ?? a.option;
+    const line: BeoAiProposal["menuLines"][number] = {
+      menu: "adults",
+      itemName: a.said ?? a.option,
+      quantity: 1,
+      productCode: code,
+      matchedName,
+      notInMenu: false,
+      chatPrice: null,
+      setMenuItemId: a.group.id,
+      ...(a.notes ? { notes: a.notes } : {}),
+      from: a.from,
+    };
+    merge(proposal.menuLines, line, (x) =>
+      x.menu === "adults" &&
+      (x.setMenuItemId === a.group.id
+        ? x.matchedName === matchedName
+        : !!code && !!x.productCode && x.productCode.toUpperCase() === code.toUpperCase() && (x.matchedName === null || x.matchedName === matchedName)),
+    );
   }
   // Entertainment: one line per entertainment the menu has; a free line as said.
   for (const e of readMany(EntertainmentWithTime, answer.entertainment, 30)) {
@@ -1371,6 +1409,38 @@ export function moreAsked(itemName: string, text: string | null): boolean {
     if (asksForMore(before) || asksForMore(after)) return true;
   }
   return false;
+}
+/** SCRUM-958: words naming the adults, in the languages the park's chats are written in. */
+const ADULT_WORDS = /(^|[^\p{L}])(adults?|grown[- ]?ups?|parents)([^\p{L}]|$)|ผู้ใหญ่|взросл|родител/iu;
+/** SCRUM-958: words naming the kids. */
+const KID_WORDS = /(^|[^\p{L}])(kids?|kiddies|child|children|little ones)([^\p{L}]|$)|เด็ก|дет[иейяскм]|ребён|ребен/iu;
+/** SCRUM-958: what ends the part of a line that says one thing: a stop, a comma, a joining word. */
+const PART_BREAK = /[.,;:!?\n]|(?:^|\s)(?:and|but|while|whereas|plus)(?=\s)|(?:^|\s)(?:и|а|но)(?=\s)|และ|ส่วน|แต่/giu;
+/**
+ * SCRUM-958 (the 12 November proof, thread A: "And chicken fried rice for the
+ * adults."): whether the chat says a set-menu choice only for the adults. The
+ * chat's words for it name the adults and not the kids; or, when they name
+ * nobody, the part of their line that holds them (up to a stop, a comma or a
+ * joining word: "Veggie fried rice for the kids and chicken fried rice for the
+ * adults" is two parts) does. Words that name nobody anywhere ("chicken fried
+ * rice") are the set menu's choice, as before.
+ */
+export function saidForTheAdults(said: string | null | undefined, lineText: string | null | undefined): boolean {
+  const words = said?.trim() ?? "";
+  if (!words) return false;
+  const adults = ADULT_WORDS.test(words);
+  const kids = KID_WORDS.test(words);
+  if (adults || kids) return adults && !kids;
+  if (!lineText) return false;
+  const line = fold(lineText);
+  const at = line.indexOf(fold(words));
+  if (at < 0) return false;
+  const end = at + fold(words).length;
+  let from = 0;
+  for (const m of line.slice(0, at).matchAll(PART_BREAK)) from = (m.index ?? 0) + m[0].length;
+  const after = new RegExp(PART_BREAK.source, "iu").exec(line.slice(end));
+  const part = line.slice(from, after ? end + after.index : line.length);
+  return ADULT_WORDS.test(part) && !KID_WORDS.test(part);
 }
 /** SCRUM-946: words saying a price is for one item ("450 each", "по 450", "ถาดละ 450"). */
 const PER_ITEM_WORDS = /(^|[^\p{L}])(each|per|apiece|a piece|ea)([^\p{L}]|$)|\/\s*(pc|pcs|piece|each)|ละ|ต่อ|за штуку|за шт|кажд|по\s*$/iu;

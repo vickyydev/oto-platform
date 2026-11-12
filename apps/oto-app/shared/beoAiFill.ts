@@ -271,6 +271,15 @@ export interface BeoAiMenuLine {
    * the dish's line; absent when the chat gives none.
    */
   notes?: string;
+  /**
+   * SCRUM-958: an adults' line that IS a dish of the party's set menu (one of
+   * its choice groups, by the id the set menu gives it): written on the
+   * adults' own menu as that group's SET line, as the editor holds a set-menu
+   * line, never an EXTRA and never charged. Its option is the one
+   * `matchedName` names; none while nobody chose it (staff choose it in the
+   * review before Approve, SCRUM-926's hold). Absent on every other line.
+   */
+  setMenuItemId?: string;
   from: BeoAiFrom;
 }
 
@@ -494,6 +503,38 @@ export function adultsLinesRepeatKids(kids: readonly KitchenLineLike[], adults: 
 export const adultsFoldedWords = (n: number): string =>
   `The adults' ${n === 1 ? "line only repeats" : `${n} lines only repeat`} the kids' menu: the adults eat the kids' menu, and "Different for adults" stays off.`;
 
+/**
+ * SCRUM-958: the option of a set menu's choice group a name stands for — the
+ * option as listed ("Chicken"), the till code's name for it ("Fried rice
+ * (Chicken)", `foodOfSetMenus`), or the option a till code belongs to
+ * (Margherita's own CF-24). Null when it is none of them: a name the set menu
+ * does not hold is never written as its choice.
+ */
+export function setMenuOptionOf(
+  group: Pick<Extract<BeoAiSetMenuItem, { type: "choice_group" }>, "label" | "options" | "optionProductCodes">,
+  name: string | null | undefined,
+  code?: string | null,
+): string | null {
+  const said = typeof name === "string" ? foldDishName(name) : "";
+  if (said) {
+    const exact = group.options.find((o) => foldDishName(o) === said || foldDishName(`${group.label} (${o})`) === said);
+    if (exact) return exact;
+    const bracket = /\(([^()]*)\)\s*$/.exec(said)?.[1]?.trim();
+    const inBracket = bracket ? group.options.filter((o) => foldDishName(o) === bracket) : [];
+    if (inBracket.length === 1) return inBracket[0]!;
+  }
+  const key = code?.trim().toUpperCase();
+  if (key) {
+    const owned = group.options.filter((o) => group.optionProductCodes[o]?.trim().toUpperCase() === key);
+    if (owned.length === 1) return owned[0]!;
+  }
+  return null;
+}
+
+/** SCRUM-958: the words beside an adults' set-menu line in the review: what it is, and that it is not charged. */
+export const adultsSetMenuLineWords = (groupLabel: string): string =>
+  `The set menu's ${groupLabel}, on the adults' own menu: a SET line, not charged.`;
+
 /** A set menu's choices as the parent link records them: each group's chosen options. */
 export interface BeoAiSetMenuChoices {
   templateId: string;
@@ -631,6 +672,12 @@ export const BeoAiApproveBodySchema = z
              * the chat's price for the dish as the review shows it. Absent: no price.
              */
             price: z.number().min(0).max(1_000_000).optional(),
+            /**
+             * SCRUM-958: an adults' line that is a choice group of the set menu this approval
+             * writes: written as that group's SET line on the adults' own menu (its option is
+             * `option`), never an EXTRA. Checked against the set menu again.
+             */
+            setMenuItemId: z.string().trim().min(1).max(100).optional(),
           })
           .strict(),
       )

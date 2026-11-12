@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CalendarDays, CheckCircle2, ClipboardPaste, Gift, ListTodo, Loader2, MessageSquare, Music, Settings, Sparkles, Trash2, Users, Utensils, Wallet } from "lucide-react";
-import { BEO_AI_MENUS, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
+import { BEO_AI_MENUS, adultsSetMenuLineWords, beoAiMatchLabel, beoAiSourceLabel, type BeoAiApproveBody, type BeoAiCakeMode, type BeoAiFrom, type BeoAiMenu, type BeoAiReview } from "@shared/beoAiFill";
 import { dayLabel } from "@/lib/beo-ai-date";
 import { aiReviewCakeNotSaidNote } from "@/lib/beo-ai-preview";
 import {
@@ -18,6 +18,7 @@ import {
   approvedMarksOf,
   catalogueIsEmpty,
   adultsFoldNoticeOf,
+  adultsSetLineGroupOf,
   chatOffered,
   chatOfferWords,
   chatSaysOf,
@@ -750,6 +751,8 @@ function ReviewSections({
           };
           // SCRUM-926: options sharing the line's till code; one nobody chose waits for staff.
           const optionOpen = !l.notInMenu && !!l.options && !(l.matchedName && l.options.includes(l.matchedName));
+          // SCRUM-958: the adults' SET line of a set-menu dish: on the adults' own menu, not charged.
+          const setGroup = adultsSetLineGroupOf(review, state, l);
           return (
             <div
               key={l.key}
@@ -757,11 +760,15 @@ function ReviewSections({
               data-testid={l.notInMenu ? "ai-review-not-in-menu" : "ai-review-menu-line"}
             >
               <div className="flex items-center gap-2 text-sm flex-wrap">
-                <select className={cn(SELECT, "w-20")} value={l.menu} onChange={(e) => update({ menu: e.target.value as BeoAiMenu })} data-testid="select-ai-review-menu">
-                  {BEO_AI_MENUS.map((m) => (
-                    <option key={m} value={m}>{MENU_LABEL[m]}</option>
-                  ))}
-                </select>
+                {setGroup ? (
+                  <span className="w-20 text-sm" data-testid="text-ai-review-menu-adults-set">{MENU_LABEL.adults}</span>
+                ) : (
+                  <select className={cn(SELECT, "w-20")} value={l.menu} onChange={(e) => update({ menu: e.target.value as BeoAiMenu })} data-testid="select-ai-review-menu">
+                    {BEO_AI_MENUS.map((m) => (
+                      <option key={m} value={m}>{MENU_LABEL[m]}</option>
+                    ))}
+                  </select>
+                )}
                 <Input
                   type="number"
                   min={1}
@@ -775,7 +782,7 @@ function ReviewSections({
                   <span className="flex-1 min-w-[8rem]" data-testid="text-ai-review-match">{beoAiMatchLabel(l.itemName, l.matchedName, l.productCode)}</span>
                 )}
                 {/* SCRUM-944: the till's own item the line is matched to, with the till's price. */}
-                {!l.notInMenu && tillMatchOf(review, l.productCode) && (
+                {!l.notInMenu && !setGroup && tillMatchOf(review, l.productCode) && (
                   <span className="text-xs text-muted-foreground shrink-0" data-testid="text-ai-review-till-price">
                     {`Till ${thb(tillMatchOf(review, l.productCode)!.price)}`}
                   </span>
@@ -786,6 +793,11 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={l.from} indent={false} />
+              {setGroup && (
+                <div className="text-xs text-muted-foreground" data-testid="text-ai-review-adults-set">
+                  {adultsSetMenuLineWords(setGroup.label)}
+                </div>
+              )}
               {/* SCRUM-904: the chat's note on the dish, written on its line. */}
               {l.notes !== undefined && (
                 <div className="flex items-center gap-2 text-sm">
@@ -813,8 +825,9 @@ function ReviewSections({
                   </select>
                 </div>
               )}
-              {/* SCRUM-946: the price written on the line, for each item, as Approve and create writes it. */}
-              {(l.chatPrice !== null || l.price !== null) && (
+              {/* SCRUM-946: the price written on the line, for each item, as Approve and create writes it.
+                  SCRUM-958: never on an adults' SET line. */}
+              {!setGroup && (l.chatPrice !== null || l.price !== null) && (
                 <div className="flex items-center gap-2 text-xs flex-wrap" data-testid="ai-review-menu-price">
                   <span className="text-muted-foreground">Price:</span>
                   <Input

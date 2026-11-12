@@ -17,7 +17,7 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { adultsLinesRepeatKids, CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, setMenuOptionOf, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
@@ -188,6 +188,37 @@ async function checkTeam(db: DbExecutor, tenantId: string, team: ApprovedTeam | 
   return null;
 }
 
+type ChoiceGroup = Extract<BeoAiSetMenuItem, { type: "choice_group" }>;
+
+/** SCRUM-958: a choice group of the set menu the approval writes, by its id. */
+function setMenuGroupOf(body: BeoAiApproveBody, catalogue: BeoCatalogue, itemId: string): ChoiceGroup | undefined {
+  const menu = body.setMenu ? catalogue.setMenus.find((m) => m.id === body.setMenu!.templateId) : undefined;
+  return menu?.items.find((i): i is ChoiceGroup => i.id === itemId && i.type === "choice_group");
+}
+
+/**
+ * SCRUM-958 — THE ADULTS' SET LINE OF A SET-MENU DISH. "Chicken fried rice for
+ * the adults" is the set menu's Fried rice for the adults, not the kids' choice
+ * and not a charged EXTRA: the line the adults' own menu holds when staff turn
+ * "Different for adults" on and change that dish there (shared/kitchenAdults.ts,
+ * SCRUM-829), which is the line the set menu resolves for the group and option
+ * (`resolveSetMenuLines`, the parent link's and the approval's own shape: SET,
+ * its group's id, "(Fried rice)" as its mark, no price), as the adults' copy
+ * (`adultsCopiesOf`'s id). The chat's note on the dish rides on it. Null when
+ * the line names no group of the set menu written, or no option of it.
+ */
+function adultsSetLineOf(body: BeoAiApproveBody, catalogue: BeoCatalogue, l: BeoAiApproveBody["menuLines"][number]): KitchenLine | null {
+  if (!l.setMenuItemId || l.menu !== "adults" || !body.setMenu) return null;
+  const group = setMenuGroupOf(body, catalogue, l.setMenuItemId);
+  const option = group ? setMenuOptionOf(group, l.option ?? null, l.productCode) : null;
+  if (!group || !option) return null;
+  const menu = catalogue.setMenus.find((m) => m.id === body.setMenu!.templateId)!;
+  const [line] = adultsCopiesOf(resolveSetMenuLines(menu.items, [{ groupId: group.id, chosenOptions: [option] }]).filter((r) => r.groupId === group.id));
+  if (!line) return null;
+  const notes = l.notes?.trim();
+  return notes ? { ...line, notes: [line.notes, notes].filter(Boolean).join(" · ") } : { ...line };
+}
+
 /** Why the reviewed BEO cannot be written as it is, in one line; null when it can. */
 export function refuseApproval(
   body: BeoAiApproveBody,
@@ -216,6 +247,18 @@ export function refuseApproval(
       if (!group.allowMultiple && c.options.length > 1) return `"${group.label}" takes one choice.`;
     }
     if (new Set(body.setMenu.choices.map((c) => c.itemId)).size !== body.setMenu.choices.length) return "A set-menu choice is given twice.";
+  }
+  // SCRUM-958: an adults' SET line names a choice group of the set menu this approval writes, and
+  // one of its options.
+  for (const l of body.menuLines) {
+    if (!l.setMenuItemId) continue;
+    if (l.menu !== "adults") return "A set-menu line is the adults' only. Open the review again.";
+    if (!adultsSetLineOf(body, catalogue, l)) {
+      const group = setMenuGroupOf(body, catalogue, l.setMenuItemId);
+      return group
+        ? `Choose the adults' option of "${group.label}" in the review.`
+        : "An adults' set-menu line is not one of the set menu's dishes. Open the review again.";
+    }
   }
   const codes = new Set(catalogue.food.map((f) => f.code.toUpperCase()));
   const offMenus = body.menuLines.filter((l) => l.productCode && !codes.has(l.productCode.toUpperCase()));
@@ -519,10 +562,24 @@ export async function approveBeoAiFill(
         };
       };
       const kidsSaid = kitchenLines.filter((l) => l.menu === "kids");
-      const adultsSaidLines = kitchenLines.filter((l) => l.menu === "adults");
+      // SCRUM-958: the adults' SET lines of set-menu dishes are not EXTRAs (written below).
+      const adultsSaidLines = kitchenLines.filter((l) => l.menu === "adults" && !l.setMenuItemId);
       const kidsExtra = kidsSaid.map(lineOf);
       const adultsExtra = adultsSaidLines.map(lineOf);
       if (kidsExtra.length > 0) kids = [...kids.filter((l) => l.source === "set_menu"), ...kidsExtra];
+      // SCRUM-958: an adults' SET line of the group and option the kids' set menu already holds is
+      // the kids' menu repeated (folded, as SCRUM-829's mirror); any other is the adults' own.
+      const adultsSet = kitchenLines.flatMap((l) => {
+        const line = l.setMenuItemId ? adultsSetLineOf(body, catalogue, l) : null;
+        return line ? [line] : [];
+      });
+      const adultsSetOwn = adultsSet.filter(
+        (a) => !kids.some((k) => k.source === "set_menu" && k.groupId === a.groupId && fold(k.itemName) === fold(a.itemName)),
+      );
+      for (const a of adultsSetOwn) {
+        const group = setMenuGroupOf(body, catalogue, String(a.groupId));
+        matches.push({ kind: "adultsChoice", itemId: a.groupId, option: a.itemName, code: group?.optionProductCodes[String(a.itemName)] ?? group?.productCode ?? null });
+      }
 
       // SCRUM-829: the adults eat the kids' menu unless the chat said otherwise. The review's
       // "adults" lines are everything the adults eat beyond the set menu (the prompts ask for
@@ -553,18 +610,30 @@ export async function approveBeoAiFill(
         adultsCount,
       );
       const adultsSaid = adultsExtra.length > 0 && !adultsRepeat;
-      const adultsOwn = adultsSaid || adultsDifferOf(menus);
+      // SCRUM-958: an adults' SET line of their own makes the adults' menu theirs, as staff turning
+      // "Different for adults" on to change that dish do.
+      const adultsOwn = adultsSaid || adultsSetOwn.length > 0 || adultsDifferOf(menus);
       // What was written, counted as written: an adults' line folded into the kids' menu is not.
       const adultsWritten = adultsOwn ? adultsSaidLines : [];
-      written.kitchenLines = kidsExtra.length + adultsWritten.length;
+      written.kitchenLines = kidsExtra.length + adultsWritten.length + adultsSetOwn.length;
       written.freeKitchenLines = [...kidsSaid, ...adultsWritten].filter((l) => !l.productCode).length;
-      if (adultsExtra.length > adultsWritten.length) written.adultsLinesFolded = adultsExtra.length - adultsWritten.length;
+      if (adultsSetOwn.length > 0) written.adultsSetLines = adultsSetOwn.length;
+      // SCRUM-958: and an adults' SET line the kids' set menu already holds.
+      const folded = adultsExtra.length - adultsWritten.length + (adultsSet.length - adultsSetOwn.length);
+      if (folded > 0) written.adultsLinesFolded = folded;
       if (!adultsOwn) {
         adults = [];
       } else {
         if (adultsExtra.length > 0) adults = [...adults.filter((l) => l.source === "set_menu"), ...adultsExtra];
-        if (body.setMenu || adultsExtra.length > 0) {
-          adults = [...adultsCopiesOf(kids.filter((l) => l.source === "set_menu")), ...adults.filter((l) => l.source !== "set_menu")];
+        if (body.setMenu || adultsExtra.length > 0 || adultsSetOwn.length > 0) {
+          // SCRUM-958: the kids' set menu copied for the adults, but for a group the adults have a
+          // dish of their own in: their SET line stands in its place (both choices stand).
+          const ownGroups = new Set(adultsSetOwn.map((l) => l.groupId));
+          adults = [
+            ...adultsCopiesOf(kids.filter((l) => l.source === "set_menu" && !ownGroups.has(l.groupId))),
+            ...adultsSetOwn,
+            ...adults.filter((l) => l.source !== "set_menu"),
+          ];
         }
       }
       // SCRUM-904: the food's times, and whether the cake comes with the package and its price, where the menus keep them.
