@@ -100,6 +100,16 @@ const promptObject = z.object({
    */
   finishing: z.boolean().optional(),
   notSaved: z.boolean().optional(),
+  /**
+   * SCRUM-943 — the till wants to hear when the family's screen cannot take
+   * the photo it asks for: it has no camera, or the camera was refused. Sent
+   * by a till that tells staff so (the photo is then taken at the till); a
+   * form that sees it says which with its `fill` (`camera`). Absent from an
+   * older till's form, and dropped by a station from before this field, so a
+   * form without it sends nothing new and an older station's strict reading
+   * of the `fill` is never tripped.
+   */
+  reportsCamera: z.boolean().optional(),
   /** What the drop-off service and a nanny cost, from the till's own drop-off pricing, for the requirement notes. */
   fees: z.object({ nannyHourlyTHB: z.number().nonnegative(), dropOffFeeTHB: z.number().nonnegative() }).optional(),
   staffReady: z.boolean(), canContinue: z.boolean(), completed: z.boolean(),
@@ -189,6 +199,12 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
    * finished, so staff watch the form live; a step change alone sends one.
    */
   step: formStep.optional(),
+  /**
+   * SCRUM-943 — the family's screen cannot take the photo: it has no camera
+   * (`none`), or the camera was refused (`refused`). Sent only on a form whose
+   * prompt carried `reportsCamera`, for the reason above.
+   */
+  camera: z.enum(['none', 'refused']).optional(),
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),

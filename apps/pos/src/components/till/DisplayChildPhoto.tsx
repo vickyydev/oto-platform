@@ -53,7 +53,7 @@ export function useCameraPresence(enabled: boolean): CameraPresence {
   return presence;
 }
 
-export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
+export function DisplayChildPhoto({ mark, presence, upload, onStored, onCameraTrouble }: {
   /** The till's mark for this child: it holds no photo yet, or it holds one. */
   mark: 'needed' | 'taken';
   presence: CameraPresence;
@@ -61,6 +61,8 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
   upload: (dataUrl: string) => Promise<string>;
   /** The picture is stored: tell the till which file it is. */
   onStored: (fileId: string) => void;
+  /** SCRUM-943 — the camera was refused or is not there (null once it works). */
+  onCameraTrouble?: (trouble: 'refused' | 'none' | null) => void;
 }) {
   const { t, lang } = useLanguage();
   const [picture, setPicture] = useState<string | undefined>(undefined);
@@ -88,7 +90,7 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
     {camera && <CameraCapture lang={lang} className="mt-2" maxEdge={DISPLAY_CONSENT_PHOTO_EDGE}
       unavailableNote={t('superviseConsent.photoByReception')}
       value={picture} onCapture={setPicture} onClear={() => setPicture(undefined)}
-      upload={send} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} />}
+      upload={send} onUploaded={(fileId) => { if (fileId) onStored(fileId); }} onCameraTrouble={onCameraTrouble} />}
     {mark === 'taken' && <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-received">
       <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />{t('superviseConsent.photoReceived')}</p>}
   </div>;

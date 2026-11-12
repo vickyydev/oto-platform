@@ -36,6 +36,12 @@ interface CameraCaptureProps {
    * display says reception will take the photo instead.
    */
   unavailableNote?: string;
+  /**
+   * SCRUM-943 — the camera here cannot be used: it was refused, or there is
+   * none (`null` once it works). The paired display tells the till, so staff
+   * know to take the photo there.
+   */
+  onCameraTrouble?: (trouble: 'refused' | 'none' | null) => void;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
@@ -47,7 +53,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
  * with no photo (the caller decides whether a photo is mandatory). Always stops
  * the stream on capture and on unmount so the camera light goes off.
  */
-export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded, lang, maxEdge, unavailableNote }: CameraCaptureProps) {
+export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded, lang, maxEdge, unavailableNote, onCameraTrouble }: CameraCaptureProps) {
   const t = tFor(lang ?? 'en');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -111,6 +117,15 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
       setState(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable');
     }
   };
+
+  // SCRUM-943 — whoever asked hears when the camera cannot be used, and when it can again.
+  const troubleHeard = useRef(onCameraTrouble);
+  troubleHeard.current = onCameraTrouble;
+  useEffect(() => {
+    if (state === 'denied') troubleHeard.current?.('refused');
+    else if (state === 'unavailable') troubleHeard.current?.('none');
+    else if (state === 'live') troubleHeard.current?.(null);
+  }, [state]);
 
   // Stop the stream when the component goes away (camera light off).
   useEffect(() => {
@@ -202,12 +217,14 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
         )}
 
         {(state === 'denied' || state === 'unavailable') && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-amber-300">
+          // SCRUM-943 — readable on a light screen too (the inks and the veil
+          // are the screen's own, `--cd-camera-*`); the dark look is as it was.
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center bg-(--cd-camera-veil) text-(--cd-camera-notice)" data-testid="camera-notice">
             <CameraOff className="h-10 w-10" />
             <span className="text-base font-semibold">
               {state === 'denied' ? t('camera.blocked') : t('camera.none')}
             </span>
-            <span className="text-sm text-foreground/50">
+            <span className="text-sm text-(--cd-camera-note)">
               {unavailableNote ?? t('camera.continueWithout')}
             </span>
           </div>

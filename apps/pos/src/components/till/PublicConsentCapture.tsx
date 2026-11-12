@@ -2,17 +2,16 @@ import { formatStoredPhone } from '@/lib/phoneUtils';
 import { useEffect, useRef, useState } from 'react';
 import { CONSENT_FORM_STEPS, type ConsentAction, type ConsentFormStep, type ConsentPrompt, type FilledConsentSlot } from '@oto/shared';
 import { ShieldCheck, ShieldAlert, UserCheck, ClipboardCheck, Baby, HeartPulse, UtensilsCrossed, Camera, Phone, Users, Eye } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { PhoneInput } from '@/components/shared/PhoneInput';
-import { ScreenKeyboard } from './ScreenKeyboard';
+import { TouchText } from './TouchText';
+import { NARROW_BAR, NARROW_HEAD, NARROW_LINE } from './consentFormLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { consentFormPhone, messagingPhoneProblem } from '@/lib/consentForm';
+import { consentFormPhone, consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/consentDraftStore';
 import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
@@ -241,31 +240,6 @@ export function mergeConsentDraft(local: FormDraft, base: FormDraft, next: FormD
   };
 }
 
-/** A text box that opens the on-screen keyboard on a display that has none (SCRUM-711). */
-function TouchText({ value, onChange, placeholder, className, id, disabled, maxLength }: {
-  value: string; onChange: (next: string) => void; placeholder?: string; className?: string; id?: string;
-  disabled?: boolean; maxLength?: number;
-}) {
-  const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
-  if (!kioskFlags.screenKeyboard) {
-    return <Input id={id} value={value} maxLength={maxLength} disabled={disabled} placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)} className={className} />;
-  }
-  return (
-    <div>
-      <Input id={id} value={value} maxLength={maxLength} disabled={disabled} placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)} onClick={() => setOpen(true)}
-        className={cn(className, 'md:text-2xl')} inputMode="none" autoComplete="off" spellCheck={false} />
-      {open && !disabled && (
-        <ScreenKeyboard value={value} onChange={(next) => onChange(maxLength ? next.slice(0, maxLength) : next)}
-          onDone={() => setOpen(false)} doneLabel={t('common.done')}
-          spaceLabel={t('display.keyboard.space')} backspaceLabel={t('display.keyboard.backspace')} />
-      )}
-    </div>
-  );
-}
-
 const FIELD = 'mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30';
 const STEPS = CONSENT_FORM_STEPS;
 type Step = ConsentFormStep;
@@ -381,6 +355,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
 
   const fence = { requestId: prompt.requestId, visitorId: prompt.visitorId };
   const locked = busy || prompt.completed;
+  /** SCRUM-943 — the till's copy for staff: nothing on it can be pressed, and it looks so. */
+  const readOnly = !!mirror;
   // SCRUM-857 — the family's photos: one file id per picture (a resend is the
   // same file), and each stored picture named to the till once the screen is
   // free to answer, the latest picture of a child replacing an earlier one.
@@ -394,6 +370,15 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const marked = prompt.slots.some((slot) => slot.photo !== undefined);
   const takesPhotos = !mirror && !!sendPhoto && marked;
   const presence = useCameraPresence(takesPhotos);
+  /**
+   * SCRUM-943 — the till is told when this screen cannot take the photo it
+   * asks for (`reportsCamera`): no camera here, or the camera was refused.
+   * It goes with the next `fill`, and a change of it sends one by itself.
+   */
+  const [cameraTrouble, setCameraTrouble] = useState<'refused' | 'none' | null>(null);
+  const reportsCamera = takesPhotos && prompt.reportsCamera === true;
+  const camera: 'none' | 'refused' | null = !reportsCamera ? null : presence === 'none' ? 'none' : cameraTrouble;
+  const cameraSent = useRef<'none' | 'refused' | null>(null);
   const photoIds = useRef(new Map<string, string>());
   const [photosToName, setPhotosToName] = useState<{ slotId: string; fileId: string }[]>([]);
   /** Each child's picture last named to the till, and how many times, until the till shows it holds a photo. */
@@ -430,14 +415,15 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   const photoOf = (slot: ConsentPrompt['slots'][number]) => slot.photo === undefined ? null
     : mirror ? <MirrorChildPhoto mark={slot.photo} photo={mirror.photos?.[slot.id]} />
     : takesPhotos ? <DisplayChildPhoto mark={slot.photo} presence={presence} upload={uploadFor(slot.id)}
-      onStored={(fileId) => setPhotosToName((queued) => [...queued.filter((item) => item.slotId !== slot.id), { slotId: slot.id, fileId }])} />
+      onStored={(fileId) => setPhotosToName((queued) => [...queued.filter((item) => item.slotId !== slot.id), { slotId: slot.id, fileId }])}
+      onCameraTrouble={setCameraTrouble} />
     : null;
   const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
   // SCRUM-857 — a till that follows the family's step (`familyStep`) hears
   // every step change; one that does not is sent the form as before.
   const followsStep = !mirror && prompt.familyStep !== undefined;
   const stepSaved = !followsStep || prompt.familyStep === step;
-  const unsent = !saved || !stepSaved;
+  const unsent = !saved || !stepSaved || camera !== cameraSent.current;
   const sendable = !mirror && !locked && !answerPending;
   // SCRUM-863 — a till that sends the channel takes the number and the channel
   // back with every step, so the form asks for both. One that does not (an
@@ -483,6 +469,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     acknowledgedConfirmationIds: form.confirmations,
     // SCRUM-857 — where the family is, for the till's copy of this screen.
     ...(followsStep ? { step: at } : {}),
+    // SCRUM-943 — this screen cannot take the photo, on a form whose till asks.
+    ...(camera ? { camera } : {}),
   });
 
   /**
@@ -501,6 +489,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     dirtySince.current = null;
     sent.current = [...sent.current, trimmed(form)].slice(-20);
     persist(form, at);
+    cameraSent.current = camera;
     onAction(fillOf(form, at));
   };
   const flush = useRef<() => void>(() => undefined);
@@ -516,7 +505,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       : Math.min(LIVE_FILL_MS, Math.max(0, dirtySince.current + LIVE_FILL_MAX_MS - now));
     const timer = setTimeout(() => flush.current(), delay);
     return () => clearTimeout(timer);
-  }, [draft, step, unsent, sendable, prompt.requestId]);
+  }, [draft, step, unsent, sendable, prompt.requestId, camera]);
   /** The family typed: sent a moment after they stop. */
   const edit = (update: (current: FormDraft) => FormDraft) => {
     // Something new to send: the tries on this copy start again.
@@ -594,7 +583,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       ? <div className="shrink-0 flex justify-center px-8 pt-4"><div className="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
         <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div></div>
       : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" /></div>}
-    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : 'pt-8')}>
+    {/* SCRUM-943 — at phone width the language button sits above the heading, not over it. */}
+    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : `pt-8 ${NARROW_HEAD}`)}>
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
         <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
@@ -622,7 +612,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             <div className="flex-1">
               <label htmlFor={`consent-child-${at}`} className="flex items-center gap-2 text-lg text-foreground/70">
                 <Baby className="h-5 w-5" /> {t('superviseConsent.childName')}</label>
-              <TouchText id={`consent-child-${at}`} value={child.name} maxLength={100} disabled={locked}
+              <TouchText id={`consent-child-${at}`} value={child.name} maxLength={100} disabled={locked} testId="consent-child-name"
                 onChange={(name) => setChild(slot.id, { name })} placeholder={t('superviseConsent.fullName')} className={FIELD} />
             </div>
             <div className="sm:w-40">
@@ -654,13 +644,14 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             {slot.saved ? <p className="text-lg text-foreground/70">{t('superviseConsent.savedOnProfile')}</p> : <>
               <div>
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}</label>
-                <Textarea value={child.allergiesMedical} maxLength={500} disabled={locked} onChange={(event) => setChild(slot.id, { allergiesMedical: event.target.value })}
-                  placeholder={t('superviseConsent.allergiesPlaceholder')}
+                {/* SCRUM-893 — the allergies box opens the on-screen keyboard too. */}
+                <TouchText multiline value={child.allergiesMedical} maxLength={500} disabled={locked} onChange={(allergiesMedical) => setChild(slot.id, { allergiesMedical })}
+                  placeholder={t('superviseConsent.allergiesPlaceholder')} testId="consent-allergies"
                   className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30" />
               </div>
               <div>
                 <label className="flex items-center gap-2 text-lg text-foreground/70"><UtensilsCrossed className="h-5 w-5" /> {t('superviseConsent.dietaryNotes')}</label>
-                <TouchText value={child.foodRestrictions} maxLength={200} disabled={locked} onChange={(foodRestrictions) => setChild(slot.id, { foodRestrictions })}
+                <TouchText value={child.foodRestrictions} maxLength={200} disabled={locked} onChange={(foodRestrictions) => setChild(slot.id, { foodRestrictions })} testId="consent-dietary"
                   placeholder={t('superviseConsent.dietaryPlaceholder')} className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30" />
               </div>
             </>}
@@ -672,7 +663,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       {shows('agreements') && <>
         <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
           <div><label htmlFor="public-consent-guardian" className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
-            <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked}
+            <TouchText id="public-consent-guardian" value={draft.guardianName} maxLength={100} disabled={locked} testId="consent-guardian"
               onChange={(guardianName) => edit((current) => ({ ...current, guardianName }))}
               placeholder={t('superviseConsent.yourFullName')} className={FIELD} /></div>
           <div>
@@ -680,7 +671,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             {phoneKept ? <div data-testid="consent-kept-phone">
               <div className="mt-2 flex h-14 items-center rounded-md border border-foreground/10 bg-foreground/5 px-4 text-2xl font-semibold tabular-nums">{formatStoredPhone(prompt.guardianPhone ?? '')}</div>
               <p className="mt-2 text-base text-foreground/50">{t('till.input.phoneKept')}</p>
-            </div> : <PhoneInput value={draft.guardianPhone} onChange={(guardianPhone) => { if (!locked) edit((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
+            </div> : <PhoneInput value={consentPhoneShown(draft.guardianPhone)} onChange={(guardianPhone) => { if (!locked) edit((current) => ({ ...current, guardianPhone, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); }}
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
               onChannelChange={takesContact ? (contactChannel) => { if (!locked) choose((current) => ({ ...current, contactChannel, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); } : undefined}
@@ -714,18 +705,20 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
       </>}
     </div>
 
-    <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3">
+    <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR)}>
       {prompt.completed ? <p role="status" data-testid="consent-finished">{t(prompt.finishing ? 'superviseConsent.finishing' : 'superviseConsent.waitForTeam')}</p> : <>
         {prompt.notSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
-        {shows('agreements') && doneLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{doneLine}</p>}
+        {shows('agreements') && doneLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE)} data-testid="consent-missing">{doneLine}</p>}
         {helpAsked && <p role="status" className="mr-auto flex items-center gap-2 text-base text-foreground/70"><Users className="h-5 w-5" />{t('superviseConsent.teamComing')}</p>}
-        <Button variant="outline" disabled={busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
-        {index > 0 && <Button variant="outline" disabled={locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
+        {/* SCRUM-943 — on the till's read-only copy (`mirror`) the family's
+            buttons are drawn as not available: only their screen presses them. */}
+        <Button variant="outline" disabled={readOnly || busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
+        {index > 0 && <Button variant="outline" disabled={readOnly || locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}
         {step !== 'agreements'
-          ? <Button disabled={locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
+          ? <Button disabled={readOnly || locked || step === 'children' && !childrenComplete} onClick={next}>{t('common.continue')}</Button>
           : saved
-            ? <Button disabled={locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
-            : <Button disabled={locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
+            ? <Button disabled={readOnly || locked || answerPending || !prompt.canContinue || asksConfirm && !prompt.contactConfirmed} onClick={() => onAction({ ...fence, action: 'done' })}>{t('common.done')}</Button>
+            : <Button disabled={readOnly || locked || prompt.consentRequired && draft.consentAcknowledged && !draft.guardianName.trim()} onClick={next}>{t('common.continue')}</Button>}
       </>}
     </div>
   </div>;

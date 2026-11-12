@@ -125,6 +125,12 @@
   --cd-violet: #6d28d9;
   --cd-sky: #0369a1;
   --cd-amber: #b45309;
+  /* SCRUM-943 — the camera notice ("Camera access blocked", "No camera
+     available" and the line under it) on a light screen: dark ink on a pale
+     veil over the camera frame, so both lines read on the cream display. */
+  --cd-camera-notice: #92400e;
+  --cd-camera-note: hsl(var(--foreground) / 0.85);
+  --cd-camera-veil: rgb(255 255 255 / 0.82);
 
   /* Branded "cinema" backdrop for the customer display(s). Flips with the
      surface's .dark/.light wrapper, so a light display nested in a dark staff
@@ -186,6 +192,11 @@
   --cd-violet: #c4b5fd;
   --cd-sky: #7dd3fc;
   --cd-amber: #fde68a;
+  /* The camera notice as it always was in dark: amber-300, the note at half
+     strength, no veil over the frame. */
+  --cd-camera-notice: #fcd34d;
+  --cd-camera-note: hsl(var(--foreground) / 0.5);
+  --cd-camera-veil: transparent;
 
   /* Original sky-950 → slate-950 ramp, kept pixel-identical in dark. */
   --cd-gradient: linear-gradient(to bottom, #082f49 0%, #020617 50%, #020617 100%);

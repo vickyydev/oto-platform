@@ -395,6 +395,23 @@ export default function Display() {
   const consentLocked = consentAnswerPending
     && !((!pending.current || pending.current.type === 'display.consent' && isLive(pending.current.payload))
       && (!answer || isLive((answer as { payload?: unknown }).payload)));
+  /**
+   * SCRUM-942 — the family pressed Done and it waits for the till (a till
+   * that is locked takes it when staff unlock it): the line says the team
+   * will be with them in a moment, not that a change waits to be confirmed.
+   */
+  const actionOf = (value: unknown): unknown => (value as { action?: unknown } | null | undefined)?.action;
+  const consentDoneWaiting = actionOf((answer as { payload?: unknown } | undefined)?.payload) === 'done'
+    || pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'done';
+  /**
+   * SCRUM-943 — on the family's form a dropped connection is said in one line
+   * laid over the top of the form, so nothing under the family's finger moves
+   * as it appears. What they type is kept and sent by itself when the line
+   * returns (SCRUM-874), so a fill that could not go asks for no Retry.
+   */
+  const onConsentForm = !!session && connection !== 'paused' && !!view?.consent;
+  const fillWaiting = pending.current?.type === 'display.consent' && actionOf(pending.current.payload) === 'fill';
+  const formReconnecting = onConsentForm && (connection === 'reconnecting' || !!error && fillWaiting);
   // SCRUM-762 — on the details screen, a number the till already holds was
   // given on the first screen: it is shown there, not asked for again.
   const keptPhone = view?.stage === 'input' && document?.prompt?.kind === 'contact'
@@ -415,8 +432,8 @@ export default function Display() {
   const theme = useDisplayTheme(document?.theme);
 
   return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
-    {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
-    {error && (!(session && connection !== 'connected') || pending.current) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
+    {session && connection === 'reconnecting' && !onConsentForm && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
+    {error && (!(session && connection !== 'connected') || pending.current) && !(onConsentForm && fillWaiting) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{session ? displayErrorText(error, lang, t) : error}</span>
       <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>{session ? t('display.retry') : 'Retry'}</Button>
     </div>}
@@ -457,7 +474,10 @@ export default function Display() {
       </p>}
     </> : view?.consent ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
-      <div className="flex-1 min-h-0" inert={consentLocked}>
+      <div className="relative flex-1 min-h-0" inert={consentLocked}>
+        {formReconnecting && <p role="status" data-testid="display-form-reconnecting"
+          className="pointer-events-none absolute inset-x-0 top-0 z-50 border-b border-foreground/10 bg-background/95 px-4 py-2 text-center text-sm">
+          {t('display.reconnectingSendsItself')}</p>}
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
           busy={consentLocked} answerPending={consentAnswerPending}
           onAction={action => { void send('display.consent', action, action.action === 'fill' || action.action === 'photo'); }}
@@ -465,8 +485,8 @@ export default function Display() {
           // screen's own credential, for this form and child only.
           sendPhoto={(form, dataUrl) => sendDisplayConsentPhoto(bearerRef.current, form, dataUrl)} />
       </div>
-      {consentLocked && <p role="status" className="shrink-0 text-center py-3">
-        {busy ? t('display.sending') : t('display.waitForConfirm')}
+      {consentLocked && <p role="status" className="shrink-0 text-center py-3" data-testid="display-consent-wait">
+        {busy ? t('display.sending') : consentDoneWaiting ? t('display.teamInAMoment') : t('display.waitForConfirm')}
       </p>}
     </> : merch && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>

@@ -29,7 +29,7 @@ import { confirmTierAtTill } from '@/lib/thaiRateConfirmation';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
-import { consentSlotPhoto } from '@/lib/consentForm';
+import { consentSlotPhoto, staffCameraLine } from '@/lib/consentForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
@@ -581,6 +581,12 @@ export default function Till() {
    * then shows every step, one under the other.
    */
   const [consentFamilyStep, setConsentFamilyStep] = useState<ConsentFormStep | null>('children');
+  /**
+   * SCRUM-943 — the paired display said it cannot take the photo it is asked
+   * for: it has no camera, or the camera was refused (its last `fill`). Staff
+   * are told, and take the photo on the till.
+   */
+  const [consentDisplayCamera, setConsentDisplayCamera] = useState<'none' | 'refused' | null>(null);
   const [superConsentAck, setSuperConsentAck] = useState<boolean>(false);
   // Confirmations checklist ticked on the customer screen (admin-configurable,
   // policy.confirmations) — required for ANY unaccompanied registration, not
@@ -2122,6 +2128,7 @@ export default function Till() {
     setSuperContactConfirmation(null);
     setConsentContactLegacy(false);
     setConsentFamilyStep('children');
+    setConsentDisplayCamera(null);
     gateRegistrationIdRef.current = null;
     gateStayIdsRef.current = new Map();
     gateWaiverIdsRef.current = new Map();
@@ -3653,6 +3660,20 @@ export default function Till() {
   const contactConfirmed = contactConfirmationStands(superContactConfirmation, superParentPhone, superParentContactMethod);
   const consentContactProblem = messagingPhoneProblem(superParentPhone);
   /**
+   * SCRUM-914 — a change of the number or the channel on this till (the
+   * customer half, or staff in Private child details) withdraws the family's
+   * confirmation until they tick again, as the paired display does: changing
+   * back to the number or channel they confirmed does not bring it back.
+   */
+  const changeGuardianPhone = (next: string) => {
+    if (consentFormPhone(next) !== consentFormPhone(superParentPhone)) setSuperContactConfirmation(null);
+    setSuperParentPhone(next);
+  };
+  const changeGuardianChannel = (next: ContactChannel) => {
+    if (next !== superParentContactMethod) setSuperContactConfirmation(null);
+    setSuperParentContactMethod(next);
+  };
+  /**
    * SCRUM-764 — THE DROP-OFF AND NANNY FORMS ON THE CUSTOMER SCREEN.
    *
    * The family fills each child's name, age and care notes, their own name,
@@ -3699,6 +3720,10 @@ export default function Till() {
     // knows); it gates Done on the display and on this till instead.
     ...(consentRequired ? { contactConfirmed } : {}),
   };
+  // SCRUM-943 — a till that asks the display for a photo wants to hear when it
+  // cannot take one, so staff are told and take it here.
+  const consentPhotoAsked = consentBase.slots.some(slot => slot.photo !== undefined);
+  if (consentPhotoAsked) consentBase.reportsCamera = true;
   const consentSignature = JSON.stringify(consentBase);
   const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
   /**
@@ -3717,7 +3742,11 @@ export default function Till() {
     ?? (consentNotSaved && !consentCandidate.completed ? { ...consentCandidate, notSaved: true } : consentCandidate);
   // SCRUM-764 — the form stays on the family’s screen when they ask for help:
   // reception helps with the details here, and the agreement ticks stay theirs.
-  const consent = step === 7 && displayOnline
+  // SCRUM-943 — staff who go Back while the family's Done is being saved
+  // leave the finished form on the family's screen, saying it is saving,
+  // until the save lands: not the cart without the drop-off.
+  const savingAfterBack = step !== 7 && consentFinishing !== null;
+  const consent = (step === 7 || savingAfterBack) && displayOnline
     && ConsentPromptSchema.safeParse({ ...consentShown, kind: 'consent', requestId: 'validation' }).success
     ? consentShown : undefined;
   const consentScope = `${reviewScope}:${consentSignature}`;
@@ -3729,7 +3758,8 @@ export default function Till() {
     ? reviewCandidate : undefined;
   reviewContext.current.eligible = !!childReview;
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
-    stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
+    stage: savingAfterBack && consent ? 'input' : customerStage, step: savingAfterBack && consent ? 7 : step,
+    sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
     saleKey: saleKeyRef.current,
     phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member: customerMember,
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
@@ -3788,6 +3818,7 @@ export default function Till() {
         contactConfirmed: prompt.data.contactConfirmed === true,
         setContactConfirmed: familyContactConfirmation,
         setFamilyStep: setConsentFamilyStep,
+        setDisplayCamera: setConsentDisplayCamera,
         contactConfirmationUnsupported: () => setConsentContactLegacy(true),
         setConsentAcknowledged: setSuperConsentAck, setAcknowledgedConfirmationIds: setSuperAcknowledgedConfirmationIds,
         setCompletedSignature: (signature) => {
@@ -3903,6 +3934,12 @@ export default function Till() {
    * Private child details, and see the family's screen follow.
    */
   const consentMirror = step === 7 && !!consent && !staffTicks && !inlineDisplay;
+  // SCRUM-943 — staff are told when the family's screen cannot take a photo
+  // still needed, and that it is taken here.
+  const consentCameraLine = consentMirror && !consentCandidate.completed && !consentFinishing
+    ? staffCameraLine({ photoStillNeeded: consentRows.some(row => row.outcome.needsConsent && !row.slot.childPhotoUrl),
+      displayAsked: consentPhotoAsked, displayCamera: consentDisplayCamera })
+    : null;
   // SCRUM-857 — the photo the till holds for each child (the family's from
   // their screen, or one staff took), shown on that copy where the family's
   // screen has its camera.
@@ -4092,6 +4129,7 @@ export default function Till() {
                     ? 'The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.'
                     : 'The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.'}</p>
                 <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
+                {consentCameraLine && <p className="w-full text-sm text-muted-foreground" data-testid="consent-staff-camera">{consentCameraLine}</p>}
               </div>}
               <ConsentTicksStatus consentRequired={consentRequired} consentAcknowledged={superConsentAck}
                 confirmations={consentConfirmations}
@@ -4336,8 +4374,8 @@ export default function Till() {
               parentPhone={superParentPhone}
               parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName}
-              onParentPhoneChange={setSuperParentPhone}
-              onParentContactMethodChange={setSuperParentContactMethod}
+              onParentPhoneChange={changeGuardianPhone}
+              onParentContactMethodChange={changeGuardianChannel}
               contactConfirmed={contactConfirmed}
               onContactConfirmedChange={(confirmed) => setSuperContactConfirmation(confirmed
                 ? { at: new Date().toISOString(), by: 'family', phone: consentFormPhone(superParentPhone), channel: superParentContactMethod }
@@ -4409,8 +4447,8 @@ export default function Till() {
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
             <ConsentCapture staffScreen slots={superSlots} ticksReadOnly={!staffTicks} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
-              onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
-              onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}
+              onParentNameChange={setSuperParentName} onParentPhoneChange={changeGuardianPhone}
+              onParentContactMethodChange={changeGuardianChannel} onConsentAckChange={setSuperConsentAck}
               // SCRUM-857 — staff see whether the family confirmed the number; they tick
               // it here, with the family beside them, only when the display cannot show
               // the form or does not know the tick (an older display or station).

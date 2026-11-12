@@ -2,16 +2,17 @@ import { useId, useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { cn } from '@/lib/utils';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
-import { messagingPhoneProblem } from '@/lib/consentForm';
+import { consentPhoneShown, messagingPhoneProblem } from '@/lib/consentForm';
 import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
 import { Button } from '@/components/ui/button';
 import { formatStoredPhone } from '@/lib/phoneUtils';
 import { getDropOffPricing } from '@/mockApi';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
-import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/shared/PhoneInput';
-import { Textarea } from '@/components/ui/textarea';
+import { TouchText } from './TouchText';
+import { NARROW_BAR, NARROW_HEAD, NARROW_LINE } from './consentFormLayout';
+import { kioskFlags } from '@/lib/kioskFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { ChildFoodProvisionPicker } from '@/components/shared/ChildFoodProvisionPicker';
@@ -199,6 +200,10 @@ export function ConsentCapture({
   const lineId = useId();
   const t = staffScreen ? tFor('en') : customer.t;
   const lang = staffScreen ? undefined : customer.lang;
+  // SCRUM-893 — on a screen with no keyboard of its own the family's half
+  // brings the on-screen keys for every box, as the paired display does; the
+  // staff copy is on the till's own screen and never does.
+  const screenKeyboard = !staffScreen && kioskFlags.screenKeyboard;
   // Customer-friendly wording for each resolved requirement (parents read this,
   // so it's warmer than the staff gate's terse "Nanny required").
   const REQUIREMENT_META = {
@@ -252,7 +257,7 @@ export function ConsentCapture({
       <div className="absolute top-4 right-4 z-40">
         <LanguageSwitcher variant="dark" />
       </div>
-      <div className="shrink-0 px-8 pt-8 pb-4 text-center">
+      <div className={cn('shrink-0 px-8 pt-8 pb-4 text-center', NARROW_HEAD)}>
         <div className="mb-2 inline-flex items-center gap-2 text-primary">
           <ShieldCheck className="h-6 w-6" />
           <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span>
@@ -277,10 +282,11 @@ export function ConsentCapture({
                 <label className="flex items-center gap-2 text-lg text-foreground/70">
                   <Baby className="h-5 w-5" /> {t('superviseConsent.childName')}
                 </label>
-                <Input
+                <TouchText
                   value={slot.name}
-                  onChange={(e) => onUpdateChild(slot.id, { name: e.target.value })}
+                  onChange={(name) => onUpdateChild(slot.id, { name })}
                   placeholder={t('superviseConsent.fullName')}
+                  screenKeyboard={screenKeyboard} testId="consent-child-name"
                   className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
                 />
               </div>
@@ -349,10 +355,12 @@ export function ConsentCapture({
                       <label className="flex items-center gap-2 text-lg text-foreground/70">
                         <HeartPulse className="h-5 w-5" /> {t('superviseConsent.allergiesMedical')}
                       </label>
-                      <Textarea
+                      <TouchText
+                        multiline
                         value={slot.allergiesMedical}
-                        onChange={(e) => onUpdateChild(slot.id, { allergiesMedical: e.target.value })}
+                        onChange={(allergiesMedical) => onUpdateChild(slot.id, { allergiesMedical })}
                         placeholder={t('superviseConsent.allergiesPlaceholder')}
+                        screenKeyboard={screenKeyboard} testId="consent-allergies"
                         className="mt-2 min-h-[88px] border-foreground/10 bg-foreground/5 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
@@ -360,10 +368,11 @@ export function ConsentCapture({
                       <label className="flex items-center gap-2 text-lg text-foreground/70">
                         <UtensilsCrossed className="h-5 w-5" /> {t('superviseConsent.dietaryNotes')}
                       </label>
-                      <Input
+                      <TouchText
                         value={slot.foodRestrictions}
-                        onChange={(e) => onUpdateChild(slot.id, { foodRestrictions: e.target.value })}
+                        onChange={(foodRestrictions) => onUpdateChild(slot.id, { foodRestrictions })}
                         placeholder={t('superviseConsent.dietaryPlaceholder')}
+                        screenKeyboard={screenKeyboard} testId="consent-dietary"
                         className="mt-2 h-12 border-foreground/10 bg-foreground/5 px-4 text-lg text-foreground placeholder:text-foreground/30"
                       />
                     </div>
@@ -406,10 +415,11 @@ export function ConsentCapture({
           <div className="rounded-3xl border border-foreground/10 bg-foreground/5 p-6 space-y-5">
             <div>
               <label className="text-lg text-foreground/70">{t('superviseConsent.parentGuardianName')}</label>
-              <Input
+              <TouchText
                 value={parentName}
-                onChange={(e) => onParentNameChange(e.target.value)}
+                onChange={onParentNameChange}
                 placeholder={t('superviseConsent.yourFullName')}
+                screenKeyboard={screenKeyboard} testId="consent-guardian"
                 className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
               />
             </div>
@@ -422,10 +432,11 @@ export function ConsentCapture({
                   <Phone className="h-5 w-5" /> {t('superviseConsent.phoneNumber')}
                 </label>
                 <PhoneInput
-                  value={parentPhone ?? ''}
+                  value={consentPhoneShown(parentPhone ?? '')}
                   onChange={onParentPhoneChange}
                   label=""
                   inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground"
+                  showKeypad={screenKeyboard}
                   channel={onParentContactMethodChange ? parentContactMethod : undefined}
                   onChannelChange={onParentContactMethodChange}
                   translate={!staffScreen}
@@ -547,10 +558,10 @@ export function ConsentCapture({
 
       {/* SCRUM-857 — the family's Done, on the till's own customer half. */}
       {onDone && (
-        <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3" data-testid="consent-done-bar">
+        <div className={cn('shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3', NARROW_BAR)} data-testid="consent-done-bar">
           {doneBusy ? <p role="status">{t('superviseConsent.finishing')}</p> : <>
             {doneNotSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
-            {missingLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{missingLine}</p>}
+            {missingLine && <p className={cn('w-full text-right text-base text-foreground/60', NARROW_LINE)} data-testid="consent-missing">{missingLine}</p>}
             <Button disabled={!doneReady} onClick={onDone}>{t('common.done')}</Button>
           </>}
         </div>

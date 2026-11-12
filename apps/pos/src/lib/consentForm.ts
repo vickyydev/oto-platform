@@ -42,6 +42,18 @@ export function consentFormPhone(typed: string): string {
 }
 
 /**
+ * SCRUM-943 — THE NUMBER AS THE FORM DRAWS IT. A number typed with its trunk
+ * 0 (0898570210 after +66) is the number the till keeps without it, and the
+ * till's copy of the form and the check-in board draw it so (+66 898570210),
+ * as the prototype's keypad asks for it (its placeholder is 8X XXX XXXX). So
+ * once what was typed reads as a number that can take messages, the form
+ * draws it the same way; while it is still being typed, as typed.
+ */
+export function consentPhoneShown(typed: string): string {
+  return messagingPhoneProblem(typed) === null ? consentFormPhone(typed) : typed;
+}
+
+/**
  * SCRUM-857 — THE FAMILY'S CONFIRMATION THAT THE NUMBER IS THE ONE FOR THE
  * CHANNEL (the owner's ruling of 8 November).
  *
@@ -135,6 +147,11 @@ export interface ConsentFormTill {
    * never publishes a form that asks the display for a photo.
    */
   takePhoto?: (slotId: string, fileId: string) => void;
+  /**
+   * SCRUM-943 — what the family's screen said about its camera with this
+   * step: none, refused, or nothing to say (null). Optional, like the above.
+   */
+  setDisplayCamera?: (camera: 'none' | 'refused' | null) => void;
 }
 
 /**
@@ -179,6 +196,8 @@ export function takeConsentAction(action: ConsentAction, till: ConsentFormTill):
     // SCRUM-857 — where the family is on their screen; a step from a display
     // (or a station between) that does not send it leaves the till not knowing.
     till.setFamilyStep?.(action.step ?? null);
+    // SCRUM-943 — the display's camera, as this step said (nothing said: no trouble).
+    till.setDisplayCamera?.(action.camera ?? null);
     // SCRUM-857 — the family's tick that this number is the one for the
     // channel comes with the step, for the number and channel the step
     // carries (the till's own when the step carries none). A step without
@@ -246,4 +265,29 @@ export function consentSlotPhoto(input: {
 }): { photo?: 'needed' | 'taken' } {
   if (!input.needsConsent || !input.stationId || input.throughCounterBox) return {};
   return { photo: input.hasPhoto ? 'taken' : 'needed' };
+}
+
+/**
+ * SCRUM-943 — WHAT STAFF ARE TOLD ABOUT THE PHOTO WHILE THE FAMILY FILLS THE
+ * FORM ON THE PAIRED DISPLAY.
+ *
+ * A photo is still needed and the family's screen cannot take it: the till
+ * does not ask the display for photos here (a counter box has no route for
+ * the picture, `consentSlotPhoto`), or the display said it has no camera or
+ * the camera was refused. The line says so, and that the photo is taken at
+ * the till. Null when there is nothing to say. Staff's own English.
+ */
+export function staffCameraLine(input: {
+  photoStillNeeded: boolean;
+  /** The till asks the display for each child's photo. */
+  displayAsked: boolean;
+  /** What the display said about its camera with the family's last step. */
+  displayCamera: 'none' | 'refused' | null;
+}): string | null {
+  if (!input.photoStillNeeded) return null;
+  const here = "Take each child's photo with the family here, in Private child details.";
+  if (!input.displayAsked) return `The display does not take the photo at this station. ${here}`;
+  if (input.displayCamera === 'none') return `The display has no camera. ${here}`;
+  if (input.displayCamera === 'refused') return `The camera on the display was refused. ${here}`;
+  return null;
 }
