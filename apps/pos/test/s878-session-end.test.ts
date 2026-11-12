@@ -49,7 +49,7 @@ const seam = vi.hoisted(() => {
   vi.stubGlobal('window', browser);
   return {
     browser, me: vi.fn(), permissions: vi.fn(), signIn: vi.fn(), signOut: vi.fn(), onlineUnlock: vi.fn(), lock: vi.fn(),
-    setLang: vi.fn(), setTheme: vi.fn(),
+    setLang: vi.fn(), setTheme: vi.fn(), boxLock: vi.fn(async (_station: string) => undefined),
   };
 });
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
@@ -59,7 +59,7 @@ vi.mock('@/i18n/LanguageContext', () => ({ useLanguage: () => ({ setLang: seam.s
 vi.mock('@/api/platform', () => ({ authApi: { me: seam.me, permissions: seam.permissions, unlock: seam.onlineUnlock,
   lock: seam.lock, signIn: seam.signIn, signOut: seam.signOut } }));
 vi.mock('@/api/bridge', () => ({ setBridgeStaffName: vi.fn(), holdBoxSession: vi.fn(), prepareConfiguredBridgeUnlock: () => null,
-  bridgeApi: { lock: async () => ({}), unlock: vi.fn() },
+  bridgeApi: { lock: seam.boxLock, unlock: vi.fn() },
 }));
 vi.mock('@/auth/staffToken', () => ({ readStaffToken: () => null, staffTokenLive: () => false, forgetStaffToken: vi.fn() }));
 vi.mock('@/lib/lane', () => ({ currentLane: () => 'platform', laneStation: () => 'zz-test-station', isBoxLaneTrigger: () => false,
@@ -304,6 +304,41 @@ describe('SCRUM-878 — the twelve-hour mark at the till', () => {
       window.dispatchEvent(new CustomEvent('oto:unauthorized', { detail: { sentAt: Date.now() } }));
       expect(value().locked).toBe(true);
       expect(value().sessionEnded?.expired).toBe(false);
+    } finally { hook.unmount(); }
+  });
+
+  it('the box session ends with it, once: the ended person’s box bearer is not kept under the sign-in form', async () => {
+    const { hook, value } = await signedIn();
+    try {
+      setSaleOpen('till', true);
+      expect(seam.boxLock).not.toHaveBeenCalled();
+      pastTheMark();
+      refused();
+      // As a lock ends it (offline plan §2.2): the operator and station stay on screen, so nothing else would.
+      expect(seam.boxLock).toHaveBeenCalledTimes(1);
+      expect(seam.boxLock).toHaveBeenCalledWith('zz-test-station');
+      // The next heartbeat refused changes nothing.
+      refused();
+      expect(seam.boxLock).toHaveBeenCalledTimes(1);
+      // The next sign-in opens no box session of its own: the box asks the person now signed in.
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      value().continueKept();
+      expect(seam.boxLock).toHaveBeenCalledTimes(1);
+    } finally { hook.unmount(); }
+  });
+
+  it('the box session ends with it on the unlock’s refusal too', async () => {
+    const { hook, value } = await signedIn();
+    try {
+      value().lockNow();
+      // The lock itself ended it once, as before.
+      expect(seam.boxLock).toHaveBeenCalledTimes(1);
+      pastTheMark();
+      seam.onlineUnlock.mockRejectedValueOnce(new ApiError(401, 'UNAUTHORIZED', 'Not signed in'));
+      await value().unlock(PASSWORD);
+      expect(value().sessionEnded).not.toBeNull();
+      expect(seam.boxLock).toHaveBeenCalledTimes(2);
     } finally { hook.unmount(); }
   });
 

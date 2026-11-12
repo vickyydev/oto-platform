@@ -397,6 +397,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     // Read before anything below moves state.
     const nothingToKeep = Boolean(viewAsRef.current || mustChangeRef.current || preparedRef.current);
     clearTimers();
+    // The box session ends with the platform's, as at a lock (offline plan
+    // §2.2): the operator and the station stay on screen, so nothing else
+    // would drop the ended person's box bearer. The next box action asks the
+    // person now signed in for their password, at the box's own door.
+    const station = laneStation();
+    if (station) void bridgeApi.lock(station);
     setOfflineUnlock(null);
     setOfflinePreparation(null);
     forgetOfflinePreparation();
