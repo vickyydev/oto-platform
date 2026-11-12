@@ -67,7 +67,8 @@ describe('s909 — the confirm for a child on their own', () => {
     expect(text).toContain("Cancel ZZ TEST Nok's booking");
     expect(text).not.toContain('Cancel this waiting booking');
     expect(text).toContain(
-      "ZZ TEST Ploy's booking: ZZ TEST Nok leave the waiting list and can't be added to a sale; the rest of the booking stays as it is.",
+      // SCRUM-938 — one child: "leaves" (the owner's correction of "leave").
+      "ZZ TEST Ploy's booking: ZZ TEST Nok leaves the waiting list and can't be added to a sale; the rest of the booking stays as it is.",
     );
     expect(text).toContain('The signed form stays on record.');
   });

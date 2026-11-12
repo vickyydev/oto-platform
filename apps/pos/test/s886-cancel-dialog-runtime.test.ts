@@ -69,7 +69,8 @@ describe('s886 — the shared cancel confirm', () => {
     const { view } = mount();
     const text = words(view.result.current);
     expect(text).toContain('Cancel this waiting booking');
-    expect(text).toContain("ZZ TEST Ploy's booking: ZZ TEST Mint leave the waiting list");
+    // SCRUM-938 — one child: "leaves" (the owner's correction of "leave").
+    expect(text).toContain("ZZ TEST Ploy's booking: ZZ TEST Mint leaves the waiting list");
     expect(text).toContain('The signed form stays on record.');
   });
 

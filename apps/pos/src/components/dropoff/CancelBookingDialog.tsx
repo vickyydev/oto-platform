@@ -220,7 +220,8 @@ export function CancelBookingDialog({
           <DialogDescription>
             {booking
               ? `${booking.parentName || 'Booking'}'s booking: ${booking.children.map((c) => c.childName).join(', ')} ` +
-                "leave the waiting list and can't be added to a sale" +
+                // SCRUM-938 — one child leaves; several leave.
+                `${booking.children.length === 1 ? 'leaves' : 'leave'} the waiting list and can't be added to a sale` +
                 (booking.alone ? '; the rest of the booking stays as it is' : '') +
                 '. The signed form stays on record.'
               : ''}

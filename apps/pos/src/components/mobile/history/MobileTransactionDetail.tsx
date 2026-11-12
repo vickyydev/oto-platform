@@ -12,7 +12,7 @@ import {
   Plus,
   Check,
 } from 'lucide-react';
-import { amountLabelOf, baht } from '@/api/history';
+import { amountLabelOf, baht, withChildName } from '@/api/history';
 import { getDiscountReasons } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
 import { pricedOnDocument } from '@/lib/tierProof';
@@ -185,7 +185,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                     <div key={id} className="rounded-xl border bg-background/40 p-3">
                       <div className="flex items-center justify-between gap-2 font-bold">
                         <span>
-                          {state.packageName(lines[0]?.ticketPackageId ?? null) ?? lines[0]?.label}
+                          {withChildName(state.packageName(lines[0]?.ticketPackageId ?? null) ?? lines[0]?.label ?? '', lines)}
                         </span>
                         <span className="shrink-0 tabular-nums">
                           ฿{satangText(lines.reduce((sum, line) => sum + line.grossSatang, 0))}

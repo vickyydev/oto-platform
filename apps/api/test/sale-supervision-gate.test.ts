@@ -431,3 +431,28 @@ describe('SCRUM-478 — what the gate leaves alone', () => {
     });
   });
 });
+
+describe('SCRUM-934 — the sale detail names the child each supervised line is for', () => {
+  it('two drop-off children on one sale: each line carries its own child, a plain line none', async () => {
+    const reg = await register([child({ name: 'Mint' }), child({ name: 'Pang', ageYears: 7 })]);
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      lines: [
+        { ...kidLine(reg.children[0]!.id), serviceFee: { label: 'Drop-off service', amountSatang: 22_500 } },
+        { ...kidLine(reg.children[1]!.id), serviceFee: { label: 'Drop-off service', amountSatang: 22_500 } },
+        { id: newId(), packageId: twoHoursId, kids: 1, adults: 1 },
+      ],
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(detail.statusCode).toBe(200);
+    const lines = detail.json().lines as { cartLineId: string; supervised: boolean; childName: string | null }[];
+    const namesOf = (cartLineId: string) => [...new Set(lines.filter((l) => l.cartLineId === cartLineId).map((l) => l.childName))];
+    expect(namesOf(reg.children[0]!.id)).toEqual(['Mint']);
+    expect(namesOf(reg.children[1]!.id)).toEqual(['Pang']);
+    const plain = lines.filter((l) => l.cartLineId !== reg.children[0]!.id && l.cartLineId !== reg.children[1]!.id);
+    expect(plain.length).toBeGreaterThan(0);
+    expect(plain.every((l) => l.childName === null && !l.supervised)).toBe(true);
+  });
+});

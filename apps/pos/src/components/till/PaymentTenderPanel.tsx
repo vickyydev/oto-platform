@@ -9,6 +9,11 @@ import { NumberKeypad } from './NumberKeypad';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 
 const format = (amount: number) => (amount / 100).toFixed(2);
+/**
+ * SCRUM-917 — the party's deposit on its settlement, as the platform names it
+ * (`partyDeposit`): "Party deposit", not the ledger's "other".
+ */
+export const PARTY_DEPOSIT_LABEL = 'Party deposit';
 export function paymentSubmitLabel(stage: PaymentStageController, confirmationLabel?: string): string {
   if (stage.busy) return label('pending');
   // S2-14a — credit expected to cover the order: the press needs no tender.
@@ -71,7 +76,7 @@ export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = fal
     {!stage.online && <p role="alert" className="rounded-xl border border-amber-500/40 p-4">{label('reconnect')}</p>}
     {state.settlements.length > 0 && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
       <p className="font-semibold">{label('recorded')}</p>
-      {state.settlements.map((part) => <p key={part.attemptId} className="text-sm">{isCreditSettlement(part) ? 'Credit' : findPaymentMethod(part.method)?.label ?? part.method} · ฿{format(part.amountSatang)}</p>)}
+      {state.settlements.map((part) => <p key={part.attemptId} className="text-sm">{part.partyDeposit ? PARTY_DEPOSIT_LABEL : isCreditSettlement(part) ? 'Credit' : findPaymentMethod(part.method)?.label ?? part.method} · ฿{format(part.amountSatang)}</p>)}
       <p className="mt-2 font-bold">{label('balance')} ฿{format(state.outstandingSatang)}</p>
     </div>}
     {!fixedAmount && state.method && !stage.locked && state.phase !== 'manual' && state.outstandingSatang > 0 && <div className="space-y-3">

@@ -41,7 +41,8 @@ export function TransactionCard({
   badge,
   timeZone,
 }: {
-  txn: TxnSummary;
+  /** `balanceDue` (SCRUM-902): a part-paid sale's balance, in baht, shown over its total. */
+  txn: TxnSummary & { balanceDue?: number };
   onClick: () => void;
   showType?: boolean;
   /** The ledger's own state where it is wider than `txn.status` (SCRUM-238). */
@@ -52,7 +53,7 @@ export function TransactionCard({
   const kind = txn.isDropOff ? 'dropoff' : txn.kind;
   return (
     <button type="button" onClick={onClick} className="w-full text-left">
-      <Card className="p-4 flex items-center gap-4 bg-card/50 hover:bg-card transition-colors">
+      <Card className="@container p-4 flex items-center gap-4 bg-card/50 hover:bg-card transition-colors">
         <div
           className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
             kind === 'ticket'
@@ -89,7 +90,7 @@ export function TransactionCard({
             )}
           </div>
           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap mt-0.5">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 whitespace-nowrap">
               <Clock className="w-3 h-3" />
               {fmtTime(txn.createdAt, timeZone)}
             </span>
@@ -111,9 +112,24 @@ export function TransactionCard({
             )}
           </div>
         </div>
+        {/* SCRUM-917 — on a narrow card (the phone) the badge sits over the
+            figure, so the title column keeps room to read; from @md (the
+            counter's list) the row is as it always was. */}
         <div className="flex items-center gap-3 shrink-0">
-          <StatusBadge status={badge ?? txn.status} />
-          <span className="text-lg font-bold tabular-nums w-20 text-right">฿{bahtText(txn.total)}</span>
+          <div className="flex flex-col items-end gap-1 @md:flex-row @md:items-center @md:gap-3">
+            <StatusBadge status={badge ?? txn.status} />
+            {txn.balanceDue !== undefined ? (
+              // SCRUM-902 — a part-paid sale names its balance, as its detail
+              // does, with the sale's total under it.
+              <span className="w-20 text-right" data-testid="card-balance-due">
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">Balance due</span>
+                <span className="block text-lg font-bold tabular-nums">฿{bahtText(txn.balanceDue)}</span>
+                <span className="block text-xs text-muted-foreground tabular-nums">of ฿{bahtText(txn.total)}</span>
+              </span>
+            ) : (
+              <span className="text-lg font-bold tabular-nums w-20 text-right">฿{bahtText(txn.total)}</span>
+            )}
+          </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
       </Card>

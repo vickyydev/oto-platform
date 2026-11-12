@@ -23,6 +23,9 @@ import {
   isVoucherDiscount,
   newActionId,
   refundItemOptions,
+  withChildName,
+  isPartySettlementSale,
+  PARTY_SETTLEMENT_LABEL,
   refundRemainingSatang,
   refundSale,
   reprintOptions,
@@ -418,9 +421,11 @@ export function restorableCreditSatang(
  * else the ledger's word stands.
  */
 export function tenderLabel(
-  attempt: Pick<PaymentAttemptView, 'method'>,
+  attempt: Pick<PaymentAttemptView, 'method' | 'partyDeposit'>,
   sale: Pick<ApiSale, 'note'>,
 ): string {
+  // SCRUM-917 — a party's deposit on its settlement, as the platform names it.
+  if (attempt.partyDeposit) return 'Party deposit';
   if (attempt.method === PAID_ONLINE_TENDER_METHOD && bookingReferenceOf(sale)) return 'Paid online';
   return METHOD_LABEL[attempt.method];
 }
@@ -833,8 +838,9 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
     });
 
   const kind = txn.isDropOff ? 'dropoff' : txn.kind;
+  // SCRUM-917 — a party's settlement is headed as one, not "Ticket sale".
   const heading =
-    detail?.timeExtension ? 'Extra-time charge' : kind === 'dropoff'
+    detail?.timeExtension ? 'Extra-time charge' : isPartySettlementSale(txn.ledger) ? PARTY_SETTLEMENT_LABEL : kind === 'dropoff'
       ? 'Drop-off charge'
       : kind === 'merch'
         ? 'Retail sale'
@@ -1299,7 +1305,8 @@ export function SaleDetail(props: SaleDetailProps) {
     <div className="space-y-3">
       {[...groups.entries()].map(([cartLineId, lines]) => {
         const first = lines[0]!;
-        const name = packageName(first.ticketPackageId) ?? first.stayDurationLabel ?? 'Items';
+        // SCRUM-934 — a drop-off or nanny child's card names the child.
+        const name = withChildName(packageName(first.ticketPackageId) ?? first.stayDurationLabel ?? 'Items', lines);
         const groupTotal = lines.reduce((sum, l) => sum + l.grossSatang, 0);
         return (
           <div key={cartLineId} className="rounded-xl border bg-background/40 p-4">

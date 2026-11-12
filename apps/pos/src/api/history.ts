@@ -171,6 +171,11 @@ export interface ApiSaleListItem extends ApiSale {
    * the platform's list reads it. Absent on every other row.
    */
   partPaid?: { paidSatang: number; balanceSatang: number } | null;
+  /**
+   * SCRUM-804 — on a party's settlement sale, the party and the settlement it
+   * settles, as the platform's list names them. Absent on every other row.
+   */
+  partySettlement?: { eventId: string; settlementId: string } | null;
 }
 
 export interface ApiSaleLine {
@@ -209,6 +214,12 @@ export interface ApiSaleLine {
   prepaid?: { checkinId: string; menuItemId: string; unmatched?: true; settledAtPickup?: true; usedUp?: true } | null;
   holderCheckinId?: string | null;
   supervised?: boolean;
+  /**
+   * SCRUM-934 — the drop-off or nanny child this line is for, by the name on
+   * the stay its cart line is; null on every other line. Optional: an older
+   * platform answers without it, and the rows then read as before.
+   */
+  childName?: string | null;
 }
 
 export interface ApiSaleDiscount {
@@ -411,6 +422,11 @@ export interface ApiSaleBand {
 export interface HistoryTxn extends TxnSummary {
   ledger: ApiSaleListItem;
   badge: BadgeStatus;
+  /**
+   * SCRUM-902 — a part-paid sale's balance due, in baht, as the platform's list
+   * reads it; the card shows it over the sale's total. Absent otherwise.
+   */
+  balanceDue?: number;
 }
 
 /** Satang → baht. The whole ported UI thinks in baht (`api/mappers.ts`). */
@@ -517,19 +533,44 @@ export function bookingReferenceOf(sale: Pick<ApiSale, 'note'>): string | null {
 /** The customer line on a redemption sale with no member behind it. */
 export const BOOKED_ONLINE_LABEL = 'Booked online';
 
+/**
+ * THE PARTY A SETTLEMENT SALE SETTLES — SCRUM-917.
+ *
+ * A party's settlement sale (`POST /parties/:id/settle`) carries the party on
+ * the list's row (`partySettlement`) and its title on the sale's note, which
+ * the settlement writes as "Party: <title>" and nothing else writes
+ * (`services/party-settlement.ts`). Read the way a booking's reference is
+ * read above. Null on every other sale.
+ */
+export function partyTitleOf(sale: Pick<ApiSale, 'note'>): string | null {
+  const found = /^Party: (.+)$/.exec(sale.note ?? '');
+  return found ? found[1]!.trim() || null : null;
+}
+
+/** Whether a sale is a party's settlement: the list names its party, or its note does. */
+export function isPartySettlementSale(sale: Pick<ApiSaleListItem, 'note'> & { partySettlement?: unknown }): boolean {
+  return Boolean(sale.partySettlement) || partyTitleOf(sale) !== null;
+}
+
+/** What a settlement's card and detail are headed — in place of "No receipt number" and "Ticket sale". */
+export const PARTY_SETTLEMENT_LABEL = 'Party settlement';
+
 /** One ledger sale as the History components read it. */
 export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: string }): HistoryTxn {
   const badge = badgeOf(sale);
   const bookingReference = bookingReferenceOf(sale);
   // A guest who booked online and is no member is not a walk-in (SCRUM-477).
+  // SCRUM-917 — a party's settlement names its party where no member does.
   const guest =
     (sale.member ? sale.member.nickname || sale.member.name || sale.member.phone : null) ??
-    (bookingReference ? BOOKED_ONLINE_LABEL : null);
+    (bookingReference ? BOOKED_ONLINE_LABEL : null) ??
+    partyTitleOf(sale);
   return {
     id: sale.id,
     kind: kindOf(sale),
     isDropOff: isDropOff(sale),
-    reference: referenceOf(sale),
+    // SCRUM-917 — a settlement still open is headed as the party's settlement.
+    reference: sale.receiptNumber === null && isPartySettlementSale(sale) ? PARTY_SETTLEMENT_LABEL : referenceOf(sale),
     createdAt: sale.occurredAt,
     total: baht(sale.totals.grossSatang),
     // `TxnSummary.status` only has words for a sale that was paid for; `badge`
@@ -541,6 +582,7 @@ export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: strin
     ...(bookingReference ? { bookingReference } : {}),
     ...(branch.id ? { branchId: branch.id } : {}),
     ...(branch.name ? { branchName: branch.name } : {}),
+    ...(badge === 'part_paid' && sale.partPaid ? { balanceDue: baht(sale.partPaid.balanceSatang) } : {}),
     ledger: sale,
   };
 }
@@ -778,6 +820,23 @@ export interface RefundItemOption {
 
 const ADMISSION_KINDS = new Set(['kids', 'adults_paid', 'adults_free']);
 
+/**
+ * SCRUM-934 — THE CHILD A CART LINE IS FOR. A drop-off or nanny child's cart
+ * line is the child's stay, and every sale line of it names the child
+ * (`childName`). Two children on one sale are two rows of the same package —
+ * "1 Hour Play · 1 ppl" twice — and the name is what tells a manager which
+ * row frees which child. Null on a line that is not a child's.
+ */
+export function childOfLines(lines: readonly Pick<ApiSaleLine, 'childName'>[]): string | null {
+  return lines.find((line) => line.childName)?.childName ?? null;
+}
+
+/** A row's name with its child before it — "Mali · 1 Hour Play" — or the name as it was. */
+export function withChildName(name: string, lines: readonly Pick<ApiSaleLine, 'childName'>[]): string {
+  const child = childOfLines(lines);
+  return child ? `${child} · ${name}` : name;
+}
+
 export function refundItemOptions(
   detail: Pick<ApiSaleDetail, 'lines' | 'refunds'>,
   nameOf: (line: ApiSaleLine) => string | null = () => null,
@@ -807,7 +866,7 @@ export function refundItemOptions(
         : lines.length === 1
           ? `${first.quantity}× ${first.label}`
           : name;
-    options.push({ id: cartLineId, label, lineIds: open.map((line) => line.id), amountSatang });
+    options.push({ id: cartLineId, label: withChildName(label, lines), lineIds: open.map((line) => line.id), amountSatang });
   }
   return options;
 }

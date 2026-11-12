@@ -5877,10 +5877,12 @@ export async function getSaleDetail(
     status: saleExtension.status, minutesAdded: saleExtension.minutesAdded, braceletCount: saleExtension.braceletCount })
     .from(saleExtension).where(eq(saleExtension.chargeSaleId, saleId)).limit(1);
   // A supervised cart line names its existing stay, including a zero-fee stay.
-  const supervisedLines = lines.length === 0 ? [] : await db.select({ id: checkin.id }).from(checkin)
+  const supervisedLines = lines.length === 0 ? [] : await db.select({ id: checkin.id, childName: checkin.childName }).from(checkin)
     .where(and(inArray(checkin.id, [...new Set(lines.map((line) => line.cartLineId))]),
       eq(checkin.operatorId, operatorId), eq(checkin.branchId, row.branchId)));
   const supervisedLineIds = new Set(supervisedLines.map((stay) => stay.id));
+  // SCRUM-934 — the child a supervised line is for, by the name on its stay.
+  const stayChildName = new Map(supervisedLines.map((stay) => [stay.id, stay.childName]));
   const holderIds = [...new Set(lines.map((line) => (line.payload as SaleLinePayload | null)?.holder?.checkinId).filter((id): id is string => !!id))];
   const correctionBands = holderIds.length === 1 ? await db.select({ code: band.code }).from(checkin)
     .innerJoin(band, eq(band.id, checkin.bandId))
@@ -5966,6 +5968,14 @@ export async function getSaleDetail(
       prepaid: (line.payload as SaleLinePayload | null)?.prepaid ?? null,
       holderCheckinId: (line.payload as SaleLinePayload | null)?.holder?.checkinId ?? null,
       supervised: supervisedLineIds.has(line.cartLineId),
+      /**
+       * SCRUM-934 — the drop-off or nanny child this line is for: its cart
+       * line is the child's stay, and the stay carries the name. Null on
+       * every line that is not a supervised child's. History names each
+       * such row by it — the refund's By item rows and the item cards — so
+       * a manager refunding one of two children picks the right one.
+       */
+      childName: stayChildName.get(line.cartLineId) ?? null,
     })),
     discounts: discounts.map((d) => {
       /** The whole code of a voucher's row, which this answer does not give. */
