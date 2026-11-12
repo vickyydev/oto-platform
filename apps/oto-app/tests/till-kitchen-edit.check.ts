@@ -18,6 +18,11 @@
 //     the till, an option outside its group is refused, a choice of the kids'
 //     set menu carries the adults' own copy with it (SCRUM-829), the adults'
 //     switch is kept, nothing is priced;
+//   - one till line is every BEO line it shows: with "Different for adults"
+//     saved on, a count, a note or a removal of a kids' line carries the
+//     adults' copies the view folds into it (a note of the adults' own
+//     stays); on a BEO whose adults' list repeats the kids' (saved before the
+//     switch), a change of an adults' line is written as the adults' own;
 //   - the same edit id twice writes once (one activity row, one line added);
 //     the same id with another change is refused `id_in_use`;
 //   - the BEO's activity says "changed on the till by <name> (<role>)", in the
@@ -83,7 +88,10 @@ const setMenuItems = [
   { id: FRIES, type: "always_included", label: "French fries", productCode: "CF-11", qty: 2 },
   { id: PIZZA, type: "choice_group", label: "Pizza", options: ["Margherita", "Hawaiian"], allowMultiple: false, optionProductCodes: { Margherita: "CF-24", Hawaiian: "CF-27" }, qty: 2 },
 ];
-const ev = { main: randomUUID(), adults: randomUUID(), open: randomUUID(), save: randomUUID(), foreign: randomUUID(), camp: randomUUID() };
+const ev = {
+  main: randomUUID(), adults: randomUUID(), open: randomUUID(), save: randomUUID(), foreign: randomUUID(), camp: randomUUID(),
+  foldSet: randomUUID(), foldRemove: randomUUID(), legacy: randomUUID(),
+};
 const keys = { a: generateDirectoryKey(), b: generateDirectoryKey(), noScope: generateDirectoryKey(), revoked: generateDirectoryKey() };
 
 function fakeAuth(req: Request, res: Response, next: NextFunction) {
@@ -362,6 +370,108 @@ try {
     assert.equal(menus!.kids.find((l) => l.groupId === RICE)!.itemName, "Shrimp");
   });
 
+  // The till's food lines as the plan view hands them: id, dish, count, note and 0048's marks.
+  const viewLinesOf = async (eventId: string) =>
+    ((await rowOf(eventId))!.kitchen_plan.lines as Record<string, unknown>[]).map((l) => [
+      l.line_id, l.name, l.qty, l.note ?? null, l.audience ?? null, l.adults_note ?? null,
+    ]);
+  const calamari = (id: string, quantity = 2, over: Partial<Line> = {}) =>
+    line(id, "Calamari", quantity, { included: false, price: 120, productCode: "CF-14", source: "additional", ...over });
+
+  await check("adults' switch on: a kids' line's count and note carry the adults' copies the till shows with it", async () => {
+    await kitchenPlan(
+      ev.foldSet,
+      {
+        kids: [calamari("k1"), line("k2", "Hummus", 1, { included: false, productCode: "CF-13", source: "additional" })],
+        // As the editor's switch makes them: a copy of each kids' line, the Hummus with an adults' own note, and a steak.
+        adults: [
+          calamari("menu_copy_0"),
+          line("menu_copy_1", "Hummus", 1, { included: false, productCode: "CF-13", source: "additional", notes: "no garlic" }),
+          line("a1", "Steak", 4, { included: false, source: "additional" }),
+        ],
+        adultsDiffer: true,
+      },
+      { setMenu: false },
+    );
+    // The till shows each dish once: the Calamari and the Hummus with their copies folded in.
+    assert.deepEqual(await viewLinesOf(ev.foldSet), [
+      ["k1", "Calamari", 2, null, null, null],
+      ["k2", "Hummus", 1, null, null, "no garlic"],
+      ["a1", "Steak", 4, null, "adults", null],
+    ]);
+    const res = await edit(ev.foldSet, [
+      { op: "set", lineId: "k1", qty: 3, note: "no sauce" },
+      { op: "set", lineId: "k2", qty: 2, note: "warm" },
+    ]);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const menus = await menusOf(ev.foldSet);
+    assert.equal(menus!.adultsDiffer, true);
+    assert.deepEqual(menus!.kids.map((l) => [l.id, l.quantity, l.notes]), [["k1", 3, "no sauce"], ["k2", 2, "warm"]]);
+    assert.deepEqual(menus!.adults.map((l) => [l.id, l.quantity, l.notes]), [
+      ["menu_copy_0", 3, "no sauce"],
+      ["menu_copy_1", 2, "no garlic"],
+      ["a1", 4, ""],
+    ]);
+    // Still one line each on the till: the kitchen makes 3 Calamari, not 3 and 2.
+    assert.deepEqual(await viewLinesOf(ev.foldSet), [
+      ["k1", "Calamari", 3, "no sauce", null, null],
+      ["k2", "Hummus", 2, "warm", null, "no garlic"],
+      ["a1", "Steak", 4, null, "adults", null],
+    ]);
+    const acts = await activitiesOf(ev.foldSet);
+    assert.equal(acts.length, 1);
+    assert.match(acts[0]!.summary_text, /Calamari ×2 → ×3, note "no sauce" \(the adults' too\); Hummus ×1 → ×2, note "warm" \(the adults' too\)$/);
+  });
+
+  await check("adults' switch on: removing a kids' extra removes the adults' copy the till shows with it", async () => {
+    await kitchenPlan(
+      ev.foldRemove,
+      { kids: [calamari("k1")], adults: [calamari("menu_copy_0"), line("a1", "Steak", 4, { included: false, source: "additional" })], adultsDiffer: true },
+      { setMenu: false },
+    );
+    assert.deepEqual(await viewLinesOf(ev.foldRemove), [["k1", "Calamari", 2, null, null, null], ["a1", "Steak", 4, null, "adults", null]]);
+    const res = await edit(ev.foldRemove, [{ op: "remove", lineId: "k1" }]);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const menus = await menusOf(ev.foldRemove);
+    assert.deepEqual(menus!.kids, []);
+    assert.deepEqual(menus!.adults.map((l) => l.id), ["a1"]);
+    assert.equal(menus!.adultsDiffer, true);
+    // No "Calamari ×2 · adults" left on the slip or the bill.
+    assert.deepEqual(await viewLinesOf(ev.foldRemove), [["a1", "Steak", 4, null, "adults", null]]);
+    assert.match((await activitiesOf(ev.foldRemove))[0]!.summary_text, /removed Calamari \(the adults' too\)$/);
+  });
+
+  await check("a BEO saved before the switch, its adults' list repeating the kids': an adults' line's change is written as theirs", async () => {
+    // No adultsDiffer key: the till shows the two lists' lines apart (0048's reading of such a BEO).
+    await kitchenPlan(ev.legacy, { kids: [calamari("k1")], adults: [calamari("a1")] }, { setMenu: false });
+    assert.deepEqual(await viewLinesOf(ev.legacy), [["k1", "Calamari", 2, null, null, null], ["a1", "Calamari", 2, null, null, null]]);
+    const res = await edit(ev.legacy, [{ op: "set", lineId: "a1", qty: 5, note: "adults spicy" }]);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const menus = await menusOf(ev.legacy);
+    assert.equal(menus!.adultsDiffer, true, "the adults' list is now their own");
+    assert.deepEqual(menus!.kids.map((l) => [l.id, l.quantity, l.notes]), [["k1", 2, ""]]);
+    assert.deepEqual(menus!.adults.map((l) => [l.id, l.quantity, l.notes]), [["a1", 5, "adults spicy"]]);
+    assert.deepEqual(await viewLinesOf(ev.legacy), [["k1", "Calamari", 2, null, null, null], ["a1", "Calamari", 5, "adults spicy", "adults", null]]);
+    assert.match((await activitiesOf(ev.legacy))[0]!.summary_text, /Calamari ×2 → ×5, note "adults spicy"$/);
+
+    // The planner alone: a change of the kids' list only writes the BEO Save's own form (the adults
+    // eat the kids' list); with the switch never saved, the till showed the lists apart, so no copy moves.
+    const legacy = (adults: Line[], adultsDiffer?: boolean) => ({
+      kitchen: { setMenuEnabled: false, cakeMode: "NONE", menus: { kids: [calamari("k1")], adults, ...(adultsDiffer === undefined ? {} : { adultsDiffer }) } },
+      bar: null,
+      template: null,
+    });
+    const kidsOnly = planTillKitchenEdit(legacy([calamari("a1")]), [{ op: "set", lineId: "k1", qty: 3 }]);
+    assert.ok(kidsOnly.ok && kidsOnly.kitchen);
+    if (!kidsOnly.ok || !kidsOnly.kitchen) return;
+    assert.deepEqual([kidsOnly.kitchen.menus.adults, kidsOnly.kitchen.menus.adultsDiffer], [[], false]);
+    const unsaved = planTillKitchenEdit(legacy([calamari("a1"), line("a2", "Steak", 4)]), [{ op: "set", lineId: "k1", qty: 3 }]);
+    assert.ok(unsaved.ok && unsaved.kitchen);
+    if (!unsaved.ok || !unsaved.kitchen) return;
+    assert.deepEqual(unsaved.kitchen.menus.adults.map((l: Line) => [l.id, l.quantity]), [["a1", 2], ["a2", 4]]);
+    assert.equal(unsaved.kitchen.menus.adultsDiffer, true);
+  });
+
   await check("the planner alone: a legacy line keeps its group when its note changes; nothing is priced", () => {
     const planned = planTillKitchenEdit(
       {
@@ -398,4 +508,4 @@ try {
   await pool.end();
   await appDbPool.end().catch(() => undefined);
 }
-process.exit(checks === 9 ? 0 : 1);
+process.exit(checks === 12 ? 0 : 1);

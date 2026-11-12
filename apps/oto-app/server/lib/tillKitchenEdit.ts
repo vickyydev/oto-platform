@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import { z } from "zod";
 import { and, eq, like } from "drizzle-orm";
 import { activityLog, beoBarPlans, beoKitchenPlans, beoSetMenuSelections, beoSetMenuTemplates, coreEvents } from "@shared/schema";
-import { adultsCopiesOf, adultsDifferOf, kitchenLinesOf } from "@shared/kitchenAdults";
+import { adultsCopiesOf, adultsDifferOf, kitchenLinesOf, sameKitchenDish } from "@shared/kitchenAdults";
 
 /**
  * A MANAGER CHANGES A PARTY'S KITCHEN PLAN ON THE TILL, AND THE BEO IS CHANGED
@@ -28,6 +28,18 @@ import { adultsCopiesOf, adultsDifferOf, kitchenLinesOf } from "@shared/kitchenA
  *               copy follows it, as the parent's submit keeps it (SCRUM-829);
  *               the dish keeps its count and takes the template's till code;
  *   - `cake`    the cake's time and note, when the BEO has a cake.
+ *
+ * ONE TILL LINE IS EVERY BEO LINE IT SHOWS. With "Different for adults" saved
+ * on, the plan view shows a kids' line and each adults' line that is the same
+ * dish (`sameKitchenDish`: name, count and till code) as ONE line, so `set`
+ * and `remove` on that kids' line carry those adults' copies with it: a count
+ * moves them, a note moves the ones that had the kids' note, a removal
+ * removes them (as `choose` carries the adults' copy of a choice). On a BEO
+ * whose adults eat the kids' list (the switch off; an adults' list from
+ * before the switch repeating the kids'), a change of an adults' line makes
+ * that list the adults' own — the switch written on, as the editor reads two
+ * unequal lists — so it is never dropped; a change of the kids' list alone
+ * writes the BEO Save's own form (the adults' list empty, the switch off).
  *
  * WRITTEN THROUGH THE BEO'S OWN SAVE (`kitchenPlanDbDataOf`, `writeKitchenPlanRow`
  * and the bar's two in beo-routes.ts), under the kitchen plan's lock, so every
@@ -132,12 +144,20 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
   const kp: Record<string, any> = state.kitchen ? { ...state.kitchen } : {};
   const menus: Record<string, any> = kp.menus && typeof kp.menus === "object" && !Array.isArray(kp.menus) ? { ...kp.menus } : {};
   const adultsDiffer = adultsDifferOf(menus);
+  // The plan view folds the adults' copies into the kids' line only with the switch SAVED on
+  // (0048, 0050: `adultsDiffer` true), so only then is a kids' line on the till its copies too.
+  const viewFoldsAdults = menus.adultsDiffer === true;
   const kids: Line[] = kitchenLinesOf(menus.kids).map((l) => ({ ...l })) as Line[];
   const adults: Line[] = kitchenLinesOf(menus.adults).map((l) => ({ ...l })) as Line[];
   const bar: Line[] = (state.bar?.items ?? []).filter((l) => l && typeof l === "object").map((l) => ({ ...l }));
   let kitchenTouched = false;
   let barTouched = false;
+  // An adults' line changed while the adults eat the kids' list: the list becomes their own.
+  let adultsChangedWhileOff = false;
   const said: string[] = [];
+  /** The adults' lines the till shows as this kids' line: the same dish, the switch saved on. */
+  const foldedCopiesOf = (kidsLine: Line): number[] =>
+    viewFoldsAdults ? adults.flatMap((a, i) => (sameKitchenDish(a, kidsLine) ? [i] : [])) : [];
 
   const lists = (): { list: Line[]; place: "kids" | "adults" | "bar" }[] => [
     { list: kids, place: "kids" },
@@ -164,22 +184,30 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
       const hit = find(change.lineId);
       if (!hit) return gone(change.lineId);
       const was = { qty: qtyOf(hit.line), note: text(hit.line.notes).trim() };
-      const next: Line = { ...hit.line };
-      if (change.qty !== undefined) next.quantity = change.qty;
-      if (change.note !== undefined) {
-        // A line saved before groupId is matched to its group by its note "(<group>)": it takes its
-        // group's id first, so a note of its own never loses it its group.
-        const group = groups.find((g) => !text(next.groupId).trim() && ofGroup(next, g));
-        if (group) next.groupId = group.id;
-        next.notes = change.note ?? "";
-      }
+      const copies = hit.place === "kids" ? foldedCopiesOf(hit.line) : [];
+      const setLine = (line: Line, withNote: boolean): Line => {
+        const next: Line = { ...line };
+        if (change.qty !== undefined) next.quantity = change.qty;
+        if (withNote && change.note !== undefined) {
+          // A line saved before groupId is matched to its group by its note "(<group>)": it takes its
+          // group's id first, so a note of its own never loses it its group.
+          const group = groups.find((g) => !text(next.groupId).trim() && ofGroup(next, g));
+          if (group) next.groupId = group.id;
+          next.notes = change.note ?? "";
+        }
+        return next;
+      };
+      const next = setLine(hit.line, true);
       hit.list[hit.at] = next;
+      // The adults' copies the till showed as this line move with it; a note of the adults' own stays.
+      for (const i of copies) adults[i] = setLine(adults[i]!, text(adults[i]!.notes).trim() === was.note);
+      if (hit.place === "adults" && !adultsDiffer) adultsChangedWhileOff = true;
       touch(hit.place);
       const parts = [
         change.qty !== undefined && change.qty !== was.qty ? `×${was.qty} → ×${change.qty}` : null,
         change.note !== undefined && (change.note ?? "").trim() !== was.note ? `note "${(change.note ?? "").trim()}"` : null,
       ].filter((p): p is string => !!p);
-      said.push(`${nameOf(next)}${parts.length ? ` ${parts.join(", ")}` : ""}`);
+      said.push(`${nameOf(next)}${parts.length ? ` ${parts.join(", ")}` : ""}${copies.length && parts.length ? " (the adults' too)" : ""}`);
       continue;
     }
     if (change.op === "remove") {
@@ -192,9 +220,13 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
           `${nameOf(hit.line)} is a dish of the party's set menu, so it is not removed from the till: change its choice or its count, or remove it in the BEO.`,
         );
       }
+      // The adults' copies the till showed as this line go with it.
+      const copies = hit.place === "kids" ? foldedCopiesOf(hit.line) : [];
       hit.list.splice(hit.at, 1);
+      for (const i of [...copies].reverse()) adults.splice(i, 1);
+      if (hit.place === "adults" && !adultsDiffer) adultsChangedWhileOff = true;
       touch(hit.place);
-      said.push(`removed ${nameOf(hit.line)}`);
+      said.push(`removed ${nameOf(hit.line)}${copies.length ? " (the adults' too)" : ""}`);
       continue;
     }
     if (change.op === "add") {
@@ -294,6 +326,10 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
     said.push(`cake ${parts.join(", ")}`);
   }
 
+  // The switch as the change leaves it: kept when it was on; turned on when an adults' line of a
+  // list that repeated the kids' was changed and the two lists now differ (adultsDifferOf, on the
+  // lists after the change), so the adults' change is written and never dropped.
+  const differ = adultsDiffer || (adultsChangedWhileOff && adultsDifferOf({ kids, adults }));
   // A set-menu dish the template resolved is never renamed but by a choice of its own group:
   // `set` writes no name, and `choose` only an option the template names for that group.
   const kitchen = kitchenTouched
@@ -309,8 +345,8 @@ export function planTillKitchenEdit(state: KitchenState, changes: readonly TillK
         setMenuTemplateId: kp.setMenuTemplateId,
         menus: {
           kids,
-          adults: adultsDiffer ? adults : [],
-          adultsDiffer,
+          adults: differ ? adults : [],
+          adultsDiffer: differ,
           kidsFoodTime: menus.kidsFoodTime,
           adultsFoodTime: menus.adultsFoodTime,
         },
