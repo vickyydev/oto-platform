@@ -324,6 +324,11 @@ try {
     assert.equal(words(p.event.eventDate), "Saturday 5 December");
     assert.equal(p.event.childAge?.value, 6);
     assert.equal(words(p.event.childAge), "6th birthday");
+    // The title follows the age the chat gives (the BEO holds none), as the Age row the approval writes does.
+    assert.deepEqual(p.details.title && [p.details.title.value, p.details.title.from.source], ["Lina's 6th Birthday", "default"]);
+    const corrected = { ...p, event: { ...p.event, childAge: { value: 7, from: family(4) } } };
+    const titled = detailsFromFill(corrected, {}, { existingData: {}, from: { source: "team", at: null, line: null }, event: { childName: "Lina", kidTurningAge: 6, eventType: "birthday" } });
+    assert.equal(titled.title?.value, "Lina's 7th Birthday", "the chat's age over the stored one, as the approval writes it");
     assert.equal(p.event.whatsapp?.value, "+66 81 234 5678");
     assert.deepEqual(fromOf(p.event.whatsapp?.from), family(4));
     assert.deepEqual([p.event.kidsFoodTime?.value, p.event.adultsFoodTime?.value, p.event.barServiceTime?.value], ["14:30", "15:00", "14:15"]);

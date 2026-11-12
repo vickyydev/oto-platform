@@ -1215,9 +1215,10 @@ const sameText = (a: string | null | undefined, b: string | null | undefined) =>
  * The rest of the BEO the form's own read gives (the ruling message, read
  * alone with the form as its baseline), put on the proposal with its source:
  * the booking name, the location, the setup plan and the POS box are the
- * ruling's (`from`); the title is the app's own rule from the child's name the
- * chat gave (else the form's) and the age the event holds — the park's
- * default, never the chat's — and only for a birthday (the event's type, else
+ * ruling's (`from`); the title is the app's own rule from the child's name and
+ * the age the chat gave (else the form's name and the age the event holds) —
+ * marked as the park's default, the rule's own value, never as the chat's
+ * words — and only for a birthday (the event's type, else
  * the form's; as apps/api's Book Date names only birthdays so): a camp or a
  * corporate event is not named after a child's birthday. A value equal to
  * what the form already holds is the form's, carried forward by the model,
@@ -1253,7 +1254,10 @@ export function detailsFromFill(
 
   const child = proposal.event.childName?.value ?? fill.event?.childName ?? heldText(formEvent.childName) ?? input.event?.childName ?? null;
   const kind = input.event?.eventType ?? heldText(formEvent.eventType);
-  const title = kind === "birthday" ? beoEventTitleOf(child, input.event?.kidTurningAge ?? null) : null;
+  // SCRUM-904: the age the chat gives first, as the child's name is, so the title and the Age row
+  // the approval writes never disagree; else the age the event holds.
+  const age = proposal.event.childAge?.value ?? input.event?.kidTurningAge ?? null;
+  const title = kind === "birthday" ? beoEventTitleOf(child, age) : null;
   details.title = title ? { value: title, from: { source: "default", at: null, line: null } } : null;
   details.bookingName = proposal.details.bookingName ?? sourced(fill.event?.bookingName, formEvent.bookingName);
   details.locationText = proposal.details.locationText ?? sourced(fill.event?.locationText, formEvent.locationText);
