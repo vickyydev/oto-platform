@@ -790,7 +790,9 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(consent.getByText('Saved on your profile — tell the team if anything has changed.', { exact: true })).toBeVisible();
     await consent.getByRole('button', { name: 'Continue', exact: true }).click();
-    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
+    // SCRUM-857 — the last letter goes in after the staff lock below, so one
+    // live fill is sent then: the one whose reply is lost and retried.
+    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardia');
     // SCRUM-863 — the parent's block asks for the number again, with the channel
     // choice, starting from the number given at the start; the family changes both.
     await expect(consent.getByTestId('consent-kept-phone')).toHaveCount(0);
@@ -804,9 +806,12 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(consent.getByTestId('public-consent-contact-confirm')).not.toBeChecked();
     await expect(consent.getByText('This is my Telegram number — send messages about my child here.', { exact: true })).toBeVisible();
     for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    // SCRUM-857 — the form travels as it is filled: with everything taken by
+    // the till, the agreements step offers Done (not Continue) without a press.
+    await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeVisible({ timeout: 20_000 });
     await page.getByLabel('Lock screen').click();
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
-    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
+    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardia');
     let originalGesture: { actionId: string; payload: unknown } | undefined;
     await fixture.display.route('**/display/session', async route => {
       if (blockRead) await route.abort('failed'); else await route.continue();
@@ -827,10 +832,13 @@ test('separate display guardian acknowledgement retains lock and retry, while st
         await route.continue();
       }
     });
-    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    // SCRUM-857 — no Continue press: the family's typing is sent by itself,
+    // and it is that fill whose reply is lost here.
+    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
     await expect(fixture.display.getByRole('button', { name: 'Retry', exact: true })).toBeVisible({ timeout: 20_000 });
     await fixture.display.getByRole('button', { name: 'Retry', exact: true }).click();
     await expect.poll(() => publicWrites).toBe(2);
+    await fixture.display.unroute('**/display/intents');
     await unlock(page);
     await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
     await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
@@ -892,6 +900,113 @@ test('separate display guardian acknowledgement retains lock and retry, while st
   } finally {
     blockRead = false;
     page.off('request', observe); fixture.display.off('request', observe);
+    try {
+      await fixture.releaseLease();
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
+    }
+  }
+});
+
+/**
+ * SCRUM-857 / SCRUM-874 — STAFF WATCH THE FAMILY FILL THE FORM, LIVE, AND A
+ * DISPLAY THAT DROPS MID-FORM COMES BACK WITH IT. The owner's ruling of 12
+ * November: the drop-off and nanny form on the paired display shows on the
+ * till as the family fills it — the same form, on their step, every value as
+ * they type, without anyone pressing Continue. A display reloaded mid-form
+ * (as after a dropped connection or a new pairing) opens on the same step
+ * with what the till holds and what it had not sent yet.
+ */
+test('separate display drop-off form is mirrored live on the till and survives a reload mid-form', async ({ page, browser, baseURL }) => {
+  test.setTimeout(150_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  try {
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Continue', exact: true }).click();
+    await lookup;
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
+      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+    }
+    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    const review = fixture.display.getByTestId('display-child-review');
+    await expect(review).toBeVisible({ timeout: 20_000 });
+    await review.getByRole('button', { name: 'Confirm', exact: true }).click();
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+    await review.getByRole('button', { name: 'Done', exact: true }).click();
+    const consent = fixture.display.getByTestId('display-consent');
+    await expect(consent).toBeVisible({ timeout: 20_000 });
+
+    // The till shows the same form beside the staff gate, on the family's step, read-only.
+    const mirror = page.getByTestId('consent-mirror');
+    await expect(mirror).toBeVisible({ timeout: 20_000 });
+    await expect(mirror.getByTestId('consent-mirror-status')).toHaveText('The customer is filling this in');
+    await expect(mirror.getByTestId('consent-child')).toHaveCount(1);
+    expect(await mirror.evaluate(element => element.hasAttribute('inert'))).toBe(true);
+    await captureLocalCheck(page, 's857-mirror-children-local.png');
+
+    // The family moves on: the till follows them, step by step.
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(mirror.getByTestId('consent-care')).toHaveCount(1, { timeout: 3_000 });
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    const staffName = mirror.getByLabel('Parent / guardian name', { exact: true });
+    await expect(staffName).toBeVisible({ timeout: 3_000 });
+
+    // What they type is on the till within a second, with no Continue pressed.
+    const familyName = consent.locator('#public-consent-guardian');
+    await familyName.pressSequentially('Live guardian', { delay: 40 });
+    const typed = Date.now();
+    await expect(staffName).toHaveValue('Live guardian', { timeout: 1_000 });
+    expect(Date.now() - typed).toBeLessThan(1_000);
+
+    // The family switches their screen to Thai: staff keep reading it in English, values as typed.
+    await consent.getByRole('button', { name: 'Change language', exact: true }).click();
+    await fixture.display.getByRole('button', { name: 'ไทย', exact: true }).click();
+    await expect(consent.getByText('ข้อตกลง', { exact: false }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(mirror.getByTestId('consent-mirror-status')).toHaveText('The customer is filling this in');
+    await expect(mirror.getByText('3. Agreements', { exact: true })).toBeVisible();
+    await expect(staffName).toHaveValue('Live guardian');
+    await captureLocalCheck(page, 's857-mirror-agreements-local.png');
+
+    // SCRUM-874 — the line drops while they type: nothing reaches the till...
+    await fixture.display.route('**/display/intents', route => route.abort('failed'));
+    await familyName.fill('Live guardian Two');
+    await fixture.display.waitForTimeout(800);
+    await expect(staffName).toHaveValue('Live guardian');
+    // ...and the display is reloaded (as after a re-pair) once the line is back.
+    await fixture.display.unroute('**/display/intents');
+    await fixture.display.reload();
+    const back = fixture.display.getByTestId('display-consent');
+    await expect(back).toBeVisible({ timeout: 20_000 });
+    await expect(back.locator('#public-consent-guardian')).toHaveValue('Live guardian Two', { timeout: 5_000 });
+    await expect(staffName).toHaveValue('Live guardian Two', { timeout: 5_000 });
+
+    // Reloaded again with nothing unsent: the step and the values come back from the till.
+    await fixture.display.reload();
+    await expect(fixture.display.locator('#public-consent-guardian')).toHaveValue('Live guardian Two', { timeout: 20_000 });
+    await captureLocalCheck(fixture.display, 's874-reloaded-mid-form-local.png');
+
+    // Staff help from the till: the family's screen follows it.
+    await page.getByRole('button', { name: 'Private child details', exact: true }).click();
+    const privateForm = page.getByRole('dialog', { name: 'Private child details', exact: true });
+    await expect(privateForm.getByPlaceholder('Your full name', { exact: true })).toHaveValue('Live guardian Two', { timeout: 20_000 });
+    await privateForm.getByPlaceholder('Your full name', { exact: true }).fill('Live guardian Staff');
+    await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(fixture.display.locator('#public-consent-guardian')).toHaveValue('Live guardian Staff', { timeout: 5_000 });
+    await expect(staffName).toHaveValue('Live guardian Staff');
+  } catch (error) {
+    await captureLocalCheck(page, 's857-mirror-failure-staff-local.png').catch(() => undefined);
+    await captureLocalCheck(fixture.display, 's857-mirror-failure-display-local.png').catch(() => undefined);
+    throw error;
+  } finally {
     try {
       await fixture.releaseLease();
     } finally {

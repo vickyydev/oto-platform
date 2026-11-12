@@ -467,11 +467,13 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   return <div className="relative flex h-full w-full min-h-0 flex-col bg-[image:var(--cd-gradient)] text-foreground"
     data-testid={mirror ? 'consent-mirror' : 'display-consent'} inert={mirror ? true : undefined}
     onBlurCapture={mirror ? undefined : () => { urgent.current = true; flush.current(); }}>
+    {/* SCRUM-857 — staff's copy says whose screen this is, above the form
+        (where the family's has its language button: staff read in theirs). */}
     {mirror
-      ? <div className="absolute top-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
-        <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div>
+      ? <div className="shrink-0 flex justify-center px-8 pt-4"><div className="inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-semibold text-foreground/70" data-testid="consent-mirror-status">
+        <Eye className="h-4 w-4" />{t('superviseConsent.mirrorFilling')}</div></div>
       : <div className="absolute top-4 right-4 z-40"><LanguageSwitcher variant="dark" /></div>}
-    <div className="shrink-0 px-8 pt-8 pb-4 text-center">
+    <div className={cn('shrink-0 px-8 pb-4 text-center', mirror ? 'pt-3' : 'pt-8')}>
       <div className="mb-2 inline-flex items-center gap-2 text-primary"><ShieldCheck className="h-6 w-6" />
         <span className="text-sm font-bold uppercase tracking-widest">{t('superviseConsent.playingToday')}</span></div>
       <h2 className="text-4xl font-black">{t(prompt.slots.length === 1 ? 'superviseConsent.titleOne' : 'superviseConsent.titleMany')}</h2>
