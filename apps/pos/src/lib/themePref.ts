@@ -10,6 +10,7 @@ import {
 } from '@oto/shared/ui-preferences';
 import { preferencesApi } from '@/api/platform';
 import { idemKey } from '@/api/client';
+import { customerDisplayTheme } from '@/lib/displayTheme';
 
 // Independent manual dark/light theme for the two surfaces of the POS:
 //   - the STAFF screens (drives document root, so portaled dialogs/toasts follow)
@@ -24,20 +25,13 @@ import { idemKey } from '@/api/client';
 // the till shows light, as it always has.
 //
 // The DISPLAY theme is a property of this device, not of whoever is signed in
-// at it, so it stays in module memory as before. Neither value touches browser
-// storage, per the app's hard rules: the account is the store.
+// at it, so it stays in module memory as before (`lib/displayTheme.ts`, which
+// since SCRUM-929 also tells a paired display when Display is pressed). Neither
+// value touches the till's browser storage, per the app's hard rules: the
+// account is the store.
 export type Theme = 'dark' | 'light';
 
-let customerTheme: Theme = 'light';
-
-const customerListeners = new Set<() => void>();
-
 type Updater = Theme | ((prev: Theme) => Theme);
-
-function subscribeCustomer(listener: () => void) {
-  customerListeners.add(listener);
-  return () => customerListeners.delete(listener);
-}
 
 function root(): ThemeRoot | null {
   return typeof document === 'undefined' ? null : document.documentElement;
@@ -85,11 +79,12 @@ export function useStaffTheme(controller: ThemeController = staffThemeController
 }
 
 // Theme of the customer-facing display(s). Independent of the staff theme.
+// The setter is a restore (the sign-in's), not a press: a press of Display
+// goes through `customerDisplayTheme.choose` so a paired display is told.
 export function useCustomerTheme(): [Theme, (value: Updater) => void] {
-  const value = useSyncExternalStore(subscribeCustomer, () => customerTheme);
+  const value = useSyncExternalStore(customerDisplayTheme.subscribe, customerDisplayTheme.get);
   const set = useCallback((next: Updater) => {
-    customerTheme = typeof next === 'function' ? next(customerTheme) : next;
-    customerListeners.forEach((l) => l());
+    customerDisplayTheme.restore(typeof next === 'function' ? next(customerDisplayTheme.get()) : next);
   }, []);
   return [value, set];
 }

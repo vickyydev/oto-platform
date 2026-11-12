@@ -77,3 +77,16 @@ export function rememberDisplayCredential(value: string): boolean {
   try { window.localStorage.setItem(CREDENTIAL_KEY, value); return true; }
   catch { return false; }
 }
+
+/** SCRUM-929 — the look this display's till last told it, kept beside the pairing. */
+const THEME_KEY = 'oto.display.theme';
+export function readDisplayTheme(): 'light' | 'dark' | null {
+  try {
+    const value = window.localStorage.getItem(THEME_KEY);
+    return value === 'light' || value === 'dark' ? value : null;
+  } catch { return null; }
+}
+export function rememberDisplayTheme(value: 'light' | 'dark'): void {
+  try { window.localStorage.setItem(THEME_KEY, value); }
+  catch { /* This page keeps it until a reload; the next document tells it again. */ }
+}

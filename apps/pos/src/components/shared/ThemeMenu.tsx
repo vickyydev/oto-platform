@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
+import { customerDisplayTheme } from '@/lib/displayTheme';
 import { setOperatorThemePref } from '@/mockApi';
 import { useOperator } from '@/auth/OperatorContext';
 import { cn } from '@/lib/utils';
@@ -27,10 +28,10 @@ interface ThemeMenuProps {
 export function ThemeMenuItems() {
   // Independent theme switches: one for the staff screens, one for the
   // customer-facing display. The staff one is the signed-in person's own and
-  // is kept on their account (SCRUM-653); the display one is this device's
-  // and resets on reload.
+  // is kept on their account (SCRUM-653); the display one is this device's,
+  // and a press of it also goes to a paired display, which keeps it (SCRUM-929).
   const staff = useStaffTheme();
-  const [customerTheme, setCustomerTheme] = useCustomerTheme();
+  const [customerTheme] = useCustomerTheme();
   const { operator } = useOperator();
   const staffNext = nextThemePreference(staff.preference);
   const customerNext = customerTheme === 'dark' ? 'light' : 'dark';
@@ -40,7 +41,7 @@ export function ThemeMenuItems() {
   };
 
   const handleCustomerToggle = () => {
-    setCustomerTheme(customerNext);
+    customerDisplayTheme.choose(customerNext);
     if (operator) setOperatorThemePref(operator.id, staff.resolved, customerNext);
   };
 
@@ -74,11 +75,12 @@ export function ThemeMenuItems() {
         />
       </DropdownMenuItem>
       {/* SCRUM-238 / SCRUM-653: the Staff choice is kept on the person's
-          account and follows them to the launcher and the console; the
-          Display choice is an in-memory map no route stores, so it cannot
-          outlive the tab. Said here rather than left for staff to discover. */}
+          account and follows them to the launcher and the console. SCRUM-929:
+          the Display choice is this till's customer screen, and a press of
+          it goes to a paired display, which keeps it. Said here rather than
+          left for staff to discover. */}
       <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
-        Staff follows your account. Display: this device only, until reload.
+        Staff follows your account. Display: this till's customer screen, and a paired display keeps it.
       </p>
     </>
   );

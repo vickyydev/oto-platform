@@ -11,6 +11,7 @@ import {
 import { api, ApiError } from '@/api/client';
 import { bridgeApi, hasBridgeOrigin, watchBridgeSnapshots } from '@/api/bridge';
 import { currentLane, isBoxLaneTrigger, noteLaneFailure } from './lane';
+import { customerDisplayTheme } from './displayTheme';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
 import type { RateMode } from './pricingMode';
@@ -586,7 +587,11 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   current.current = { state: shown, onAnswer: answer, active: publishing };
   const publisher = useRef<DisplayPublisher | null>(null);
   const wake = useRef<((ownChange?: boolean) => void) | null>(null);
-  const presentationSignature = JSON.stringify({ key: shown.key, presentation: shown.presentation('') });
+  // SCRUM-929 — a press of Theme > Display is a change to publish on its own,
+  // even when nothing on the order moved.
+  const [displayTheme, setDisplayTheme] = useState(customerDisplayTheme.toTell);
+  useEffect(() => customerDisplayTheme.subscribe(() => setDisplayTheme(customerDisplayTheme.toTell())), []);
+  const presentationSignature = JSON.stringify({ key: shown.key, presentation: shown.presentation(''), theme: displayTheme });
   useEffect(() => { wake.current?.(true); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -764,6 +769,11 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         }
         adoptReply(document, deliveredBefore);
         document = documentCache!;
+        // SCRUM-929 — a box that keeps a display's look says so with the field
+        // (null until a till tells one, when the display shows dark). Until
+        // somebody presses Display here, this till's switch shows that look.
+        const keepsTheme = 'theme' in document;
+        if (keepsTheme) customerDisplayTheme.adopt(document.theme ?? (seen !== 'unknown' && seen.length > 0 ? 'dark' : null));
         const latest = current.current;
         const key = latest.state.key;
         if (key !== channel.promptKey) {
@@ -785,7 +795,10 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           // React applies the resulting stage/contact state before the next publish.
           return;
         }
-        const payload = latest.state.presentation(channel.requestId);
+        // SCRUM-929 — the look goes only to a box that keeps it: an older box
+        // refuses a publication with a field it does not know.
+        const told = keepsTheme ? customerDisplayTheme.toTell() : null;
+        const payload = { ...latest.state.presentation(channel.requestId), ...(told ? { theme: told } : {}) };
         const signature = JSON.stringify(payload);
         if (signature !== channel.lastPublished) {
           const deliveredBeforePublish = delivered;

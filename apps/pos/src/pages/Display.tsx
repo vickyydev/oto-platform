@@ -50,6 +50,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
 import { useHeldSaleKey, useLanguageChoice } from '@/lib/languageChoice';
+import { useDisplayTheme } from '@/lib/displayTheme';
 import { displayErrorText } from '@/lib/customerDisplayCopy';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
@@ -410,8 +411,10 @@ export default function Display() {
   const firstScreen = view?.stage === 'identify';
   const saleKey = useHeldSaleKey(firstScreen, view?.saleKey);
   const language = useLanguageChoice(firstScreen, saleKey);
+  // SCRUM-929 — the look the till's Display switch last told this screen, kept through a reload.
+  const theme = useDisplayTheme(document?.theme);
 
-  return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
+  return <div className={`${theme} h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col`} data-testid="separate-display">
     {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
     {error && (!(session && connection !== 'connected') || pending.current) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{session ? displayErrorText(error, lang, t) : error}</span>
