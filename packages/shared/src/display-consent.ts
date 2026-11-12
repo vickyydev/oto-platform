@@ -38,6 +38,17 @@ const promptObject = z.object({
      * tell the team if anything has changed.
      */
     saved: z.boolean().optional(),
+    /**
+     * SCRUM-857 — the family takes the child's photo on their own screen (the
+     * owner's ruling of 8 November). Sent by a till that takes a photo from
+     * the display, only for a child the photo is asked for: `needed` until
+     * the till holds one, `taken` once it does (from the display or from
+     * staff). Absent from an older till's form, and dropped by a station from
+     * before this field, so the display then shows the form as it was — the
+     * photo is taken at reception — and never sends a photo the station or
+     * the till could not take.
+     */
+    photo: z.enum(['needed', 'taken']).optional(),
   })).min(1).max(50),
   guardianName, consentRequired: z.boolean(), consentAcknowledged: z.boolean(),
   confirmations: z.array(z.object({ id, text: z.string().min(1).max(1_000),
@@ -159,6 +170,15 @@ export const ConsentActionSchema = z.discriminatedUnion('action', [
   consentAcknowledged: z.boolean(), acknowledgedConfirmationIds }).strict(),
   fence.extend({ action: z.literal('done') }).strict(),
   fence.extend({ action: z.literal('staff_help') }).strict(),
+  /**
+   * SCRUM-857 — the family took a child's photo on their screen: the picture
+   * went to the platform first (`POST /display/consent-photos`, the display's
+   * own credential, refused unless the form on its station asks for that
+   * photo), and this names the stored file for the till to collect. Sent only
+   * for a slot whose prompt carries `photo`, so a station or till from
+   * before it never receives one.
+   */
+  fence.extend({ action: z.literal('photo'), slotId: id, fileId: z.string().uuid() }).strict(),
 ]);
 export type ConsentAction = z.infer<typeof ConsentActionSchema>;
 
@@ -168,6 +188,8 @@ export function consentActionAllowed(prompt: ConsentPrompt, action: ConsentActio
   // SCRUM-857 — a till that asks the family to confirm their messaging number
   // takes no `done` before they have (`contactConfirmed` is `false` until then).
   if (action.action === 'done') return prompt.canContinue && prompt.contactConfirmed !== false;
+  // SCRUM-857 — a photo only for a child whose form asks the display for one.
+  if (action.action === 'photo') return prompt.slots.some(slot => slot.id === action.slotId && slot.photo !== undefined);
   if (action.action === 'acknowledge' || action.action === 'fill') {
     if (action.consentAcknowledged && !action.guardianName.trim() && (action.action === 'fill' || prompt.consentRequired)) {
       return false;
@@ -183,3 +205,27 @@ export type ConsentAnswer = z.infer<typeof ConsentAnswerSchema>;
 export const ConsentDocumentPromptSchema = promptObject.extend({
   answer: ConsentAnswerSchema.optional(), answeredAt: z.string().datetime().optional(),
 }).superRefine(validatePrompt);
+
+/**
+ * SCRUM-857 — THE FAMILY'S PHOTO OF A CHILD, FROM THE PAIRED DISPLAY.
+ *
+ * The display downscales the picture before it sends it (the longest edge at
+ * most `DISPLAY_CONSENT_PHOTO_EDGE` pixels), so a real photo is a few tens of
+ * kilobytes; the cap refuses anything that is not one. `id` is minted on the
+ * display for each picture taken, so a resend through a dropped connection
+ * is the same file and is stored once. The form it belongs to is named by
+ * the visitor and the child's slot: the platform takes it only while the
+ * form on the display's own station asks for that photo.
+ */
+export const DISPLAY_CONSENT_PHOTO_EDGE = 720;
+export const DISPLAY_CONSENT_PHOTO_MAX_BYTES = 512 * 1024;
+export const DISPLAY_CONSENT_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const DisplayConsentPhotoUploadSchema = z.object({
+  id: z.string().uuid(),
+  visitorId: id,
+  slotId: id,
+  contentType: z.enum(DISPLAY_CONSENT_PHOTO_TYPES),
+  data: z.string().min(4).max(Math.ceil(DISPLAY_CONSENT_PHOTO_MAX_BYTES / 3) * 4)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'The photo must be base64'),
+}).strict();
+export type DisplayConsentPhotoUpload = z.infer<typeof DisplayConsentPhotoUploadSchema>;
