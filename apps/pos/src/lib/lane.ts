@@ -91,6 +91,78 @@ export function isBoxLaneTrigger(err: unknown): boolean {
   );
 }
 
+/**
+ * SCRUM-887 — the connection itself dropped: nothing answered, or this till's
+ * forwarder could not reach the API. Not the Console's forced-offline switch,
+ * which is the platform answering.
+ */
+export function isConnectionDrop(err: unknown): boolean {
+  return err instanceof NetworkError
+    || (err instanceof ApiError && hasBridgeOrigin() && err.status === 502 && err.code === 'UPSTREAM_UNAVAILABLE');
+}
+
+/**
+ * SCRUM-887 — A REGISTRATION BEGUN ON THE PLATFORM FINISHES ON THE PLATFORM.
+ *
+ * The drop-off gate writes the guardian and the children online, then the
+ * registration. A dropped link between those writes used to move the call to
+ * the box, which had not yet pulled the member written seconds before (its
+ * copy refreshes every minute) and answered "Member not found": the family
+ * stood at the desk. While a hold is taken, a call goes to the platform even
+ * when the lane says box, a dropped link is tried again there with a short
+ * backoff (the ids are the till's, so a write that landed answers with what
+ * exists), and nothing moves the lane. The Console's forced-offline switch
+ * still sends the call to the box: the platform is up, so the box can pull.
+ * A till offline from the start takes no hold and works through its box.
+ */
+let platformHolds = 0;
+const heldRetryListeners = new Set<(attempt: number) => void>();
+const HELD_RETRY_MS: readonly number[] = [1_000, 2_000, 4_000];
+let heldRetryDelays: readonly number[] = HELD_RETRY_MS;
+
+/** Take the hold; the answer releases it (once). `onRetry` hears each retry. */
+export function holdPlatformLane(onRetry?: (attempt: number) => void): () => void {
+  platformHolds += 1;
+  if (onRetry) heldRetryListeners.add(onRetry);
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    platformHolds -= 1;
+    if (onRetry) heldRetryListeners.delete(onRetry);
+  };
+}
+
+export function platformLaneHeld(): boolean {
+  return platformHolds > 0;
+}
+
+/** Tests only: the waits between held retries (null restores the defaults). */
+export function setHeldRetryDelays(delays: readonly number[] | null): void {
+  heldRetryDelays = delays ?? HELD_RETRY_MS;
+}
+
+async function onHeldPlatform<T>(
+  onPlatform: () => Promise<T>,
+  onBox: (stationId: string) => Promise<T>,
+  id: string | null,
+): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await onPlatform();
+    } catch (err) {
+      if (id && err instanceof ApiError && err.status === 503 && err.code === 'STATION_FORCED_OFFLINE') {
+        setLane('box');
+        return onBox(id);
+      }
+      const wait = heldRetryDelays[attempt];
+      if (!isConnectionDrop(err) || wait === undefined) throw err;
+      for (const listener of heldRetryListeners) listener(attempt + 1);
+      await new Promise<void>((resolve) => setTimeout(resolve, wait));
+    }
+  }
+}
+
 /** Note a failure the platform lane met; moves to the box when it is a trigger. */
 export function noteLaneFailure(err: unknown): void {
   if (stationId && isBoxLaneTrigger(err)) setLane('box');
@@ -146,6 +218,7 @@ export async function viaLane<T>(
   onBox: (stationId: string) => Promise<T>,
 ): Promise<T> {
   const id = stationId;
+  if (platformHolds > 0) return onHeldPlatform(onPlatform, onBox, id);
   if (!id) return onPlatform();
   if (lane === 'box') return onBox(id);
   try {

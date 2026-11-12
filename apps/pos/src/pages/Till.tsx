@@ -18,6 +18,7 @@ import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { gateChildPatch, saveGateChildren } from '@/lib/gateChildren';
+import { GATE_RETRYING, gateFailureDescription, gateOnlineHold } from '@/lib/gateOnline';
 import { buildSale } from '@/lib/sale';
 import { withPlatformCredit } from '@/lib/saleCredit';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
@@ -605,6 +606,8 @@ export default function Till() {
   const gateChildIdsRef = useRef(new Map<string, string>());
   // SCRUM-872 — the slots matched to a saved child by name, for the life of the gate.
   const gateMatchedChildrenRef = useRef(new Map<string, string>());
+  // SCRUM-887 — a gate that has written on the platform finishes there (lib/gateOnline).
+  const [gateOnline] = useState(() => gateOnlineHold(() => toast(GATE_RETRYING)));
   const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
     const known = ids.get(slotId);
     if (known) return known;
@@ -2041,6 +2044,7 @@ export default function Till() {
     gateWaiverIdsRef.current = new Map();
     gateChildIdsRef.current = new Map();
     gateMatchedChildrenRef.current = new Map();
+    gateOnline.reset();
     refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
@@ -2271,6 +2275,10 @@ export default function Till() {
 
   const resolveSupervisionGate = async () => {
     if (!tier || !operator) return;
+    // SCRUM-887 — once a write of this gate is answered on the platform, the
+    // rest of it is held there: a dropped link is retried online, never handed
+    // to a box that has not pulled the family yet. Released when the press ends.
+    gateOnline.beginPress();
     const policy = getSupervisionPolicy();
     const resolved = resolveGroupRequirements(
       superSlots.map((s) => ({ id: s.id, age: slotAge(s) ?? -1 })),
@@ -2375,6 +2383,7 @@ export default function Till() {
           addChild: (memberId, body, id) => membersApi.addChild(memberId, body, id),
           updateChild: (childId, patch) => membersApi.updateChild(childId, patch),
           onSaved: (slotId, child, guardianId) => {
+            gateOnline.noteWrite();
             applySavedChild(child, guardianId);
             // Linked to the record it just became, one child at a time: if the
             // next child's write fails, pressing Continue again corrects this
@@ -2400,13 +2409,14 @@ export default function Till() {
             memberId: guardian.id,
             childIds: confirmedChildIds,
           });
+          gateOnline.noteWrite();
           setConfirmedVisitId(gateVisitId);
         }
       }
     } catch (err) {
       toast({
         title: "Couldn't save these children",
-        description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
+        description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
       return;
@@ -2455,6 +2465,7 @@ export default function Till() {
           })),
         });
         registrationId = reg.id;
+        gateOnline.noteWrite();
         created = supervised.map(({ slot }, i) => {
           const stay = reg.children.find((c) => c.id === stayIds[i]);
           if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
@@ -2513,7 +2524,7 @@ export default function Till() {
     } catch (err) {
       toast({
         title: "Couldn't register these children",
-        description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
+        description: gateFailureDescription(err, gateOnline.startedOnline),
         variant: 'destructive',
       });
       return;
@@ -2592,7 +2603,10 @@ export default function Till() {
   const handleSupervisionContinue = () => {
     if (gateSaving) return;
     setGateSaving(true);
-    void resolveSupervisionGate().finally(() => setGateSaving(false));
+    void resolveSupervisionGate().finally(() => {
+      gateOnline.endPress();
+      setGateSaving(false);
+    });
   };
 
   /**
@@ -2616,6 +2630,7 @@ export default function Till() {
         nickname: name,
         preferredChannel: superParentContactMethod,
       });
+      gateOnline.noteWrite();
       return apiMemberToMember(created.member);
     } catch (err) {
       const existingId =
