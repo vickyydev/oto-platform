@@ -9,6 +9,7 @@ import {
 import {
   BEO_AI_CAKE_MODES,
   BEO_AI_MENUS,
+  BEO_AI_QUOTE_MAX,
   BEO_AI_REQUEST_KINDS,
   beoEventTitleOf,
   emptyBeoAiDetails,
@@ -195,17 +196,17 @@ export async function loadBeoCatalogue(db: DbExecutor, input: { tenantId: string
   };
 }
 
-/** No catalogue: the fill reads as SCRUM-660's did (a catalogue that could not be read is this). */
+/**
+ * No catalogue (a catalogue that could not be read is this). SCRUM-903: the
+ * conversation is still read against it; every item the chat names is then a
+ * line the catalogue lacks, for staff to keep or leave out.
+ */
 export const emptyCatalogue = (): BeoCatalogue => ({
   packages: [],
   setMenus: [],
   entertainment: [],
   food: [],
 });
-
-/** Whether there is anything to match a conversation to. */
-export const catalogueIsEmpty = (c: BeoAiCatalogueView) =>
-  c.packages.length === 0 && c.setMenus.length === 0 && c.entertainment.length === 0;
 
 // --- The conversation, as the model reads it ------------------------------------------
 
@@ -216,7 +217,37 @@ export interface TranscriptRef {
   source: BeoAiSource;
   at: string;
   ruling: boolean;
+  /**
+   * SCRUM-903: the line as it was written, for the chat's words a value
+   * carries (`quoteOf`). Server only: never sent to the screen whole, never
+   * written to the activity row or a log line.
+   */
+  text?: string;
 }
+
+const foldQuote = (t: string) => t.normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
+const clipQuote = (t: string) => {
+  const one = t.replace(/\s+/g, " ").trim();
+  return one.length <= BEO_AI_QUOTE_MAX ? one : `${one.slice(0, BEO_AI_QUOTE_MAX - 1).trimEnd()}…`;
+};
+
+/**
+ * SCRUM-903 — the chat's words for a value, by Book Date's rule
+ * (packages/assistant/src/book-date.ts `readBookDateProposal`): the model's
+ * own words for it when the line really holds them, else the line itself,
+ * each clipped to `BEO_AI_QUOTE_MAX` characters. Null with no line.
+ */
+export function quoteOf(words: string | null | undefined, lineText: string | null | undefined): string | null {
+  if (!lineText || !lineText.trim()) return null;
+  const said = words?.trim();
+  return said && foldQuote(lineText).includes(foldQuote(said)) ? clipQuote(said) : clipQuote(lineText);
+}
+
+/** `from` with the chat's words for the value, when its line is known. */
+const withQuote = (from: BeoAiFrom, words: string | null | undefined, lineText: string | null | undefined): BeoAiFrom => {
+  const quote = quoteOf(words, lineText);
+  return quote ? { ...from, quote } : from;
+};
 
 /** The longest conversation handed to the model at once; older lines go first (the ruling never). */
 export const TRANSCRIPT_TEXT_MAX = 40_000;
@@ -235,21 +266,24 @@ function localTimeOf(iso: string, timeZone: string): string {
  * RULING; and what each number stands for, so a value's source is the line's
  * author whatever the model says. A ruling message the bounds left out is put
  * back in its place. Lines beyond `TRANSCRIPT_TEXT_MAX` characters are left
- * out oldest first; `cut` says so.
+ * out oldest first; `cut` says so. SCRUM-903: with no ruling message (no team
+ * message confirms the party yet) no line is marked, and the conversation is
+ * read as it stands.
  */
 export function renderTranscript(
   lines: InboxTranscriptLine[],
-  ruling: { id: string; body: string; at: string },
+  ruling: { id: string; body: string; at: string } | null,
   timeZone: string,
 ): { text: string; refs: TranscriptRef[]; cut: boolean } {
-  const all = lines.some((l) => l.id === ruling.id)
+  const isRuling = (l: InboxTranscriptLine) => ruling !== null && l.id === ruling.id;
+  const all = !ruling || lines.some((l) => l.id === ruling.id)
     ? [...lines]
     : [...lines, { id: ruling.id, author: "staff" as const, at: ruling.at, text: ruling.body }].sort(
         (a, b) => Date.parse(a.at) - Date.parse(b.at),
       );
   const render = (l: InboxTranscriptLine, n: number) => {
     const who = l.author === "customer" ? "family" : "team";
-    const mark = l.id === ruling.id ? `${who}, RULING` : who;
+    const mark = isRuling(l) ? `${who}, RULING` : who;
     const body = l.text.replace(/\r\n?/g, "\n").replace(/\n/g, "\n    ");
     return `#${n} [${mark}] ${localTimeOf(l.at, timeZone)}: ${body}`;
   };
@@ -257,7 +291,7 @@ export function renderTranscript(
   let cut = false;
   const size = (ls: InboxTranscriptLine[]) => ls.reduce((sum, l, i) => sum + render(l, i + 1).length + 1, 0);
   while (kept.length > 1 && size(kept) > TRANSCRIPT_TEXT_MAX) {
-    const drop = kept.findIndex((l) => l.id !== ruling.id);
+    const drop = kept.findIndex((l) => !isRuling(l));
     if (drop < 0) break;
     kept = kept.filter((_, i) => i !== drop);
     cut = true;
@@ -267,7 +301,8 @@ export function renderTranscript(
     id: l.id,
     source: (l.author === "customer" ? "family" : "team") as BeoAiSource,
     at: l.at,
-    ruling: l.id === ruling.id,
+    ruling: isRuling(l),
+    text: l.text,
   }));
   return { text: kept.map((l, i) => render(l, i + 1)).join("\n"), refs, cut };
 }
@@ -558,6 +593,14 @@ const fold = (s: string) => s.normalize("NFC").trim().toLowerCase().replace(/\s+
  * the rule the prompt states). The event's counts and times, the cake and
  * the deposit are one entry each: the model gives the line that rules them
  * under the same rule, and its author is the source.
+ *
+ * SCRUM-903: every value whose line is known carries the chat's words for it
+ * (`from.quote`, `quoteOf`): the model's own words for the value — the
+ * `said`, the dish's or the wish's words, the step's label, the cake's notes
+ * — when that line holds them, else the line itself; the counts, the times,
+ * the child and the deposit, which have no words of their own, the line.
+ * The catalogue may be empty: every item is then a line the catalogue lacks,
+ * for staff to keep or leave out.
  */
 export function resolveCatalogueAnswer(
   raw: unknown,
@@ -565,15 +608,22 @@ export function resolveCatalogueAnswer(
   refs: TranscriptRef[],
   /** The ruling message read alone (no conversation): every value is the team's. */
   fallback?: BeoAiFrom,
+  /** SCRUM-903: that ruling message's text, for the chat's words a value carries. */
+  fallbackText?: string,
 ): BeoAiProposal {
   const answer = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   const allTeam = refs.length > 0 && refs.every((r) => r.source === "team");
-  const fromOf = (entry: { line?: number; source?: BeoAiSource }): BeoAiFrom => {
+  const fromOf = (entry: { line?: number; source?: BeoAiSource }, words?: string | null): BeoAiFrom => {
     const known = entry.line ? refs.find((r) => r.line === entry.line) : undefined;
-    if (known) return { source: known.source, at: known.at, line: known.line };
-    if (fallback) return fallback;
+    if (known) return withQuote({ source: known.source, at: known.at, line: known.line }, words, known.text);
+    // The ruling message read alone: its words for the value when it holds them, else the message.
+    if (fallback) return fallbackText ? withQuote({ source: fallback.source, at: fallback.at, line: fallback.line }, words, fallbackText) : fallback;
     // A conversation holding only the team's lines (the ruling alone): the team's.
-    if (allTeam) return refs.length === 1 ? { source: "team", at: refs[0]!.at, line: refs[0]!.line } : { source: "team", at: null, line: null };
+    if (allTeam) {
+      return refs.length === 1
+        ? withQuote({ source: "team", at: refs[0]!.at, line: refs[0]!.line }, words, refs[0]!.text)
+        : { source: "team", at: null, line: null };
+    }
     return { source: "family", at: null, line: null };
   };
   /** Puts `entry` in `list`, or in place of the same item there when its line is the later. */
@@ -602,9 +652,9 @@ export function resolveCatalogueAnswer(
   const pkgAnswer = readOne(PackageAnswer, answer.package);
   const pkg = pkgAnswer?.templateId ? catalogue.packages.find((p) => p.id === pkgAnswer.templateId) : undefined;
   if (pkgAnswer && pkg) {
-    proposal.package = { templateId: pkg.id, said: pkgAnswer.said ?? null, chatPrice: pkgAnswer.chatPrice ?? null, from: fromOf(pkgAnswer) };
+    proposal.package = { templateId: pkg.id, said: pkgAnswer.said ?? null, chatPrice: pkgAnswer.chatPrice ?? null, from: fromOf(pkgAnswer, pkgAnswer.said) };
   } else if (pkgAnswer) {
-    other(pkgAnswer.said, pkgAnswer.chatPrice, fromOf(pkgAnswer));
+    other(pkgAnswer.said, pkgAnswer.chatPrice, fromOf(pkgAnswer, pkgAnswer.said));
   }
 
   // Add-ons: the chosen package's lines it does not include.
@@ -612,10 +662,10 @@ export function resolveCatalogueAnswer(
     const line = pkg?.lines.find((l) => l.id === a.lineId && !l.included);
     if (line) {
       const quantity = a.quantity && a.quantity > 0 ? a.quantity : 1;
-      const entry = { lineId: line.id, quantity, said: a.said ?? null, chatPrice: a.chatPrice ?? null, from: fromOf(a) };
+      const entry = { lineId: line.id, quantity, said: a.said ?? null, chatPrice: a.chatPrice ?? null, from: fromOf(a, a.said) };
       merge(proposal.addOns, entry, (x) => x.lineId === line.id);
     } else {
-      other(a.said, a.chatPrice, fromOf(a));
+      other(a.said, a.chatPrice, fromOf(a, a.said));
     }
   }
 
@@ -624,16 +674,16 @@ export function resolveCatalogueAnswer(
   const named = setAnswer?.templateId ? catalogue.setMenus.find((m) => m.id === setAnswer.templateId) : undefined;
   const fromPackage = !named && pkg?.setMenuTemplateId ? catalogue.setMenus.find((m) => m.id === pkg.setMenuTemplateId) : undefined;
   const menu = named ?? fromPackage;
-  if (setAnswer && !menu) other(setAnswer.said, undefined, fromOf(setAnswer));
+  if (setAnswer && !menu) other(setAnswer.said, undefined, fromOf(setAnswer, setAnswer.said));
   if (menu) {
-    const from = named && setAnswer ? fromOf(setAnswer) : proposal.package!.from;
+    const from = named && setAnswer ? fromOf(setAnswer, setAnswer.said) : proposal.package!.from;
     const chosen: Array<{ itemId: string; option: string; said: string | null; from: BeoAiFrom }> = [];
     for (const c of readMany(ChoiceAnswer, setAnswer?.choices)) {
       const group = menu.items.find((i) => i.id === c.itemId && i.type === "choice_group") as
         | Extract<BeoAiSetMenuItem, { type: "choice_group" }>
         | undefined;
       const option = group && c.option ? group.options.find((o) => fold(o) === fold(c.option!)) : undefined;
-      const cFrom = fromOf(c);
+      const cFrom = fromOf(c, c.said ?? c.option);
       if (!group || !option) {
         // A choice the set menu does not list: a dish of its own, for staff to decide.
         const itemName = c.said ?? c.option;
@@ -667,7 +717,7 @@ export function resolveCatalogueAnswer(
       matchedName: food?.names[0] ?? null,
       notInMenu: !food,
       chatPrice: m.chatPrice ?? null,
-      from: fromOf(m),
+      from: fromOf(m, m.itemName),
     };
     // A dish the menu codes is one line per list; one it lacks stays as the conversation said it.
     if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.menu === menu);
@@ -686,7 +736,7 @@ export function resolveCatalogueAnswer(
       quantity: e.quantity ?? 1,
       chatPrice: e.chatPrice ?? null,
       notInCatalogue: !t,
-      from: fromOf(e),
+      from: fromOf(e, e.said),
     };
     if (t) merge(proposal.entertainment, entry, (x) => x.templateId === t.id);
     else proposal.entertainment.push(entry);
@@ -710,7 +760,7 @@ export function resolveCatalogueAnswer(
   const cake = readOne(CakeAnswer, answer.cake);
   const cakeMode = cake?.mode && cake.mode !== "NOT_SAID" ? cake.mode : null;
   if (cake && (cakeMode || cake.time || cake.notes)) {
-    proposal.cake = { mode: cakeMode, notes: cake.notes ?? null, time: cake.time ?? null, from: fromOf(cake) };
+    proposal.cake = { mode: cakeMode, notes: cake.notes ?? null, time: cake.time ?? null, from: fromOf(cake, cake.notes) };
   }
 
   const deposit = readOne(DepositAnswer, answer.deposit);
@@ -721,13 +771,13 @@ export function resolveCatalogueAnswer(
   // SCRUM-827: the chat's requests, one entry each; the same words again are the later line's.
   for (const r of readMany(RequestAnswer, answer.requests, 60)) {
     if (!r.text) continue;
-    const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r) };
+    const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r, r.text) };
     merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
   }
   // The chat's timed steps, one per step, in clock order.
   for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
     if (!t.time || !t.label) continue;
-    const entry = { time: t.time, label: t.label, from: fromOf(t) };
+    const entry = { time: t.time, label: t.label, from: fromOf(t, t.label) };
     merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
   }
   proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));

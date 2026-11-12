@@ -633,6 +633,8 @@ export interface AiRunFacts {
   answerChars: number;
   outcome: "filled" | AiFailReason;
   issues: string[];
+  /** SCRUM-903: how many times the model was asked (2 when a run that may retry once did). */
+  attempts?: number;
 }
 
 export type AiRun<T> =
@@ -669,6 +671,31 @@ export async function runAiHelper<T>(
      */
     requiredShape?: z.ZodTypeAny;
     /** Appended to the system prompt after the advice, the output format and the required fields (the branch list). */
+    systemExtra?: string;
+    user: string;
+    inputChars: number;
+    /**
+     * SCRUM-903: ask once more, with the same prompt, when the answer could not
+     * be read or the model did not answer (`unreadable`, `model_error`); never
+     * on a missing key or the quota. The conversation's read of a BEO fill.
+     */
+    retryOnce?: boolean;
+  },
+): Promise<AiRun<T>> {
+  const first = await runAiHelperOnce(deps, input);
+  if (!input.retryOnce || first.ok || (first.reason !== "unreadable" && first.reason !== "model_error")) return first;
+  const second = await runAiHelperOnce(deps, input);
+  second.facts.attempts = 2;
+  return second;
+}
+
+/** One ask of `runAiHelper`: the prompt, the model (and its one fallback), the answer read. */
+async function runAiHelperOnce<T>(
+  deps: AiDeps,
+  input: {
+    helper: AiHelper;
+    schema: z.ZodType<T, z.ZodTypeDef, unknown>;
+    requiredShape?: z.ZodTypeAny;
     systemExtra?: string;
     user: string;
     inputChars: number;
@@ -749,6 +776,7 @@ export function runLogFields(facts: AiRunFacts): Record<string, unknown> {
     answerChars: facts.answerChars,
     outcome: facts.outcome,
     issues: facts.issues,
+    ...(facts.attempts ? { attempts: facts.attempts } : {}),
   };
 }
 

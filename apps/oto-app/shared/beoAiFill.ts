@@ -50,7 +50,20 @@ export interface BeoAiFrom {
   source: BeoAiOrigin;
   at: string | null;
   line: number | null;
+  /**
+   * SCRUM-903: the chat's own words for the value, as Book Date gives them —
+   * the model's words for it when that line holds them, else the line itself
+   * clipped to `BEO_AI_QUOTE_MAX` characters. Absent when no line of the chat
+   * is known for the value (the park's default, a template, a line the model
+   * did not name). Shown on the review and in Fetch from chat; never written
+   * to the activity row or a log line, and never sent back by the approval
+   * (its `sources` carry the source and the time only).
+   */
+  quote?: string;
 }
+
+/** SCRUM-903: the longest quote of the chat a value carries (Book Date's `BOOK_DATE_MAX_SAID_CHARS`). */
+export const BEO_AI_QUOTE_MAX = 120;
 
 export interface BeoAiSourced<T> {
   value: T;
@@ -288,8 +301,23 @@ export interface BeoAiReview {
   /**
    * The ruling message's place in what was read: the team's. The form's own
    * fields (the free-text fill, its date among them) are read from it alone.
+   * SCRUM-903: null when no message of the team's confirms the party yet —
+   * the conversation is read alone, Final Message to Parent stays empty and
+   * the review says nothing is confirmed by the team yet.
    */
-  ruling: BeoAiFrom;
+  ruling: BeoAiFrom | null;
+  /**
+   * SCRUM-903: the inbox conversation that was read, for the approval's
+   * activity row when no ruling message names it (absent on a pasted message
+   * and from a server before this rule).
+   */
+  conversationId?: string | null;
+  /**
+   * SCRUM-903: the park's time zone the conversation was read at, so each
+   * value's line shows when it was written on the park's clock (absent from
+   * a server before this rule: the device's own clock is used).
+   */
+  timeZone?: string;
   /** How many conversation lines were read, and whether older ones were left out. */
   transcript: { lines: number; cut: boolean };
   /** Sections the BEO already holds that approving replaces. */
