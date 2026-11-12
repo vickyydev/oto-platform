@@ -88,7 +88,7 @@ import {
   type ReviewTeamField,
   type ReviewTeamProposal,
 } from "@/lib/beo-ai-review";
-import { BEO_AI_FROM_THE_CHAT } from "@shared/beoAiFill";
+import { BEO_AI_FROM_THE_CHAT, SET_MENU_CHOSEN_FROM_CHAT, choicesFromChatOnly } from "@shared/beoAiFill";
 import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { PartyMenuItemDialog } from "./beo-party-menu-item";
@@ -3219,8 +3219,11 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                               <ListChecks className="h-3.5 w-3.5 text-emerald-600" />
                                               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Set Menu</span>
                                               <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 ml-1">{selectedTemplate.name}</Badge>
+                                              {/* SCRUM-927: choices read from the chat are not a parent's: no "Selections received". */}
                                               {setMenuSelection?.isSubmitted && (
-                                                <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto">Selections received</Badge>
+                                                <Badge className="text-[10px] px-1.5 bg-emerald-500 text-white ml-auto" data-testid="badge-set-menu-selection">
+                                                  {choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : "Selections received"}
+                                                </Badge>
                                               )}
                                               {setMenuSelection && !setMenuSelection.isSubmitted && (
                                                 <Badge variant="outline" className="text-[10px] px-1.5 ml-auto text-amber-600 border-amber-500/30 bg-amber-500/10">Awaiting parent</Badge>
@@ -3323,8 +3326,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
                                           </Button>
                                         )}
                                         {setMenuSelection?.isSubmitted && setMenuSelection.submittedAt && (
-                                          <span className="text-xs text-muted-foreground">
-                                            Received {new Date(setMenuSelection.submittedAt).toLocaleDateString()}
+                                          <span className="text-xs text-muted-foreground" data-testid="text-set-menu-selection-date">
+                                            {choicesFromChatOnly(setMenuSelection.selections) ? "Chosen from the chat" : "Received"} {new Date(setMenuSelection.submittedAt).toLocaleDateString()}
                                           </span>
                                         )}
                                       </div>
@@ -4342,10 +4345,12 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
               <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Selections received!</p>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    {choicesFromChatOnly(setMenuSelection.selections) ? `${SET_MENU_CHOSEN_FROM_CHAT}: no parent has answered this link.` : "Selections received!"}
+                  </p>
                   {setMenuSelection.submittedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Submitted on {new Date(setMenuSelection.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      {choicesFromChatOnly(setMenuSelection.selections) ? "Recorded on" : "Submitted on"} {new Date(setMenuSelection.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   )}
                 </div>

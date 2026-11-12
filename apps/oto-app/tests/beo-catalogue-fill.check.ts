@@ -785,7 +785,8 @@ try {
     assert.equal(rows.kitchen.cake_mode, "INTERNAL");
     assert.equal(rows.selection.template_id, cat.setMenu);
     assert.equal(rows.selection.is_submitted, true);
-    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    // SCRUM-927: a choice Approve and create records is marked as read from the chat (a parent's is not).
+    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
     // Entertainment at the catalogue's prices: the bubble show (the chat said 5,000) and the family's wish.
     assert.deepEqual(rows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[cat.bubble, "Bubble show", 550000], [cat.face, "Face painting", 200000]]);
     // The counts, times, the ticked date, child, final message and deposit.
@@ -1141,7 +1142,8 @@ try {
     assert.equal(approved.status, 200, JSON.stringify(approved.body));
     const rows = await beoRows(ev.paste);
     assert.equal(rows.snapshot.template_id, cat.floresta);
-    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    // SCRUM-927: a choice Approve and create records is marked as read from the chat (a parent's is not).
+    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
     assert.deepEqual(rows.entertainment.map((e) => [e.template_id, e.name, e.price]), [[cat.zombie, "Zombie game", 400000]], "the catalogue's price, never the chat's");
     assert.equal(rows.event.num_children, 10);
     assert.equal(rows.event.internal_staff_notes, null, "Final Message to Parent is not written from a pasted text");
@@ -1348,7 +1350,8 @@ try {
     const approved = await approve(ev.multi, body);
     assert.equal(approved.status, 200, JSON.stringify(approved.body));
     const rows = await beoRows(ev.multi);
-    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }, { groupId: DRINKS, chosenOptions: ["Juice", "Mors"] }]);
+    // SCRUM-927: a choice Approve and create records is marked as read from the chat (a parent's is not).
+    assert.deepEqual(rows.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }, { groupId: DRINKS, chosenOptions: ["Juice", "Mors"], recordedFrom: "chat" }]);
     assert.deepEqual(setMenuLinesOf(rows.kitchen), byMenuOrder([
       ["Margherita", PIZZA], ["Juice", DRINKS], ["Mors", DRINKS], ["French fries", "item_cf_bday_fries"], ["Fruit skewers", "item_cf_bday_fruit_skewers"],
     ]), "both drinks reach the kitchen plan");
@@ -1397,7 +1400,8 @@ try {
     assert.deepEqual(setMenuLinesOf(rows.kitchen), byMenuOrder([
       ["Margherita", PIZZA], ["Fish fingers", HOT_DISH], ["Cola", DRINKS], ["French fries", "item_cf_bday_fries"], ["Fruit skewers", "item_cf_bday_fruit_skewers"],
     ]));
-    assert.deepEqual(rows.selection.selections, [stored[1], stored[2], { groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    // SCRUM-927: a choice Approve and create records is marked as read from the chat (a parent's is not).
+    assert.deepEqual(rows.selection.selections, [stored[1], stored[2], { groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
     assert.equal(rows.selection.is_submitted, true);
     assert.equal(rows.selection.token, token, "the same set menu keeps the family's link");
 
@@ -1487,7 +1491,8 @@ try {
     const approved = await approve(ev.noRuling, body);
     assert.equal(approved.status, 200, JSON.stringify(approved.body));
     const after = await beoRows(ev.noRuling);
-    assert.deepEqual(after.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"] }]);
+    // SCRUM-927: a choice Approve and create records is marked as read from the chat (a parent's is not).
+    assert.deepEqual(after.selection.selections, [{ groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
     assert.deepEqual(after.entertainment.map((e) => [e.template_id, e.name]), [[cat.bubble, "Bubble show"]]);
     assert.equal(after.event.start_time, "15:00");
     assert.equal(after.event.internal_staff_notes, null, "Final Message to Parent stays empty");

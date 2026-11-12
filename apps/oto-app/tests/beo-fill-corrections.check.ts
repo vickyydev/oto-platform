@@ -30,7 +30,9 @@
 //   8. the cake is ticked "In the package" only when the chat or the package
 //      says so, never by default.
 //   9. SCRUM-927's points: another WhatsApp number is written with its stored
-//      international form (whatsapp_phone_e164) by the app's own phone rule.
+//      international form (whatsapp_phone_e164) by the app's own phone rule;
+//      the Kitchen Plan does not say "Selections received" when no parent
+//      answered the menu link (the choices are marked as read from the chat).
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -44,6 +46,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import pg from "pg";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -65,7 +68,7 @@ const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
-const { emptyBeoAiDetails, foodNamesFor } = await import("../shared/beoAiFill");
+const { emptyBeoAiDetails, foodNamesFor, choicesFromChatOnly, SET_MENU_CHOSEN_FROM_CHAT } = await import("../shared/beoAiFill");
 type FetchFormValues = import("../client/src/lib/beo-fetch-from-chat").FetchFormValues;
 type BeoAiProposal = import("../shared/beoAiFill").BeoAiProposal;
 type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
@@ -86,7 +89,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 9;
+const CHECKS = 10;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -95,7 +98,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline", "show", "cake", "cakeHeld", "phone", "chosen"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -583,6 +586,30 @@ try {
     // An approval that sends no number leaves both as they are.
     await approve(ev.phone, bodyOf({ event: { numChildren: 12 } }));
     assert.equal((await phoneRow()).whatsapp_phone_raw, "1234");
+  });
+
+  // --- 9b. "Selections received" only when a parent answered --------------------------------
+  await check("choicesFromTheChatAreNotSelectionsReceived", async () => {
+    const selectionOf = async () => (await q("select is_submitted, selections from beo_set_menu_selections where event_id = $1", [ev.chosen]))[0]!;
+    const res = await approve(ev.chosen, bodyOf({ setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Hawaiian"] }] } }));
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    let sel = await selectionOf();
+    assert.equal(sel.is_submitted, true, "recorded, so the link keeps the family's and the kitchen's choice in step as before");
+    assert.deepEqual(sel.selections, [{ groupId: PIZZA, chosenOptions: ["Hawaiian"], recordedFrom: "chat" }]);
+    assert.equal(choicesFromChatOnly(sel.selections), true, "no parent answered: not 'Selections received'");
+    // A choice a parent sent is kept unmarked beside an approval's own; then a parent did answer.
+    await q("update beo_set_menu_selections set selections = $2 where event_id = $1", [ev.chosen, JSON.stringify([{ groupId: RICE, chosenOptions: ["Chicken"] }])]);
+    await approve(ev.chosen, bodyOf({ setMenu: { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Margherita"] }] } }));
+    sel = await selectionOf();
+    assert.deepEqual(sel.selections, [{ groupId: RICE, chosenOptions: ["Chicken"] }, { groupId: PIZZA, chosenOptions: ["Margherita"], recordedFrom: "chat" }]);
+    assert.equal(choicesFromChatOnly(sel.selections), false, "a parent's choice in it: 'Selections received'");
+    assert.equal(choicesFromChatOnly([]), false);
+    assert.equal(choicesFromChatOnly(null), false);
+    // The Kitchen Plan's badge, its date line and the parent link's dialog read the mark.
+    const editor = readFileSync(new URL("../client/src/components/beo/beo-event-editor.tsx", import.meta.url), "utf8");
+    assert.equal(editor.split("choicesFromChatOnly(setMenuSelection.selections)").length - 1, 4, "the badge, the date line and the dialog's two lines");
+    assert.ok(editor.includes("{choicesFromChatOnly(setMenuSelection.selections) ? SET_MENU_CHOSEN_FROM_CHAT : \"Selections received\"}"));
+    assert.equal(SET_MENU_CHOSEN_FROM_CHAT, "Chosen from the chat");
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

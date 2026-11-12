@@ -390,6 +390,25 @@ export function beoEventTitleOf(childName: string | null | undefined, kidTurning
   return `${child}'s ${n}${suffix} Birthday`;
 }
 
+/**
+ * SCRUM-927: the mark Approve and create puts on each set-menu choice it
+ * records (`selections[].recordedFrom`), so the Kitchen Plan can tell choices
+ * read from the chat from the ones a parent sent through the menu link.
+ */
+export const CHOICE_FROM_CHAT = "chat";
+/** SCRUM-927: what the Kitchen Plan says of set-menu choices read from the chat, in place of "Selections received". */
+export const SET_MENU_CHOSEN_FROM_CHAT = "Chosen from the chat";
+
+/**
+ * SCRUM-927: whether the recorded set-menu choices all came from the chat (an
+ * AI fill's approval) and none from a parent through the menu link: the
+ * Kitchen Plan then does not say "Selections received".
+ */
+export function choicesFromChatOnly(selections: unknown): boolean {
+  if (!Array.isArray(selections) || selections.length === 0) return false;
+  return selections.every((s) => !!s && typeof s === "object" && (s as Record<string, unknown>).recordedFrom === CHOICE_FROM_CHAT);
+}
+
 /** A set menu's choices as the parent link records them: each group's chosen options. */
 export interface BeoAiSetMenuChoices {
   templateId: string;

@@ -17,7 +17,7 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { CHOICE_FROM_CHAT, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
@@ -278,13 +278,17 @@ export async function parentSelectionOf(db: DbExecutor, eventId: string): Promis
   return { templateId: sel.templateId, choices: storedChoices(sel.selections).map((s) => ({ itemId: s.groupId, options: s.chosenOptions })) };
 }
 
-/** A selection row's choices, as the parent link stores them; an entry off its shape is left out. */
-function storedChoices(raw: unknown): SetMenuChoice[] {
+/**
+ * A selection row's choices, as the parent link stores them; an entry off its shape is left out.
+ * SCRUM-927: a choice an approval recorded from the chat keeps its mark (`recordedFrom`).
+ */
+function storedChoices(raw: unknown): Array<SetMenuChoice & { recordedFrom?: typeof CHOICE_FROM_CHAT }> {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((s) => {
     const entry = asCollection(s);
     const options = Array.isArray(entry.chosenOptions) ? entry.chosenOptions.filter((o): o is string => typeof o === "string") : [];
-    return typeof entry.groupId === "string" && options.length > 0 ? [{ groupId: entry.groupId, chosenOptions: options }] : [];
+    const mark = entry.recordedFrom === CHOICE_FROM_CHAT ? { recordedFrom: CHOICE_FROM_CHAT as typeof CHOICE_FROM_CHAT } : {};
+    return typeof entry.groupId === "string" && options.length > 0 ? [{ groupId: entry.groupId, chosenOptions: options, ...mark }] : [];
   });
 }
 
@@ -401,7 +405,8 @@ export async function approveBeoAiFill(
       const setMenuTemplateId = body.setMenu ? body.setMenu.templateId : (plan?.setMenuTemplateId ?? null);
       if (body.setMenu) {
         const menu = catalogue.setMenus.find((m) => m.id === body.setMenu!.templateId)!;
-        const approved = body.setMenu.choices.map((c) => ({ groupId: c.itemId, chosenOptions: c.options }));
+        // SCRUM-927: marked as read from the chat, so the Kitchen Plan does not call them a parent's.
+        const approved = body.setMenu.choices.map((c) => ({ groupId: c.itemId, chosenOptions: c.options, recordedFrom: CHOICE_FROM_CHAT }));
         const [had] = await tx
           .select({ id: beoSetMenuSelections.id, templateId: beoSetMenuSelections.templateId, isSubmitted: beoSetMenuSelections.isSubmitted, selections: beoSetMenuSelections.selections })
           .from(beoSetMenuSelections)
