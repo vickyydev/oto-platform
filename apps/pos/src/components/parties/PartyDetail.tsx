@@ -162,7 +162,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const [showFnb, setShowFnb] = useState(false);
   const [showTickets, setShowTickets] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditingNow] = useState(false);
   // SCRUM-804 — the plan the OTO App published for this party, and the Settle form.
   const [planNonce, setPlanNonce] = useState(0);
   const [showSettle, setShowSettle] = useState(false);
@@ -354,6 +354,21 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     if (!stalePlan.current) stalePlan.current = { read: planRead };
   };
 
+  /**
+   * The Edit form opened or closed. It never opens on a plan the BEO has moved past: while that
+   * read is on its way, it is asked again and the form stays shut. (Edit party still goes through
+   * `openUnlessBlocked` first, as every write of the party does.)
+   */
+  const setEditing = (open: boolean) => {
+    if (open && stalePlan.current && stalePlan.current.read === planRead) {
+      setPlanNonce((n) => n + 1);
+      toast({ title: 'Reading the party again', description: 'The kitchen plan is being read from the BEO. Press Edit party again in a moment.' });
+      return;
+    }
+    if (open) stalePlan.current = null;
+    setEditingNow(open);
+  };
+
   /** The form closed after the BEO changed: the party page reads the plan again, so it shows what the BEO now holds. */
   const closeEdit = () => {
     markPlanStale();
@@ -368,16 +383,6 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     else setEditing(false);
   };
 
-  /** Edit party: never on a plan the BEO has moved past; while that read is on its way, it is asked again. */
-  const openEdit = () => {
-    if (stalePlan.current && stalePlan.current.read === planRead) {
-      setPlanNonce((n) => n + 1);
-      toast({ title: 'Reading the party again', description: 'The kitchen plan is being read from the BEO. Press Edit party again in a moment.' });
-      return;
-    }
-    stalePlan.current = null;
-    setEditing(true);
-  };
 
   const saving = useRef(false);
   const handleSaveEdit = async (patch: PartyEditPatch, kitchenChanges: PartyKitchenChange[] = []) => {
@@ -895,7 +900,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => openUnlessBlocked(openEdit)}
+              onClick={() => openUnlessBlocked(() => setEditing(true))}
             >
               <Pencil className="w-5 h-5" />
               Edit party
