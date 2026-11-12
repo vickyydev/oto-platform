@@ -208,7 +208,7 @@ export function MobileChildCard({ family, onTap }: MobileChildCardProps) {
             </div>
           )}
           {bookedFor && (
-            <div className="flex items-center gap-1 text-xs font-semibold text-amber-300 mt-0.5">
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 mt-0.5">
               <CalendarClock className="w-3 h-3" />
               {bookedFor}
             </div>

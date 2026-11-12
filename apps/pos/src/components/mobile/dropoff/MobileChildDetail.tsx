@@ -314,7 +314,7 @@ export function MobileChildDetail({
             </div>
             <p className="text-xs text-muted-foreground font-mono">{rep.phone}</p>
             {bookedFor && (
-              <p className="flex items-center gap-1 text-xs font-semibold text-amber-300">
+              <p className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <CalendarClock className="w-3.5 h-3.5" />
                 {bookedFor}
               </p>
