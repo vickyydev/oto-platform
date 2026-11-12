@@ -17,6 +17,8 @@
 //      the form already says (a lead-in such as "Important", the case and the
 //      punctuation aside) is not offered again; each new line is offered on
 //      its own and can be accepted alone.
+//   4. a phone number the form holds (or the review offers) as the WhatsApp
+//      number is not offered as a Special requests line too.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -47,7 +49,7 @@ const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, menuLinePriceWords } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 const { fetchChangesOf, applyFetchChanges, rememberDeclined, offeredChanges, changeKey, saysAlready, NO_DECLINED } = await import("../client/src/lib/beo-fetch-from-chat");
 const { emptyBeoAiDetails } = await import("../shared/beoAiFill");
@@ -71,7 +73,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 3;
+const CHECKS = 4;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -337,6 +339,36 @@ try {
     // A form that already says every line: nothing offered.
     const all = fetchChangesOf({ fill: {}, review }, formOf({ specialRequests: `${held}\nOne of the kids is lactose intolerant.\nA high chair for the baby` }));
     assert.equal(all.filter((c) => c.field === "specialRequests").length, 0);
+  });
+
+  // --- 4. The WhatsApp number is not a Special requests line ---------------------------------
+  await check("theWhatsAppNumberIsNotARequestLine", () => {
+    const husband = "If you can't reach me, please call my husband on 089 870 0417";
+    const review = reviewOf(
+      { event: { whatsapp: { value: "089 870 0417", from: familyFrom(4) } } },
+      { requests: [
+        { kind: "special_request", text: husband, from: familyFrom(4, husband) },
+        { kind: "special_request", text: "a quiet corner for grandma", from: familyFrom(4) },
+      ] },
+    );
+    // Fetch from chat on a form that holds the number (written +66 here): the line is not offered.
+    const changes = fetchChangesOf({ fill: {}, review }, formOf({ whatsappPhoneRaw: "+66 89 870 0417", specialRequests: "Allergy: peanuts" }));
+    assert.deepEqual(changes.filter((c) => c.field === "specialRequests").map((c) => c.line), ["a quiet corner for grandma"]);
+    assert.equal(changes.find((c) => c.field === "whatsappPhoneRaw"), undefined, "the same number is not offered either");
+    // The review: the number is the WhatsApp row's, not a Special requests line.
+    const held = { ...NOTHING_HELD, whatsapp: "0898700417" };
+    const state = initialReviewState(review, { held, saved: held });
+    assert.equal(state.details.specialRequests.value, "a quiet corner for grandma");
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(!html.includes("call my husband"), "nor its words as a reason");
+    // The form holding none: the chat's number is the WhatsApp row, and still no request line.
+    const fresh = initialReviewState(review, {});
+    assert.equal(fresh.details.whatsapp.value, "089 870 0417");
+    assert.equal(fresh.details.specialRequests.value, "a quiet corner for grandma");
+    // Another number in a line stays a request.
+    assert.equal(namesPhone("call the nanny on 081 234 5678", ["089 870 0417"]), false);
+    assert.equal(namesPhone("call me on +66-89-870-0417 please", ["0898700417"]), true);
+    assert.equal(namesPhone("table for 12 at 14:30", ["0898700417"]), false, "a count or a time is no phone number");
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

@@ -1,7 +1,7 @@
 import { laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
-import { depositOpensPaid, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, type ApprovedMarks } from "./beo-ai-review";
+import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, type ApprovedMarks } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826) — the diff and the memory.
@@ -294,8 +294,11 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     }
   };
   // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line (SCRUM-904: allergies first).
+  // SCRUM-946: a line writing out the WhatsApp number the form holds (or the chat's, offered as
+  // the WhatsApp row) is that number, never a Special requests line as well.
+  const phones = [form.whatsappPhoneRaw, proposal?.event.whatsapp?.value];
   const requests = (kind: Exclude<BeoAiRequestKind, "allergy">) =>
-    requestsOfField(proposal?.details.requests ?? [], kind).map((r) => ({ text: requestLineText(r), from: r.from }));
+    requestsOfField((proposal?.details.requests ?? []).filter((r) => !namesPhone(r.text, phones)), kind).map((r) => ({ text: requestLineText(r), from: r.from }));
   // SCRUM-904: the rest of the form the conversation's read gives (the ruling's read only where it gives nothing).
   const detail = (chat: BeoAiSourced<string> | null | undefined, read: unknown): { value: string | null; from: BeoAiFrom | null } =>
     chat ? { value: str(chat.value), from: chat.from } : { value: str(read), from: ruling };

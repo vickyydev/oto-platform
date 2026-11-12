@@ -383,7 +383,7 @@ function ReviewSections({
       field={d[field]}
       onChange={(next) => setDetails({ [field]: next } as Partial<ReviewDetails>)}
       testId={field}
-      says={field in REQUEST_KIND ? requestFromsOf(review, REQUEST_KIND[field as keyof typeof REQUEST_KIND]) : undefined}
+      says={field in REQUEST_KIND ? requestFromsOf(review, REQUEST_KIND[field as keyof typeof REQUEST_KIND], d.whatsapp.held) : undefined}
       {...opts}
     />
   );

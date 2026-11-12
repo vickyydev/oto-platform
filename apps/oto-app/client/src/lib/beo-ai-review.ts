@@ -340,13 +340,16 @@ export function initialReviewState(
   // What the saved BEO holds; the form's live text when the caller gives no saved one.
   const saved = opts.saved ?? held;
   const d = p.details;
-  const requestLine = (kind: Exclude<BeoAiRequestKind, "allergy">) => {
-    const field = HELD_OF_KIND[kind];
-    return reviewText(held[field], requestsText(d.requests, kind), distinctFroms(requestsOfField(d.requests, kind).map((r) => r.from)), saved[field]);
-  };
-  const text = (field: keyof ReviewHeld, chat: { value: string; from: BeoAiFrom } | null) => reviewText(held[field], chat, undefined, saved[field]);
   // SCRUM-904: the family's number the chat gives is offered only when it is another number than the form's.
   const chatPhone = p.event.whatsapp && !samePhone(held.whatsapp ?? "", p.event.whatsapp.value) ? p.event.whatsapp : null;
+  // SCRUM-946: a line that writes out the WhatsApp number the form holds, or the one the review
+  // offers for it, is that number: never a Special requests line as well.
+  const requests = d.requests.filter((r) => !namesPhone(r.text, [held.whatsapp, p.event.whatsapp?.value]));
+  const requestLine = (kind: Exclude<BeoAiRequestKind, "allergy">) => {
+    const field = HELD_OF_KIND[kind];
+    return reviewText(held[field], requestsText(requests, kind), distinctFroms(requestsOfField(requests, kind).map((r) => r.from)), saved[field]);
+  };
+  const text = (field: keyof ReviewHeld, chat: { value: string; from: BeoAiFrom } | null) => reviewText(held[field], chat, undefined, saved[field]);
   const proposals = asRecord(asRecord(opts.fill)?.proposals);
   const teamProposals: ReviewTeamProposals = { partyHost: null, entertainmentHost: null, setupResponsible: null };
   for (const { field } of REVIEW_TEAM_FIELDS) {
@@ -450,6 +453,18 @@ export function samePhone(a: string, b: string): boolean {
   const db = b.replace(/\D/g, "");
   if (!da || !db) return false;
   return da === db || (da.length >= 9 && db.length >= 9 && da.slice(-9) === db.slice(-9));
+}
+
+/**
+ * SCRUM-946: whether a line of the chat writes out one of these phone numbers
+ * (however it is written): such a line is the WhatsApp number the form holds
+ * or offers, never a Special requests line of its own as well.
+ */
+export function namesPhone(text: string, phones: ReadonlyArray<string | null | undefined>): boolean {
+  const known = phones.filter((p): p is string => !!p && p.replace(/\D/g, "").length >= 9);
+  if (known.length === 0) return false;
+  const runs = text.match(/\+?\d[\d\s().-]{6,}\d/g) ?? [];
+  return runs.some((run) => run.replace(/\D/g, "").length >= 9 && known.some((p) => samePhone(run, p)));
 }
 
 /**
@@ -613,8 +628,14 @@ export function chatTimeOf(at: string | null | undefined, timeZone?: string): st
  * SCRUM-903: the chat's requests of one kind, each with its line: the reasons under Special requests, Activities and Decoration.
  * SCRUM-904: under Special requests, the allergies' lines first.
  */
-export function requestFromsOf(review: BeoAiReview, kind: Exclude<BeoAiRequestKind, "allergy">): BeoAiFrom[] {
-  return requestsOfField(review.proposal.details.requests, kind).map((r) => r.from);
+export function requestFromsOf(
+  review: BeoAiReview,
+  kind: Exclude<BeoAiRequestKind, "allergy">,
+  /** SCRUM-946: the WhatsApp number the form holds; a line writing it out is not a request (nor its reason). */
+  heldPhone?: string | null,
+): BeoAiFrom[] {
+  const requests = review.proposal.details.requests.filter((r) => !namesPhone(r.text, [heldPhone, review.proposal.event.whatsapp?.value]));
+  return requestsOfField(requests, kind).map((r) => r.from);
 }
 
 /** SCRUM-903: the park's catalogue holds nothing to match: every item the chat names is a line to keep or leave out. */
