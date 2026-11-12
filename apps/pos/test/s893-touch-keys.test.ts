@@ -215,6 +215,9 @@ describe('where it is used', () => {
     }
     const keys = src('components/till/ScreenKeyboard.tsx');
     expect(keys).toContain("const SHORT = '[@media(max-height:700px)]:h-10';");
-    expect(keys.match(/`h-12 \$\{SHORT\} /g)).toHaveLength(2);
+    // SCRUM-954: the keys' own button (Hide) is a plain key now, built on KEY,
+    // so KEY's class is the one place the short height is written.
+    expect(keys.match(/`h-12 \$\{SHORT\} /g)).toHaveLength(1);
+    expect(keys).toContain("className={cn(KEY, 'flex items-center justify-center gap-1.5 text-lg font-semibold text-foreground/70')}");
   });
 });
