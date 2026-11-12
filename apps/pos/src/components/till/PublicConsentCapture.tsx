@@ -628,7 +628,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             <div className="sm:w-40">
               <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
               <ChildDobPicker lang={lang} dateOfBirth={child.dateOfBirth ?? undefined} age={child.ageYears} childName={child.name}
-                disabled={locked} className="mt-2" matchSurface
+                disabled={locked} className="mt-2" matchSurface touch={!mirror}
                 onChange={({ dateOfBirth, age }) => {
                   // An age is a choice, not typing: it goes to the till at once, so
                   // what this child needs is worked out there and shown here.
@@ -685,6 +685,8 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
               label="" showKeypad={kioskFlags.screenKeyboard} disabled={locked} translate
               channel={takesContact ? draft.contactChannel ?? prompt.contactChannel : undefined}
               onChannelChange={takesContact ? (contactChannel) => { if (!locked) choose((current) => ({ ...current, contactChannel, ...(current.contactConfirmed !== undefined ? { contactConfirmed: false } : {}) })); } : undefined}
+              // SCRUM-963 — WhatsApp, Telegram and LINE a finger's height on the family's screen.
+              channelClassName={touch}
               inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground" />}
             {/* SCRUM-857 — the family confirms that this is the number for the
                 channel they chose; a changed number or channel asks again. */}

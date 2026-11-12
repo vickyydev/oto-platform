@@ -155,13 +155,15 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                 <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-base">
                   <Baby className="h-4 w-4" /> {t('childReview.childN', { n: idx + 1 })}
                 </Badge>
+                {/* SCRUM-963 — the badges' inks follow the screen's look (`--cd-badge-*`):
+                    amber-300 and emerald-300 in dark, as before; deeper inks on a light screen. */}
                 {prefilled ? (
                   confirmed ? (
-                    <Badge className="gap-1.5 bg-emerald-500/20 px-3 py-1.5 text-base text-emerald-300">
+                    <Badge className="gap-1.5 bg-emerald-500/20 px-3 py-1.5 text-base text-(--cd-badge-done)">
                       <Check className="h-4 w-4" /> {t('childReview.confirmed')}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-amber-300">
+                    <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-(--cd-badge-check)">
                       <ShieldCheck className="h-4 w-4" /> {t('childReview.stillCorrect')}
                     </Badge>
                   )
@@ -201,6 +203,8 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     className="mt-2"
                     // SCRUM-954 — the family's picker wears their screen's look (dark on a dark display).
                     matchSurface
+                    // SCRUM-963 — and its presses a finger's size there.
+                    touch={publicMode}
                   />
                 </div>
               </div>

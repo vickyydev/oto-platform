@@ -11,7 +11,7 @@ import { resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { TouchText } from './TouchText';
-import { NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, SHORT_HIDE } from './consentFormLayout';
+import { DISPLAY_TOUCH, NARROW_BAR, NARROW_HEAD, NARROW_LINE, PHONE_SCROLL, PHONE_SCROLL_FORM, SHORT_HIDE } from './consentFormLayout';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CameraCapture } from '@/components/shared/CameraCapture';
@@ -466,6 +466,8 @@ export function ConsentCapture({
                   channel={onParentContactMethodChange ? parentContactMethod : undefined}
                   onChannelChange={onParentContactMethodChange}
                   translate={!staffScreen}
+                  // SCRUM-963 — a finger's height on the phone till's form; the till's own half as before.
+                  channelClassName={phoneScroll ? DISPLAY_TOUCH : undefined}
                 />
                 {/* SCRUM-857 — the family confirms that this number is the one for
                     the chosen channel; the line names the channel. Not tickable

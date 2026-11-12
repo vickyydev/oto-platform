@@ -8,6 +8,12 @@ import { LANGUAGES } from '@/i18n/types';
 // customer-facing surface on the same device stays in sync. `variant` swaps
 // the color scheme between dark customer displays (default) and the light
 // /book flow.
+//
+// SCRUM-963 — the customer screens' list (`variant="dark"`) follows the look
+// of the screen it opens on (`lib/displayTheme.ts`, the `.dark` / `.light`
+// wrapper's `--cd-menu` tokens): on a dark screen it is the slate list it
+// always was, on a light one the screen's cream card under its dark ink. It
+// was slate under the light screen's dark ink, which could not be read.
 export function LanguageSwitcher({
   variant = 'dark',
   className = '',
@@ -15,7 +21,11 @@ export function LanguageSwitcher({
 }: {
   variant?: 'dark' | 'light';
   className?: string;
-  /** SCRUM-954 — added to the pill itself: the counter display's form makes it a finger's height. */
+  /**
+   * SCRUM-954 — added to the pill itself: the counter display's form makes it
+   * a finger's height. SCRUM-963 — and to each language in its list, so the
+   * choices are a finger's height there too.
+   */
   buttonClassName?: string;
 }) {
   const { lang, setLang, t } = useLanguage();
@@ -40,7 +50,7 @@ export function LanguageSwitcher({
 
   const menuClass =
     variant === 'dark'
-      ? 'bg-slate-900 border-foreground/15 text-foreground'
+      ? 'bg-(--cd-menu) border-foreground/15 text-foreground'
       : 'bg-white border-slate-200 text-slate-900';
 
   return (
@@ -68,11 +78,11 @@ export function LanguageSwitcher({
               }}
               className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
                 l.code === lang
-                  ? 'bg-primary/15 text-primary'
+                  ? variant === 'dark' ? 'bg-primary/15 text-(--cd-menu-chosen)' : 'bg-primary/15 text-primary'
                   : variant === 'dark'
                   ? 'hover:bg-foreground/10'
                   : 'hover:bg-slate-50'
-              }`}
+              }${buttonClassName ? ` ${buttonClassName}` : ''}`}
             >
               {l.nativeLabel}
             </button>

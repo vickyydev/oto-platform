@@ -131,6 +131,16 @@
   --cd-camera-notice: #92400e;
   --cd-camera-note: hsl(var(--foreground) / 0.85);
   --cd-camera-veil: rgb(255 255 255 / 0.82);
+  /* SCRUM-963 — the customer screens' language list (LanguageSwitcher) on a
+     light screen: the card's cream under the screen's dark ink, the chosen
+     language in a deeper coral (orange-700) so it reads on its coral wash. */
+  --cd-menu: hsl(var(--popover));
+  --cd-menu-chosen: oklch(55.3% 0.195 38.402);
+  /* SCRUM-963 — the returning family's badges on a light screen ("Saved —
+     still correct?", "Confirmed"): amber-800 and emerald-700, which read on
+     the cream where amber-300 and emerald-300 did not. */
+  --cd-badge-check: oklch(47.3% 0.137 46.201);
+  --cd-badge-done: oklch(50.8% 0.118 165.612);
 
   /* Branded "cinema" backdrop for the customer display(s). Flips with the
      surface's .dark/.light wrapper, so a light display nested in a dark staff
@@ -198,6 +208,13 @@
   --cd-camera-notice: oklch(87.9% 0.169 91.605);
   --cd-camera-note: hsl(var(--foreground) / 0.5);
   --cd-camera-veil: transparent;
+  /* SCRUM-963 — the language list and the returning family's badges in dark,
+     exactly as they always were: slate-900 under the screen's own ink with the
+     chosen language in primary, and the badges' amber-300 and emerald-300. */
+  --cd-menu: oklch(20.8% 0.042 265.755);
+  --cd-menu-chosen: hsl(var(--primary));
+  --cd-badge-check: oklch(87.9% 0.169 91.605);
+  --cd-badge-done: oklch(84.5% 0.143 164.978);
 
   /* Original sky-950 → slate-950 ramp, kept pixel-identical in dark. */
   --cd-gradient: linear-gradient(to bottom, #082f49 0%, #020617 50%, #020617 100%);

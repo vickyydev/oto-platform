@@ -50,6 +50,12 @@ interface PhoneInputProps {
    * selection is a single global context, not per-screen.
    */
   translate?: boolean;
+  /**
+   * SCRUM-963 — added to each channel pill: the family's form on the counter
+   * display and on the phone till makes them a finger's height (44 pixels).
+   * Left out, the pills are as they were.
+   */
+  channelClassName?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,10 +66,12 @@ function ChannelSelector({
   channel,
   onChange,
   kiosk,
+  pillClassName,
 }: {
   channel: ContactChannel;
   onChange: (c: ContactChannel) => void;
   kiosk: boolean;
+  pillClassName?: string;
 }) {
   const current = normalizeChannel(channel);
   return (
@@ -84,6 +92,7 @@ function ChannelSelector({
               active
                 ? `${colors.bg} ${colors.text} ${colors.border}`
                 : 'bg-transparent text-muted-foreground border-transparent hover:text-foreground',
+              pillClassName,
             )}
           >
             <Icon className={kiosk ? 'w-4 h-4' : 'w-3 h-3'} />
@@ -286,6 +295,7 @@ export function PhoneInput({
   channel,
   onChannelChange,
   translate = false,
+  channelClassName,
 }: PhoneInputProps) {
   const { t } = useLanguage();
   const resolvedLabel = label !== undefined ? label : translate ? t('phoneInput.label') : 'Phone Number';
@@ -349,7 +359,7 @@ export function PhoneInput({
         />
 
         {showChannelSelector && (
-          <ChannelSelector channel={channel} onChange={onChannelChange!} kiosk />
+          <ChannelSelector channel={channel} onChange={onChannelChange!} kiosk pillClassName={channelClassName} />
         )}
       </div>
     );
@@ -382,7 +392,7 @@ export function PhoneInput({
         />
       </div>
       {showChannelSelector && (
-        <ChannelSelector channel={channel} onChange={onChannelChange!} kiosk={false} />
+        <ChannelSelector channel={channel} onChange={onChannelChange!} kiosk={false} pillClassName={channelClassName} />
       )}
       {value && (
         <p className="text-xs text-muted-foreground">

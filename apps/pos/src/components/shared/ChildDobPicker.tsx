@@ -43,7 +43,21 @@ interface ChildDobPickerProps {
   // the page's root, which wears the staff look (or none on a display), so
   // without this a dark display opened a light picker. Left out, as before.
   matchSurface?: boolean;
+  // SCRUM-963 — the family's own screen (the paired display): the picker's
+  // close, back and Age / Month / Day presses a finger's height and width,
+  // 44 pixels, as SCRUM-954 made the form's bar, pills and language button.
+  // The till's own customer half and the staff screens leave it out, as before.
+  touch?: boolean;
 }
+
+/**
+ * SCRUM-963 — the dialog's own close (its last child, `components/ui/dialog`)
+ * as a 44-pixel press, centred where its 16-pixel cross was (24 pixels in from
+ * the corner), so the cross is drawn exactly where it was.
+ */
+const TOUCH_CLOSE = '[&>button:last-child]:top-0.5 [&>button:last-child]:right-0.5 [&>button:last-child]:flex [&>button:last-child]:h-11 '
+  + '[&>button:last-child]:w-11 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full';
+const TOUCH_PRESS = 'min-h-11 min-w-11';
 
 type Step = 'age' | 'month' | 'day' | 'confirm';
 
@@ -63,6 +77,7 @@ export function ChildDobPicker({
   referenceDate,
   lang,
   matchSurface = false,
+  touch = false,
 }: ChildDobPickerProps) {
   const t = tFor(lang ?? 'en');
   const monthLabels = MONTH_LABELS.map((_, index) => t(`dob.month.${index + 1}`));
@@ -172,17 +187,18 @@ export function ChildDobPicker({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className={cn('max-w-md gap-0 border-foreground/10 bg-background p-0', surface && `${surface} text-foreground`)}
+        <DialogContent className={cn('max-w-md gap-0 border-foreground/10 bg-background p-0', surface && `${surface} text-foreground`, touch && TOUCH_CLOSE)}
           data-surface={surface ?? undefined}>
-          {/* Header + step breadcrumb (tap a completed step to re-pick). */}
-          <div className="flex items-center gap-3 border-b border-foreground/10 px-5 py-4">
+          {/* Header + step breadcrumb (tap a completed step to re-pick). On
+              the family's screen its end is kept clear of the larger close. */}
+          <div className={cn('flex items-center gap-3 border-b border-foreground/10 px-5 py-4', touch && 'pr-14')}>
             {step !== 'age' && (
               <button
                 type="button"
                 onClick={() =>
                   setStep(step === 'confirm' ? 'day' : step === 'day' ? 'month' : 'age')
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/5 text-foreground/70 hover:bg-foreground/10"
+                className={cn('flex h-9 w-9 items-center justify-center rounded-full bg-foreground/5 text-foreground/70 hover:bg-foreground/10', touch && 'h-11 w-11')}
                 aria-label={t('common.back')}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -194,6 +210,7 @@ export function ChildDobPicker({
                 active={step === 'age'}
                 done={pickedAge != null}
                 onClick={() => setStep('age')}
+                touch={touch}
               />
               <span className="text-foreground/30">›</span>
               <Crumb
@@ -201,6 +218,7 @@ export function ChildDobPicker({
                 active={step === 'month'}
                 done={pickedMonth != null}
                 onClick={() => pickedAge != null && setStep('month')}
+                touch={touch}
               />
               <span className="text-foreground/30">›</span>
               <Crumb
@@ -208,6 +226,7 @@ export function ChildDobPicker({
                 active={step === 'day'}
                 done={pickedDay != null}
                 onClick={() => pickedMonth != null && setStep('day')}
+                touch={touch}
               />
             </div>
           </div>
@@ -311,11 +330,13 @@ function Crumb({
   active,
   done,
   onClick,
+  touch = false,
 }: {
   label: string;
   active: boolean;
   done: boolean;
   onClick: () => void;
+  touch?: boolean;
 }) {
   return (
     <button
@@ -324,6 +345,7 @@ function Crumb({
       disabled={!done && !active}
       className={cn(
         'rounded-full px-2.5 py-1 transition-colors',
+        touch && TOUCH_PRESS,
         active
           ? 'bg-primary/20 text-primary'
           : done
