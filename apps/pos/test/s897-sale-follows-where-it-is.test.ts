@@ -542,18 +542,22 @@ describe('SCRUM-897 (2) — credit: no sale is held online where credit is spent
       return statSync(full).isDirectory() ? files(full) : /\.tsx?$/.test(name) ? [full] : [];
     });
   const root = path.resolve(import.meta.dirname, '..', 'src');
-  const using = (needle: string) =>
-    files(root)
-      .filter((file) => readFileSync(file, 'utf8').includes(needle))
-      .map((file) => path.relative(root, file).split(path.sep).join('/'))
-      .sort();
+  // Read once: the whole source tree is scanned for each needle.
+  let tree: { rel: string; text: string }[] | null = null;
+  const using = (needle: string) => {
+    tree ??= files(root).map((file) => ({
+      rel: path.relative(root, file).split(path.sep).join('/'),
+      text: readFileSync(file, 'utf8'),
+    }));
+    return tree.filter((entry) => entry.text.includes(needle)).map((entry) => entry.rel).sort();
+  };
 
   it('the platform hold is taken only by the drop-off gate, and only the counter\'s ticket till has the gate', () => {
     expect(using('holdPlatformLane(')).toEqual(['lib/gateOnline.ts', 'lib/lane.ts']);
     expect(using('gateOnlineHold(')).toEqual(['lib/gateOnline.ts', 'pages/Till.tsx']);
     // The hold goes with the till: nothing it held outlives the screen.
     expect(src('pages/Till.tsx')).toContain('useEffect(() => () => gateOnline.reset(), [gateOnline]);');
-  });
+  }, 30_000);
 
   it('the ticket till spends no credit; the screens that do take no hold and are never on screen with it', () => {
     const till = src('pages/Till.tsx');
@@ -572,5 +576,5 @@ describe('SCRUM-897 (2) — credit: no sale is held online where credit is spent
     ]);
     // The counter's till, the F&B station and the shop are one route at a time.
     expect(src('App.tsx')).toMatch(/\{ticketTill \? <Till [^\n]*\n\s*: guestOrderStation \? <OrderStation [^\n]*\n\s*: <MerchStation /);
-  });
+  }, 30_000);
 });
