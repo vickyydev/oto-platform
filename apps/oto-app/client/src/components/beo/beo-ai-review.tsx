@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,8 +16,11 @@ import {
   approvalResultWords,
   approveBodyOf,
   approvedMarksOf,
+  catalogueIsEmpty,
   chatOffered,
   chatOfferWords,
+  chatSaysOf,
+  chatSaysWords,
   choiceGroupsOf,
   edited,
   editedText,
@@ -25,6 +28,7 @@ import {
   packageOf,
   packagePrices,
   priceBeside,
+  requestFromsOf,
   reviewTeamUnmatchedText,
   sourceOf,
   thb,
@@ -62,6 +66,13 @@ import {
  * writes it all at once; nothing opens after it. A text field the BEO
  * already holds keeps its value, with the chat's offered beside it to take
  * with one press (nothing typed is overwritten, SCRUM-826's rule).
+ *
+ * SCRUM-903 — every value the chat gave shows the chat's own words under it,
+ * as the inbox's Book Date does: The chat says “…”, whose line it was and
+ * when (`ChatSays`). With no message of the team's confirming the party yet
+ * the review says so, and Load into Editor (the ruling message's free-text
+ * fill) has nothing to load; with an empty catalogue every item is a line to
+ * keep or leave out.
  */
 
 /** What Create BEO's AI Fill answered when the park has a catalogue. */
@@ -75,6 +86,27 @@ export interface BeoAiPending {
 const MENU_LABEL: Record<BeoAiMenu, string> = { kids: "Kids", adults: "Adults", bar: "Bar" };
 const CAKE_LABEL: Record<BeoAiCakeMode, string> = { INTERNAL: "The park's cake", EXTERNAL: "The family's own cake", NONE: "No cake" };
 const SELECT = "h-8 rounded-md border border-input bg-background px-2 text-sm";
+
+/** SCRUM-903: the park's time zone the conversation was read at, for when each line was written. */
+const ReviewZone = createContext<string | undefined>(undefined);
+
+/**
+ * SCRUM-903: the chat's own words under a value, whose line they are and
+ * when it was written — the reason line of the inbox's Book Date. Nothing
+ * when the value carries no words of the chat's.
+ */
+export function ChatSays({ from, timeZone, indent = true, className }: { from: BeoAiFrom | null | undefined; timeZone?: string; indent?: boolean; className?: string }) {
+  const zone = useContext(ReviewZone);
+  const says = chatSaysOf(from, timeZone ?? zone);
+  if (!says) return null;
+  return (
+    <div className={cn("flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground", indent && "pl-[7.5rem]", className)} data-testid="text-ai-review-chat-says">
+      <span className="min-w-0 break-words">{chatSaysWords(says)}</span>
+      <SourceMark field={{ from: { source: says.source }, changed: false }} />
+      {says.when && <span data-testid="text-ai-review-chat-says-when">{`· ${says.when}`}</span>}
+    </div>
+  );
+}
 
 /** The small mark beside a filled field. */
 export function SourceMark({ field }: { field: { from: Pick<BeoAiFrom, "source"> & Partial<BeoAiFrom> | null; changed: boolean } | null }) {
@@ -125,6 +157,7 @@ function TextRow({
   multiline,
   type,
   testId,
+  says,
 }: {
   label: string;
   field: ReviewText;
@@ -132,6 +165,8 @@ function TextRow({
   multiline?: boolean;
   type?: "text" | "time";
   testId: string;
+  /** SCRUM-903: the lines the chat's text came from, each with its words (the field's own line when not given). */
+  says?: BeoAiFrom[];
 }) {
   const offered = chatOffered(field);
   const offer = chatOfferWords(field);
@@ -172,6 +207,7 @@ function TextRow({
           </Button>
         </div>
       )}
+      {field.chat !== null && (says ?? (field.chatFrom ? [field.chatFrom] : [])).map((from, i) => <ChatSays key={i} from={from} />)}
     </div>
   );
 }
@@ -186,24 +222,27 @@ function LineRow({ line, onChange, onRemove, extraLabel, testId }: {
   testId: string;
 }) {
   return (
-    <div className="flex items-center gap-2 text-sm flex-wrap" data-testid={testId}>
-      {extraLabel === "time" && (
-        <Input type="time" className="h-8 w-28" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
-      )}
-      {extraLabel === "kind" && (
-        <select className={cn(SELECT, "w-24")} value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })}>
-          <option value="included">Included</option>
-          <option value="extra">Extra</option>
-        </select>
-      )}
-      <Input className="h-8 flex-1 min-w-[8rem]" value={line.label} onChange={(e) => onChange({ ...line, label: e.target.value, changed: true })} />
-      {extraLabel === "notes" && (
-        <Input className="h-8 w-40" placeholder="Notes" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
-      )}
-      <SourceMark field={line} />
-      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onRemove} aria-label="Remove the line">
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-2 text-sm flex-wrap" data-testid={testId}>
+        {extraLabel === "time" && (
+          <Input type="time" className="h-8 w-28" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
+        )}
+        {extraLabel === "kind" && (
+          <select className={cn(SELECT, "w-24")} value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })}>
+            <option value="included">Included</option>
+            <option value="extra">Extra</option>
+          </select>
+        )}
+        <Input className="h-8 flex-1 min-w-[8rem]" value={line.label} onChange={(e) => onChange({ ...line, label: e.target.value, changed: true })} />
+        {extraLabel === "notes" && (
+          <Input className="h-8 w-40" placeholder="Notes" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
+        )}
+        <SourceMark field={line} />
+        <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onRemove} aria-label="Remove the line">
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <ChatSays from={line.from} indent={false} />
     </div>
   );
 }
@@ -235,12 +274,30 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
   );
 }
 
-function Row({ label, children, field }: { label: string; children: React.ReactNode; field?: Parameters<typeof SourceMark>[0]["field"] }) {
-  return (
+function Row({
+  label,
+  children,
+  field,
+  says,
+}: {
+  label: string;
+  children: React.ReactNode;
+  field?: Parameters<typeof SourceMark>[0]["field"];
+  /** SCRUM-903: the line the value came from, for the chat's words under it. */
+  says?: BeoAiFrom | null;
+}) {
+  const row = (
     <div className="flex items-center gap-2 text-sm flex-wrap">
       <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
       {children}
       {field !== undefined && <SourceMark field={field} />}
+    </div>
+  );
+  if (!chatSaysOf(says)) return row;
+  return (
+    <div className="space-y-0.5">
+      {row}
+      <ChatSays from={says} />
     </div>
   );
 }
@@ -276,8 +333,19 @@ function Decide({ decision, onDecide, keepLabel }: { decision: BeoAiDecision; on
 const freeLine = (decision: BeoAiDecision) =>
   cn("rounded-md p-1.5 -mx-1.5", decision === null ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800" : decision === "drop" ? "opacity-50" : "bg-muted/40");
 
-/** The proposed BEO as the editor's own sections, editable. */
-export function BeoAiReviewBody({
+/**
+ * The proposed BEO as the editor's own sections, editable. SCRUM-903: on the
+ * park's clock, for when each of the chat's lines was written.
+ */
+export function BeoAiReviewBody(props: Parameters<typeof ReviewSections>[0]) {
+  return (
+    <ReviewZone.Provider value={props.review.timeZone}>
+      <ReviewSections {...props} />
+    </ReviewZone.Provider>
+  );
+}
+
+function ReviewSections({
   review,
   state,
   onChange,
@@ -293,8 +361,17 @@ export function BeoAiReviewBody({
   // SCRUM-827: the rest of the BEO, in the same review.
   const d = state.details;
   const setDetails = (patch: Partial<ReviewDetails>) => set({ details: { ...d, ...patch } });
+  // SCRUM-903: a request field's reasons are each request's own line, not only the latest's.
+  const REQUEST_KIND = { specialRequests: "special_request", activities: "activity", decoration: "decoration" } as const;
   const textRow = (field: keyof ReviewHeld, label: string, opts: { multiline?: boolean; type?: "text" | "time" } = {}) => (
-    <TextRow label={label} field={d[field]} onChange={(next) => setDetails({ [field]: next } as Partial<ReviewDetails>)} testId={field} {...opts} />
+    <TextRow
+      label={label}
+      field={d[field]}
+      onChange={(next) => setDetails({ [field]: next } as Partial<ReviewDetails>)}
+      testId={field}
+      says={field in REQUEST_KIND ? requestFromsOf(review, REQUEST_KIND[field as keyof typeof REQUEST_KIND]) : undefined}
+      {...opts}
+    />
   );
   const lines = (field: "setupTasks" | "posItems" | "timeline", extraLabel: "notes" | "kind" | "time", testId: string) =>
     d[field].map((line, i) => (
@@ -315,7 +392,7 @@ export function BeoAiReviewBody({
   const proposedPkg = review.proposal.package;
   const groups = choiceGroupsOf(review, state.setMenuId.value);
   const count = (field: Reviewed<number> | null, key: "numChildren" | "numAdults", label: string) => (
-    <Row label={label} field={field}>
+    <Row label={label} field={field} says={field?.from}>
       <Input
         type="number"
         min={0}
@@ -327,7 +404,7 @@ export function BeoAiReviewBody({
     </Row>
   );
   const time = (field: Reviewed<string> | null, key: "startTime" | "endTime", label: string) => (
-    <Row label={label} field={field}>
+    <Row label={label} field={field} says={field?.from}>
       <Input
         type="time"
         className="h-8 w-28"
@@ -343,7 +420,7 @@ export function BeoAiReviewBody({
       <Section title="Event Info" icon={<CalendarDays className="h-4 w-4" />}>
         {/* SCRUM-827: the party's name, as the app names one from the child and the age — the park's default. */}
         {textRow("title", "Title")}
-        <Row label="Child" field={state.childName}>
+        <Row label="Child" field={state.childName} says={state.childName?.from}>
           <Input
             className="h-8 flex-1 min-w-[10rem]"
             value={state.childName?.value ?? ""}
@@ -455,7 +532,11 @@ export function BeoAiReviewBody({
       </Section>
 
       <Section title="Package" icon={<Gift className="h-4 w-4" />}>
-        <Row label="Package" field={state.packageId.value ? state.packageId : null}>
+        <Row
+          label="Package"
+          field={state.packageId.value ? state.packageId : null}
+          says={proposedPkg && state.packageId.value === proposedPkg.templateId ? proposedPkg.from : null}
+        >
           <select
             className={SELECT}
             value={state.packageId.value ?? ""}
@@ -488,19 +569,22 @@ export function BeoAiReviewBody({
           const q = state.addOns[line.id] ?? null;
           const proposed = review.proposal.addOns.find((a) => a.lineId === line.id);
           return (
-            <div key={line.id} className="flex items-center gap-2 text-sm flex-wrap" data-testid={`ai-review-addon-${line.id}`}>
-              <span className="w-28 shrink-0 text-muted-foreground">Add-on:</span>
-              <span className="flex-1 min-w-[8rem]">{line.label}</span>
-              <Input
-                type="number"
-                min={0}
-                className="h-8 w-20"
-                value={q?.value ?? 0}
-                onChange={(e) => set({ addOns: { ...state.addOns, [line.id]: edited(q, Math.max(0, parseInt(e.target.value, 10) || 0)) } })}
-                data-testid={`input-ai-review-addon-${line.id}`}
-              />
-              <PriceBeside chat={proposed?.chatPrice ?? null} catalogue={[line.unitPrice]} />
-              <SourceMark field={q && q.value > 0 ? q : null} />
+            <div key={line.id} className="space-y-0.5">
+              <div className="flex items-center gap-2 text-sm flex-wrap" data-testid={`ai-review-addon-${line.id}`}>
+                <span className="w-28 shrink-0 text-muted-foreground">Add-on:</span>
+                <span className="flex-1 min-w-[8rem]">{line.label}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8 w-20"
+                  value={q?.value ?? 0}
+                  onChange={(e) => set({ addOns: { ...state.addOns, [line.id]: edited(q, Math.max(0, parseInt(e.target.value, 10) || 0)) } })}
+                  data-testid={`input-ai-review-addon-${line.id}`}
+                />
+                <PriceBeside chat={proposed?.chatPrice ?? null} catalogue={[line.unitPrice]} />
+                <SourceMark field={q && q.value > 0 ? q : null} />
+              </div>
+              {q && q.value > 0 && <ChatSays from={proposed?.from} />}
             </div>
           );
         })}
@@ -526,7 +610,11 @@ export function BeoAiReviewBody({
       </Section>
 
       <Section title="Kitchen Plan" icon={<Utensils className="h-4 w-4" />}>
-        <Row label="Set menu" field={state.setMenuId.value ? state.setMenuId : null}>
+        <Row
+          label="Set menu"
+          field={state.setMenuId.value ? state.setMenuId : null}
+          says={review.proposal.setMenu && state.setMenuId.value === review.proposal.setMenu.templateId ? review.proposal.setMenu.from : null}
+        >
           <select
             className={SELECT}
             value={state.setMenuId.value ?? ""}
@@ -582,10 +670,15 @@ export function BeoAiReviewBody({
               {c && !c.changed &&
                 chosen.map((option) => {
                   const proposed = review.proposal.setMenu?.choices.find((x) => x.itemId === g.id && x.option === option);
-                  if (!proposed?.said) return null;
+                  if (!proposed) return null;
                   return (
-                    <div key={option} className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-match">
-                      {beoAiMatchLabel(proposed.said, option, g.optionProductCodes[option] ?? g.productCode)}
+                    <div key={option} className="space-y-0.5">
+                      {proposed.said && (
+                        <div className="pl-[7.5rem] text-xs text-muted-foreground" data-testid="text-ai-review-match">
+                          {beoAiMatchLabel(proposed.said, option, g.optionProductCodes[option] ?? g.productCode)}
+                        </div>
+                      )}
+                      <ChatSays from={proposed.from} />
                     </div>
                   );
                 })}
@@ -628,6 +721,7 @@ export function BeoAiReviewBody({
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
+              <ChatSays from={l.from} indent={false} />
               {l.chatPrice !== null && <PriceBeside chat={l.chatPrice} catalogue={[]} />}
               {l.notInMenu && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
@@ -639,7 +733,7 @@ export function BeoAiReviewBody({
             </div>
           );
         })}
-        <Row label="Cake" field={state.cake}>
+        <Row label="Cake" field={state.cake} says={state.cake?.from}>
           <select
             className={SELECT}
             value={state.cake?.value.mode ?? ""}
@@ -718,6 +812,7 @@ export function BeoAiReviewBody({
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
+              <ChatSays from={e.from} indent={false} />
               <PriceBeside chat={e.chatPrice} catalogue={t ? [t.price] : []} />
               {e.notInCatalogue && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
@@ -734,19 +829,22 @@ export function BeoAiReviewBody({
       {state.otherLines.length > 0 && (
         <Section title="Not in the catalogue" icon={<AlertCircle className="h-4 w-4 text-amber-500" />}>
           {state.otherLines.map((o, i) => (
-            <div key={o.key} className={cn("flex items-center gap-2 text-sm flex-wrap", freeLine(o.decision))} data-testid="ai-review-other-line">
-              <span className="flex-1 min-w-[8rem]">{o.text}</span>
-              {o.chatPrice !== null && <PriceBeside chat={o.chatPrice} catalogue={[]} />}
-              <SourceMark field={{ from: o.from, changed: false }} />
-              <Decide
-                decision={o.decision}
-                onDecide={(decision) => {
-                  const otherLines = [...state.otherLines];
-                  otherLines[i] = { ...o, decision };
-                  set({ otherLines });
-                }}
-                keepLabel="Keep in Special Requests"
-              />
+            <div key={o.key} className="space-y-0.5">
+              <div className={cn("flex items-center gap-2 text-sm flex-wrap", freeLine(o.decision))} data-testid="ai-review-other-line">
+                <span className="flex-1 min-w-[8rem]">{o.text}</span>
+                {o.chatPrice !== null && <PriceBeside chat={o.chatPrice} catalogue={[]} />}
+                <SourceMark field={{ from: o.from, changed: false }} />
+                <Decide
+                  decision={o.decision}
+                  onDecide={(decision) => {
+                    const otherLines = [...state.otherLines];
+                    otherLines[i] = { ...o, decision };
+                    set({ otherLines });
+                  }}
+                  keepLabel="Keep in Special Requests"
+                />
+              </div>
+              <ChatSays from={o.from} indent={false} />
             </div>
           ))}
         </Section>
@@ -764,7 +862,7 @@ export function BeoAiReviewBody({
 
       {state.deposit && (
         <Section title="Deposit" icon={<Wallet className="h-4 w-4" />}>
-          <Row label={state.deposit.value.paid ? "Deposit paid" : "Deposit asked"} field={state.deposit}>
+          <Row label={state.deposit.value.paid ? "Deposit paid" : "Deposit asked"} field={state.deposit} says={state.deposit.from}>
             <Input
               type="number"
               min={0}
@@ -846,6 +944,8 @@ export function BeoAiReviewDialog({
   const undecided = undecidedLines(state);
   // SCRUM-818: a message pasted into AI Fill, read as one line of the team's.
   const pasted = review.origin === "pasted";
+  // SCRUM-903: no message of the team's confirms the party yet: the conversation was read alone.
+  const unconfirmed = !pasted && review.ruling === null;
 
   const approve = async () => {
     setApproving(true);
@@ -853,7 +953,7 @@ export function BeoAiReviewDialog({
     let body: BeoAiApproveBody;
     let answer: ApproveAnswer = {};
     try {
-      body = approveBodyOf(review, state, { conversationId: source?.conversationId ?? null, messageId: source?.messageId ?? null });
+      body = approveBodyOf(review, state, { conversationId: source?.conversationId ?? review.conversationId ?? null, messageId: source?.messageId ?? null });
       const res = await apiRequest("POST", `/api/events/${eventId}/beo/ai-fill/approve`, body);
       answer = ((await res.json().catch(() => ({}))) ?? {}) as ApproveAnswer;
     } catch (err: any) {
@@ -911,6 +1011,16 @@ export function BeoAiReviewDialog({
                 }`}
               </p>
             )}
+            {unconfirmed && (
+              <p className="text-amber-700 dark:text-amber-300" data-testid="text-ai-review-no-ruling">
+                Nothing is confirmed by the team yet: no message of the team's names the date, the time and the party details. Every value is what the chat says so far — check each one before approving.
+              </p>
+            )}
+            {catalogueIsEmpty(review) && (
+              <p data-testid="text-ai-review-no-catalogue">
+                This park's catalogue is empty: every package, dish and show the chat names is a line to keep or leave out.
+              </p>
+            )}
             <p className="flex items-center gap-1.5 flex-wrap">
               {pasted ? "Every field it fills is the team's, or the park's own:" : "Every field is the family's, the team's, or the park's own:"}
               <SourceMark field={{ from: { source: "team" }, changed: false }} />
@@ -919,6 +1029,7 @@ export function BeoAiReviewDialog({
               <SourceMark field={{ from: null, changed: true }} />
               {pasted ? "— a field you change is marked as changed here." : "— the family's are defaults for you to check."}
             </p>
+            <p data-testid="text-ai-review-reasons">Under each value, the chat's own words for it, whose line they are and when it was written.</p>
           </div>
           <BeoAiReviewBody review={review} state={state} onChange={setState} bookedCakeMode={bookedCakeMode} />
           {review.finalMessage && (
@@ -942,10 +1053,13 @@ export function BeoAiReviewDialog({
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onFallback(pending)} disabled={approving} data-testid="button-ai-review-fallback">
-            <ClipboardPaste className="h-4 w-4 mr-2" />
-            Load into Editor instead
-          </Button>
+          {/* SCRUM-903: with no ruling message there is no free-text fill to load. */}
+          {!unconfirmed && (
+            <Button variant="outline" onClick={() => onFallback(pending)} disabled={approving} data-testid="button-ai-review-fallback">
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              Load into Editor instead
+            </Button>
+          )}
           <Button onClick={approve} disabled={approving || undecided > 0} data-testid="button-ai-review-approve">
             {approving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
             Approve and create

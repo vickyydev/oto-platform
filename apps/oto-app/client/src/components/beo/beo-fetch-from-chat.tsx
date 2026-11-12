@@ -21,7 +21,7 @@ import {
   type FetchChange,
   type FetchFormValues,
 } from "@/lib/beo-fetch-from-chat";
-import { SourceMark } from "./beo-ai-review";
+import { ChatSays, SourceMark } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826).
@@ -37,6 +37,8 @@ import { SourceMark } from "./beo-ai-review";
  * food and the entertainment is listed too, to read: those are chosen in
  * their own sections, never applied here. A fetch that finds nothing new
  * anywhere says so. The rules are `lib/beo-fetch-from-chat.ts`'s.
+ * SCRUM-903: under each row, the chat's own words for it, whose line they are
+ * and when (the review's reason line, `ChatSays`).
  */
 
 export const FETCH_WARNING =
@@ -46,7 +48,7 @@ type Step =
   | { kind: "warn" }
   | { kind: "reading" }
   | { kind: "error"; message: string }
-  | { kind: "review"; changes: FetchChange[]; catalogue: FetchCatalogueChange[]; held: number; chatMark: string | null };
+  | { kind: "review"; changes: FetchChange[]; catalogue: FetchCatalogueChange[]; held: number; chatMark: string | null; timeZone?: string };
 type Decision = "accept" | "decline";
 
 export function BeoFetchFromChatDialog({
@@ -95,7 +97,7 @@ export function BeoFetchFromChatDialog({
     const { offered, held } = offeredChanges(all, declined, answer.chatMark);
     const catalogue = fetchCatalogueChangesOf(answer.review, answer.held, now);
     setDecisions({});
-    setStep({ kind: "review", changes: offered, catalogue, held, chatMark: answer.chatMark });
+    setStep({ kind: "review", changes: offered, catalogue, held, chatMark: answer.chatMark, timeZone: answer.review?.timeZone });
   };
 
   const decideAll = (decision: Decision) => {
@@ -219,6 +221,7 @@ export function BeoFetchFromChatDialog({
                       {c.said && <span className="text-xs text-muted-foreground">{`— the chat says "${c.said}"`}</span>}
                       <SourceMark field={{ from: c.from, changed: false }} />
                     </span>
+                    <ChatSays from={c.from} timeZone={step.timeZone} className="order-last basis-full" />
                     <span className="inline-flex gap-1">
                       <Button
                         type="button"
@@ -263,6 +266,7 @@ export function BeoFetchFromChatDialog({
                         <span className="font-medium" data-testid="text-fetch-now">{c.now}</span>
                         <SourceMark field={{ from: c.from, changed: false }} />
                       </span>
+                      <ChatSays from={c.from} timeZone={step.timeZone} className="basis-full" />
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground" data-testid="text-fetch-catalogue-line">

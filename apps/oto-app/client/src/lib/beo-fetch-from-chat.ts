@@ -1,4 +1,4 @@
-import type { BeoAiFrom, BeoAiMenu, BeoAiReview } from "@shared/beoAiFill";
+import { laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
 import { thb, type ApprovedMarks } from "./beo-ai-review";
@@ -32,6 +32,13 @@ import { thb, type ApprovedMarks } from "./beo-ai-review";
  * (`fetchCatalogueChangesOf`), to read, and applies none of it, so the list
  * is every change the chat brings and "reads the same" is true when said.
  * Pure, so the app's check holds it.
+ *
+ * SCRUM-903: the fill runs with no message of the team's confirming the
+ * party yet; the conversation's read is then the only one (`review.ruling`
+ * null, nothing in the fill), and the special requests, activities and
+ * decoration a fetch offers are the conversation's own requests, each with
+ * its line. Every change's `from` carries the chat's words for it, shown
+ * under the row.
  */
 
 /** What the form holds now, in the fields a fetch knows. */
@@ -186,15 +193,22 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   const kitchen = asRecord(fill.kitchenPlan);
   const party = asRecord(fill.partyDetails);
   const proposal = answer.review?.proposal ?? null;
-  const ruling = answer.review?.ruling ?? TEAM;
+  // SCRUM-903: a review read with no ruling message has none (null); its fill holds nothing.
+  const ruling = answer.review ? answer.review.ruling : TEAM;
   const changes: FetchChange[] = [];
   const offer = (field: FetchField, was: string, now: string, value: string | number, from: BeoAiFrom | null, said: string | null = null) =>
     changes.push({ field, label: FETCH_LABELS[field], was, now, value, from, said });
 
   // The form's text fields, from the fill (the ruling message, the form as its baseline).
-  const text = (field: Extract<FetchField, "bookingName" | "locationText" | "specialRequests" | "activities" | "decoration">, read: unknown) => {
+  const text = (field: Extract<FetchField, "bookingName" | "locationText" | "specialRequests" | "activities" | "decoration">, read: unknown, from = ruling) => {
     const value = str(read);
-    if (value && !sameText(form[field], value)) offer(field, shownText(form[field]), value, value, ruling);
+    if (value && !sameText(form[field], value)) offer(field, shownText(form[field]), value, value, from);
+  };
+  // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line, from the latest line.
+  const requests = (kind: BeoAiRequestKind): { value: string | null; from: BeoAiFrom | null } => {
+    const lines = proposal?.details.requests.filter((r) => r.kind === kind) ?? [];
+    if (lines.length === 0) return { value: null, from: null };
+    return { value: lines.map((r) => r.text).join("\n"), from: lines.reduce((a, r) => (laterLineWins(r.from, a) ? r.from : a), lines[0]!.from) };
   };
   // SCRUM-827: the title is never the model's own (`event.title` is its guess): the one a
   // fetch offers is the park's default the proposal carries — the app's naming rule from the
@@ -203,9 +217,18 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   if (title && !sameText(form.title, title.value)) offer("title", shownText(form.title), title.value, title.value, title.from);
   text("bookingName", event.bookingName);
   text("locationText", event.locationText);
-  text("specialRequests", event.specialRequests);
-  text("activities", event.activities);
-  text("decoration", event.decoration);
+  for (const [field, kind] of [
+    ["specialRequests", "special_request"],
+    ["activities", "activity"],
+    ["decoration", "decoration"],
+  ] as const) {
+    if (answer.review && !ruling) {
+      const read = requests(kind);
+      text(field, read.value, read.from);
+    } else {
+      text(field, event[field]);
+    }
+  }
 
   // The child, the counts and the times: the whole conversation's reading where there is one.
   const childName = proposal?.event.childName ? { value: proposal.event.childName.value, from: proposal.event.childName.from } : { value: str(event.childName), from: ruling };

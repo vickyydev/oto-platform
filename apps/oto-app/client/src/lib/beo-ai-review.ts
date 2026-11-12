@@ -433,6 +433,55 @@ export function chatOfferWords(field: Pick<ReviewText, "chat" | "chatFrom">): { 
   }
 }
 
+/**
+ * SCRUM-903 — the chat's words under a value, as the inbox's Book Date shows
+ * them ("The chat says “…”", whose line it is): the quote the value carries,
+ * the line's author and when it was written on the park's clock. Null when
+ * the value carries no words of the chat's (the park's default, a template,
+ * a line the model did not name).
+ */
+export interface ChatSays {
+  quote: string;
+  source: "team" | "family";
+  /** "Thu 5 Nov 14:02", or null when the line's time is not known. */
+  when: string | null;
+}
+export function chatSaysOf(from: BeoAiFrom | null | undefined, timeZone?: string): ChatSays | null {
+  const quote = from?.quote?.trim();
+  if (!from || !quote || (from.source !== "team" && from.source !== "family")) return null;
+  return { quote, source: from.source, when: chatTimeOf(from.at, timeZone) };
+}
+
+/** The reason line's words, Book Date's: The chat says “…”. */
+export const chatSaysWords = (says: Pick<ChatSays, "quote">) => `The chat says “${says.quote}”`;
+
+/** "Thu 5 Nov 14:02": when a line was written, on the park's clock (the device's own when the zone is not known). */
+export function chatTimeOf(at: string | null | undefined, timeZone?: string): string | null {
+  if (!at) return null;
+  const when = new Date(at);
+  if (Number.isNaN(when.getTime())) return null;
+  const parts = (zone: string | undefined) =>
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(when);
+  let read: Intl.DateTimeFormatPart[];
+  try {
+    read = parts(timeZone);
+  } catch {
+    // A zone this device does not know: its own clock.
+    read = parts(undefined);
+  }
+  const part = (type: Intl.DateTimeFormatPartTypes) => read.find((x) => x.type === type)?.value ?? "";
+  return `${part("weekday")} ${part("day")} ${part("month")} ${part("hour")}:${part("minute")}`;
+}
+
+/** SCRUM-903: the chat's requests of one kind, each with its line: the reasons under Special requests, Activities and Decoration. */
+export function requestFromsOf(review: BeoAiReview, kind: BeoAiRequestKind): BeoAiFrom[] {
+  return review.proposal.details.requests.filter((r) => r.kind === kind).map((r) => r.from);
+}
+
+/** SCRUM-903: the park's catalogue holds nothing to match: every item the chat names is a line to keep or leave out. */
+export const catalogueIsEmpty = (review: Pick<BeoAiReview, "catalogue">): boolean =>
+  review.catalogue.packages.length === 0 && review.catalogue.setMenus.length === 0 && review.catalogue.entertainment.length === 0;
+
 /** What the small mark beside a field says. */
 export function sourceOf(field: { from: BeoAiFrom | null; changed: boolean } | null): BeoAiOrigin | "staff" | null {
   if (!field) return null;
