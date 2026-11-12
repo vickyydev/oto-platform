@@ -116,6 +116,8 @@ describe('the lock screen’s line', () => {
 });
 
 describe('the lock screen draws it', () => {
+  // A fresh module graph is imported here (the lock screen and all it reads),
+  // which takes a few seconds on a loaded runner: past vitest's default five.
   it('shows the line for a family filling the form and for their Done', async () => {
     vi.doMock('react', async () => vi.importActual('react'));
     vi.doMock('@/auth/OperatorContext', () => ({ useOperator: () => ({ locked: true, operator: { id: 'zz', name: 'ZZ TEST staff' },
@@ -140,5 +142,5 @@ describe('the lock screen draws it', () => {
     vi.doUnmock('@/auth/OperatorContext');
     vi.doUnmock('wouter');
     vi.unstubAllGlobals();
-  });
+  }, 60_000);
 });
