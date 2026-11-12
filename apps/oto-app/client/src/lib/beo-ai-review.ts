@@ -84,6 +84,14 @@ export interface ReviewMenuLine {
   /** SCRUM-904: the chat's note on the dish ("no cheese"), written on its line; absent when none. */
   notes?: string;
   /**
+   * SCRUM-946: the price written on the line, in baht for each item (the till
+   * charges an EXTRA at it times the quantity): the chat's price when it names
+   * one; null writes none. The reviewer may change it.
+   */
+  price: number | null;
+  /** Where the price shown came from: the chat, or the reviewer ("staff"); null with none. */
+  priceFrom: "chat" | "staff" | null;
+  /**
    * SCRUM-926: the catalogue's names of the options that share this line's
    * till code ("Fried rice (Veggie)", "Fried rice (Chicken)"…), present only
    * when there are several: `matchedName` is the one chosen, and a line with
@@ -367,6 +375,9 @@ export function initialReviewState(
         decision: null,
         ...(l.notes ? { notes: l.notes } : {}),
         ...(options.length > 1 ? { options } : {}),
+        // SCRUM-946: the chat's price is the line's, per item, as it will be written.
+        price: l.chatPrice,
+        priceFrom: l.chatPrice !== null ? "chat" : null,
       };
     }),
     entertainment: p.entertainment.map((e) => ({
@@ -664,6 +675,18 @@ export function priceBeside(chatPrice: number | null, catalogueSatang: Array<num
 /** "฿16,900" */
 export const thb = (baht: number) => `฿${baht.toLocaleString("en", { maximumFractionDigits: 2 })}`;
 
+/**
+ * SCRUM-946: the words beside a dish line's price in the review, as Approve
+ * and create writes it: an EXTRA at that price for each item, where it came
+ * from; with none, that none is written.
+ */
+export function menuLinePriceWords(line: Pick<ReviewMenuLine, "price" | "priceFrom" | "quantity">): string {
+  if (typeof line.price !== "number" || !(line.price > 0)) return "No price is written on the line.";
+  const from = line.priceFrom === "chat" ? " — the chat's price" : line.priceFrom === "staff" ? " — changed here" : "";
+  const total = line.quantity > 1 ? ` (${line.quantity} × ${thb(line.price)} = ${thb(Math.round(line.price * line.quantity * 100) / 100)})` : "";
+  return `THB each, written on the line as an EXTRA${total}${from}.`;
+}
+
 /** The add-on, entertainment or package price the catalogue holds, in satang, for `priceBeside`. */
 export const packagePrices = (pkg: BeoAiPackage) => [pkg.priceWeekday ?? pkg.basePrice, pkg.priceWeekend ?? pkg.basePrice];
 
@@ -798,6 +821,8 @@ export function approveBodyOf(
         notes: l.notes?.trim() || null,
         // SCRUM-926: the option shown, where options share the code, so the kitchen gets that one.
         ...(!l.notInMenu && l.options && l.matchedName && l.options.includes(l.matchedName) ? { option: l.matchedName } : {}),
+        // SCRUM-946: the price shown, for each item.
+        ...(typeof l.price === "number" && Number.isFinite(l.price) && l.price > 0 ? { price: Math.round(l.price * 100) / 100 } : {}),
       };
     });
 

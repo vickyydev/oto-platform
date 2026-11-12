@@ -70,7 +70,9 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  * A section the reviewed BEO says nothing about is left as it is; one it
  * speaks to is replaced (the review said which). Prices are the catalogue's:
  * the chat's own prices are shown beside them in the review and never
- * written over them. Every id is checked again against the park's catalogue:
+ * written over them; SCRUM-946: a dish or drink line beyond the set menu is an
+ * EXTRA, written with the price the review shows for each item (the chat's),
+ * which is what the till charges it at. Every id is checked again against the park's catalogue:
  * one it does not hold refuses the whole approval, and nothing is written.
  *
  * SCRUM-843 — THE DEPOSIT FOLLOWS THE SAVE'S RULE (server/lib/depositSaveGuard.ts).
@@ -141,6 +143,12 @@ const minutes = (t: string) => {
   const [h, m] = t.split(":").map(Number);
   return h! * 60 + m!;
 };
+/**
+ * SCRUM-946: the price a dish or drink line is written with, in baht for each item (a BEO line
+ * keeps baht; the till charges an EXTRA at it times the quantity, SCRUM-906): the one the review
+ * sent, to the satang; none (0, as the form's own new line) when it sent none.
+ */
+const priceOf = (l: { price?: number }): number => (typeof l.price === "number" && Number.isFinite(l.price) && l.price > 0 ? Math.round(l.price * 100) / 100 : 0);
 /** The same words, case and spacing aside (SCRUM-827: a task, a line item or a step the BEO already holds). */
 const fold = (s: unknown) => (typeof s === "string" ? s.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ") : "");
 
@@ -433,7 +441,8 @@ export async function approveBeoAiFill(
           quantity: l.quantity,
           notes: [matched ? matched.code : "Not in the menu", l.notes?.trim() || null].filter(Boolean).join(" · "),
           included: false,
-          price: 0,
+          // SCRUM-946: an EXTRA, at the price the review shows for each item (the chat's), else none.
+          price: priceOf(l),
           ...(setMenuEnabled ? { source: "additional" } : {}),
         };
       };
@@ -521,7 +530,7 @@ export async function approveBeoAiFill(
           quantity: l.quantity,
           notes: [matched ? matched.code : null, l.notes?.trim() || null].filter(Boolean).join(" · "),
           included: false,
-          price: 0,
+          price: priceOf(l),
         };
       });
       const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));

@@ -466,6 +466,12 @@ export const BeoAiApproveBodySchema = z
              * dish's till code carries several (the server writes it only when it is one of them).
              */
             option: z.string().trim().min(1).max(300).optional(),
+            /**
+             * SCRUM-946: the price written on the line, in baht FOR EACH ITEM (the owner's
+             * ruling of 12 November: an EXTRA is charged at its entered price per item):
+             * the chat's price for the dish as the review shows it. Absent: no price.
+             */
+            price: z.number().min(0).max(1_000_000).optional(),
           })
           .strict(),
       )

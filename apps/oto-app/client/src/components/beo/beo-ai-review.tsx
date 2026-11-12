@@ -25,6 +25,7 @@ import {
   edited,
   editedText,
   initialReviewState,
+  menuLinePriceWords,
   packageOf,
   packagePrices,
   priceBeside,
@@ -801,7 +802,22 @@ function ReviewSections({
                   </select>
                 </div>
               )}
-              {l.chatPrice !== null && <PriceBeside chat={l.chatPrice} catalogue={[]} />}
+              {/* SCRUM-946: the price written on the line, for each item, as Approve and create writes it. */}
+              {(l.chatPrice !== null || l.price !== null) && (
+                <div className="flex items-center gap-2 text-xs flex-wrap" data-testid="ai-review-menu-price">
+                  <span className="text-muted-foreground">Price:</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    className="h-8 w-24"
+                    placeholder="Price"
+                    value={l.price ?? ""}
+                    onChange={(e) => update({ price: e.target.value === "" ? null : Math.max(0, Number(e.target.value) || 0), priceFrom: "staff" })}
+                    data-testid="input-ai-review-menu-price"
+                  />
+                  <span className="text-muted-foreground" data-testid="text-ai-review-menu-price">{menuLinePriceWords(l)}</span>
+                </div>
+              )}
               {l.notInMenu && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />

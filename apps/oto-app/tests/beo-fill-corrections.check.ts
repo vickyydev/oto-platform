@@ -10,6 +10,9 @@
 //      adults") is the adults' own list, written with the switch on; a list
 //      that only repeats the kids' menu stays a mirror; the count is what was
 //      written.
+//   2. the chat's price for an extra dish ("2 more at 450 each") is written on
+//      its line as an EXTRA at that price for each item, shown so in the
+//      review; a cake's price stays where the form keeps it.
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -21,6 +24,8 @@ import { createServer as createHttpServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import express, { type NextFunction, type Request, type Response } from "express";
 import pg from "pg";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -38,6 +43,9 @@ const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
 const { loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
 const { db, pool: appDbPool } = await import("../server/db");
+const { initialReviewState, approveBodyOf, menuLinePriceWords } = await import("../client/src/lib/beo-ai-review");
+const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
+type BeoAiReview = import("../shared/beoAiFill").BeoAiReview;
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
 type AiCompleteOptions = import("../server/lib/anthropic").AiCompleteOptions;
 type BeoAiApproveBody = import("../shared/beoAiFill").BeoAiApproveBody;
@@ -55,7 +63,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 1;
+const CHECKS = 2;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -64,7 +72,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror"] as const;
+const KEYS = ["extra", "mirror", "priced"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -136,6 +144,8 @@ async function post(path: string, body: unknown) {
   const response = await fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", "x-test-as": "manager" }, body: JSON.stringify(body) });
   return { status: response.status, body: (await response.json().catch(() => null)) as any };
 }
+const fill = (eventId: string, existingData: Record<string, unknown> = { event: { title: "ZZ TEST" } }) =>
+  post(`/api/events/${eventId}/beo/ai-fill/inbox`, { existingData });
 const approve = (eventId: string, body: unknown) => post(`/api/events/${eventId}/beo/ai-fill/approve`, body);
 const bodyOf = (over: Partial<BeoAiApproveBody>): BeoAiApproveBody => ({
   conversationId: null, messageId: null, package: null, setMenu: null, menuLines: [], entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [], ...over,
@@ -210,6 +220,52 @@ try {
     assert.deepEqual(mirrored.menus.adults, []);
     assert.equal(mirror.body.written.kitchenLines, 2, "the folded adults' lines are not counted as written");
     assert.equal(mirror.body.written.adultsLinesFolded, 2, "and the answer says they were folded");
+  });
+
+  // --- 2. The chat's price on an extra dish ---------------------------------------------------
+  await check("theChatsPriceIsWrittenOnTheLineForEachItem", async () => {
+    chats.set("priced", [
+      { id: `${conv.priced}-1`, author: "customer", at: at(0), text: "Hi, a party for ZZ Test Sami turning 8, Sunday 20 December 15:00-17:30, 14 kids and 10 adults. PRICED-946" },
+      { id: `${conv.priced}-2`, author: "customer", at: at(1), text: "The Floresta birthday package. Margherita for the kids' set menu, and 2 more Margherita pizzas at 450 each. 2 of the park's cakes at 800 baht each. PRICED-946" },
+    ]);
+    answers.set("PRICED-946", {
+      catalogue: {
+        package: { templateId: cat.pkg, said: "The Floresta birthday package", line: 2 },
+        setMenu: { templateId: cat.setMenu, line: 2, choices: [{ itemId: PIZZA, option: "Margherita", said: "Margherita", line: 2 }] },
+        menuLines: [{ productCode: "CF-24", itemName: "2 more Margherita pizzas", menu: "kids", quantity: 2, chatPrice: 450, line: 2 }],
+        cake: { mode: "INTERNAL", notes: "2 of the park's cakes", quantity: 2, price: 800, line: 2 },
+        event: { numChildren: { value: 14, line: 1 } },
+      },
+    });
+    const res = await fill(ev.priced);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    const state = initialReviewState(review, { fill: res.body.fill });
+    const line = state.menuLines[0]!;
+    assert.deepEqual([line.itemName, line.quantity, line.price, line.priceFrom], ["2 more Margherita pizzas", 2, 450, "chat"]);
+    assert.equal(menuLinePriceWords(line), "THB each, written on the line as an EXTRA (2 × ฿450 = ฿900) — the chat's price.");
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(html.includes('data-testid="input-ai-review-menu-price"') && html.includes('value="450"'), "the price shown in the review, editable");
+    assert.ok(html.includes("THB each, written on the line as an EXTRA"), "with what Approve and create does with it");
+    const body = approveBodyOf(review, state, { conversationId: review.conversationId ?? null, messageId: null });
+    assert.equal(body.menuLines[0]?.price, 450, "the approval carries the price shown");
+    assert.equal(body.cake?.price, 800, "the cake's price rides where the form keeps it");
+    const ok = await approve(ev.priced, body);
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const plan = await kitchenOf(ev.priced);
+    const extra = (plan.menus.kids as any[]).find((l) => l.source === "additional");
+    assert.deepEqual([extra?.productCode ?? extra?.notes, extra?.quantity, extra?.price], ["CF-24", 2, 450], "an EXTRA at 450 for each item");
+    assert.equal(plan.menus.cakePrice, 800, "the cake's price stays the form's cake price");
+    assert.equal(plan.menus.kids.filter((l: any) => /cake/i.test(l.itemName)).length, 0, "no charge is invented for the cake");
+    // The till's plan reads it as an EXTRA at 450 a portion.
+    const tillLine = (await viewLinesOf(ev.priced)).find((l) => l.source === "extra" && l.line_id === extra?.id);
+    assert.deepEqual([tillLine?.qty, tillLine?.unit_price_satang], [2, 45000], JSON.stringify(tillLine));
+    // A price the reviewer clears is not written; one they change is.
+    const cleared = approveBodyOf(review, { ...state, menuLines: state.menuLines.map((l) => ({ ...l, price: null, priceFrom: "staff" as const })) }, { conversationId: null, messageId: null });
+    assert.equal(cleared.menuLines[0]?.price, undefined);
+    const changed = { ...state, menuLines: state.menuLines.map((l) => ({ ...l, price: 420, priceFrom: "staff" as const })) };
+    assert.equal(approveBodyOf(review, changed, { conversationId: null, messageId: null }).menuLines[0]?.price, 420);
+    assert.ok(menuLinePriceWords(changed.menuLines[0]!).endsWith("— changed here."));
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
