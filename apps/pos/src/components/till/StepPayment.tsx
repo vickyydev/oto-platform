@@ -123,7 +123,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
   const free = Boolean(paymentStage ? total === 0 : nothingToPay) && !amountUnavailable && total === 0;
 
   return (
-    <div data-testid="payment-step" className="flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
+    <div data-testid="payment-step" className="@container flex flex-col min-w-0 w-full h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
         <div className="text-5xl sm:text-6xl break-words font-black text-primary">{amountUnavailable ? '—' : `฿${total}`}</div>
@@ -146,9 +146,17 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       ) : (
         <>
           <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
+          {/* SCRUM-882 — the tiles follow the PANEL's width (`@container` on
+              the step), as the customer-type cards do, not the window's: in
+              the split till view the panel is ~310px on a 1440px screen, and
+              three `sm:` tiles there broke "PromptPay", even "Cash", mid-word
+              and pushed Confirm below the window. Below `@xl` they are the
+              phone's two columns and sizes; from `@xl` (576px, where three
+              prototype tiles hold "PromptPay" and "Наличные" whole) the
+              prototype's row. Labels wrap only between words. */}
           <div
-            className={cn('grid gap-3 sm:gap-4', methods.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-              methods.length >= 4 ? 'sm:grid-cols-4' : methods.length === 3 ? 'sm:grid-cols-3' : '')}
+            className={cn('grid gap-3 @xl:gap-4', methods.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
+              methods.length >= 4 ? '@3xl:grid-cols-4' : methods.length === 3 ? '@xl:grid-cols-3' : '')}
           >
             {methods.map((m) => {
               const Icon = paymentMethodIcon(m.kind);
@@ -158,7 +166,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                 <Card
                   key={m.id}
                   className={cn(
-                    'relative min-w-0 flex flex-col items-center justify-center p-3 sm:p-6 cursor-pointer transition-all',
+                    'relative min-w-0 flex flex-col items-center justify-center p-3 @xl:p-6 cursor-pointer transition-all',
                     selected ? style.ring : style.hover
                   )}
                   onClick={() => { if (paymentStage?.locked || amountUnavailable) return; paymentStage?.selectMethod(m.id); onSelectMethod(m.id); }}
@@ -169,10 +177,10 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                       <Check className="w-4 h-4" />
                     </div>
                   )}
-                  <div className={cn('h-14 w-14 sm:h-20 sm:w-20 rounded-full flex items-center justify-center mb-3 sm:mb-4', style.iconBg)}>
+                  <div className={cn('h-14 w-14 @xl:h-20 @xl:w-20 rounded-full flex items-center justify-center mb-3 @xl:mb-4', style.iconBg)}>
                     <Icon className={cn('h-10 w-10', style.iconColor)} />
                   </div>
-                  <h3 className="max-w-full text-center break-words text-lg sm:text-2xl font-bold">{m.label}</h3>
+                  <h3 className="max-w-full text-center text-lg @xl:text-2xl font-bold">{m.label}</h3>
                 </Card>
               );
             })}

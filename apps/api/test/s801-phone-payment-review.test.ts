@@ -28,7 +28,8 @@ describe('SCRUM-801/800 — phone payment adversarial review', () => {
     expect(payment).toContain('flex-col sm:flex-row');
     expect(payment).toContain('whitespace-normal');
     expect(payment).toContain('grid-cols-2');
-    expect(payment).toContain('sm:grid-cols-3');
+    // SCRUM-882: the tiles key to the step's panel (@container), not the window.
+    expect(payment).toContain('@xl:grid-cols-3');
     expect(payment).toContain('break-words');
     expect(payment).not.toContain('overflow-x-hidden');
   });
