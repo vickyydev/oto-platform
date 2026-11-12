@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-886",
+  "title": "Waiting bookings from earlier days can be cancelled from the Check-in board",
+  "also": "SCRUM-860 fix carried by the same api deploy: an inbox contact rename's activity row names the conversation on both sides (bcaf07eaf)",
+  "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+  "provedAt": "2026-11-12, 12:47-13:08 Bangkok",
+  "deploys": {
+    "oto-api-staging": { "id": "dep-dbql396i0phs73d0vmfg", "sha": "b627077e", "liveAtBangkok": "12:46:21", "servedThroughout": true },
+    "oto-pos-staging": { "id": "dep-dbql39gn74is73chekug", "sha": "b627077e", "liveAtBangkok": "12:43:22",
+      "supersededDuringTheProof": { "id": "dep-dbqla7e7bikc73aegkng", "sha": "9df18d68", "liveAtBangkok": "12:57:47" } },
+    "oto-pos-web-staging": { "id": "dep-dbql39on74is73chem2g", "sha": "b627077e", "liveAtBangkok": "12:45:13",
+      "supersededDuringTheProof": { "id": "dep-dbqla7tg1s2s73emg090", "sha": "9df18d68", "liveAtBangkok": "13:00:13" } },
+    "servedNote": "The api served b627077e for every step. The till (oto-pos-web-staging) served b627077e for points 1-2 (12:59:03-13:00:00) and most likely 9df18d68 from point 3 on (another lane's deploy went live at 13:00:13). 9df18d68 contains b627077e and changes only the sale writer (SCRUM-887: Till.tsx, saleWriter.ts, gateOnline.ts, SaleWriteStatus.tsx); none of the SCRUM-886 files differ (CancelBookingDialog.tsx, FamilyCheckInCard.tsx, DropOff.tsx, the mobile board files, api checkin.ts). Both bundles carried the SCRUM-886 markers ('Booked for ', 'bookingCheckedIn')."
+  },
+  "points": {
+    "1": { "pass": true, "pictures": ["01a-board-upcoming-now-other-families-masked.png", "01b-board-upcoming-zz-test-leftovers-booked-for.png", "01c-earlier-day-leftover-card-booked-for-cancel-booking.png"],
+      "shows": "Upcoming 18 children in 15 families (In Park 7, Out 25): 11 ZZ TEST families, all for earlier days, each card says 'Booked for <day>' (6 Oct to 11 Nov); 4 families that are not ZZ TEST are masked. 7 ZZ TEST families had Cancel booking enabled; 4 were refused by the board (paid, or a sibling collected earlier)." },
+    "2": { "pass": true, "pictures": ["02a-board-cancel-dialog-reason-empty-disabled.png", "02b-board-cancel-dialog-reason-typed.png", "02c-board-after-cancel-card-gone-upcoming-18-to-17.png", "02d-board-zz-test-after-clearing-only-paid-or-checked-in-left.png", "02e-board-upcoming-after-clearing-other-families-masked.png"],
+      "shows": "'ZZ TEST Walkin Guardian 496' (Booked for 6 Oct): reason empty -> 'Give a reason to cancel' disabled and 'A reason is required.'; reason 'ZZ TEST leftover' -> 'Cancel the booking'; 200, the card left, Upcoming 18 -> 17 (one child). Then 5 more cleared from the desk board and the last one from the phone board (point 5)." ,
+      "cleared": { "families": 7, "children": 7, "reason": "ZZ TEST leftover", "guardians": ["ZZ TEST Walkin Guardian 496 (6 Oct)", "ZZ TEST SCRUM-853 guardian (11 Nov, the unpaid one)", "ZZ TEST SCRUM-847 guardian (11 Nov)", "ZZ TEST SCRUM-847 guardian (11 Nov, second)", "ZZ TEST Parent (4 Nov)", "ZZ TEST Guardian (20 Oct)", "ZZ TEST Nanny Guardian 494 (5 Oct, from the phone board)"] },
+      "untouched": { "notZzFamilies": 4, "children": 4 },
+      "zzLeftBecauseTheBoardRefusesThem": ["ZZ TEST SCRUM-853 guardian (11 Nov): paid at the till, no Cancel booking", "ZZ TEST SCRUM-741 Ying (4 Nov): sibling Bua collected on an earlier day, Cancel booking disabled", "ZZ TEST SCRUM-730 Ying (3 Nov): sibling Bua collected on an earlier day, Cancel booking disabled", "ZZ TEST Family 496 waiting (6 Oct, 4 children): one child paid, Cancel booking disabled"] },
+    "3": { "pass": true, "pictures": ["03a-dropoff-form-booking-c.png", "03b-board-today-booking-no-booked-for-cancel-booking.png", "03c-board-today-booking-cancel-dialog.png", "03d-board-after-today-cancel-card-gone.png"],
+      "shows": "Today's own booking c (ZZ TEST 886 guardian c / child c, 0898860010): form signed, sale cancelled unpaid at the till (voided). On the board: no 'Booked for' line (bookedForDate null), Cancel booking enabled; cancelled from the board (200, reason 'ZZ TEST cancel'), the card left, Upcoming 13 -> 12." },
+    "4": { "pass": true, "pictures": ["04a-paid-booking-b-left-as-booked-no-cancel-booking.png", "04b-paid-booking-b-checked-in-from-the-board.png", "04c-earlier-day-paid-booking-no-cancel-booking.png", "04d-earlier-day-collected-sibling-cancel-disabled-741.png", "04e-earlier-day-collected-sibling-cancel-disabled-730.png", "04f-earlier-day-part-paid-family-cancel-disabled.png"],
+      "shows": "Own booking b paid 915 THB cash and left as booked: 'Booked & paid - no payment needed', no Cancel booking button; a cancel press through the api is refused 409 CHECKIN_CANCEL_PAID. Checked in from the board ('Check in & issue band', In Park 8) and released (out). Earlier-day ZZ TEST: paid -> no button (04c); sibling collected earlier -> disabled with 'ZZ TEST SCRUM-741 Bua is already checked in - a checked-in booking is handled through its sale.' (04d, 04e); one of four paid -> disabled with 'ZZ TEST Child 496 C is paid for - a paid booking is handled through its sale.' (04f)." },
+    "5": { "pass": true, "pictures": ["05a-phone-board-earlier-day-leftover-booked-for.png", "05b-phone-family-screen-cancel-booking.png", "05c-phone-cancel-dialog-reason-typed.png", "05d-phone-board-after-cancel-card-gone.png", "05e-phone-board-today-booking-no-booked-for.png", "05f-phone-family-screen-today-cancel-booking.png", "05g-phone-cancel-dialog-today-reason-typed.png", "05h-phone-board-after-today-cancel-card-gone.png"],
+      "shows": "Phone till 390 x 844: the earlier-day leftover 'ZZ TEST Nanny Guardian 494' card says 'Booked for 5 Oct', its family screen has Cancel booking; cancelled there (200, 'ZZ TEST leftover'), Upcoming 12 -> 11. Retake on today's own booking d: no 'Booked for' line, the family screen shows Message, Pickups, Check In and Cancel booking; cancelled there (200), Upcoming 12 -> 11." },
+    "6": { "pass": true, "pictures": ["06a-inbox-edit-name-zz-test-contact-renamed-once-more.png", "06b-console-activity-filtered-by-the-rename.png", "06c-console-activity-rename-row-no-conversation-change.png"],
+      "shows": "The ZZ TEST simulator contact (+66898600001, Demo WhatsApp) renamed to 'ZZ TEST 886 rename check' from the inbox's Edit name (PATCH 200). Its audit row carries conversationId 01a1cdf0-4cbb-7338-82e6-b377a8aec01b before and after; the Console's row (request id 3424115f-cf6b-4f56-9347-8f30d7d349c9) lists only Display name, Name set at and Name set by account id - no 'Conversation id was - now' line (the SCRUM-860 proof's 06b had one). Set back to its profile name 'ZZ TEST sim profile 860B' (200)." }
+  },
+  "odd": [
+    { "picture": "07a-named-check-in-label-overflows-beside-cancel-booking.png (crop of 04f)", "what": "On a part-paid family with long names the second named check-in press ('Check in ZZ TEST Sibling 496 age3, ZZ TEST Sibling 496 age3 & ZZ TEST Sibling 496 age6 nanny') spills above and below its 44 px button. The presses are fixed h-11 with a wrapping label; the new Cancel booking takes about 135 px of the same row, so the label gets narrower still.",
+      "where": "apps/pos/src/components/dropoff/FamilyCheckInCard.tsx:355 (the action row), :359/:370/:381 (h-11 flex-1 presses), :76 (NAMED_CHECK_IN, from 342c8ccfc), :401-412 (the SCRUM-886 Cancel booking)", "kind": "display, pre-existing pattern made tighter by SCRUM-886" },
+    { "picture": "04d-earlier-day-collected-sibling-cancel-disabled-741.png, 04e-earlier-day-collected-sibling-cancel-disabled-730.png", "what": "A sibling who came and left on an earlier day keeps the booking's Cancel booking disabled with 'Bua is already checked in', though Bua left days ago; such leftovers cannot be cleared from the board. Commit 4fbbe51bb already names this as a rule question for the owner.",
+      "where": "apps/pos/src/components/dropoff/CancelBookingDialog.tsx:51-52 (cancelBookingBlockedBy, the checked-in line); the api refusal CHECKIN_CANCEL_CHECKED_IN (apps/api/src/services/checkin.ts:775)", "kind": "rule question, as designed" },
+    { "picture": "04a-paid-booking-b-left-as-booked-no-cancel-booking.png, 04c-earlier-day-paid-booking-no-cancel-booking.png", "what": "Not SCRUM-886: a booking paid at the till and left as booked shows 'Overdue - 13:00' on its Upcoming card straight after payment (its booked arrival is the sale time).", "where": "apps/pos/src/components/dropoff/FamilyCheckInCard.tsx:110 (Overdue · the booked time)", "kind": "pre-existing observation" },
+    { "picture": "all board pictures, 03a, 05b", "what": "Masks: the thin bar under the tabs covers 'Nannies free now: <names>' (staff names); the top-right box is the signed-in account; in run 03 the first card masks also covered the till form's Back / Continue to payment (03a) and the phone family screen's Check In button (05b) - the retake (05f) shows that screen unmasked." }
+  ],
+  "notExercised": "Offline refusal of the board's cancel (not in the asked points).",
+  "leftovers": {
+    "tills": "Z88601-Z88605 (ZZ TEST SCRUM-886 proof till ...) archived, 0 devices",
+    "ownBookings": "c cancelled, d cancelled, b out (released); sales: finalised 915 THB cash (b, kept as a ZZ TEST sale), voided 915 (c), voided 915 (d)",
+    "members": "the three ZZ TEST members the drop-off form made (0898860010, 0898860011, 0898860015) archived; lookups 0898860010-18 all none",
+    "sessions": "till, admin, inbox, Console and launcher signed out (401 read back)",
+    "inboxContact": "ZZ TEST sim profile 860B, back to its profile name",
+    "inboxThreads": "the drop-off form's WhatsApp check left 'ZZ TEST 886 guardian b/c/d' threads in the Team Inbox (synthetic numbers), as every drop-off proof's do",
+    "boardAfter": "Upcoming 11 children in 8 families: 4 families that are not ZZ TEST (4 children) untouched; 4 ZZ TEST families (7 children) the board refuses to cancel (listed under point 2); no earlier-day ZZ TEST family with Cancel booking enabled is left; nothing of this proof waiting"
+  },
+  "runs": "01-02 read-only dry runs of point 1 (tills Z88601-02); 03 the proof, points 1-5 (Z88603); 04-05 picture retakes with board-only masks (Z88604-05). See the header of proof.mjs."
+}

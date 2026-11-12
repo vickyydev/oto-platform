@@ -1,0 +1,355 @@
+{
+ "readAt": "2026-11-12T05:47:41.129Z",
+ "branch": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+ "counts": {
+  "registered": 18,
+  "in_park": 10,
+  "out": 22
+ },
+ "newApi": {
+  "familiesWithCheckedInChildNames": 37,
+  "families": 37,
+  "waitingChildrenWithBookedForKey": 18,
+  "waitingChildren": 18
+ },
+ "today": "2026-11-12",
+ "upcomingFamilies": 15,
+ "upcomingChildren": 18,
+ "zzFamilies": [
+  {
+   "zz": true,
+   "registrationId": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+   "guardian": "ZZ TEST SCRUM-853 guardian",
+   "children": [
+    "ZZ TEST SCRUM-853 child:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-12",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-11"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 1,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+   "guardian": "ZZ TEST SCRUM-853 guardian",
+   "children": [
+    "ZZ TEST SCRUM-853 child:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-12",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-11"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+   "guardian": "ZZ TEST SCRUM-847 guardian",
+   "children": [
+    "ZZ TEST SCRUM-847 child:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-11",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-11"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+   "guardian": "ZZ TEST SCRUM-847 guardian",
+   "children": [
+    "ZZ TEST SCRUM-847 child:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-11",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-11"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+   "guardian": "ZZ TEST SCRUM-741 Ying",
+   "children": [
+    "ZZ TEST SCRUM-741 Nok:registered"
+   ],
+   "tab": "registered",
+   "source": "booking",
+   "createdDay": "2026-11-04",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-04"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 1
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1a581-fc8b-7b0c-a916-e0f54b0402c9",
+   "guardian": "ZZ TEST Parent",
+   "children": [
+    "ZZ TEST Older:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-04",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-04"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a1a259-d770-7803-a0e5-e08c52b6c3dd",
+   "guardian": "ZZ TEST SCRUM-730 Ying",
+   "children": [
+    "ZZ TEST SCRUM-730 Nok:registered"
+   ],
+   "tab": "registered",
+   "source": "booking",
+   "createdDay": "2026-11-03",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-03"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 1
+  },
+  {
+   "zz": true,
+   "registrationId": "01a156d0-ba0c-7b6e-ad2f-183ec15dd24e",
+   "guardian": "ZZ TEST Guardian",
+   "children": [
+    "ZZ TEST Child:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-10-20",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-10-20"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a111d3-1250-7ce7-b0e1-ef6b86280ccb",
+   "guardian": "ZZ TEST Walkin Guardian 496",
+   "children": [
+    "ZZ TEST Walkin Child 496:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-10-06",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-10-06"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a111ca-333e-7a1d-b4e2-a59ded2bad48",
+   "guardian": "ZZ TEST Family 496 waiting",
+   "children": [
+    "ZZ TEST Child 496 C:registered",
+    "ZZ TEST Sibling 496 age3:registered",
+    "ZZ TEST Sibling 496 age3:registered",
+    "ZZ TEST Sibling 496 age6 nanny:registered"
+   ],
+   "tab": "registered",
+   "source": "booking",
+   "createdDay": "2026-10-06",
+   "waiting": 4,
+   "bookedFor": [
+    "2026-10-06"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 1,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "zz": true,
+   "registrationId": "01a10d02-473e-71fc-9302-14e13839f44d",
+   "guardian": "ZZ TEST Nanny Guardian 494",
+   "children": [
+    "ZZ TEST Nanny Child 494:registered"
+   ],
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-10-06",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-10-05"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  }
+ ],
+ "nonZz": [
+  {
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-12",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-11"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-06",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-06"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 0,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-11-06",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-11-06"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 1,
+   "inParkSibling": false,
+   "checkedIn": 0
+  },
+  {
+   "tab": "registered",
+   "source": "till",
+   "createdDay": "2026-10-30",
+   "waiting": 1,
+   "bookedFor": [
+    "2026-10-30"
+   ],
+   "earlier": true,
+   "later": false,
+   "today": false,
+   "paid": 1,
+   "inParkSibling": false,
+   "checkedIn": 0
+  }
+ ],
+ "summary": {
+  "zzFamilies": 11,
+  "zzWaitingChildren": 14,
+  "nonZzFamilies": 4,
+  "nonZzWaitingChildren": 4,
+  "zzEarlierUnpaidNoCheckedIn": 7
+ },
+ "numbers": {
+  "0898860010": "unused",
+  "0898860011": "unused",
+  "0898860012": "unused",
+  "0898860013": "unused",
+  "0898860014": "unused",
+  "0898860015": "unused",
+  "0898860016": "unused",
+  "0898860017": "unused",
+  "0898860018": "unused",
+  "0898860019": "unused",
+  "0898860020": "unused",
+  "0898860021": "unused",
+  "0898860022": "unused",
+  "0898860023": "unused",
+  "0898860024": "unused",
+  "0898860025": "unused",
+  "0898860026": "unused",
+  "0898860027": "unused",
+  "0898860028": "unused",
+  "0898860029": "unused",
+  "0898860030": "unused"
+ },
+ "activeZzTills": [
+  "ZZ TEST SCRUM-710 display",
+  "ZZ TEST SCRUM-718 path",
+  "ZZ TEST SCRUM-861 proof till 1794459841764",
+  "ZZ TEST setup traps 20261102"
+ ],
+ "prefixesZ886": [],
+ "signOut": 200,
+ "me": 401
+}

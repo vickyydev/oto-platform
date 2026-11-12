@@ -1,0 +1,175 @@
+{
+  "readAt": "2026-11-12T06:08:23.775Z",
+  "board": {
+    "today": "2026-11-12",
+    "counts": {
+      "registered": 11,
+      "in_park": 7,
+      "out": 26
+    },
+    "upcomingFamilies": 8,
+    "zz": [
+      {
+        "guardian": "ZZ TEST SCRUM-853 guardian",
+        "children": [
+          "ZZ TEST SCRUM-853 child"
+        ],
+        "waiting": 1,
+        "paid": 1,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-11-11"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST SCRUM-741 Ying",
+        "children": [
+          "ZZ TEST SCRUM-741 Nok"
+        ],
+        "waiting": 1,
+        "paid": 0,
+        "checkedInOrCollected": 1,
+        "bookedFor": [
+          "2026-11-04"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST SCRUM-730 Ying",
+        "children": [
+          "ZZ TEST SCRUM-730 Nok"
+        ],
+        "waiting": 1,
+        "paid": 0,
+        "checkedInOrCollected": 1,
+        "bookedFor": [
+          "2026-11-03"
+        ]
+      },
+      {
+        "guardian": "ZZ TEST Family 496 waiting",
+        "children": [
+          "ZZ TEST Child 496 C",
+          "ZZ TEST Sibling 496 age3",
+          "ZZ TEST Sibling 496 age3",
+          "ZZ TEST Sibling 496 age6 nanny"
+        ],
+        "waiting": 4,
+        "paid": 1,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-10-06"
+        ]
+      }
+    ],
+    "notZz": [
+      {
+        "waiting": 1,
+        "paid": 0,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-11-11"
+        ]
+      },
+      {
+        "waiting": 1,
+        "paid": 0,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-11-06"
+        ]
+      },
+      {
+        "waiting": 1,
+        "paid": 1,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-11-06"
+        ]
+      },
+      {
+        "waiting": 1,
+        "paid": 1,
+        "checkedInOrCollected": 0,
+        "bookedFor": [
+          "2026-10-30"
+        ]
+      }
+    ],
+    "zzEarlierDayStillCancellable": 0
+  },
+  "tills": [
+    {
+      "prefix": "Z88601",
+      "archived": true,
+      "devices": 0,
+      "sales": []
+    },
+    {
+      "prefix": "Z88602",
+      "archived": true,
+      "devices": 0,
+      "sales": []
+    },
+    {
+      "prefix": "Z88603",
+      "archived": true,
+      "devices": 0,
+      "sales": [
+        "finalised 915",
+        "voided 915"
+      ]
+    },
+    {
+      "prefix": "Z88604",
+      "archived": true,
+      "devices": 0,
+      "sales": [
+        "voided 915"
+      ]
+    },
+    {
+      "prefix": "Z88605",
+      "archived": true,
+      "devices": 0,
+      "sales": []
+    }
+  ],
+  "ownBookings": [
+    {
+      "run": "03",
+      "tag": "c",
+      "guardian": "ZZ TEST 886 guardian c",
+      "children": [
+        "cancelled"
+      ]
+    },
+    {
+      "run": "03",
+      "tag": "b",
+      "guardian": "ZZ TEST 886 guardian b",
+      "children": [
+        "out"
+      ]
+    },
+    {
+      "run": "04",
+      "tag": "d",
+      "guardian": "ZZ TEST 886 guardian d",
+      "children": [
+        "cancelled"
+      ]
+    }
+  ],
+  "numbers": {
+    "0898860010": "none",
+    "0898860011": "none",
+    "0898860012": "none",
+    "0898860013": "none",
+    "0898860014": "none",
+    "0898860015": "none",
+    "0898860016": "none",
+    "0898860017": "none",
+    "0898860018": "none"
+  },
+  "adminMe": 401
+}

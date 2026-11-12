@@ -1,0 +1,1573 @@
+{
+  "ticket": "SCRUM-886",
+  "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+  "startedAt": "2026-11-12T05:59:03.923Z",
+  "phase": "finished",
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbql39gn74is73chekug",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:58.412797Z",
+        "finishedAt": "2026-11-12T05:43:22.254945Z"
+      },
+      "serving": {
+        "id": "dep-dbql39gn74is73chekug",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:58.412797Z",
+        "finishedAt": "2026-11-12T05:43:22.254945Z"
+      },
+      "readAt": "2026-11-12T05:46:39.579Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbql39on74is73chem2g",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:59.811722Z",
+        "finishedAt": "2026-11-12T05:45:13.414756Z"
+      },
+      "serving": {
+        "id": "dep-dbql39on74is73chem2g",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:59.811722Z",
+        "finishedAt": "2026-11-12T05:45:13.414756Z"
+      },
+      "readAt": "2026-11-12T05:46:40.337Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "serving": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "readAt": "2026-11-12T05:46:40.973Z"
+    }
+  },
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01b-board-upcoming-zz-test-leftovers-booked-for.png",
+      "shows": "Upcoming 18 children in 15 families (11 ZZ TEST, 4 not, masked); every earlier-day card says \"Booked for <day>\"; 7 ZZ TEST leftovers have Cancel booking enabled",
+      "seen": {
+        "tabs": {
+          "Upcoming": 18,
+          "In Park": 7,
+          "Out": 25
+        },
+        "platform": {
+          "registered": 18,
+          "in_park": 7,
+          "out": 25
+        },
+        "families": 15,
+        "zzFamilies": 11,
+        "notZzFamilies": 4,
+        "zzEarlierEnabled": 7,
+        "zzEarlierNotEnabled": 4,
+        "zzCardsShown": 11,
+        "cardsWithBookedFor": 11,
+        "zzFamiliesForAnotherDay": 11,
+        "picked": {
+          "guardian": "ZZ TEST Walkin Guardian 496",
+          "children": [
+            "ZZ TEST Walkin Child 496"
+          ],
+          "bookedFor": [
+            "2026-10-06"
+          ],
+          "card": {
+            "bookedFor": "Booked for 6 Oct",
+            "cancelButtons": 1,
+            "cancelEnabled": true,
+            "refusal": null
+          }
+        }
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02c-board-after-cancel-card-gone-upcoming-count.png",
+      "shows": "\"ZZ TEST Walkin Guardian 496\" (booked for 2026-10-06): reason empty -> \"Give a reason to cancel\" disabled; \"ZZ TEST leftover\" -> \"Cancel the booking\"; 200, the card left and Upcoming went 18 -> 17 (1 child)",
+      "seen": {
+        "description": "ZZ TEST Walkin Guardian 496's booking: ZZ TEST Walkin Child 496 leave the waiting list and can't be added to a sale. The signed form stays on record.",
+        "beforeReason": {
+          "label": "Give a reason to cancel",
+          "enabled": false
+        },
+        "afterReason": {
+          "label": "Cancel the booking",
+          "enabled": true
+        },
+        "answer": 200,
+        "registrationId": "01a111d3-1250-7ce7-b0e1-ef6b86280ccb",
+        "after": {
+          "guardianZz": true,
+          "children": [
+            {
+              "zz": true,
+              "status": "cancelled"
+            }
+          ],
+          "consentKept": true
+        },
+        "upcomingBefore": 18,
+        "upcomingAfter": 17,
+        "cardsLeftForName": 0,
+        "upcomingBeforeNoSearch": 18,
+        "upcomingAfterNoSearch": 17
+      }
+    },
+    "3": {
+      "pass": true,
+      "picture": "03b-board-today-booking-no-booked-for-cancel-booking.png",
+      "shows": "Today's unpaid booking c (sale voided at the till): the card has no \"Booked for\" line and an enabled Cancel booking; cancelled from the board (200), the card left",
+      "seen": {
+        "left": {
+          "how": "till Cancel",
+          "saleStatus": "voided"
+        },
+        "card": {
+          "bookedFor": null,
+          "cancelButtons": 1,
+          "cancelEnabled": true,
+          "refusal": null
+        },
+        "platformChild": [
+          {
+            "status": "registered",
+            "bookedForDate": null
+          }
+        ],
+        "cancel": {
+          "description": "ZZ TEST 886 guardian c's booking: ZZ TEST 886 child c leave the waiting list and can't be added to a sale. The signed form stays on record.",
+          "beforeReason": {
+            "label": "Give a reason to cancel",
+            "enabled": false
+          },
+          "afterReason": {
+            "label": "Cancel the booking",
+            "enabled": true
+          },
+          "answer": 200,
+          "registrationId": "01a1ce57-90a4-7296-9dcb-6df184582419",
+          "after": {
+            "guardianZz": true,
+            "children": [
+              {
+                "zz": true,
+                "status": "cancelled"
+              }
+            ],
+            "consentKept": true
+          },
+          "upcomingBefore": 13,
+          "upcomingAfter": 12,
+          "cardsLeft": 0
+        }
+      }
+    },
+    "4": {
+      "pass": true,
+      "picture": "04-paid-booking-b-left-as-booked-no-cancel-booking.png",
+      "shows": "Paid in cash, left as booked: no Cancel booking on the card (platform refuses 409 CHECKIN_CANCEL_PAID); checked in from the board and released. Earlier-day ZZ TEST: ZZ TEST SCRUM-853 guardian no button; ZZ TEST SCRUM-741 Ying disabled: ZZ TEST SCRUM-741 Bua is already checked in — a checked-in booking is handled through its sale.; ZZ TEST SCRUM-730 Ying disabled: ZZ TEST SCRUM-730 Bua is already checked in — a checked-in booking is handled through its sale.; ZZ TEST Family 496 waiting disabled: ZZ TEST Child 496 C is paid for — a paid booking is handled through its sale.",
+      "seen": {
+        "sale": {
+          "status": "finalised",
+          "grossSatang": 91500
+        },
+        "card": {
+          "bookedFor": null,
+          "cancelButtons": 0,
+          "cancelEnabled": null,
+          "refusal": null,
+          "text": "ZZ TEST 886 guardian b <number> Message Awaiting confirmation Waiting for parent to tap \"Confirm received\" in WhatsApp. 🇹🇭 +66 WhatsApp Telegram LINE Stored as: <number> Save & re-send Resend Sim: parent confirms Couldn't reach ZZ TEST 886 child b 6 yrs DROP-OFF Overdue · 13:00 Booked & paid · no "
+        },
+        "platformRefusal": {
+          "status": 409,
+          "code": "CHECKIN_CANCEL_PAID"
+        },
+        "refusals": [
+          {
+            "guardian": "ZZ TEST SCRUM-853 guardian",
+            "bookedFor": [
+              "2026-11-11"
+            ],
+            "waiting": 1,
+            "paidWaiting": 1,
+            "settled": 0,
+            "platformOffered": false,
+            "cards": [
+              {
+                "bookedFor": "Booked for 11 Nov",
+                "cancelButtons": 0,
+                "cancelEnabled": null,
+                "refusal": null
+              }
+            ],
+            "picture": "04-earlier-day-a-paid-no-cancel.png"
+          },
+          {
+            "guardian": "ZZ TEST SCRUM-741 Ying",
+            "bookedFor": [
+              "2026-11-04"
+            ],
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 1,
+            "platformOffered": true,
+            "cards": [
+              {
+                "bookedFor": "Booked for 4 Nov",
+                "cancelButtons": 1,
+                "cancelEnabled": false,
+                "refusal": "ZZ TEST SCRUM-741 Bua is already checked in — a checked-in booking is handled through its sale."
+              }
+            ],
+            "picture": "04-earlier-day-b-checked-in-cancel-disabled.png"
+          },
+          {
+            "guardian": "ZZ TEST SCRUM-730 Ying",
+            "bookedFor": [
+              "2026-11-03"
+            ],
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 1,
+            "platformOffered": true,
+            "cards": [
+              {
+                "bookedFor": "Booked for 3 Nov",
+                "cancelButtons": 1,
+                "cancelEnabled": false,
+                "refusal": "ZZ TEST SCRUM-730 Bua is already checked in — a checked-in booking is handled through its sale."
+              }
+            ],
+            "picture": "04-earlier-day-c-checked-in-cancel-disabled.png"
+          },
+          {
+            "guardian": "ZZ TEST Family 496 waiting",
+            "bookedFor": [
+              "2026-10-06"
+            ],
+            "waiting": 4,
+            "paidWaiting": 1,
+            "settled": 0,
+            "platformOffered": true,
+            "cards": [
+              {
+                "bookedFor": "Booked for 6 Oct",
+                "cancelButtons": 1,
+                "cancelEnabled": false,
+                "refusal": "ZZ TEST Child 496 C is paid for — a paid booking is handled through its sale."
+              }
+            ],
+            "picture": "04-earlier-day-d-paid-cancel-disabled.png"
+          }
+        ],
+        "checkin": {
+          "via": "board",
+          "release": [
+            200
+          ],
+          "children": [
+            "out"
+          ]
+        }
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05b-phone-family-detail-cancel-booking.png",
+      "shows": "Phone till (390 x 844): \"ZZ TEST Nanny Guardian 494\" booked for 2026-10-05 shows \"Booked for\" on its card and Cancel booking on its family screen; cancelled there (200), the card left, Upcoming 12 -> 11",
+      "seen": {
+        "before": 12,
+        "cardText": "ZZ TEST Nanny Guardian 494 Booked for 5 Oct Z ZZ TEST Nanny Child 494 6 yrs DROP-OFF No arrival time set",
+        "detail": {
+          "cancelEnabled": true,
+          "bookedFor": "Booked for 5 Oct",
+          "refusal": 0
+        },
+        "description": "ZZ TEST Nanny Guardian 494's booking: ZZ TEST Nanny Child 494 leave the waiting list and can't be added to a sale. The signed form stays on record.",
+        "beforeReason": {
+          "label": "Give a reason to cancel",
+          "enabled": false
+        },
+        "afterReason": {
+          "label": "Cancel the booking",
+          "enabled": true
+        },
+        "answer": 200,
+        "cardsLeft": 0,
+        "after": 11
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce56-9d41-72ca-b887-2435171d8793",
+      "name": "ZZ TEST SCRUM-886 proof till 1794463143932",
+      "prefix": "Z88603"
+    },
+    {
+      "kind": "registration",
+      "tag": "c",
+      "id": "01a1ce57-90a4-7296-9dcb-6df184582419",
+      "stays": [
+        "01a1ce57-90a4-7296-9dcb-6df2ab2e3d85"
+      ]
+    },
+    {
+      "kind": "dropoff-sale-c",
+      "id": "01a1ce57-94b8-7e18-b3c2-62b92301a5c1"
+    },
+    {
+      "kind": "registration",
+      "tag": "b",
+      "id": "01a1ce57-ea63-783a-9dc6-b411aa5f9df3",
+      "stays": [
+        "01a1ce57-ea64-73e4-bf39-4a4b0564760f"
+      ]
+    },
+    {
+      "kind": "dropoff-sale-b",
+      "id": "01a1ce57-ee00-7ad2-a338-4861b1d20b24"
+    }
+  ],
+  "cancelled": [
+    {
+      "id": "01a111d3-1250-7ce7-b0e1-ef6b86280ccb",
+      "guardian": "ZZ TEST Walkin Guardian 496",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:26.842Z"
+    },
+    {
+      "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+      "guardian": "ZZ TEST SCRUM-853 guardian",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:38.244Z"
+    },
+    {
+      "id": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+      "guardian": "ZZ TEST SCRUM-847 guardian",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:42.923Z"
+    },
+    {
+      "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+      "guardian": "ZZ TEST SCRUM-847 guardian",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:47.625Z"
+    },
+    {
+      "id": "01a1a581-fc8b-7b0c-a916-e0f54b0402c9",
+      "guardian": "ZZ TEST Parent",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:52.282Z"
+    },
+    {
+      "id": "01a156d0-ba0c-7b6e-ad2f-183ec15dd24e",
+      "guardian": "ZZ TEST Guardian",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board",
+      "at": "2026-11-12T05:59:56.965Z"
+    },
+    {
+      "id": "01a1ce57-90a4-7296-9dcb-6df184582419",
+      "guardian": "ZZ TEST 886 guardian c",
+      "reason": "ZZ TEST cancel",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "desk board (own booking c)",
+      "at": "2026-11-12T06:00:22.219Z"
+    },
+    {
+      "id": "01a10d02-473e-71fc-9302-14e13839f44d",
+      "guardian": "ZZ TEST Nanny Guardian 494",
+      "reason": "ZZ TEST leftover",
+      "status": 200,
+      "children": [
+        "cancelled"
+      ],
+      "from": "phone board",
+      "at": "2026-11-12T06:01:07.843Z"
+    }
+  ],
+  "checks": {
+    "testNumbersUnusedBefore": true,
+    "meIdKnown": true,
+    "bundle": {
+      "files": 1,
+      "bookedForMarkers": 3,
+      "bookingCheckedInMarkers": 2,
+      "cancelDialogMarkers": 1
+    },
+    "mixedFamilies": 2,
+    "masking": {
+      "strings": 46,
+      "leftToCardMasks": 3,
+      "mixedFamilyTabs": [
+        "out",
+        "out"
+      ]
+    },
+    "boardBefore": {
+      "counts": {
+        "registered": 18,
+        "in_park": 7,
+        "out": 25
+      },
+      "families": 15,
+      "zz": [
+        {
+          "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+          "guardian": "ZZ TEST SCRUM-853 guardian",
+          "children": [
+            "ZZ TEST SCRUM-853 child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+          "guardian": "ZZ TEST SCRUM-853 guardian",
+          "children": [
+            "ZZ TEST SCRUM-853 child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+          "guardian": "ZZ TEST SCRUM-847 guardian",
+          "children": [
+            "ZZ TEST SCRUM-847 child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+          "guardian": "ZZ TEST SCRUM-847 guardian",
+          "children": [
+            "ZZ TEST SCRUM-847 child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+          "guardian": "ZZ TEST SCRUM-741 Ying",
+          "children": [
+            "ZZ TEST SCRUM-741 Nok"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 1,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-04"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1a581-fc8b-7b0c-a916-e0f54b0402c9",
+          "guardian": "ZZ TEST Parent",
+          "children": [
+            "ZZ TEST Older"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-04"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1a259-d770-7803-a0e5-e08c52b6c3dd",
+          "guardian": "ZZ TEST SCRUM-730 Ying",
+          "children": [
+            "ZZ TEST SCRUM-730 Nok"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 1,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-03"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a156d0-ba0c-7b6e-ad2f-183ec15dd24e",
+          "guardian": "ZZ TEST Guardian",
+          "children": [
+            "ZZ TEST Child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-10-20"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a111d3-1250-7ce7-b0e1-ef6b86280ccb",
+          "guardian": "ZZ TEST Walkin Guardian 496",
+          "children": [
+            "ZZ TEST Walkin Child 496"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-10-06"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a111ca-333e-7a1d-b4e2-a59ded2bad48",
+          "guardian": "ZZ TEST Family 496 waiting",
+          "children": [
+            "ZZ TEST Child 496 C",
+            "ZZ TEST Sibling 496 age3",
+            "ZZ TEST Sibling 496 age3",
+            "ZZ TEST Sibling 496 age6 nanny"
+          ],
+          "waiting": 4,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-10-06"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a10d02-473e-71fc-9302-14e13839f44d",
+          "guardian": "ZZ TEST Nanny Guardian 494",
+          "children": [
+            "ZZ TEST Nanny Child 494"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-10-05"
+          ],
+          "earlier": true
+        }
+      ],
+      "notZz": [
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-06"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-06"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-10-30"
+          ],
+          "earlier": true
+        }
+      ]
+    },
+    "pick": "01a111d3-1250-7ce7-b0e1-ef6b86280ccb",
+    "clearing": {
+      "cleared": [
+        {
+          "id": "01a1cb9a-cb21-7a3d-8e76-991c78f54e89",
+          "guardian": "ZZ TEST SCRUM-853 guardian",
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "waiting": 1,
+          "answer": 200,
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "id": "01a1cb74-d06a-7430-beef-25fb90f5fda3",
+          "guardian": "ZZ TEST SCRUM-847 guardian",
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "waiting": 1,
+          "answer": 200,
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "id": "01a1cb73-436f-7db0-8a9b-cb6c237001fd",
+          "guardian": "ZZ TEST SCRUM-847 guardian",
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "waiting": 1,
+          "answer": 200,
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "id": "01a1a581-fc8b-7b0c-a916-e0f54b0402c9",
+          "guardian": "ZZ TEST Parent",
+          "bookedFor": [
+            "2026-11-04"
+          ],
+          "waiting": 1,
+          "answer": 200,
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "id": "01a156d0-ba0c-7b6e-ad2f-183ec15dd24e",
+          "guardian": "ZZ TEST Guardian",
+          "bookedFor": [
+            "2026-10-20"
+          ],
+          "waiting": 1,
+          "answer": 200,
+          "children": [
+            "cancelled"
+          ]
+        }
+      ],
+      "skipped": [],
+      "after": {
+        "zz": [
+          {
+            "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+            "guardian": "ZZ TEST SCRUM-853 guardian",
+            "children": [
+              "ZZ TEST SCRUM-853 child"
+            ],
+            "waiting": 1,
+            "paidWaiting": 1,
+            "settled": 0,
+            "offered": false,
+            "enabled": false,
+            "bookedFor": [
+              "2026-11-11"
+            ],
+            "earlier": true
+          },
+          {
+            "id": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+            "guardian": "ZZ TEST SCRUM-741 Ying",
+            "children": [
+              "ZZ TEST SCRUM-741 Nok"
+            ],
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 1,
+            "offered": true,
+            "enabled": false,
+            "bookedFor": [
+              "2026-11-04"
+            ],
+            "earlier": true
+          },
+          {
+            "id": "01a1a259-d770-7803-a0e5-e08c52b6c3dd",
+            "guardian": "ZZ TEST SCRUM-730 Ying",
+            "children": [
+              "ZZ TEST SCRUM-730 Nok"
+            ],
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 1,
+            "offered": true,
+            "enabled": false,
+            "bookedFor": [
+              "2026-11-03"
+            ],
+            "earlier": true
+          },
+          {
+            "id": "01a111ca-333e-7a1d-b4e2-a59ded2bad48",
+            "guardian": "ZZ TEST Family 496 waiting",
+            "children": [
+              "ZZ TEST Child 496 C",
+              "ZZ TEST Sibling 496 age3",
+              "ZZ TEST Sibling 496 age3",
+              "ZZ TEST Sibling 496 age6 nanny"
+            ],
+            "waiting": 4,
+            "paidWaiting": 1,
+            "settled": 0,
+            "offered": true,
+            "enabled": false,
+            "bookedFor": [
+              "2026-10-06"
+            ],
+            "earlier": true
+          },
+          {
+            "id": "01a10d02-473e-71fc-9302-14e13839f44d",
+            "guardian": "ZZ TEST Nanny Guardian 494",
+            "children": [
+              "ZZ TEST Nanny Child 494"
+            ],
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 0,
+            "offered": true,
+            "enabled": true,
+            "bookedFor": [
+              "2026-10-05"
+            ],
+            "earlier": true
+          }
+        ],
+        "notZz": [
+          {
+            "zz": false,
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 0,
+            "offered": true,
+            "enabled": true,
+            "bookedFor": [
+              "2026-11-11"
+            ],
+            "earlier": true
+          },
+          {
+            "zz": false,
+            "waiting": 1,
+            "paidWaiting": 0,
+            "settled": 0,
+            "offered": true,
+            "enabled": true,
+            "bookedFor": [
+              "2026-11-06"
+            ],
+            "earlier": true
+          },
+          {
+            "zz": false,
+            "waiting": 1,
+            "paidWaiting": 1,
+            "settled": 0,
+            "offered": false,
+            "enabled": false,
+            "bookedFor": [
+              "2026-11-06"
+            ],
+            "earlier": true
+          },
+          {
+            "zz": false,
+            "waiting": 1,
+            "paidWaiting": 1,
+            "settled": 0,
+            "offered": false,
+            "enabled": false,
+            "bookedFor": [
+              "2026-10-30"
+            ],
+            "earlier": true
+          }
+        ]
+      }
+    },
+    "refusalsOnBoard": [
+      {
+        "guardian": "ZZ TEST SCRUM-853 guardian",
+        "bookedFor": [
+          "2026-11-11"
+        ],
+        "waiting": 1,
+        "paidWaiting": 1,
+        "settled": 0,
+        "platformOffered": false,
+        "cards": [
+          {
+            "bookedFor": "Booked for 11 Nov",
+            "cancelButtons": 0,
+            "cancelEnabled": null,
+            "refusal": null
+          }
+        ],
+        "picture": "04-earlier-day-a-paid-no-cancel.png"
+      },
+      {
+        "guardian": "ZZ TEST SCRUM-741 Ying",
+        "bookedFor": [
+          "2026-11-04"
+        ],
+        "waiting": 1,
+        "paidWaiting": 0,
+        "settled": 1,
+        "platformOffered": true,
+        "cards": [
+          {
+            "bookedFor": "Booked for 4 Nov",
+            "cancelButtons": 1,
+            "cancelEnabled": false,
+            "refusal": "ZZ TEST SCRUM-741 Bua is already checked in — a checked-in booking is handled through its sale."
+          }
+        ],
+        "picture": "04-earlier-day-b-checked-in-cancel-disabled.png"
+      },
+      {
+        "guardian": "ZZ TEST SCRUM-730 Ying",
+        "bookedFor": [
+          "2026-11-03"
+        ],
+        "waiting": 1,
+        "paidWaiting": 0,
+        "settled": 1,
+        "platformOffered": true,
+        "cards": [
+          {
+            "bookedFor": "Booked for 3 Nov",
+            "cancelButtons": 1,
+            "cancelEnabled": false,
+            "refusal": "ZZ TEST SCRUM-730 Bua is already checked in — a checked-in booking is handled through its sale."
+          }
+        ],
+        "picture": "04-earlier-day-c-checked-in-cancel-disabled.png"
+      },
+      {
+        "guardian": "ZZ TEST Family 496 waiting",
+        "bookedFor": [
+          "2026-10-06"
+        ],
+        "waiting": 4,
+        "paidWaiting": 1,
+        "settled": 0,
+        "platformOffered": true,
+        "cards": [
+          {
+            "bookedFor": "Booked for 6 Oct",
+            "cancelButtons": 1,
+            "cancelEnabled": false,
+            "refusal": "ZZ TEST Child 496 C is paid for — a paid booking is handled through its sale."
+          }
+        ],
+        "picture": "04-earlier-day-d-paid-cancel-disabled.png"
+      }
+    ]
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "c",
+      "id": "01a1ce57-90a4-7296-9dcb-6df184582419",
+      "children": [
+        {
+          "id": "01a1ce57-90a4-7296-9dcb-6df2ab2e3d85",
+          "status": "cancelled"
+        }
+      ]
+    },
+    {
+      "kind": "registration",
+      "tag": "b",
+      "id": "01a1ce57-ea63-783a-9dc6-b411aa5f9df3",
+      "children": [
+        {
+          "id": "01a1ce57-ea64-73e4-bf39-4a4b0564760f",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce57-ee00-7ad2-a338-4861b1d20b24",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1ce57-ee00-7ad2-a338-4861b1d20b24",
+          "status": "finalised",
+          "grossSatang": 91500
+        },
+        {
+          "id": "01a1ce57-94b8-7e18-b3c2-62b92301a5c1",
+          "status": "voided",
+          "grossSatang": 91500
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce56-9d41-72ca-b887-2435171d8793",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "bookC",
+      "id": "01a1ce57-8f12-750b-817d-ef82fb995bfa",
+      "archived": true
+    },
+    {
+      "kind": "member",
+      "key": "bookB",
+      "id": "01a1ce57-e8d2-7377-bd53-10cc6010048c",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "spare",
+      "member": null
+    },
+    {
+      "kind": "board-after",
+      "counts": {
+        "registered": 11,
+        "in_park": 7,
+        "out": 26
+      },
+      "zz": [
+        {
+          "id": "01a1cb9b-06a4-74cb-850d-2d14e009aeb4",
+          "guardian": "ZZ TEST SCRUM-853 guardian",
+          "children": [
+            "ZZ TEST SCRUM-853 child"
+          ],
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1a6da-5962-76a9-a335-8db6b14a739a",
+          "guardian": "ZZ TEST SCRUM-741 Ying",
+          "children": [
+            "ZZ TEST SCRUM-741 Nok"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 1,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-04"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a1a259-d770-7803-a0e5-e08c52b6c3dd",
+          "guardian": "ZZ TEST SCRUM-730 Ying",
+          "children": [
+            "ZZ TEST SCRUM-730 Nok"
+          ],
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 1,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-03"
+          ],
+          "earlier": true
+        },
+        {
+          "id": "01a111ca-333e-7a1d-b4e2-a59ded2bad48",
+          "guardian": "ZZ TEST Family 496 waiting",
+          "children": [
+            "ZZ TEST Child 496 C",
+            "ZZ TEST Sibling 496 age3",
+            "ZZ TEST Sibling 496 age3",
+            "ZZ TEST Sibling 496 age6 nanny"
+          ],
+          "waiting": 4,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": true,
+          "enabled": false,
+          "bookedFor": [
+            "2026-10-06"
+          ],
+          "earlier": true
+        }
+      ],
+      "notZz": [
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-11"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 0,
+          "settled": 0,
+          "offered": true,
+          "enabled": true,
+          "bookedFor": [
+            "2026-11-06"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-11-06"
+          ],
+          "earlier": true
+        },
+        {
+          "zz": false,
+          "waiting": 1,
+          "paidWaiting": 1,
+          "settled": 0,
+          "offered": false,
+          "enabled": false,
+          "bookedFor": [
+            "2026-10-30"
+          ],
+          "earlier": true
+        }
+      ]
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "bookC": "0898860010",
+    "bookB": "0898860011",
+    "spare": "0898860012"
+  },
+  "only": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T06:01:13.712Z"
+}

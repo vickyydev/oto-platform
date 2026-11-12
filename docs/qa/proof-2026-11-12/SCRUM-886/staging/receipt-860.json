@@ -1,0 +1,99 @@
+{
+  "unit": "SCRUM-860 fix (rename audit names the conversation on both sides), checked on the SCRUM-886 api deploy",
+  "startedAt": "2026-11-12T06:01:02.452Z",
+  "conversation": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+  "contact": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+  "steps": {
+    "before": {
+      "id": "01a1cdf0-4cb9-757a-97a1-e15cc73f9ae1",
+      "displayName": "ZZ TEST sim profile 860B",
+      "profileName": "ZZ TEST sim profile 860B",
+      "nameSetByStaff": false,
+      "handle": "+66898600001"
+    },
+    "rename": {
+      "route": "PATCH /api/inbox/conversations/:id/contact",
+      "status": 200,
+      "sent": {
+        "displayName": "ZZ TEST 886 rename check"
+      }
+    },
+    "auditRow": {
+      "action": "inbox.contact.rename",
+      "createdAt": "2026-11-12T06:01:17.555Z",
+      "requestId": "3424115f-cf6b-4f56-9347-8f30d7d349c9",
+      "before": {
+        "nameSetAt": null,
+        "displayName": "ZZ TEST sim profile 860B",
+        "profileName": "ZZ TEST sim profile 860B",
+        "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+        "nameSetByAccountId": null
+      },
+      "after": {
+        "nameSetAt": "2026-11-12T06:01:17.554Z",
+        "displayName": "ZZ TEST 886 rename check",
+        "profileName": "ZZ TEST sim profile 860B",
+        "conversationId": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+        "nameSetByAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+      },
+      "conversationBefore": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b",
+      "conversationAfter": "01a1cdf0-4cbb-7338-82e6-b377a8aec01b"
+    },
+    "console": {
+      "requestIdFilled": true,
+      "changesTab": [
+        "Changes",
+        "Raw record",
+        "Related",
+        "DISPLAY NAME",
+        "was ZZ TEST sim profile 860B",
+        "now ZZ TEST 886 rename check",
+        "NAME SET AT",
+        "was —",
+        "now 2026-11-12T06:01:17.554Z",
+        "NAME SET BY ACCOUNT ID",
+        "was —",
+        "now 01a0bbdc-8c64-7283-aa3b-2af7e79c525d"
+      ],
+      "conversationLine": false,
+      "wasDashLines": 2
+    },
+    "restore": {
+      "status": 200,
+      "displayName": "ZZ TEST sim profile 860B",
+      "profileName": "ZZ TEST sim profile 860B",
+      "nameSetByStaff": false
+    }
+  },
+  "images": [
+    {
+      "file": "06a-inbox-edit-name-zz-test-contact-renamed-once-more.png",
+      "shows": "the inbox's Edit name on the ZZ TEST simulator contact, the name typed: ZZ TEST 886 rename check",
+      "namesMasked": 23
+    },
+    {
+      "file": "06b-console-activity-filtered-by-the-rename.png",
+      "shows": "the Console Activity filtered by the rename's request id",
+      "namesMasked": 12
+    },
+    {
+      "file": "06c-console-activity-rename-row-no-conversation-change.png",
+      "shows": "the rename's row opened: Changes lists the name fields only; the conversation is not a change",
+      "namesMasked": 2
+    }
+  ],
+  "errors": [],
+  "namesHeld": 10,
+  "pass": true,
+  "signOut": {
+    "inbox": 200,
+    "console": 200,
+    "launcher": 200
+  },
+  "readBack": {
+    "inbox": 401,
+    "console": 401,
+    "launcher": 401
+  },
+  "finishedAt": "2026-11-12T06:01:40.312Z"
+}
