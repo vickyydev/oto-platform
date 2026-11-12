@@ -253,3 +253,21 @@ Ticket: SCRUM-955 (an empty count does not read as 0; a count the chat reads two
 6. The hold applies to every field the window can read two ways (date, start time, park, adults, child's name, age), not only the kids. Those fields already refused on press with the same words; the button is now disabled up front. Agreed?
 7. 'Fetch from chat' still settles an open two-way choice with the chat's fresh reading, the SCRUM-826 rule, so after a fetch nothing is held because the box has the chat's current value. Keep that?
 8. A reading that was picked and then cleared frees Book date with an empty count; a figure typed and then cleared brings the two readings back and holds it. Which rule should both follow?
+
+## The split-view follow-up lane landed (13 November 04:10, main 5033d46ca)
+Tickets: SCRUM-959 (the split view at 1440 after its proof), SCRUM-960 (a part-paid food order no longer holds the till; three small points), point 2 of SCRUM-952. Service: the till only (both staging tills); no migration; the counter box needs nothing. Left and ticketed: SCRUM-969.
+Not changed because the prototype does the same: the header's tabs scroll sideways at 1440 and 1680; the socks line and the cart lines are cut.
+
+### Questions for the owner from this lane
+1. Header tabs: nothing was changed. The prototype's eight tabs need 782 pixels and get 586 at 1440 and 719 at 1680 (ours get 410 to 428 and 522 to 542, and folding our additions to icons still does not reach 782 at 1440). Do you want the tabs on a row of their own under the bar below 1920 wide (the header 64 pixels taller), or keep the sideways scroll?
+2. The socks line "Regular So…" in the Current Order panel is the prototype's own cut. Should the name wrap instead?
+3. F&B and Shop cart lines such as "Helium Balloo…" are also the prototype's own cut. Wrap them?
+4. In the split view only, the Membership Check's Phone and Nickname cards were tightened (12 pixel padding, a 40 pixel icon). All right?
+5. History's search box now reads "Search by name, receipt, bracelet…". Are those the right words?
+6. "Save as partly paid" on F&B and Shop writes no held sale: the order sits in History as Partly paid until a manager refunds it, and its balance cannot be collected later. Is the dialog's wording right, and is it right on the Shop as well?
+7. F&B and Shop in the split view: one tile a row at 1440 and two at 1680, the categories in one sideways-scrolling row (on some systems with no visible scrollbar). Acceptable?
+8. The customer half's new row says "Discount code", not the code's own name. Keep?
+9. Payment Successful in the split view: the count stays on one line and the caption wraps. Acceptable?
+10. At full width, a desk window 768 to about 1005 pixels wide now also shows the categories as one sideways-scrolling row, and below about 813 the tiles go one a row. Keep it, or limit it to the split view?
+11. End of Day, for a part-paid F&B or Shop order, still says "take the balance at that counter", and the exit dialog does not say Close Day stays held until a refund. Do you want new words for both?
+12. The ticket till's "Save as partly paid" needs the permission to change a sale; the F&B and Shop one needs none, because it writes nothing. All right?
