@@ -411,6 +411,17 @@ const RefundBody = z
     path: ['amountSatang'],
   });
 
+/**
+ * SCRUM-900 — a refund's answer, of which only the part the till reads for
+ * paper is declared: `printing.notes`, the void and updated slips the kitchen
+ * and the bar were not sent, in the shape of a sale's. Everything else passes
+ * through as `refundSale` returned it. The default is for a replay stored
+ * before the field existed.
+ */
+const RefundAnswerSchema = z
+  .object({ printing: z.object({ notes: z.array(z.string()) }).default({ notes: [] }) })
+  .passthrough();
+
 const ReprintBody = z.object({
   /** `TransactionDetail.tsx:171-197`: the receipt, a band group, the pick-up ticket, a shop receipt. */
   kind: z.enum(SALE_REPRINT_KINDS),
@@ -1113,9 +1124,10 @@ export async function saleRoutes(app: App): Promise<void> {
       config: { permission: 'pos:refund:create', stationTrading: true },
       schema: {
         description:
-          'Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. A part-paid sale (money taken, the rest never came) is refunded whole: everything taken goes back and the sale is closed as void, releasing its vouchers. Replaying the same `actionId` answers the refund it recorded.',
+          'Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. A part-paid sale (money taken, the rest never came) is refunded whole: everything taken goes back and the sale is closed as void, releasing its vouchers. Replaying the same `actionId` answers the refund it recorded. `printing.notes` names each void or updated slip the kitchen or the bar was not sent — "Void slip for the bar not printed — no bar printer at …" — in the shape of a sale’s printing notes, empty when all were queued or none was due; a replay says the same (SCRUM-900).',
         params: z.object({ id: z.string().uuid() }),
         body: RefundBody,
+        response: { 200: RefundAnswerSchema },
       },
     },
     async (req, reply) => {
@@ -1159,12 +1171,13 @@ export async function saleRoutes(app: App): Promise<void> {
       const gatewayPending = result.refund.tenderAllocation.some(
         (slice) => slice.route === 'gateway_refund' && slice.status === 'pending',
       );
-      if (!gatewayPending) return result;
+      // Spread, so the answer is a plain object the passthrough schema takes.
+      if (!gatewayPending) return { ...result };
       // After the commit: a call to the gateway's server must not hold the
       // sale's row lock. The answer then carries the slice as it ended.
       await settleGatewayRefunds(app.db, opCtx(req), result.refund.id, gatewayFor(app.env, req.log).qr);
       const refreshed = (await refundsOfSale(app.db, req.params.id)).find((r) => r.id === result.refund.id);
-      return refreshed ? { ...result, refund: refreshed } : result;
+      return refreshed ? { ...result, refund: refreshed } : { ...result };
     },
   );
 

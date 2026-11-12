@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
-import { account, employee, partySlipPrint, prepSlipPrint, printJob, sale, station } from '@oto/db';
+import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
+import { account, auditLog, employee, partySlipPrint, prepSlipPrint, printJob, sale, station } from '@oto/db';
 import {
   PRINTING_PREP_STATIONS,
   clockOf,
@@ -246,6 +246,9 @@ export interface RefundPrepSlipsResult {
   notes: string[];
 }
 
+/** What the till is told when the slips could not be queued at all (the refund stands). */
+export const VOID_SLIPS_UNQUEUED_NOTE = 'Void slips could not be queued for the kitchen and bar — tell them by hand';
+
 /**
  * THE REFUND'S SLIPS: for each station that received a ticket for the sale, a
  * VOID slip of the lines this refund cancelled there and an UPDATED slip of
@@ -346,8 +349,36 @@ export async function queueRefundPrepSlips(tx: Tx, input: RefundPrepSlipsInput):
       requestId: actor.requestId,
       after: { refundId: refund.id, error: code },
     });
-    return { rows: [], notes: ['Void slips could not be queued for the kitchen and bar — tell them by hand'] };
+    return { rows: [], notes: [VOID_SLIPS_UNQUEUED_NOTE] };
   }
+}
+
+/**
+ * SCRUM-900 — what a refund's answer said of its slips, for a replay of that
+ * refund (its action id again): the notes its `sale.void_slips` row kept, or
+ * the one sentence of `sale.void_slips_failed`. Read from the record the
+ * first answer wrote rather than worked out again, so a replay says exactly
+ * what the first press said — the station may have been renamed, or given a
+ * bar printer, since. Empty when no slip was due.
+ */
+export async function refundPrepSlipNotes(db: Exec, q: { saleId: string; refundId: string }): Promise<string[]> {
+  const [row] = await db
+    .select({ action: auditLog.action, after: auditLog.after })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.entityType, 'sale'),
+        eq(auditLog.entityId, q.saleId),
+        inArray(auditLog.action, ['sale.void_slips', 'sale.void_slips_failed']),
+        sql`${auditLog.after}->>'refundId' = ${q.refundId}`,
+      ),
+    )
+    .orderBy(asc(auditLog.createdAt))
+    .limit(1);
+  if (!row) return [];
+  if (row.action === 'sale.void_slips_failed') return [VOID_SLIPS_UNQUEUED_NOTE];
+  const notes = (row.after as { notes?: unknown } | null)?.notes;
+  return Array.isArray(notes) ? notes.filter((note): note is string => typeof note === 'string') : [];
 }
 
 // --- A party's slips: what each station was last given -----------------------------

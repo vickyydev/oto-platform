@@ -39,7 +39,7 @@ import { allocateReceipt, saleViewOf, type SaleView } from './sale';
 import { restoreForRefund, takeBackPrepaidForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
 import { releaseOpenHold } from './sale-hold-release';
-import { queueRefundPrepSlips } from './prep-slips';
+import { queueRefundPrepSlips, refundPrepSlipNotes } from './prep-slips';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 import { voidSoldVouchersForRefund } from './voucher-sale-issue';
 
@@ -115,6 +115,13 @@ export interface RefundSaleResult {
   /** What was asked for, before the clamp; `clamped` says whether it was cut down. */
   requestedSatang: number;
   clamped: boolean;
+  /**
+   * SCRUM-900 — what the kitchen and the bar were not sent, in the shape of a
+   * sale's `printing.notes`: "Void slip for the bar not printed — no bar
+   * printer at …". Empty when every slip was queued or none was due. A replay
+   * says what the first answer said.
+   */
+  printing: { notes: string[] };
 }
 
 /**
@@ -160,7 +167,7 @@ async function answerFor(
   saleRow: SaleRow,
   refundRow: typeof refund.$inferSelect,
   extra: { replay: boolean; requestedSatang: number; clamped: boolean },
-): Promise<RefundSaleResult> {
+): Promise<Omit<RefundSaleResult, 'printing'>> {
   return {
     replay: extra.replay,
     refund: await viewOfRefund(db, refundRow),
@@ -202,11 +209,14 @@ export async function refundSale(
           saleId: already.saleId,
         });
       }
-      return answerFor(tx, row, already, {
-        replay: true,
-        requestedSatang: already.amountSatang,
-        clamped: false,
-      });
+      return {
+        ...(await answerFor(tx, row, already, {
+          replay: true,
+          requestedSatang: already.amountSatang,
+          clamped: false,
+        })),
+        printing: { notes: await refundPrepSlipNotes(tx, { saleId, refundId: already.id }) },
+      };
     }
   }
 
@@ -648,7 +658,7 @@ export async function refundSale(
    * is still to make. Under its own savepoint, never throwing: a slip that
    * cannot be queued is an audit row, and the refund stands.
    */
-  await queueRefundPrepSlips(tx, {
+  const slips = await queueRefundPrepSlips(tx, {
     saleRow: after,
     refund: {
       id: refundId,
@@ -701,11 +711,14 @@ export async function refundSale(
     },
   });
 
-  return answerFor(tx, after, finalRow, {
-    replay: false,
-    requestedSatang: amount.requestedSatang,
-    clamped: amount.clamped,
-  });
+  return {
+    ...(await answerFor(tx, after, finalRow, {
+      replay: false,
+      requestedSatang: amount.requestedSatang,
+      clamped: amount.clamped,
+    })),
+    printing: { notes: slips.notes },
+  };
 }
 
 /**
