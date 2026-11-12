@@ -17,7 +17,7 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { foodNameFor, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { foodNameFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
@@ -90,6 +90,19 @@ import { resolveSetMenuLines, type SetMenuChoice } from "./setMenuResolve";
  * gave none) names the stored deposit: its day is kept, and there is nothing
  * to say.
  */
+
+/**
+ * SCRUM-926: the catalogue's name a dish line is written as: the option the
+ * review showed (`option`, written only when it is one of the code's names),
+ * else the one the chat's words name; with neither (a page from before this
+ * rule, or a code whose options nobody chose), the name the options share
+ * ("Fried rice"), never the first option. Null when the names share nothing:
+ * the line keeps its own words and its code. Always a catalogue name, so the
+ * activity row never holds the chat's words.
+ */
+export function catalogueNameOf(names: string[], line: { itemName: string; option?: string }): string | null {
+  return foodOptionNamed(names, line.option) ?? foodNameFor(names, line.itemName) ?? sharedFoodLabel(names);
+}
 
 export interface ApproveEvent {
   id: string;
@@ -411,9 +424,9 @@ export async function approveBeoAiFill(
       }
       const lineOf = (l: BeoAiApproveBody["menuLines"][number]): KitchenLine => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        // SCRUM-926: the option the chat names when options share one code, as the review showed it.
-        const matchedName = matched ? foodNameFor(matched.names, l.itemName) : null;
-        if (matched) matches.push({ kind: "menu", code: matched.code, name: matchedName! });
+        // SCRUM-926: the option the review showed when options share one code (never the first).
+        const matchedName = matched ? catalogueNameOf(matched.names, l) : null;
+        if (matched) matches.push({ kind: "menu", code: matched.code, name: matchedName });
         return {
           id: `ai_${randomUUID()}`,
           itemName: matchedName ?? l.itemName,
@@ -491,8 +504,8 @@ export async function approveBeoAiFill(
     if (barLines.length > 0) {
       const items = barLines.map((l) => {
         const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        const matchedName = matched ? foodNameFor(matched.names, l.itemName) : null;
-        if (matched) matches.push({ kind: "bar", code: matched.code, name: matchedName! });
+        const matchedName = matched ? catalogueNameOf(matched.names, l) : null;
+        if (matched) matches.push({ kind: "bar", code: matched.code, name: matchedName });
         return {
           id: `ai_${randomUUID()}`,
           itemName: matchedName ?? l.itemName,

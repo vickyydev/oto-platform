@@ -83,6 +83,13 @@ export interface ReviewMenuLine {
   decision: BeoAiDecision;
   /** SCRUM-904: the chat's note on the dish ("no cheese"), written on its line; absent when none. */
   notes?: string;
+  /**
+   * SCRUM-926: the catalogue's names of the options that share this line's
+   * till code ("Fried rice (Veggie)", "Fried rice (Chicken)"…), present only
+   * when there are several: `matchedName` is the one chosen, and a line with
+   * none chosen waits for staff to choose it (`undecidedOptions`).
+   */
+  options?: string[];
 }
 
 export interface ReviewEntertainment {
@@ -343,20 +350,25 @@ export function initialReviewState(
     addOns,
     setMenuId: fresh(p.setMenu?.templateId ?? null, p.setMenu?.from ?? null),
     choices,
-    menuLines: p.menuLines.map((l) => ({
-      key: key("menu"),
-      menu: l.menu,
-      itemName: l.itemName,
-      quantity: l.quantity,
-      productCode: l.productCode,
-      matchedName: l.matchedName,
-      notInMenu: l.notInMenu,
-      chatPrice: l.chatPrice,
-      from: l.from,
-      changed: false,
-      decision: null,
-      ...(l.notes ? { notes: l.notes } : {}),
-    })),
+    menuLines: p.menuLines.map((l) => {
+      // SCRUM-926: the options sharing the line's code, for staff to choose where the chat does not say.
+      const options = !l.notInMenu && l.productCode ? optionsOfCode(review, l.productCode) : [];
+      return {
+        key: key("menu"),
+        menu: l.menu,
+        itemName: l.itemName,
+        quantity: l.quantity,
+        productCode: l.productCode,
+        matchedName: l.matchedName,
+        notInMenu: l.notInMenu,
+        chatPrice: l.chatPrice,
+        from: l.from,
+        changed: false,
+        decision: null,
+        ...(l.notes ? { notes: l.notes } : {}),
+        ...(options.length > 1 ? { options } : {}),
+      };
+    }),
     entertainment: p.entertainment.map((e) => ({
       key: key("ent"),
       templateId: e.templateId,
@@ -414,6 +426,11 @@ export function initialReviewState(
       setupNotes: text("setupNotes", d.setup.notes ?? null),
     },
   };
+}
+
+/** SCRUM-926: the catalogue's names a till code carries (several when a set menu's options share it). */
+export function optionsOfCode(review: Pick<BeoAiReview, "catalogue">, code: string): string[] {
+  return review.catalogue.food.find((f) => f.code.toUpperCase() === code.toUpperCase())?.names ?? [];
 }
 
 /** SCRUM-904: the same phone number, however it is written (+66 81…, 081…): the last nine digits. */
@@ -609,6 +626,16 @@ export function undecidedLines(state: BeoAiReviewState): number {
   );
 }
 
+/**
+ * SCRUM-926: dish lines whose till code several options share and whose
+ * option nobody has chosen yet (the chat does not say which: a Thai or a
+ * Russian chat, plain "fried rice"); Approve and create waits for none, so
+ * the kitchen is never sent an option the family did not name.
+ */
+export function undecidedOptions(state: BeoAiReviewState): number {
+  return state.menuLines.filter((l) => !l.notInMenu && !!l.options && l.options.length > 1 && !(l.matchedName && l.options.includes(l.matchedName))).length;
+}
+
 export const packageOf = (review: BeoAiReview, id: string | null): BeoAiPackage | undefined =>
   id ? review.catalogue.packages.find((p) => p.id === id) : undefined;
 
@@ -769,6 +796,8 @@ export function approveBodyOf(
         productCode: l.notInMenu ? null : l.productCode,
         // SCRUM-904: the chat's note on the dish, as the reviewer left it.
         notes: l.notes?.trim() || null,
+        // SCRUM-926: the option shown, where options share the code, so the kitchen gets that one.
+        ...(!l.notInMenu && l.options && l.matchedName && l.options.includes(l.matchedName) ? { option: l.matchedName } : {}),
       };
     });
 

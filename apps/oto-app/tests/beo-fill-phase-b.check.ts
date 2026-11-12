@@ -68,11 +68,14 @@ process.stdout.write = ((chunk: unknown, ...rest: unknown[]) => {
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { resolveCatalogueAnswer, loadBeoCatalogue, quoteOf, beoCatalogueSystemBlock, emptyCatalogue, BEO_CONVERSATION_FORM_RULES, BEO_CONVERSATION_RULES, phoneInLine } =
-  await import("../server/lib/beoCatalogueFill");
-const { foodNameFor } = await import("../shared/beoAiFill");
+const {
+  resolveCatalogueAnswer, loadBeoCatalogue, quoteOf, beoCatalogueSystemBlock, emptyCatalogue, BEO_CONVERSATION_FORM_RULES, BEO_CONVERSATION_RULES, phoneInLine,
+  detailsFromFill, timedElsewhere,
+} = await import("../server/lib/beoCatalogueFill");
+const { foodNameFor, foodOptionNamed, sharedFoodLabel } = await import("../shared/beoAiFill");
+const { catalogueNameOf } = await import("../server/lib/beoAiApprove");
 const { db, pool: appDbPool } = await import("../server/db");
-const { initialReviewState, approveBodyOf, undecidedLines, NOTHING_HELD, requestsOfField } = await import("../client/src/lib/beo-ai-review");
+const { initialReviewState, approveBodyOf, undecidedLines, undecidedOptions, NOTHING_HELD, requestsOfField } = await import("../client/src/lib/beo-ai-review");
 const { fetchChangesOf, fetchCatalogueChangesOf } = await import("../client/src/lib/beo-fetch-from-chat");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
 type InboxRead = Awaited<ReturnType<typeof import("../server/lib/inboxConfirmation").readInboxConfirmation>>;
@@ -94,7 +97,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 8;
+const CHECKS = 9;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -404,7 +407,9 @@ try {
     assert.deepEqual(body.service, { kidsFoodTime: "14:30", adultsFoodTime: "15:00", barServiceTime: "14:15" });
     assert.deepEqual(body.cake, { mode: "INTERNAL", notes: "chocolate cakes", time: null, quantity: 2, included: false, price: 800 });
     assert.deepEqual(body.setMenu, { templateId: cat.setMenu, choices: [{ itemId: PIZZA, options: ["Hawaiian"], notes: "no cheese on it" }] });
-    assert.deepEqual(body.menuLines, [{ menu: "adults", itemName: "chicken fried rice", quantity: 1, productCode: "CF-43", notes: null }]);
+    // SCRUM-926: the option the review shows rides the approval, so the kitchen gets that one.
+    assert.deepEqual(body.menuLines, [{ menu: "adults", itemName: "chicken fried rice", quantity: 1, productCode: "CF-43", notes: null, option: "Fried rice (Chicken)" }]);
+    assert.equal(undecidedOptions(state), 0, "the chat names the option: nothing to choose");
     assert.deepEqual(body.entertainment.map((e) => [e.templateId, e.time ?? null]), [[cat.bubble, "15:00"], [cat.face, null]]);
     assert.deepEqual(body.details?.posItems, [{ description: "extra pizza", type: "extra", price: 450 }]);
     assert.equal(body.details?.setupNotes, "keep it away from the stage");
@@ -533,7 +538,8 @@ try {
     const rice = ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Pork)"];
     assert.equal(foodNameFor(rice, "Chicken fried rice please"), "Fried rice (Chicken)");
     assert.equal(foodNameFor(rice, "pork"), "Fried rice (Pork)");
-    assert.equal(foodNameFor(rice, "fried rice"), "Fried rice (Veggie)", "no option named: the first");
+    // SCRUM-926 review: words that name no option name none, never the first (the line waits for staff).
+    assert.equal(foodNameFor(rice, "fried rice"), null, "no option named: none, never the first");
     assert.equal(foodNameFor(["Margherita"], "pizza"), "Margherita");
     assert.equal(phoneInLine("+66 81 234 5678", FAMILY_TEXTS[3]!), true);
     assert.equal(phoneInLine("081 234 5678", "call 0812345678"), true);
@@ -609,6 +615,61 @@ try {
     }, form);
     assert.ok(listed.some((c) => c.section === "food" && c.now === "Fried rice (Chicken)"), JSON.stringify(listed));
     assert.ok(listed.some((c) => c.section === "entertainment" && c.now === "Bubble show at 15:00"));
+  });
+
+  await check("anOptionNobodyNamedWaitsForStaff", async () => {
+    // SCRUM-926 review: words that name no option of a shared code — in any language — name none.
+    const rice = ["Fried rice (Veggie)", "Fried rice (Chicken)", "Fried rice (Pork)"];
+    for (const said of ["ข้าวผัดไก่", "ข้าวผัดหมู", "жареный рис с курицей", "fried rice"]) assert.equal(foodNameFor(rice, said), null, said);
+    assert.equal(foodNameFor(rice, "chicken or pork fried rice"), null, "two options named alike: none");
+    assert.equal(foodOptionNamed(rice, "Fried rice (Chicken)"), "Fried rice (Chicken)");
+    assert.equal(foodOptionNamed(rice, "chicken"), "Fried rice (Chicken)", "the option in the name's brackets");
+    assert.equal(foodOptionNamed(rice, "ZZ beef"), null, "a name the catalogue lacks is never its");
+    assert.equal(sharedFoodLabel(rice), "Fried rice");
+    assert.equal(sharedFoodLabel(["Margherita"]), "Margherita");
+    assert.equal(catalogueNameOf(rice, { itemName: "ข้าวผัดไก่" }), "Fried rice", "nobody chose: the shared name, never the first option");
+    assert.equal(catalogueNameOf(rice, { itemName: "ข้าวผัดไก่", option: "Fried rice (Chicken)" }), "Fried rice (Chicken)");
+    assert.equal(catalogueNameOf(rice, { itemName: "ข้าวผัดไก่", option: "ZZ invented" }), "Fried rice", "an option the catalogue lacks is not written");
+    // The read: the option it names is the one shown; none named stays open, each dish its own line.
+    const refs: TranscriptRef[] = FAMILY_TEXTS.map((text, i) => ({ line: i + 1, id: `l${i}`, source: "family", at: at(i), ruling: false, text }));
+    const read = resolveCatalogueAnswer(
+      {
+        menuLines: [
+          { productCode: "CF-43", itemName: "ข้าวผัดไก่", menu: "adults", option: "Fried rice (Chicken)", line: 2 },
+          { productCode: "CF-43", itemName: "жареный рис со свининой", menu: "adults", line: 2 },
+          { productCode: "CF-43", itemName: "ข้าวผัดหมู", menu: "adults", line: 2 },
+        ],
+      },
+      familyReview!.catalogue,
+      refs,
+    );
+    assert.deepEqual(read.menuLines.map((l) => [l.itemName, l.productCode, l.matchedName]), [
+      ["ข้าวผัดไก่", "CF-43", "Fried rice (Chicken)"],
+      ["жареный рис со свининой", "CF-43", null],
+      ["ข้าวผัดหมู", "CF-43", null],
+    ]);
+    // The review: an open option holds Approve and create until staff choose; the chosen one is sent.
+    const review: BeoAiReview = { ...familyReview!, proposal: { ...familyReview!.proposal, setMenu: null, menuLines: read.menuLines } };
+    const state = initialReviewState(review, {});
+    assert.equal(undecidedOptions(state), 2);
+    assert.equal(undecidedLines(state), 0, "a dish the catalogue has is no line the catalogue lacks");
+    assert.deepEqual(approveBodyOf(review, state, { conversationId: null, messageId: null }).menuLines.map((l) => l.option ?? null), ["Fried rice (Chicken)", null, null]);
+    const html = renderToStaticMarkup(React.createElement(BeoAiReviewBody, { review, state, onChange: () => undefined }));
+    assert.ok(html.includes('data-testid="select-ai-review-menu-option"') && html.includes("Which option? The chat does not say: choose it before approving."), "the picker, open");
+    const chosen = { ...state, menuLines: state.menuLines.map((l, i) => (i === 0 ? l : { ...l, matchedName: "Fried rice (Pork)", changed: true })) };
+    assert.equal(undecidedOptions(chosen), 0);
+    const body = approveBodyOf(review, chosen, { conversationId: null, messageId: null });
+    assert.deepEqual(body.menuLines.map((l) => l.option), ["Fried rice (Chicken)", "Fried rice (Pork)", "Fried rice (Pork)"]);
+    // The approval writes the option shown; a page that sends none writes the shared name, never the first option.
+    const older = { ...body, menuLines: body.menuLines.map((l, i) => (i === 2 ? { ...l, option: undefined } : l)) };
+    const res = await approve(ev.held, {
+      conversationId: null, messageId: null, package: null, setMenu: null, menuLines: older.menuLines, entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [],
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const rows = await beoRows(ev.held);
+    const adults = (rows.kitchen.menus.adults as any[]).filter((l) => l.source !== "set_menu").map((l) => l.itemName);
+    assert.deepEqual(adults, ["Fried rice (Chicken)", "Fried rice (Pork)", "Fried rice"], "never Fried rice (Veggie), which nobody asked for");
+    for (const r of rows.activity) for (const w of ["ข้าวผัด", "жареный"]) assert.ok(!r.metadata_json.includes(w) && !r.summary_text.includes(w), "the chat's words never ride the activity row");
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));

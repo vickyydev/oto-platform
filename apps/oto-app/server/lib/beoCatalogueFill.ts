@@ -14,6 +14,7 @@ import {
   beoEventTitleOf,
   emptyBeoAiDetails,
   foodNameFor,
+  foodOptionNamed,
   laterLineWins,
   type BeoAiCatalogueView,
   type BeoAiDetails,
@@ -503,7 +504,7 @@ export const BEO_CONVERSATION_OUTPUT_FORMAT = `"event": {
     "entertainmentHost": { "value": "a name, as written", "said": "the conversation's words", "line": 0, "source": "team | family" }
   },
   "cake": { "quantity": 1, "included": true, "price": 0 },
-  "menuLines": [ { "notes": "the conversation's note on that dish" } ],
+  "menuLines": [ { "notes": "the conversation's note on that dish", "option": "the catalogue's own name for the dish when its food code carries several names" } ],
   "setMenu": { "choices": [ { "notes": "the conversation's note on that dish" } ] },
   "entertainment": [ { "time": "HH:MM" } ],
   "requests": [ { "kind": "allergy" } ]`;
@@ -531,6 +532,7 @@ Read every field of the form below from the conversation too, from the family's 
 - "team": "partyHost" and "entertainmentHost", a person the conversation names for that role, as written, without a role word or "the" before it. Never one you choose
 - "cake": "quantity", how many cakes, only when the conversation says; "included", true when the conversation says the cake comes with the package and false when it is charged on its own; "price", only a price the conversation names for the cake, in baht
 - A note the conversation gives about one dish ("no cheese on the pizza", "cut into squares") is that dish's "notes", on its "menuLines" entry or on its set-menu choice, in the conversation's own words: not a request
+- A "menuLines" entry whose food code carries several "names" in "food" (the options of one dish, such as "Fried rice (Veggie)", "Fried rice (Chicken)") names the one the conversation means as its "option", exactly as "food" lists it, whatever language the conversation is in. Leave "option" out when the conversation does not say which: staff choose it
 - An allergy or a food intolerance (nuts, gluten, lactose, seafood) is a "requests" entry of the kind "allergy", one for each, in the conversation's own words; it is not given again as a "special_request"
 - A show or an act the conversation gives a time for ("the bubble show at 15:00") keeps its "entertainment" entry with that time as its "time", HH:MM, and is not given again as a "timeline" step
 
@@ -748,7 +750,11 @@ const dishNotes = optStr(1000).describe("the conversation's own note on that dis
 // SCRUM-904: the entries the rest of the form adds keys to, read whole: a plain entry schema would
 // strip the dish's note and the show's time before the resolver sees them.
 const ChoiceWithNotes = ChoiceAnswer.extend({ notes: dishNotes });
-const MenuLineWithNotes = MenuLineAnswer.extend({ notes: dishNotes });
+// SCRUM-926: the option of a dish whose code several options share, as the catalogue's "food" names it.
+const MenuLineWithNotes = MenuLineAnswer.extend({
+  notes: dishNotes,
+  option: optStr(300).describe('one of that food code\'s "names", exactly as listed, when it carries several; left out when the conversation does not say which'),
+});
 const EntertainmentWithTime = EntertainmentAnswer.extend({ time: optTime });
 
 /**
@@ -979,8 +985,10 @@ export function resolveCatalogueAnswer(
     const itemName = m.itemName ?? food?.names[0];
     if (!itemName) continue;
     const menu = (m.menu ?? "kids") as BeoAiMenu;
-    // SCRUM-926: of the names one code carries (a set menu's options sharing it), the one the chat names.
-    const matchedName = food ? foodNameFor(food.names, m.itemName) : null;
+    // SCRUM-926: of the names one code carries (a set menu's options sharing it), the option the
+    // read names when it is one of them, else the one the chat's words name; none (null) when
+    // neither says which: staff choose it in the review, never the first option.
+    const matchedName = food ? foodOptionNamed(food.names, m.option) ?? foodNameFor(food.names, m.itemName) : null;
     const line = {
       menu,
       itemName,
@@ -993,9 +1001,13 @@ export function resolveCatalogueAnswer(
       ...(m.notes ? { notes: m.notes } : {}),
       from: fromOf(m, m.itemName),
     };
-    // A dish the menu codes is one line per list (per option, when options share the code);
-    // one it lacks stays as the conversation said it.
-    if (food) merge(proposal.menuLines, line, (x) => x.productCode === food.code && x.matchedName === matchedName && x.menu === menu);
+    // A dish the menu codes is one line per list (per option, when options share the code; a
+    // line whose option is not said, by its words); one it lacks stays as the conversation said it.
+    if (food) {
+      merge(proposal.menuLines, line, (x) =>
+        x.productCode === food.code && x.menu === menu && (matchedName ? x.matchedName === matchedName : x.matchedName === null && fold(x.itemName) === fold(itemName)),
+      );
+    }
     // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.
     else merge(proposal.menuLines, line, (x) => x.productCode === null && x.menu === menu && fold(x.itemName) === fold(itemName));
   }

@@ -33,6 +33,7 @@ import {
   sourceOf,
   thb,
   undecidedLines,
+  undecidedOptions,
   useChatText,
   writtenSourcesOf,
   type ApproveAnswer,
@@ -741,8 +742,14 @@ function ReviewSections({
             menuLines[i] = { ...l, ...patch, changed: patch.decision !== undefined && Object.keys(patch).length === 1 ? l.changed : true };
             set({ menuLines });
           };
+          // SCRUM-926: options sharing the line's till code; one nobody chose waits for staff.
+          const optionOpen = !l.notInMenu && !!l.options && !(l.matchedName && l.options.includes(l.matchedName));
           return (
-            <div key={l.key} className={cn("space-y-1", l.notInMenu && freeLine(l.decision))} data-testid={l.notInMenu ? "ai-review-not-in-menu" : "ai-review-menu-line"}>
+            <div
+              key={l.key}
+              className={cn("space-y-1", l.notInMenu && freeLine(l.decision), optionOpen && freeLine(null))}
+              data-testid={l.notInMenu ? "ai-review-not-in-menu" : "ai-review-menu-line"}
+            >
               <div className="flex items-center gap-2 text-sm flex-wrap">
                 <select className={cn(SELECT, "w-20")} value={l.menu} onChange={(e) => update({ menu: e.target.value as BeoAiMenu })} data-testid="select-ai-review-menu">
                   {BEO_AI_MENUS.map((m) => (
@@ -772,6 +779,26 @@ function ReviewSections({
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-xs text-muted-foreground">Note:</span>
                   <Input className="h-8 flex-1 min-w-[8rem]" value={l.notes} onChange={(e) => update({ notes: e.target.value })} data-testid="input-ai-review-menu-notes" />
+                </div>
+              )}
+              {/* SCRUM-926: the option of a dish whose till code several options share, as the kitchen gets it. */}
+              {!l.notInMenu && l.options && (
+                <div className={cn("flex items-center gap-2 text-xs flex-wrap", optionOpen && "text-amber-800 dark:text-amber-200")}>
+                  {optionOpen && <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                  <span className={cn(!optionOpen && "text-muted-foreground")}>
+                    {optionOpen ? "Which option? The chat does not say: choose it before approving." : "Option:"}
+                  </span>
+                  <select
+                    className={SELECT}
+                    value={l.matchedName && l.options.includes(l.matchedName) ? l.matchedName : ""}
+                    onChange={(e) => update({ matchedName: e.target.value || null })}
+                    data-testid="select-ai-review-menu-option"
+                  >
+                    <option value="">Not chosen yet</option>
+                    {l.options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               {l.chatPrice !== null && <PriceBeside chat={l.chatPrice} catalogue={[]} />}
@@ -1048,6 +1075,8 @@ export function BeoAiReviewDialog({
   if (!pending || !state) return null;
   const { review, source } = pending;
   const undecided = undecidedLines(state);
+  // SCRUM-926: dishes whose option nobody chose (their till code several options share).
+  const optionsOpen = undecidedOptions(state);
   // SCRUM-818: a message pasted into AI Fill, read as one line of the team's.
   const pasted = review.origin === "pasted";
   // SCRUM-903: no message of the team's confirms the party yet: the conversation was read alone.
@@ -1162,6 +1191,11 @@ export function BeoAiReviewDialog({
             {`Decide the ${undecided} line${undecided === 1 ? "" : "s"} the catalogue does not have before approving.`}
           </p>
         )}
+        {optionsOpen > 0 && (
+          <p className="text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-review-options-open">
+            {`Choose the option of the ${optionsOpen === 1 ? "dish" : `${optionsOpen} dishes`} the chat does not say before approving.`}
+          </p>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter className="gap-2">
           {/* SCRUM-903: with no ruling message there is no free-text fill to load. */}
@@ -1171,7 +1205,7 @@ export function BeoAiReviewDialog({
               Load into Editor instead
             </Button>
           )}
-          <Button onClick={approve} disabled={approving || undecided > 0} data-testid="button-ai-review-approve">
+          <Button onClick={approve} disabled={approving || undecided > 0 || optionsOpen > 0} data-testid="button-ai-review-approve">
             {approving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
             Approve and create
           </Button>

@@ -172,7 +172,11 @@ export interface BeoAiMenuLine {
   quantity: number;
   /** The till's code, when the catalogue has the item; null on a line the menu does not have. */
   productCode: string | null;
-  /** The catalogue's name for that code ("Margherita"). */
+  /**
+   * The catalogue's name for that code ("Margherita"). SCRUM-926: null on a
+   * line with a code when the code carries several options and the chat does
+   * not say which: staff choose it in the review before approving.
+   */
   matchedName: string | null;
   /** The catalogue has no such item: a free line, kept only when staff decide so. */
   notInMenu: boolean;
@@ -457,6 +461,11 @@ export const BeoAiApproveBodySchema = z
             quantity: qty,
             productCode: z.string().trim().min(1).max(64).nullable(),
             notes: z.string().max(1000).nullable(),
+            /**
+             * SCRUM-926: the catalogue's name of the option the review shows, sent when the
+             * dish's till code carries several (the server writes it only when it is one of them).
+             */
+            option: z.string().trim().min(1).max(300).optional(),
           })
           .strict(),
       )
@@ -607,13 +616,17 @@ export function beoAiMatchLabel(said: string, matchedName: string | null, code: 
  * set menu whose options share one code ("Fried rice" with Veggie, Chicken
  * and Pork all CF-43) names the code once per option; the chat's words
  * ("chicken fried rice") pick the option they name, by the words that tell
- * the names apart. The first name when the words name none of them, or
- * when the code has one name. The review shows and the approval writes
- * this one name, so the two never differ.
+ * the names apart. A code with one name is that name. NULL when the code
+ * carries several and the words name none of them, or two alike (a Thai or
+ * a Russian chat, plain "fried rice"): the review then asks staff to choose
+ * the option (`undecidedOptions`), and the first option is never written
+ * for a family that did not name it. The review shows and the approval
+ * writes this one name, so the two never differ.
  */
-export function foodNameFor(names: string[], said: string | null | undefined): string {
-  const first = names[0] ?? "";
-  if (names.length < 2 || !said?.trim()) return first;
+export function foodNameFor(names: string[], said: string | null | undefined): string | null {
+  if (names.length === 0) return null;
+  if (names.length === 1) return names[0]!;
+  if (!said?.trim()) return null;
   const words = (t: string) => t.normalize("NFC").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   const saidText = said.normalize("NFC").toLowerCase();
   const saidWords = words(said);
@@ -621,8 +634,9 @@ export function foodNameFor(names: string[], said: string | null | undefined): s
   // A word is the chat's when one of its words starts with it; a word in a
   // script written without spaces (Thai) is the chat's when the words hold it.
   const holds = (w: string) => saidWords.some((s) => s.startsWith(w)) || (!/[a-z]/.test(w) && saidText.includes(w));
-  let best = 0;
+  let best = -1;
   let bestScore = 0;
+  let tied = false;
   all.forEach((own, i) => {
     // The words this name has that not every other name has: "chicken" of "Fried rice (Chicken)".
     const telling = own.filter((w) => !all.every((other) => other.includes(w)));
@@ -630,9 +644,51 @@ export function foodNameFor(names: string[], said: string | null | undefined): s
     if (score > bestScore) {
       best = i;
       bestScore = score;
+      tied = false;
+    } else if (score > 0 && score === bestScore) {
+      tied = true;
     }
   });
-  return names[best] ?? first;
+  return best >= 0 && !tied ? names[best]! : null;
+}
+
+/**
+ * SCRUM-926: the catalogue's own name for an option, as the model (the
+ * conversation read's `option`) or the reviewer gives it: one of the code's
+ * names written as listed, or the option a name carries in its brackets
+ * ("Chicken" is "Fried rice (Chicken)"). Null when it is none of them: a
+ * name the catalogue does not hold is never written as the catalogue's.
+ */
+export function foodOptionNamed(names: string[], option: string | null | undefined): string | null {
+  const said = option?.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!said) return null;
+  const folded = (n: string) => n.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+  const exact = names.find((n) => folded(n) === said);
+  if (exact) return exact;
+  const bracketed = names.filter((n) => /\(([^()]*)\)\s*$/.exec(folded(n))?.[1]?.trim() === said);
+  return bracketed.length === 1 ? bracketed[0]! : null;
+}
+
+/**
+ * SCRUM-926: the name the options of one till code share ("Fried rice" of
+ * "Fried rice (Veggie)", "Fried rice (Chicken)"): what a line whose option
+ * nobody chose is written as, never the first option. Null when the names
+ * share no words.
+ */
+export function sharedFoodLabel(names: string[]): string | null {
+  if (names.length === 0) return null;
+  if (names.length === 1) return names[0]!;
+  const bases = names.map((n) => n.replace(/\s*\([^()]*\)\s*$/, "").trim());
+  if (bases.every((b) => b && b.toLowerCase() === bases[0]!.toLowerCase())) return bases[0]!;
+  const split = names.map((n) => n.trim().split(/\s+/));
+  const common: string[] = [];
+  for (let i = 0; i < split[0]!.length; i++) {
+    const w = split[0]![i]!;
+    if (!split.every((s) => s[i]?.toLowerCase() === w.toLowerCase())) break;
+    common.push(w);
+  }
+  const label = common.join(" ").replace(/[\s(,:;-]+$/, "").trim();
+  return label || null;
 }
 
 /** The small mark beside a filled field. */
