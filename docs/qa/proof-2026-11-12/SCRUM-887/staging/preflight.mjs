@@ -7,7 +7,8 @@ const repo = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
 const { need } = await import(pathToFileURL(repo + '/scripts/agent/env.mjs'));
 const { request } = createRequire(repo + '/apps/pos/package.json')('@playwright/test');
 const pos = 'https://oto-pos-web-staging.onrender.com';
-const keys = ['Connection dropped — retrying', 'finishing their registration online', 'finishing this sale online under the same sale number', 'The connection dropped and has not come back yet', 'UPSTREAM_UNAVAILABLE'];
+// Run 04 adds the follow-up fix's strings (9df18d68): the door retry words and the box's own refusal cause.
+const keys = ['Connection dropped — retrying', 'finishing their registration online', 'finishing this sale online under the same sale number', 'The connection dropped and has not come back yet', 'UPSTREAM_UNAVAILABLE', 'finishing their check-in online', 'box-not-synced'];
 for (const origin of [pos, 'https://oto-pos-staging.onrender.com']) {
   const html = await (await fetch(origin + '/', { cache: 'no-store' })).text();
   const scripts = [...html.matchAll(/src="([^"]+\.js)"/g)].map(m => m[1]);
@@ -28,7 +29,7 @@ try {
   const branches = (await get('/branches')).body;
   const branch = (branches.branches ?? branches).find(b => /Central Floresta/.test(b.name));
   console.log('branch', branch?.id, branch?.code);
-  for (let n = 10; n <= 25; n += 1) {
+  for (let n = Number(process.env.FROM ?? 10); n <= Number(process.env.TO ?? 25); n += 1) {
     const phone = '08988700' + n;
     const r = await get(`/members/lookup?phone=${encodeURIComponent(phone)}`);
     console.log('lookup', phone, r.status, r.body?.member === null ? 'unused' : 'TAKEN');

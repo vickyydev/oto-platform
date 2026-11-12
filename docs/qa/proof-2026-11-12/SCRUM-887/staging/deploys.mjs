@@ -5,7 +5,8 @@ import { resolve } from 'node:path';
 const { need } = await import(pathToFileURL('C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs'));
 const headers = { authorization: `Bearer ${need('RENDER_API_KEY')}`, accept: 'application/json' };
 const get = async path => { const r = await fetch('https://api.render.com/v1' + path, { headers, signal: AbortSignal.timeout(60000) }); return r.ok ? r.json() : { _status: r.status }; };
-const want = { 'oto-pos-staging': 'dep-dbqjonlg1s2s73ei2bhg', 'oto-pos-web-staging': 'dep-dbqjoo3bc2fs73djch0g', 'oto-api-staging': null };
+// Run 04 (the follow-up fix at 9df18d68): the deploys of 12:56 Bangkok. Runs 01-03 named dep-dbqjonlg1s2s73ei2bhg and dep-dbqjoo3bc2fs73djch0g (63f51a2d).
+const want = { 'oto-pos-staging': 'dep-dbqla7e7bikc73aegkng', 'oto-pos-web-staging': 'dep-dbqla7tg1s2s73emg090', 'oto-api-staging': null };
 const services = (await get('/services?limit=50')).map(r => r.service ?? r);
 const state = {};
 for (const [name, dep] of Object.entries(want)) {

@@ -1,0 +1,1089 @@
+{
+  "ticket": "SCRUM-887",
+  "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+  "startedAt": "2026-11-12T06:13:07.560Z",
+  "phase": "finished",
+  "only": [
+    "2"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqla7e7bikc73aegkng",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:45.876418Z",
+        "finishedAt": "2026-11-12T05:57:46.908522Z"
+      },
+      "serving": {
+        "id": "dep-dbqla7e7bikc73aegkng",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:45.876418Z",
+        "finishedAt": "2026-11-12T05:57:46.908522Z"
+      },
+      "readAt": "2026-11-12T06:01:02.673Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqla7tg1s2s73emg090",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:47.37813Z",
+        "finishedAt": "2026-11-12T06:00:13.361448Z"
+      },
+      "serving": {
+        "id": "dep-dbqla7tg1s2s73emg090",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:47.37813Z",
+        "finishedAt": "2026-11-12T06:00:13.361448Z"
+      },
+      "readAt": "2026-11-12T06:01:03.297Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "serving": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "readAt": "2026-11-12T06:01:03.579Z"
+    }
+  },
+  "points": {
+    "2": {
+      "pass": true,
+      "picture": "02-platform-readback-sale-cash-checkin-online.png",
+      "shows": "Link down past the retries: the till said press Continue again; restored with the box status still unreachable (box lane): the registration, the sale, the cash press and Check in now all went online, once each; no box intent; both children in the park",
+      "seen": {
+        "checks": {
+          "gaveUpSaysPressContinueAgain": true,
+          "tillOnBoxLaneAtSecondContinue": true,
+          "noRefusalAfterSecondContinue": true,
+          "oneRegistration": true,
+          "oneSalePost200Online": true,
+          "oneCashPress200": true,
+          "checkInNowBothInPark": true,
+          "checkInNowPressOnline200": true,
+          "noBoxIntentForThisFamily": true,
+          "familyHeldOnce": true,
+          "noMemberNotFoundNoCopy": true
+        },
+        "abortedRegs": 4,
+        "abortedOther": 22,
+        "gaveUpAfterMs": 7304,
+        "retrying": "Connection dropped — retrying These children are already saved online. The till is finishing their registration online — please wait, there is nothing to type again.",
+        "gaveUp": "Couldn't register these children The connection dropped and has not come back yet. What was saved stays saved online. Check the counter's internet, then press Continue again — the till finishes this same registration online, without entering anyone twice. Nobody has been checked in or charged — the details are still on screen.",
+        "atGiveUp": {
+          "member": [
+            {
+              "id": "01a1ce63-b0b1-7add-871a-ec9a6043b625",
+              "name": "ZZ TEST Mali 887",
+              "ageYears": 7,
+              "allergies": null
+            },
+            {
+              "id": "01a1ce63-b128-7ee1-a32f-d633ff8574e8",
+              "name": "ZZ TEST Ton 887",
+              "ageYears": 8,
+              "allergies": null
+            }
+          ],
+          "onPayment": false,
+          "sales": [],
+          "phrases": [
+            "Connection dropped — retrying",
+            "These children are already saved online",
+            "Couldn't register these children",
+            "The connection dropped and has not come back yet"
+          ]
+        },
+        "statusAfterRestore": [
+          "8.1"
+        ],
+        "laneProbed": true,
+        "secondContinueAfterRestoreMs": 9973,
+        "refused": null,
+        "onBox": false,
+        "recovery": {
+          "tryAgainPresses": 0,
+          "recoveredAfterMs": null
+        },
+        "sale": {
+          "bodyKeys": [
+            "timeExtension",
+            "sale",
+            "correctionBandShortCode",
+            "refundStatus",
+            "refundableSatang",
+            "refunds",
+            "printJobs",
+            "bands",
+            "grants",
+            "issuedVouchers",
+            "pickupCode",
+            "attempts",
+            "taxBreakdown",
+            "taxConfig",
+            "lines",
+            "discounts"
+          ],
+          "arrays": {
+            "refunds": 0,
+            "printJobs": 3,
+            "bands": 2,
+            "grants": 0,
+            "issuedVouchers": 0,
+            "attempts": 1,
+            "lines": 4,
+            "discounts": 0
+          },
+          "totals": {
+            "subtotalSatang": 183000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 171028,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 11972,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 183000,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "id": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+          "status": "finalised",
+          "grossSatang": 183000,
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "payments": {},
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 183000
+            }
+          ],
+          "provenance": {
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "salesChannel": "till"
+          },
+          "printJobs": [
+            "queued",
+            "queued",
+            "printed"
+          ]
+        },
+        "registration": {
+          "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+          "children": [
+            {
+              "name": "ZZ TEST Mali 887",
+              "linked": true,
+              "status": "in_park"
+            },
+            {
+              "name": "ZZ TEST Ton 887",
+              "linked": true,
+              "status": "in_park"
+            }
+          ]
+        },
+        "memberChildren": [
+          {
+            "id": "01a1ce63-b0b1-7add-871a-ec9a6043b625",
+            "name": "ZZ TEST Mali 887",
+            "ageYears": 7,
+            "allergies": null
+          },
+          {
+            "id": "01a1ce63-b128-7ee1-a32f-d633ff8574e8",
+            "name": "ZZ TEST Ton 887",
+            "ageYears": 8,
+            "allergies": null
+          }
+        ],
+        "checkedIn": true,
+        "wire": {
+          "memberPosts": 1,
+          "childPosts": [
+            {
+              "id": "01a1ce63-b0b1-7add-871a-ec9a6043b625",
+              "status": 200
+            },
+            {
+              "id": "01a1ce63-b128-7ee1-a32f-d633ff8574e8",
+              "status": 200
+            }
+          ],
+          "regPosts": [
+            {
+              "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+              "outcome": "aborted"
+            },
+            {
+              "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+              "outcome": "aborted"
+            },
+            {
+              "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+              "outcome": "aborted"
+            },
+            {
+              "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+              "outcome": "aborted"
+            },
+            {
+              "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+              "outcome": 200
+            }
+          ],
+          "salePosts": [
+            {
+              "id": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+              "outcome": 200
+            }
+          ],
+          "finalisePosts": [
+            {
+              "outcome": 200
+            }
+          ],
+          "doorPosts": [
+            {
+              "path": "/api/checkin/check-in-now",
+              "outcome": 200
+            }
+          ],
+          "boxIntents": [],
+          "otherBoxIntents": [
+            "session.publish_display",
+            "session.publish_display",
+            "session.publish_display",
+            "session.publish_display",
+            "session.publish_display",
+            "session.publish_display",
+            "receipt.observed",
+            "session.publish_display"
+          ]
+        },
+        "phrases": {
+          "Payment Successful": 1794464025150
+        },
+        "ownSales": [
+          {
+            "id": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+            "status": "finalised"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce63-7dce-70ad-95a4-ea82cd3874d0",
+      "name": "ZZ TEST SCRUM-887 proof till 1794463987570",
+      "prefix": "Z88704",
+      "box": "virtual-1"
+    },
+    {
+      "kind": "registration",
+      "tag": "g2",
+      "id": "01a1ce63-b20e-7e76-80de-c20d42c14123"
+    },
+    {
+      "kind": "dropoff-sale-g2",
+      "id": "01a1ce64-01bf-7594-b1b9-e559583291dc"
+    }
+  ],
+  "checks": {
+    "box": {
+      "slot": "virtual-1",
+      "role": "virtual",
+      "status": "online"
+    },
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-5gKWBhC_.js"
+      ],
+      "connectionDropped": 3,
+      "saleHold": 1,
+      "doorHold": 1,
+      "boxNotSynced": 3
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/box/v1/station/:id/status 404"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
+  "wire": [
+    {
+      "at": "2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794463997415,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794463997631,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464002225,
+      "method": "POST",
+      "path": "/api/members",
+      "bodyId": "01a1ce63-b031-7c79-9105-7bd650966e87",
+      "status": 200
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464002344,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1ce63-b0b1-7add-871a-ec9a6043b625",
+      "status": 200
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464002452,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1ce63-b128-7ee1-a32f-d633ff8574e8",
+      "status": 200
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464002581,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464003596,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464005601,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794464009611,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794464011483,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464021140,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464021257,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464022155,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464022962,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464023116,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464023141,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464023289,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464023315,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464023516,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464024971,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464025091,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464025205,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464025264,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "2: Continue pressed again, the lane still the box's",
+      "t": 1794464027297,
+      "method": "POST",
+      "path": "/api/checkin/check-in-now",
+      "bodyId": null,
+      "status": 200
+    }
+  ],
+  "probes": [
+    {
+      "at": "2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794464019043,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "clean up",
+      "t": 1794464034134,
+      "status": 404,
+      "lane": null
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "box-status",
+      "status": 200,
+      "shape": {
+        "stationId": "string",
+        "boxId": "string",
+        "link": {
+          "up": true,
+          "offline": false,
+          "lane": "platform"
+        },
+        "catalogue": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 24,
+          "state": "fresh",
+          "version": "string",
+          "bannerAfterSeconds": 86400,
+          "refuseAfterSeconds": 604800
+        },
+        "members": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 24
+        },
+        "staff": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 24
+        },
+        "denyList": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 24
+        },
+        "outboxDepth": 0,
+        "receiptMark": {
+          "prefix": "string",
+          "highWaterMark": 0
+        },
+        "serverTime": "string"
+      }
+    },
+    {
+      "kind": "registration",
+      "tag": "g2",
+      "id": "01a1ce63-b20e-7e76-80de-c20d42c14123",
+      "children": [
+        {
+          "id": "01a1ce63-b20e-7e76-80de-c20ea4943500",
+          "status": "out"
+        },
+        {
+          "id": "01a1ce63-b20e-7e76-80de-c20f172852e9",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1ce64-01bf-7594-b1b9-e559583291dc",
+          "status": "finalised",
+          "grossSatang": 183000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce63-7dce-70ad-95a4-ea82cd3874d0",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "g1",
+      "member": null
+    },
+    {
+      "kind": "member",
+      "key": "g2",
+      "id": "01a1ce63-b031-7c79-9105-7bd650966e87",
+      "archived": true
+    },
+    {
+      "kind": "test-number",
+      "key": "g3",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "offline",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "refused",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898870040",
+    "g2": "0898870041",
+    "g3": "0898870042",
+    "ordinary": "0898870043",
+    "offline": "0898870044",
+    "refused": "0898870045"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T06:13:55.033Z"
+}

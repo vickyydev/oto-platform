@@ -1,0 +1,516 @@
+{
+  "ticket": "SCRUM-887",
+  "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+  "startedAt": "2026-11-12T06:15:26.216Z",
+  "phase": "finished",
+  "only": [
+    "4b"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqla7e7bikc73aegkng",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:45.876418Z",
+        "finishedAt": "2026-11-12T05:57:46.908522Z"
+      },
+      "serving": {
+        "id": "dep-dbqla7e7bikc73aegkng",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:45.876418Z",
+        "finishedAt": "2026-11-12T05:57:46.908522Z"
+      },
+      "readAt": "2026-11-12T06:01:02.673Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqla7tg1s2s73emg090",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:47.37813Z",
+        "finishedAt": "2026-11-12T06:00:13.361448Z"
+      },
+      "serving": {
+        "id": "dep-dbqla7tg1s2s73emg090",
+        "status": "live",
+        "sha": "9df18d68efe552a095507eaadbf7ca701f0129e5",
+        "createdAt": "2026-11-12T05:56:47.37813Z",
+        "finishedAt": "2026-11-12T06:00:13.361448Z"
+      },
+      "readAt": "2026-11-12T06:01:03.297Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "serving": {
+        "id": "dep-dbql396i0phs73d0vmfg",
+        "status": "live",
+        "sha": "b627077e86c5085af7ba7ca52dd3277e452aae03",
+        "createdAt": "2026-11-12T05:41:57.048108Z",
+        "finishedAt": "2026-11-12T05:46:21.497194Z"
+      },
+      "readAt": "2026-11-12T06:01:03.579Z"
+    }
+  },
+  "points": {
+    "4b": {
+      "pass": true,
+      "picture": "04b-ordinary-online-sale-paid-cash.png",
+      "shows": "One adult and one child paid in cash completes online: one sale POST 200, one cash press 200, one cash payment, no box intent",
+      "seen": {
+        "sale": {
+          "bodyKeys": [
+            "timeExtension",
+            "sale",
+            "correctionBandShortCode",
+            "refundStatus",
+            "refundableSatang",
+            "refunds",
+            "printJobs",
+            "bands",
+            "grants",
+            "issuedVouchers",
+            "pickupCode",
+            "attempts",
+            "taxBreakdown",
+            "taxConfig",
+            "lines",
+            "discounts"
+          ],
+          "arrays": {
+            "refunds": 0,
+            "printJobs": 3,
+            "bands": 2,
+            "grants": 1,
+            "issuedVouchers": 0,
+            "attempts": 1,
+            "lines": 2,
+            "discounts": 0
+          },
+          "totals": {
+            "subtotalSatang": 104000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 97196,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 6804,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 104000,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "id": "01a1ce65-ba8e-7186-b12e-0e001e4fe288",
+          "status": "finalised",
+          "grossSatang": 104000,
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "payments": {},
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 104000
+            }
+          ],
+          "provenance": {
+            "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+            "salesChannel": "till"
+          },
+          "printJobs": [
+            "queued",
+            "queued",
+            "queued"
+          ]
+        },
+        "salePosts": [
+          {
+            "id": "01a1ce65-ba8e-7186-b12e-0e001e4fe288",
+            "outcome": 200
+          }
+        ],
+        "cashPresses": [
+          {
+            "outcome": 200
+          }
+        ],
+        "regPosts": 0,
+        "boxIntents": [],
+        "otherBoxIntents": [
+          "receipt.observed"
+        ],
+        "phrases": {
+          "Payment Successful": 1794464136574
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1ce65-9b87-70c2-8f0f-71265a1cf47a",
+      "name": "ZZ TEST SCRUM-887 proof till 1794464126228",
+      "prefix": "Z88706",
+      "box": "virtual-1"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1ce65-ba8e-7186-b12e-0e001e4fe288"
+    }
+  ],
+  "checks": {
+    "box": {
+      "slot": "virtual-1",
+      "role": "virtual",
+      "status": "online"
+    },
+    "testNumbersUnusedBefore": true,
+    "bundle": {
+      "files": [
+        "index-5gKWBhC_.js"
+      ],
+      "connectionDropped": 3,
+      "saleHold": 1,
+      "doorHold": 1,
+      "boxNotSynced": 3
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "wire": [
+    {
+      "at": "4b: ordinary online sale — one adult and one child, cash",
+      "t": 1794464135950,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1ce65-ba8e-7186-b12e-0e001e4fe288",
+      "status": 200
+    },
+    {
+      "at": "4b: ordinary online sale — one adult and one child, cash",
+      "t": 1794464136084,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "4b: ordinary online sale — one adult and one child, cash",
+      "t": 1794464136448,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "4b: ordinary online sale — one adult and one child, cash",
+      "t": 1794464136574,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    }
+  ],
+  "probes": [],
+  "cleanup": [
+    {
+      "kind": "box-status",
+      "status": 200,
+      "shape": {
+        "stationId": "string",
+        "boxId": "string",
+        "link": {
+          "up": true,
+          "offline": false,
+          "lane": "platform"
+        },
+        "catalogue": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 12,
+          "state": "fresh",
+          "version": "string",
+          "bannerAfterSeconds": 86400,
+          "refuseAfterSeconds": 604800
+        },
+        "members": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 12
+        },
+        "staff": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 12
+        },
+        "denyList": {
+          "held": true,
+          "appliedAt": "string",
+          "ageSeconds": 12
+        },
+        "outboxDepth": 0,
+        "receiptMark": "object",
+        "serverTime": "string"
+      }
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1ce65-ba8e-7186-b12e-0e001e4fe288",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1ce65-ba8e-7186-b12e-0e001e4fe288",
+          "status": "finalised",
+          "grossSatang": 104000
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1ce65-9b87-70c2-8f0f-71265a1cf47a",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "test-number",
+      "key": "g1",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "g2",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "g3",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "offline",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "refused",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898870060",
+    "g2": "0898870061",
+    "g3": "0898870062",
+    "ordinary": "0898870063",
+    "offline": "0898870064",
+    "refused": "0898870065"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-12T06:15:44.996Z"
+}
