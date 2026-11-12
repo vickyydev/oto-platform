@@ -14,7 +14,7 @@ import { loadSellableStock } from '@/api/stock';
 import { getMenuCategories, getTicketTypes } from '@/mockApi';
 import { upsertMenuCategory, deleteMenuCategory } from '@/store/catalogStore';
 import { HISTORY_SEARCH_PLACEHOLDER } from '@/lib/historyLookup';
-import type { TaxBreakdown } from '@/lib/tax';
+import type { TaxBreakdownBaht } from '@/lib/cartWire';
 import type { EodStrandedRow } from '@oto/shared';
 import type { CartLine, Member, MenuItem, MerchItem, MerchOrderLine, Sale } from '@/types';
 import { readSplitFix } from './measure';
@@ -224,7 +224,7 @@ function MerchDisplayFrame() {
     { id: 'l1', merchItem: items[8]!, qty: 1, lineTotal: 100 },
     { id: 'l2', merchItem: items[3]!, qty: 1, lineTotal: 65 },
   ];
-  const tax = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0, taxTotal: 0, grandTotal: 165, serviceChargeTotal: 0, categories: [] } as unknown as TaxBreakdown;
+  const tax = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0, taxTotal: 0, grandTotal: 165, serviceChargeTotal: 0, categories: [] } as unknown as TaxBreakdownBaht;
   const display = h(LanguageProvider, null,
     h('div', { id: 'region', className: 'h-full' },
       h(MerchCustomerDisplay, {
