@@ -504,7 +504,10 @@ describe('A. fences and seams', () => {
       // SCRUM-906: the owner's ruling of 12 November, a price entered on a kitchen-plan EXTRA line is
       // the price of one (the till charges it times the count), so the PDF prints it "120฿ each";
       // where the BEO's documents live is unchanged.
-      'pdf.ts': '62f5837ab59362aa962238d43886627ad5448228bea5c49ab6fe19c765b4a713',
+      // SCRUM-958 (SCRUM-949, SCRUM-940 point 3): the bar plan's EXTRA drink prints its price "145฿ each"
+      // as the kitchen's lines do, and a set-menu choice prints its group in one pair of brackets
+      // ("Margherita (Pizza)", no longer "((Pizza))"); where the BEO's documents live is unchanged.
+      'pdf.ts': '4ad401f20c3e896e37b0b8f274eb07887e147b4eb74d4bf6bf5fdc5ffce1630d',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
