@@ -7,6 +7,7 @@ import {
   partySlipFingerprint,
   prepSlipTargets,
   refundPrepSlips,
+  salePrintRequests,
   wallClockMinutesInTz,
   type PartySlipDocument,
   type PartySlipHeld,
@@ -16,9 +17,11 @@ import {
   type PrepSlipVariant,
   type PrintKind,
   type PrintingPrepStation,
+  type SalePrintSnapshot,
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
+import { boxCompletedSale } from './band-food';
 import { salePrintSnapshotOf, writeJob, type JobScope, type SalePrintJobView } from './sale-printing';
 import type { Exec, Tx } from './tx';
 
@@ -39,7 +42,8 @@ import type { Exec, Tx } from './tx';
  * TWO SENDERS, one writer:
  *   - a REFUND (`queueRefundPrepSlips`, from `refundSale`): the stations that
  *     received a ticket for the sale — those with a kitchen or bar ticket job
- *     that was not skipped — get their slips on the station that job printed
+ *     that was not skipped, or, for a sale the box closed offline, those the
+ *     box printed one for — get their slips on the station that ticket printed
  *     on. Under a savepoint and never throwing: a slip that cannot be queued is
  *     a note and an audit row, and the refund stands;
  *   - a PARTY's plan changing after its slips printed (`party-slips.ts`,
@@ -176,6 +180,41 @@ async function ticketJobOf(db: Exec, saleId: string, station: PrintingPrepStatio
   return row ?? null;
 }
 
+/** Whether the platform ever queued a kitchen or bar ticket of this sale, skipped or not. */
+async function platformRoutedTickets(db: Exec, saleId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: printJob.id })
+    .from(printJob)
+    .where(
+      and(
+        eq(printJob.subjectType, 'sale'),
+        eq(printJob.subjectId, saleId),
+        inArray(printJob.kind, [KIND_OF_STATION.kitchen, KIND_OF_STATION.bar]),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * A sale the box closed OFFLINE printed its kitchen and bar tickets on the box
+ * itself, from `salePrintRequests` of its snapshot (`box-agent` `sale-queue.ts`),
+ * and was filed here with `printing: 'skip'`: no ticket job of the platform's
+ * says which stations had it. The same composer says it here, on the sale's own
+ * station — the one the box printed the tickets on.
+ */
+async function boxPrintedTickets(
+  db: Exec,
+  saleRow: SaleRow,
+  snapshot: () => Promise<SalePrintSnapshot>,
+): Promise<PrintingPrepStation[]> {
+  if (!saleRow.stationId) return [];
+  if (saleRow.origin !== 'box' && !(await boxCompletedSale(db, saleRow.id))) return [];
+  if (await platformRoutedTickets(db, saleRow.id)) return [];
+  const kinds = new Set<PrintKind>(salePrintRequests(await snapshot()).map((r) => r.kind));
+  return PRINTING_PREP_STATIONS.filter((st) => kinds.has(KIND_OF_STATION[st]));
+}
+
 /** The person as the slip names them: the employee's nickname, else their name; null when nothing names the account. */
 async function staffNameOf(db: Exec, accountId: string): Promise<string | null> {
   const [row] = await db
@@ -222,16 +261,23 @@ export async function queueRefundPrepSlips(tx: Tx, input: RefundPrepSlipsInput):
   const { saleRow, refund, actor, now } = input;
   try {
     return await tx.transaction(async (sp) => {
+      let snapshot: SalePrintSnapshot | null = null;
+      const snapshotOf = async () => (snapshot ??= await salePrintSnapshotOf(sp, saleRow));
       const tickets: Partial<Record<PrintingPrepStation, { stationId: string | null }>> = {};
       for (const st of PRINTING_PREP_STATIONS) {
         const job = await ticketJobOf(sp, saleRow.id, st);
         if (job) tickets[st] = job;
       }
+      // Closed offline: the box printed the tickets, on the sale's station.
+      if (PRINTING_PREP_STATIONS.some((st) => !tickets[st])) {
+        for (const st of await boxPrintedTickets(sp, saleRow, snapshotOf)) {
+          tickets[st] ??= { stationId: saleRow.stationId };
+        }
+      }
       if (Object.keys(tickets).length === 0) return { rows: [], notes: [] };
 
-      const snapshot = await salePrintSnapshotOf(sp, saleRow);
       const slips = refundPrepSlips({
-        snapshot,
+        snapshot: await snapshotOf(),
         refund: {
           number: refund.number,
           coveredLineIds: refund.coveredLineIds,

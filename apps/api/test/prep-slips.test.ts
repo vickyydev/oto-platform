@@ -1,20 +1,34 @@
+import { createHash, generateKeyPairSync, sign as signDetached } from 'node:crypto';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  account,
   auditLog,
+  box,
   boxCommand,
   branch,
   child,
+  device,
   member,
   prepSlipPrint,
   printJob,
   product,
+  sale,
   saleLine,
   station,
   stationDevice,
   ticketPackage,
 } from '@oto/db';
-import { newId, type PrepSlipDocument } from '@oto/shared';
+import {
+  SYNC_EVENT_SCHEMA_VERSION,
+  canonicalSyncBytes,
+  newId,
+  type PrepSlipDocument,
+  type SyncEventEnvelope,
+  type SyncPushResponse,
+} from '@oto/shared';
+import { boxCredential } from '@oto/box-agent';
+import { issueClaimCode } from '../src/services/box';
 import { buildPrintDocument } from '../src/services/sale-printing';
 import {
   BRANCH_MANAGER,
@@ -368,5 +382,115 @@ describe('SCRUM-861 — a refund sends the kitchen and the bar a void slip and a
     } finally {
       await ctx.db.update(station).set({ boxId: t1.boxId }).where(eq(station.id, t1.id));
     }
+  });
+});
+
+// --- A sale the box closed offline ------------------------------------------------
+
+describe('SCRUM-861 — a sale the box closed offline: its kitchen and bar tickets printed on the box', () => {
+  it('refunded whole, the kitchen and the bar each get a VOID slip on the till the box printed the tickets on', async () => {
+    // A box with one till of its own, a printer on it wearing the kitchen and the bar roles.
+    const boxId = newId();
+    await ctx.db.insert(box).values({ id: boxId, operatorId, branchId, name: 'Offline F&B box', slot: 'offline-861', role: 'virtual', status: 'unclaimed' });
+    const tillId = newId();
+    await ctx.db.insert(station).values({ id: tillId, operatorId, branchId, boxId, name: 'Offline till 861', kind: 'till', codePrefix: 'V861' });
+    const printerId = newId();
+    await ctx.db.insert(device).values({
+      id: printerId, operatorId, branchId, boxId, kind: 'receipt_printer', label: 'Offline till printer',
+      transport: 'simulated', address: '192.168.88.250:9100', model: 'Xprinter XP-80', protocol: 'escpos',
+      reachability: 'reachable', paperStatus: 'ok',
+    });
+    await ctx.db.insert(stationDevice).values([
+      { id: newId(), stationId: tillId, role: 'receipt', deviceId: printerId },
+      { id: newId(), stationId: tillId, role: 'kitchen', deviceId: printerId },
+      { id: newId(), stationId: tillId, role: 'bar', deviceId: printerId },
+    ]);
+    const { code: claimCode } = await issueClaimCode(ctx.db, boxId);
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+    const registered = await ctx.app.inject({
+      method: 'POST',
+      url: '/box/v1/register',
+      payload: {
+        claimCode,
+        agentVersion: '0.1.0',
+        hostname: 'offline-861',
+        syncPublicKey: publicKey.export({ format: 'pem', type: 'spki' }).toString(),
+        syncKeyAlgorithm: 'ed25519',
+      },
+    });
+    expect(registered.statusCode, registered.body).toBe(200);
+    const { secret } = registered.json() as { secret: string };
+    const [receptionAccount] = await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone)).limit(1);
+
+    // The order, priced by the platform as the box prices it, then closed with no internet.
+    const items = [
+      { id: newId(), productId: productByCode.get('FB-HOTDOG')!, quantity: 1 },
+      { id: newId(), productId: productByCode.get('FB-JUICE')!, quantity: 2 },
+    ];
+    const quoted = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie: reception },
+      payload: { stationId: tillId, items, channel: 'fnb' },
+    });
+    expect(quoted.statusCode, quoted.body).toBe(200);
+    const q = quoted.json() as { quote?: { totals: { grossSatang: number } }; totals?: { grossSatang: number } };
+    const total = Number((q.quote ?? q).totals!.grossSatang);
+    const saleId = newId();
+    const base = {
+      eventId: newId(),
+      journalEpoch: 1,
+      boxSeq: 1,
+      type: 'sale.finalised',
+      schemaVersion: SYNC_EVENT_SCHEMA_VERSION,
+      occurredAt: new Date().toISOString(),
+      clockTrust: 'trusted' as const,
+      stationId: tillId,
+      actorKind: 'account' as const,
+      actorAccountId: receptionAccount!.id,
+      actorCredentialId: null,
+      actionId: `act-${newId()}`,
+      payload: {
+        saleId,
+        cart: { memberId: maliId, channel: 'fnb', pickupCode: '61', items, expectedTotalSatang: total },
+        tenders: [{ actionId: `press-${newId()}`, methodCode: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total, changeSatang: 0 }],
+        receipt: { series: 'V861', seq: 1, number: 'V861-000001' },
+      },
+    };
+    const canonical = canonicalSyncBytes({ ...base, boxId });
+    const envelope = {
+      ...base,
+      payloadHash: createHash('sha256').update(canonical, 'utf8').digest('hex'),
+      sig: signDetached(null, Buffer.from(canonical, 'utf8'), privateKey).toString('base64'),
+      sigAlg: 'ed25519',
+    } as SyncEventEnvelope;
+    const pushed = await ctx.app.inject({
+      method: 'POST',
+      url: '/box/v1/sync/push',
+      headers: { authorization: `Bearer ${boxCredential(boxId, secret)}` },
+      payload: { events: [envelope] },
+    });
+    expect(pushed.statusCode, pushed.body).toBe(200);
+    expect((pushed.json() as SyncPushResponse).applied, pushed.body).toBe(1);
+    const [filed] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(filed).toMatchObject({ origin: 'box', status: 'finalised', stationId: tillId });
+    // The platform queued no ticket of its own: the box printed them.
+    expect(await ctx.db.select().from(printJob).where(eq(printJob.subjectId, saleId))).toEqual([]);
+
+    const res = await refundAs(manager, saleId, { mode: 'whole', reason: 'Guest left' });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().refundStatus).toBe('refunded');
+    const rows = await slipsOf(saleId);
+    expect(shape(rows)).toEqual([
+      ['kitchen', 'void', 'printed'],
+      ['bar', 'void', 'printed'],
+    ]);
+    const jobs = await ctx.db.select().from(printJob).where(inArray(printJob.id, rows.map((r) => r.printJobId!)));
+    expect(jobs.map((j) => [j.kind, j.role, j.status, j.stationId]).sort()).toEqual([
+      ['bar_ticket', 'bar', 'queued', tillId],
+      ['kitchen_ticket', 'kitchen', 'queued', tillId],
+    ]);
+    expect((rows[0]!.document as PrepSlipDocument).lines.map((l) => l.qty)).toEqual([1]);
+    expect((rows[1]!.document as PrepSlipDocument).lines.map((l) => l.qty)).toEqual([2]);
   });
 });
