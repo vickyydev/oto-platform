@@ -67,6 +67,16 @@ interface FnbPaymentProps {
    * Save as partly paid is shut then, as the ticket till's is.
    */
   saleWriting?: boolean;
+  /**
+   * SCRUM-963 — what this counter calls what it sells: F&B an order, the Shop
+   * a sale ("Guest sale", "Your Sale"). The Save as partly paid dialog says it.
+   */
+  saleWord?: 'order' | 'sale';
+}
+
+/** SCRUM-960 / SCRUM-963 — the Save as partly paid dialog's words, in the counter's own word for what it sells. */
+export function partPaidDialogWords(paid: string, balance: string, saleWord: 'order' | 'sale' = 'order'): string {
+  return `${paid} paid, balance ${balance}. The ${saleWord} is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new ${saleWord}.`;
 }
 
 /**
@@ -75,7 +85,9 @@ interface FnbPaymentProps {
  * their words and style, for an order that has had a part paid. The dialog
  * says what becomes of the order, as the till's does.
  */
-function SavePartPaid({ stage, saleWriting, onSave }: { stage: FnbPaymentProps['stage']; saleWriting: boolean; onSave: () => void }) {
+function SavePartPaid({ stage, saleWriting, onSave, saleWord }: {
+  stage: FnbPaymentProps['stage']; saleWriting: boolean; onSave: () => void; saleWord: 'order' | 'sale';
+}) {
   const [open, setOpen] = useState(false);
   const exit = itemPartPaidExit(stage, saleWriting);
   if (!exit.shown) return null;
@@ -98,7 +110,7 @@ function SavePartPaid({ stage, saleWriting, onSave }: { stage: FnbPaymentProps['
           <DialogHeader>
             <DialogTitle>Save as partly paid</DialogTitle>
             <DialogDescription>
-              {`${paid} paid, balance ${balance}. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.`}
+              {partPaidDialogWords(paid, balance, saleWord)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -111,7 +123,7 @@ function SavePartPaid({ stage, saleWriting, onSave }: { stage: FnbPaymentProps['
   );
 }
 
-export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange, onSavePartPaid, saleWriting = false }: FnbPaymentProps) {
+export function FnbPayment({ total, wristband, pickupCode, stage, onBack, creditLabel = 'Credit', creditBalanceOverride, useCredit = false, onUseCreditChange, onSavePartPaid, saleWriting = false, saleWord = 'order' }: FnbPaymentProps) {
   const methods = getEnabledPaymentMethods().filter((method) => ['cash', 'card', 'qr'].includes(method.kind));
   const balance = creditBalanceOverride ?? wristband?.creditBalanceTHB ?? 0;
   const outstandingSatang = stage.state.outstandingSatang;
@@ -346,7 +358,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
         </div>
 
         <div className="mt-6"><PaymentTenderPanel stage={stage} showSubmit={!free && !creditCoversAll} /></div>
-        {onSavePartPaid && <SavePartPaid stage={stage} saleWriting={saleWriting} onSave={onSavePartPaid} />}
+        {onSavePartPaid && <SavePartPaid stage={stage} saleWriting={saleWriting} onSave={onSavePartPaid} saleWord={saleWord} />}
         <div className="mt-4">
           <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack && !stage.canCancel}
             onClick={stage.canCancel ? () => { void stage.cancel(); } : onBack}><ArrowLeft className="w-5 h-5" />Back</Button>

@@ -9,6 +9,7 @@ import { variantStatus, type VariantStatus } from '@/lib/inventory';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CategoryRow } from '@/components/shared/CategoryRow';
 import { cn } from '@/lib/utils';
 import { hasModifiers } from '@/lib/fnb';
 import { UtensilsCrossed, CupSoda, Wine, Cookie, Plus, SlidersHorizontal, Search, X, type LucideIcon } from 'lucide-react';
@@ -267,7 +268,8 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
         </ScrollArea>
       ) : (
         <>
-          <div className={CATEGORY_ROW}>
+          {/* SCRUM-963 — in the one-row state, a mouse wheel and two arrows move it (`CategoryRow`). */}
+          <CategoryRow className={CATEGORY_ROW} chosen={activeTopId}>
             {visibleTopLevels.map((cat) => {
               const Icon = iconFor(cat.id);
               const isActive = cat.id === activeTopId;
@@ -275,6 +277,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                 <button
                   key={cat.id}
                   type="button"
+                  data-chosen={isActive || undefined}
                   onClick={() => {
                     setActiveTop(cat.id);
                     setActiveSub('');
@@ -291,7 +294,7 @@ export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
                 </button>
               );
             })}
-          </div>
+          </CategoryRow>
 
           {/* Secondary level: sub-category chips (only when the top-level has them) */}
           {subChips.length > 0 && (

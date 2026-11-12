@@ -777,6 +777,8 @@ export default function MerchStation() {
               // SCRUM-960 — the order stays part-paid on the platform; the station starts afresh.
               onSavePartPaid={resetOrder}
               saleWriting={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
+              // SCRUM-963 — the Shop calls it a sale, and its dialog says so.
+              saleWord="sale"
             />
             <div className="mx-auto w-full max-w-2xl px-6 pb-6">
               {saleWriter.state.kind === 'failed' && <SaleWriteFailure

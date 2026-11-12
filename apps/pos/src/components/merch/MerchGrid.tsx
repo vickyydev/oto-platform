@@ -6,6 +6,7 @@ import { resolveRateToday } from '@/lib/pricingMode';
 import { bahtText } from '@/lib/bahtText';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CategoryRow } from '@/components/shared/CategoryRow';
 import { cn } from '@/lib/utils';
 import { Plus, Ban, AlertTriangle } from 'lucide-react';
 
@@ -46,6 +47,7 @@ function CatChip({
     <button
       type="button"
       onClick={onClick}
+      data-chosen={active || undefined}
       className={cn(
         'px-5 h-12 rounded-xl font-bold transition-all active:scale-95 md:@max-xl/merch:shrink-0 md:@max-xl/merch:whitespace-nowrap',
         active
@@ -133,8 +135,9 @@ export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
 
   return (
     <div className="@container/merch flex flex-col h-full min-h-0">
+      {/* SCRUM-963 — in the one-row state, a mouse wheel and two arrows move it (`CategoryRow`). */}
       {categories.length > 1 && (
-        <div className={CATEGORY_ROW}>
+        <CategoryRow className={CATEGORY_ROW} chosen={activeCat}>
           <CatChip label="All" active={activeCat === ALL} onClick={() => setActive(ALL)} />
           {categories.map((c) => (
             <CatChip
@@ -144,7 +147,7 @@ export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
               onClick={() => setActive(c)}
             />
           ))}
-        </div>
+        </CategoryRow>
       )}
 
       <ScrollArea className="flex-1 -mx-2 px-2">
