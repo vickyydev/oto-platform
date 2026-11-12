@@ -165,19 +165,29 @@ describe('SCRUM-859: the ticket till’s customer screen at the payment stage', 
     const html = ticketDisplay({ sale: sale(25, { paymentMethod: 'cash' }) });
     const lines = between(html, 'payment-order-lines', 'payment-order-summary');
     for (let n = 1; n <= 25; n += 1) expect(lines).toContain(`ZZ TEST Play ${n}`);
-    // The list: a flex child that may shrink to its minimum and scrolls.
-    expect(html).toMatch(/class="flex-1 min-h-0 overflow-y-auto p-8 space-y-4" data-testid="payment-order-lines"/);
-    // The order column keeps a minimum of its own; the amount block keeps its
-    // size while there is room, and scrolls within itself rather than off the
-    // screen when there is not.
-    expect(html).toMatch(/class="flex-1 min-h-40 @4xl:min-h-0 min-w-0 flex flex-col" data-testid="payment-order"/);
-    expect(html).toMatch(/class="shrink min-h-0 overflow-y-auto @4xl:shrink-0 @4xl:w-\[26rem\][^"]*" data-testid="payment-amount"/);
+    // The list scrolls in its own area and keeps a minimum of its own while
+    // stacked: one card high from 36rem, 6rem on the phone-width till.
+    expect(html).toMatch(/class="flex-1 min-h-24 @xl:min-h-56 @2xl:min-h-0 overflow-y-auto px-8 py-4 @2xl:py-8 space-y-4 @max-4xl:\[&amp;_\.truncate\]:whitespace-normal" data-testid="payment-order-lines"/);
+    // Stacked, the order's box steps aside so the list, the footer and the
+    // amount block share one column: the footer keeps its height, and only the
+    // amount block gives way, scrolling within itself rather than off the
+    // screen. From 42rem, two columns.
+    expect(html).toMatch(/class="contents @2xl:flex @2xl:flex-1 @2xl:min-h-0 min-w-0 @2xl:flex-col" data-testid="payment-order"/);
+    expect(html).toMatch(/class="shrink-0 px-8 py-3 @2xl:py-5 border-t border-foreground\/10" data-testid="payment-order-summary"/);
+    expect(html).toMatch(/class="shrink min-h-0 overflow-y-auto @2xl:shrink-0 @2xl:w-\[20rem\] @4xl:w-\[26rem\][^"]*" data-testid="payment-amount"/);
+    // Narrower than a paired display the amount block is drawn compact: the
+    // spacing scale at four-fifths (the w-64 QR stays 204px) and the type a
+    // step down. Nothing of it reaches a paired display.
+    const amountClass = html.match(/class="([^"]*)" data-testid="payment-amount"/)?.[1] ?? '';
+    expect(amountClass).toContain('@max-4xl:[--spacing:0.2rem]');
+    expect(amountClass).toContain('@max-4xl:[--text-7xl:3rem]');
+    expect(amountClass).not.toMatch(/(^| )\[--/);
     // One amount, after every line.
     expect(html.split(`฿${(25 * KID_PRICE).toFixed(2)}`).length - 1).toBe(1);
     expect(html.indexOf('data-testid="payment-amount"')).toBeGreaterThan(html.lastIndexOf('ZZ TEST Play 25'));
-    // The frame reads its own width, not the viewport's: two columns from 56rem.
+    // The frame reads its own width, not the viewport's: two columns from 42rem.
     expect(html).toContain('@container');
-    expect(html).toContain('@4xl:flex-row');
+    expect(html).toContain('@2xl:flex-row');
   });
 
   it('nothing to pay: the complimentary block beside the order it covers', () => {
