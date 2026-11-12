@@ -261,7 +261,7 @@ describe('SCRUM-898 — the station drawer and the version it was filled from', 
     await pressSave();
     expect(update.mock.calls[0]?.[1]).toMatchObject({ name: 'ZZ TEST typed here', expectedConfigVersion: 1 });
     // Kept open, in the owner's words, and the list is asked to read again.
-    expect(refusal()).toBe('This till was changed since you opened it. Close it and open it again.');
+    expect(refusal()).toBe('This station was changed since you opened it. Close it and open it again.');
     expect(onSaved).not.toHaveBeenCalled();
     expect(onStale).toHaveBeenCalledTimes(1);
     expect(nameField().value).toBe('ZZ TEST typed here');
@@ -311,7 +311,7 @@ describe('SCRUM-932 — the drawer shows one station, the one its form was fille
     expect(title()).toBe(v1.name);
     expect(title()).not.toBe(v3.name);
     expect(version()).toBe('config v1');
-    expect(refusal()).toBe('This till was changed since you opened it. Close it and open it again.');
+    expect(refusal()).toBe('This station was changed since you opened it. Close it and open it again.');
   });
 
   it('an untouched form that takes a newer reading shows that reading’s name and version together', () => {

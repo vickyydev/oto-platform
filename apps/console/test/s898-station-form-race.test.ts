@@ -141,9 +141,9 @@ describe('the api’s refusal of an older form', () => {
   it('is said in the owner’s words, the form kept open with them', () => {
     const refused = new ApiError(409, 'STATION_CHANGED', 'This station was changed since you opened it. Close it and open it again.');
     expect(stationSaveRefusal(refused, 'till', 'The station could not be saved')).toBe(
-      'This till was changed since you opened it. Close it and open it again.',
+      'This station was changed since you opened it. Close it and open it again.',
     );
-    expect(stationChangedWords('booth')).toBe('This booth was changed since you opened it. Close it and open it again.');
+    expect(stationChangedWords('booth')).toBe('This station was changed since you opened it. Close it and open it again.');
   });
 
   it('leaves every other refusal in the api’s own words', () => {

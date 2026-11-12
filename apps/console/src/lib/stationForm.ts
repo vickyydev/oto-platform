@@ -1,6 +1,5 @@
 import { ApiError } from '@/api/client';
 import type { StationRow } from '@/api/fleet';
-import { stationKindWord } from '@/lib/fleetWords';
 
 /**
  * SCRUM-898 — A STATION FORM NEVER OPENS ON SETTINGS OLDER THAN THE LAST SAVE.
@@ -85,9 +84,23 @@ export function expectedVersion(filled: StationRow | null): number | null {
   return version !== null && Number.isInteger(version) && version >= 1 ? version : null;
 }
 
-/** What the drawer says when the api refuses a save from an older version. */
-export function stationChangedWords(kind: string): string {
-  return `This ${stationKindWord(kind).toLowerCase()} was changed since you opened it. Close it and open it again.`;
+/**
+ * SCRUM-952 — the platform's sentence for a save from an older version, word
+ * for word as the api refuses it (`STATION_CHANGED` in
+ * `apps/api/src/services/fleet.ts`) and as the till shows it. The drawer
+ * said "This till was changed…", named after the station's kind, while the
+ * till and the platform said "This station was changed…": one refusal, two
+ * wordings. The next step is the same on every side: close it and open it again.
+ */
+export const STATION_CHANGED_WORDS = 'This station was changed since you opened it. Close it and open it again.';
+
+/**
+ * What the drawer says when the api refuses a save from an older version.
+ * The same sentence whatever kind of station it is (SCRUM-952); the kind is
+ * still taken so every caller reads as before.
+ */
+export function stationChangedWords(_kind?: string): string {
+  return STATION_CHANGED_WORDS;
 }
 
 /** Whether a failed save was refused as made from an older version. */
