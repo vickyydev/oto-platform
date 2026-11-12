@@ -302,16 +302,16 @@ async function registrationViewOf(db: Exec, row: RegistrationRow): Promise<Regis
 }
 
 /**
- * SCRUM-857 — why a guardian's number was refused as one to message them on,
- * in the words the till shows staff beside the form.
- */
-/**
  * SCRUM-914 — what staff are told when a board edit of the number or the
  * channel withdrew the family's confirmation of it.
  */
 export const CONFIRMATION_WITHDRAWN =
   "The family's confirmation of their messaging number was withdrawn by this change — ask them to confirm the new number.";
 
+/**
+ * SCRUM-857 — why a guardian's number was refused as one to message them on,
+ * in the words the till shows staff beside the form.
+ */
 export function messagingPhoneRefusal(problem: 'empty' | 'not_a_number' | 'not_valid' | 'not_mobile'): string {
   switch (problem) {
     case 'not_mobile':
