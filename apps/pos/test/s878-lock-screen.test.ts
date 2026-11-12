@@ -95,6 +95,30 @@ describe('SCRUM-878 — the offer to the next person', () => {
     expect(html).not.toContain('still signed in');
   }, 60_000);
 
+  it('a sale already rung up: says a payment may be waiting, and offers Continue only', () => {
+    const rungUp: KeptSaleOffer = { ...OFFER, rungUpSaleId: 'zz-test-sale-878' };
+    const html = draw({ ...base, operator: { id: 'zz-test-ben', name: 'ZZ TEST Ben', role: 'staff' }, keptOffer: rungUp });
+    expect(html).toContain('A sale is open on this till');
+    expect(html).toContain('Continue it to read its payment back, then finish it or cancel it.');
+    expect(html).toContain('ZZ TEST Ann started this sale at 20:05. The session of ZZ TEST Ann ended at 20:31.');
+    expect(html).toContain('data-testid="kept-sale-rung-up"');
+    expect(html).toContain('It is rung up; a payment may be waiting on the customer display.');
+    // In the same amber notice style as the line above it.
+    const line = html.slice(html.lastIndexOf('<p', html.indexOf('kept-sale-rung-up')), html.indexOf('</p>', html.indexOf('kept-sale-rung-up')));
+    expect(line).toContain('border-amber-500/30 bg-amber-400/10');
+    expect(html).toContain('Continue this sale');
+    // Never discarded here: it would clear the display's QR and strand the sale on the platform.
+    expect(html).not.toContain('Discard it and start a new sale');
+    expect(html).not.toContain('Continue it, or discard it');
+    expect(html).not.toContain('zz-test-sale-878');
+  }, 60_000);
+
+  it('a cart not rung up says nothing of a payment', () => {
+    const html = draw({ ...base, operator: { id: 'zz-test-ben', name: 'ZZ TEST Ben', role: 'staff' }, keptOffer: OFFER });
+    expect(html).not.toContain('kept-sale-rung-up');
+    expect(html).toContain('Continue it, or discard it and start a new sale.');
+  }, 60_000);
+
   it('is drawn by the offer component itself in the lock screen’s layout', () => {
     const html = draw({ ...base, keptOffer: OFFER }, React.createElement(KeptSaleOfferScreen, { offer: OFFER }));
     expect(html).toContain('h-[100dvh] w-full flex flex-col items-center justify-center bg-background');

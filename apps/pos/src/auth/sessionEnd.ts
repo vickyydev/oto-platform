@@ -26,7 +26,8 @@
  *    unlock"), so nothing is charged twice and nothing is lost;
  *  - a different person who may sell: the sale is offered to them plainly —
  *    who started it and when — to continue or to discard; never silently
- *    made theirs (`components/auth/KeptSaleOffer.tsx`);
+ *    made theirs (`components/auth/KeptSaleOffer.tsx`). A sale already rung
+ *    up is offered to continue only, saying a payment may be waiting;
  *  - anyone else, another park, another operator, another trading day, or a
  *    person who may not sell: a fresh till, as before.
  *
@@ -65,6 +66,12 @@ export interface KeptTill {
   /** When the sale on screen was started, or null when nothing was on screen. */
   saleSince: number | null;
   endedAt: number;
+  /**
+   * The sale on screen had been rung up (Pay pressed, not yet closed): its id,
+   * as this till remembers it for the payment screen (`lib/saleOnScreen.ts`).
+   * Absent when the sale on screen was still a cart.
+   */
+  rungUpSaleId?: string;
 }
 
 /** The offer a different person sees after signing in over a kept sale. */
@@ -73,6 +80,16 @@ export interface KeptSaleOffer {
   startedAt: number;
   endedAt: number;
   stationId: string | null;
+  /**
+   * The kept sale is rung up, and a QR or card payment may be waiting on the
+   * customer display. It is offered to continue only: discarding it would put
+   * the display back to its welcome with the sale still open on the platform,
+   * which only the person who rang it up may resume (`resumableHere`), and the
+   * platform refuses its void once money is taken. Continuing reads the
+   * payment back first (`lib/usePaymentStage.ts`); the till's own Cancel then
+   * voids it, or is refused in the platform's words.
+   */
+  rungUpSaleId?: string;
 }
 
 /** Who signed in next, and where. */
@@ -154,4 +171,14 @@ export function clockTime(at: number): string {
 /** What the offer says: who started the sale and when, and when their session ended. */
 export function keptSaleOfferLine(offer: KeptSaleOffer): string {
   return `${offer.startedBy} started this sale at ${clockTime(offer.startedAt)}. The session of ${offer.startedBy} ended at ${clockTime(offer.endedAt)}.`;
+}
+
+/** The offer's second line, for a kept sale already rung up. */
+export const KEPT_SALE_RUNG_UP_LINE = 'It is rung up; a payment may be waiting on the customer display.';
+
+/** What the offer asks of the person: continue or discard, or continue only for a sale rung up. */
+export function keptSaleOfferAsk(offer: Pick<KeptSaleOffer, 'rungUpSaleId'>): string {
+  return offer.rungUpSaleId
+    ? 'Continue it to read its payment back, then finish it or cancel it.'
+    : 'Continue it, or discard it and start a new sale.';
 }

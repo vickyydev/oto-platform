@@ -23,6 +23,7 @@ import { loadCatalogFromApi, restorePreparedCatalog } from '@/api/catalogBridge'
 import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
 import { branchTradingDate } from '@/lib/pricingMode';
 import { saleOpenSince } from '@/pwa/openSale';
+import { saleOnScreen } from '@/lib/saleOnScreen';
 import { forgetOfflinePreparation, prepareOfflineOperator, readOfflinePreparation, type OfflinePreparation } from './offlinePreparation';
 import {
   afterSignIn,
@@ -421,15 +422,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
     const now = Date.now();
     const saleSince = saleOpenSince();
+    // Rung up (Pay pressed, not yet closed): a QR or card payment may be
+    // waiting on the customer display, so the next person is told so.
+    const rungUpSaleId = saleSince !== null && station ? saleOnScreen(station) : null;
     keptTill.current = {
       accountId: op.id,
       name: op.name,
       operatorId: sessionPlace.current.operatorId,
       branchId: sessionPlace.current.branchId,
-      stationId: laneStation(),
+      stationId: station,
       tradingDate: branchTradingDate(new Date(now)),
       saleSince,
       endedAt: now,
+      ...(rungUpSaleId ? { rungUpSaleId } : {}),
     };
     setSessionEnded({
       name: op.name,
@@ -553,7 +558,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         maySell: held.has('pos:sale:create'),
       });
       if (outcome === 'offer' && kept && kept.saleSince !== null) {
-        setKeptOffer({ startedBy: kept.name, startedAt: kept.saleSince, endedAt: kept.endedAt, stationId: kept.stationId });
+        setKeptOffer({
+          startedBy: kept.name, startedAt: kept.saleSince, endedAt: kept.endedAt, stationId: kept.stationId,
+          ...(kept.rungUpSaleId ? { rungUpSaleId: kept.rungUpSaleId } : {}),
+        });
         setReseat((n) => n + 1);
         return op;
       }

@@ -192,6 +192,54 @@ describe('SCRUM-878 — a QR waiting on the display when the session ends', () =
     expect(test.finaliseSale).not.toHaveBeenCalled();
   });
 
+  describe('a different person signs in and is offered the rung-up sale (continue only), then continues it', () => {
+    it('approved on the simulator in the gap: nothing is read until Continue, then it is closed once and nothing charged again', async () => {
+      const test = mount();
+      await qrWaitingWhenTheSessionEnds(test);
+      // Signed in and shown the offer: the till stays locked over the sale, so
+      // the stage stays paused, keeps the attempt and reads nothing yet.
+      getSale.mockResolvedValue({ sale: apiSale() });
+      read.mockResolvedValue(readBack({ status: 'approved', paidAt: '2026-11-12T13:31:00.000Z' }, 0));
+      test.rerender({ ...test.options, paused: true });
+      expect(read).not.toHaveBeenCalled();
+      expect(getSale).not.toHaveBeenCalled();
+      expect(test.result.current.state.attempt?.id).toBe('qr-attempt-878');
+
+      // Continue this sale.
+      await signedInAgain(test);
+      await vi.waitFor(() => expect(test.result.current.state.phase).toBe('complete'));
+      expect(start).toHaveBeenCalledTimes(1);
+      expect(test.finaliseSale).toHaveBeenCalledTimes(1);
+      expect(test.finaliseSale.mock.calls[0]![0]).toBeUndefined();
+      expect(test.onComplete).toHaveBeenCalledTimes(1);
+      expect(test.result.current.state.settlements).toHaveLength(1);
+      expect(test.result.current.display.status).toBe('paid');
+    });
+
+    it('still pending on the simulator: the QR stays up, nothing new is started, and Cancel is offered only once it is read back', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const test = mount();
+      await qrWaitingWhenTheSessionEnds(test);
+      getSale.mockResolvedValue({ sale: apiSale() });
+      read.mockResolvedValue(readBack({ status: 'sent_to_terminal' }, 54_000));
+      // While the offer is up: no Cancel, no new payment.
+      expect(test.result.current.canCancel).toBe(false);
+      expect(test.result.current.canSubmit).toBe(false);
+
+      // Continue this sale.
+      test.rerender({ ...test.options, paused: false });
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(test.result.current.state.phase).toBe('pending');
+      expect(test.result.current.display).toMatchObject({ status: 'pending', qrPayload: QR_PAYLOAD });
+      // The till's own Cancel now cancels the waiting QR, after the read.
+      expect(test.result.current.canCancel).toBe(true);
+      expect(start).toHaveBeenCalledTimes(1);
+      expect(test.onComplete).not.toHaveBeenCalled();
+    });
+  });
+
   it('the read refused again (no session yet): a hold to retry, never a fresh charge', async () => {
     const test = mount();
     await qrWaitingWhenTheSessionEnds(test);

@@ -6,11 +6,14 @@ import { renderHook } from './support/hooks';
 import { OperatorProvider, type useOperator } from '@/auth/OperatorContext';
 import { ApiError } from '@/api/client';
 import { setSaleOpen } from '@/pwa/openSale';
+import { rememberSaleOnScreen } from '@/lib/saleOnScreen';
 import {
   afterSignIn,
   clockTime,
   endedByExpiry,
   hoursInWords,
+  KEPT_SALE_RUNG_UP_LINE,
+  keptSaleOfferAsk,
   keptSaleOfferLine,
   sessionDeadline,
   sessionEndedLine,
@@ -391,6 +394,56 @@ describe('SCRUM-878 — a different person signs in over the kept sale', () => {
       expect(value().locked).toBe(false);
       expect(value().keptOffer).toBeNull();
       expect(value().tillSeat).toBe(seat);
+    } finally { hook.unmount(); }
+  });
+
+  it('a sale already rung up with a payment waiting: the offer says so and offers it to continue only', async () => {
+    const till = await signedIn();
+    const { hook, value } = till;
+    try {
+      const seat = value().tillSeat;
+      vi.setSystemTime(T0 + 11 * 3_600_000 + 35 * 60_000);
+      setSaleOpen('till', true);
+      // Pay pressed: the till remembers the rung-up sale for its payment screen, as `Till.tsx` does.
+      rememberSaleOnScreen('zz-test-station', 'zz-test-sale-878');
+      pastTheMark();
+      refused();
+      expect(value().sessionEnded?.saleKept).toBe(true);
+
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().locked).toBe(true);
+      expect(value().keptOffer).toEqual({
+        startedBy: ANN.name,
+        startedAt: T0 + 11 * 3_600_000 + 35 * 60_000,
+        endedAt: T0 + HOURS_12 + 5_000,
+        stationId: 'zz-test-station',
+        rungUpSaleId: 'zz-test-sale-878',
+      });
+      expect(keptSaleOfferAsk(value().keptOffer!)).toBe('Continue it to read its payment back, then finish it or cancel it.');
+      expect(KEPT_SALE_RUNG_UP_LINE).toBe('It is rung up; a payment may be waiting on the customer display.');
+
+      // Continue: the same screen, unlocked, so its payment stage reads the attempt back.
+      value().continueKept();
+      expect(value().locked).toBe(false);
+      expect(value().tillSeat).toBe(seat);
+      expect(value().reseat).toBe(1);
+    } finally { hook.unmount(); }
+  });
+
+  it('a cart not rung up is offered with Discard as before; a remembered sale with nothing on screen is never offered', async () => {
+    expect(keptSaleOfferAsk({})).toBe('Continue it, or discard it and start a new sale.');
+    const { hook, value } = await signedIn();
+    try {
+      // A sale remembered from earlier, but nothing on screen now: nothing kept, nothing offered.
+      rememberSaleOnScreen('zz-test-station', 'zz-test-sale-earlier');
+      pastTheMark();
+      refused();
+      expect(value().sessionEnded?.saleKept).toBe(false);
+      who = { ...BEN, branchId: 'zz-test-park', operatorId: 'zz-test-operator' };
+      await value().signIn('ZZ TEST other phone', PASSWORD);
+      expect(value().keptOffer).toBeNull();
+      expect(value().locked).toBe(false);
     } finally { hook.unmount(); }
   });
 
