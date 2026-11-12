@@ -93,7 +93,7 @@ function ok(run: Run): Run {
 
 // --- What the Pi says about itself ----------------------------------------------
 
-/** A Pi 5's connectors: the 10-inch monitor on HDMI0, nothing on HDMI1. */
+/** A Pi 5's two HDMI connectors and its writeback one, `connected` plugged in (the park's 10-inch monitor is on HDMI-A-2). */
 function drm(dir: string, connected: string[]): string {
   const root = join(dir, 'drm');
   for (const name of ['HDMI-A-1', 'HDMI-A-2', 'Writeback-1']) {
@@ -103,6 +103,14 @@ function drm(dir: string, connected: string[]): string {
   mkdirSync(join(root, 'card1'), { recursive: true });
   return shellPath(root);
 }
+
+/**
+ * The park's touch screen as libinput names it. It was seen at the park as a
+ * WingCool (Goodix) touch controller; its exact name was not written down, so
+ * this is the name such a controller usually gives: the real one is read on
+ * the Pi (BOX_QUICKSTART.md part I2).
+ */
+const PARK_TOUCH = 'WingCool Inc. TouchScreen';
 
 /** /proc/bus/input/devices with a keyboard, a touch pad and the monitor's touch screen. */
 const INPUTS = `I: Bus=0003 Vendor=046d Product=c31c Version=0110
@@ -118,8 +126,8 @@ H: Handlers=mouse0 event2
 B: PROP=5
 B: EV=b
 
-I: Bus=0003 Vendor=222a Product=0001 Version=0110
-N: Name="ILITEK ILITEK-TP"
+I: Bus=0003 Vendor=27c6 Product=0111 Version=0110
+N: Name="${PARK_TOUCH}"
 H: Handlers=mouse1 event3
 B: PROP=2
 B: EV=1b
@@ -127,25 +135,31 @@ B: EV=1b
 
 test('SCRUM-928: the connected output and the touch screen are read from what the kernel says', () =>
   inFolder((dir) => {
-    const root = drm(dir, ['HDMI-A-1', 'Writeback-1']);
+    const root = drm(dir, ['HDMI-A-2', 'Writeback-1']);
     writeFileSync(join(dir, 'inputs'), INPUTS);
     const run = ok(helper(dir, `display_connected_outputs "${root}"; echo ---; display_touch_devices "$S928/inputs"`));
-    assert.equal(run.stdout, 'HDMI-A-1\n---\nILITEK ILITEK-TP\n', 'a writeback connector and a touch pad are neither');
+    assert.equal(run.stdout, `HDMI-A-2\n---\n${PARK_TOUCH}\n`, 'a writeback connector and a touch pad are neither');
     const none = ok(helper(dir, `display_connected_outputs "${drm(join(dir, 'b'), [])}"; display_touch_devices "$S928/missing"`));
     assert.equal(none.stdout, '');
   }));
 
 // --- The turn: the desktop user's kanshi file ---------------------------------------
 
-/** What the park's Pi was turned with by hand, the way the Screen Configuration tool writes it. */
+/**
+ * What the park's Pi was turned with by hand on 12 November (transform 270 on
+ * HDMI-A-2, after the owner asked for a flip: docs/progress/STATUS.md), the
+ * way the Screen Configuration tool writes it.
+ */
 const HAND_MADE_KANSHI = `profile {
-\toutput HDMI-A-1 enable mode 1024x600@60.000 position 0,0 transform 90
+\toutput HDMI-A-2 enable mode 1024x600@60.000 position 0,0 transform 270
 }
 `;
-const KANSHI_BLOCK = (output: string, transform: string) =>
+/** What the box's profile carries from the hand-made one for HDMI-A-2. */
+const PARK_KEEP = 'mode 1024x600@60.000 position 0,0';
+const KANSHI_BLOCK = (output: string, transform: string, keep = '') =>
   `# >>> oto-box display (SCRUM-928): written by the OTO box installer; --display-rotate off removes this block
 profile oto-box-display {
-\toutput ${output} enable transform ${transform}
+\toutput ${output} enable${keep ? ` ${keep}` : ''} transform ${transform}
 }
 # <<< oto-box display (SCRUM-928)
 `;
@@ -181,10 +195,10 @@ test('SCRUM-928: a kanshi file the box made holds only its block, and goes with 
 
 // --- The touch: labwc's rc.xml --------------------------------------------------------
 
-/** A touch mapping made by hand, the root as Raspberry Pi OS writes it. */
+/** A touch mapping made by hand (the park's: HDMI-A-2, mouseEmulation no), the root as Raspberry Pi OS writes it. */
 const HAND_MADE_RC = `<?xml version="1.0"?>
 <openbox_config xmlns="http://openbox.org/3.4/rc">
-\t<touch deviceName="ILITEK ILITEK-TP" mapToOutput="HDMI-A-1" mouseEmulation="no"/>
+\t<touch deviceName="${PARK_TOUCH}" mapToOutput="HDMI-A-2" mouseEmulation="no"/>
 </openbox_config>
 `;
 const SYSTEM_RC = `<?xml version="1.0"?>
@@ -429,46 +443,118 @@ test('SCRUM-928: with no screen seen, or two, the installer asks for the output 
 
 // --- Writing it for the desktop user --------------------------------------------------
 
-function applyTurn(dir: string, rotate: string, extra = ''): Run {
+function applyTurn(dir: string, rotate: string, output = 'HDMI-A-1'): Run {
   return helper(
     dir,
     [
-      `DISPLAY_ROTATE_NOW=${rotate}; DISPLAY_OUTPUT_NOW=HDMI-A-1; DISPLAY_NOTE=unset`,
-      extra,
+      `DISPLAY_ROTATE_NOW=${rotate}; DISPLAY_OUTPUT_NOW=${output}; DISPLAY_NOTE=unset`,
       'display_turn_apply "$S928/home" "" "$S928/inputs" "$S928/system.xml" "$S928/autostart $S928/home/.config/labwc/autostart" "$S928/udev"',
       'printf "%s\\n" "$DISPLAY_NOTE"',
     ].join('\n'),
   );
 }
 
+/** The park's Pi as it was left on 12 November: turned and mapped by hand, kanshi started by the desktop. */
+function parkPi(dir: string): void {
+  mkdirSync(join(dir, 'home', '.config', 'kanshi'), { recursive: true });
+  mkdirSync(join(dir, 'home', '.config', 'labwc'), { recursive: true });
+  mkdirSync(join(dir, 'udev'), { recursive: true });
+  writeFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), HAND_MADE_KANSHI);
+  writeFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), HAND_MADE_RC);
+  writeFileSync(join(dir, 'system.xml'), SYSTEM_RC);
+  writeFileSync(join(dir, 'inputs'), INPUTS);
+  writeFileSync(join(dir, 'autostart'), '/usr/bin/lwrespawn /usr/bin/wf-panel-pi &\n/usr/bin/kanshi &\n');
+}
+
+const kanshiOf = (dir: string) => readFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), 'utf8');
+const outputLine = (text: string) => text.split('\n').find((line) => line.startsWith('\toutput '));
+
 test('SCRUM-928: on the park\'s Pi the turn and the touch are written beside what was made by hand', () =>
   inFolder((dir) => {
-    mkdirSync(join(dir, 'home', '.config', 'kanshi'), { recursive: true });
-    mkdirSync(join(dir, 'home', '.config', 'labwc'), { recursive: true });
-    mkdirSync(join(dir, 'udev'));
-    writeFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), HAND_MADE_KANSHI);
-    writeFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), HAND_MADE_RC);
-    writeFileSync(join(dir, 'system.xml'), SYSTEM_RC);
-    writeFileSync(join(dir, 'inputs'), INPUTS);
-    writeFileSync(join(dir, 'autostart'), '/usr/bin/lwrespawn /usr/bin/wf-panel-pi &\n/usr/bin/kanshi &\n');
-    const run = ok(applyTurn(dir, '90'));
-    assert.equal(run.stderr, '', 'no warning on a desktop that starts kanshi and has no hand-made calibration');
+    parkPi(dir);
+    const run = ok(applyTurn(dir, '270', 'HDMI-A-2'));
+    assert.equal(run.stderr, '', 'no warning: the box turns the screen as the hand-made profile did');
+    assert.equal(kanshiOf(dir), KANSHI_BLOCK('HDMI-A-2', '270', PARK_KEEP) + HAND_MADE_KANSHI);
     assert.equal(
-      readFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), 'utf8'),
-      KANSHI_BLOCK('HDMI-A-1', '90') + HAND_MADE_KANSHI,
+      outputLine(KANSHI_BLOCK('HDMI-A-2', '270', PARK_KEEP)),
+      outputLine(HAND_MADE_KANSHI),
+      'the box\'s profile is equal to the hand-made one: same output, mode, position and turn',
     );
-    assert.match(readFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), 'utf8'), /<touch deviceName="ILITEK ILITEK-TP" mapToOutput="HDMI-A-1" mouseEmulation="no" \/>\n<touch mapToOutput="HDMI-A-1" mouseEmulation="no" \/>\n<!-- <<< oto-box display/);
-    assert.match(run.stdout.trimEnd(), /^90 on HDMI-A-1, from the next boot \(sudo reboot\): the box's profile at the top of .*kanshi\/config \(the profile\(s\) already in that file are kept below the box's and apply again with --display-rotate off\); touch mapped to HDMI-A-1 in .*rc\.xml \("ILITEK ILITEK-TP", and every other touch screen\)$/);
+    assert.match(
+      readFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), 'utf8'),
+      /<touch deviceName="WingCool Inc\. TouchScreen" mapToOutput="HDMI-A-2" mouseEmulation="no" \/>\n<touch mapToOutput="HDMI-A-2" mouseEmulation="no" \/>\n<!-- <<< oto-box display/,
+    );
+    assert.match(
+      run.stdout.trimEnd(),
+      /^270 on HDMI-A-2, from the next boot \(sudo reboot\): the box's profile at the top of .*kanshi\/config \(the profile\(s\) already in that file are kept below the box's and apply again with --display-rotate off\); it keeps the hand-made profile's mode 1024x600@60\.000 position 0,0 for HDMI-A-2; the hand-made profile turns HDMI-A-2 270 too, so the screen turns as it did; touch mapped to HDMI-A-2 in .*rc\.xml \("WingCool Inc\. TouchScreen", and every other touch screen\)$/,
+    );
+
+    // An update runs it again: the same bytes in both files.
+    const kanshi = kanshiOf(dir);
+    const rc = readFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), 'utf8');
+    ok(applyTurn(dir, '270', 'HDMI-A-2'));
+    assert.equal(kanshiOf(dir), kanshi);
+    assert.equal(readFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), 'utf8'), rc);
 
     // off: both files back as they were made by hand, and the summary says the hand-made profile applies.
-    const off = ok(applyTurn(dir, 'off'));
-    assert.equal(readFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), 'utf8'), HAND_MADE_KANSHI);
+    const off = ok(applyTurn(dir, 'off', 'HDMI-A-2'));
+    assert.equal(kanshiOf(dir), HAND_MADE_KANSHI);
     assert.equal(readFileSync(join(dir, 'home', '.config', 'labwc', 'rc.xml'), 'utf8'), HAND_MADE_RC);
     assert.match(off.stdout.trimEnd(), /^off: the box's turn taken out of .*; the box's touch lines taken out of .*\. From the next boot \(sudo reboot\) the desktop shows the screen as it is made, or as the profile still in .*kanshi\/config turns it$/);
 
     // off again, with nothing of the box's left: no file touched, nothing to say.
-    const again = ok(applyTurn(dir, 'off'));
+    const again = ok(applyTurn(dir, 'off', 'HDMI-A-2'));
     assert.equal(again.stdout, '\n');
+  }));
+
+test('SCRUM-928: a turn that differs from the one made by hand is warned about, naming both', () =>
+  inFolder((dir) => {
+    parkPi(dir);
+    // 90 on the park's Pi, turned 270 by hand: the box's goes above it, so it is said in a WARN line and on the summary's.
+    const run = ok(applyTurn(dir, '90', 'HDMI-A-2'));
+    assert.match(
+      run.stderr,
+      /^WARN: the profile made by hand in .*kanshi\/config turns HDMI-A-2 270, and the box's turn \(90\) now goes above it, so the screen will not turn as it was set by hand: if the picture does not stand upright after the reboot, run the installer again with --display-rotate 270$/m,
+    );
+    assert.match(
+      run.stdout.trimEnd(),
+      /; it keeps the hand-made profile's mode 1024x600@60\.000 position 0,0 for HDMI-A-2; touch mapped to .*\. WARNING: the hand-made profile turns HDMI-A-2 270, the box's turns it 90 \(if the picture does not stand upright, run the installer again with --display-rotate 270\)$/,
+    );
+    assert.equal(kanshiOf(dir), KANSHI_BLOCK('HDMI-A-2', '90', PARK_KEEP) + HAND_MADE_KANSHI, 'the mode is carried all the same');
+
+    // A hand-made turn the option cannot name: off is what gives it back.
+    writeFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), HAND_MADE_KANSHI.replace('transform 270', 'transform flipped-270'));
+    const flipped = ok(applyTurn(dir, '270', 'HDMI-A-2'));
+    assert.match(flipped.stderr, /turns HDMI-A-2 flipped-270, and the box's turn \(270\) now goes above it, .*: if the picture does not stand upright after the reboot, --display-rotate off gives the hand-made turn back$/m);
+
+    // A hand-made profile for another output: nothing carried, nothing said.
+    writeFileSync(join(dir, 'home', '.config', 'kanshi', 'config'), HAND_MADE_KANSHI);
+    const other = ok(applyTurn(dir, '90', 'HDMI-A-1'));
+    assert.equal(other.stderr, '');
+    assert.equal(kanshiOf(dir), KANSHI_BLOCK('HDMI-A-1', '90') + HAND_MADE_KANSHI);
+    assert.doesNotMatch(other.stdout, /hand-made profile/);
+  }));
+
+test('SCRUM-928: a hand-made profile is read for its turn, mode, position and scale, nothing else', () =>
+  inFolder((dir) => {
+    const read = (text: string, output = 'HDMI-A-2') => {
+      writeFileSync(join(dir, 'kanshi'), text);
+      return ok(
+        helper(dir, `display_kanshi_hand_made "$S928/kanshi" ${output}; printf '%s|%s\\n' "$DISPLAY_HAND_TRANSFORM" "$DISPLAY_HAND_KEEP"`),
+      ).stdout;
+    };
+    assert.equal(read(HAND_MADE_KANSHI), `270|${PARK_KEEP}\n`);
+    assert.equal(read(HAND_MADE_KANSHI, 'HDMI-A-1'), '|\n', 'another output: nothing');
+    // A name in quotes, a custom mode, a scale, one line, a comment: the first line that names the output.
+    assert.equal(
+      read('# output HDMI-A-2 transform 90\nprofile x { output "HDMI-A-2" mode --custom 600x1024@60Hz scale 1.5 adaptive_sync on # transform 90\n}\nprofile y {\n\toutput HDMI-A-2 transform 180\n}\n'),
+      '|mode --custom 600x1024@60Hz scale 1.5\n',
+    );
+    // Values of another shape are not carried into the box's file.
+    assert.equal(read('profile {\n\toutput HDMI-A-2 mode $(reboot) position 0;0 scale x transform sideways\n}\n'), '|\n');
+    // The box's own block is not a hand-made profile.
+    assert.equal(read(KANSHI_BLOCK('HDMI-A-2', '90', PARK_KEEP)), '|\n');
+    assert.equal(ok(helper(dir, `display_kanshi_hand_made "$S928/missing" HDMI-A-2; printf '%s|%s\\n' "$DISPLAY_HAND_TRANSFORM" "$DISPLAY_HAND_KEEP"`)).stdout, '|\n');
   }));
 
 test('SCRUM-928: a desktop that does not start kanshi, or a hand-made touch calibration, is said out loud', () =>

@@ -12,7 +12,10 @@
 # Configuration tool writes, and where the park's screen was turned by hand.
 # The box's profile goes at the top of that file between two marked lines, so
 # it is the one kanshi applies; whatever the file held stays below it, byte for
-# byte, and applies again once the box's block is taken out.
+# byte, and applies again once the box's block is taken out. A profile already
+# there for the same output is read first: its mode, position and scale go
+# into the box's, so the box's equals it but for the turn, and a turn that
+# differs from the box's is warned about and named on the summary's line.
 #
 # THE TOUCH. A touch screen follows the output's turn only when the compositor
 # maps it to that output: labwc's <touch mapToOutput="..."/> in
@@ -127,13 +130,69 @@ display_dirs() {
   done
 }
 
-# The box's kanshi profile at the top of FILE: OUTPUT turned TRANSFORM.
+# What a profile already in FILE, outside the box's block, sets for OUTPUT,
+# from the first line that names it (kanshi applies the first profile that
+# fits): DISPLAY_HAND_TRANSFORM, its turn (nothing when it names none), and
+# DISPLAY_HAND_KEEP, its mode, position and scale, which the box's profile
+# carries so that it equals the hand-made one but for the turn. Both empty
+# when no line names OUTPUT. Only values of kanshi's own shapes are kept.
+display_kanshi_hand_made() {
+  local file="$1" output="$2" line i=0 word next
+  local -a words=()
+  DISPLAY_HAND_TRANSFORM=""; DISPLAY_HAND_KEEP=""
+  [ -f "$file" ] || return 0
+  # The whole file is read (no early exit), so the pipe never breaks under
+  # the installer's pipefail.
+  line="$(display_without_block "$file" "$DISPLAY_KANSHI_BEGIN" "$DISPLAY_KANSHI_END" | awk -v o="$output" '
+    found { next }
+    { sub(/#.*/, "") }
+    {
+      for (i = 1; i < NF && !found; i++) {
+        if ($i == "output" && ($(i + 1) == o || $(i + 1) == "\"" o "\"")) {
+          out = ""
+          for (j = i + 2; j <= NF && $j != "}" && $j != "output" && $j != "exec"; j++) out = out " " $j
+          print substr(out, 2)
+          found = 1
+        }
+      }
+    }')"
+  read -ra words <<<"$line"
+  while [ "$i" -lt "${#words[@]}" ]; do
+    word="${words[$i]}"; next="${words[$((i + 1))]:-}"
+    case "$word" in
+      transform)
+        if [[ "$next" =~ ^(normal|90|180|270|flipped|flipped-90|flipped-180|flipped-270)$ ]]; then DISPLAY_HAND_TRANSFORM="$next"; fi
+        i=$((i + 2)) ;;
+      mode)
+        if [ "$next" = --custom ]; then
+          next="${words[$((i + 2))]:-}"
+          if [[ "$next" =~ ^[0-9]+x[0-9]+(@[0-9]+(\.[0-9]+)?(Hz)?)?$ ]]; then DISPLAY_HAND_KEEP="$DISPLAY_HAND_KEEP mode --custom $next"; fi
+          i=$((i + 3))
+        else
+          if [[ "$next" =~ ^[0-9]+x[0-9]+(@[0-9]+(\.[0-9]+)?(Hz)?)?$ ]]; then DISPLAY_HAND_KEEP="$DISPLAY_HAND_KEEP mode $next"; fi
+          i=$((i + 2))
+        fi ;;
+      position)
+        if [[ "$next" =~ ^-?[0-9]+,-?[0-9]+$ ]]; then DISPLAY_HAND_KEEP="$DISPLAY_HAND_KEEP position $next"; fi
+        i=$((i + 2)) ;;
+      scale)
+        if [[ "$next" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then DISPLAY_HAND_KEEP="$DISPLAY_HAND_KEEP scale $next"; fi
+        i=$((i + 2)) ;;
+      *) i=$((i + 1)) ;;
+    esac
+  done
+  DISPLAY_HAND_KEEP="${DISPLAY_HAND_KEEP# }"
+  return 0
+}
+
+# The box's kanshi profile at the top of FILE: OUTPUT turned TRANSFORM, with
+# KEEP (a mode, position and scale carried from a hand-made profile) when given.
 display_kanshi_set() {
-  local file="$1" output="$2" transform="$3" owner="${4:-}" rest=""
+  local file="$1" output="$2" transform="$3" owner="${4:-}" keep="${5:-}" rest=""
   if [ -f "$file" ]; then rest="$(display_without_block "$file" "$DISPLAY_KANSHI_BEGIN" "$DISPLAY_KANSHI_END"; printf x)"; rest="${rest%x}"; fi
   display_write "$file" "$DISPLAY_KANSHI_BEGIN
 profile oto-box-display {
-	output $output enable transform $transform
+	output $output enable${keep:+ $keep} transform $transform
 }
 $DISPLAY_KANSHI_END
 $rest" "$owner"
@@ -310,7 +369,7 @@ display_preflight() {
 display_turn_apply() {
   local home="$1" owner="$2" inputs="$3" system_rc="$4" autostarts="$5" udev="$6"
   local kanshi="$home/.config/kanshi/config" rc="$home/.config/labwc/rc.xml"
-  local touch="" note="" kept="" file
+  local touch="" note="" kept="" hand="" again="" file
   local -a touches=()
   if [ "$DISPLAY_ROTATE_NOW" = off ]; then
     local undone=""
@@ -330,9 +389,24 @@ display_turn_apply() {
   if [ -f "$kanshi" ] && [ -n "$(display_without_block "$kanshi" "$DISPLAY_KANSHI_BEGIN" "$DISPLAY_KANSHI_END" | grep -v '^[[:space:]]*#' | tr -d '[:space:]')" ]; then
     kept="the profile(s) already in that file are kept below the box's and apply again with --display-rotate off"
   fi
+  # A turn made by hand for the same output (the park's Pi has one): its mode,
+  # position and scale go into the box's profile, and a turn that differs from
+  # the box's is said out loud, naming both, rather than shadowed in silence.
+  display_kanshi_hand_made "$kanshi" "$DISPLAY_OUTPUT_NOW"
   display_dirs "$owner" "$home/.config" "$home/.config/kanshi" "$home/.config/labwc"
-  display_kanshi_set "$kanshi" "$DISPLAY_OUTPUT_NOW" "$DISPLAY_ROTATE_NOW" "$owner"
+  display_kanshi_set "$kanshi" "$DISPLAY_OUTPUT_NOW" "$DISPLAY_ROTATE_NOW" "$owner" "$DISPLAY_HAND_KEEP"
   note="$DISPLAY_ROTATE_NOW on $DISPLAY_OUTPUT_NOW, from the next boot (sudo reboot): the box's profile at the top of $kanshi${kept:+ ($kept)}"
+  [ -z "$DISPLAY_HAND_KEEP" ] || note="$note; it keeps the hand-made profile's $DISPLAY_HAND_KEEP for $DISPLAY_OUTPUT_NOW"
+  if [ -n "$DISPLAY_HAND_TRANSFORM" ] && [ "$DISPLAY_HAND_TRANSFORM" = "$DISPLAY_ROTATE_NOW" ]; then
+    note="$note; the hand-made profile turns $DISPLAY_OUTPUT_NOW $DISPLAY_HAND_TRANSFORM too, so the screen turns as it did"
+  elif [ -n "$DISPLAY_HAND_TRANSFORM" ]; then
+    case "$DISPLAY_HAND_TRANSFORM" in
+      90|180|270) again="run the installer again with --display-rotate $DISPLAY_HAND_TRANSFORM" ;;
+      *) again="--display-rotate off gives the hand-made turn back" ;;
+    esac
+    warn "the profile made by hand in $kanshi turns $DISPLAY_OUTPUT_NOW $DISPLAY_HAND_TRANSFORM, and the box's turn ($DISPLAY_ROTATE_NOW) now goes above it, so the screen will not turn as it was set by hand: if the picture does not stand upright after the reboot, $again"
+    hand="WARNING: the hand-made profile turns $DISPLAY_OUTPUT_NOW $DISPLAY_HAND_TRANSFORM, the box's turns it $DISPLAY_ROTATE_NOW (if the picture does not stand upright, $again)"
+  fi
   if display_labwc_set "$rc" "$DISPLAY_OUTPUT_NOW" "$touch" "$system_rc" "$owner"; then
     if [ -n "$touch" ]; then
       note="$note; touch mapped to $DISPLAY_OUTPUT_NOW in $rc (\"$touch\", and every other touch screen)"
@@ -345,6 +419,7 @@ display_turn_apply() {
     warn "$rc has no closing </labwc_config> or </openbox_config> tag, so the touch was NOT mapped: a press may land away from where it is pressed"
     note="$note; touch NOT mapped ($rc has no closing tag the installer knows)"
   fi
+  [ -z "$hand" ] || note="$note. $hand"
   local starts=0
   for file in $autostarts; do grep -qs kanshi "$file" && starts=1; done
   if [ "$starts" -eq 0 ]; then

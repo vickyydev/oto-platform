@@ -42,9 +42,15 @@
 #                         same output in ~/.config/labwc/rc.xml, so a press lands
 #                         where it is pressed. For a screen that opens a display
 #                         address (--kiosk-url) with --rotate off: the page does
-#                         not turn as well. Try 90; if the picture is on its side
-#                         the wrong way, 270. off takes the box's lines out again.
-#                         An update keeps what the box has. From the next boot
+#                         not turn as well. A monitor on its end takes 90 or 270
+#                         (Till 1's at the park: 270, on HDMI-A-2); if the
+#                         picture stands upside down, the other of the two. 180
+#                         turns a landscape picture over and never fits a
+#                         monitor on its end. A turn made by hand for the same
+#                         output is read: its mode is kept, and a turn that
+#                         differs is warned about. off takes the box's lines out
+#                         again. An update keeps what the box has. From the next
+#                         boot
 #   --display-output NAME the output the screen is on (HDMI-A-1, HDMI-A-2), when
 #                         the installer cannot tell: no screen seen, or two
 #   --display-camera allow|off
