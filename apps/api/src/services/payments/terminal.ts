@@ -327,7 +327,335 @@ export async function readAttempt(
   };
 }
 
-/** A stopped exchange or failed command without a final result must never replay SALE. */
+// --- When the box could not run the instruction (SCRUM-972) ------------------
+
+/**
+ * SCRUM-972 — EVERY WAY A `terminal_sale` COMMAND CAN END `failed`, read off
+ * the box's own code (`packages/box-agent/src`), and whether a byte could have
+ * reached the terminal before it.
+ *
+ * The box acknowledges a command `failed` only when it holds NO answer from the
+ * terminal: `state: outcome.result || !outcome.errorCode ? 'succeeded' :
+ * 'failed'` (agent.ts:4155-4169). So a failed command's `result` always reads
+ * `{ attemptId, mode, ...routed, outcome: null, terminalRef: null,
+ * responseCode: null }`, or there is no `result` at all for the three refusals
+ * the agent makes before the terminal module is reached.
+ *
+ * CERTAINLY NOTHING SENT — every place the code is thrown is before the first
+ * `channel.write`:
+ *   BOX_OFFLINE               agent.ts:3900-3911, handed to an offline box, never run
+ *   TERMINALS_DISABLED        agent.ts:4109-4115, an agent with no terminal pipeline
+ *   BAD_TENDER                agent.ts:4116-4123, the payload did not parse
+ *   TERMINAL_NOT_ON_THIS_BOX  terminal/index.ts:338-351, the device is not in the
+ *                             set-up the box holds (a terminal assigned on the
+ *                             Console that the box has not pulled yet)
+ *   DEVICE_NO_ADDRESS         terminal/index.ts:216-222, thrown by `open()`
+ *   TERMINAL_NO_SERIAL_DRIVER serial-channel.ts:184-189, the default opener, at `open()`
+ *   TERMINAL_NOT_CONFIGURED   terminal/index.ts:154-163 and counter.ts:129-163 (minting
+ *                             the reference), digio.ts:908-913 (void password)
+ *   TERMINAL_BAD_REQUEST      terminal/index.ts:364-368/381-385, ghl.ts:255/454/592/696/793,
+ *                             digio.ts:89/97/226/545/549, counter.ts:101-116: all while
+ *                             the request is being built
+ *
+ * POSSIBLY SENT:
+ *   TERMINAL_WRITE_FAILED     serial-channel.ts:228-241, the port died while the
+ *                             request was going out (`partial: true`)
+ *   TERMINAL_UNREACHABLE      serial-channel.ts:133-148 at `open()`, BUT ALSO
+ *                             terminal/index.ts:409-421 for any error that is not a
+ *                             `TerminalError`, which includes the store write in
+ *                             `serialise`'s `finally` (index.ts:266-269), AFTER the
+ *                             terminal has answered
+ *
+ * SENT AND ANSWERED, unreadably:
+ *   TERMINAL_BAD_FRAME        digio.ts:106-160/266-281, a frame scanner throwing
+ *                             inside `readFrame`, after the write
+ *
+ * Any other code, or none, is read as possibly sent. One caveat the list rests
+ * on: `terminalChannel.write` rethrows a `TerminalError` from its transport
+ * as it is (serial-channel.ts:235). The only transports in this tree are the
+ * simulators and `noSerialDriver`; a host opener added later must not throw one
+ * of the codes above from `write`.
+ *
+ * Each code proved to send nothing carries the sentence the till may show.
+ */
+const NOT_SENT_WORDS: Readonly<Record<string, string>> = {
+  BOX_OFFLINE:
+    'This counter’s box is offline, so the card terminal was not asked. Take another way to pay, or try again when the box is back online.',
+  TERMINALS_DISABLED:
+    'The card terminal on this counter is not set up to take payments, so it was not asked. Take another way to pay, and ask a manager to check the terminal.',
+  BAD_TENDER:
+    'The card terminal could not be asked for this payment, so nothing was charged. Try again, or take another way to pay.',
+  TERMINAL_NOT_ON_THIS_BOX:
+    'The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.',
+  DEVICE_NO_ADDRESS:
+    'The card terminal on this counter is not set up to take payments, so it was not asked. Take another way to pay, and ask a manager to check the terminal.',
+  TERMINAL_NO_SERIAL_DRIVER:
+    'The card terminal on this counter is not set up to take payments, so it was not asked. Take another way to pay, and ask a manager to check the terminal.',
+  TERMINAL_NOT_CONFIGURED:
+    'The card terminal on this counter is not set up to take payments, so it was not asked. Take another way to pay, and ask a manager to check the terminal.',
+  TERMINAL_BAD_REQUEST:
+    'The card terminal could not be asked for this payment, so nothing was charged. Try again, or take another way to pay.',
+};
+
+/** Our own word for a SALE command the box never took: it expired in the queue. */
+const COMMAND_EXPIRED = 'BOX_COMMAND_EXPIRED';
+const COMMAND_EXPIRED_WORDS =
+  'This counter’s box did not pick up the card payment in time, so the terminal was never asked. Try again, or take another way to pay.';
+
+/** The error codes a failed `terminal_sale` proves sent nothing (SCRUM-972). */
+export const TERMINAL_NOTHING_SENT_CODES: readonly string[] = Object.keys(NOT_SENT_WORDS);
+
+/** The till's sentence for a refusal that sent nothing; null when a byte may have gone out. */
+export function terminalNotSentWords(errorCode: string | null | undefined): string | null {
+  return errorCode && Object.prototype.hasOwnProperty.call(NOT_SENT_WORDS, errorCode)
+    ? NOT_SENT_WORDS[errorCode]!
+    : null;
+}
+
+type CommandRow = typeof boxCommand.$inferSelect;
+type AttemptRow = typeof paymentAttempt.$inferSelect;
+
+/** How long a claimed exchange may run before its silence is read as a missing result. */
+const EXCHANGE_BUDGET_MS = TERMINAL_TIMEOUTS.customerInteractionMs + 30_000;
+
+function commandFacts(row: Pick<CommandRow, 'payload' | 'result'>): {
+  mode: string | null;
+  attemptId: string | null;
+  deviceId: string | null;
+  answered: boolean;
+} {
+  const payload = (row.payload ?? {}) as { mode?: unknown; attemptId?: unknown; deviceId?: unknown };
+  const outcome = (row.result as { outcome?: unknown } | null)?.outcome;
+  return {
+    mode: typeof payload.mode === 'string' ? payload.mode : null,
+    attemptId: typeof payload.attemptId === 'string' ? payload.attemptId : null,
+    deviceId: typeof payload.deviceId === 'string' ? payload.deviceId : null,
+    // A result with no outcome is a missing result (SCRUM-972): the terminal
+    // said nothing the result route could carry.
+    answered: outcome !== undefined && outcome !== null,
+  };
+}
+
+/**
+ * Take the attempt's row lock BEFORE the command's, in the order the read-time
+ * recovery takes them, so `completeCommand` and a till's poll of the same
+ * attempt cannot deadlock (SCRUM-972).
+ */
+export async function lockAttemptOfTerminalCommand(
+  tx: Tx,
+  operatorId: string,
+  command: Pick<CommandRow, 'kind' | 'payload' | 'result'>,
+): Promise<void> {
+  if (command.kind !== 'terminal_sale') return;
+  const { attemptId } = commandFacts(command);
+  if (!attemptId || !/^[0-9a-f-]{36}$/i.test(attemptId)) return;
+  await tx.select({ id: paymentAttempt.id }).from(paymentAttempt)
+    .where(and(eq(paymentAttempt.id, attemptId), eq(paymentAttempt.operatorId, operatorId)))
+    .for('update').limit(1);
+}
+
+/**
+ * SCRUM-972 — THE MOMENT THE BOX SAYS A TERMINAL COMMAND FAILED, in the same
+ * transaction as `completeCommand`'s state change. A SALE the box proves it
+ * never sent ends the attempt now, so the till is freed on its next poll and
+ * not only when somebody reads the attempt; one that may have reached the
+ * terminal takes the missing-result road. Never a second SALE.
+ */
+export async function settleFailedTerminalCommand(
+  tx: Tx,
+  ctx: OpContext,
+  operatorId: string,
+  commandId: string,
+): Promise<void> {
+  const [command] = await tx.select().from(boxCommand).where(eq(boxCommand.id, commandId)).limit(1);
+  if (!command || command.kind !== 'terminal_sale' || command.state !== 'failed') return;
+  const facts = commandFacts(command);
+  if (!facts.attemptId || !facts.deviceId || !/^[0-9a-f-]{36}$/i.test(facts.attemptId)) return;
+  const [current] = await tx.select().from(paymentAttempt)
+    .where(and(eq(paymentAttempt.id, facts.attemptId), eq(paymentAttempt.operatorId, operatorId)))
+    .for('update').limit(1);
+  if (!current || current.deviceId !== facts.deviceId) return;
+  await settleStalledCommand(tx, ctx, current, command, Date.now());
+}
+
+/**
+ * What a terminal command that will never report means for its attempt.
+ *
+ * Its SALE: proved never sent (a failed command whose code is on the list
+ * above, or one that expired in the queue) ends the attempt `declined`, the
+ * word `failAttempt` and the box's own lane (station-bridge.ts:4069-4074) use
+ * for a payment that did not happen; anything else waits for a person or an
+ * inquiry. Its INQUIRY: says nothing about the sale, so the attempt goes back
+ * to a person, as an inquiry with no conclusive answer does
+ * (`recordTerminalResult`).
+ */
+async function settleStalledCommand(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  now: number,
+): Promise<void> {
+  const facts = commandFacts(command);
+  if (facts.answered) return;
+  const inquiry = facts.mode === 'inquire';
+  if (inquiry) {
+    if (current.status !== 'inquiring') return;
+    const asked = ((current.payload ?? {}) as AttemptPayload).inquiry?.actionId;
+    if (!asked || asked !== command.actionId) return;
+  } else if (facts.mode !== 'sale' || !['created', 'sent_to_terminal'].includes(current.status)) {
+    return;
+  }
+
+  let state = command.state;
+  if (state === 'queued') {
+    // Never handed to the box, and from here never will be: the claim needs
+    // `expires_at > now()`, and this row is locked.
+    if (!command.expiresAt || command.expiresAt.getTime() > now) return;
+    const [expired] = await tx.update(boxCommand)
+      .set({ state: 'expired', finishedAt: new Date(now) })
+      .where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'queued')))
+      .returning({ id: boxCommand.id });
+    if (!expired) return;
+    state = 'expired';
+  }
+  if (state === 'running') {
+    // A still-running exchange gets its full budget.
+    if (!command.claimedAt || now - command.claimedAt.getTime() < EXCHANGE_BUDGET_MS) return;
+    await tx.update(boxCommand).set({
+      errorCode: 'TERMINAL_RESULT_MISSING',
+      errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
+    }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
+  } else if (state !== 'failed' && state !== 'expired') {
+    return;
+  }
+
+  if (inquiry) {
+    await returnInquiryToPerson(tx, ctx, current, command, state);
+    return;
+  }
+  const notSent = state === 'expired'
+    ? { code: COMMAND_EXPIRED, words: COMMAND_EXPIRED_WORDS }
+    : state === 'failed' && terminalNotSentWords(command.errorCode)
+      ? { code: command.errorCode!, words: terminalNotSentWords(command.errorCode)! }
+      : null;
+  if (notSent) {
+    await endAttemptNotSent(tx, ctx, current, command, state, notSent);
+    return;
+  }
+  await markTerminalResultMissing(tx, ctx, current, command, state);
+}
+
+/** A SALE the box never sent: the attempt ends, the sale is free (SCRUM-972). */
+async function endAttemptNotSent(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  commandState: string,
+  notSent: { code: string; words: string },
+): Promise<void> {
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const at = new Date().toISOString();
+  await failAttempt(tx, current.id, {
+    status: 'declined',
+    payload: {
+      ...payload,
+      // `exchange.responseText` is the read view's `responseText`, the field
+      // the till reads for an ended tender. Nothing here came off a terminal.
+      exchange: {
+        mode: 'sale',
+        outcome: null,
+        protocol: payload.protocol ?? null,
+        requestedSatang: current.amountSatang,
+        approvedSatang: null,
+        responseCode: null,
+        responseText: notSent.words,
+        elapsedMs: null,
+        at,
+      },
+      notSent: { commandId: command.id, commandState, errorCode: notSent.code, at },
+    },
+  });
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null,
+    operatorId: current.operatorId,
+    branchId: current.branchId,
+    action: 'payment.attempt.not_sent',
+    entityType: 'payment_attempt',
+    entityId: current.id,
+    actionId: current.actionId,
+    requestId: ctx.requestId,
+    before: { status: current.status },
+    after: {
+      status: 'declined',
+      commandId: command.id,
+      commandState,
+      errorCode: notSent.code,
+      saleId: current.saleId,
+      amountSatang: current.amountSatang,
+    },
+  });
+}
+
+/** A SALE that may have reached the terminal: unknown or a person, never a second SALE. */
+async function markTerminalResultMissing(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  commandState: string,
+): Promise<void> {
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const protocol = terminalProtocolOf(payload.protocol);
+  const canAsk = protocol && canInquire(protocol, payload.tender ?? 'card') && Boolean(current.terminalRef);
+  const status = canAsk ? 'unknown' : 'awaiting_staff_confirmation';
+  await stampAttempt(tx, current.id, { status });
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
+    action: 'payment.attempt.result_missing', entityType: 'payment_attempt', entityId: current.id,
+    actionId: current.actionId, requestId: ctx.requestId,
+    before: { status: current.status },
+    after: { status, commandId: command.id, commandState,
+      ...(command.errorCode ? { errorCode: command.errorCode } : {}),
+      saleId: current.saleId, amountSatang: current.amountSatang },
+  });
+}
+
+/** An inquiry that will never answer: back to a person, who may also ask again. */
+async function returnInquiryToPerson(
+  tx: Tx,
+  ctx: OpContext,
+  current: AttemptRow,
+  command: CommandRow,
+  commandState: string,
+): Promise<void> {
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  await stampAttempt(tx, current.id, {
+    status: 'awaiting_staff_confirmation',
+    payload: {
+      ...payload,
+      inquiry: {
+        ...(payload.inquiry ?? {}),
+        ended: { commandId: command.id, commandState, errorCode: command.errorCode ?? null, at: new Date().toISOString() },
+      },
+    },
+  });
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null, operatorId: current.operatorId, branchId: current.branchId,
+    action: 'payment.attempt.result_missing', entityType: 'payment_attempt', entityId: current.id,
+    actionId: current.actionId, requestId: ctx.requestId,
+    before: { status: current.status },
+    after: { status: 'awaiting_staff_confirmation', mode: 'inquire', commandId: command.id, commandState,
+      ...(command.errorCode ? { errorCode: command.errorCode } : {}),
+      saleId: current.saleId, amountSatang: current.amountSatang },
+  });
+}
+
+/**
+ * The read-time net: a stopped exchange, a failed command or one that expired
+ * in the queue, found when the attempt is read. Never replays SALE.
+ */
 export async function recoverMissingTerminalResult(
   tx: Tx,
   ctx: OpContext,
@@ -337,40 +665,26 @@ export async function recoverMissingTerminalResult(
   const [current] = await tx.select().from(paymentAttempt)
     .where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.operatorId, operatorId)))
     .for('update').limit(1);
-  if (!current?.deviceId || !['created', 'sent_to_terminal'].includes(current.status)) return;
+  if (!current?.deviceId) return;
+  const waitingOnSale = ['created', 'sent_to_terminal'].includes(current.status);
+  const inquiryActionId = current.status === 'inquiring'
+    ? ((current.payload ?? {}) as AttemptPayload).inquiry?.actionId
+    : null;
+  if (!waitingOnSale && typeof inquiryActionId !== 'string') return;
   const [terminal] = await tx.select().from(device)
     .where(and(eq(device.id, current.deviceId), eq(device.operatorId, operatorId))).limit(1);
   if (!terminal?.boxId) return;
   const [command] = await tx.select().from(boxCommand).where(and(
     eq(boxCommand.boxId, terminal.boxId), eq(boxCommand.kind, 'terminal_sale'),
-    inArray(boxCommand.state, ['running', 'failed']), isNull(boxCommand.result),
+    inArray(boxCommand.state, ['queued', 'running', 'failed', 'expired']),
     sql`${boxCommand.payload}->>'attemptId' = ${id}`,
     sql`${boxCommand.payload}->>'deviceId' = ${current.deviceId}`,
-    sql`${boxCommand.payload}->>'mode' = 'sale'`,
+    waitingOnSale
+      ? sql`${boxCommand.payload}->>'mode' = 'sale'`
+      : and(sql`${boxCommand.payload}->>'mode' = 'inquire'`, eq(boxCommand.actionId, inquiryActionId as string)),
   )).for('update').limit(1);
   if (!command) return;
-  // A still-running exchange gets its full budget; a failed command already ended.
-  if (command.state === 'running' && (!command.claimedAt
-    || Date.now() - command.claimedAt.getTime() < TERMINAL_TIMEOUTS.customerInteractionMs + 30_000)) return;
-  const payload = (current.payload ?? {}) as AttemptPayload;
-  const protocol = terminalProtocolOf(payload.protocol);
-  const canAsk = protocol && canInquire(protocol, payload.tender ?? 'card') && Boolean(current.terminalRef);
-  const status = canAsk ? 'unknown' : 'awaiting_staff_confirmation';
-  await stampAttempt(tx, id, { status });
-  if (command.state === 'running') {
-    await tx.update(boxCommand).set({
-      errorCode: 'TERMINAL_RESULT_MISSING',
-      errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
-    }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
-  }
-  await audit.record(tx, {
-    actorAccountId: ctx.actorAccountId ?? null, operatorId, branchId: current.branchId,
-    action: 'payment.attempt.result_missing', entityType: 'payment_attempt', entityId: id,
-    actionId: current.actionId, requestId: ctx.requestId,
-    before: { status: current.status },
-    after: { status, commandId: command.id, commandState: command.state,
-      saleId: current.saleId, amountSatang: current.amountSatang },
-  });
+  await settleStalledCommand(tx, ctx, current, command, Date.now());
 }
 
 // --- Writing what only this file can write -----------------------------------

@@ -44,7 +44,11 @@ import { audit } from './audit';
 import { currentBandKey } from './bands';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
-import { readStationsSellingReadiness } from './payments/terminal';
+import {
+  lockAttemptOfTerminalCommand,
+  readStationsSellingReadiness,
+  settleFailedTerminalCommand,
+} from './payments/terminal';
 import { registerProductBarcodeHandler } from './scanning-product';
 import {
   boxOutboxState,
@@ -1465,6 +1469,8 @@ export async function completeCommand(
 
   const finishedAt = new Date();
   const outcome = await withTx(db, ctx, `box.command.${existing.kind}`, async (tx) => {
+    // SCRUM-972 — the attempt's lock first, in the read-time recovery's order.
+    await lockAttemptOfTerminalCommand(tx, auth.operatorId, existing);
     const updated = await tx
       .update(boxCommand)
       .set({
@@ -1477,6 +1483,14 @@ export async function completeCommand(
       .where(and(eq(boxCommand.id, commandId), eq(boxCommand.state, 'running')))
       .returning({ id: boxCommand.id, state: boxCommand.state });
     if (!updated[0]) return { replayed: true as const, epoch: auth.currentEpoch };
+    /**
+     * SCRUM-972 — a terminal command the box could not finish settles its
+     * attempt in this transaction: a SALE it proves it never sent frees the
+     * sale now, anything else waits for a person. Never a second SALE.
+     */
+    if (existing.kind === 'terminal_sale' && input.state === 'failed') {
+      await settleFailedTerminalCommand(tx, ctx, auth.operatorId, existing.id);
+    }
 
     let epoch = auth.currentEpoch;
     if (existing.kind === 'reset_store' && input.state === 'succeeded') {
