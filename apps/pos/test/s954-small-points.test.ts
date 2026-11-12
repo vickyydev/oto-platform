@@ -191,10 +191,11 @@ describe('SCRUM-954 (5) — the age picker reads the look of the screen it sits 
     expect(surfaceThemeOf(null)).toBeNull();
   });
 
-  it('the family’s form asks for it on both screens; the staff copy does not', () => {
+  it('the family’s form and the saved-children review before it ask for it; the staff screens do not', () => {
     expect(src('components/till/PublicConsentCapture.tsx')).toContain('disabled={locked} className="mt-2" matchSurface');
     expect(src('components/till/ConsentCapture.tsx')).toContain('matchSurface={!staffScreen}');
-    for (const file of ['components/till/SupervisionGate.tsx', 'components/till/AddDropOffModal.tsx', 'components/shared/SavedChildrenReview.tsx']) {
+    expect(src('components/shared/SavedChildrenReview.tsx')).toMatch(/className="mt-2"\r?\n[^\n]*\n\s*matchSurface\r?\n/);
+    for (const file of ['components/till/SupervisionGate.tsx', 'components/till/AddDropOffModal.tsx']) {
       expect(src(file), file).not.toContain('matchSurface');
     }
   });

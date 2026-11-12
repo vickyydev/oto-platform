@@ -199,6 +199,8 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                       onUpdateSlot(slot.id, { dateOfBirth, age: String(age) })
                     }
                     className="mt-2"
+                    // SCRUM-954 — the family's picker wears their screen's look (dark on a dark display).
+                    matchSurface
                   />
                 </div>
               </div>
