@@ -303,3 +303,22 @@ Tickets: SCRUM-964 (a kept sale after a session end), SCRUM-967 (the party page 
 8. (point 1 of SCRUM-969) End of Day says only what can be done for an F&B or Shop order saved as partly paid (a manager's refund from History), and the "Save as partly paid" dialog says Close Day waits for it.
 
 Not in this lane (the owner's questions, already written down): starting a kitchen plan from the till for a party that has none (point 2 of SCRUM-967); collecting a part-paid food order's balance at the F&B or Shop counter (SCRUM-969); the whole order line above the QR on the phone (SCRUM-892). The party-page small points of SCRUM-953 and point 6 of SCRUM-967 go into the till lane after this one.
+
+## The counter display lane landed (13 November 06:27, main 3f465947f)
+Tickets: SCRUM-928 (the installer turns a vertical display and maps its touch), SCRUM-895 (the screen opens the display by itself once the connection is back), SCRUM-896 (the camera without a tap, when asked for), point 6 of SCRUM-962 (which page the screen opens is said). No web service changes; the counter Pi needs a NEW BOX RELEASE packed from main (pnpm --filter @oto/box-agent pack:pi) and installed. Left and ticketed: SCRUM-974.
+The park's install line (from the guide, part I2; run through scripts/agent/push-release.sh oto-till <release>.tgz --): --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1 --rotate off --display-rotate 270 --display-output HDMI-A-2. BEFORE installing, read on the Pi what was made by hand (cat ~/.config/kanshi/config; grep -n touch ~/.config/labwc/rc.xml; grep OTO_KIOSK_URL /etc/oto-box/config) and use the turn found there.
+To try on the Pi, in order: the turn after a reboot; the touch in all four corners; the waiting page with the router's Wi-Fi off at power-on, then the display opening by itself when it is back; the same after the screen's service is restarted; the camera prompt; two reboots keeping all of it; an update with no display options keeping it all.
+
+### Questions for the owner from this lane
+1. Is the option right as named: --display-rotate 90|180|270|off, with the numbers the desktop itself writes? "off" takes out only the box's lines.
+2. When a screen turn is asked for, the installer refuses unless the page's own turn is off ("add --rotate off"), and does not switch it off by itself. Is a refusal what you want?
+3. The park's hand-made screen turn is kept in the file below the box's (unused while the box's applies; it comes back if the box's turn is set to off). Should the installer remove or replace it?
+4. The touch is mapped for every touch screen plus the one it finds by name; there is no option for a box with two touch screens. Enough?
+5. The turn takes effect at the next boot (one "sudo reboot" after the install). Acceptable?
+6. A display address that answers with an error page such as 404 is opened so a person can see it; no answer, or a server error during a deploy, keeps the waiting page up. Is that the rule?
+7. The screen waits about 30 seconds at start before it shows the waiting page. Is 30 seconds right?
+8. A page that fails while the browser is already running is left to the browser's own retry (1 s, 5 s, 30 s, 1, 5 and 10 minutes, then every 30). Should the box also restart the screen whenever the address comes back?
+9. Camera for Till 1: one tap on Allow on the screen (today), or --display-camera allow so the display's address uses the camera with no tap?
+10. For Till 1, should the screen open the web address (photos can be sent, display changes arrive with a web deploy, it needs the Wi-Fi) or the box's own copy (works with no Wi-Fi, but photos cannot be sent yet and every display change needs a box release)? The park's line uses the web address.
+11. The waiting page is in English only. Do you want a Thai line on it?
+12. The display settings are changed only with the installer; editing them in the box's config file does nothing on its own. Acceptable?
