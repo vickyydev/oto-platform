@@ -11,7 +11,7 @@ import { schema as s } from '@oto/db';
 import type { SimulatedInbound } from '@oto/messaging';
 import { InboxBookDateProposalSchema, branchToday, newId, type InboxBookDateProposal } from '@oto/shared';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
-import { BOOK_DATE_PROPOSAL_MESSAGES, bookDateProposalOf } from '../src/services/inbox/book-date-proposal';
+import { BOOK_DATE_PROPOSAL_MESSAGES, bookDateProposalOf, guestCountOfChat } from '../src/services/inbox/book-date-proposal';
 import {
   CENTRAL_BRANCH_CODE,
   OTO_OPERATOR_NAME,
@@ -490,6 +490,77 @@ describe('the cake’s time is not the party’s start (SCRUM-836)', () => {
     const res = await propose('gm', conv);
     expect(res.body.proposal).toMatchObject({ startTime: { value: '14:00', text: 'at 14:00', source: 'family', messageId: first } });
     expect(res.body.patternReading).toMatchObject({ startTime: '14:00', timeText: 'at 14:00' });
+  });
+});
+
+describe('the digits of a time are never a count (SCRUM-947)', () => {
+  // Thread C of the SCRUM-904 staging proof, as the family typed it: Book Date offered "8 or 00" kids.
+  const THREAD_C =
+    'สวัสดีค่ะ อยากจองงานวันเกิดให้ลูกชาย ZZ Test Niko ครบ 5 ขวบ วันเสาร์ที่ 12 ธันวาคม 11:00-13:00 เด็ก 8 คน ผู้ใหญ่ 4 คน (ZZ TEST)';
+
+  it('the proof’s Thai line: the model’s 8 kids and 4 adults stand with their words', async () => {
+    const { conv, first } = await bday(THREAD_C, 'th');
+    fake.push({ kind: 'reading', reading: { kids: at(8, 1, 'เด็ก 8 คน'), adults: at(4, 1, 'ผู้ใหญ่ 4 คน'), startTime: at('11:00', 1, '11:00-13:00') } });
+    const res = await propose('gm', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.proposal).toMatchObject({
+      kids: { value: 8, text: 'เด็ก 8 คน', source: 'family', messageId: first },
+      adults: { value: 4, text: 'ผู้ใหญ่ 4 คน', source: 'family', messageId: first },
+      startTime: { value: '11:00', text: '11:00-13:00' },
+    });
+  });
+
+  it('a model that reads the time’s digits as the kids or the adults is not believed; the rest stands', async () => {
+    const { conv, first } = await bday(THREAD_C, 'th');
+    fake.push({ kind: 'reading', reading: { kids: at(0, 1, '13:00'), adults: at(13, 1, '13'), childAge: at(5, 1, 'ครบ 5 ขวบ') } });
+    const res = await propose('gm', conv);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(InboxBookDateProposalSchema.safeParse(res.body).success).toBe(true);
+    expect(res.body.model).toBe('ai');
+    expect(res.body.proposal).toMatchObject({ kids: null, adults: null, childAge: { value: 5, messageId: first } });
+  });
+
+  const en = 'Party on 12/12 from 13:00 to 16:00 for 10 kids and 4 adults, budget 1,500 baht, call +66 81 234 5678, she is turning 6';
+  const ru = '12 декабря с 11:00 до 13:00, 10 детей и 4 взрослых, цена 590, телефон 081 234 567, сыну исполняется 6';
+  const th = 'วันเสาร์ที่ 12 ธันวาคม 11:00-13:00 เด็ก 10 คน ผู้ใหญ่ 4 คน ราคา 1,500 บาท โทร 081-234-5678 ลูกอายุ 6 ขวบ';
+  const proposedAs = (value: number, line: string) => ({ value, text: line, source: 'family' as const, line: 0 });
+  const check = (line: string, value: number, said: string) => guestCountOfChat(proposedAs(value, line), said, [{ by: 'family', at: '2026-11-12 10:00', text: line }]);
+
+  it.each([
+    ['en', 'a clock time', en, 13, '13:00'],
+    ['en', 'a clock time cut short', en, 16, '16'],
+    ['en', 'a date', en, 12, '12/12'],
+    ['en', 'a price', en, 500, '1,500 baht'],
+    ['en', 'a phone number', en, 234, '+66 81 234 5678'],
+    ['en', 'an age', en, 6, 'turning 6'],
+    ['ru', 'a clock time', ru, 0, 'с 11:00'],
+    ['ru', 'a date', ru, 12, '12 декабря'],
+    ['ru', 'a price', ru, 590, 'цена 590'],
+    ['ru', 'a phone number', ru, 567, '081 234 567'],
+    ['ru', 'an age', ru, 6, 'исполняется 6'],
+    ['th', 'a clock time', th, 0, '11:00-13:00'],
+    ['th', 'a date', th, 12, 'วันเสาร์ที่ 12'],
+    ['th', 'a price', th, 500, '1,500 บาท'],
+    ['th', 'a phone number', th, 234, '081-234-5678'],
+    ['th', 'an age', th, 6, 'อายุ 6 ขวบ'],
+  ] as const)('%s, %s: %i from "%s" is left out', (_language, _kind, line, value, said) => {
+    expect(check(line, value, said)).toBeNull();
+  });
+
+  it.each([
+    ['en', en, 10, '10 kids'],
+    ['en', en, 4, '4 adults'],
+    ['ru', ru, 10, '10 детей'],
+    ['ru', ru, 4, '4 взрослых'],
+    ['th', th, 10, 'เด็ก 10 คน'],
+    ['th', th, 4, 'ผู้ใหญ่ 4 คน'],
+    ['en', 'Only adults: 0 kids, 6 adults at 13:00', 0, '0 kids'],
+    ['th', 'เด็ก 0 คน ผู้ใหญ่ 6 คน 13:00', 0, 'เด็ก 0 คน'],
+    ['en', 'ten kids at 10:00', 10, 'ten kids'],
+    ['th', '11:00-13:00 เด็ก 8 คน', 8, 'eight kds'],
+    ['en', 'from 08:00, 8 kids', 8, '8'],
+  ] as const)('%s: %i from "%s" stands', (_language, line, value, said) => {
+    expect(check(line, value, said)).toEqual(proposedAs(value, line));
   });
 });
 

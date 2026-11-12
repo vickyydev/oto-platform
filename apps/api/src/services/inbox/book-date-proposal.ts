@@ -9,13 +9,16 @@ import {
   type BookDateProposalReading,
   type BookDateProposed,
   type BookDateReader,
+  type BookDateReading,
   type BookDateRequest,
 } from '@oto/assistant';
 import {
   INBOX_DAY_TIMEZONE,
   InboxBookDateProposalSchema,
   branchToday,
+  readChatNumbers,
   readChatPartyDate,
+  type ChatNumber,
   type InboxBookDateProposal,
   type InboxBeoTranscriptLine,
 } from '@oto/shared';
@@ -51,7 +54,10 @@ import { loadVisibleConversation, type InboxViewer } from './read-visibility';
  * the pattern reading. What the model proposes is checked before it is
  * answered (`readBookDateProposal`): a value with no line of the chat behind
  * it, a date gone by or no calendar day, a time that is no clock time, a
- * count out of range, or a park the operator does not have is left out.
+ * count out of range, or a park the operator does not have is left out. So is
+ * a count of kids or adults whose digits in the chat are a clock time's, a
+ * date's, a price's, a phone number's or an age's (SCRUM-947,
+ * `guestCountOfChat`).
  *
  * WHO: whoever can see the conversation, as `GET …/beo-confirmation` reads it
  * (`inbox:conversation:read`, then the conversation's own visibility; 404 when
@@ -90,6 +96,51 @@ export function parkLocalStamp(iso: string, timeZone: string): string {
 }
 
 type Proposal = NonNullable<InboxBookDateProposal['proposal']>;
+
+const sameWords = (t: string) => t.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * A GUEST COUNT THE CHAT GIVES (SCRUM-947). Book Date offered "00" kids for a
+ * Thai chat that said "11:00-13:00 เด็ก 8 คน": the digits of a time are never
+ * a count, from the patterns or from the model. The model's count is checked
+ * against its words (`said`, when they are in its line; else the line) as the
+ * shared reader reads them (`readChatNumbers`):
+ *   - the words hold no such number ("ten kids", "สิบคน"): the model read
+ *     words, and the count stands;
+ *   - the words hold it as a number of its own, and so does its line: it
+ *     stands ("เด็ก 8 คน", "0 kids");
+ *   - else its digits are a clock time's, a date's, a price's, a phone
+ *     number's or an age's ("13:00", "12/12", "฿500", "ครบ 5 ขวบ"), or the
+ *     model cut them out of one ("13" of "13:00"): it is left out.
+ */
+export function guestCountOfChat(
+  proposed: BookDateProposed<number> | null,
+  said: string | null,
+  lines: BookDateRequest['lines'],
+): BookDateProposed<number> | null {
+  if (!proposed) return null;
+  const line = lines[proposed.line]?.text ?? '';
+  const inLine = readChatNumbers(line).numbers;
+  const quote = said?.trim() ?? '';
+  const words = quote && sameWords(line).includes(sameWords(quote)) ? readChatNumbers(quote).numbers : inLine;
+  const holds = (numbers: readonly ChatNumber[], asCount?: boolean) =>
+    numbers.some((n) => n.value === proposed.value && (asCount === undefined || n.count === asCount));
+  if (!holds(words)) return proposed;
+  return holds(words, true) && holds(inLine, true) ? proposed : null;
+}
+
+/** The checked reading with its kids and adults checked against the chat's words (SCRUM-947). */
+function withGuestCounts(
+  reading: BookDateProposalReading,
+  model: BookDateReading,
+  lines: BookDateRequest['lines'],
+): BookDateProposalReading {
+  return {
+    ...reading,
+    kids: guestCountOfChat(reading.kids, model.kids?.said ?? null, lines),
+    adults: guestCountOfChat(reading.adults, model.adults?.said ?? null, lines),
+  };
+}
 
 /** The checked reading as the route answers it: each value with its message. */
 function answerOf(reading: BookDateProposalReading, transcript: readonly InboxBeoTranscriptLine[]): Proposal {
@@ -205,7 +256,8 @@ export async function bookDateProposalOf(
   const outcome = await readWithin(reader, request, deps.deadlineMs ?? BOOK_DATE_TIMEOUT_MS + 2_000);
   if (!outcome.ok) return unavailable(outcome.reason, outcome);
 
-  const proposal = answerOf(readBookDateProposal(outcome.reading, request), transcript);
+  const checked = withGuestCounts(readBookDateProposal(outcome.reading, request), outcome.reading, request.lines);
+  const proposal = answerOf(checked, transcript);
   const answer: InboxBookDateProposal = { conversationId: conv.id, model: 'ai', proposal, patternReading };
   // The checks above keep every value inside the route's own schema; were one ever to slip, the answer is
   // the pattern reading's, never a 500.
