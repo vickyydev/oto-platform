@@ -103416,6 +103416,14 @@
                     },
                     "serverTime": {
                       "type": "string"
+                    },
+                    "familyForm": {
+                      "type": "string",
+                      "enum": [
+                        "filling",
+                        "done"
+                      ],
+                      "nullable": true
                     }
                   },
                   "required": [

@@ -1133,7 +1133,7 @@ export class StationBridge {
   async status(stationId: string): Promise<BridgeStatus> {
     this.station(stationId);
     const now = this.host.now();
-    const [catalogue, members, staff, deny, receipts, policy, depth] = await Promise.all([
+    const [catalogue, members, staff, deny, receipts, policy, depth, familyForm] = await Promise.all([
       this.bundle('catalogue'),
       this.bundle('members'),
       this.bundle('staff'),
@@ -1141,6 +1141,7 @@ export class StationBridge {
       this.bundle('receipt_series'),
       this.policy(stationId),
       this.host.store.depth(this.host.boxId).catch(() => ({ queued: 0, oldestQueuedAt: null })),
+      this.familyForm(stationId),
     ]);
     const age = (bundle: CachedBundle | null) => ({
       held: !!bundle,
@@ -1177,7 +1178,23 @@ export class StationBridge {
           }
         : null,
       serverTime: now.toISOString(),
+      familyForm,
     };
+  }
+
+  /**
+   * SCRUM-942 — the family's drop-off or nanny form on this station's display,
+   * as the station document holds it: open (`filling`), or with the family's
+   * Done waiting for the till (`done`). Read, never created; nothing about
+   * the family leaves here.
+   */
+  private async familyForm(stationId: string): Promise<'filling' | 'done' | null> {
+    const document = await this.host.store.readSession(stationId).catch(() => null);
+    const prompt = document?.prompt;
+    if (!prompt || prompt.kind !== 'consent' || document.step !== 7) return null;
+    const answer = prompt.answer as { payload?: { action?: unknown } } | undefined;
+    if (answer?.payload?.action === 'done') return 'done';
+    return prompt.completed === true ? null : 'filling';
   }
 
   // --- unlock and the box session ---------------------------------------------------

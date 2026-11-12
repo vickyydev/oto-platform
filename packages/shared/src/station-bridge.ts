@@ -120,6 +120,14 @@ export const BridgeStatusSchema = z.object({
     .object({ prefix: z.string().nullable(), highWaterMark: z.number().int().min(0) })
     .nullable(),
   serverTime: z.string(),
+  /**
+   * SCRUM-942 — where the family's drop-off or nanny form on this station's
+   * display stands: open and being filled (`filling`), Done pressed and
+   * waiting for the till (`done`), or no form (null). What a locked till's
+   * lock screen says, through this read a locked session may make; no
+   * personal data. Absent from a box from before it.
+   */
+  familyForm: z.enum(['filling', 'done']).nullable().optional(),
 });
 export type BridgeStatus = z.infer<typeof BridgeStatusSchema>;
 

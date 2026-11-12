@@ -40897,6 +40897,8 @@ export interface paths {
                                 highWaterMark: number;
                             } | null;
                             serverTime: string;
+                            /** @enum {string|null} */
+                            familyForm?: "filling" | "done" | null;
                         };
                     };
                 };

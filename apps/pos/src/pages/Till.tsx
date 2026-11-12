@@ -30,6 +30,7 @@ import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { routeToPayment } from '@/lib/customerContact';
 import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, staffTicksAgreements, takeConsentAction, type ContactConfirmation } from '@/lib/consentForm';
 import { consentSlotPhoto, staffCameraLine } from '@/lib/consentForm';
+import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
@@ -3952,6 +3953,10 @@ export default function Till() {
     setSaleOpen('ticket-display', displayInUse);
     return () => setSaleOpen('ticket-display', false);
   }, [displayInUse]);
+  // SCRUM-942 — while this till is locked with the family's form open on its
+  // paired display, the lock screen says so, and says when they press Done.
+  useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null,
+    formOpen: consentMirror && !consentCandidate.completed && !consentFinishing });
 
   // Retain the same visitor through a staff lock, but unmount every child
   // surface and portal so no member details or staff controls remain visible.

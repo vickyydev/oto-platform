@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ApiError } from '@/api/client';
 import { authApi } from '@/api/platform';
+import { lockedFamilyFormLine, useLockedFamilyForm } from '@/lib/lockedFamilyForm';
 import {
   Lock,
   Loader2,
@@ -62,6 +63,9 @@ const LAUNCHER_URL = launcherOrigin();
  */
 export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
   const { signIn, locked, operator, unlock, logout, handoffError, offlineUnlock } = useOperator();
+  // SCRUM-942 — a family filling the form on this till's display, or done with it.
+  const familyForm = useLockedFamilyForm();
+  const familyFormLine = lockedFamilyFormLine(familyForm);
   const [, navigate] = useLocation();
 
   const [mode, setMode] = useState<Mode>('signin');
@@ -173,6 +177,15 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
           <p className="text-lg text-foreground/60 mb-8">
             {operator.name} is still signed in — enter your password to continue.
           </p>
+          {/* SCRUM-942 — one line, in this screen's notice style, above the password. */}
+          {familyFormLine && (
+            <p role="status" data-testid="lock-family-form"
+              className={familyForm === 'done'
+                ? '-mt-4 mb-6 w-full rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 text-left'
+                : '-mt-4 mb-6 w-full rounded-2xl border border-dashed border-foreground/20 px-4 py-3 text-sm text-foreground/60 text-left'}>
+              {familyFormLine}
+            </p>
+          )}
 
           <form onSubmit={doUnlock} className="w-full flex flex-col gap-3 text-left">
             <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2">
