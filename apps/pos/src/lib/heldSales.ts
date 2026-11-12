@@ -5,6 +5,7 @@ import { NetworkError, idemKey } from '@/api/client';
 import { newActionId, refundSale } from '@/api/history';
 import { salesApi } from '@/api/sales';
 import { toast } from '@/hooks/use-toast';
+import { isBoxLaneTrigger, onPlatformAnswered } from './lane';
 
 /**
  * SCRUM-774 — THE BRANCH'S HELD SALES, as every till at the branch shows them.
@@ -15,6 +16,11 @@ import { toast } from '@/hooks/use-toast';
  * here within the poll, without anybody pressing anything. A read that fails
  * keeps the last list and says why (`error`), rather than quietly emptying it:
  * an empty Held sales list is an answer reception acts on.
+ *
+ * SCRUM-897 — a read that met no connection is read again the moment the
+ * platform answers this till (`onPlatformAnswered` in lib/lane.ts), not at the
+ * next poll: after a long outage the till can finish a family online while
+ * its lane still says box, and the list said it could not be read throughout.
  */
 const POLL_MS = 20_000;
 
@@ -35,6 +41,8 @@ export function useHeldSales(opts: { branchId: string | null; enabled: boolean }
   const [loaded, setLoaded] = useState(false);
   const [tick, setTick] = useState(0);
   const seq = useRef(0);
+  /** SCRUM-897 — the last read met no connection: the platform's next answer reads again. */
+  const unreached = useRef(false);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
@@ -45,6 +53,7 @@ export function useHeldSales(opts: { branchId: string | null; enabled: boolean }
       .list(branchId)
       .then((answer) => {
         if (mine !== seq.current) return;
+        unreached.current = false;
         setSales(answer.sales);
         setCounts(answer.counts);
         setError(null);
@@ -52,6 +61,7 @@ export function useHeldSales(opts: { branchId: string | null; enabled: boolean }
       })
       .catch((err: unknown) => {
         if (mine !== seq.current) return;
+        unreached.current = isBoxLaneTrigger(err);
         setError(err instanceof Error ? err.message : 'The Held sales list could not be read');
         setLoaded(true);
       });
@@ -61,6 +71,16 @@ export function useHeldSales(opts: { branchId: string | null; enabled: boolean }
     if (!enabled || !branchId) return;
     const timer = window.setInterval(() => setTick((n) => n + 1), POLL_MS);
     return () => window.clearInterval(timer);
+  }, [enabled, branchId]);
+
+  // SCRUM-897 — the platform answered the till: a list it could not reach is read again now.
+  useEffect(() => {
+    if (!enabled || !branchId) return;
+    return onPlatformAnswered(() => {
+      if (!unreached.current) return;
+      unreached.current = false;
+      setTick((n) => n + 1);
+    });
   }, [enabled, branchId]);
 
   return { sales, counts, error, loaded, refresh };

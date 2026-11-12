@@ -1,24 +1,27 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BridgeSaleAnswer } from '@oto/shared';
+import type { BridgeSaleAnswer, HeldSale } from '@oto/shared';
 import { renderHook } from './support/hooks';
-import { apiSale } from './support/fixtures';
+import { apiSale, settle } from './support/fixtures';
 import { setBridgeOrigin, setBridgeStaffName } from '@/api/bridge';
 import { closedOnBox, laneSale } from '@/api/boxSales';
-import { NetworkError } from '@/api/client';
+import { ApiError, NetworkError } from '@/api/client';
+import { heldSalesApi } from '@/api/heldSales';
 import type { SaleCartPayload, SaleTenderPayload } from '@/api/sales';
 import { gateOnlineHold, type GateOnlineHold } from '@/lib/gateOnline';
-import { BOX_LANE_NO_HOLD, BOX_SALE_NOT_HELD, holdButtonReasons } from '@/lib/heldSales';
+import { BOX_LANE_NO_HOLD, BOX_SALE_NOT_HELD, holdButtonReasons, useHeldSales } from '@/lib/heldSales';
 import {
   currentLane,
   holdPlatformLane,
   noteLaneFailure,
   platformLaneHeld,
+  refreshLane,
   saleLane,
   setHeldRetryDelays,
   setLaneStation,
   useSaleLane,
+  viaLane,
 } from '@/lib/lane';
 import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
 
@@ -55,6 +58,7 @@ vi.mock('react', async () => ({
   },
 }));
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
+vi.mock('@/api/heldSales', () => ({ heldSalesApi: { list: vi.fn(), hold: vi.fn(), resume: vi.fn() } }));
 
 const STATION = '018f0000-0000-7000-8000-0000000897c1';
 const GUARDIAN = '018f0000-0000-7000-8000-0000000897c2';
@@ -380,5 +384,153 @@ describe('SCRUM-897 (3) — Hold sale says what is true of the sale on screen', 
     const phone = src('components/mobile/MobileTill.tsx');
     expect(phone).toContain('const lane = useLane();');
     expect(phone).not.toContain('gateOnlineHold');
+  });
+});
+
+describe('SCRUM-897 (4) — the Held sales list is read again from the platform the moment it answers', () => {
+  const list = vi.mocked(heldSalesApi.list);
+  const sale: HeldSale = {
+    holdId: '018f0000-0000-7000-8000-0000000897e1',
+    saleId: '018f0000-0000-7000-8000-0000000897e2',
+    branchId: BRANCH,
+    kind: 'held',
+    label: 'ZZ TEST Khun 897',
+    note: null,
+    grossSatang: 54_000,
+    paidSatang: 0,
+    balanceSatang: 54_000,
+    businessDate: '2026-11-12',
+    heldAt: '2026-11-12T05:00:00.000Z',
+    heldBy: { accountId: '018f0000-0000-7000-8000-0000000897a1', name: 'Som' },
+    heldStation: { id: STATION, name: 'Reception Till 1' },
+    flaggedAt: null,
+  };
+  const listed = { branchId: BRANCH, sales: [sale], counts: { held: 1, partPaid: 0 } };
+
+  beforeEach(() => {
+    vi.stubGlobal('window', globalThis);
+    list.mockReset();
+  });
+
+  const mount = () => renderHook(() => useHeldSales({ branchId: BRANCH, enabled: true }));
+
+  it('a read that met no connection is read again as soon as a held call is answered online while the lane still says box', async () => {
+    noteLaneFailure(new NetworkError());
+    list.mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce(listed);
+    const view = mount();
+    const release = holdPlatformLane();
+    try {
+      await settle();
+      expect(view.result.current.error).toBe('No answer from the platform. This screen has no connection.');
+      expect(list).toHaveBeenCalledTimes(1);
+      // Continue again after the outage: the gate's write is held on the platform and answered there.
+      await expect(viaLane(async () => 'registered online', async () => 'box')).resolves.toBe('registered online');
+      expect(currentLane()).toBe('box');
+      await settle();
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(view.result.current.error).toBeNull();
+      expect(view.result.current.sales).toEqual([sale]);
+    } finally {
+      view.unmount();
+      release();
+    }
+  });
+
+  it('the sale written online under the hold reads it again too', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    list.mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce(listed);
+    const view = mount();
+    const writer = renderHook(() => useSaleWriter());
+    try {
+      await settle();
+      expect(view.result.current.error).not.toBeNull();
+      await writer.result.current.commit(order());
+      await settle();
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(view.result.current.error).toBeNull();
+    } finally {
+      writer.unmount();
+      view.unmount();
+      hold.endSale();
+    }
+  });
+
+  it('the lane moving back to the platform reads it again', async () => {
+    noteLaneFailure(new NetworkError());
+    list.mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce(listed);
+    const view = mount();
+    try {
+      await settle();
+      expect(view.result.current.error).not.toBeNull();
+      vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+        reply(url === '/api/me' ? { sessionLocked: false } : { link: { up: true, offline: false, lane: 'platform' } })));
+      expect(await refreshLane()).toBe('platform');
+      await settle();
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(view.result.current.error).toBeNull();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('a call answered on the platform lane reads it again too', async () => {
+    list.mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce(listed);
+    const view = mount();
+    try {
+      await settle();
+      await viaLane(async () => 'online', async () => 'box');
+      await settle();
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(view.result.current.error).toBeNull();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('a call the box answers is no sign the platform is back: the list waits for its timer', async () => {
+    noteLaneFailure(new NetworkError());
+    list.mockRejectedValueOnce(new NetworkError());
+    const view = mount();
+    try {
+      await settle();
+      await expect(viaLane(async () => 'online', async () => 'box')).resolves.toBe('box');
+      await settle();
+      expect(list).toHaveBeenCalledTimes(1);
+      expect(view.result.current.error).not.toBeNull();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('a list the platform refused is not asked again at every answer — only its timer reads it', async () => {
+    list.mockRejectedValueOnce(new ApiError(403, 'FORBIDDEN', 'You cannot read held sales here'));
+    const view = mount();
+    try {
+      await settle();
+      expect(view.result.current.error).toBe('You cannot read held sales here');
+      await viaLane(async () => 'online', async () => 'box');
+      await viaLane(async () => 'online', async () => 'box');
+      await settle();
+      expect(list).toHaveBeenCalledTimes(1);
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('a list that was read is not read again at every answer, and a screen that has gone hears nothing', async () => {
+    list.mockResolvedValue(listed);
+    const view = mount();
+    await settle();
+    await viaLane(async () => 'online', async () => 'box');
+    await settle();
+    expect(list).toHaveBeenCalledTimes(1);
+    view.unmount();
+    list.mockRejectedValueOnce(new NetworkError());
+    const gone = mount();
+    await settle();
+    gone.unmount();
+    await viaLane(async () => 'online', async () => 'box');
+    await settle();
+    expect(list).toHaveBeenCalledTimes(2);
   });
 });

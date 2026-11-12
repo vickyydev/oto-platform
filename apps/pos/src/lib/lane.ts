@@ -160,6 +160,38 @@ export function saleLane(): BridgeLane {
   return platformHolds > 0 ? 'platform' : lane;
 }
 
+/**
+ * SCRUM-897 — THE PLATFORM ANSWERED THIS TILL. Each call the arbiter sent to
+ * the platform and got an answer for — on the platform lane, held there while
+ * the lane still says box, or the lane moving back — is heard here. A read
+ * that failed for want of a connection (the Held sales list) is read again
+ * then, rather than at its next timer: the connection is back.
+ */
+const answeredListeners = new Set<() => void>();
+
+export function onPlatformAnswered(listener: () => void): () => void {
+  answeredListeners.add(listener);
+  return () => {
+    answeredListeners.delete(listener);
+  };
+}
+
+function platformAnswered(): void {
+  for (const listener of [...answeredListeners]) {
+    try {
+      listener();
+    } catch {
+      // A listener's fault is its own, never the call's: it was answered.
+    }
+  }
+}
+
+/** The platform's answer, passed on once every listener has heard it. */
+function heard<T>(answer: T): T {
+  platformAnswered();
+  return answer;
+}
+
 /** Tests only: the waits between held retries (null restores the defaults). */
 export function setHeldRetryDelays(delays: readonly number[] | null): void {
   heldRetryDelays = delays ?? HELD_RETRY_MS;
@@ -185,7 +217,7 @@ async function onHeldPlatform<T>(
 async function retryHeld<T>(call: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
     try {
-      return await call();
+      return heard(await call());
     } catch (err) {
       if (!isConnectionDrop(err)) throw err;
       const wait = heldRetryDelays[attempt];
@@ -206,7 +238,7 @@ async function retryHeld<T>(call: () => Promise<T>): Promise<T> {
  * handle by its own lane rules. Without a hold it is the call, unchanged.
  */
 export function onPlatformWhileHeld<T>(call: () => Promise<T>): Promise<T> {
-  return platformHolds > 0 ? retryHeld(call) : call();
+  return platformHolds > 0 ? retryHeld(call) : call().then(heard);
 }
 
 /** Note a failure the platform lane met; moves to the box when it is a trigger. */
@@ -245,7 +277,12 @@ async function recoverLane(): Promise<BridgeLane> {
       if (me.sessionLocked !== false) return lane;
       platformLocked = false;
     }
-    if (stationId === id) setLane(status.link.lane);
+    if (stationId === id) {
+      // SCRUM-897: back on the platform, whose `/me` has just answered.
+      const back = lane === 'box' && status.link.lane === 'platform';
+      setLane(status.link.lane);
+      if (back) platformAnswered();
+    }
   } catch {
     // The box did not answer either: stay where we are. The next call decides.
   } finally { clearTimeout(timeout); }
@@ -265,10 +302,10 @@ export async function viaLane<T>(
 ): Promise<T> {
   const id = stationId;
   if (platformHolds > 0) return onHeldPlatform(onPlatform, onBox, id);
-  if (!id) return onPlatform();
+  if (!id) return heard(await onPlatform());
   if (lane === 'box') return onBox(id);
   try {
-    return await onPlatform();
+    return heard(await onPlatform());
   } catch (err) {
     if (!isBoxLaneTrigger(err)) throw err;
     setLane('box');
