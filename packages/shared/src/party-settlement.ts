@@ -161,6 +161,17 @@ export type PartyPlanEntertainment = z.infer<typeof PartyPlanEntertainmentSchema
 export const PARTY_MENU_AUDIENCES = ['kids', 'adults'] as const;
 export type PartyMenuAudience = (typeof PARTY_MENU_AUDIENCES)[number];
 
+/**
+ * SCRUM-906: where a kitchen-plan line came from. `set_menu` — the set menu,
+ * or a line the BEO badges SET: part of the package; `extra` — a line the BEO
+ * badges EXTRA (or one from before the badge); `party_only` — an item the
+ * BEO's "New item" door made for this party alone (a `PARTY-` code,
+ * SCRUM-828). Absent on a plan the OTO App published before its whole
+ * kitchen plan (app migration 0050).
+ */
+export const PARTY_MENU_ORIGINS = ['set_menu', 'extra', 'party_only'] as const;
+export type PartyMenuOrigin = (typeof PARTY_MENU_ORIGINS)[number];
+
 export const PartyPlanMenuItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
@@ -177,6 +188,17 @@ export const PartyPlanMenuItemSchema = z.object({
    * beside it. Absent otherwise.
    */
   adultsNote: z.string().optional(),
+  /** SCRUM-906: the BEO line's own id; absent for a set-menu template line no BEO line answers. */
+  lineId: z.string().optional(),
+  origin: z.enum(PARTY_MENU_ORIGINS).optional(),
+  /** SCRUM-906: the price entered on the BEO line, per unit; absent when none was entered. */
+  unitPriceSatang: Satang.optional(),
+  /**
+   * SCRUM-906: whether a live till product carries the line's code — false
+   * for a line typed by hand or one whose code no product carries any more
+   * ("not on the till menu"). Set by the api where it read the catalogue.
+   */
+  onTillMenu: z.boolean().optional(),
 });
 export type PartyPlanMenuItem = z.infer<typeof PartyPlanMenuItemSchema>;
 
@@ -184,14 +206,38 @@ export const PartyPlanBarItemSchema = z.object({
   productCode: z.string().nullable(),
   name: z.string(),
   qty: Count,
+  /** SCRUM-906: the bar line's note, its id, its badge, its entered price and whether the till sells it. */
+  note: z.string().nullable().optional(),
+  lineId: z.string().optional(),
+  origin: z.enum(PARTY_MENU_ORIGINS).optional(),
+  unitPriceSatang: Satang.optional(),
+  onTillMenu: z.boolean().optional(),
 });
+export type PartyPlanBarItem = z.infer<typeof PartyPlanBarItemSchema>;
 
 export const PartyPlanKitchenSchema = z.object({
   kidsFoodTime: z.string().nullable(),
   adultsFoodTime: z.string().nullable(),
   readyOffsetMinutes: z.number().int().nullable(),
   slipsTime: z.string().nullable(),
+  /** SCRUM-906: the bar plan's service time, "HH:MM". */
+  barServiceTime: z.string().nullable().optional(),
 });
+
+/**
+ * SCRUM-906 — the cake as the BEO's cake choice says it (the owner's decision
+ * 4): `our` the park's cake ("Our Cake"), `own` the family's ("Own Cake"),
+ * its quantity, its time and its notes. Null when the BEO says no cake.
+ */
+export const PARTY_CAKE_TYPES = ['our', 'own'] as const;
+export type PartyCakeType = (typeof PARTY_CAKE_TYPES)[number];
+export const PartyPlanCakeSchema = z.object({
+  type: z.enum(PARTY_CAKE_TYPES),
+  qty: Count,
+  time: z.string().nullable(),
+  note: z.string().nullable(),
+});
+export type PartyPlanCake = z.infer<typeof PartyPlanCakeSchema>;
 
 /** One party's plan, in the platform's words. Money passes through from the view in satang. */
 export const PartyPlanSchema = z.object({
@@ -207,8 +253,29 @@ export const PartyPlanSchema = z.object({
   barItems: z.array(PartyPlanBarItemSchema),
   kitchen: PartyPlanKitchenSchema.nullable(),
   settlement: z.object({ depositSatang: Satang, posSaleId: z.string().nullable() }),
+  /** SCRUM-906: the cake, null when the BEO says none; absent on a plan from before. */
+  cake: PartyPlanCakeSchema.nullable().optional(),
 });
 export type PartyPlan = z.infer<typeof PartyPlanSchema>;
+
+/**
+ * SCRUM-906 — A PARTY'S KITCHEN PLAN, with or without a package (the owner's
+ * decision 8): what the party page shows and the slips print. For a party
+ * with a package it is the plan's own lines; for one without, it is all the
+ * OTO App has, and the party cannot be settled until a package is chosen.
+ */
+export const PartyKitchenPlanSchema = PartyPlanSchema.pick({
+  eventId: true,
+  partyDate: true,
+  startTime: true,
+  endTime: true,
+  counts: true,
+  setMenu: true,
+  barItems: true,
+  kitchen: true,
+  cake: true,
+});
+export type PartyKitchenPlan = z.infer<typeof PartyKitchenPlanSchema>;
 
 /**
  * Why a party has no plan: none in the OTO App (`no_package`), or the seam view

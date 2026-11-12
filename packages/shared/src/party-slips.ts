@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { isIsoDate } from './dates';
 import { PartyDetailAnswerSchema } from './parties';
-import type { PartyPlan } from './party-settlement';
+import type { PartyCakeType, PartyKitchenPlan, PartyPlan, PartyPlanCake } from './party-settlement';
 import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from './print';
 
 /**
@@ -45,6 +45,17 @@ import { PREP_TICKET_TITLE, PRINT_JOB_STATUSES, type PrintingPrepStation } from 
  *     slip prints no separate totals: how the adults' portions are counted is
  *     the owner's open point, and these two counts are the simplest honest
  *     reading of it.
+ *   - THE WHOLE KITCHEN PLAN (SCRUM-906; the owner's decisions of 12
+ *     November): every line of the BEO's kitchen plan arrives, typed or
+ *     coded. A line no live till product carries — typed by hand, or a code
+ *     the till no longer sells — prints by its name, marked "not on the till
+ *     menu" (decision 1). A chosen dish prints under its group's name,
+ *     "Fried rice: Veggie", never a bare "Veggie". The bar plan's lines go
+ *     where their own till code prints (a drink to the bar, a dish the bar
+ *     plan names to the kitchen), the bar's when they have none, with their
+ *     note. The cake prints on the kitchen slip as the BEO's cake choice says
+ *     it — "Our Cake" or "Own Cake", its quantity, its time and its notes —
+ *     and not at all when the BEO says no cake (decision 4).
  */
 
 /** The two slips, kitchen first: the prep stations that print (`print.ts`). */
@@ -68,6 +79,33 @@ export const PARTY_NO_KIDS_FOOD_TIME = "No kids' food time in the OTO App";
 
 /** What the slip says under an open choice group. */
 export const PARTY_CHOICE_NOT_MADE = 'Choice not made in the OTO App';
+
+/** SCRUM-906: beside a line no live till product carries (the owner's decision 1). */
+export const PARTY_NOT_ON_TILL_MENU = 'not on the till menu';
+
+/**
+ * SCRUM-906: the slip composer's generation. A slip composed by an earlier
+ * generation, or from a plan the OTO App published in an earlier shape, is
+ * not compared line by line with one composed now: the api takes what the
+ * plan composes now as what the station holds, and prints nothing for it
+ * (`party-slips.ts` in the api: a release is not a change). Raise it when
+ * the composer changes what an unchanged plan prints.
+ */
+export const PARTY_SLIP_COMPOSER = 2;
+
+/** "Fried rice: Veggie": a chosen dish under its group's name. */
+export const partyChoiceName = (group: string, choice: string): string => `${group.trim()}: ${choice.trim()}`;
+
+/** The cake as the BEO names it. */
+export const PARTY_CAKE_NAMES: Record<PartyCakeType, string> = { our: 'Our Cake', own: 'Own Cake' };
+
+/** The cake's slip line: its name, quantity, time and notes, as the BEO's cake choice says them. */
+export function partyCakeSlipLine(cake: PartyPlanCake): PartySlipLine {
+  const notes = [cake.time?.trim() ? `Cake time ${cake.time.trim()}` : null, cake.note?.trim() || null].filter(
+    (n): n is string => !!n,
+  );
+  return { qty: cake.qty, name: PARTY_CAKE_NAMES[cake.type], ...(notes.length ? { note: notes.join(' · ') } : {}) };
+}
 
 /** SCRUM-829: the adults' changes, marked on the one food list (the BEO PDF prints the same words). */
 export const PARTY_KIDS_ONLY = 'kids only';
@@ -144,7 +182,7 @@ export interface PartySlipDocument {
 
 /** What the slips are composed from: the plan, the party as the page shows it, the catalogue. */
 export interface PartySlipInput {
-  plan: Pick<PartyPlan, 'setMenu' | 'barItems' | 'kitchen' | 'counts'>;
+  plan: Pick<PartyKitchenPlan, 'setMenu' | 'barItems' | 'kitchen' | 'counts' | 'cake'>;
   /** The party's name and room as the party page shows them. */
   partyName: string;
   location: string | null;
@@ -158,6 +196,8 @@ export interface PartySlipInput {
 interface SlipLineDraft {
   qty: number | null;
   name: string;
+  /** The dish the line is, as an adults' line of the same dish finds it (the chosen option, else the name). */
+  dish: string;
   notes: string[];
 }
 
@@ -169,20 +209,28 @@ const draftToLine = (d: SlipLineDraft): PartySlipLine => ({
 
 /**
  * The party's two slips; null for a station the plan has nothing for. Lines
- * keep the plan's order: the set menu, then the bar plan. An adults' line
- * (SCRUM-829) of a name the station's slip already lists folds into that
- * line, as the file's header says; one of a new name is its own line.
+ * keep the plan's order: the set menu and the food lists, then the bar plan,
+ * then the cake. An adults' line (SCRUM-829) of a dish the station's slip
+ * already lists folds into that line, as the file's header says; one of a new
+ * dish is its own line.
  */
 export function composePartySlips(input: PartySlipInput): Record<PartySlipStation, PartySlipDocument | null> {
   const drafts: Record<PartySlipStation, SlipLineDraft[]> = { kitchen: [], bar: [] };
   for (const item of input.plan.setMenu) {
-    const station = item.productCode ? (input.prepStationOf(item.productCode) ?? 'kitchen') : 'kitchen';
-    if (station === 'none') continue;
-    const name = (item.chosenOption ?? item.name).trim();
-    if (!name) continue;
+    // Where the till product prints; null when no live product carries the code, or there is none.
+    const place = item.productCode ? input.prepStationOf(item.productCode) : null;
+    if (place === 'none') continue;
+    const station = place ?? 'kitchen';
+    const dish = (item.chosenOption ?? item.name).trim();
+    if (!dish) continue;
+    const group = (item.choiceGroup ?? item.name).trim();
+    const name = item.chosenOption && group ? partyChoiceName(group, item.chosenOption) : dish;
     const note = item.note?.trim() || null;
+    const open = !!item.choiceGroup && !item.chosenOption;
+    // SCRUM-906: no till product makes it (an open choice is no dish yet).
+    const offMenu = place === null && !open ? PARTY_NOT_ON_TILL_MENU : null;
     if (item.audience === 'adults') {
-      const held = drafts[station].find((d) => foldName(d.name) === foldName(name) && !d.notes.includes(PARTY_ADULTS_ONLY));
+      const held = drafts[station].find((d) => foldName(d.dish) === foldName(dish) && !d.notes.includes(PARTY_ADULTS_ONLY));
       if (held) {
         const adultsQty = item.qty ?? 1;
         if (held.qty !== adultsQty) {
@@ -193,26 +241,41 @@ export function composePartySlips(input: PartySlipInput): Record<PartySlipStatio
         }
         continue;
       }
-      drafts[station].push({ qty: item.qty, name, notes: [PARTY_ADULTS_ONLY, ...(note ? [note] : [])] });
+      drafts[station].push({
+        qty: item.qty,
+        name,
+        dish,
+        notes: [PARTY_ADULTS_ONLY, ...(note ? [note] : []), ...(offMenu ? [offMenu] : [])],
+      });
       continue;
     }
     const notes = [
-      item.choiceGroup && !item.chosenOption ? PARTY_CHOICE_NOT_MADE : null,
+      open ? PARTY_CHOICE_NOT_MADE : null,
       note,
       item.audience === 'kids' ? PARTY_KIDS_ONLY : null,
       // The same dish for the adults with another note: one line, their note beside it.
       item.adultsNote === undefined ? null : partyAdultsNoteMark(item.adultsNote),
+      offMenu,
     ].filter((n): n is string => !!n);
-    drafts[station].push({ qty: item.qty, name, notes });
+    drafts[station].push({ qty: item.qty, name, dish, notes });
   }
   const lines: Record<PartySlipStation, PartySlipLine[]> = {
     kitchen: drafts.kitchen.map(draftToLine),
     bar: drafts.bar.map(draftToLine),
   };
+  // SCRUM-906: the bar plan's lines go where their own till code prints; the bar's when they have none.
   for (const item of input.plan.barItems) {
     const name = item.name.trim();
-    if (name) lines.bar.push({ qty: item.qty, name });
+    if (!name) continue;
+    const place = item.productCode ? input.prepStationOf(item.productCode) : null;
+    if (place === 'none') continue;
+    const notes = [item.note?.trim() || null, place === null ? PARTY_NOT_ON_TILL_MENU : null].filter(
+      (n): n is string => !!n,
+    );
+    lines[place ?? 'bar'].push({ qty: item.qty, name, ...(notes.length ? { note: notes.join(' · ') } : {}) });
   }
+  // SCRUM-906: the cake, as the BEO's cake choice says it (decision 4).
+  if (input.plan.cake) lines.kitchen.push(partyCakeSlipLine(input.plan.cake));
 
   const ready = partyReadyBy(input.plan);
   const details = [

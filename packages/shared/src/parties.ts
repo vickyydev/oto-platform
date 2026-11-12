@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isIsoDate } from './dates';
-import { PARTY_PLAN_STATUSES, PartyPlanSchema } from './party-settlement';
+import { PARTY_PLAN_STATUSES, PartyKitchenPlanSchema, PartyPlanSchema } from './party-settlement';
 import {
   EventDetailAnswerSchema,
   EventViewSchema,
@@ -260,5 +260,12 @@ export const PartyQuerySchema = z.object({
 export const PartyDetailAnswerSchema = EventDetailAnswerSchema.extend({
   plan: PartyPlanSchema.nullable().optional(),
   planStatus: z.enum(PARTY_PLAN_STATUSES).optional(),
+  /**
+   * SCRUM-906 — the party's whole kitchen plan (every line, the cake, the bar
+   * lines), with or without a package: what the party page shows and the slips
+   * print. Null when the OTO App has none for it. Optional so an answer from
+   * before still reads.
+   */
+  kitchenPlan: PartyKitchenPlanSchema.nullable().optional(),
 });
 export type PartyDetailAnswer = z.infer<typeof PartyDetailAnswerSchema>;
