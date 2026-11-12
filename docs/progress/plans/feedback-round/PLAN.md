@@ -271,3 +271,20 @@ Not changed because the prototype does the same: the header's tabs scroll sidewa
 10. At full width, a desk window 768 to about 1005 pixels wide now also shows the categories as one sideways-scrolling row, and below about 813 the tiles go one a row. Keep it, or limit it to the split view?
 11. End of Day, for a part-paid F&B or Shop order, still says "take the balance at that counter", and the exit dialog does not say Close Day stays held until a refund. Do you want new words for both?
 12. The ticket till's "Save as partly paid" needs the permission to change a sale; the F&B and Shop one needs none, because it writes nothing. All right?
+
+## The printers follow-up lane is built and reviewed (13 November 05:22); its checks are running on the rebased code
+Ticket: SCRUM-952 points 1, 3, 4 and 6. Lane printers952 (C:/oto-lanes/printers952-20261113, run wf_6f9fa443-8cb, six commits, rebased onto main with no conflict). Services when it lands: the platform, then the Console; no migration. The counter box prints nothing differently (only the simulated printer's record changed).
+Point 4 answered: the second "printout" on the simulated receipt printer was the cash drawer's pulse, not paper.
+
+### Questions for the owner from this lane
+1. Test page 'Model' row: I print the device's model, or its kind in the Console's words ('Receipt printer', 'Band printer') when it has no model. Should it show both kind and model instead?
+2. Test page 'Time' row: I print when the test was asked for (the job's queue time) on the branch clock, for example '13 Nov 2026 14:05'. Should it be the moment the box printed it instead?
+3. Test page 'Station' row: I print the station the test was pressed at. A printer shared by two stations shows only that one. Is that right?
+4. Test page 'Transport' row: I print 'Simulated · escpos' (how the box reaches it, plus its protocol) instead of the fixed 'TCP 9100, one session'. Is that wording right?
+5. Test page template list: it now names the branch's own print templates instead of the renderer's fixed seed list. Keep it?
+6. The Console still calls a test page command 'Test print', even though it now carries the platform's page like a sale's receipt. Keep that name?
+7. After a cash sale, the Console's Printing panel no longer shows a 'Cash drawer pulse' tile, because the pulse is no longer recorded as a printout. It is in the box's command history and the simulator's events. Do you want a drawer tile back in that panel?
+8. A printer with no address now shows red with 'not set up' on its own dot on the Health page. It does not turn its box amber and does not raise an alert. Should it also count as a problem on Health, with an amber box and an alert?
+9. Only an empty address counts as 'not set up', matching the Console's box drawer. A legacy printer with an unreadable address (which the box also skips) still shows its last reading. Should that also count as not set up?
+10. The booth status card and the kiosk summary show such a printer as 'unknown' and 'paper unknown' rather than 'not set up'. I did not change those two Console cards. Change them too?
+11. The seeded simulated printers moved to documentation addresses that keep each unit's last number: 192.0.2.202, .204, .206, .207, .208, .210. Are those the addresses you want?
