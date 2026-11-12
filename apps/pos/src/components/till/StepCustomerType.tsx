@@ -133,7 +133,13 @@ export function StepCustomerType({
           in the split till view the panel is far narrower than the screen and
           a viewport-keyed md:grid-cols-3 overflowed and clipped the cards. */}
       <div className="px-3 py-2 @container">
-      <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6 md:@max-xl/type:gap-3">
+      {/* SCRUM-959 — in the split view the three cards stand whole above the
+          fold with a member whose name takes two lines and the "overdue" bar
+          above the till (staging's 01b had the Thai card's last line 32px
+          under it): the cards sit 8px apart and 12px deep rather than 16,
+          and the verified card's badge keeps clear of its title alone, so its
+          proof line is one line, not two. */}
+      <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6 md:@max-xl/type:gap-2">
         {shownTiers.map((t) => {
           const tier = t.id;
           const isDefault = isDefaultTier(tier);
@@ -145,7 +151,7 @@ export function StepCustomerType({
           return (
             <Card
               key={tier}
-              className={`relative flex flex-col items-center justify-center p-8 md:@max-xl/type:flex-row md:@max-xl/type:justify-start md:@max-xl/type:gap-4 md:@max-xl/type:p-4 cursor-pointer transition-all hover:-translate-y-1 active:translate-y-0 ${
+              className={`relative flex flex-col items-center justify-center p-8 md:@max-xl/type:flex-row md:@max-xl/type:justify-start md:@max-xl/type:gap-4 md:@max-xl/type:px-4 md:@max-xl/type:py-3 cursor-pointer transition-all hover:-translate-y-1 active:translate-y-0 ${
                 isSelected
                   ? 'border-primary ring-2 ring-primary bg-primary/5'
                   : verified && !isDefault
@@ -173,8 +179,8 @@ export function StepCustomerType({
               </div>
               {/* SCRUM-884 — the card's words as one block: centred under
                   the icon as the prototype draws them, beside it in the split view. */}
-              <div className={`flex flex-col items-center md:@max-xl/type:items-start md:@max-xl/type:min-w-0 ${!isDefault && verified ? 'md:@max-xl/type:pr-20' : ''}`}>
-                <h3 className="text-2xl font-bold mb-2 md:@max-xl/type:text-xl md:@max-xl/type:mb-0.5">{tierLabel(tier)}</h3>
+              <div className="flex flex-col items-center md:@max-xl/type:items-start md:@max-xl/type:min-w-0">
+                <h3 className={`text-2xl font-bold mb-2 md:@max-xl/type:text-xl md:@max-xl/type:mb-0.5 ${!isDefault && verified ? 'md:@max-xl/type:pr-20' : ''}`}>{tierLabel(tier)}</h3>
                 <p className="text-muted-foreground text-center md:@max-xl/type:text-left">{blurb}</p>
                 {needsVerify ? (
                   <p className="mt-3 text-sm font-semibold text-amber-600 dark:text-amber-400 text-center md:@max-xl/type:mt-1 md:@max-xl/type:text-left">

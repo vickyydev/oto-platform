@@ -230,6 +230,22 @@ const ROW_TEXT = 'min-w-[5.5rem] flex-1';
  * is on the receipt, items to collect on the receipt or their own slip.
  */
 export const CREDIT_HEADING = 'Credit Grants Issued';
+
+/**
+ * SCRUM-959 — THE TWO COLUMNS IN THE SPLIT VIEW. Each column's card is a
+ * query container (`@container/col`). In the split view a column's content
+ * is 273px wide at 1440 and 333px at 1680, under 24rem; a desk at full width
+ * gives it 425px or more (a window of 1024), so nothing below applies there.
+ * Under 24rem the bracelet row's caption wraps between its words instead of
+ * being cut ("1 Hour • 1 H…", staging's 03d), and the heading keeps 12px from
+ * its count, which stays on one line ("Credit Grants Issued" ran into
+ * "1 TOTAL" at 1680, 06d).
+ */
+const COLUMN_CARD = '@container/col p-6 flex flex-col bg-card/50 overflow-hidden';
+const COLUMN_HEAD = 'flex items-center justify-between mb-4 border-b pb-4 md:@max-sm/col:gap-3';
+const COLUMN_COUNT =
+  'text-sm font-bold uppercase tracking-wide text-muted-foreground md:@max-sm/col:shrink-0 md:@max-sm/col:whitespace-nowrap';
+const ROW_CAPTION = 'text-sm text-muted-foreground truncate md:@max-sm/col:whitespace-normal';
 const DURATION_BADGE = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-center';
 
 /**
@@ -386,13 +402,13 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
       </div>
 
       <div className={cn('flex-1 grid gap-6 overflow-hidden', platformPrintsCredit ? 'grid-cols-2' : 'grid-cols-1')}>
-        <Card className="p-6 flex flex-col bg-card/50 overflow-hidden">
-          <div className="flex items-center justify-between mb-4 border-b pb-4">
+        <Card className={COLUMN_CARD}>
+          <div className={COLUMN_HEAD}>
             <div className="flex items-center gap-3">
               <Printer className="w-6 h-6 text-primary" />
               <h3 className="text-2xl font-bold">Bracelets to Print</h3>
             </div>
-            <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            <span className={COLUMN_COUNT}>
               {totalBracelets} total
             </span>
           </div>
@@ -415,7 +431,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
                     <div className="text-lg font-bold">
                       {row.count}× {row.kind === 'child' ? 'Child' : 'Adult'} bracelet{row.count > 1 ? 's' : ''}
                     </div>
-                    <div className="text-sm text-muted-foreground truncate" title={`${row.duration} • ${row.ticket}`}>
+                    <div className={ROW_CAPTION} title={`${row.duration} • ${row.ticket}`}>
                       {row.duration} • {row.ticket}
                     </div>
                     {row.atCheckIn && <div className="text-sm text-muted-foreground">Prints at check-in</div>}
@@ -447,14 +463,14 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue, 
         </Card>
 
         {platformPrintsCredit && (
-          <Card className="p-6 flex flex-col bg-card/50 overflow-hidden">
-            <div className="flex items-center justify-between mb-4 border-b pb-4">
+          <Card className={COLUMN_CARD}>
+            <div className={COLUMN_HEAD}>
               <div className="flex items-center gap-3">
                 <UtensilsCrossed className="w-6 h-6 text-primary" />
                 {/* SCRUM-931 — `CREDIT_HEADING`: issued, not "to print". */}
                 <h3 className="text-2xl font-bold">{CREDIT_HEADING}</h3>
               </div>
-              <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              <span className={COLUMN_COUNT}>
                 {creditGrants.length} total
               </span>
             </div>

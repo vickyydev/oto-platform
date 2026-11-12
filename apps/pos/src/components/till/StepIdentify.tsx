@@ -32,6 +32,11 @@ interface StepIdentifyProps {
   kioskDesk?: ReactNode;
 }
 
+/** SCRUM-959 — the Phone and Nickname cards: the prototype's, tighter in the split view only. */
+const IDENTIFY_CARD = 'p-5 flex items-center gap-4 text-left md:@max-xl/identify:p-3 md:@max-xl/identify:gap-3';
+const IDENTIFY_ICON =
+  'w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0 md:@max-xl/identify:w-10 md:@max-xl/identify:h-10';
+
 export function StepIdentify({
   phone,
   nickname,
@@ -46,7 +51,7 @@ export function StepIdentify({
   const autoTier = member ? resolveAutoTier(member) : null;
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="@container/identify flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-300">
       <div className="mb-6 shrink-0">
         <h2 className="text-3xl font-bold tracking-tight">Membership Check</h2>
         <p className="text-muted-foreground mt-2 text-lg">
@@ -119,9 +124,14 @@ export function StepIdentify({
               A phone number is required for every visit — it is how the team reaches the family about their child’s safety.
             </p>
 
+            {/* SCRUM-959 — in the split view (this step's column under 36rem,
+                `@container/identify`) each card is 147px wide at 1440, and
+                "Nickname" ran 5px past its card (staging's 20b; the
+                prototype's own cards are the same): there the cards are 12px
+                deep and the icon tile 40px. Full width is as it was. */}
             <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-xl">
-              <Card className="p-5 flex items-center gap-4 text-left">
-                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+              <Card className={IDENTIFY_CARD}>
+                <div className={IDENTIFY_ICON}>
                   <Smartphone className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
@@ -131,8 +141,8 @@ export function StepIdentify({
                   </div>
                 </div>
               </Card>
-              <Card className="p-5 flex items-center gap-4 text-left">
-                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+              <Card className={IDENTIFY_CARD}>
+                <div className={IDENTIFY_ICON}>
                   <User className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
