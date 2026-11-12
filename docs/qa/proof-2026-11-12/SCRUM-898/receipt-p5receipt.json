@@ -1,0 +1,149 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p5receipt",
+  "startedAt": "2026-11-12T10:14:46.413Z",
+  "step": null,
+  "points": {
+    "5-receipt": {
+      "printouts": [
+        {
+          "seq": 1,
+          "at": "2026-11-12T10:10:23.547Z",
+          "widthDots": 576,
+          "heightDots": 537,
+          "jobId": null
+        },
+        {
+          "seq": 2,
+          "at": "2026-11-12T10:10:23.929Z",
+          "widthDots": 576,
+          "heightDots": 0,
+          "jobId": null
+        },
+        {
+          "seq": 3,
+          "at": "2026-11-12T10:10:33.479Z",
+          "widthDots": 576,
+          "heightDots": 537,
+          "jobId": null
+        },
+        {
+          "seq": 4,
+          "at": "2026-11-12T10:10:33.632Z",
+          "widthDots": 576,
+          "heightDots": 0,
+          "jobId": null
+        },
+        {
+          "seq": 5,
+          "at": "2026-11-12T10:13:13.866Z",
+          "widthDots": 576,
+          "heightDots": 537,
+          "jobId": null
+        },
+        {
+          "seq": 6,
+          "at": "2026-11-12T10:13:14.026Z",
+          "widthDots": 576,
+          "heightDots": 0,
+          "jobId": null
+        },
+        {
+          "seq": 7,
+          "at": "2026-11-12T10:14:18.957Z",
+          "widthDots": 576,
+          "heightDots": 1088,
+          "jobId": null
+        },
+        {
+          "seq": 8,
+          "at": "2026-11-12T10:14:19.186Z",
+          "widthDots": 576,
+          "heightDots": 0,
+          "jobId": null
+        }
+      ],
+      "receiptJobs": [
+        {
+          "receipt": "Z89801-000004",
+          "kind": "receipt",
+          "status": "printed",
+          "queuedAt": "2026-11-12T10:14:16.724Z",
+          "printedAt": null,
+          "id": "01a1cf40-3fd7-73d5-85ab-ccedbf86d2ef"
+        },
+        {
+          "receipt": "Z89801-000003",
+          "kind": "receipt",
+          "status": "printed",
+          "queuedAt": "2026-11-12T10:13:08.608Z",
+          "printedAt": null,
+          "id": "01a1cf3f-35ed-72c4-9bbb-26b4a5d930ef"
+        },
+        {
+          "receipt": "Z89801-000002",
+          "kind": "receipt",
+          "status": "printed",
+          "queuedAt": "2026-11-12T10:10:29.171Z",
+          "printedAt": null,
+          "id": "01a1cf3c-c6e9-7170-81e5-6b4a2cfc2145"
+        },
+        {
+          "receipt": "Z89801-000001",
+          "kind": "receipt",
+          "status": "printed",
+          "queuedAt": "2026-11-12T10:10:23.320Z",
+          "printedAt": null,
+          "id": "01a1cf3c-b00e-7bbb-8c40-4112e81893c3"
+        }
+      ]
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:14:47.718Z"
+}

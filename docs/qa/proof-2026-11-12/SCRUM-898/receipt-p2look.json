@@ -1,0 +1,48 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p2look",
+  "startedAt": "2026-11-12T08:56:22.795Z",
+  "step": null,
+  "points": {
+    "2-look": {
+      "printerCardsOnTheTillsSettings": [
+        "Receipt printer",
+        "Kids bracelet printer",
+        "Adult bracelet printer",
+        "Kitchen printer",
+        "Bar printer"
+      ]
+    }
+  },
+  "requests": [],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "manager till",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager till",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "manager till",
+      "stationIsOwn": true
+    },
+    {
+      "signedOut": "manager till",
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T08:56:35.004Z"
+}

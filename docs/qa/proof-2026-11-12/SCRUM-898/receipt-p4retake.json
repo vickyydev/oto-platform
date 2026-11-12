@@ -1,0 +1,338 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p4retake",
+  "startedAt": "2026-11-12T10:12:59.847Z",
+  "step": "4 retake: the bar printer given back (api)",
+  "points": {
+    "4-retake-so-far": {
+      "saleC": {
+        "receipt": "Z89801-000003",
+        "tickets": [
+          {
+            "id": "01a1cf3f-35f9-76b1-86e6-8b9bf4ef15e4",
+            "kind": "bar_ticket",
+            "role": "bar",
+            "device": "ZZ TEST SCRUM-898 bar printer",
+            "status": "printed",
+            "error": null,
+            "subjectType": "sale"
+          },
+          {
+            "id": "01a1cf3f-35f4-7459-b212-2a721f0753d7",
+            "kind": "kitchen_ticket",
+            "role": "kitchen",
+            "device": "ZZ TEST SCRUM-898 kitchen printer",
+            "status": "printed",
+            "error": null,
+            "subjectType": "sale"
+          }
+        ]
+      },
+      "barRemoved": {
+        "status": 200,
+        "answeredVersion": 14
+      },
+      "refund": {
+        "status": 200,
+        "refund": "Z89801-R-000003",
+        "notes": [
+          "Void slip for the bar not printed — no bar printer at ZZ TEST SCRUM-898 proof till A"
+        ],
+        "toastSeen": true,
+        "toastMsAfterAnswer": 18,
+        "toastText": "Some items not printed Void slip for the bar not printed — no bar printer at ZZ TEST SCRUM-898 proof till A",
+        "recordedCard": "Refund recorded · Z89801-R-000003 · −฿95",
+        "barNew": 0,
+        "kitchenNew": 0,
+        "refundsOnSale": 1
+      },
+      "barGivenBack": {
+        "status": 200,
+        "roles": [
+          "adult_band",
+          "bar",
+          "dropoff_band",
+          "kids_band",
+          "kitchen",
+          "receipt"
+        ]
+      }
+    },
+    "4-retake": {
+      "verdict": "PASS",
+      "pictures": [
+        "04e-till-refund-notice-bar-void-not-printed.png"
+      ],
+      "shows": "The same notice again on a third order, for a picture whose title is not masked: \"Some items not printed\" with the bar's VOID-slip line; nothing printed",
+      "seen": {
+        "saleC": {
+          "receipt": "Z89801-000003",
+          "tickets": [
+            {
+              "id": "01a1cf3f-35f9-76b1-86e6-8b9bf4ef15e4",
+              "kind": "bar_ticket",
+              "role": "bar",
+              "device": "ZZ TEST SCRUM-898 bar printer",
+              "status": "printed",
+              "error": null,
+              "subjectType": "sale"
+            },
+            {
+              "id": "01a1cf3f-35f4-7459-b212-2a721f0753d7",
+              "kind": "kitchen_ticket",
+              "role": "kitchen",
+              "device": "ZZ TEST SCRUM-898 kitchen printer",
+              "status": "printed",
+              "error": null,
+              "subjectType": "sale"
+            }
+          ]
+        },
+        "barRemoved": {
+          "status": 200,
+          "answeredVersion": 14
+        },
+        "refund": {
+          "status": 200,
+          "refund": "Z89801-R-000003",
+          "notes": [
+            "Void slip for the bar not printed — no bar printer at ZZ TEST SCRUM-898 proof till A"
+          ],
+          "toastSeen": true,
+          "toastMsAfterAnswer": 18,
+          "toastText": "Some items not printed Void slip for the bar not printed — no bar printer at ZZ TEST SCRUM-898 proof till A",
+          "recordedCard": "Refund recorded · Z89801-R-000003 · −฿95",
+          "barNew": 0,
+          "kitchenNew": 0,
+          "refundsOnSale": 1
+        },
+        "barGivenBack": {
+          "status": 200,
+          "roles": [
+            "adult_band",
+            "bar",
+            "dropoff_band",
+            "kids_band",
+            "kitchen",
+            "receipt"
+          ]
+        },
+        "expectedNote": "Void slip for the bar not printed — no bar printer at ZZ TEST SCRUM-898 proof till A"
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "errorCode": null,
+      "expectedConfigVersionSent": 13,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "dropoff_band",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "time": "2026-11-12T10:13:01.743Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "time": "2026-11-12T10:13:01.744Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:16.891Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:16.892Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:23.252Z",
+      "kind": "http",
+      "text": "GET /api/branches/:id/credentials 401"
+    },
+    {
+      "page": "console",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:23.253Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "manager",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:24.638Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager",
+      "at": "4 retake: Console, the Bar printer set to Not set",
+      "time": "2026-11-12T10:13:24.639Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": true
+    },
+    {
+      "signedOut": "till",
+      "me": 401
+    },
+    {
+      "consoleSignOut": "console",
+      "time": "2026-11-12T10:13:23.106Z",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "signedIn": "manager",
+      "stationIsOwn": true
+    },
+    {
+      "signedOut": "manager",
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:13:48.632Z"
+}

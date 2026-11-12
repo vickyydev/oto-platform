@@ -1,0 +1,46 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3",
+  "startedAt": "2026-11-12T08:56:44.145Z",
+  "step": "3: Console, Devices > Boxes > Virtual box 1 > Add a device",
+  "points": {},
+  "requests": [],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": false,
+  "failure": {
+    "step": "3: Console, Devices > Boxes > Virtual box 1 > Add a device",
+    "error": "Error: expect(locator).toBeVisible() failed",
+    "at": [
+      "phases.p3 (C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-12\\SCRUM-898\\proof.mjs:729:23",
+      "async proof.mjs:1097:3"
+    ],
+    "lastScreens": [
+      "[console] O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print templates Staff benefits DEVICES & PLACES Devices Booths CHANNELS & ASSISTANT Teams & routing Assistant settings STAFF & HR REPORTS Analytics & sources Money oversight Sales Profitability Discounts & comps Tax & VAT Wallet & promo Wallets Booth report Bookings WATCH Health 23 23 open alerts Failures 6 6 failure groups in the last 24 hours Integrations Activity Releases Support PLATFORM Operators System roles Platform alerts Platform jobs Environment Test controls All apps POS Admin A ████ Owner "
+    ]
+  },
+  "finishedAt": "2026-11-12T08:56:55.070Z"
+}

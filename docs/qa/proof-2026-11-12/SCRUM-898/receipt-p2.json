@@ -1,0 +1,229 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p2",
+  "startedAt": "2026-11-12T08:52:10.917Z",
+  "step": "2: the till's own Station setup, saved without a change",
+  "points": {
+    "2-console": {
+      "before": {
+        "configVersion": 10,
+        "name": "ZZ TEST SCRUM-898 proof till",
+        "devices": {
+          "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+          "bar": "ZZ TEST SCRUM-898 bar printer",
+          "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+          "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+          "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+          "receipt": "ZZ TEST SCRUM-898 receipt printer"
+        }
+      },
+      "opened": {
+        "A": 10,
+        "B": 10
+      },
+      "A": {
+        "status": 200,
+        "expectedConfigVersionSent": 10,
+        "answeredVersion": 11,
+        "name": "ZZ TEST SCRUM-898 proof till A"
+      },
+      "B": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+        "details": {
+          "expectedConfigVersion": 10,
+          "configVersion": 11
+        },
+        "expectedConfigVersionSent": 10,
+        "drawerStillOpen": true,
+        "typedNameKept": true,
+        "drawerTitleNow": "ZZ TEST SCRUM-898 proof till A",
+        "versionShownNow": 10,
+        "secondPress": {
+          "status": 409,
+          "errorCode": "STATION_CHANGED"
+        },
+        "reopened": {
+          "name": "ZZ TEST SCRUM-898 proof till A",
+          "version": 11,
+          "dropoffKept": true
+        }
+      },
+      "readBackAfterB": {
+        "configVersion": 11,
+        "name": "ZZ TEST SCRUM-898 proof till A",
+        "devices": {
+          "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+          "bar": "ZZ TEST SCRUM-898 bar printer",
+          "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+          "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+          "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+          "receipt": "ZZ TEST SCRUM-898 receipt printer"
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "errorCode": null,
+      "expectedConfigVersionSent": 10,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "dropoff_band",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 409,
+      "errorCode": "STATION_CHANGED",
+      "expectedConfigVersionSent": 10,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "dropoff_band",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 409,
+      "errorCode": "STATION_CHANGED",
+      "expectedConfigVersionSent": 10,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "dropoff_band",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console A",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console A",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console B",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console B",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console B",
+      "at": "2: B, still on the version it opened, renames differently and saves",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "console B",
+      "at": "2: B, still on the version it opened, renames differently and saves",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console B",
+      "at": "2: B presses Save again (still refused), then closes and reopens",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "console B",
+      "at": "2: B presses Save again (still refused), then closes and reopens",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "manager till",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager till",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console A",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "consoleSignOut": "console B",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "signedIn": "manager till",
+      "stationIsOwn": null
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": false,
+  "failure": {
+    "step": "2: the till's own Station setup, saved without a change",
+    "error": "AssertionError: manager till signed in at the ZZ TEST till",
+    "at": [
+      "openTill proof.mjs:202:10",
+      "async phases.p2 proof.mjs:595:13",
+      "async proof.mjs:1049:3"
+    ],
+    "lastScreens": [
+      "[console A] O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print templates Staff benefits DEVICES & PLACES Devices Booths CHANNELS & ASSISTANT Teams & routing Assistant settings STAFF & HR REPORTS Analytics & sources Money oversight Sales Profitability Discounts & comps Tax & VAT Wallet & promo Wallets Booth report Bookings WATCH Health 24 24 open alerts Failures 6 6 failure groups in the last 24 hours Integrations Activity Releases Support PLATFORM Operators System roles Platform alerts Platform jobs Environment Test controls All apps POS Admin A [staff] Owner ",
+      "[console B] O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print templates Staff benefits DEVICES & PLACES Devices Booths CHANNELS & ASSISTANT Teams & routing Assistant settings STAFF & HR REPORTS Analytics & sources Money oversight Sales Profitability Discounts & comps Tax & VAT Wallet & promo Wallets Booth report Bookings WATCH Health 24 24 open alerts Failures 6 6 failure groups in the last 24 hours Integrations Activity Releases Support PLATFORM Operators System roles Platform alerts Platform jobs Environment Test controls All apps POS Admin A ████ Owner "
+    ]
+  },
+  "finishedAt": "2026-11-12T08:52:38.344Z"
+}

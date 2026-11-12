@@ -1,0 +1,49 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3seen",
+  "startedAt": "2026-11-12T09:01:51.182Z",
+  "step": null,
+  "points": {},
+  "requests": [],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T09:01:56.054Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T09:01:56.056Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T09:01:58.820Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES"
+    }
+  ],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": false,
+  "failure": {
+    "step": null,
+    "error": "TimeoutError: page.waitForURL: Timeout 30000ms exceeded.",
+    "at": [
+      "openConsole (C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-12\\SCRUM-898\\proof.mjs:306:14",
+      "async phases.p3seen (C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\docs\\qa\\proof-2026-11-12\\SCRUM-898\\proof.mjs:874:13",
+      "async proof.mjs:1183:3"
+    ],
+    "lastScreens": []
+  },
+  "finishedAt": "2026-11-12T09:02:38.261Z"
+}

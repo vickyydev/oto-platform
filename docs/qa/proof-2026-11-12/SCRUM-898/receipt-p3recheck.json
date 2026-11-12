@@ -1,0 +1,55 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3recheck",
+  "startedAt": "2026-11-12T08:58:49.928Z",
+  "step": null,
+  "points": {
+    "3": {
+      "verdict": "PASS",
+      "pictures": [
+        "03a-console-add-printer-no-address-held-back.png",
+        "03b-console-add-printer-dev-path-refused.png",
+        "03c-console-add-printer-valid-address.png",
+        "03d-console-edit-printer-address-cleared-save-held-back.png"
+      ],
+      "shows": "Point 3 re-judged from receipt-p3.json: PATCH { address: \"\" } is refused 400 VALIDATION by the route schema (not PRINTER_ADDRESS_REQUIRED); everything else as receipt-p3.json shows",
+      "seen": {
+        "correctedCheck": {
+          "clearEmpty": {
+            "status": 400,
+            "code": "VALIDATION"
+          },
+          "clearNull": {
+            "status": 400,
+            "code": "PRINTER_ADDRESS_REQUIRED"
+          }
+        },
+        "readFrom": "receipt-p3.json"
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "addedPrinterNow": {
+        "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+        "address": "192.0.2.98:9122",
+        "archived": false
+      }
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T08:58:50.716Z"
+}

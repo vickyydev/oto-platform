@@ -1,0 +1,233 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p5",
+  "startedAt": "2026-11-12T10:13:59.448Z",
+  "step": "5: an ordinary ticket sale, one child and one adult, cash",
+  "points": {
+    "5": {
+      "verdict": "PASS",
+      "pictures": [
+        "05a-till-header-printer-light-clear.png",
+        "05b-till-ordinary-sale-paid-cash.png"
+      ],
+      "shows": "An ordinary ticket sale (1 child + 1 adult, cash) on the ZZ TEST till prints as before; the header shows no printer fault (the light is clear) with every printer addressed",
+      "seen": {
+        "lightBefore": {
+          "shown": false,
+          "label": null
+        },
+        "stationPrinters": [
+          {
+            "label": "ZZ TEST SCRUM-898 adult band printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          },
+          {
+            "label": "ZZ TEST SCRUM-898 bar printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          },
+          {
+            "label": "ZZ TEST SCRUM-898 drop-off band printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          },
+          {
+            "label": "ZZ TEST SCRUM-898 kids band printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          },
+          {
+            "label": "ZZ TEST SCRUM-898 kitchen printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          },
+          {
+            "label": "ZZ TEST SCRUM-898 receipt printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "queued": 0
+          }
+        ],
+        "sale": {
+          "receipt": "Z89801-000004",
+          "finaliseNotes": [],
+          "jobs": [
+            {
+              "id": "01a1cf40-3fdf-71c4-ac40-8af8f6b8c71d",
+              "kind": "adult_wristband",
+              "role": "adult_band",
+              "device": "ZZ TEST SCRUM-898 adult band printer",
+              "status": "printed",
+              "error": null,
+              "subjectType": "band"
+            },
+            {
+              "id": "01a1cf40-3fdb-749b-a591-39a7600adc91",
+              "kind": "kids_wristband",
+              "role": "kids_band",
+              "device": "ZZ TEST SCRUM-898 kids band printer",
+              "status": "printed",
+              "error": null,
+              "subjectType": "band"
+            },
+            {
+              "id": "01a1cf40-3fd7-73d5-85ab-ccedbf86d2ef",
+              "kind": "receipt",
+              "role": "receipt",
+              "device": "ZZ TEST SCRUM-898 receipt printer",
+              "status": "printed",
+              "error": null,
+              "subjectType": "sale"
+            }
+          ],
+          "newPrintouts": {
+            "kids": 1,
+            "adult": 1,
+            "receipt": 2,
+            "dropoff": 0
+          }
+        },
+        "lightAfter": {
+          "shown": false,
+          "label": null
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": null,
+      "time": "2026-11-12T10:14:01.768Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": null,
+      "time": "2026-11-12T10:14:01.770Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "till",
+      "stationIsOwn": true
+    },
+    {
+      "signedOut": "till",
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:14:29.906Z"
+}

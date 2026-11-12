@@ -1,0 +1,190 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p1b",
+  "startedAt": "2026-11-12T08:49:43.752Z",
+  "step": "1b: round 7, the drop-off band printer, the list re-read held back, the picture at once",
+  "points": {
+    "1b": {
+      "verdict": "PASS",
+      "pictures": [
+        "01c-console-reopened-at-once-not-set-list-held-top.png",
+        "01d-console-reopened-at-once-dropoff-printer-list-held-top.png"
+      ],
+      "shows": "Rounds 6 and 7: the picture taken the moment the reopened form is drawn, the list re-read still held back (none landed before the picture): the form shows the saved choice and the new version",
+      "seen": {
+        "rounds": [
+          {
+            "round": 6,
+            "target": "Not set",
+            "listReadHeldBack": true,
+            "versionBefore": 6,
+            "formShowedBefore": 6,
+            "fieldBefore": "ZZ TEST drop-off band printer",
+            "save": {
+              "status": 200,
+              "expectedConfigVersionSent": 6,
+              "answeredVersion": 7
+            },
+            "reopenedMsAfterSave": 6,
+            "listReadsLandedBetweenSaveAndReopen": 0,
+            "listReadsLandedWhileOpen": 1,
+            "framesSampled": 1651,
+            "firstFrameMs": 28,
+            "lastFrameMs": 10031,
+            "versionsSeen": [
+              7
+            ],
+            "dropoffValuesSeen": [
+              "Not set"
+            ],
+            "framesBeforeDevicesLoaded": 0,
+            "formShowedAfter": 7,
+            "fieldAfter": "Not set",
+            "apiAfter": {
+              "configVersion": 7,
+              "dropoff": "Not set"
+            },
+            "picture": "01c-console-reopened-at-once-not-set-list-held-top.png",
+            "atOnce": {
+              "picture": "01c-console-reopened-at-once-not-set-list-held-top.png",
+              "msAfterSave": 160,
+              "listReadsLandedBeforePicture": 0
+            },
+            "ok": true
+          },
+          {
+            "round": 7,
+            "target": "ZZ TEST drop-off band printer",
+            "listReadHeldBack": true,
+            "versionBefore": 7,
+            "formShowedBefore": 7,
+            "fieldBefore": "Not set",
+            "save": {
+              "status": 200,
+              "expectedConfigVersionSent": 7,
+              "answeredVersion": 8
+            },
+            "reopenedMsAfterSave": 7,
+            "listReadsLandedBetweenSaveAndReopen": 0,
+            "listReadsLandedWhileOpen": 1,
+            "framesSampled": 1652,
+            "firstFrameMs": 40,
+            "lastFrameMs": 10041,
+            "versionsSeen": [
+              8
+            ],
+            "dropoffValuesSeen": [
+              "ZZ TEST drop-off band printer"
+            ],
+            "framesBeforeDevicesLoaded": 0,
+            "formShowedAfter": 8,
+            "fieldAfter": "ZZ TEST drop-off band printer",
+            "apiAfter": {
+              "configVersion": 8,
+              "dropoff": "ZZ TEST SCRUM-898 drop-off band printer"
+            },
+            "picture": "01d-console-reopened-at-once-dropoff-printer-list-held-top.png",
+            "atOnce": {
+              "picture": "01d-console-reopened-at-once-dropoff-printer-list-held-top.png",
+              "msAfterSave": 190,
+              "listReadsLandedBeforePicture": 0
+            },
+            "ok": true
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "errorCode": null,
+      "expectedConfigVersionSent": 6,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "kids_band",
+        "kitchen",
+        "receipt"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "console form",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200,
+      "errorCode": null,
+      "expectedConfigVersionSent": 7,
+      "idempotencyKeySent": false,
+      "devicesSent": [
+        "adult_band",
+        "bar",
+        "kids_band",
+        "kitchen",
+        "receipt",
+        "dropoff_band"
+      ]
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T08:50:33.963Z"
+}

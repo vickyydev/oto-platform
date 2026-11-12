@@ -1,0 +1,116 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "readback",
+  "startedAt": "2026-11-12T10:05:42.624Z",
+  "step": null,
+  "points": {
+    "readback": {
+      "station": {
+        "name": "ZZ TEST SCRUM-898 proof till A",
+        "configVersion": 11,
+        "archived": false,
+        "devices": {
+          "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+          "bar": "ZZ TEST SCRUM-898 bar printer",
+          "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+          "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+          "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+          "receipt": "ZZ TEST SCRUM-898 receipt printer"
+        }
+      },
+      "printers": [
+        {
+          "role": "kids_band",
+          "label": "ZZ TEST SCRUM-898 kids band printer",
+          "address": "192.0.2.98:9101",
+          "archived": false
+        },
+        {
+          "role": "adult_band",
+          "label": "ZZ TEST SCRUM-898 adult band printer",
+          "address": "192.0.2.98:9102",
+          "archived": false
+        },
+        {
+          "role": "dropoff_band",
+          "label": "ZZ TEST SCRUM-898 drop-off band printer",
+          "address": "192.0.2.98:9103",
+          "archived": false
+        },
+        {
+          "role": "receipt",
+          "label": "ZZ TEST SCRUM-898 receipt printer",
+          "address": "192.0.2.98:9104",
+          "archived": false
+        },
+        {
+          "role": "kitchen",
+          "label": "ZZ TEST SCRUM-898 kitchen printer",
+          "address": "192.0.2.98:9105",
+          "archived": false
+        },
+        {
+          "role": "bar",
+          "label": "ZZ TEST SCRUM-898 bar printer",
+          "address": "192.0.2.98:9106",
+          "archived": false
+        },
+        {
+          "role": "added",
+          "label": "ZZ TEST SCRUM-898 no address",
+          "address": "192.0.2.98:9120",
+          "archived": false
+        },
+        {
+          "role": "added",
+          "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+          "address": "192.0.2.98:9122",
+          "archived": false
+        },
+        {
+          "role": "trimmed",
+          "label": "ZZ TEST SCRUM-898 trimmed address",
+          "address": "192.0.2.98:9121",
+          "archived": false
+        }
+      ],
+      "salesAtTheTill": [],
+      "ordinaryNumberMember": false
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:05:43.836Z"
+}

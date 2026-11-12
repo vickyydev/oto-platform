@@ -1,0 +1,418 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3",
+  "startedAt": "2026-11-12T08:57:46.295Z",
+  "step": "3: an existing ZZ TEST printer without an address, if this morning left one",
+  "points": {
+    "3": {
+      "verdict": "FAIL",
+      "pictures": [
+        "03a-console-add-printer-no-address-held-back.png",
+        "03b-console-add-printer-dev-path-refused.png",
+        "03c-console-add-printer-valid-address.png",
+        "03d-console-edit-printer-address-cleared-save-held-back.png"
+      ],
+      "shows": "Add a device: a band printer with no address cannot be added and the form says why; /dev/usb/lp0 and tcp:// are refused; 192.0.2.98:9120 adds. Edit: clearing or breaking the address holds Save back; restored, it saves. The api refuses the same (400 PRINTER_ADDRESS_REQUIRED / PRINTER_ADDRESS_INVALID), writes nothing, and stores an address trimmed",
+      "seen": {
+        "console": {
+          "empty": {
+            "addItEnabled": false,
+            "hint": "Required for a printer. The address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box."
+          },
+          "devPath": {
+            "addItEnabled": false,
+            "hint": "That is not an address the box can print to. Write it as 192.168.88.204:9100, the printer’s address and its port (9100 when left off)."
+          },
+          "tcpUrl": {
+            "addItEnabled": false,
+            "hint": "That is not an address the box can print to. Write it as 192.168.88.204:9100, the printer’s address and its port (9100 when left off)."
+          },
+          "valid": {
+            "addItEnabled": true,
+            "hint": "The address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box."
+          },
+          "added": {
+            "status": 200,
+            "address": "192.0.2.98:9122"
+          },
+          "rowText": "ZZ TEST SCRUM-898 no address 2 Band printer Simulated Edit tspl2 192.0.2.98:9122",
+          "editCleared": {
+            "saveEnabled": false,
+            "hint": "A printer needs the address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it."
+          },
+          "editDevPath": {
+            "saveEnabled": false
+          },
+          "editRestored": {
+            "saveEnabled": true
+          },
+          "editSaved": {
+            "status": 200,
+            "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+            "address": "192.0.2.98:9122"
+          }
+        },
+        "api": {
+          "create": {
+            "bandNoAddress": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_REQUIRED",
+              "written": false
+            },
+            "receiptBlank": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_REQUIRED",
+              "written": false
+            },
+            "kitchenDevPath": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_INVALID",
+              "written": false
+            },
+            "barTcpUrl": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_INVALID",
+              "written": false
+            },
+            "bandIpv6": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_INVALID",
+              "written": false
+            },
+            "bandBadPort": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_INVALID",
+              "written": false
+            }
+          },
+          "validWithSpaces": {
+            "status": 200,
+            "storedAddress": "192.0.2.98:9121"
+          },
+          "edit": {
+            "clearEmpty": {
+              "status": 400,
+              "code": "VALIDATION"
+            },
+            "clearNull": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_REQUIRED"
+            },
+            "devPath": {
+              "status": 400,
+              "code": "PRINTER_ADDRESS_INVALID"
+            },
+            "renameOnly": {
+              "status": 200,
+              "code": null
+            }
+          },
+          "addedReadBack": {
+            "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+            "address": "192.0.2.98:9122",
+            "archived": false
+          }
+        },
+        "legacy": "none live on Virtual box 1 (every ZZ TEST printer there is archived or has an address), and the api no longer makes one"
+      }
+    },
+    "3-console": {
+      "empty": {
+        "addItEnabled": false,
+        "hint": "Required for a printer. The address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box."
+      },
+      "devPath": {
+        "addItEnabled": false,
+        "hint": "That is not an address the box can print to. Write it as 192.168.88.204:9100, the printer’s address and its port (9100 when left off)."
+      },
+      "tcpUrl": {
+        "addItEnabled": false,
+        "hint": "That is not an address the box can print to. Write it as 192.168.88.204:9100, the printer’s address and its port (9100 when left off)."
+      },
+      "valid": {
+        "addItEnabled": true,
+        "hint": "The address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box."
+      },
+      "added": {
+        "status": 200,
+        "address": "192.0.2.98:9122"
+      },
+      "rowText": "ZZ TEST SCRUM-898 no address 2 Band printer Simulated Edit tspl2 192.0.2.98:9122",
+      "editCleared": {
+        "saveEnabled": false,
+        "hint": "A printer needs the address the box prints to: 192.168.88.204:9100 for a printer on the park network, 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it."
+      },
+      "editDevPath": {
+        "saveEnabled": false
+      },
+      "editRestored": {
+        "saveEnabled": true
+      },
+      "editSaved": {
+        "status": 200,
+        "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+        "address": "192.0.2.98:9122"
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_INVALID"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_INVALID"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_INVALID"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_INVALID"
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "VALIDATION"
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_INVALID"
+    },
+    {
+      "via": "admin api",
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "console",
+      "at": "3: Edit that printer: clear the address, then put it back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-12T08:58:00.875Z"
+}

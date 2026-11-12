@@ -1,0 +1,226 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p2till",
+  "startedAt": "2026-11-12T08:55:20.118Z",
+  "step": "2: the till's own Station setup, saved without a change",
+  "points": {
+    "2": {
+      "verdict": "PASS",
+      "pictures": [
+        "02a-console-second-form-refused-changed-since-opened.png",
+        "02b-console-reopened-shows-first-save.png",
+        "02c-till-station-setup-before-save.png",
+        "02d-till-station-setup-saved.png",
+        "02e-console-after-till-save-dropoff-printer-kept.png"
+      ],
+      "shows": "Two Consoles open on the same version: A saves a rename; B's different rename from the older version is refused 409 STATION_CHANGED, the form stays open with what was typed and says \"This till was changed since you opened it. Close it and open it again.\"; nothing written; reopened it shows A's save. The till's Station setup save (no version sent) still saves and keeps the drop-off band printer",
+      "seen": {
+        "before": {
+          "configVersion": 10,
+          "name": "ZZ TEST SCRUM-898 proof till",
+          "devices": {
+            "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+            "bar": "ZZ TEST SCRUM-898 bar printer",
+            "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+            "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+            "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+            "receipt": "ZZ TEST SCRUM-898 receipt printer"
+          }
+        },
+        "opened": {
+          "A": 10,
+          "B": 10
+        },
+        "A": {
+          "status": 200,
+          "expectedConfigVersionSent": 10,
+          "answeredVersion": 11,
+          "name": "ZZ TEST SCRUM-898 proof till A"
+        },
+        "B": {
+          "status": 409,
+          "errorCode": "STATION_CHANGED",
+          "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+          "details": {
+            "expectedConfigVersion": 10,
+            "configVersion": 11
+          },
+          "expectedConfigVersionSent": 10,
+          "drawerStillOpen": true,
+          "typedNameKept": true,
+          "drawerTitleNow": "ZZ TEST SCRUM-898 proof till A",
+          "versionShownNow": 10,
+          "secondPress": {
+            "status": 409,
+            "errorCode": "STATION_CHANGED"
+          },
+          "reopened": {
+            "name": "ZZ TEST SCRUM-898 proof till A",
+            "version": 11,
+            "dropoffKept": true
+          }
+        },
+        "readBackAfterB": {
+          "configVersion": 11,
+          "name": "ZZ TEST SCRUM-898 proof till A",
+          "devices": {
+            "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+            "bar": "ZZ TEST SCRUM-898 bar printer",
+            "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+            "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+            "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+            "receipt": "ZZ TEST SCRUM-898 receipt printer"
+          }
+        },
+        "tillSetup": {
+          "status": 200,
+          "expectedConfigVersionSent": null,
+          "devicesSent": [
+            "receipt",
+            "kids_band",
+            "adult_band",
+            "kitchen",
+            "bar",
+            "dropoff_band"
+          ],
+          "versionBefore": 11,
+          "versionAfter": 11,
+          "dropoffBefore": "ZZ TEST SCRUM-898 drop-off band printer",
+          "dropoffAfter": "ZZ TEST SCRUM-898 drop-off band printer",
+          "devicesAfter": {
+            "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+            "bar": "ZZ TEST SCRUM-898 bar printer",
+            "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+            "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+            "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+            "receipt": "ZZ TEST SCRUM-898 receipt printer"
+          }
+        },
+        "consoleAfterTillSave": {
+          "version": 11,
+          "dropoffKept": true
+        }
+      }
+    },
+    "2-console": {
+      "before": {
+        "configVersion": 10,
+        "name": "ZZ TEST SCRUM-898 proof till",
+        "devices": {
+          "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+          "bar": "ZZ TEST SCRUM-898 bar printer",
+          "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+          "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+          "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+          "receipt": "ZZ TEST SCRUM-898 receipt printer"
+        }
+      },
+      "opened": {
+        "A": 10,
+        "B": 10
+      },
+      "A": {
+        "status": 200,
+        "expectedConfigVersionSent": 10,
+        "answeredVersion": 11,
+        "name": "ZZ TEST SCRUM-898 proof till A"
+      },
+      "B": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+        "details": {
+          "expectedConfigVersion": 10,
+          "configVersion": 11
+        },
+        "expectedConfigVersionSent": 10,
+        "drawerStillOpen": true,
+        "typedNameKept": true,
+        "drawerTitleNow": "ZZ TEST SCRUM-898 proof till A",
+        "versionShownNow": 10,
+        "secondPress": {
+          "status": 409,
+          "errorCode": "STATION_CHANGED"
+        },
+        "reopened": {
+          "name": "ZZ TEST SCRUM-898 proof till A",
+          "version": 11,
+          "dropoffKept": true
+        }
+      },
+      "readBackAfterB": {
+        "configVersion": 11,
+        "name": "ZZ TEST SCRUM-898 proof till A",
+        "devices": {
+          "adult_band": "ZZ TEST SCRUM-898 adult band printer",
+          "bar": "ZZ TEST SCRUM-898 bar printer",
+          "dropoff_band": "ZZ TEST SCRUM-898 drop-off band printer",
+          "kids_band": "ZZ TEST SCRUM-898 kids band printer",
+          "kitchen": "ZZ TEST SCRUM-898 kitchen printer",
+          "receipt": "ZZ TEST SCRUM-898 receipt printer"
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "manager till",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "manager till",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "2: the till's own Station setup, saved without a change",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "signedIn": "manager till",
+      "stationIsOwn": true
+    },
+    {
+      "signedOut": "manager till",
+      "me": 401
+    },
+    {
+      "consoleSignOut": "console",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T08:55:46.906Z"
+}

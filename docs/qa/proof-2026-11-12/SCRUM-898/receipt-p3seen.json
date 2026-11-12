@@ -1,0 +1,65 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3seen",
+  "startedAt": "2026-11-12T10:15:29.505Z",
+  "step": "3seen: Robinson Chalong > Boxes > Virtual box 3 (view only)",
+  "points": {
+    "3-seen": {
+      "branch": "Oto Play Park, Robinson Chalong",
+      "box": "Virtual box 3",
+      "row": "Receipt Printer 1 Receipt printer Simulated paper ok Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to."
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T10:15:31.849Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T10:15:31.851Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3seen: Robinson Chalong > Boxes > Virtual box 3 (view only)",
+      "time": "2026-11-12T10:15:39.572Z",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 401"
+    },
+    {
+      "page": "console",
+      "at": "3seen: Robinson Chalong > Boxes > Virtual box 3 (view only)",
+      "time": "2026-11-12T10:15:39.573Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console",
+      "time": "2026-11-12T10:15:39.296Z",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:15:40.579Z"
+}

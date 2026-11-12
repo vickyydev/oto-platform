@@ -1,0 +1,130 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "readback",
+  "startedAt": "2026-11-12T10:16:06.218Z",
+  "step": null,
+  "points": {
+    "readback": {
+      "station": {
+        "name": "ZZ TEST SCRUM-898 proof till A",
+        "configVersion": 16,
+        "archived": true,
+        "devices": {}
+      },
+      "printers": [
+        {
+          "role": "kids_band",
+          "label": "ZZ TEST SCRUM-898 kids band printer",
+          "address": "192.0.2.98:9101",
+          "archived": true
+        },
+        {
+          "role": "adult_band",
+          "label": "ZZ TEST SCRUM-898 adult band printer",
+          "address": "192.0.2.98:9102",
+          "archived": true
+        },
+        {
+          "role": "dropoff_band",
+          "label": "ZZ TEST SCRUM-898 drop-off band printer",
+          "address": "192.0.2.98:9103",
+          "archived": true
+        },
+        {
+          "role": "receipt",
+          "label": "ZZ TEST SCRUM-898 receipt printer",
+          "address": "192.0.2.98:9104",
+          "archived": true
+        },
+        {
+          "role": "kitchen",
+          "label": "ZZ TEST SCRUM-898 kitchen printer",
+          "address": "192.0.2.98:9105",
+          "archived": true
+        },
+        {
+          "role": "bar",
+          "label": "ZZ TEST SCRUM-898 bar printer",
+          "address": "192.0.2.98:9106",
+          "archived": true
+        },
+        {
+          "role": "added",
+          "label": "ZZ TEST SCRUM-898 no address",
+          "address": "192.0.2.98:9120",
+          "archived": true
+        },
+        {
+          "role": "added",
+          "label": "ZZ TEST SCRUM-898 no address 2 renamed",
+          "address": "192.0.2.98:9122",
+          "archived": true
+        },
+        {
+          "role": "trimmed",
+          "label": "ZZ TEST SCRUM-898 trimmed address",
+          "address": "192.0.2.98:9121",
+          "archived": true
+        }
+      ],
+      "salesAtTheTill": [
+        {
+          "status": "finalised",
+          "receipt": "Z89801-000004",
+          "grossBaht": 1040
+        },
+        {
+          "status": "finalised",
+          "receipt": "Z89801-000003",
+          "grossBaht": 270
+        },
+        {
+          "status": "finalised",
+          "receipt": "Z89801-000002",
+          "grossBaht": 270
+        },
+        {
+          "status": "finalised",
+          "receipt": "Z89801-000001",
+          "grossBaht": 270
+        }
+      ],
+      "ordinaryNumberMember": false
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T10:16:07.279Z"
+}

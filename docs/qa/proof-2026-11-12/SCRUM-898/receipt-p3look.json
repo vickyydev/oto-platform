@@ -1,0 +1,85 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "p3look",
+  "startedAt": "2026-11-12T08:58:51.328Z",
+  "step": "3look: signed out with the drawer still open, 10 s more",
+  "points": {
+    "3-look": {
+      "deviceReadsWhileOpen": [
+        {
+          "time": "2026-11-12T08:58:59.152Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.153Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.167Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.167Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.200Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.200Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.200Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.521Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.546Z",
+          "status": 200
+        },
+        {
+          "time": "2026-11-12T08:58:59.547Z",
+          "status": 200
+        }
+      ],
+      "signedOutAt": "2026-11-12T08:59:28.777Z",
+      "deviceReadsAfterSignOut": []
+    }
+  },
+  "requests": [],
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T08:58:54.054Z",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": null,
+      "time": "2026-11-12T08:58:54.056Z",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "notes": [
+    {
+      "consoleSignOut": "console",
+      "time": "2026-11-12T08:59:40.061Z",
+      "status": 200,
+      "me": 401
+    },
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T09:01:00.931Z"
+}

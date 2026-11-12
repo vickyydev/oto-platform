@@ -1,0 +1,126 @@
+{
+  "ticket": "SCRUM-898/899/900",
+  "phase": "setup",
+  "startedAt": "2026-11-12T08:47:56.806Z",
+  "step": "setup: the ZZ TEST till, without a drop-off band printer (point 1 assigns it in the Console)",
+  "points": {
+    "beforeRun": {
+      "box": "Virtual box 1",
+      "liveZzTestPrintersWithoutAddress": [],
+      "archivedZzTestPrintersWithoutAddress": [],
+      "otherLivePrintersWithoutAddress": 0
+    },
+    "setup": {
+      "station": {
+        "name": "ZZ TEST SCRUM-898 proof till",
+        "prefix": "Z89801",
+        "configVersion": 1,
+        "devices": [
+          {
+            "role": "adult_band",
+            "label": "ZZ TEST SCRUM-898 adult band printer"
+          },
+          {
+            "role": "bar",
+            "label": "ZZ TEST SCRUM-898 bar printer"
+          },
+          {
+            "role": "kids_band",
+            "label": "ZZ TEST SCRUM-898 kids band printer"
+          },
+          {
+            "role": "kitchen",
+            "label": "ZZ TEST SCRUM-898 kitchen printer"
+          },
+          {
+            "role": "receipt",
+            "label": "ZZ TEST SCRUM-898 receipt printer"
+          }
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "via": "admin api",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "odd": [],
+  "pageErrors": [],
+  "notes": [
+    {
+      "adminSignedOut": 401
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-11-12T08:47:59.025Z"
+}
