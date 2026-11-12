@@ -1103,17 +1103,6 @@ export function resolveCatalogueAnswer(
     const entry = { kind: (r.kind ?? "special_request") as BeoAiRequestKind, text: r.text, from: fromOf(r, r.text) };
     merge(proposal.details.requests, entry, (x) => x.kind === entry.kind && fold(x.text) === fold(entry.text));
   }
-  // The chat's timed steps, one per step, in clock order.
-  // SCRUM-904: a show the entertainment carries at the same time is that act, not a second step
-  // (and the drinks at the bar's time are the bar's service): `timedElsewhere`.
-  for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
-    if (!t.time || !t.label) continue;
-    if (timedElsewhere({ time: t.time, label: t.label }, proposal)) continue;
-    const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
-    merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
-  }
-  proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));
-
   // SCRUM-904: the rest of the form the conversation gives — the booking name, the location,
   // the setup plan, the POS box and the hosts — each with the chat's words for it.
   const sourced = (v: { value?: string; said?: string; line?: number; source?: BeoAiSource } | null): BeoAiSourced<string> | null =>
@@ -1155,6 +1144,18 @@ export function resolveCatalogueAnswer(
   if (partyHost || entertainmentHost) {
     proposal.details.hosts = { ...(partyHost ? { partyHost } : {}), ...(entertainmentHost ? { entertainmentHost } : {}) };
   }
+
+  // The chat's timed steps, one per step, in clock order.
+  // SCRUM-904: a show the entertainment carries at the same time is that act, not a second step
+  // (and the drinks at the bar's time are the bar's service): `timedElsewhere`. SCRUM-946: read
+  // after the setup plan, so a setup task (which the Timeline places itself) is not a step again.
+  for (const t of readMany(TimelineAnswer, answer.timeline, 60)) {
+    if (!t.time || !t.label) continue;
+    if (timedElsewhere({ time: t.time, label: t.label }, proposal)) continue;
+    const entry = { time: t.time, label: t.label, from: fromOf(t, t.label, t.time) };
+    merge(proposal.details.timeline, entry, (x) => fold(x.label) === fold(entry.label));
+  }
+  proposal.details.timeline.sort((a, b) => a.time.localeCompare(b.time));
   return proposal;
 }
 
@@ -1171,14 +1172,51 @@ const DRINKS_WORDS = /(^|[^\p{L}])(drinks?|bar|beverages?)([^\p{L}]|$)|เคร
  * Timeline makes its own step of each (`generateTimelineFromBeo`), and a
  * step of the chat's beside it would be the same moment twice.
  */
-export function timedElsewhere(step: { time: string; label: string }, proposal: Pick<BeoAiProposal, "entertainment" | "event">): boolean {
+export function timedElsewhere(
+  step: { time: string; label: string },
+  proposal: Pick<BeoAiProposal, "entertainment" | "event"> & Partial<Pick<BeoAiProposal, "cake" | "details">>,
+): boolean {
   const label = fold(step.label);
   if (!label) return false;
   const show = proposal.entertainment.some(
     (e) => e.time === step.time && [e.name, e.said].some((n) => !!n && (fold(n).includes(label) || label.includes(fold(n)))),
   );
   if (show) return true;
-  return proposal.event.barServiceTime?.value === step.time && DRINKS_WORDS.test(step.label);
+  if (proposal.event.barServiceTime?.value === step.time && DRINKS_WORDS.test(step.label)) return true;
+  // SCRUM-946 (the 12 November proof): the Timeline makes its own steps of these too.
+  // The party's start ("party starts", "from 14:00") beside the automatic Guests arrive, and its
+  // end ("party ends", "to 16:30"): a step that says nothing but that, at that time.
+  if (proposal.event.startTime?.value === step.time && saysOnly(step.label, START_WORDS)) return true;
+  if (proposal.event.endTime?.value === step.time && saysOnly(step.label, END_WORDS)) return true;
+  // SCRUM-941: the cake, which approval writes with its time, so the Timeline's Cake moment is
+  // the one cake line at the cake's time ("16:00 cakes" beside it is the same moment twice).
+  const cake = proposal.cake;
+  if (cake?.time && cake.mode !== "NONE" && CAKE_WORDS.test(step.label)) return true;
+  // A setup task, which the Timeline places before the start itself, and the setup's ready-by.
+  const setup = proposal.details?.setup;
+  if (setup?.tasks.some((t) => { const task = fold(t.itemLabel); return !!task && (label.includes(task) || task.includes(label)); })) return true;
+  return setup?.readyBy?.value === step.time && SETUP_WORDS.test(step.label);
+}
+
+/** SCRUM-941: words for the cake, in the languages the park's chats are written in. */
+const CAKE_WORDS = /(^|[^\p{L}])cakes?([^\p{L}]|$)|เค้ก|торт/iu;
+/** SCRUM-946: words for getting the room ready. */
+const SETUP_WORDS = /(^|[^\p{L}])(set ?up|ready|decorat\p{L}*)([^\p{L}]|$)|เตรียม|จัดห้อง|подготов|готов/iu;
+/** SCRUM-946: the words a step that only marks the party's start or end is made of (and its time). */
+const START_WORDS = new Set([
+  "party", "the", "guests", "guest", "kids", "children", "everyone", "arrive", "arrives", "arrival", "arriving", "start", "starts", "starting",
+  "begin", "begins", "beginning", "from", "at", "of", "birthday", "time", "open", "opens", "doors", "h", "pm", "am",
+  "เริ่ม", "เริ่มงาน", "งาน", "เวลา", "начало", "начинается", "праздник", "вечеринка", "гости", "приходят", "с", "в",
+]);
+const END_WORDS = new Set([
+  "party", "the", "guests", "kids", "children", "everyone", "end", "ends", "ending", "finish", "finishes", "finished", "over", "close",
+  "closes", "until", "till", "to", "at", "of", "birthday", "time", "leave", "leaves", "goodbye", "bye", "h", "pm", "am",
+  "เลิก", "จบ", "จบงาน", "เลิกงาน", "งาน", "เวลา", "สิ้นสุด", "конец", "заканчивается", "праздник", "вечеринка", "до", "в",
+]);
+/** Whether a label holds only these words and numbers (its time): "party starts", "from 14:00". */
+function saysOnly(label: string, words: ReadonlySet<string>): boolean {
+  const parts = label.normalize("NFC").toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+  return parts.length > 0 && parts.every((w) => /^\d+$/.test(w) || words.has(w));
 }
 
 /** A real calendar day, YYYY-MM-DD. */
@@ -1303,7 +1341,12 @@ export function detailsFromFill(
     for (const t of fill.timeline ?? []) {
       if (details.timeline.some((x) => sameText(x.label, t.label))) continue;
       // SCRUM-904: a show the conversation times, or the drinks at the bar's time, is not a step twice.
-      if (timedElsewhere(t, proposal)) continue;
+      // SCRUM-946: nor the party's start or end, the cake, or a setup task (the ruling's own too).
+      const timed = (key: "startTime" | "endTime") => {
+        const v = proposal.event[key]?.value ?? (typeof fill.event?.[key] === "string" ? fill.event[key] : undefined);
+        return v ? { [key]: { value: v, from: input.from } } : {};
+      };
+      if (timedElsewhere(t, { ...proposal, details, event: { ...proposal.event, ...timed("startTime"), ...timed("endTime") } })) continue;
       details.timeline.push({ time: t.time, label: t.label, from: fromFor(t.label) });
     }
     details.timeline.sort((a, b) => a.time.localeCompare(b.time));

@@ -22,6 +22,9 @@
 //   5. a till code's names are the party's own set menu's: CF-43 offers Fried
 //      rice Veggie, Chicken or Shrimp, never another set menu's "Fried Rice";
 //      CF-24 is "Margherita", never also "Margherita Pizza".
+//   6. the Timeline holds each moment once: no "party starts" or "party ends"
+//      step beside the automatic Guests arrive, no setup task again as a step,
+//      and one cake line at the cake's time (SCRUM-941).
 //
 // Every model answer here is scripted: no model key is used.
 //
@@ -50,7 +53,8 @@ process.env.LOG_LEVEL ??= "info";
 
 const { registerAIRoutes } = await import("../server/ai-routes");
 const { registerBeoRoutes } = await import("../server/beo-routes");
-const { loadBeoCatalogue } = await import("../server/lib/beoCatalogueFill");
+const { loadBeoCatalogue, resolveCatalogueAnswer, timedElsewhere } = await import("../server/lib/beoCatalogueFill");
+type TranscriptRef = import("../server/lib/beoCatalogueFill").TranscriptRef;
 const { db, pool: appDbPool } = await import("../server/db");
 const { initialReviewState, approveBodyOf, menuLinePriceWords, namesPhone, NOTHING_HELD, undecidedOptions } = await import("../client/src/lib/beo-ai-review");
 const { BeoAiReviewBody } = await import("../client/src/components/beo/beo-ai-review");
@@ -76,7 +80,7 @@ async function check(name: string, fn: () => Promise<void> | void) {
     failures[name] = error instanceof Error ? `${error.message}\n${error.stack?.split("\n").slice(1, 4).join("\n")}` : String(error);
   }
 }
-const CHECKS = 5;
+const CHECKS = 6;
 
 const run = randomUUID().slice(0, 8);
 const tenant = randomUUID();
@@ -85,7 +89,7 @@ const park = randomUUID();
 const coreBranch = randomUUID();
 const manager = randomUUID();
 const cat = { pkg: randomUUID(), setMenu: randomUUID(), otherMenu: randomUUID(), bubble: randomUUID() };
-const KEYS = ["extra", "mirror", "priced", "options"] as const;
+const KEYS = ["extra", "mirror", "priced", "options", "timeline"] as const;
 type Key = (typeof KEYS)[number];
 const ev = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
 const conv = Object.fromEntries(KEYS.map((k) => [k, randomUUID()])) as Record<Key, string>;
@@ -413,6 +417,63 @@ try {
     // A party on the other set menu reads the code by that menu's names; with no set menu, every name.
     assert.deepEqual(foodNamesFor(review.catalogue, "CF-43", cat.otherMenu), ["Fried Rice"]);
     assert.deepEqual(foodNamesFor(review.catalogue, "cf-24", null), ["Margherita", "Margherita Pizza"]);
+  });
+
+  // --- 6. The Timeline: each moment once ------------------------------------------------------
+  await check("theTimelineHoldsEachMomentOnce", async () => {
+    const texts = [
+      "Saturday 5 December, from 15:00 to 17:30, 12 kids and 8 adults. TIMELINE-946",
+      "2 of the park's cakes at 16:00 please. TIMELINE-946",
+      "For the setup, balloons at the entrance by 14:30 please. Games at 16:30, and welcome drinks at 15:00. TIMELINE-946",
+    ];
+    chats.set("timeline", texts.map((text, i) => ({ id: `${conv.timeline}-${i}`, author: "customer" as const, at: at(i), text })));
+    // The proof's thread A answer: the start and the end as steps, the cake as a step beside the
+    // cake's time, the setup task as a step beside the setup plan.
+    answers.set("TIMELINE-946", {
+      catalogue: {
+        event: { startTime: { value: "15:00", line: 1 }, endTime: { value: "17:30", line: 1 } },
+        cake: { mode: "INTERNAL", notes: "2 of the park's cakes", time: "16:00", line: 2 },
+        setup: { readyBy: { value: "14:30", said: "by 14:30", line: 3 }, tasks: [{ label: "balloons at the entrance", notes: "by 14:30", line: 3 }] },
+        timeline: [
+          { time: "15:00", label: "party starts", line: 1 },
+          { time: "15:00", label: "from 15:00", line: 1 },
+          { time: "16:00", label: "cakes", line: 2 },
+          { time: "17:30", label: "party ends", line: 1 },
+          { time: "14:30", label: "balloons at the entrance by 14:30", line: 3 },
+          { time: "16:30", label: "Games", line: 3 },
+          { time: "15:00", label: "welcome drinks", line: 3 },
+        ],
+      },
+    });
+    const res = await fill(ev.timeline);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    const review: BeoAiReview = res.body.review;
+    assert.deepEqual(review.proposal.details.timeline.map((t) => [t.time, t.label]), [["15:00", "welcome drinks"], ["16:30", "Games"]], "only the chat's own moments");
+    const ok = await approve(ev.timeline, approveBodyOf(review, initialReviewState(review, { fill: res.body.fill }), { conversationId: review.conversationId ?? null, messageId: null }));
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const steps = await q<{ label: string; is_system_generated: boolean }>("select label, is_system_generated from beo_timeline_items where event_id = $1", [ev.timeline]);
+    const labels = steps.map((t) => t.label);
+    assert.equal(labels.filter((l) => /cake/i.test(l)).length, 1, `one cake line: ${JSON.stringify(labels)}`);
+    assert.equal(labels.filter((l) => /arrive|starts|from 15/i.test(l)).length, 1, `the start once (Guests arrive): ${JSON.stringify(labels)}`);
+    assert.equal(labels.filter((l) => /ends/i.test(l)).length, 0, "no party-ends step");
+    assert.equal(labels.filter((l) => /balloons/i.test(l)).length, 1, `the setup task once: ${JSON.stringify(labels)}`);
+    assert.ok(labels.includes("Games") && labels.includes("welcome drinks"), "the chat's own steps stay");
+
+    // The rule alone (SCRUM-941): a cake step only when no cake time carries it; another time is still the cake.
+    const proposal = { entertainment: [], event: { startTime: { value: "17:00", from: familyFrom(1) }, endTime: { value: "19:30", from: familyFrom(1) } } };
+    const cakeAt = (time: string | null, mode: "INTERNAL" | "EXTERNAL" | "NONE" | null = "EXTERNAL") => ({ ...proposal, cake: { mode, notes: null, time, from: familyFrom(3) } });
+    assert.equal(timedElsewhere({ time: "17:00", label: "Торт мы принесём свой, в 17:00" }, cakeAt("17:00")), true, "the family's own cake, in Russian");
+    assert.equal(timedElsewhere({ time: "18:00", label: "Cake" }, cakeAt("17:00")), true, "the cake is the cake's time's line");
+    assert.equal(timedElsewhere({ time: "18:00", label: "Cake" }, cakeAt(null)), false, "no cake time: the step is the one cake line");
+    assert.equal(timedElsewhere({ time: "18:00", label: "Cake" }, cakeAt("17:00", "NONE")), false);
+    assert.equal(timedElsewhere({ time: "17:00", label: "เริ่มงาน" }, proposal), true, "the start in Thai");
+    assert.equal(timedElsewhere({ time: "17:00", label: "Welcome speech" }, proposal), false, "another moment at the start stays");
+    assert.equal(timedElsewhere({ time: "18:00", label: "party starts" }, proposal), false, "not at the start: kept");
+    assert.equal(timedElsewhere({ time: "19:30", label: "Goodbye and party bags" }, proposal), false, "an end step with its own words stays");
+    // The resolver on its own: the same steps of the proof dropped, the chat's own kept.
+    const refs: TranscriptRef[] = texts.map((text, i) => ({ line: i + 1, id: `t${i}`, source: "family", at: at(i), ruling: false, text }));
+    const read = resolveCatalogueAnswer(answers.get("TIMELINE-946") ? (answers.get("TIMELINE-946") as any).catalogue : {}, review.catalogue, refs);
+    assert.deepEqual(read.details.timeline.map((t) => t.label), ["welcome drinks", "Games"]);
   });
 } finally {
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
