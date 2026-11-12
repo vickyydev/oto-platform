@@ -2048,9 +2048,22 @@ export async function editCheckin(
         rAfter[k] = nextReg[k];
       }
     }
+    // SCRUM-857 — the family's confirmation stands for the number and the
+    // channel they confirmed it for: a staff edit of either withdraws it (the
+    // record keeps who changed what in the audit row), and a cleared number
+    // can hold no confirmation at all (registration_contact_confirmed_check).
+    const withdrawn = reg.contactConfirmedAt !== null && ('guardianPhone' in rAfter || 'contactChannel' in rAfter);
+    if (withdrawn) {
+      rBefore.contactConfirmedAt = reg.contactConfirmedAt?.toISOString() ?? null;
+      rBefore.contactConfirmedBy = reg.contactConfirmedBy ?? null;
+      rAfter.contactConfirmedAt = null;
+      rAfter.contactConfirmedBy = null;
+    }
     if (Object.keys(rAfter).length) {
-      changed += Object.keys(rAfter).length;
-      await tx.update(registration).set({ ...nextReg, updatedAt: now }).where(eq(registration.id, reg.id));
+      changed += Object.keys(rAfter).length - (withdrawn ? 2 : 0);
+      await tx.update(registration)
+        .set({ ...nextReg, ...(withdrawn ? { contactConfirmedAt: null, contactConfirmedBy: null } : {}), updatedAt: now })
+        .where(eq(registration.id, reg.id));
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: actor.operatorId,

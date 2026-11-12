@@ -155,3 +155,49 @@ describe('POST /checkin/registrations checks the number itself', () => {
     expect(res.json().guardianPhone).toBeNull();
   });
 });
+
+describe('PATCH /checkin/checkins/:id after the family confirmed the number', () => {
+  async function confirmedStay() {
+    const { res, payload } = await register({ contactConfirmation: { confirmedAt: CONFIRMED_AT, by: 'family' } });
+    expect(res.statusCode, res.body).toBe(200);
+    return { registrationId: payload.id as string, stayId: res.json().children[0].id as string };
+  }
+  const edit = (id: string, payload: Record<string, unknown>) =>
+    ctx.app.inject({ method: 'PATCH', url: `/checkin/checkins/${id}`, headers: { cookie: reception }, payload });
+  const row = async (id: string) => (await ctx.db.select().from(registration).where(eq(registration.id, id)))[0]!;
+  const lastEdit = async (id: string) => {
+    const rows = await ctx.db.select().from(auditLog)
+      .where(and(eq(auditLog.entityType, 'registration'), eq(auditLog.entityId, id), eq(auditLog.action, 'registration.update')));
+    return rows.at(-1)!;
+  };
+
+  it('keeps the confirmation when only the name changes', async () => {
+    const { registrationId, stayId } = await confirmedStay();
+    expect((await edit(stayId, { guardianName: 'ZZ TEST guardian B' })).statusCode).toBe(200);
+    expect((await row(registrationId)).contactConfirmedBy).toBe('family');
+  });
+
+  it.each([
+    ['a new number', { guardianPhone: '0898570003' }],
+    ['another channel', { contactChannel: 'line' }],
+  ])('withdraws it on %s, and the audit row says so', async (_label, change) => {
+    const { registrationId, stayId } = await confirmedStay();
+    const res = await edit(stayId, change);
+    expect(res.statusCode, res.body).toBe(200);
+    const after = await row(registrationId);
+    expect(after.contactConfirmedAt).toBeNull();
+    expect(after.contactConfirmedBy).toBeNull();
+    const audited = await lastEdit(registrationId);
+    expect(audited.before).toMatchObject({ contactConfirmedAt: CONFIRMED_AT, contactConfirmedBy: 'family' });
+    expect(audited.after).toMatchObject({ contactConfirmedAt: null, contactConfirmedBy: null });
+  });
+
+  it('lets staff clear the number, which takes the confirmation with it', async () => {
+    const { registrationId, stayId } = await confirmedStay();
+    const res = await edit(stayId, { guardianPhone: null });
+    expect(res.statusCode, res.body).toBe(200);
+    const after = await row(registrationId);
+    expect(after.guardianPhone).toBeNull();
+    expect(after.contactConfirmedAt).toBeNull();
+  });
+});
