@@ -288,3 +288,18 @@ Point 4 answered: the second "printout" on the simulated receipt printer was the
 9. Only an empty address counts as 'not set up', matching the Console's box drawer. A legacy printer with an unreadable address (which the box also skips) still shows its last reading. Should that also count as not set up?
 10. The booth status card and the kiosk summary show such a printer as 'unknown' and 'paper unknown' rather than 'not set up'. I did not change those two Console cards. Change them too?
 11. The seeded simulated printers moved to documentation addresses that keep each unit's last number: 192.0.2.202, .204, .206, .207, .208, .210. Are those the addresses you want?
+
+## The next till lane, written and waiting (13 November 05:43)
+It starts when the display-fix lane (SCRUM-963) has landed: one till lane builds at a time, because the till's real-browser tests are what filled the laptop's memory. Worktree C:/oto-lanes/keptsale964-20261113, branch lane/keptsale964-20261113; the brief is in the planner's scratchpad at l964/brief.txt and is repeated in short here so it can be rebuilt from this page.
+Tickets: SCRUM-964 (a kept sale after a session end), SCRUM-967 (the party page after a kitchen edit), points 1 and 2 of SCRUM-969 (End of Day's words; the phone's F&B at a session end). Services: the till; the platform too if End of Day's sentence is composed there. No migration. The counter box is not changed.
+
+1. HIGH (SCRUM-964): after a different person continues a kept sale the paired counter display no longer stays frozen: the till drops the first person's hold on the display, takes its own and shows the sale at once; a refusal of the old hold is not retried for ever.
+2. (SCRUM-964) Under an ended session the line "A family is filling in the drop-off form on the display." shows.
+3. (SCRUM-964) An F&B or Shop order with a QR or card payment waiting is offered Continue only after a session end, as the ticket till does; a stale mark after a reload no longer gives a Continue-only offer for a plain cart.
+4. (SCRUM-964) After an unlock the station is asked for again; a reload at the session-ended form keeps the line and the kept sale as far as the till's own storage holds it.
+5. (point 2 of SCRUM-969) A session that ends mid-order on the phone's F&B keeps the order.
+6. HIGH (SCRUM-967): after a manager saves a kitchen change, the party page's bill and "Take balance" show the new amounts without a reload, and the amount taken is always the fresh one.
+7. (SCRUM-967) A food line's note shows on the Kitchen plan card; the "adults" and "not on the till menu" marks are whole in the Edit form at 1440; the refusal after the BEO changed names the dish and gives one instruction.
+8. (point 1 of SCRUM-969) End of Day says only what can be done for an F&B or Shop order saved as partly paid (a manager's refund from History), and the "Save as partly paid" dialog says Close Day waits for it.
+
+Not in this lane (the owner's questions, already written down): starting a kitchen plan from the till for a party that has none (point 2 of SCRUM-967); collecting a part-paid food order's balance at the F&B or Shop counter (SCRUM-969); the whole order line above the QR on the phone (SCRUM-892). The party-page small points of SCRUM-953 and point 6 of SCRUM-967 go into the till lane after this one.
