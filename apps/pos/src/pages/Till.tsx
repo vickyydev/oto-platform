@@ -3876,6 +3876,11 @@ export default function Till() {
    * Private child details, and see the family's screen follow.
    */
   const consentMirror = step === 7 && !!consent && !staffTicks && !inlineDisplay;
+  // SCRUM-857 — the photo the till holds for each child (the family's from
+  // their screen, or one staff took), shown on that copy where the family's
+  // screen has its camera.
+  const consentMirrorPhotos: Record<string, string> = Object.fromEntries(
+    superSlots.flatMap(slot => slot.childPhotoUrl ? [[slot.id, slot.childPhotoUrl] as const] : []));
   const displayInUse = linkedDisplay.connected.length > 0;
   useEffect(() => {
     // A visitor may be typing on the separate display while staff are locked.
@@ -4289,7 +4294,7 @@ export default function Till() {
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <LanguageProvider>
               <PublicConsentCapture prompt={{ ...consent, kind: 'consent', requestId: 'staff-mirror' }} busy={false}
-                onAction={() => undefined} mirror={{ step: consentFamilyStep }} />
+                onAction={() => undefined} mirror={{ step: consentFamilyStep, photos: consentMirrorPhotos }} />
             </LanguageProvider>
           </div>
         )}

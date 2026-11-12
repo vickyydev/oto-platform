@@ -93,3 +93,30 @@ export function DisplayChildPhoto({ mark, presence, upload, onStored }: {
       <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />{t('superviseConsent.photoReceived')}</p>}
   </div>;
 }
+
+/**
+ * SCRUM-857 — THE SAME BLOCK ON THE TILL'S COPY OF THE FAMILY'S SCREEN (the
+ * owner's ruling of 12 November: staff watch the form as it is filled). The
+ * same title and instructions, and the photo the till holds for this child —
+ * the family's from their screen, or one staff took — where the family's
+ * screen has its camera. Read-only: it never opens a camera.
+ */
+export function MirrorChildPhoto({ mark, photo }: {
+  mark: 'needed' | 'taken';
+  /** The photo the till holds for this child, if any. */
+  photo?: string;
+}) {
+  const { t } = useLanguage();
+  return <div data-testid="consent-mirror-photo">
+    <label className="flex items-center gap-2 text-lg text-foreground/70"><Camera className="h-5 w-5" /> {t('superviseConsent.photoTitle')}</label>
+    <p className="mt-1 text-sm text-foreground/50">{t('superviseConsent.photoInstructions')}</p>
+    <div className="relative mt-2 aspect-[4/3] w-full overflow-hidden rounded-2xl border border-foreground/10 bg-black/40">
+      {photo
+        ? <img src={photo} alt={t('camera.capturedAlt')} className="h-full w-full object-cover" />
+        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-foreground/50">
+          <Camera className="h-12 w-12" /><span className="text-base">{t('camera.noPhoto')}</span></div>}
+    </div>
+    {mark === 'taken' && <p className="mt-2 flex items-center gap-2 text-base text-foreground/70" data-testid="consent-photo-received">
+      <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />{t('superviseConsent.photoReceived')}</p>}
+  </div>;
+}

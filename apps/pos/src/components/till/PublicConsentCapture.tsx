@@ -17,7 +17,7 @@ import { clearConsentDraft, keepConsentDraft, readConsentDraft } from '@/lib/con
 import { consentMissing, consentMissingLine } from '@/lib/consentFinish';
 import { CHANNEL_LABEL } from '@/lib/contactChannel';
 import type { DisplayPhotoForm } from '@/api/consentPhoto';
-import { DisplayChildPhoto, useCameraPresence } from './DisplayChildPhoto';
+import { DisplayChildPhoto, MirrorChildPhoto, useCameraPresence } from './DisplayChildPhoto';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
 
@@ -271,6 +271,16 @@ const LIVE_TRIES = 3;
  * form stops sending it until the family changes something or presses on.
  */
 const LIVE_IGNORED = 2;
+/**
+ * SCRUM-857 — a picture named to the till while the till still shows no
+ * photo for that child this long after is named again (the answer was lost
+ * or refused on its way, or the till could not collect it), up to this many
+ * times in all; the till keeps the same file once.
+ */
+export const PHOTO_RESEND_MS = 5_000;
+export const PHOTO_TRIES = 3;
+/** SCRUM-875 — Done waits on a change still on its way to the till; past this long, the line under the form says so. */
+export const SLOW_SEND_MS = 1_500;
 
 /** The public part of ConsentCapture: the family fills it; the photo and staff decisions remain at the till. */
 export function PublicConsentCapture({ prompt, busy, onAction, answerPending = busy, mirror, sendPhoto }: {
@@ -289,9 +299,10 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
    * to watch as it is filled: the form as the till holds it (`prompt`), on the
    * step the family is on, read-only. `step` is null when the family's screen
    * does not say (an older display, or a station between that drops it): every
-   * step is shown, one under the other.
+   * step is shown, one under the other. `photos`: the photo the till holds
+   * for each child, by slot, shown where the family's screen has its camera.
    */
-  mirror?: { step: ConsentFormStep | null };
+  mirror?: { step: ConsentFormStep | null; photos?: Readonly<Record<string, string>> };
   /** SCRUM-857 — store the family's picture of a child; answered with the stored file's id. Absent, the photo stays at reception. */
   sendPhoto?: (form: DisplayPhotoForm, dataUrl: string) => Promise<string>;
 }) {
@@ -359,27 +370,52 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
   // SCRUM-857 — the family's photos: one file id per picture (a resend is the
   // same file), and each stored picture named to the till once the screen is
   // free to answer, the latest picture of a child replacing an earlier one.
-  const takesPhotos = !!sendPhoto && prompt.slots.some((slot) => slot.photo !== undefined);
+  // Free means no answer of this screen's is out at all (`answerPending`), a
+  // live `fill` included: the station takes one answer at a time. A picture
+  // the till still shows no photo for a moment after it was named is named
+  // again (`PHOTO_RESEND_MS`), so a name that was lost on its way between
+  // two fills does not leave the child without a photo. The till's own copy
+  // of this screen (`mirror`) never opens a camera: it shows the photo the
+  // till holds.
+  const marked = prompt.slots.some((slot) => slot.photo !== undefined);
+  const takesPhotos = !mirror && !!sendPhoto && marked;
   const presence = useCameraPresence(takesPhotos);
   const photoIds = useRef(new Map<string, string>());
   const [photosToName, setPhotosToName] = useState<{ slotId: string; fileId: string }[]>([]);
+  /** Each child's picture last named to the till, and how many times, until the till shows it holds a photo. */
+  const named = useRef(new Map<string, { fileId: string; tries: number }>());
   useEffect(() => {
-    if (busy || prompt.completed || photosToName.length === 0) return;
+    // "Ask the team", waiting for the same free moment, goes first.
+    if (answerPending || prompt.completed || photosToName.length === 0 || helpAsked && !helpSent.current) return;
     const [first, ...rest] = photosToName;
     setPhotosToName(rest);
     if (prompt.slots.some((slot) => slot.id === first!.slotId && slot.photo !== undefined)) {
+      const before = named.current.get(first!.slotId);
+      named.current.set(first!.slotId, { fileId: first!.fileId, tries: before?.fileId === first!.fileId ? before.tries + 1 : 1 });
       onAction({ ...fence, action: 'photo', slotId: first!.slotId, fileId: first!.fileId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the fence and the answer callback follow the prompt and the parent's render
-  }, [busy, prompt, photosToName]);
+  }, [answerPending, prompt, photosToName, helpAsked]);
+  useEffect(() => {
+    for (const slotId of [...named.current.keys()]) {
+      if (!prompt.slots.some((slot) => slot.id === slotId && slot.photo === 'needed')) named.current.delete(slotId);
+    }
+    if (answerPending || prompt.completed || photosToName.length > 0) return;
+    const again = [...named.current].filter(([, item]) => item.tries < PHOTO_TRIES).map(([slotId, item]) => ({ slotId, fileId: item.fileId }));
+    if (again.length === 0) return;
+    const timer = setTimeout(() => setPhotosToName((queued) => [...queued,
+      ...again.filter((item) => !queued.some((other) => other.slotId === item.slotId))]), PHOTO_RESEND_MS);
+    return () => clearTimeout(timer);
+  }, [answerPending, prompt, photosToName]);
   const uploadFor = (slotId: string) => async (dataUrl: string): Promise<string> => {
     const key = `${slotId}\n${dataUrl}`;
     const id = photoIds.current.get(key) ?? crypto.randomUUID();
     photoIds.current.set(key, id);
     return sendPhoto!({ id, visitorId: prompt.visitorId, slotId }, dataUrl);
   };
-  const photoOf = (slot: ConsentPrompt['slots'][number]) => takesPhotos && slot.photo !== undefined
-    ? <DisplayChildPhoto mark={slot.photo} presence={presence} upload={uploadFor(slot.id)}
+  const photoOf = (slot: ConsentPrompt['slots'][number]) => slot.photo === undefined ? null
+    : mirror ? <MirrorChildPhoto mark={slot.photo} photo={mirror.photos?.[slot.id]} />
+    : takesPhotos ? <DisplayChildPhoto mark={slot.photo} presence={presence} upload={uploadFor(slot.id)}
       onStored={(fileId) => setPhotosToName((queued) => [...queued.filter((item) => item.slotId !== slot.id), { slotId: slot.id, fileId }])} />
     : null;
   const saved = same(trimmed(draft), trimmed(draftOf(prompt)));
@@ -493,7 +529,9 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     onAction({ ...fence, action: 'staff_help' });
   });
   // SCRUM-875 — what is still missing before Done, from what the family has
-  // entered here; the photos are the till's (staffReady says they are taken).
+  // entered here. The photos are the till's: each child it asks this screen
+  // for is `taken` once it holds one, from the family or from staff (SCRUM-857);
+  // a till that marks none says so in `staffReady`.
   const missingLine = consentMissingLine(t, consentMissing({
     children: prompt.slots.map((slot) => ({ name: draft.slots[slot.id]?.name ?? '', ageYears: draft.slots[slot.id]?.ageYears ?? null })),
     consentRequired: prompt.consentRequired,
@@ -501,8 +539,19 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     consentAcknowledged: draft.consentAcknowledged,
     confirmations: prompt.confirmations.map((item) => ({ required: item.required, acknowledged: draft.confirmations.includes(item.id) })),
     ...(asksConfirm ? { contact: { confirmed: draft.contactConfirmed === true, problem: contactProblem } } : {}),
-    photosTaken: prompt.staffReady,
+    photosTaken: marked ? prompt.slots.every((slot) => slot.photo !== 'needed') : prompt.staffReady,
   }), CHANNEL_LABEL[contactChannel]);
+  // SCRUM-875 — with nothing missing, Done also waits while this screen's last
+  // change is on its way to the till (it is pressed on the till's copy of the
+  // form); when that takes more than a moment, the line says it is sending.
+  const waitingOnTill = !mirror && saved && answerPending && !locked;
+  const [slowSend, setSlowSend] = useState(false);
+  useEffect(() => {
+    if (!waitingOnTill) { setSlowSend(false); return; }
+    const timer = setTimeout(() => setSlowSend(true), SLOW_SEND_MS);
+    return () => clearTimeout(timer);
+  }, [waitingOnTill]);
+  const doneLine = missingLine ?? (slowSend ? t('display.sending') : null);
   const setChild = (id: string, patch: Partial<ChildDraft>) =>
     edit((current) => ({ ...current, slots: { ...current.slots, [id]: { ...current.slots[id]!, ...patch } } }));
   const index = STEPS.indexOf(step);
@@ -603,7 +652,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
             </>}
           </div>;
         })}
-        {prompt.consentRequired && !takesPhotos && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
+        {prompt.consentRequired && !(mirror ? marked : takesPhotos) && <p className="flex items-center gap-2 text-base text-foreground/70"><Camera className="h-5 w-5 shrink-0" />{t('superviseConsent.photoAtReception')}</p>}
       </>}
 
       {shows('agreements') && <>
@@ -654,7 +703,7 @@ export function PublicConsentCapture({ prompt, busy, onAction, answerPending = b
     <div className="shrink-0 border-t border-foreground/10 px-8 py-4 flex flex-wrap items-center justify-end gap-3">
       {prompt.completed ? <p role="status" data-testid="consent-finished">{t(prompt.finishing ? 'superviseConsent.finishing' : 'superviseConsent.waitForTeam')}</p> : <>
         {prompt.notSaved && <p role="status" className="w-full text-right text-base text-(--cd-amber)" data-testid="consent-not-saved">{t('superviseConsent.notSaved')}</p>}
-        {step === 'agreements' && missingLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{missingLine}</p>}
+        {shows('agreements') && doneLine && <p className="w-full text-right text-base text-foreground/60" data-testid="consent-missing">{doneLine}</p>}
         {helpAsked && <p role="status" className="mr-auto flex items-center gap-2 text-base text-foreground/70"><Users className="h-5 w-5" />{t('superviseConsent.teamComing')}</p>}
         <Button variant="outline" disabled={busy || helpAsked} onClick={() => setHelpAsked(true)}>{t('superviseConsent.askTeam')}</Button>
         {index > 0 && <Button variant="outline" disabled={locked} onClick={() => goTo(STEPS[index - 1]!)}>{t('common.back')}</Button>}

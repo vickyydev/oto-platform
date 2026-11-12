@@ -101,7 +101,7 @@ describe('the till publishes the step and shows staff the family’s screen', ()
     const mirror = till.match(/\{consentMirror && consent && \([\s\S]*?\n {8}\)\}/)?.[0] ?? '';
     expect(mirror).toContain('<LanguageProvider>');
     expect(mirror).toMatch(/<PublicConsentCapture prompt=\{\{ \.\.\.consent, kind: 'consent', requestId: 'staff-mirror' \}\} busy=\{false\}/);
-    expect(mirror).toContain('onAction={() => undefined} mirror={{ step: consentFamilyStep }}');
+    expect(mirror).toContain('onAction={() => undefined} mirror={{ step: consentFamilyStep, photos: consentMirrorPhotos }}');
     expect(mirror).not.toMatch(/storageKey/);
   });
 });

@@ -383,13 +383,17 @@ export default function Display() {
   /**
    * SCRUM-857 — the drop-off form never locks for its own `fill`: the family
    * keeps typing while the till takes the last one (the form sends the next
-   * when it has). It locks, and says to wait, for anything else it sent.
+   * when it has). Nor for a `photo`, which only names to the till a picture
+   * the family took. It locks, and says to wait, for anything else it sent.
    */
   const consentAnswerPending = busy || !!answer || !!pending.current;
-  const isFill = (value: unknown): boolean => (value as { action?: unknown } | null | undefined)?.action === 'fill';
+  const isLive = (value: unknown): boolean => {
+    const action = (value as { action?: unknown } | null | undefined)?.action;
+    return action === 'fill' || action === 'photo';
+  };
   const consentLocked = consentAnswerPending
-    && !((!pending.current || pending.current.type === 'display.consent' && isFill(pending.current.payload))
-      && (!answer || isFill((answer as { payload?: unknown }).payload)));
+    && !((!pending.current || pending.current.type === 'display.consent' && isLive(pending.current.payload))
+      && (!answer || isLive((answer as { payload?: unknown }).payload)));
   // SCRUM-762 — on the details screen, a number the till already holds was
   // given on the first screen: it is shown there, not asked for again.
   const keptPhone = view?.stage === 'input' && document?.prompt?.kind === 'contact'
@@ -453,7 +457,7 @@ export default function Display() {
       <div className="flex-1 min-h-0" inert={consentLocked}>
         <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
           busy={consentLocked} answerPending={consentAnswerPending}
-          onAction={action => { void send('display.consent', action, action.action === 'fill'); }}
+          onAction={action => { void send('display.consent', action, action.action === 'fill' || action.action === 'photo'); }}
           // SCRUM-857 — the family's photo goes to the platform with this
           // screen's own credential, for this form and child only.
           sendPhoto={(form, dataUrl) => sendDisplayConsentPhoto(bearerRef.current, form, dataUrl)} />
