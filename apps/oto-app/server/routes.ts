@@ -153,7 +153,7 @@ import {
 
 // Helper to parse object storage path
 
-import { registerBeoRoutes } from "./beo-routes";
+import { barPlanDbDataOf, generateTimelineFromBeo, kitchenPlanDbDataOf, lockKitchenPlanMutation, registerBeoRoutes, writeBarPlanRow, writeKitchenPlanRow } from "./beo-routes";
 import { registerPartyMenuRoutes } from "./party-menu-routes";
 import { registerTillMenuRoutes } from "./till-menu-routes";
 import { registerPartyBillingRoutes } from "./party-billing-routes";
@@ -175,6 +175,7 @@ import {
   upsertEmployeeLeaveOverride,
 } from "./leave-types";
 import { directoryEventRouter } from "./directory/eventRoutes";
+import { directoryKitchenPlanRouter } from "./directory/kitchenPlanRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
 import { directoryNotificationRouter } from "./directory/notificationRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, employeeEngagements, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, dutyBlocks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, sickLeavePolicies, type LeaveType, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, userPreferences, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
@@ -15468,6 +15469,16 @@ OTO Company Limited`,
   // A tenant-bound directory key, not the shared HR key above
   // (server/directory/eventRoutes.ts).
   app.use(directoryEventRouter(pool));
+
+  // SCRUM-907: a manager's change of a party's kitchen plan on the till, written to the BEO
+  // through its own Save, under the same `events:write` key (server/directory/kitchenPlanRoutes.ts).
+  app.use(
+    directoryKitchenPlanRouter(pool, {
+      db,
+      writers: { lockKitchenPlanMutation, kitchenPlanDbDataOf, writeKitchenPlanRow, barPlanDbDataOf, writeBarPlanRow },
+      afterWrite: generateTimelineFromBeo,
+    }),
+  );
 
   // SCRUM-823: the platform's inbox telling the birthday manager on duty (and
   // the GM) in the bell, under a `notifications:write` key

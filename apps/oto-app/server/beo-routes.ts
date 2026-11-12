@@ -182,8 +182,101 @@ export function wholeBahtFromSatang(satang: number | null | undefined): number {
   return Math.round((satang ?? 0) / 100);
 }
 
-async function lockKitchenPlanMutation(tx: any, eventId: string): Promise<void> {
+export async function lockKitchenPlanMutation(tx: any, eventId: string): Promise<void> {
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${eventId}))`);
+}
+
+/**
+ * THE BEO'S SAVE OF THE KITCHEN AND BAR PLANS, as one code path (SCRUM-907).
+ * The editor's Save (`PUT /api/events/:eventId/beo`, below) and the till's
+ * door for a manager's change (server/directory/kitchenPlanRoutes.ts) both
+ * write through these, so every rule of the kitchen plan holds whoever
+ * changed it: the form's fields mapped to the plan's columns, the set menu a
+ * parent submitted kept over a stale form, the adults' list and its switch
+ * recorded as their readers resolve them (SCRUM-829).
+ */
+export function kitchenPlanDbDataOf(kp: Record<string, any>): Record<string, any> {
+  return {
+    foodRequired: kp.foodRequired ?? true,
+    cakeMode: kp.cakeMode || "NONE",
+    cakeNotes: kp.cakeNotes || null,
+    cakeTime: kp.cakeTime || null,
+    serviceSchedule: kp.serviceSchedule || [],
+    setMenuEnabled: kp.setMenuEnabled ?? false,
+    setMenuTemplateId: kp.setMenuTemplateId || null,
+    menus: {
+      // Canonical menus preserve the parent-resolved group identity;
+      // simplifiedMenus remains a compatibility fallback for old clients.
+      kids: kp.menus?.kids ?? kp.simplifiedMenus?.kids ?? [],
+      adults: kp.menus?.adults ?? kp.simplifiedMenus?.adults ?? [],
+      // SCRUM-829: "Different for adults", as the editor's switch stands; an editor
+      // from before the switch sends none, and the plan records what its lists say
+      // (withAdultsDiffer, below, once the parent's lines are in).
+      ...(typeof kp.menus?.adultsDiffer === "boolean" ? { adultsDiffer: kp.menus.adultsDiffer } : {}),
+      cakePrice: kp.cakePrice || 0,
+      cakeIncluded: kp.cakeIncluded !== false,
+      kidsFoodTime: kp.menus?.kidsFoodTime || "",
+      adultsFoodTime: kp.menus?.adultsFoodTime || "",
+    },
+    simplifiedMenus: kp.simplifiedMenus || {
+      kids: kp.menus?.kids || [],
+      adults: kp.menus?.adults || [],
+    },
+  };
+}
+
+/** The kitchen plan's row written from those columns. The caller holds the plan's lock (`lockKitchenPlanMutation`). */
+export async function writeKitchenPlanRow(
+  tx: any,
+  eventId: string,
+  kitchenDbData: Record<string, any>,
+  setMenuSelectionSubmittedAt: unknown,
+): Promise<void> {
+  const [existingKitchen] = await tx.select().from(beoKitchenPlans)
+    .where(eq(beoKitchenPlans.eventId, eventId));
+
+  if (existingKitchen) {
+    const [selection] = await tx.select({
+      isSubmitted: beoSetMenuSelections.isSubmitted,
+      submittedAt: beoSetMenuSelections.submittedAt,
+    }).from(beoSetMenuSelections)
+      .where(eq(beoSetMenuSelections.eventId, eventId));
+    const preserveSubmittedItems = isStaleSetMenuSubmission(selection, setMenuSelectionSubmittedAt);
+    const menus = withAdultsDiffer(preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems));
+    const simplifiedMenus = preserveServerSetMenuItems(
+      kitchenDbData.simplifiedMenus,
+      existingKitchen.simplifiedMenus ?? existingKitchen.menus,
+      preserveSubmittedItems,
+    );
+    await tx.update(beoKitchenPlans)
+      .set({ ...kitchenDbData, menus, simplifiedMenus, updatedAt: new Date() })
+      .where(eq(beoKitchenPlans.eventId, eventId));
+  } else {
+    await tx.insert(beoKitchenPlans)
+      .values({ ...kitchenDbData, menus: withAdultsDiffer(kitchenDbData.menus), eventId });
+  }
+}
+
+/** The bar plan's columns as the BEO's Save maps the form's fields. */
+export function barPlanDbDataOf(bp: Record<string, any>): Record<string, any> {
+  return {
+    serviceTime: bp.serviceTime || null,
+    items: bp.items || [],
+  };
+}
+
+/** The bar plan's row written from those columns. */
+export async function writeBarPlanRow(tx: any, eventId: string, barDbData: Record<string, any>): Promise<void> {
+  const [existingBar] = await tx.select().from(beoBarPlans)
+    .where(eq(beoBarPlans.eventId, eventId));
+  if (existingBar) {
+    await tx.update(beoBarPlans)
+      .set({ ...barDbData, updatedAt: new Date() })
+      .where(eq(beoBarPlans.eventId, eventId));
+  } else {
+    await tx.insert(beoBarPlans)
+      .values({ ...barDbData, eventId });
+  }
 }
 
 export async function generateTimelineFromBeo(eventId: string): Promise<void> {
@@ -1698,81 +1791,19 @@ export function registerBeoRoutes(app: Express) {
         }
       }
       
-      // Upsert kitchen plan - map frontend fields to valid DB columns
+      // Upsert kitchen plan - map frontend fields to valid DB columns (SCRUM-907: one code path with the till's door)
       if (kitchenPlan !== undefined) {
         const kp = kitchenPlan as Record<string, any>;
-        const kitchenDbData: Record<string, any> = {
-          foodRequired: kp.foodRequired ?? true,
-          cakeMode: kp.cakeMode || "NONE",
-          cakeNotes: kp.cakeNotes || null,
-          cakeTime: kp.cakeTime || null,
-          serviceSchedule: kp.serviceSchedule || [],
-          setMenuEnabled: kp.setMenuEnabled ?? false,
-          setMenuTemplateId: kp.setMenuTemplateId || null,
-          menus: {
-            // Canonical menus preserve the parent-resolved group identity;
-            // simplifiedMenus remains a compatibility fallback for old clients.
-            kids: kp.menus?.kids ?? kp.simplifiedMenus?.kids ?? [],
-            adults: kp.menus?.adults ?? kp.simplifiedMenus?.adults ?? [],
-            // SCRUM-829: "Different for adults", as the editor's switch stands; an editor
-            // from before the switch sends none, and the plan records what its lists say
-            // (withAdultsDiffer, below, once the parent's lines are in).
-            ...(typeof kp.menus?.adultsDiffer === "boolean" ? { adultsDiffer: kp.menus.adultsDiffer } : {}),
-            cakePrice: kp.cakePrice || 0,
-            cakeIncluded: kp.cakeIncluded !== false,
-            kidsFoodTime: kp.menus?.kidsFoodTime || "",
-            adultsFoodTime: kp.menus?.adultsFoodTime || "",
-          },
-          simplifiedMenus: kp.simplifiedMenus || {
-            kids: kp.menus?.kids || [],
-            adults: kp.menus?.adults || [],
-          },
-        };
+        const kitchenDbData = kitchenPlanDbDataOf(kp);
         await db.transaction(async (tx) => {
           await lockKitchenPlanMutation(tx, eventId);
-          const [existingKitchen] = await tx.select().from(beoKitchenPlans)
-            .where(eq(beoKitchenPlans.eventId, eventId));
-
-          if (existingKitchen) {
-            const [selection] = await tx.select({
-              isSubmitted: beoSetMenuSelections.isSubmitted,
-              submittedAt: beoSetMenuSelections.submittedAt,
-            }).from(beoSetMenuSelections)
-              .where(eq(beoSetMenuSelections.eventId, eventId));
-            const preserveSubmittedItems = isStaleSetMenuSubmission(selection, kp.setMenuSelectionSubmittedAt);
-            const menus = withAdultsDiffer(preserveServerSetMenuItems(kitchenDbData.menus, existingKitchen.menus, preserveSubmittedItems));
-            const simplifiedMenus = preserveServerSetMenuItems(
-              kitchenDbData.simplifiedMenus,
-              existingKitchen.simplifiedMenus ?? existingKitchen.menus,
-              preserveSubmittedItems,
-            );
-            await tx.update(beoKitchenPlans)
-              .set({ ...kitchenDbData, menus, simplifiedMenus, updatedAt: new Date() })
-              .where(eq(beoKitchenPlans.eventId, eventId));
-          } else {
-            await tx.insert(beoKitchenPlans)
-              .values({ ...kitchenDbData, menus: withAdultsDiffer(kitchenDbData.menus), eventId });
-          }
+          await writeKitchenPlanRow(tx, eventId, kitchenDbData, kp.setMenuSelectionSubmittedAt);
         });
       }
-      
+
       // Upsert bar plan
       if (barPlan !== undefined) {
-        const bp = barPlan as Record<string, any>;
-        const barDbData: Record<string, any> = {
-          serviceTime: bp.serviceTime || null,
-          items: bp.items || [],
-        };
-        const [existingBar] = await db.select().from(beoBarPlans)
-          .where(eq(beoBarPlans.eventId, eventId));
-        if (existingBar) {
-          await db.update(beoBarPlans)
-            .set({ ...barDbData, updatedAt: new Date() })
-            .where(eq(beoBarPlans.eventId, eventId));
-        } else {
-          await db.insert(beoBarPlans)
-            .values({ ...barDbData, eventId });
-        }
+        await writeBarPlanRow(db, eventId, barPlanDbDataOf(barPlan as Record<string, any>));
       }
 
       // Upsert billing (also stores partyDetails in addOns)

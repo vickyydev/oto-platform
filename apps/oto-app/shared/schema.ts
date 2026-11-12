@@ -1404,6 +1404,7 @@ export const activityTypes = [
   "checklist_status_overridden", // SCRUM-544: a manager's checklist status override
   "fix_report_deleted", // SCRUM-641: a manager or admin deleted a Fix report
   "beo_ai_fill", // SCRUM-660: a BEO's AI Fill read a message (never the text itself)
+  "beo_kitchen_plan_till_edit", // SCRUM-907: a manager changed a BEO's kitchen plan on the till
 ] as const;
 export type ActivityType = typeof activityTypes[number];
 
