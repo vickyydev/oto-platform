@@ -469,6 +469,39 @@ try {
     assert.deepEqual(read("Margherita for the kids, fried rice for the 10 adults.", { productCode: "CF-43", itemName: "fried rice", quantity: 10 }), [[RICE, 10, null]], "the adults' headcount: their SET line");
     assert.deepEqual(read("Margherita for the kids, a Pepperoni pizza for the adults.", { productCode: "CF-31", itemName: "a Pepperoni pizza" }), [[PIZZA, 1, null]], "another option of a choice group: the adults' SET line");
     assert.deepEqual(read("Margherita for the kids, a Caesar salad for the adults.", { productCode: "CF-15", itemName: "a Caesar salad" }), [[null, 1, null]], "a dish no set menu gives: an EXTRA");
+    // The lane's reviews: two adults' options of a group of one choice. The set menu gives them one
+    // Fried rice: one SET line, the later; the other an EXTRA with its till code, at the till's price.
+    const two = resolveCatalogueAnswer(
+      {
+        setMenu: { templateId: cat.setMenu, line: 1, choices: [{ itemId: PIZZA, option: "Hawaiian", said: "Hawaiian pizza for the kids", line: 1 }] },
+        menuLines: [
+          { productCode: "CF-43", itemName: "chicken fried rice", option: "Chicken", menu: "adults", quantity: 1, line: 1 },
+          { productCode: "CF-43", itemName: "shrimp fried rice", option: "Shrimp", menu: "adults", quantity: 1, line: 1 },
+        ],
+        event: counts(12, 8),
+      },
+      catalogue,
+      refsOf(["Hawaiian pizza for the kids. For the adults chicken fried rice and shrimp fried rice."]),
+    );
+    assert.deepEqual(
+      two.menuLines.map((l) => [l.matchedName, l.productCode, l.setMenuItemId ?? null]),
+      [["Fried rice (Chicken)", "CF-43", null], ["Fried rice (Shrimp)", "CF-43", RICE]],
+      "one SET line of Fried rice for the adults; the other an extra",
+    );
+    const twoReview: BeoAiReview = { ...(await fill(ev.both)).body.review, proposal: two };
+    const twoState = initialReviewState(twoReview, {});
+    assert.deepEqual(twoState.menuLines.map((l) => [l.matchedName, l.price, l.priceFrom]), [["Fried rice (Chicken)", 240, "till"], ["Fried rice (Shrimp)", null, null]]);
+    // The approval refuses two such SET lines, and writes nothing.
+    const twice = await approve(ev.both, {
+      conversationId: null, messageId: null, package: null, setMenu: { templateId: cat.setMenu, choices: [] }, entertainment: [], otherLines: [], event: {}, cake: null, deposit: null, sources: [],
+      menuLines: [
+        { menu: "adults", itemName: "chicken fried rice", quantity: 1, productCode: "CF-43", notes: null, setMenuItemId: RICE, option: "Fried rice (Chicken)" },
+        { menu: "adults", itemName: "shrimp fried rice", quantity: 1, productCode: "CF-43", notes: null, setMenuItemId: RICE, option: "Fried rice (Shrimp)" },
+      ],
+    });
+    assert.equal(twice.status, 400);
+    assert.equal(twice.body.message, 'The set menu gives the adults one "Fried rice": keep one of its options in the review.');
+    assert.equal(await kitchenOf(ev.both), null, "nothing written");
     // Thread D, exactly as SCRUM-946 proved it: the adults' own 3 more Margherita, CF-24, charged.
     const res = await fill(ev.D);
     assert.equal(res.status, 200, JSON.stringify(res.body));

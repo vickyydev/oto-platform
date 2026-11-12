@@ -260,6 +260,15 @@ export function refuseApproval(
         : "An adults' set-menu line is not one of the set menu's dishes. Open the review again.";
     }
   }
+  // SCRUM-958 (the lane's reviews): the set menu gives the adults one dish of a group of one
+  // choice, as it gives the kids; two such SET lines would leave one dish uncharged.
+  const adultsSetGroups = body.menuLines.flatMap((l) => (l.setMenuItemId && l.menu === "adults" ? [l.setMenuItemId] : []));
+  for (const id of new Set(adultsSetGroups)) {
+    const group = setMenuGroupOf(body, catalogue, id);
+    if (group && !group.allowMultiple && adultsSetGroups.filter((g) => g === id).length > 1) {
+      return `The set menu gives the adults one "${group.label}": keep one of its options in the review.`;
+    }
+  }
   const codes = new Set(catalogue.food.map((f) => f.code.toUpperCase()));
   const offMenus = body.menuLines.filter((l) => l.productCode && !codes.has(l.productCode.toUpperCase()));
   if (offMenus.length > 0) {

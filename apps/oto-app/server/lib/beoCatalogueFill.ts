@@ -1240,6 +1240,27 @@ export function resolveCatalogueAnswer(
       return true;
     });
     if (folded.length > 0) proposal.adultsFolded = folded;
+    // SCRUM-958 (the lane's reviews: "For the adults chicken fried rice and shrimp fried rice"
+    // wrote both uncharged): the set menu gives the adults one dish of a group of one choice, as
+    // it gives the kids. One SET line per such group, the later line's (as the kids' choice is);
+    // another option the chat names for them is an order of its own: an EXTRA, at its till or
+    // chat price.
+    for (const g of menu.items) {
+      if (g.type !== "choice_group" || g.allowMultiple) continue;
+      const set = proposal.menuLines.filter((l) => l.menu === "adults" && l.setMenuItemId === g.id);
+      if (set.length < 2) continue;
+      const kept = set.reduce((was, l) => (laterLineWins(l.from, was.from) ? l : was));
+      for (const l of set) {
+        if (l === kept) continue;
+        delete l.setMenuItemId;
+        // An extra line of the dish carries its till code (the option's own, else the group's).
+        if (!l.productCode) {
+          const option = setMenuOptionOf(g, l.matchedName);
+          l.productCode = (option ? g.optionProductCodes[option] : undefined) ?? g.productCode ?? null;
+          if (!l.productCode) l.notInMenu = true;
+        }
+      }
+    }
   }
 
   // SCRUM-787: a cake the conversation times or describes without saying who brings it
