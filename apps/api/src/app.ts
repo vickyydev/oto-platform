@@ -81,6 +81,7 @@ import { inboxReadRoutes } from './routes/inbox-read';
 import { inboxActionRoutes } from './routes/inbox-actions';
 import { inboxPrivacyRoutes } from './routes/inbox-privacy';
 import { inboxContactRoutes } from './routes/inbox-contacts';
+import { inboxTestLineRoutes } from './routes/inbox-test-line';
 import { inboxReplyRoutes } from './routes/inbox-reply';
 import { inboxDictationRoutes } from './routes/inbox-dictation';
 import { inboxAiRoutes } from './routes/inbox-ai';
@@ -589,6 +590,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(inboxPrivacyRoutes, { prefix: '/inbox' });
   // SCRUM-860 — a contact made by staff, and a contact's name set by staff.
   await app.register(inboxContactRoutes, { prefix: '/inbox' });
+  // SCRUM-908 — the WhatsApp test line on Twilio's sandbox: its set-up and Start over.
+  await app.register(inboxTestLineRoutes, { prefix: '/inbox' });
   // S2-19 I2f — the reply, the templates and the send path.
   await app.register(inboxReplyRoutes, { prefix: '/inbox' });
   // SCRUM-834 — a reply dictated into the composer: the recording in, the words out, no message written.

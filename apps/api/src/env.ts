@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
+import { parsePublicOrigin } from '@oto/messaging';
 import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
 import { parseOtoAppJobKeys } from './services/otoapp-directory';
 import { parseOtoAppProvisionKeys } from './lib/otoapp-provision-keys';
@@ -781,12 +782,26 @@ const EnvSchema = z.object({
    *    required when WhatsApp is on. The per-number token is
    *    `INBOX_WHATSAPP_TOKEN_<credential_ref>`, read by name when the account
    *    is first used, never declared here.
+   *  - `INBOX_TWILIO_ENABLED` (SCRUM-908) — `true` builds the Twilio adapter
+   *    for `twilio` channel accounts: the WhatsApp TEST LINE on Twilio's
+   *    sandbox. Default off; a `DEPLOY_ENV=production` service refuses to
+   *    start with it on (`assertProductionSafe`). Per account, by its
+   *    `credential_ref`: `INBOX_TWILIO_ACCOUNT_SID_<ref>`,
+   *    `INBOX_TWILIO_AUTH_TOKEN_<ref>` (**secret**) and
+   *    `INBOX_TWILIO_ALLOWED_NUMBERS_<ref>` — the only customer numbers the
+   *    line answers and writes to, required.
+   *  - `INBOX_TWILIO_PUBLIC_URL` — this api's public origin exactly as Twilio
+   *    calls it (`https://host`, no path). Twilio signs the URL it called;
+   *    the signature is checked against this, never a request header.
+   *    Required when the line is on.
    */
   INBOX_SIMULATOR: z.enum(['on', 'off']).default('off'),
   INBOX_SIMULATOR_SECRET: z.string().default(''),
   INBOX_WHATSAPP_ENABLED: z.enum(['true', 'false']).default('false'),
   INBOX_META_APP_SECRET: z.string().default(''),
   INBOX_META_VERIFY_TOKEN: z.string().default(''),
+  INBOX_TWILIO_ENABLED: z.enum(['true', 'false']).default('false'),
+  INBOX_TWILIO_PUBLIC_URL: z.string().default(''),
 
   /**
    * THE INBOX'S RETENTION PERIODS (S2-19 I2g, SCRUM-586; plan §3.6, owner
@@ -1140,6 +1155,14 @@ export function assertProductionSafe(env: Env): void {
     if (env.INBOX_SIMULATOR === 'on') {
       problems.push('INBOX_SIMULATOR is on — pretend customers could be played into a live park’s inbox');
     }
+    /**
+     * SCRUM-908 — the Twilio line is a TEST line: Twilio's shared sandbox
+     * number, one allowed tester, a Start over that clears its threads. A
+     * live park's number is not built on it.
+     */
+    if (env.INBOX_TWILIO_ENABLED === 'true') {
+      problems.push('INBOX_TWILIO_ENABLED is true — the Twilio WhatsApp line is a test line (sandbox), not a live park’s number');
+    }
     const gateway = resolveGatewayProvider(env);
     if (gateway.provider === 'simulator') {
       problems.push(
@@ -1218,6 +1241,16 @@ export function assertProductionSafe(env: Env): void {
       problems.push(`INBOX_WHATSAPP_ENABLED is true but ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set`);
     }
   }
+  // SCRUM-908: the Twilio test line on with no public origin to check
+  // Twilio's signature against would refuse every delivery. Named, never its value.
+  if (env.INBOX_TWILIO_ENABLED === 'true') {
+    const origin = (env.INBOX_TWILIO_PUBLIC_URL ?? '').trim();
+    if (!origin) {
+      problems.push('INBOX_TWILIO_ENABLED is true but INBOX_TWILIO_PUBLIC_URL is not set — no Twilio delivery could be verified');
+    } else if (!parsePublicOrigin(origin)) {
+      problems.push('INBOX_TWILIO_PUBLIC_URL is not an https origin (https://host, no path) — no Twilio delivery could be verified');
+    }
+  }
   // SCRUM-590 (plan §D.6): the assistant switched on with nothing to call
   // the model with would be an assistant that is silent on every turn while
   // the Console shows it on. Named, never its value.
@@ -1277,6 +1310,9 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // never let `pnpm test` call the real model and spend real money. The
     // suites inject a fake client and switch the assistant on themselves.
     if (overrides.ANTHROPIC_API_KEY === undefined) raw.ANTHROPIC_API_KEY = '';
+    // And the Twilio test line (SCRUM-908): credentials in `.env` must never
+    // let `pnpm test` post to Twilio. The suites build their own adapter.
+    if (overrides.INBOX_TWILIO_ENABLED === undefined) raw.INBOX_TWILIO_ENABLED = 'false';
     if (overrides.INBOX_AI_ENABLED === undefined) raw.INBOX_AI_ENABLED = 'false';
     // And the internal assistant (SCRUM-591), for the same reason.
     if (overrides.INTERNAL_AI_ENABLED === undefined) raw.INTERNAL_AI_ENABLED = 'false';

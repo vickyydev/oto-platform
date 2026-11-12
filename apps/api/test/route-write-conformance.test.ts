@@ -1017,6 +1017,14 @@ const OPEN_WITHOUT_A_KEY = [
    *     touches a contact or a thread (`inbox-ingest.test.ts`).
    */
   'POST /webhooks/inbox/:channelAccountId',
+  /**
+   *   - **the same two keys** — `POST /webhooks/inbox/twilio/:channelAccountId`
+   *     (SCRUM-908), Twilio's posts for the WhatsApp test line: the receipt
+   *     keyed on the delivery's SHA-256, and each message on Twilio's message
+   *     SID as its `external_message_id`, through the same ingest
+   *     (`inbox-twilio-test-line.test.ts`).
+   */
+  'POST /webhooks/inbox/twilio/:channelAccountId',
 ];
 
 describe('the idempotency key (SCRUM-291)', () => {

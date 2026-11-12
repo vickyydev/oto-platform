@@ -589,6 +589,9 @@ async function receiveMessage(
             eq(conversation.operatorId, operatorId),
             eq(conversation.contactId, person.id),
             eq(conversation.channelAccountId, account.id),
+            // SCRUM-908: a thread cleared with Start over stands aside; the
+            // number's next message opens a new one.
+            isNull(conversation.archivedAt),
           ),
         )
         .limit(1)

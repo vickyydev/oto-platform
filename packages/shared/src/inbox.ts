@@ -707,6 +707,85 @@ export const InboxPersonSchema = z.object({
   operatorWide: z.boolean(),
 });
 
+// --- The WhatsApp test line (SCRUM-908) -----------------------------------------------
+//
+// A Twilio sandbox number in front of the Unified Inbox for one allowed
+// tester (the owner, 12 November 2026: "Create a separate inbox of Tom's
+// Number for Testing and show all his messages there. Keep it general however
+// give an option to delete the chat so he can try again with a new message
+// acting as a new customer").
+//
+//   POST /inbox/test-lines                        set up the line (find or create)
+//   POST /inbox/conversations/{id}/start-over     clear one of its conversations
+
+/** A test line as `GET /inbox/me` lists it. */
+export const InboxTestLineSchema = z.object({
+  id: Uuid,
+  channel: InboxChannelSchema,
+  displayName: z.string(),
+  branchId: Uuid.nullable(),
+  /** The viewer may press Start over on this line's conversations. */
+  startOver: z.boolean(),
+});
+export type InboxTestLine = z.infer<typeof InboxTestLineSchema>;
+
+export const InboxTestLineCreateBodySchema = z.object({
+  /** The name the inbox shows for the line; `WhatsApp test line` when left out. */
+  displayName: z.string().trim().min(1).max(60).optional(),
+  /**
+   * The NAME suffix of the line's settings (`INBOX_TWILIO_ACCOUNT_SID_<ref>`
+   * and its two siblings): upper-case letters, digits and underscores;
+   * `SANDBOX` when left out.
+   */
+  credentialRef: z.string().regex(/^[A-Z0-9_]{1,64}$/).optional(),
+});
+
+export const InboxTestLineCreatedSchema = z.object({
+  channelAccountId: Uuid,
+  displayName: z.string(),
+  /** The WhatsApp number the line receives on (Twilio's sandbox number). */
+  externalId: z.string(),
+  credentialRef: z.string(),
+  /** False when the line already existed: nothing was written. */
+  created: z.boolean(),
+  /** Its settings' names — names only, never a value. */
+  settings: z.object({ accountSid: z.string(), authToken: z.string(), allowedNumbers: z.string() }),
+  /**
+   * The address to paste into Twilio's Sandbox configuration, both for "When
+   * a message comes in" and for "Status callback URL": the public origin
+   * (`INBOX_TWILIO_PUBLIC_URL`) plus `webhookPath`; null while no origin is set.
+   */
+  webhookUrl: z.string().nullable(),
+  webhookPath: z.string(),
+  /** Whether the line's adapter can be built on this deployment now, and why not. */
+  connected: z.boolean(),
+  reason: z.string().nullable(),
+  /** The assistant on the line (`off` until a person switches it, as on every number). */
+  aiMode: z.enum(['off', 'shadow', 'live']),
+});
+export type InboxTestLineCreated = z.infer<typeof InboxTestLineCreatedSchema>;
+
+/** What a Start over cleared. Ids and counts only. */
+export const InboxStartOverSchema = z.object({
+  conversationId: Uuid,
+  contactId: Uuid,
+  channelAccountId: Uuid,
+  /** True when the conversation had already been cleared: nothing changed. */
+  alreadyCleared: z.boolean(),
+  clearedAt: Iso,
+  messages: z.number().int(),
+  filesDeleted: z.number().int(),
+  turnsCancelled: z.number().int(),
+  linesWithdrawn: z.number().int(),
+  openQuestionAnswers: z.number().int(),
+  examplesDeleted: z.number().int(),
+  eventsRedacted: z.number().int(),
+  webhookPayloadsPurged: z.number().int(),
+  /** The contact's remembered facts (its names and language) were reset. */
+  contactReset: z.boolean(),
+});
+export type InboxStartOver = z.infer<typeof InboxStartOverSchema>;
+
 export const InboxMeSchema = z.object({
   accountId: Uuid,
   name: z.string().nullable(),
@@ -794,6 +873,13 @@ export const InboxMeSchema = z.object({
       }),
     )
     .optional(),
+  /**
+   * SCRUM-908 — the WhatsApp TEST LINES (a Twilio sandbox number with one
+   * allowed tester): each is an inbox of its own in the rail. `startOver` is
+   * whether this viewer may clear a conversation of the line
+   * (`inbox:channel:manage` at the line). Absent from an api that predates it.
+   */
+  testLines: z.array(InboxTestLineSchema).optional(),
 });
 export type InboxMe = z.infer<typeof InboxMeSchema>;
 

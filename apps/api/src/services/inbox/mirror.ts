@@ -354,6 +354,8 @@ async function upsertConversation(
     eq(conversation.operatorId, input.operatorId),
     eq(conversation.contactId, contactId),
     eq(conversation.channelAccountId, account.id),
+    // SCRUM-908: the live thread only — the key is partial on archived_at.
+    isNull(conversation.archivedAt),
   );
   const [existing] = await sp.select({ id: conversation.id }).from(conversation).where(thread).limit(1);
   if (existing) return { id: existing.id, created: false };
@@ -379,7 +381,11 @@ async function upsertConversation(
       bookingRef: input.source === 'booking.confirmation' ? input.sourceId : null,
       createdAt: input.sentAt,
     })
-    .onConflictDoNothing({ target: [conversation.operatorId, conversation.contactId, conversation.channelAccountId] })
+    .onConflictDoNothing({
+      target: [conversation.operatorId, conversation.contactId, conversation.channelAccountId],
+      // The thread key holds the live threads only (SCRUM-908); the conflict target says so.
+      where: sql`archived_at is null`,
+    })
     .returning({ id: conversation.id });
   if (made) return { id: made.id, created: true };
   const [raced] = await sp.select({ id: conversation.id }).from(conversation).where(thread).limit(1);

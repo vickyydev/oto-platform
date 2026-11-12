@@ -3,8 +3,10 @@ import {
   ChannelConfigError,
   ConsoleChannel,
   SimulatorChannel,
+  TwilioWhatsAppChannel,
   WhatsAppCloudChannel,
   simulatorConfigFrom,
+  twilioConfigFrom,
   whatsAppCloudConfigFrom,
   type Channel,
   type ConsoleSender,
@@ -29,6 +31,10 @@ import type { Env } from '../../env';
  *               staging; production refuses to boot with it on)
  *   meta_cloud  `WhatsAppCloudChannel`, only with `INBOX_WHATSAPP_ENABLED=true`
  *               and every variable it needs set — never in this story
+ *   twilio      `TwilioWhatsAppChannel` (SCRUM-908), the WhatsApp TEST LINE on
+ *               Twilio's sandbox, only with `INBOX_TWILIO_ENABLED=true`, the
+ *               public origin, and the account's SID, token and ALLOW-LIST
+ *               set; it receives on `/webhooks/inbox/twilio/<account id>`
  *   anything    `CHANNEL_NOT_CONNECTED`
  *
  * ONE INSTANCE PER CHANNEL ACCOUNT, PER PROCESS. The simulator keeps what it
@@ -76,7 +82,9 @@ export interface InboxChannelDeps {
     | 'INBOX_WHATSAPP_ENABLED'
     | 'INBOX_META_APP_SECRET'
     | 'INBOX_META_VERIFY_TOKEN'
-  >;
+  > &
+    // SCRUM-908: optional, so a caller that never runs the Twilio line names neither.
+    Partial<Pick<Env, 'INBOX_TWILIO_ENABLED' | 'INBOX_TWILIO_PUBLIC_URL'>>;
   /**
    * The console sender, read at send time — the api's `app.sms`, which a
    * test swaps after the app is built.
@@ -93,6 +101,11 @@ export interface InboxChannelDeps {
   now?: () => Date;
 }
 
+/** Where Twilio posts for a `twilio` channel account (SCRUM-908): its messages and its status callbacks. */
+export function twilioWebhookPath(channelAccountId: string): string {
+  return `/webhooks/inbox/twilio/${channelAccountId}`;
+}
+
 /** Short, sortable and unique enough per boot: base-36 time plus four random bytes. */
 export function newRunId(): string {
   return `${Date.now().toString(36)}${randomBytes(4).toString('hex')}`.toUpperCase();
@@ -107,6 +120,8 @@ export function buildInboxChannels(deps: InboxChannelDeps): InboxChannels {
     INBOX_WHATSAPP_ENABLED: deps.env.INBOX_WHATSAPP_ENABLED,
     INBOX_META_APP_SECRET: deps.env.INBOX_META_APP_SECRET,
     INBOX_META_VERIFY_TOKEN: deps.env.INBOX_META_VERIFY_TOKEN,
+    INBOX_TWILIO_ENABLED: deps.env.INBOX_TWILIO_ENABLED,
+    INBOX_TWILIO_PUBLIC_URL: deps.env.INBOX_TWILIO_PUBLIC_URL,
   };
   // Read once. On without a secret is refused at boot (`assertProductionSafe`);
   // this is the second line, for a caller that built an env by hand.
@@ -177,6 +192,35 @@ export function buildInboxChannels(deps: InboxChannelDeps): InboxChannels {
           };
         }
         return { ok: true, channel: new WhatsAppCloudChannel(cfg, now ? { now } : {}) };
+      }
+      case 'twilio': {
+        let cfg;
+        try {
+          cfg = twilioConfigFrom(envRecord, {
+            credentialRef: row.credentialRef ?? '',
+            sender: row.externalId,
+            webhookPath: twilioWebhookPath(row.id),
+            displayName: row.displayName,
+          });
+        } catch (err) {
+          const named = err instanceof ChannelConfigError ? [...err.missing, ...err.invalid] : [];
+          return {
+            ok: false,
+            code: 'CHANNEL_NOT_CONNECTED',
+            reason:
+              err instanceof ChannelConfigError
+                ? `the Twilio line is on but ${named.join(', ')} ${named.length === 1 ? 'is' : 'are'} not set or not usable`
+                : 'the account has no usable credential_ref',
+          };
+        }
+        if (!cfg) {
+          return {
+            ok: false,
+            code: 'CHANNEL_NOT_CONNECTED',
+            reason: 'the Twilio line is off on this deployment (INBOX_TWILIO_ENABLED)',
+          };
+        }
+        return { ok: true, channel: new TwilioWhatsAppChannel(cfg, now ? { now } : {}) };
       }
       default:
         return {

@@ -82,9 +82,14 @@ export function heldByViewerSql(viewer: InboxViewer): SQL {
 /**
  * The visibility predicate over `inbox.conversation`, operator fence first.
  * Every list and count in the Inbox's reads is filtered by exactly this.
+ *
+ * A CLEARED thread (SCRUM-908: a test line's Start over, `archived_at` set)
+ * is part of the fence: it has left the inbox for every viewer — the list,
+ * the counts, the dashboard, a by-id read (404) and every action that loads
+ * its conversation through here.
  */
 export function visibleConversationsSql(viewer: InboxViewer): SQL {
-  const fence = eq(s.conversation.operatorId, viewer.operatorId);
+  const fence = and(eq(s.conversation.operatorId, viewer.operatorId), isNull(s.conversation.archivedAt))!;
   if (viewer.scope.operatorWide) return fence;
   const arms: SQL[] = [heldByViewerSql(viewer)];
   if (viewer.scope.branchIds.length > 0) {

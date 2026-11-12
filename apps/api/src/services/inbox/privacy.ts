@@ -27,9 +27,10 @@ function sourcedFrom(operatorId: string, conversationIds: string[]): SQL {
 
 /**
  * R6: the unapproved examples from the subject's threads deleted, the source
- * links of any approved one nulled. Answers how many were deleted.
+ * links of any approved one nulled. Answers how many were deleted. Shared
+ * with a test line's Start over (SCRUM-908, `test-line.ts`).
  */
-async function eraseExamples(tx: Tx, operatorId: string, conversationIds: string[], now: Date): Promise<number> {
+export async function eraseExamples(tx: Tx, operatorId: string, conversationIds: string[], now: Date): Promise<number> {
   if (conversationIds.length === 0) return 0;
   const gone = await tx
     .delete(s.aiExample)
@@ -172,7 +173,7 @@ export function erasedHandleOf(contactId: string): string {
 }
 
 /** The text needles a raw delivery is searched for; short ones would match anything. */
-function needlesOf(values: Iterable<string | null | undefined>): string[] {
+export function needlesOf(values: Iterable<string | null | undefined>): string[] {
   const out = new Set<string>();
   for (const v of values) if (v && v.length >= 6) out.add(v);
   return [...out];
@@ -247,9 +248,10 @@ interface RedactOutcome extends FileOutcome {
 
 /**
  * Remove the words and the media of every message in these threads, in
- * place. Counts only the rows that still held something.
+ * place. Counts only the rows that still held something. Shared with a test
+ * line's Start over (SCRUM-908).
  */
-async function redactThreadMessages(
+export async function redactThreadMessages(
   tx: Tx,
   storage: FileStorage | null,
   operatorId: string,
@@ -305,6 +307,63 @@ async function redactThreadMessages(
     messageIds: ids,
     ...files,
   };
+}
+
+/**
+ * The timeline of these threads: any word- or name-bearing key nulled,
+ * through the I1 trigger's erasure door. Answers how many events changed.
+ * Shared with a test line's Start over (SCRUM-908).
+ */
+export async function redactThreadEvents(tx: Tx, operatorId: string, convIds: string[]): Promise<number> {
+  if (convIds.length === 0) return 0;
+  const events = await tx
+    .select({ id: s.inboxEvent.id, payload: s.inboxEvent.payload })
+    .from(s.inboxEvent)
+    .where(and(eq(s.inboxEvent.operatorId, operatorId), inArray(s.inboxEvent.conversationId, convIds)));
+  const changed = events.flatMap((e) => {
+    const r = redactPayload(e.payload);
+    return r.changed ? [{ id: e.id, payload: r.value }] : [];
+  });
+  if (changed.length > 0) {
+    await tx.execute(sql`select set_config('oto.inbox_erasure', 'on', true)`);
+    for (const e of changed) {
+      await tx
+        .update(s.inboxEvent)
+        .set({ payload: e.payload as never })
+        .where(and(eq(s.inboxEvent.operatorId, operatorId), eq(s.inboxEvent.id, e.id)));
+    }
+    await tx.execute(sql`select set_config('oto.inbox_erasure', 'off', true)`);
+  }
+  return changed.length;
+}
+
+/**
+ * The raw deliveries on these channel accounts whose payload names one of
+ * the needles: payload nulled, `payload_purged_at` stamped. Answers how many.
+ * Shared with a test line's Start over (SCRUM-908).
+ */
+export async function purgeDeliveriesNaming(
+  tx: Tx,
+  operatorId: string,
+  accountIds: string[],
+  needles: string[],
+  now: Date,
+): Promise<number> {
+  if (accountIds.length === 0 || needles.length === 0) return 0;
+  const purged = await tx
+    .update(s.webhookReceipt)
+    .set({ payload: null, payloadPurgedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(s.webhookReceipt.operatorId, operatorId),
+        inArray(s.webhookReceipt.channelAccountId, accountIds),
+        isNotNull(s.webhookReceipt.payload),
+        sql`exists (select 1 from unnest(${textArray(needles)}) as n(needle)
+                    where position(n.needle in ${s.webhookReceipt.payload}::text) > 0)`,
+      ),
+    )
+    .returning({ id: s.webhookReceipt.id });
+  return purged.length;
 }
 
 // --- Erasure ---------------------------------------------------------------------------
@@ -459,48 +518,11 @@ export async function eraseContact(tx: Tx, storage: FileStorage | null, input: E
   }
 
   // 3. The timeline: any word- or name-bearing key nulled, through the trigger's erasure door.
-  let eventsRedacted = 0;
-  if (convIds.length > 0) {
-    const events = await tx
-      .select({ id: s.inboxEvent.id, payload: s.inboxEvent.payload })
-      .from(s.inboxEvent)
-      .where(and(eq(s.inboxEvent.operatorId, operatorId), inArray(s.inboxEvent.conversationId, convIds)));
-    const changed = events.flatMap((e) => {
-      const r = redactPayload(e.payload);
-      return r.changed ? [{ id: e.id, payload: r.value }] : [];
-    });
-    if (changed.length > 0) {
-      await tx.execute(sql`select set_config('oto.inbox_erasure', 'on', true)`);
-      for (const e of changed) {
-        await tx
-          .update(s.inboxEvent)
-          .set({ payload: e.payload as never })
-          .where(and(eq(s.inboxEvent.operatorId, operatorId), eq(s.inboxEvent.id, e.id)));
-      }
-      await tx.execute(sql`select set_config('oto.inbox_erasure', 'off', true)`);
-    }
-    eventsRedacted = changed.length;
-  }
+  const eventsRedacted = await redactThreadEvents(tx, operatorId, convIds);
 
   // 4. The raw deliveries that carried them.
-  let webhookPayloadsPurged = 0;
   const accountIds = [...new Set(subject.conversations.map((c) => c.channelAccountId))];
-  if (accountIds.length > 0 && needles.length > 0) {
-    const purged = await tx
-      .update(s.webhookReceipt)
-      .set({ payload: null, payloadPurgedAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(s.webhookReceipt.operatorId, operatorId),
-          inArray(s.webhookReceipt.channelAccountId, accountIds),
-          isNotNull(s.webhookReceipt.payload),
-          sql`exists (select 1 from unnest(${textArray(needles)}) as n(needle)
-                      where position(n.needle in ${s.webhookReceipt.payload}::text) > 0)`,
-        ),
-      )
-      .returning({ id: s.webhookReceipt.id });
-    webhookPayloadsPurged = purged.length;
-  }
+  const webhookPayloadsPurged = await purgeDeliveriesNaming(tx, operatorId, accountIds, needles, now);
 
   // 5. The person: anonymised in place; the rows stay so the counts still add up.
   const avatars = live.flatMap((c) => (c.avatarFileId ? [c.avatarFileId] : []));

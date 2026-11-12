@@ -27,6 +27,7 @@ import { aiStateOf } from './ai-turns';
 import { handoverNoticesOf } from './handover-notice';
 import { openQuestionsOf } from './open-question';
 import { generalPoolSql } from './placement';
+import { testLinesOf } from './test-line';
 import {
   INBOX_READ,
   activeAssignmentsOf,
@@ -941,6 +942,8 @@ export async function inboxMe(
     },
     simulator,
     contactChannels,
+    // SCRUM-908: the WhatsApp test lines, each an inbox of its own in the rail.
+    testLines: await testLinesOf(db, viewer.operatorId, effective),
   };
 }
 

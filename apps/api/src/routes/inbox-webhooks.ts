@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TWIML_EMPTY } from '@oto/messaging';
 import type { App } from '../app';
 import { ipLimited } from '../plugins/rate-limit';
 import { answerChallenge, ingestDelivery } from '../services/inbox/ingest';
@@ -10,6 +11,12 @@ import { scheduleOf } from '../services/inbox/ai-runtime';
  *
  *   GET  /webhooks/inbox/:channelAccountId   Meta's subscription challenge
  *   POST /webhooks/inbox/:channelAccountId   a delivery: messages, statuses
+ *   POST /webhooks/inbox/twilio/:channelAccountId
+ *        Twilio's form posts for the WhatsApp test line (SCRUM-908): an
+ *        incoming message and a status callback alike, answered with empty
+ *        TwiML. Twilio signs the URL it called and the fields; the route
+ *        hands over its own path, and the adapter joins it to the configured
+ *        public origin (`INBOX_TWILIO_PUBLIC_URL`), never a Host header.
  *
  * THE SAME THREE RULES AS THE 2C2P WEBHOOK (`routes/webhooks.ts`):
  *  - the caller is a machine with no session, so the route is `public` and
@@ -117,6 +124,53 @@ export function inboxWebhookRoutes(app: App): Promise<void> {
         },
       );
       return reply.status(200).send({ outcome: result.outcome });
+    },
+  );
+
+  app.post(
+    '/webhooks/inbox/twilio/:channelAccountId',
+    {
+      config: { public: true, ...ipLimited, rateLimit: { max: 600, timeWindow: 60_000 } },
+      schema: {
+        description:
+          "Twilio's form-encoded posts for one inbox channel account on the WhatsApp test line (SCRUM-908): an incoming message (\"When a message comes in\") and a status callback (\"Status callback URL\") both come here. Verified on X-Twilio-Signature over this deployment's configured public origin plus this path and every posted field, recorded as a webhook receipt keyed on the delivery, its messages deduplicated on Twilio's message SID, filed, routed and answered by the assistant as any delivery is. A message from a number not on the line's allow-list is recorded as having arrived and nothing else. It ALWAYS answers 200 with an empty TwiML document, refusals included.",
+        params: z.object({ channelAccountId: z.string() }),
+        /** DELIBERATELY UNSHAPED: a form post kept as its bytes for the signature; a 400 is never the answer. */
+        body: z.unknown(),
+      },
+    },
+    async (req, reply) => {
+      const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(typeof req.body === 'string' ? req.body : '');
+      const result = await ingestDelivery(
+        app.db,
+        {
+          channels: app.inboxChannels,
+          log: req.log,
+          storage: app.fileStorage,
+          ai: scheduleOf(app.inboxAi),
+          transcribe: app.inboxTranscription.adapter !== null,
+        },
+        {
+          channelAccountId: req.params.channelAccountId,
+          webhook: {
+            method: 'POST',
+            // A NAMED SUBSET, never the whole bag: the signature and the type.
+            headers: {
+              'x-twilio-signature': req.headers['x-twilio-signature'],
+              'content-type': req.headers['content-type'],
+            },
+            query: {},
+            rawBody: raw,
+            // The path and query Twilio called, as received. The origin it
+            // is joined to is configuration, never this request's Host.
+            publicPath: req.url,
+          },
+          requestId: req.id,
+          sourceIp: req.ip,
+        },
+      );
+      req.log.info({ outcome: result.outcome, channelAccountId: req.params.channelAccountId }, 'inbox twilio delivery');
+      return reply.status(200).header('cache-control', 'no-store').type('text/xml; charset=utf-8').send(TWIML_EMPTY);
     },
   );
 
