@@ -187,12 +187,17 @@ async function settle() {
   for (let i = 0; i < 10; i += 1) await new Promise((resolve) => setImmediate(resolve));
 }
 
-/** What the customer's half of the modal asks the QR screen to draw. */
+/**
+ * What the customer's half of the modal asks the QR screen to draw. SCRUM-859:
+ * a pass with a door fee draws its line and Total beside the code, so the QR
+ * screen sits inside the payment-stage frame rather than being the pane itself.
+ */
 function customerScreen(tree: unknown): Record<string, unknown> {
   const pane = [...walk(tree)].find((el) => 'qr' in el.props)!;
   const drawn = (pane.type as (props: unknown) => El)(pane.props);
-  expect(drawn.type).toBe(PromptPayCustomerScreen);
-  return drawn.props;
+  const screen = elementOf(drawn, PromptPayCustomerScreen);
+  expect(screen).not.toBeNull();
+  return screen!.props;
 }
 
 const workshop = { id: EVENT, type: 'workshop', title: 'ZZ TEST slime workshop', date: '2026-11-03', entryPriceTHB: { weekday: 350, weekend: 350 } } as unknown as OtoEvent;
