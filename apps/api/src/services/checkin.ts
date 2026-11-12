@@ -1119,7 +1119,8 @@ async function loadChoice(
     if (refunded.has(lineOf.get(s.id)!.id)) {
       throw errors.conflict(
         'CHECKIN_LINE_REFUNDED',
-        `${s.childName}'s drop-off on this sale was refunded, so they are not paid for on it. Nothing was changed.`,
+        `${s.childName}'s drop-off on this sale was refunded, so they are not paid for on it. ` +
+          'If they are staying, ring them up again and take the payment; if not, cancel their booking. Nothing was changed.',
         { checkinId: s.id, saleId: saleRow.id },
       );
     }

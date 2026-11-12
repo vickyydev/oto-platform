@@ -30,6 +30,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { revokeSaleBands } from './bands';
 import { releaseSaleBenefits } from './benefit-checkout';
+import { releaseRefundedStays } from './checkin-paid-at-till';
 import { restoreTierClaimOf } from './sale-tier';
 import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
 import { failAttempt } from './payments/attempt';
@@ -619,6 +620,21 @@ export async function refundSale(
     });
   }
   if (full || partPaid) await cancelSaleExtension(tx, after, actor, now);
+  // SCRUM-909 — a waiting drop-off child whose own line this refund paid back
+  // is unfiled from the sale: unpaid again, never stranded on a refunded line.
+  // The lines are the ones the Golden Ticket void reads above.
+  const releasedStayIds = partPaid
+    ? []
+    : await releaseRefundedStays(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        {
+          saleRow: row,
+          lines: full ? lines.filter((l) => l.quantity > 0 && !earlierLines.has(l.id)) : covered,
+          refundId,
+          now,
+        },
+      );
 
   let partPaidClose: { releasedVoucherIds: string[]; releasedBenefitApplicationIds: string[]; restoredTierClaimId: string | null } | null = null;
   if (partPaid) {
@@ -706,6 +722,7 @@ export async function refundSale(
       revokedBandIds,
       ...(prepaidTakenBack.length ? { prepaidCreditTakenBack: prepaidTakenBack } : {}),
       ...(soldVouchersVoided.length ? { soldVouchersVoided } : {}),
+      ...(releasedStayIds.length ? { releasedStayIds } : {}),
       ...(partPaidClose ? { partPaid: true, ...partPaidClose } : {}),
       restocked: restockedMovements.map((m) => ({
         stockItemId: m.stockItemId,

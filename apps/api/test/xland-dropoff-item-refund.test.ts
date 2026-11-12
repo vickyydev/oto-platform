@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { branch, checkin, saleLine, station, ticketPackage } from '@oto/db';
+import { auditLog, branch, checkin, saleLine, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
 import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
@@ -22,7 +22,10 @@ import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, ty
  * refund of that sale, linked or not (`tillSalesOfStays`), and a check-in on
  * a sale refuses a child whose line it refunded (`loadChoice`). The other
  * child of the same sale is still paid for, a whole refund behaves as before,
- * and the refunded child can be cancelled or rung up again and paid for.
+ * and the refunded child can be cancelled or rung up again and paid for. A
+ * child left as booked is unfiled from the sale by the refund that paid them
+ * back (`releaseRefundedStays`), so a family that stays after all is rung up
+ * again like any unpaid child.
  */
 
 let ctx: TestContext;
@@ -289,19 +292,53 @@ describe('SCRUM-909 — a child left as booked, then refunded by item', () => {
     return { a, b, stayA, stayB, saleId };
   }
 
-  it('reads as not paid, is not checked in on the sale that refunded them, and can be cancelled', async () => {
+  const releaseRows = (stayId: string) =>
+    ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityType, 'checkin'), eq(auditLog.entityId, stayId), eq(auditLog.action, 'checkin.update')))
+      .then((rows) => rows.filter((r) => (r.after as { event?: string } | null)?.event === 'refund_released'));
+
+  it('the refund unfiles them from the sale: unpaid again, sent to the till, and the booking can be cancelled', async () => {
     const { b, stayB, saleId } = await bookedThenRefunded(['ZZ TEST Kid Six Stays', 'ZZ TEST Kid Six Goes']);
-    expect(await stayRow(stayB)).toMatchObject({ status: 'registered', saleId });
+    expect(await stayRow(stayB)).toMatchObject({ status: 'registered', saleId: null, scheduledFor: null });
+    const released = await releaseRows(stayB);
+    expect(released).toHaveLength(1);
+    expect(released[0]!.before).toMatchObject({ saleId });
+    expect(released[0]!.after).toMatchObject({ saleId: null, scheduledFor: null, event: 'refund_released' });
     expect(await pickerPaidAtTill(b.id, stayB)).toBeNull();
+
+    // The board no longer files them as booked: it sends the counter to the till.
+    const checkIn = await boardCheckIn(stayB);
+    expect(checkIn.statusCode, checkIn.body).toBe(409);
+    expect(checkIn.json().error.code).toBe('CHECKIN_NOT_BOOKED');
+    // The old sale's Check in now refuses them, naming the way forward.
+    const onOldSale = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/check-in-now',
+      headers: { cookie: reception, 'idempotency-key': newId() },
+      payload: { saleId, entries: [{ checkinId: stayB }] },
+    });
+    expect(onOldSale.statusCode, onOldSale.body).toBe(409);
+    expect(onOldSale.json().error.code).toBe('CHECKIN_LINE_REFUNDED');
+    expect(onOldSale.json().error.message).toContain('ring them up again');
+    expect((await stayRow(stayB)).status).toBe('registered');
+
+    const cancel = await cancelBooking(b.id);
+    expect(cancel.statusCode, cancel.body).toBe(200);
+    expect((await stayRow(stayB)).status).toBe('cancelled');
+  });
+
+  it('one still filed on a refunded line (refunded before the unfiling) is refused, with the way out named', async () => {
+    const { stayB, saleId } = await bookedThenRefunded(['ZZ TEST Kid Ten Stays', 'ZZ TEST Kid Ten Filed']);
+    // As a stay refunded before this fix reads: still filed on the sale.
+    await ctx.db.update(checkin).set({ saleId, scheduledFor: new Date() }).where(eq(checkin.id, stayB));
+    expect(await pickerPaidAtTill((await stayRow(stayB)).registrationId, stayB)).toBeNull();
 
     const checkIn = await boardCheckIn(stayB);
     expect(checkIn.statusCode, checkIn.body).toBe(409);
     expect(checkIn.json().error.code).toBe('CHECKIN_LINE_REFUNDED');
-    expect(checkIn.json().error.message).toContain('was refunded');
-    expect((await stayRow(stayB)).status).toBe('registered');
 
-    // Still filed on that sale, as a child whose whole sale was refunded is: a
-    // second sale is refused, and cancelling is the way off the list.
     const second = await ctx.app.inject({
       method: 'POST',
       url: '/sales',
@@ -315,16 +352,60 @@ describe('SCRUM-909 — a child left as booked, then refunded by item', () => {
     expect(second.statusCode, second.body).toBe(409);
     expect(second.json().error.code).toBe('CHECKIN_PAID_AT_TILL');
     expect(second.json().error.message).toContain('which was refunded');
-
-    const cancel = await cancelBooking(b.id);
-    expect(cancel.statusCode, cancel.body).toBe(200);
-    expect((await stayRow(stayB)).status).toBe('cancelled');
+    expect(second.json().error.message).toContain('Cancel their booking from the Drop-Off board, and register them again if they are staying.');
+    expect(second.json().error.message).not.toContain('Ask a manager');
   });
 
-  it('the sibling left as booked on the same sale is still checked in from the board', async () => {
+  it('the family stays after all: rung up again on a new sale, paid, and checked in there', async () => {
+    const { b, stayB } = await bookedThenRefunded(['ZZ TEST Kid Eight Stays', 'ZZ TEST Kid Eight Back']);
+    const again = await paidSale([stayB]);
+    expect(await pickerPaidAtTill(b.id, stayB)).toMatchObject({ saleId: again });
+    const checkIn = await boardCheckIn(stayB);
+    expect(checkIn.statusCode, checkIn.body).toBe(200);
+    expect(await stayRow(stayB)).toMatchObject({ status: 'in_park', saleId: again });
+  });
+
+  it('the sibling left as booked on the same sale is still filed there and checked in from the board', async () => {
     const { stayA, saleId } = await bookedThenRefunded(['ZZ TEST Kid Seven Stays', 'ZZ TEST Kid Seven Goes']);
+    expect(await releaseRows(stayA)).toHaveLength(0);
+    expect(await stayRow(stayA)).toMatchObject({ status: 'registered', saleId });
     const checkIn = await boardCheckIn(stayA);
     expect(checkIn.statusCode, checkIn.body).toBe(200);
     expect(await stayRow(stayA)).toMatchObject({ status: 'in_park', saleId });
+  });
+
+  it('a whole refund unfiles every waiting child it paid back, and a replay unfiles nobody twice', async () => {
+    const a = await register('ZZ TEST Kid Nine A');
+    const b = await register('ZZ TEST Kid Nine B');
+    const stayA = a.children[0]!.id;
+    const stayB = b.children[0]!.id;
+    const saleId = await paidSale([stayA, stayB]);
+    const booked = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/leave-as-booked',
+      headers: { cookie: reception, 'idempotency-key': newId() },
+      payload: { saleId, entries: [{ checkinId: stayA }, { checkinId: stayB }] },
+    });
+    expect(booked.statusCode, booked.body).toBe(200);
+    const actionId = newId();
+    const whole = () =>
+      ctx.app.inject({
+        method: 'POST',
+        url: `/sales/${saleId}/refunds`,
+        headers: { cookie: manager, 'idempotency-key': newId() },
+        payload: { mode: 'whole', reason: 'ZZ TEST family went home', actionId },
+      });
+    const first = await whole();
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json().refundStatus).toBe('refunded');
+    const replay = await whole();
+    expect(replay.statusCode, replay.body).toBe(200);
+    for (const id of [stayA, stayB]) {
+      expect(await stayRow(id)).toMatchObject({ status: 'registered', saleId: null, scheduledFor: null });
+      expect(await releaseRows(id)).toHaveLength(1);
+      const checkIn = await boardCheckIn(id);
+      expect(checkIn.statusCode, checkIn.body).toBe(409);
+      expect(checkIn.json().error.code).toBe('CHECKIN_NOT_BOOKED');
+    }
   });
 });

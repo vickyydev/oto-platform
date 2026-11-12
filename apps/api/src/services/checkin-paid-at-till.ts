@@ -33,8 +33,10 @@ import type { Exec } from './tx';
  * the lines under that child's stay go back while the sale stays `finalised`
  * for the other. That child is not paid for any more, linked or not: the
  * picker offers them to charge again, the board does not check them in for
- * nothing, and the booking can be cancelled. A linked one stays filed on its
- * sale, as one whose whole sale was refunded does.
+ * nothing, and the booking can be cancelled. A linked one is unfiled from the
+ * sale by the refund itself (`releaseRefundedStays`), so they can be rung up
+ * again; one still filed on a refunded line (refunded before that) reads as
+ * refunded here.
  */
 export interface PaidAtTill {
   saleId: string;
@@ -59,6 +61,64 @@ export async function refundedLineIdsOf(db: Exec, saleIds: readonly string[]): P
   if (ids.length === 0) return new Set();
   const rows = await db.select({ lines: refund.lines }).from(refund).where(inArray(refund.saleId, ids));
   return new Set(rows.flatMap((r) => (r.lines ?? []).map((l) => l.saleLineId)));
+}
+
+/**
+ * SCRUM-909 — A REFUND LETS GO OF THE WAITING CHILDREN IT PAID BACK.
+ *
+ * "Leave as booked" files a paid sale on the stay (`saleId`, `scheduledFor`).
+ * When a refund then pays back that child's own drop-off line — History's
+ * refund by item, or a refund that empties the sale — the child is no longer
+ * paid for, yet a stay still filed on that sale could never be sold again
+ * (`loadChoice` refuses any other sale for it), so a family that stays after
+ * all met refusals with no way forward. Here, in the refund's transaction,
+ * each such child still waiting is unfiled from the sale: they wait as any
+ * unpaid child does, the picker offers them, a new sale takes their money and
+ * Check in files them there; or their booking is cancelled. One audit row per
+ * child. A checked-in or collected child is left as they are, and so is a
+ * child on a booking's redemption sale (the booking paid for them, and its
+ * own path decides).
+ */
+export async function releaseRefundedStays(
+  tx: Exec,
+  actor: { accountId: string | null; operatorId: string; requestId?: string | null },
+  input: {
+    saleRow: { id: string; operatorId: string; bookingId: string | null };
+    lines: readonly { kind: string; cartLineId: string }[];
+    refundId: string;
+    now: Date;
+  },
+): Promise<string[]> {
+  if (input.saleRow.bookingId) return [];
+  const stayIds = [...new Set(input.lines.filter((l) => l.kind === 'kids').map((l) => l.cartLineId))];
+  if (stayIds.length === 0) return [];
+  const stays = await tx
+    .select()
+    .from(checkin)
+    .where(
+      and(
+        inArray(checkin.id, stayIds),
+        eq(checkin.operatorId, input.saleRow.operatorId),
+        eq(checkin.saleId, input.saleRow.id),
+        eq(checkin.status, 'registered'),
+      ),
+    )
+    .for('update');
+  for (const s of stays) {
+    await tx.update(checkin).set({ saleId: null, scheduledFor: null, updatedAt: input.now }).where(eq(checkin.id, s.id));
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: s.operatorId,
+      branchId: s.branchId,
+      action: 'checkin.update',
+      entityType: 'checkin',
+      entityId: s.id,
+      requestId: actor.requestId ?? null,
+      before: { saleId: s.saleId, scheduledFor: s.scheduledFor?.toISOString() ?? null },
+      after: { saleId: null, scheduledFor: null, event: 'refund_released', refundId: input.refundId },
+    });
+  }
+  return stays.map((s) => s.id);
 }
 
 /** The till sale each of these stays is already on, by stay id. */
@@ -183,7 +243,8 @@ export async function refusePaidAtTillStays(
       ? tendered
         ? `${s.childName} is already paid for at the till${receipt}, so this sale cannot take their money again. Cancel this sale and ring it up again without them, then check them in from the Drop-Off board. Nothing was charged.`
         : `${s.childName} is already paid for at the till${receipt}, so there is nothing to charge. Check them in from the Drop-Off board. Nothing was saved.`
-      : `${s.childName} is still filed on an earlier sale${receipt}, which was ${hit.status === 'refunded' ? 'refunded' : 'cancelled'}, so they cannot go on a second sale. Ask a manager. ${tendered ? 'Nothing was charged.' : 'Nothing was saved.'}`;
+      : // SCRUM-909 — the way out, named: a manager had no tool for "Ask a manager".
+        `${s.childName} is still filed on an earlier sale${receipt}, which was ${hit.status === 'refunded' ? 'refunded' : 'cancelled'}, so they cannot go on a second sale. Cancel their booking from the Drop-Off board, and register them again if they are staying. ${tendered ? 'Nothing was charged.' : 'Nothing was saved.'}`;
     throw errors.conflict(
       CHECKIN_PAID_AT_TILL,
       message,
