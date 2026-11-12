@@ -33,6 +33,7 @@ import { audit } from './audit';
 import { boxAuthFromRow, configBundle } from './box';
 import { queueCommand } from './fleet';
 import { recordRun } from './ops';
+import { printerReading } from './printer-reading';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
@@ -1149,9 +1150,9 @@ export async function listStationPrinters(
     label: r.device.label,
     role: r.role,
     kind: r.device.kind,
-    reachability: r.device.reachability,
-    paperStatus: r.device.paperStatus,
-    lastError: r.device.lastError,
+    // SCRUM-952 — a printer with no address reads as not set up, never as
+    // "reachable" and "paper ok": the till's light says "no address set".
+    ...printerReading(r.device),
     lastSeenAt: r.device.lastSeenAt?.toISOString() ?? null,
     queued: depth.get(r.device.id) ?? 0,
   }));

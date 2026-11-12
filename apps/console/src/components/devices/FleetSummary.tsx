@@ -13,8 +13,8 @@ import {
   deviceKindWord,
   toneForBoxStatus,
   toneForPaper,
-  toneForReachability,
 } from '@/lib/fleetWords';
+import { NOT_SET_UP, healthDeviceTone, readAsNotSetUp } from '@/lib/printerAddress';
 import { elapsed, formatWhen, timeAgo } from '@/lib/time';
 
 /**
@@ -140,16 +140,25 @@ function BoxHealthRow({
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6">
           {devices.map((device) => (
             <span key={device.id} className="inline-flex items-center gap-1.5 text-xs">
-              <StatusMark tone={toneForReachability(device.reachability)} className="w-2.5 h-2.5" />
+              {/* SCRUM-952 — a printer the platform reads as not set up (no
+                  address) is drawn as the box drawer draws it, not by a
+                  reachability left over from before it lost its address. */}
+              <StatusMark tone={healthDeviceTone(device)} className="w-2.5 h-2.5" />
               <span className="text-muted-foreground">{device.label}</span>
-              {device.kind.endsWith('printer') &&
+              {readAsNotSetUp(device) ? (
+                <StatusChip tone="down" className="px-1.5 py-0">
+                  {NOT_SET_UP}
+                </StatusChip>
+              ) : (
+                device.kind.endsWith('printer') &&
                 device.paperStatus &&
                 device.paperStatus !== 'unknown' &&
                 device.paperStatus !== 'ok' && (
                   <StatusChip tone={toneForPaper(device.paperStatus)} className="px-1.5 py-0">
                     paper {device.paperStatus}
                   </StatusChip>
-                )}
+                )
+              )}
               <span className="sr-only">{deviceKindWord(device.kind)}</span>
             </span>
           ))}

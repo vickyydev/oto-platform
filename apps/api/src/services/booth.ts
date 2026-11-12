@@ -25,6 +25,7 @@ import { AppError } from '../lib/errors';
 import { SPIN_LABEL_JOINS, SPIN_UNATTRIBUTED } from './booth-attribution';
 import { boxSettings, inProcessBox } from './box';
 import { boothUnpaired, type BoothDeviceAuth } from './device-credential';
+import { printerReading } from './printer-reading';
 
 /**
  * The cloud's booth surface (S2-07a).
@@ -497,6 +498,8 @@ export async function boothConsoleStatus(
     .select({
       deviceId: device.id,
       label: device.label,
+      kind: device.kind,
+      address: device.address,
       reachability: device.reachability,
       paperStatus: device.paperStatus,
       lastError: device.lastError,
@@ -599,9 +602,8 @@ export async function boothConsoleStatus(
       ? {
           deviceId: printerRow.deviceId,
           label: printerRow.label,
-          reachability: printerRow.reachability,
-          paperStatus: printerRow.paperStatus,
-          lastError: printerRow.lastError,
+          // SCRUM-952 — with no address it reads as not set up, as its box reads it.
+          ...printerReading(printerRow),
           lastSeenAt: printerRow.lastSeenAt?.toISOString() ?? null,
         }
       : null,

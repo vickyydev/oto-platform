@@ -28,6 +28,7 @@ import { reachCovers, type BranchReach } from './access-control';
 import { audit } from './audit';
 import { boxSettings, inProcessBox } from './box';
 import { calledOffBandsOf } from './kiosk';
+import { printerReading } from './printer-reading';
 import { withTx, type OpContext } from './tx';
 
 /**
@@ -258,8 +259,11 @@ export async function kioskHealth(
         id: device.id,
         label: device.label,
         boxId: device.boxId,
+        kind: device.kind,
+        address: device.address,
         reachability: device.reachability,
         paperStatus: device.paperStatus,
+        lastError: device.lastError,
       },
     })
     .from(stationDevice)
@@ -308,6 +312,8 @@ export async function kioskHealth(
     const live = band ? inProcessBox(band.device.boxId)?.printing()?.simulator(band.device.id) : undefined;
     const faults = live ? [...live.faults] : [];
     const last = lastByStation.get(st.id) ?? null;
+    // SCRUM-952 — a band printer with no address reads as not set up, as its box reads it.
+    const reading = band ? printerReading(band.device) : null;
 
     return {
       stationId: st.id,
@@ -333,8 +339,8 @@ export async function kioskHealth(
             deviceId: band.device.id,
             label: band.device.label,
             // The simulator's own fault, where this process runs it, is newer than the last heartbeat.
-            reachability: faults.includes('unreachable') ? 'unreachable' : band.device.reachability,
-            paperStatus: faults.includes('paper_out') ? 'out' : band.device.paperStatus,
+            reachability: faults.includes('unreachable') ? 'unreachable' : (reading?.reachability ?? band.device.reachability),
+            paperStatus: faults.includes('paper_out') ? 'out' : (reading?.paperStatus ?? band.device.paperStatus),
             faults,
           }
         : null,

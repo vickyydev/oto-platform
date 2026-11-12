@@ -50,6 +50,7 @@ import {
   type ReadAvailability,
 } from './health-evidence';
 import { occupancyHealthCheck } from './occupancy';
+import { printerReading } from './printer-reading';
 import { syncSettings } from './sync';
 import type { Exec } from './tx';
 
@@ -2584,12 +2585,13 @@ export async function fleetHealth(
 
   if (rows.length === 0) return { boxes: [], conditions: [] };
 
-  const devices = (await deps.db
+  const deviceRows = await deps.db
     .select({
       id: device.id,
       boxId: device.boxId,
       kind: device.kind,
       label: device.label,
+      address: device.address,
       reachability: device.reachability,
       paperStatus: device.paperStatus,
       lastError: device.lastError,
@@ -2605,7 +2607,16 @@ export async function fleetHealth(
         isNull(device.archivedAt),
       ),
     )
-    .orderBy(asc(device.label))) as FleetDeviceRow[];
+    .orderBy(asc(device.label));
+  /**
+   * SCRUM-952 — a printer with no address is read as not set up, as its box
+   * reads it (`printerReading`): never "reachable" and "paper ok" left over
+   * from the seed, which kept its dot on this page green.
+   */
+  const devices: FleetDeviceRow[] = deviceRows.map(({ address, ...d }) => ({
+    ...d,
+    ...printerReading({ ...d, address }),
+  }));
 
   const byBox = new Map<string, FleetDeviceRow[]>();
   for (const d of devices) {

@@ -90,6 +90,27 @@ export function deviceDotTone(device: { kind: string; address?: string | null; r
   return printerWithoutAddress(device) ? 'down' : toneForReachability(device.reachability);
 }
 
+/**
+ * SCRUM-952 — the code the platform reads a printer with no address by, as
+ * its box reads it: nothing known of its reachability or paper, and this as
+ * its last error (`printerReading` in `apps/api/src/services/printer-reading.ts`).
+ */
+export const NO_ADDRESS_CODE = 'DEVICE_NO_ADDRESS';
+
+/**
+ * Whether the platform reads this printer as not set up — for a list that
+ * carries no address, as the Health page's boxes do. The box drawer, which
+ * has the address, asks `printerWithoutAddress`; the two agree.
+ */
+export function readAsNotSetUp(device: { kind: string; lastError?: string | null }): boolean {
+  return isPrinterKind(device.kind) && device.lastError === NO_ADDRESS_CODE;
+}
+
+/** The Health page's dot for a device: its reachability, except a printer read as not set up. */
+export function healthDeviceTone(device: { kind: string; reachability?: string | null; lastError?: string | null }): Tone {
+  return readAsNotSetUp(device) ? 'down' : toneForReachability(device.reachability);
+}
+
 /** The colour each tone is drawn in, as the station drawer draws its own warnings. */
 export const toneColor = (tone: AddressField['tone']): string | undefined =>
   tone === 'down' ? 'hsl(var(--status-down))' : tone === 'warn' ? 'hsl(var(--status-warn))' : undefined;

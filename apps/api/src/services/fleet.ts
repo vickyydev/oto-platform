@@ -63,6 +63,7 @@ import type { Env } from '../env';
 import { lockActiveOrganisation } from './organisation-archive';
 import { readStationsSellingReadiness } from './payments/terminal';
 import { displayPresence, screenOfflineAfterS, tillScreen } from './screen-presence';
+import { printerReading } from './printer-reading';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -2332,6 +2333,15 @@ function deviceView(row: typeof device.$inferSelect): DeviceView {
   };
 }
 
+/**
+ * A device as the Console and the till are told about it: the row, with a
+ * printer that has no address read as not set up (SCRUM-952,
+ * `printerReading`). The audit trail keeps `deviceView`, the row as it is.
+ */
+function readDeviceView(row: typeof device.$inferSelect): DeviceView {
+  return { ...deviceView(row), ...printerReading(row) };
+}
+
 export async function listDevices(
   db: Db,
   boxId: string,
@@ -2342,7 +2352,7 @@ export async function listDevices(
     .from(device)
     .where(and(eq(device.boxId, boxId), includeArchived ? undefined : isNull(device.archivedAt)))
     .orderBy(asc(device.kind), asc(device.label));
-  return rows.map(deviceView);
+  return rows.map(readDeviceView);
 }
 
 /**
@@ -2403,7 +2413,7 @@ export async function createDevice(
     async (id) => (await db.select().from(device).where(eq(device.id, id)).limit(1))[0],
     (row) => row.boxId === boxRow.id,
   );
-  if (claim.replay) return markReplay({ device: deviceView(claim.row) });
+  if (claim.replay) return markReplay({ device: readDeviceView(claim.row) });
   assertTerminalProtocol(input.kind, input.protocol);
   // A printer's address is kept as the box reads it, without the spaces around it.
   // SCRUM-932 — an empty address is no address, for any kind: a printer's is
@@ -2444,7 +2454,7 @@ export async function createDevice(
         after: deviceView(row!),
         requestId: ctx.requestId,
       });
-      return { device: deviceView(row!) };
+      return { device: readDeviceView(row!) };
     });
   } catch (err) {
     rethrowFleetConflict(err);
@@ -2504,7 +2514,7 @@ export async function updateDevice(
         after: deviceView(after!),
         requestId: ctx.requestId,
       });
-      return { device: deviceView(after!) };
+      return { device: readDeviceView(after!) };
     });
   } catch (err) {
     rethrowFleetConflict(err);
