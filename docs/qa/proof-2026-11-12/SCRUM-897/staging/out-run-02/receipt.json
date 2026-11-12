@@ -1,0 +1,2591 @@
+{
+  "ticket": "SCRUM-897",
+  "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+  "startedAt": "2026-11-12T10:07:25.232Z",
+  "phase": "finished",
+  "only": [
+    "1",
+    "5",
+    "2",
+    "4a"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "serving": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "readAt": "2026-11-12T10:07:17.334Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "serving": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "readAt": "2026-11-12T10:07:17.966Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "serving": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "readAt": "2026-11-12T10:07:18.261Z"
+    }
+  },
+  "points": {
+    "1": {
+      "pass": true,
+      "picture": "01-promo-window-then-same-customer.png",
+      "shows": "The code on the drop-off family's sale written online in the long-outage window: one discount row, cash, the platform's use count 0 → 1; the same number again on the same till: refused in the words \"Code \"ZZTEST897A02\" can only be used once per customer.\" — not the till's own once-per-customer words",
+      "seen": {
+        "checks": {
+          "codeTakenOnTheOrder": true,
+          "windowReproduced": true,
+          "saleOnlineFinalisedCash": true,
+          "codeOnTheSaleOnce": true,
+          "platformCountRoseByOne": true,
+          "tillDidNotCountItLocally": true,
+          "nothingRungUpByTheCheck": true
+        },
+        "before": {
+          "ZZTEST897A02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "afterSale": {
+          "ZZTEST897A02": {
+            "usedCount": 1,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "afterCheck": {
+          "ZZTEST897A02": {
+            "usedCount": 1,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "sale": {
+          "id": "01a1cf3a-bd2f-7e23-88c5-380fe69eb940",
+          "status": "finalised",
+          "grossSatang": 144450,
+          "totals": {
+            "subtotalSatang": 160500,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 16050,
+            "discountSatang": 16050,
+            "netSatang": 135000,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 9450,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 144450,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "memberIsSet": true,
+          "discounts": [
+            {
+              "kind": "promo",
+              "code": "ZZTEST897A02",
+              "discountType": "percent",
+              "percentBp": 1000,
+              "amountSatang": 16050
+            }
+          ],
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 144450
+            }
+          ],
+          "printJobs": [
+            "queued",
+            "queued",
+            "printed"
+          ]
+        },
+        "again": {
+          "refusal": "Code \"ZZTEST897A02\" can only be used once per customer.",
+          "badge": false,
+          "priceNote": null,
+          "phrases": [
+            "can only be used once per customer"
+          ]
+        },
+        "identified": "member-found-visit-children",
+        "window": {
+          "salePosts": [
+            {
+              "outcome": 200
+            }
+          ],
+          "finalisePosts": [
+            200
+          ],
+          "doorPosts": [
+            "/api/checkin/check-in-now 200"
+          ],
+          "boxIntents": []
+        },
+        "door": {
+          "shown": true,
+          "inPark": true
+        }
+      }
+    },
+    "2": {
+      "pass": true,
+      "picture": "02-hold-sale-in-the-window-held-resumed-paid-once.png",
+      "shows": "In the window the payment step showed Hold sale open with no counter-box line; the sale was held (in Held sales on the till and on the platform), resumed once the lane was back, and paid in cash once",
+      "seen": {
+        "checks": {
+          "windowReproduced": true,
+          "noCounterBoxLineHoldOpen": true,
+          "heldOnce": true,
+          "resumedOnce": true,
+          "paidCashOnce": true,
+          "noBoxIntent": true,
+          "offTheHeldList": true
+        },
+        "st": {
+          "hold": {
+            "holdVisible": true,
+            "holdEnabled": true,
+            "reason": null,
+            "counterBoxLines": 0
+          },
+          "gaveUp": "Couldn't register these children The connection dropped and has not come back yet. What was saved stays saved online. Check the counter's internet, then press Continue again — the till finishes this same registration online, without entering anyone twice. Nobody has been checked in or charged — the details are still on screen."
+        },
+        "held": {
+          "pressed": true,
+          "status": 200,
+          "toast": "Sale held ZZ TEST SCRUM-897 held g2-02 — in Held sales on every till at this branch. Nothing was issued.",
+          "listed": true,
+          "resumeWhileBox": {
+            "enabled": false,
+            "lines": [
+              "This till is working through its counter box while the platform cannot be reached — resuming a held sale needs the platform. Try again when the connection is back."
+            ]
+          },
+          "platformList": [
+            {
+              "kind": "held",
+              "label": "ZZ TEST SCRUM-897 held g2-02",
+              "balanceSatang": 183000
+            }
+          ],
+          "saleWhileHeld": "tendering",
+          "laneBackAfterS": 9,
+          "resumeEnabledAfterLane": true,
+          "resumeStatus": 200,
+          "door": {
+            "shown": false,
+            "inPark": false
+          }
+        },
+        "sale": {
+          "id": "01a1cf3b-fe74-7ef7-a106-f2606f0c9b35",
+          "status": "finalised",
+          "grossSatang": 183000,
+          "totals": {
+            "subtotalSatang": 183000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 0,
+            "discountSatang": 0,
+            "netSatang": 171028,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 11972,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 183000,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "memberIsSet": true,
+          "discounts": [],
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 183000
+            }
+          ],
+          "printJobs": [
+            "printed"
+          ]
+        },
+        "wire": {
+          "salePosts": [
+            200
+          ],
+          "holdPosts": [
+            200
+          ],
+          "resumePosts": [
+            200
+          ],
+          "finalisePosts": [
+            200
+          ],
+          "boxIntents": [],
+          "doorPosts": []
+        },
+        "registration": [
+          {
+            "name": "ZZ TEST Mali 897",
+            "status": "registered"
+          },
+          {
+            "name": "ZZ TEST Ton 897",
+            "status": "registered"
+          }
+        ]
+      }
+    },
+    "3": {
+      "pass": false,
+      "picture": "03-held-sales-read-again-when-the-platform-answers.png",
+      "shows": "In 2 window(s) the Held sales list, which could not be read, was read again -0.1 s and -0.1 s after the platform answered the registration, and \"could not be read\" went away",
+      "seen": {
+        "windows": [
+          {
+            "tag": "g1",
+            "heldErrorBefore": null,
+            "heldFailed": true,
+            "heldErrorGone": true,
+            "heldErrorGoneAfterAgainMs": 2354,
+            "reads": [
+              {
+                "secondsAfterFailedRead": 0,
+                "secondsAfterRegistrationAnswered": -1.5,
+                "outcome": "aborted"
+              },
+              {
+                "secondsAfterFailedRead": 1.5,
+                "secondsAfterRegistrationAnswered": -0.1,
+                "outcome": 200
+              }
+            ],
+            "hold": {
+              "holdVisible": true,
+              "holdEnabled": true,
+              "reason": null,
+              "counterBoxLines": 0
+            },
+            "firstOk": {
+              "secondsAfterFailedRead": 1.5,
+              "secondsAfterRegistrationAnswered": -0.1,
+              "outcome": 200
+            },
+            "pass": false
+          },
+          {
+            "tag": "g2",
+            "heldErrorBefore": null,
+            "heldFailed": true,
+            "heldErrorGone": true,
+            "heldErrorGoneAfterAgainMs": 2318,
+            "reads": [
+              {
+                "secondsAfterFailedRead": 0,
+                "secondsAfterRegistrationAnswered": -1.9,
+                "outcome": "aborted"
+              },
+              {
+                "secondsAfterFailedRead": 1.8,
+                "secondsAfterRegistrationAnswered": -0.1,
+                "outcome": 200
+              }
+            ],
+            "hold": {
+              "holdVisible": true,
+              "holdEnabled": true,
+              "reason": null,
+              "counterBoxLines": 0
+            },
+            "firstOk": {
+              "secondsAfterFailedRead": 1.8,
+              "secondsAfterRegistrationAnswered": -0.1,
+              "outcome": 200
+            },
+            "pass": false
+          }
+        ]
+      }
+    },
+    "5": {
+      "pass": true,
+      "picture": "05-platform-readback-ordinary-sale-code-counted-once.png",
+      "shows": "An ordinary online sale with ZZTEST897A02 (use 2 of its limit of 2) was accepted on the same till, paid in cash online once, and the platform's count rose by exactly one (1 → 2)",
+      "seen": {
+        "checks": {
+          "codeTaken": true,
+          "finalisedOnlineCash": true,
+          "codeOnTheSaleOnce": true,
+          "countedOnce": true
+        },
+        "before": {
+          "ZZTEST897A02": {
+            "usedCount": 1,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "after": {
+          "ZZTEST897A02": {
+            "usedCount": 2,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "sale": {
+          "id": "01a1cf3b-426a-74f8-8384-0e8229b5bc23",
+          "status": "finalised",
+          "grossSatang": 93600,
+          "totals": {
+            "subtotalSatang": 104000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 10400,
+            "discountSatang": 10400,
+            "netSatang": 87477,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 6123,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 93600,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "memberIsSet": false,
+          "discounts": [
+            {
+              "kind": "promo",
+              "code": "ZZTEST897A02",
+              "discountType": "percent",
+              "percentBp": 1000,
+              "amountSatang": 10400
+            }
+          ],
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 93600
+            }
+          ],
+          "printJobs": [
+            "queued",
+            "queued",
+            "queued"
+          ]
+        },
+        "applied": {
+          "refusal": null,
+          "badge": true,
+          "priceNote": null,
+          "badgeRow": "ZZ TEST SCRUM-897 proof 2 ZZTEST897A02 -฿104",
+          "phrases": []
+        },
+        "salePosts": [
+          {
+            "outcome": 200
+          }
+        ],
+        "cash": [
+          200
+        ]
+      }
+    },
+    "4a": {
+      "pass": true,
+      "picture": "04a-box-lane-unchanged.png",
+      "shows": "A till offline from the start sold 1 kid + 1 adult with a code through its box: Hold sale shut with the counter-box line, cash on the box; the till's own copy then refused the used-up code to the next customer; after the restore the box handed the finalised sale to the platform, which counted one use",
+      "seen": {
+        "checks": {
+          "codeTakenOffline": true,
+          "holdShutWithBoxLine": true,
+          "soldThroughTheBox": true,
+          "tillCountedTheBoxUse": true,
+          "finalisedOnPlatformWithCode": true,
+          "platformCountsOne": true
+        },
+        "abortedPlatform": 11,
+        "applied": {
+          "refusal": null,
+          "badge": true,
+          "priceNote": null,
+          "badgeRow": "ZZ TEST SCRUM-897 proof 2 ZZTEST897B02 -฿104",
+          "phrases": []
+        },
+        "hold": {
+          "holdVisible": true,
+          "holdEnabled": false,
+          "reason": "This sale was rung up on the counter box while the platform could not be reached — it cannot be held. Take the payment now.",
+          "counterBoxLines": 0
+        },
+        "again": {
+          "refusal": "Code \"ZZTEST897B02\" has reached its total usage limit.",
+          "badge": false,
+          "priceNote": null,
+          "phrases": [
+            "has reached its total usage limit"
+          ]
+        },
+        "intents": [
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "cart.quote",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "cart.quote",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "sale.finalise",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "cart.quote",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          },
+          {
+            "intent": "session.publish_display",
+            "outcome": 200
+          }
+        ],
+        "sale": {
+          "id": "01a1cf3c-a398-7651-b39b-2db0e0ac1886",
+          "status": "finalised",
+          "grossSatang": 93600,
+          "totals": {
+            "subtotalSatang": 104000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 10400,
+            "discountSatang": 10400,
+            "netSatang": 87477,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 6123,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 93600,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "memberIsSet": false,
+          "discounts": [
+            {
+              "kind": "promo",
+              "code": "ZZTEST897B02",
+              "discountType": "percent",
+              "percentBp": 1000,
+              "amountSatang": 10400
+            }
+          ],
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 93600
+            }
+          ],
+          "printJobs": []
+        },
+        "before": {
+          "ZZTEST897A02": {
+            "usedCount": 2,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "after": {
+          "ZZTEST897A02": {
+            "usedCount": 2,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B02": {
+            "usedCount": 1,
+            "active": true,
+            "archived": false
+          }
+        },
+        "trace": []
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/held",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/held",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/held",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/menu/discounts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897A02",
+      "id": "01a1cf39-fefb-7391-a7a0-5afed799aae3",
+      "usageLimit": 2,
+      "perCustomerLimit": 1,
+      "valueBp": 1000,
+      "validOn": "2026-11-12"
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897B02",
+      "id": "01a1cf39-ff6d-7563-b204-f284ac87dbe3",
+      "usageLimit": 1,
+      "perCustomerLimit": null,
+      "valueBp": 1000,
+      "validOn": "2026-11-12"
+    },
+    {
+      "kind": "station",
+      "id": "01a1cf3a-00f1-7048-b352-6b184f8d2e6a",
+      "name": "ZZ TEST SCRUM-897 proof till 1794478045245",
+      "prefix": "Z89702",
+      "box": "virtual-1"
+    },
+    {
+      "kind": "registration",
+      "tag": "g1",
+      "id": "01a1cf3a-45e2-7bb7-816e-614e49026ca3"
+    },
+    {
+      "kind": "dropoff-sale-g1",
+      "id": "01a1cf3a-bd2f-7e23-88c5-380fe69eb940"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1cf3b-426a-74f8-8384-0e8229b5bc23"
+    },
+    {
+      "kind": "registration",
+      "tag": "g2",
+      "id": "01a1cf3b-7643-7061-a25e-09e115e23b41"
+    },
+    {
+      "kind": "dropoff-sale-g2",
+      "id": "01a1cf3b-fe74-7ef7-a106-f2606f0c9b35"
+    },
+    {
+      "kind": "offline-box-sale",
+      "id": "01a1cf3c-a398-7651-b39b-2db0e0ac1886"
+    }
+  ],
+  "checks": {
+    "box": {
+      "slot": "virtual-1",
+      "role": "virtual",
+      "status": "online"
+    },
+    "testNumbersUnusedBefore": true,
+    "codesAtStart": {
+      "ZZTEST897A02": {
+        "usedCount": 0,
+        "active": true,
+        "archived": false
+      },
+      "ZZTEST897B02": {
+        "usedCount": 0,
+        "active": true,
+        "archived": false
+      }
+    },
+    "bundle": [
+      "index-CbGPMEQe.js"
+    ],
+    "point3g1": {
+      "tag": "g1",
+      "phone": "0898897020",
+      "identified": "new-member-offer",
+      "promo": {
+        "refusal": null,
+        "badge": true,
+        "priceNote": null,
+        "badgeRow": "ZZ TEST SCRUM-897 proof 2 ZZTEST897A02 -฿138",
+        "phrases": []
+      },
+      "abortedRegs": 4,
+      "abortedOther": 22,
+      "wire0": 3,
+      "held0": 2,
+      "probes0": 0,
+      "retrying": "Connection dropped — retrying These children are already saved online. The till is finishing their registration online — please wait, there is nothing to type again.",
+      "gaveUp": "Couldn't register these children The connection dropped and has not come back yet. What was saved stays saved online. Check the counter's internet, then press Continue again — the till finishes this same registration online, without entering anyone twice. Nobody has been checked in or charged — the details are still on screen.",
+      "gaveUpAfterMs": 7120,
+      "restoredAt": 1794478073183,
+      "laneProbed": true,
+      "heldFailed": true,
+      "heldErrorBefore": null,
+      "heldFailedAt": 1794478092662,
+      "againAt": 1794478093858,
+      "regId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "refused": null,
+      "regAnsweredT": 1794478094183,
+      "heldErrorGone": true,
+      "heldErrorGoneAfterAgainMs": 2354,
+      "heldReadsAfterFailure": [
+        {
+          "secondsAfterFailedRead": 0,
+          "secondsAfterRegistrationAnswered": -1.5,
+          "outcome": "aborted"
+        },
+        {
+          "secondsAfterFailedRead": 1.5,
+          "secondsAfterRegistrationAnswered": -0.1,
+          "outcome": 200
+        }
+      ],
+      "hold": {
+        "holdVisible": true,
+        "holdEnabled": true,
+        "reason": null,
+        "counterBoxLines": 0
+      },
+      "statusReadsAbortedSoFar": 1,
+      "phrases": [],
+      "statusReadsAborted": 2,
+      "window": {
+        "salePosts": [
+          {
+            "outcome": 200
+          }
+        ],
+        "finalisePosts": [
+          200
+        ],
+        "doorPosts": [
+          "/api/checkin/check-in-now 200"
+        ],
+        "boxIntents": []
+      },
+      "laneBackAfterS": 10.5
+    },
+    "point3windows": [
+      {
+        "tag": "g1",
+        "heldErrorBefore": null,
+        "heldFailed": true,
+        "heldErrorGone": true,
+        "heldErrorGoneAfterAgainMs": 2354,
+        "reads": [
+          {
+            "secondsAfterFailedRead": 0,
+            "secondsAfterRegistrationAnswered": -1.5,
+            "outcome": "aborted"
+          },
+          {
+            "secondsAfterFailedRead": 1.5,
+            "secondsAfterRegistrationAnswered": -0.1,
+            "outcome": 200
+          }
+        ],
+        "hold": {
+          "holdVisible": true,
+          "holdEnabled": true,
+          "reason": null,
+          "counterBoxLines": 0
+        }
+      },
+      {
+        "tag": "g2",
+        "heldErrorBefore": null,
+        "heldFailed": true,
+        "heldErrorGone": true,
+        "heldErrorGoneAfterAgainMs": 2318,
+        "reads": [
+          {
+            "secondsAfterFailedRead": 0,
+            "secondsAfterRegistrationAnswered": -1.9,
+            "outcome": "aborted"
+          },
+          {
+            "secondsAfterFailedRead": 1.8,
+            "secondsAfterRegistrationAnswered": -0.1,
+            "outcome": 200
+          }
+        ],
+        "hold": {
+          "holdVisible": true,
+          "holdEnabled": true,
+          "reason": null,
+          "counterBoxLines": 0
+        }
+      }
+    ]
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ],
+  "wire": [
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478055754,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: ZZTEST897A02 applied on the order at the ticket step, before the drop-off form",
+      "t": 1794478055990,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: ZZTEST897A02 applied on the order at the ticket step, before the drop-off form",
+      "t": 1794478056379,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478064741,
+      "method": "POST",
+      "path": "/api/members",
+      "bodyId": "01a1cf3a-43d6-7d78-830f-7f3a6fd23305",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478064886,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf3a-4464-730e-b217-126934236f18",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478065008,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf3a-44f6-7838-b8ac-e1841e6fc073",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478065130,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478066135,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478068148,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478072167,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478073542,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478094063,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478094183,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478094951,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478095635,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478095822,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478095824,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1cf3a-bd2f-7e23-88c5-380fe69eb940",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478095962,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478095997,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478096174,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: cash, then Check in now",
+      "t": 1794478097388,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: cash, then Check in now",
+      "t": 1794478097507,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: cash, then Check in now",
+      "t": 1794478097677,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    },
+    {
+      "at": "g1: cash, then Check in now",
+      "t": 1794478097712,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g1: cash, then Check in now",
+      "t": 1794478099655,
+      "method": "POST",
+      "path": "/api/checkin/check-in-now",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "1b: Start New Sale (no reload), the same number, the same code",
+      "t": 1794478119213,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "1b: Start New Sale (no reload), the same number, the same code",
+      "t": 1794478119534,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794478126471,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794478129915,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1cf3b-426a-74f8-8384-0e8229b5bc23",
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794478130426,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794478130551,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478137874,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478138105,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478142674,
+      "method": "POST",
+      "path": "/api/members",
+      "bodyId": "01a1cf3b-745d-76d2-9615-4ae56054b5c3",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478142791,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf3b-74d2-7f33-a845-4bbd7e899aa6",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478142907,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf3b-7547-7938-8333-9a79ad69024d",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478143048,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478144064,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478146070,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478150084,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478151925,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478176252,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478176365,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478177191,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478177891,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478178049,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1cf3b-fe74-7ef7-a106-f2606f0c9b35",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478178073,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478178212,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478178247,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478178416,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: Hold sale pressed on the online sale while the lane still says box",
+      "t": 1794478179391,
+      "method": "POST",
+      "path": "/api/sales/:id/hold",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Hold sale pressed on the online sale while the lane still says box",
+      "t": 1794478179596,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g2: the box status read let through; waiting for the lane to come back, then Resume",
+      "t": 1794478192836,
+      "method": "POST",
+      "path": "/api/sales/:id/resume",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: the resumed sale paid in cash",
+      "t": 1794478194786,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: the resumed sale paid in cash",
+      "t": 1794478194909,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478216001,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478216947,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "cart.quote",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478217214,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478220384,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "cart.quote",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478220418,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478220603,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478222177,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478222599,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "sale.finalise",
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478222777,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478224649,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478226317,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478226622,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478226802,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478227464,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478227929,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "cart.quote",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478228174,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478231689,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    }
+  ],
+  "probes": [
+    {
+      "at": "g1: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478081628,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478096625,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: the box status read let through again; waiting for the lane to come back",
+      "t": 1794478111744,
+      "status": 200,
+      "lane": "platform"
+    },
+    {
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478159484,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "t": 1794478174495,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: the box status read let through; waiting for the lane to come back, then Resume",
+      "t": 1794478189610,
+      "status": 200,
+      "lane": "platform"
+    },
+    {
+      "at": "4a: the next customer at the same till, still offline, the same code",
+      "t": 1794478230083,
+      "status": 200,
+      "lane": "platform"
+    }
+  ],
+  "held": [
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478051295,
+      "status": 200
+    },
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478052778,
+      "status": 200
+    },
+    {
+      "at": "g1: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478072649,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "t": 1794478092663,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g1: Continue pressed again, the lane still the box's",
+      "t": 1794478094126,
+      "status": 200
+    },
+    {
+      "at": "g1: the box status read let through again; waiting for the lane to come back",
+      "t": 1794478112766,
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478134601,
+      "status": 200
+    },
+    {
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478154601,
+      "status": 200
+    },
+    {
+      "at": "g2: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "t": 1794478174499,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue pressed again, the lane still the box's",
+      "t": 1794478176314,
+      "status": 200
+    },
+    {
+      "at": "g2: Hold sale pressed on the online sale while the lane still says box",
+      "t": 1794478179523,
+      "status": 200
+    },
+    {
+      "at": "g2: the box status read let through; waiting for the lane to come back, then Resume",
+      "t": 1794478193199,
+      "status": 200
+    },
+    {
+      "at": "g2: the resumed sale paid in cash",
+      "t": 1794478194624,
+      "status": 200
+    },
+    {
+      "at": "4a: offline from the start — every platform request aborted, the virtual box path left open",
+      "t": 1794478213958,
+      "status": 200
+    },
+    {
+      "at": "4a: network restored; the box hands the sale to the platform",
+      "t": 1794478234254,
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "registration",
+      "tag": "g1",
+      "id": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "children": [
+        {
+          "id": "01a1cf3a-45e2-7bb7-816e-614f10c278d7",
+          "status": "out"
+        },
+        {
+          "id": "01a1cf3a-45e2-7bb7-816e-61504bfb836c",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "cancel-own-booking",
+      "tag": "g2",
+      "status": 409
+    },
+    {
+      "kind": "check-in-booked-own",
+      "tag": "g2",
+      "status": 200
+    },
+    {
+      "kind": "registration",
+      "tag": "g2",
+      "id": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "children": [
+        {
+          "id": "01a1cf3b-7643-7061-a25e-09e2aa1a877a",
+          "status": "out"
+        },
+        {
+          "id": "01a1cf3b-7643-7061-a25e-09e3507ea596",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "held-read-back",
+      "ownHeld": 0
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cf3c-a398-7651-b39b-2db0e0ac1886",
+      "retained": true,
+      "printJobs": []
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cf3b-fe74-7ef7-a106-f2606f0c9b35",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cf3b-426a-74f8-8384-0e8229b5bc23",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "finalised-test-sale",
+      "id": "01a1cf3a-bd2f-7e23-88c5-380fe69eb940",
+      "retained": true,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": [
+        {
+          "id": "01a1cf3c-a398-7651-b39b-2db0e0ac1886",
+          "status": "finalised",
+          "grossSatang": 93600
+        },
+        {
+          "id": "01a1cf3b-fe74-7ef7-a106-f2606f0c9b35",
+          "status": "finalised",
+          "grossSatang": 183000
+        },
+        {
+          "id": "01a1cf3b-426a-74f8-8384-0e8229b5bc23",
+          "status": "finalised",
+          "grossSatang": 93600
+        },
+        {
+          "id": "01a1cf3a-bd2f-7e23-88c5-380fe69eb940",
+          "status": "finalised",
+          "grossSatang": 144450
+        }
+      ]
+    },
+    {
+      "kind": "station",
+      "id": "01a1cf3a-00f1-7048-b352-6b184f8d2e6a",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897A02",
+      "id": "01a1cf39-fefb-7391-a7a0-5afed799aae3",
+      "archived": true,
+      "active": false,
+      "usedCount": 2,
+      "inLiveList": false
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897B02",
+      "id": "01a1cf39-ff6d-7563-b204-f284ac87dbe3",
+      "archived": true,
+      "active": false,
+      "usedCount": 1,
+      "inLiveList": false
+    },
+    {
+      "kind": "member",
+      "key": "g1",
+      "id": "01a1cf3a-43d6-7d78-830f-7f3a6fd23305",
+      "archived": true,
+      "readBack": "gone from lookup"
+    },
+    {
+      "kind": "member",
+      "key": "g2",
+      "id": "01a1cf3b-745d-76d2-9615-4ae56054b5c3",
+      "archived": true,
+      "readBack": "gone from lookup"
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "offline",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "probe",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898897020",
+    "g2": "0898897021",
+    "ordinary": "0898897022",
+    "offline": "0898897023",
+    "probe": "0898897024"
+  },
+  "passed": false,
+  "finishedAt": "2026-11-12T10:10:44.263Z"
+}

@@ -1,0 +1,853 @@
+{
+  "ticket": "SCRUM-897",
+  "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+  "startedAt": "2026-11-12T10:14:44.640Z",
+  "phase": "finished",
+  "only": [
+    "3b"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "serving": {
+        "id": "dep-dbqotahsrm7s73dia8h0",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:18.464784Z",
+        "finishedAt": "2026-11-12T10:03:29.412798Z"
+      },
+      "readAt": "2026-11-12T10:07:17.334Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "serving": {
+        "id": "dep-dbqotatckfvc73d32gug",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:20.023336Z",
+        "finishedAt": "2026-11-12T10:05:54.260716Z"
+      },
+      "readAt": "2026-11-12T10:07:17.966Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "serving": {
+        "id": "dep-dbqota1srm7s73dia67g",
+        "status": "live",
+        "sha": "348caa58d0a568d76a5f8cae815dcb745b0d73b7",
+        "createdAt": "2026-11-12T10:02:16.971528Z",
+        "finishedAt": "2026-11-12T10:06:55.875133Z"
+      },
+      "readAt": "2026-11-12T10:07:18.261Z"
+    }
+  },
+  "points": {},
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/held",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cf40-b3e3-7f96-9c33-af9f8cc8fcc8",
+      "name": "ZZ TEST SCRUM-897 proof till 1794478484656",
+      "prefix": "Z89703",
+      "box": "virtual-1"
+    },
+    {
+      "kind": "registration",
+      "tag": "g3",
+      "id": "01a1cf40-e973-7ed9-aad3-55ccd222e76c"
+    },
+    {
+      "kind": "dropoff-sale-g3",
+      "id": "01a1cf41-7189-78a3-a135-f7bba4ef49a6"
+    }
+  ],
+  "checks": {
+    "box": {
+      "slot": "virtual-1",
+      "role": "virtual",
+      "status": "online"
+    },
+    "testNumbersUnusedBefore": true,
+    "codesAtStart": {},
+    "bundle": [
+      "index-CbGPMEQe.js"
+    ],
+    "point3b": {
+      "holdStatus": 200,
+      "abortedReadsSecondsAfterFirst": [
+        0
+      ],
+      "cadenceS": 20,
+      "errorShown": "Held sales could not be read — No answer from the platform. This screen has no connection.",
+      "releasedAfterFirstFailureS": 2.6,
+      "boxSaidPlatformAfterReleaseS": 7.6,
+      "rereadAfterBoxSaidPlatformS": 0.2,
+      "rereadBeforeNextTimerS": 9.5,
+      "lineGoneAfterBoxSaidPlatformS": 0.3
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: every read of the list now reaches nothing until the box answers \"platform\"",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g3: every read of the list now reaches nothing until the box answers \"platform\"",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "wire": [
+    {
+      "at": "g3: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478494693,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478494953,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478499834,
+      "method": "POST",
+      "path": "/api/members",
+      "bodyId": "01a1cf40-e77b-7389-8996-aeeb3a80c494",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478499957,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf40-e7f9-7ccb-9310-6bb2a2439a4a",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478500083,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf40-e874-7edc-ba33-ed9b760f5808",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478500218,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478501227,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478503233,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794478507242,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478508577,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478533239,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478533378,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478534263,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535012,
+      "method": "POST",
+      "path": "/api/checkin/registrations/:id/photo",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535198,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1cf41-7189-78a3-a135-f7bba4ef49a6",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535219,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535349,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535405,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478535598,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: the sale held, so the till is back at its first screen where Held sales is drawn; the lane still says box",
+      "t": 1794478536642,
+      "method": "POST",
+      "path": "/api/sales/:id/hold",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g3: the sale held, so the till is back at its first screen where Held sales is drawn; the lane still says box",
+      "t": 1794478536847,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    },
+    {
+      "at": "g3: every read of the list now reaches nothing until the box answers \"platform\"",
+      "t": 1794478551781,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "checkin.board",
+      "status": 200
+    }
+  ],
+  "probes": [
+    {
+      "at": "g3: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478516764,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "t": 1794478531770,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: every read of the list now reaches nothing until the box answers \"platform\"",
+      "t": 1794478546763,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: the box status read let through; waiting for the lane to move back",
+      "t": 1794478561873,
+      "status": 200,
+      "lane": "platform"
+    }
+  ],
+  "held": [
+    {
+      "at": "g3: walk-in, two children no adult, drop-off form filled",
+      "t": 1794478491749,
+      "status": 200
+    },
+    {
+      "at": "g3: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794478511745,
+      "status": 200
+    },
+    {
+      "at": "g3: the Held sales list's next timed read is made to fail while the lane is on the box",
+      "t": 1794478531652,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: Continue pressed again, the lane still the box's",
+      "t": 1794478533312,
+      "status": 200
+    },
+    {
+      "at": "g3: the sale held, so the till is back at its first screen where Held sales is drawn; the lane still says box",
+      "t": 1794478536805,
+      "status": 200
+    },
+    {
+      "at": "g3: every read of the list now reaches nothing until the box answers \"platform\"",
+      "t": 1794478551634,
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g3: the box status read let through; waiting for the lane to move back",
+      "t": 1794478562097,
+      "status": 200
+    },
+    {
+      "at": "g3: the box status read let through; waiting for the lane to move back",
+      "t": 1794478571743,
+      "status": 200
+    },
+    {
+      "at": "g3: the box status read let through; waiting for the lane to move back",
+      "t": 1794478591756,
+      "status": 200
+    },
+    {
+      "at": "g3: Resume, then cash",
+      "t": 1794478611787,
+      "status": 200
+    },
+    {
+      "at": "clean up",
+      "t": 1794478624272,
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "cancel-own-booking",
+      "tag": "g3",
+      "status": 409
+    },
+    {
+      "kind": "check-in-booked-own",
+      "tag": "g3",
+      "status": 200
+    },
+    {
+      "kind": "registration",
+      "tag": "g3",
+      "id": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "children": [
+        {
+          "id": "01a1cf40-e973-7ed9-aad3-55cd2fbc1f83",
+          "status": "out"
+        },
+        {
+          "id": "01a1cf40-e973-7ed9-aad3-55cec7dea145",
+          "status": "out"
+        }
+      ]
+    },
+    {
+      "kind": "held-read-back",
+      "ownHeld": 0
+    },
+    {
+      "kind": "sales-read-back",
+      "sales": []
+    },
+    {
+      "kind": "station",
+      "id": "01a1cf40-b3e3-7f96-9c33-af9f8cc8fcc8",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "kind": "member",
+      "key": "g1",
+      "id": "01a1cf40-e77b-7389-8996-aeeb3a80c494",
+      "archived": true,
+      "readBack": "gone from lookup"
+    },
+    {
+      "kind": "test-number",
+      "key": "g2",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "offline",
+      "member": null
+    },
+    {
+      "kind": "test-number",
+      "key": "probe",
+      "member": null
+    },
+    {
+      "kind": "till-session",
+      "signedOut": true,
+      "me": 401
+    },
+    {
+      "kind": "admin-session",
+      "signedOut": true,
+      "me": 401
+    }
+  ],
+  "numbers": {
+    "g1": "0898897030",
+    "g2": "0898897031",
+    "ordinary": "0898897032",
+    "offline": "0898897033",
+    "probe": "0898897034"
+  },
+  "failures": [
+    {
+      "pass": "3b",
+      "failedAt": "g3: Resume, then cash",
+      "failure": "Error: expect(locator).toBeEnabled() failed"
+    }
+  ],
+  "passed": false,
+  "finishedAt": "2026-11-12T10:17:08.210Z"
+}

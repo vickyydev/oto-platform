@@ -1,0 +1,171 @@
+{
+  "at": "2026-11-12T10:19:56.692Z",
+  "tills": [
+    {
+      "prefix": "Z89701",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "prefix": "Z89702",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "prefix": "Z89703",
+      "archived": true,
+      "devices": 0
+    }
+  ],
+  "codes": [
+    {
+      "code": "ZZTEST897A",
+      "archived": true,
+      "active": false,
+      "usedCount": 1
+    },
+    {
+      "code": "ZZTEST897B",
+      "archived": true,
+      "active": false,
+      "usedCount": 0
+    },
+    {
+      "code": "ZZTEST897A02",
+      "archived": true,
+      "active": false,
+      "usedCount": 2
+    },
+    {
+      "code": "ZZTEST897B02",
+      "archived": true,
+      "active": false,
+      "usedCount": 1
+    }
+  ],
+  "liveCodes": 0,
+  "numbers": {
+    "0898897010": "none",
+    "0898897020": "none",
+    "0898897030": "none",
+    "0898897011": "none",
+    "0898897021": "none",
+    "0898897031": "none",
+    "0898897012": "none",
+    "0898897022": "none",
+    "0898897032": "none",
+    "0898897013": "none",
+    "0898897023": "none",
+    "0898897033": "none",
+    "0898897014": "none",
+    "0898897024": "none",
+    "0898897034": "none"
+  },
+  "heldOwn": 0,
+  "registrations": [
+    {
+      "id": "01a1cf3a-45e2-7bb7-816e-614e49026ca3",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "id": "01a1cf3b-7643-7061-a25e-09e115e23b41",
+      "children": [
+        "out",
+        "out"
+      ]
+    },
+    {
+      "id": "01a1cf40-e973-7ed9-aad3-55ccd222e76c",
+      "children": [
+        "out",
+        "out"
+      ]
+    }
+  ],
+  "sales": [
+    {
+      "run": "01",
+      "kind": "ordinary-ticket-sale",
+      "status": "finalised",
+      "grossSatang": 93600,
+      "payments": [
+        "cash approved 93600"
+      ],
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "run": "02",
+      "kind": "dropoff-sale-g1",
+      "status": "finalised",
+      "grossSatang": 144450,
+      "payments": [
+        "cash approved 144450"
+      ],
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "run": "02",
+      "kind": "ordinary-ticket-sale",
+      "status": "finalised",
+      "grossSatang": 93600,
+      "payments": [
+        "cash approved 93600"
+      ],
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "run": "02",
+      "kind": "dropoff-sale-g2",
+      "status": "finalised",
+      "grossSatang": 183000,
+      "payments": [
+        "cash approved 183000"
+      ],
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "run": "02",
+      "kind": "offline-box-sale",
+      "status": "finalised",
+      "grossSatang": 93600,
+      "payments": [
+        "cash approved 93600"
+      ],
+      "printJobs": []
+    },
+    {
+      "run": "03",
+      "kind": "dropoff-sale-g3",
+      "status": "finalised",
+      "grossSatang": 183000,
+      "payments": [
+        "cash approved 183000"
+      ],
+      "printJobs": [
+        "failed",
+        "failed",
+        "failed"
+      ]
+    }
+  ],
+  "adminMeAfter": 401
+}

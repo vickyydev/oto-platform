@@ -1,0 +1,68 @@
+{
+  "at": "2026-11-12T10:06:38.926Z",
+  "steps": [
+    {
+      "what": "finalised test sale kept",
+      "id": "01a1cf10-18cd-787c-9dcd-9078a5ccc0d7",
+      "status": "finalised",
+      "grossSatang": 93600,
+      "printJobs": [
+        "printed",
+        "printed",
+        "printed"
+      ]
+    },
+    {
+      "what": "own till retired",
+      "id": "01a1cf0f-8c59-7ba0-af4e-5e3a6586352f",
+      "archived": true,
+      "devices": 0
+    },
+    {
+      "what": "code archived",
+      "code": "ZZTEST897A",
+      "usedCount": 1,
+      "active": false,
+      "inLiveList": false
+    },
+    {
+      "what": "code archived",
+      "code": "ZZTEST897B",
+      "usedCount": 0,
+      "active": false,
+      "inLiveList": false
+    },
+    {
+      "what": "number",
+      "key": "g1",
+      "member": null
+    },
+    {
+      "what": "member archived",
+      "key": "g2",
+      "id": "01a1cf10-47e5-7b97-9551-4fe5a49787f0",
+      "children": 2,
+      "lookupAfter": "gone"
+    },
+    {
+      "what": "number",
+      "key": "ordinary",
+      "member": null
+    },
+    {
+      "what": "number",
+      "key": "offline",
+      "member": null
+    },
+    {
+      "what": "number",
+      "key": "probe",
+      "member": null
+    },
+    {
+      "what": "held read-back",
+      "own": 0
+    }
+  ],
+  "adminMeAfter": 401
+}

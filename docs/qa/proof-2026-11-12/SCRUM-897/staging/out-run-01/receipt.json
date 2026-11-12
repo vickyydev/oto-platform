@@ -1,0 +1,657 @@
+{
+  "ticket": "SCRUM-897",
+  "sha": "079b94314e8998959cb86d37094c5571b458dcd6",
+  "startedAt": "2026-11-12T09:21:02.864Z",
+  "phase": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+  "only": [
+    "1",
+    "5",
+    "2",
+    "4a"
+  ],
+  "deployments": {
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqnr0jrjlhs739v1j00",
+        "status": "live",
+        "sha": "079b94314e8998959cb86d37094c5571b458dcd6",
+        "createdAt": "2026-11-12T08:49:06.665146Z",
+        "finishedAt": "2026-11-12T08:50:10.511421Z"
+      },
+      "serving": {
+        "id": "dep-dbqnr0jrjlhs739v1j00",
+        "status": "live",
+        "sha": "079b94314e8998959cb86d37094c5571b458dcd6",
+        "createdAt": "2026-11-12T08:49:06.665146Z",
+        "finishedAt": "2026-11-12T08:50:10.511421Z"
+      },
+      "readAt": "2026-11-12T08:53:05.698Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqnr15bedkc73e7gl50",
+        "status": "live",
+        "sha": "079b94314e8998959cb86d37094c5571b458dcd6",
+        "createdAt": "2026-11-12T08:49:08.551766Z",
+        "finishedAt": "2026-11-12T08:52:10.57829Z"
+      },
+      "serving": {
+        "id": "dep-dbqnr15bedkc73e7gl50",
+        "status": "live",
+        "sha": "079b94314e8998959cb86d37094c5571b458dcd6",
+        "createdAt": "2026-11-12T08:49:08.551766Z",
+        "finishedAt": "2026-11-12T08:52:10.57829Z"
+      },
+      "readAt": "2026-11-12T08:53:06.312Z"
+    },
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqnj10n74is73co4us0",
+        "status": "live",
+        "sha": "7cb06ac6c81407e7673645920b29baec058bcbf8",
+        "createdAt": "2026-11-12T08:32:04.112782Z",
+        "finishedAt": "2026-11-12T08:37:44.408815Z"
+      },
+      "serving": {
+        "id": "dep-dbqnj10n74is73co4us0",
+        "status": "live",
+        "sha": "7cb06ac6c81407e7673645920b29baec058bcbf8",
+        "createdAt": "2026-11-12T08:32:04.112782Z",
+        "finishedAt": "2026-11-12T08:37:44.408815Z"
+      },
+      "readAt": "2026-11-12T08:53:06.612Z"
+    }
+  },
+  "points": {
+    "5": {
+      "pass": true,
+      "picture": "05-platform-readback-ordinary-sale-code-counted-once.png",
+      "shows": "An ordinary online sale with ZZTEST897A (its second use of 2) was accepted on the same till, paid in cash online once, and the platform's count rose by exactly one (0 → 1)",
+      "seen": {
+        "checks": {
+          "codeTaken": true,
+          "finalisedOnlineCash": true,
+          "codeOnTheSaleOnce": true,
+          "countedOnce": true
+        },
+        "before": {
+          "ZZTEST897A": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "after": {
+          "ZZTEST897A": {
+            "usedCount": 1,
+            "active": true,
+            "archived": false
+          },
+          "ZZTEST897B": {
+            "usedCount": 0,
+            "active": true,
+            "archived": false
+          }
+        },
+        "sale": {
+          "id": "01a1cf10-18cd-787c-9dcd-9078a5ccc0d7",
+          "status": "finalised",
+          "grossSatang": 93600,
+          "totals": {
+            "subtotalSatang": 104000,
+            "manualDiscountSatang": 0,
+            "promoDiscountSatang": 10400,
+            "discountSatang": 10400,
+            "netSatang": 87477,
+            "serviceChargeSatang": 0,
+            "taxInclusiveSatang": 6123,
+            "taxExclusiveSatang": 0,
+            "grossSatang": 93600,
+            "unappliedDiscountSatang": 0,
+            "refundedSatang": 0
+          },
+          "receiptNumber": "present",
+          "stationIsOwn": true,
+          "memberIsSet": false,
+          "discounts": [
+            {
+              "kind": "promo",
+              "code": "ZZTEST897A",
+              "discountType": "percent",
+              "percentBp": 1000,
+              "amountSatang": 10400
+            }
+          ],
+          "paymentAttempts": [
+            {
+              "method": "cash",
+              "status": "approved",
+              "amountSatang": 93600
+            }
+          ],
+          "printJobs": [
+            "queued",
+            "queued",
+            "queued"
+          ]
+        },
+        "applied": {
+          "refusal": null,
+          "badge": true,
+          "priceNote": null,
+          "badgeRow": "ZZ TEST SCRUM-897 proof A ZZTEST897A -฿104",
+          "phrases": []
+        },
+        "salePosts": [
+          {
+            "outcome": 200
+          }
+        ],
+        "cash": [
+          200
+        ]
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/menu/discounts",
+      "status": 200
+    }
+  ],
+  "created": [
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897A",
+      "id": "01a1cf0f-8a40-772c-a35c-111daee6bd68",
+      "usageLimit": 2,
+      "perCustomerLimit": 1,
+      "valueBp": 1000,
+      "validOn": "2026-11-12"
+    },
+    {
+      "kind": "promo-code",
+      "code": "ZZTEST897B",
+      "id": "01a1cf0f-8ab1-7f72-a819-e3a493bcfb15",
+      "usageLimit": 1,
+      "perCustomerLimit": null,
+      "valueBp": 1000,
+      "validOn": "2026-11-12"
+    },
+    {
+      "kind": "station",
+      "id": "01a1cf0f-8c59-7ba0-af4e-5e3a6586352f",
+      "name": "ZZ TEST SCRUM-897 proof till 1794475262879",
+      "prefix": "Z89701",
+      "box": "virtual-1"
+    },
+    {
+      "kind": "ordinary-ticket-sale",
+      "id": "01a1cf10-18cd-787c-9dcd-9078a5ccc0d7"
+    }
+  ],
+  "checks": {
+    "box": {
+      "slot": "virtual-1",
+      "role": "virtual",
+      "status": "online"
+    },
+    "testNumbersUnusedBefore": true,
+    "codesAtStart": {
+      "ZZTEST897A": {
+        "usedCount": 0,
+        "active": true,
+        "archived": false
+      },
+      "ZZTEST897B": {
+        "usedCount": 0,
+        "active": true,
+        "archived": false
+      }
+    },
+    "bundle": [
+      "index-HR1xwEZn.js"
+    ]
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "till",
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ],
+  "wire": [
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475273285,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475273530,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794475297753,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794475301225,
+      "method": "POST",
+      "path": "/api/sales",
+      "bodyId": "01a1cf10-18cd-787c-9dcd-9078a5ccc0d7",
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794475301691,
+      "method": "POST",
+      "path": "/api/sales/:id/finalise",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794475301805,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "receipt.observed",
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475308422,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475308635,
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "bodyId": null,
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475313258,
+      "method": "POST",
+      "path": "/api/members",
+      "bodyId": "01a1cf10-47e5-7b97-9551-4fe5a49787f0",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475313404,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf10-486a-7ecb-9796-066f61415d11",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475313540,
+      "method": "POST",
+      "path": "/api/members/:id/children",
+      "bodyId": "01a1cf10-48fb-7c22-880d-862b35e6bc3e",
+      "status": 200
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475313668,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf10-49fd-740e-81f6-f846b8cf039b",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475314686,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf10-49fd-740e-81f6-f846b8cf039b",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475316690,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf10-49fd-740e-81f6-f846b8cf039b",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: Continue — from the registration request on, every /api request reaches nothing until the till gives up",
+      "t": 1794475320698,
+      "method": "POST",
+      "path": "/api/checkin/registrations",
+      "bodyId": "01a1cf10-49fd-740e-81f6-f846b8cf039b",
+      "failed": "net::ERR_FAILED"
+    },
+    {
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794475322047,
+      "method": "POST",
+      "path": "/api/box/v1/station/:id/intents",
+      "bodyId": null,
+      "intent": "session.publish_display",
+      "status": 200
+    }
+  ],
+  "probes": [],
+  "held": [
+    {
+      "at": "reception account signs in at the own till (new browser profile; the codes exist before the catalog is read)",
+      "t": 1794475269088,
+      "status": 200
+    },
+    {
+      "at": "g1: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475270412,
+      "status": 200
+    },
+    {
+      "at": "g1: ZZTEST897A applied on the order, before payment",
+      "t": 1794475290409,
+      "status": 200
+    },
+    {
+      "at": "5: Start New Sale (no reload): an ordinary walk-in, 1 kid + 1 adult, the same code, cash",
+      "t": 1794475294612,
+      "status": 200
+    },
+    {
+      "at": "g2: walk-in, two children no adult, drop-off form filled",
+      "t": 1794475305037,
+      "status": 200
+    },
+    {
+      "at": "g2: link restored for the till; its box status read still reaches nothing, so the lane stays on the box",
+      "t": 1794475325058,
+      "status": 200
+    }
+  ],
+  "cleanup": [],
+  "numbers": {
+    "g1": "0898897010",
+    "g2": "0898897011",
+    "ordinary": "0898897012",
+    "offline": "0898897013",
+    "probe": "0898897014"
+  },
+  "failures": [
+    {
+      "pass": "1",
+      "failedAt": "g1: ZZTEST897A applied on the order, before payment",
+      "failure": "Error: expect(locator).toBeEnabled() failed"
+    }
+  ]
+}
