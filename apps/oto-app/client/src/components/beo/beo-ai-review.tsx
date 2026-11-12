@@ -237,6 +237,18 @@ function LineRow({ line, onChange, onRemove, extraLabel, testId }: {
         {extraLabel === "notes" && (
           <Input className="h-8 w-40" placeholder="Notes" value={line.extra} onChange={(e) => onChange({ ...line, extra: e.target.value, changed: true })} />
         )}
+        {/* SCRUM-904: a POS line item's price, only as the chat names it (empty: none). */}
+        {extraLabel === "kind" && (
+          <Input
+            type="number"
+            min={0}
+            className="h-8 w-24"
+            placeholder="Price"
+            value={typeof line.price === "number" ? line.price : ""}
+            onChange={(e) => onChange({ ...line, price: e.target.value === "" ? null : Math.max(0, parseInt(e.target.value, 10) || 0), changed: true })}
+            data-testid="input-ai-review-pos-item-price"
+          />
+        )}
         <SourceMark field={line} />
         <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onRemove} aria-label="Remove the line">
           <Trash2 className="h-3.5 w-3.5" />
@@ -403,7 +415,7 @@ function ReviewSections({
       />
     </Row>
   );
-  const time = (field: Reviewed<string> | null, key: "startTime" | "endTime", label: string) => (
+  const time = (field: Reviewed<string> | null, key: "startTime" | "endTime" | "kidsFoodTime" | "adultsFoodTime" | "barServiceTime", label: string) => (
     <Row label={label} field={field} says={field?.from}>
       <Input
         type="time"
@@ -428,6 +440,19 @@ function ReviewSections({
             data-testid="input-ai-review-childName"
           />
         </Row>
+        {/* SCRUM-904: the age the child turns, as the chat gives it. */}
+        {(state.childAge || review.proposal.event.childAge) && (
+          <Row label="Age" field={state.childAge} says={state.childAge?.from}>
+            <Input
+              type="number"
+              min={0}
+              className="h-8 w-24"
+              value={state.childAge?.value ?? ""}
+              onChange={(e) => set({ childAge: e.target.value === "" ? null : edited(state.childAge, Math.max(0, parseInt(e.target.value, 10) || 0)) })}
+              data-testid="input-ai-review-childAge"
+            />
+          </Row>
+        )}
         {/* SCRUM-814: the confirmation's date beside the booked one; marked when they differ, applied only when ticked. */}
         {state.date && (
           <div
@@ -444,8 +469,10 @@ function ReviewSections({
                 {state.date.readText && (
                   <span className="text-xs text-muted-foreground">{`— the message says "${state.date.readText}"`}</span>
                 )}
-                <SourceMark field={{ from: review.ruling, changed: false }} />
+                <SourceMark field={{ from: state.date.from !== undefined ? state.date.from : review.ruling, changed: false }} />
               </div>
+              {/* SCRUM-904: the chat's words for the date, whose line and when. */}
+              <ChatSays from={state.date.from !== undefined ? state.date.from : review.ruling} indent={false} />
               {state.date.differs ? (
                 <>
                   <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300" data-testid="text-ai-review-date-differs">
@@ -478,6 +505,8 @@ function ReviewSections({
         {time(state.endTime, "endTime", "End")}
         {/* SCRUM-827: the rest of Event Info: the ruling's fields, and the chat's requests with their lines. */}
         {textRow("bookingName", "Booking name")}
+        {/* SCRUM-904: the family's WhatsApp number the chat gives, beside the form's, never over it. */}
+        {(d.whatsapp.value || d.whatsapp.chat) && textRow("whatsapp", "WhatsApp")}
         {textRow("locationText", "Location")}
         {textRow("activities", "Activities", { multiline: true })}
         {textRow("decoration", "Decoration", { multiline: true })}
@@ -497,35 +526,42 @@ function ReviewSections({
           if (proposal.match) {
             const ticked = d.team.accepted.includes(field);
             return (
-              <label key={field} className="flex items-start gap-2 text-sm cursor-pointer" data-testid={`ai-review-team-${field}`}>
-                <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
-                <input
-                  type="checkbox"
-                  className="mt-1 shrink-0"
-                  checked={ticked}
-                  onChange={(e) =>
-                    setDetails({
-                      team: { ...d.team, accepted: e.target.checked ? [...d.team.accepted, field] : d.team.accepted.filter((f) => f !== field) },
-                    })
-                  }
-                  data-testid={`checkbox-ai-review-team-${field}`}
-                />
-                <span className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium">{proposal.match.label}</span>
-                  <span className="text-xs text-muted-foreground">{` — the message says "${proposal.asked}". Tick to assign.`}</span>
-                  <SourceMark field={{ from: { source: "team", at: null, line: null }, changed: false }} />
-                </span>
-              </label>
+              <div key={field} className="space-y-0.5">
+                <label className="flex items-start gap-2 text-sm cursor-pointer" data-testid={`ai-review-team-${field}`}>
+                  <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+                  <input
+                    type="checkbox"
+                    className="mt-1 shrink-0"
+                    checked={ticked}
+                    onChange={(e) =>
+                      setDetails({
+                        team: { ...d.team, accepted: e.target.checked ? [...d.team.accepted, field] : d.team.accepted.filter((f) => f !== field) },
+                      })
+                    }
+                    data-testid={`checkbox-ai-review-team-${field}`}
+                  />
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium">{proposal.match.label}</span>
+                    <span className="text-xs text-muted-foreground">{` — the message says "${proposal.asked}". Tick to assign.`}</span>
+                    <SourceMark field={{ from: proposal.from ?? { source: "team", at: null, line: null }, changed: false }} />
+                  </span>
+                </label>
+                {/* SCRUM-904: the chat's line that names them (the ruling message when the conversation did not). */}
+                <ChatSays from={proposal.from ?? review.ruling} />
+              </div>
             );
           }
           return (
-            <div key={field} className="flex items-start gap-2 text-sm" data-testid={`ai-review-team-${field}`}>
-              <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
-              <span>
-                <span className="font-medium">{`"${proposal.asked}"`}</span>
-                <span className="text-xs text-amber-700 dark:text-amber-300">{` ${reviewTeamUnmatchedText(field, proposal.why)}`}</span>
-              </span>
+            <div key={field} className="space-y-0.5" data-testid={`ai-review-team-${field}`}>
+              <div className="flex items-start gap-2 text-sm">
+                <span className="text-muted-foreground w-28 shrink-0">{label}:</span>
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+                <span>
+                  <span className="font-medium">{`"${proposal.asked}"`}</span>
+                  <span className="text-xs text-amber-700 dark:text-amber-300">{` ${reviewTeamUnmatchedText(field, proposal.why)}`}</span>
+                </span>
+              </div>
+              <ChatSays from={proposal.from ?? review.ruling} />
             </div>
           );
         })}
@@ -603,10 +639,12 @@ function ReviewSections({
       <Section title="Setup Plan" icon={<Settings className="h-4 w-4" />}>
         {textRow("setupReadyBy", "Ready by", { type: "time" })}
         {textRow("setupResponsible", "Who")}
-        {d.setupTasks.length === 0 && !d.setupReadyBy.value && !d.setupResponsible.value && (
+        {d.setupTasks.length === 0 && !d.setupReadyBy.value && !d.setupResponsible.value && !d.setupNotes.value && (
           <p className="text-xs text-muted-foreground" data-testid="text-ai-review-no-setup">The chat names no setup.</p>
         )}
         {lines("setupTasks", "notes", "ai-review-setup-task")}
+        {/* SCRUM-904: the setup plan's notes, held text never overwritten. */}
+        {(d.setupNotes.value || d.setupNotes.chat) && textRow("setupNotes", "Setup notes", { multiline: true })}
       </Section>
 
       <Section title="Kitchen Plan" icon={<Utensils className="h-4 w-4" />}>
@@ -722,6 +760,13 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={l.from} indent={false} />
+              {/* SCRUM-904: the chat's note on the dish, written on its line. */}
+              {l.notes !== undefined && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-xs text-muted-foreground">Note:</span>
+                  <Input className="h-8 flex-1 min-w-[8rem]" value={l.notes} onChange={(e) => update({ notes: e.target.value })} data-testid="input-ai-review-menu-notes" />
+                </div>
+              )}
               {l.chatPrice !== null && <PriceBeside chat={l.chatPrice} catalogue={[]} />}
               {l.notInMenu && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
@@ -772,6 +817,49 @@ function ReviewSections({
             </>
           )}
         </Row>
+        {/* SCRUM-904: how many cakes, whether it comes with the package and its price — only as the chat says them. */}
+        {state.cake && (state.cake.value.quantity !== undefined || state.cake.value.included !== undefined || state.cake.value.price !== undefined) && (
+          <div className="pl-[7.5rem] flex items-center gap-2 text-sm flex-wrap" data-testid="ai-review-cake-more">
+            <span className="text-xs text-muted-foreground">Cakes:</span>
+            <Input
+              type="number"
+              min={1}
+              className="h-8 w-16"
+              value={state.cake.value.quantity ?? ""}
+              onChange={(e) => {
+                const { quantity: _q, ...rest } = state.cake!.value;
+                set({ cake: edited(state.cake, e.target.value === "" ? rest : { ...rest, quantity: Math.max(1, parseInt(e.target.value, 10) || 1) }) });
+              }}
+              data-testid="input-ai-review-cake-quantity"
+            />
+            <label className="flex items-center gap-1 text-xs">
+              <input
+                type="checkbox"
+                checked={state.cake.value.included === true}
+                onChange={(e) => set({ cake: edited(state.cake, { ...state.cake!.value, included: e.target.checked }) })}
+                data-testid="checkbox-ai-review-cake-included"
+              />
+              In the package
+            </label>
+            <Input
+              type="number"
+              min={0}
+              className="h-8 w-24"
+              placeholder="Price"
+              value={state.cake.value.price ?? ""}
+              onChange={(e) => {
+                const { price: _p, ...rest } = state.cake!.value;
+                set({ cake: edited(state.cake, e.target.value === "" ? rest : { ...rest, price: Math.max(0, parseInt(e.target.value, 10) || 0) }) });
+              }}
+              data-testid="input-ai-review-cake-price"
+            />
+            <span className="text-xs text-muted-foreground">THB</span>
+          </div>
+        )}
+        {/* SCRUM-904: when the kids' and the adults' food is served, and when the bar serves the drinks. */}
+        {(state.kidsFoodTime || review.proposal.event.kidsFoodTime) && time(state.kidsFoodTime, "kidsFoodTime", "Kids' food")}
+        {(state.adultsFoodTime || review.proposal.event.adultsFoodTime) && time(state.adultsFoodTime, "adultsFoodTime", "Adults' food")}
+        {(state.barServiceTime || review.proposal.event.barServiceTime) && time(state.barServiceTime, "barServiceTime", "Bar service")}
       </Section>
 
       <Section title="Entertainment" icon={<Music className="h-4 w-4" />}>
@@ -813,6 +901,14 @@ function ReviewSections({
                 </Button>
               </div>
               <ChatSays from={e.from} indent={false} />
+              {/* SCRUM-904: a show the chat times is an Entertainment Act at that time as well, on the Timeline. */}
+              {e.time !== undefined && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap" data-testid="ai-review-entertainment-act">
+                  <span>Act at</span>
+                  <Input type="time" className="h-8 w-28" value={e.time} onChange={(ev) => update({ time: ev.target.value })} data-testid="input-ai-review-entertainment-time" />
+                  <span>{e.time ? "— added to Entertainment Acts, which puts it on the Timeline." : "— no time: not added as an act."}</span>
+                </div>
+              )}
               <PriceBeside chat={e.chatPrice} catalogue={t ? [t.price] : []} />
               {e.notInCatalogue && (
                 <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 flex-wrap">
@@ -1019,7 +1115,10 @@ export function BeoAiReviewDialog({
             )}
             {catalogueIsEmpty(review) && (
               <p data-testid="text-ai-review-no-catalogue">
-                This park's catalogue is empty: every package, dish and show the chat names is a line to keep or leave out.
+                {/* SCRUM-904: a catalogue that could not be read is not called empty. */}
+                {review.catalogueUnread
+                  ? "This park's catalogue could not be read just now: every package, dish and show the chat names is a line to keep or leave out. Try again in a moment to match them to the catalogue."
+                  : "This park's catalogue is empty: every package, dish and show the chat names is a line to keep or leave out."}
               </p>
             )}
             <p className="flex items-center gap-1.5 flex-wrap">
