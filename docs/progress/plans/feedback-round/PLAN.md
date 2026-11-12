@@ -82,3 +82,35 @@ noted for the owner on SCRUM-864).
 | hunt/xland-20261112 (report only) | none yet | A defect hunt across today's landings, where lanes touched the same files | agent |
 
 Queued behind SCRUM-857 because they edit the same form or till layout: SCRUM-893 (allergies box opens the on-screen keyboard), 894 (short screen keeps the typed field in view), 884 (split view at 1440). Waiting for the owner: SCRUM-878 (session length), 892 (phone QR size), 895 (proved only on the real Pi), 896 (webcam permission choice).
+
+## Third wave, 12 November afternoon (the owner's new items, all on Opus)
+
+| Lane | Tickets | What | Workflow run | State at 16:20 |
+|---|---|---|---|---|
+| beofill903 | SCRUM-903 | BEO fill Phase A: runs on the whole chat, shows the chat's words per value | wf_10ea937e-f48 | landed 4cdcf5d1b, proof running |
+| beofill904 | SCRUM-904 | BEO fill Phase B: every field read from the whole chat | wf_628ff791-10b | building, restart queued |
+| beomenu905 | SCRUM-905 | The till's menu picked in the BEO's kitchen and bar plan; Phase C follows | wf_7af2dded-e03 | fix round, restart queued |
+| kitchenplan906 | SCRUM-906 | The whole kitchen plan reaches the till | wf_783981c9-4d3 | building |
+| (after 906) | SCRUM-907 | A manager or admin edits the kitchen plan on the till and the BEO is updated | none yet | not started |
+| twilio908b | SCRUM-908 | WhatsApp test line through Twilio's sandbox | wf_464e50f9-607 | second review |
+| xland | SCRUM-909, 911, 912, 913, 916 | Defect-hunt fixes; the bundled Thai font | wf_3d07866e-685 | fix round |
+| printfollow | SCRUM-898, 899, 900 | Console station form, printer address, refund slip notes | wf_303b010e-e75 | landed 7cb06ac6c, proof queued |
+| lanefollow897 | SCRUM-897 | Promo use, hold sale and held sales after an online drop-off sale | wf_324bffac-42f | landed 079b94314, proof running |
+| smallui885 | SCRUM-885, 888 | First-visit greeting; Cancel booking fits | wf_b2b1f4cf-74e | Deployed |
+| settleresume889 | SCRUM-889, 890, 891 | Settlement resumes on the party page; Partly paid; one refund status | wf_f18a81db-8c4 | Deployed |
+
+The plans the owner approved, with his words and the findings they rest on:
+`docs/progress/plans/beo-inbox/BEO_FILL_FROM_CHAT_2026-11-12.md`,
+`docs/progress/plans/beo-inbox/KITCHEN_PLAN_AND_POS_2026-11-12.md` and
+`docs/progress/plans/inbox-build/WHATSAPP_TEST_LINE.md`. The main app's go-live
+is run by a separate session from `docs/handover/GO_LIVE_MAIN_APP_PROMPT.md`.
+
+How to restart a stopped run: the top block of `docs/progress/STATUS.md` for
+12 November 16:20 (exact-copy scripts in `C:/oto-lanes/_resume/`).
+
+Filed from proofs and reviews and not yet being built: SCRUM-901 (a long
+check-in label beside Cancel booking), 902 (a part-paid sale names its balance
+on Pay and on its History card), 910 (a refunded party's deposit: the owner's
+rule), 914 (the number tick returns on the split screen), 915 (the phone till
+and a drop-off child on their own), 917 (smaller points from the 889 proof),
+918 (add-on cards in the split view), 919 (the Thai font check).

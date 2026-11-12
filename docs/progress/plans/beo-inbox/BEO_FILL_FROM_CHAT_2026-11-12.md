@@ -1,0 +1,47 @@
+# BEO AI Fill from the inbox conversation: findings and the owner's approved plan
+
+Read-only investigation on 12 November at origin/main de22ef68b, plus staging logs.
+
+OWNER'S WORDS (12 Nov): "The beo form is not extracting the menu and other information from the chat, its only fetching main adult,kids,age date etc. it needs to fetch every available information and pre fill the beo form with reason like booking date form. Even if its any menu item like pizza or something or entertainment activities, everything needs to be pre filled."
+HIS GO (12 Nov): "Approve A,B and C. Run the workflows and deploy it asap without waiting for CI actions".
+
+## What happened on staging
+Five presses of Create BEO / Fetch from chat; each time GET .../beo-confirmation answered 200 and the app logged "ai fill from the inbox did not run", reason "no_confirmation". The form held only what Book Date writes (apps/api/src/services/inbox/book-date.ts:362-376).
+Cause: the fill runs only if a TEAM message names a date, a time and a party detail (apps/api/src/services/inbox/beo-confirmation.ts:95-97, :195); otherwise the app refuses before reading anything (apps/oto-app/server/ai-routes.ts:624). The transcript (family and team lines) is already in the answer but is not read then.
+
+## The path
+Inbox ChatPanel.tsx:837 Create BEO -> POST /inbox/conversations/:id/open-beo {aiFill:true} -> /studio/events/kanban?beo=<id>&fill=inbox (packages/shared/src/inbox.ts:473) -> the editor's runInboxAiFill (apps/oto-app/client/src/components/beo/beo-event-editor.tsx:1549) -> POST /api/events/:id/beo/ai-fill/inbox (apps/oto-app/server/ai-routes.ts:605) -> the app asks the platform GET .../beo-confirmation (server/lib/inboxConfirmation.ts): `message` (newest team message with date+time+detail, or null) and `transcript` (up to 200 lines, 60 days). No message -> 409 no_confirmation. Otherwise runBeoFill makes two model calls in parallel (ai-routes.ts:307-326) via aiComplete (server/lib/anthropic.ts:53), no structured output, JSON read by readModelAnswer + zod.
+- Read 1, the older free-text fill (SCRUM-660): schema BeoFillSchema (server/lib/aiFill.ts); text sent = the form's current data + the ruling (team confirmation) message only.
+- Read 2, the conversation/catalogue fill (SCRUM-815/818/827): runs only when the park's catalogue is non-empty and the transcript is non-empty (ai-routes.ts:302, :644, :539). Schema BEO_CATALOGUE_OUTPUT_FORMAT (server/lib/beoCatalogueFill.ts:350), BeoCatalogueAnswerShape (:513): catalogue{package, addOns[], setMenu{choices[]}, menuLines[], entertainment[], event{childName,numChildren,numAdults,startTime,endTime}, cake, deposit, requests[], timeline[]}, each with `line` and `source`. The prompt says "Answer ONLY the catalogue key… other fields… from the RULING line alone" (:347). Text sent = the whole numbered conversation.
+- Applied: resolveCatalogueAnswer checks ids against the catalogue; detailsFromFill (:762-783) adds the ruling-only fields; together they form the `review`; the review dialog -> "Approve and create" -> server/lib/beoAiApprove.ts writes in one transaction. If read 2 fails or does not run, the old free-text preview opens -> Load into Editor.
+- Fetch from chat uses the same route (purpose "fetch") and the same gate.
+- Read 2 answered "not JSON" 4 times since 10 Nov; there is no retry (open SCRUM-829 follow-up).
+- Staging uses the park group's SAVED advice and output format (adviceFrom/outputFormatFrom "setting"), not the built-in; the conversation block reaches the model either way.
+
+## Reasons
+Book Date: api book-date-proposal -> @oto/assistant readBookDateProposal (structured output); each value {value, text, source, messageId}; text = the model's quote if it really appears in that line, else the line clipped to 120 chars (packages/assistant/src/book-date.ts:248-256); the dialog shows under each field: The chat says "…" + from the family / from the team (apps/inbox BookDateDialog.tsx:83).
+BEO: each value carries from{source, at, line} but the review shows only a chip (client components/beo/beo-ai-review.tsx:80). No chat words per field.
+
+## Field table (form: apps/oto-app/client/src/components/beo/beo-event-editor.tsx)
+Filled today when the fill runs: title (naming rule), child name, start/end time, kids/adults, activities/decoration/special requests (requests kinds), final message to parent (the ruling message), package (by catalogue id), add-ons (the chosen package's lines), entertainment selections (by id or a free line needing Keep/Leave), deposit, set menu and choices, kids/adults extra dishes (menuLines, coded or "not in the menu"), cake type/notes/time, bar items (review path), timeline steps.
+Ruling-only (read only from the team's confirmation message, not the conversation): booking name, event date, location, hosts (team.*), POS box (name, notes, line items), setup plan (ready by, who, tasks).
+No key in any schema: WhatsApp number, kid's age, kids'/adults' food time, bar service time, per-dish notes ("no cheese"; MenuLineAnswer :455, sent null at client lib beo-ai-review.ts:603), general setup notes, entertainment acts with times (the approval writes package-module selections, beoAiApprove.ts:480-514), cake qty/price/included on the review path (shared/beoAiFill.ts:399).
+Menu matching: a dish matches a set-menu choice option, or a "food" code the park's SET MENUS carry (foodOfSetMenus, beoCatalogueFill.ts:99; the note at :47 says the till's F&B catalogue is not readable from the app); otherwise a free "Not in the menu" line that blocks Approve until kept or left (undecidedLines, client lib beo-ai-review.ts:444).
+
+## PHASE A (no prompt wording change; deploys oto-app only)
+1. ai-routes.ts: with no team confirmation but a transcript, run the conversation read alone; review.ruling is null and Final Message to Parent stays empty; refuse only when the chat has no lines. The review header says nothing is confirmed by the team yet.
+2. Empty catalogue: read the conversation anyway (drop the gates at :302, :644, :539); every item becomes a "not in the catalogue/menu" line to keep or leave.
+3. One retry of the conversation read on unreadable/model_error.
+4. Reasons, server: renderTranscript keeps each line's text (server only); resolveCatalogueAnswer attaches a `quote` per value by Book Date's rule (the model's own words if they are in that line, else the line clipped to 120 chars); BeoAiFrom (shared/beoAiFill.ts) gains `quote`.
+5. Reasons, review screen: every row shows The chat says "…" · from the family / from the team · the time. The quote never goes into the activity row or the logs.
+6. Fetch from chat shows the same quotes.
+Owner decisions (approved as recommended): the fill runs with no team confirmation and the header says nothing is confirmed; a catalogue item only the family mentioned is PRE-SELECTED, marked "from the family" with their words.
+Tests: tests/beo-inbox-fill.check.ts (its no_confirmation case at :417 becomes "fills from the conversation"), beo-catalogue-fill.check.ts (empty catalogue, the quote rule, the source from the line), ai-fill.check.ts (the retry), beo-prefill-ui.check.ts, fetch-from-chat.check.ts; and the apps/api text pins that read app files (s660-beo-confirmation-review.test.ts, s217b-r6-review and any *review* test; grep apps/api/test for the app file names you change).
+
+## PHASE B (prompt and output schema change: approved by the owner)
+New keys in the conversation read, each with the chat's exact words: booking name, location, event date with its words, age, setup (ready-by, who, tasks), POS box (name, notes, items), hosts, kids'/adults' food time, bar service time, cake quantity, per-item notes, an allergy kind (kept in Special Requests, shown first as its own kind), a show's time (-> an Entertainment Act with that time). The rules go in the conversation block (beoCatalogueFill.ts:341+), NOT in BUILT_IN_BEO_PARSING_ADVICE (staging's saved advice overrides the built-in). Follow-on: the approval schema and writer (beoAiApprove.ts), the review rows, Fetch from chat. Read 1 stays only to fill gaps and as the fallback. SCRUM-844 (deposit asked vs received) touches the same prompt and may be folded in. Prefer structured output for read 2 if the app's model helper supports it (Book Date uses it); verify against the Anthropic SDK documentation, never guess.
+
+## PHASE C (approved)
+Match dishes to the till's real F&B products so a pizza on the POS menu is coded even when no set menu lists it; write the code as the line's product code, not into the note (beoAiApprove.ts:404-415). Built on the till-menu door of the kitchen-plan plan (see kitchen-plan.md, Lane A).
+
+Goldens: none record the BEO fill (the oto-app checks use scripted answers); the inbox assistant's recorded goldens are untouched. Never spend a real model key in tests.
