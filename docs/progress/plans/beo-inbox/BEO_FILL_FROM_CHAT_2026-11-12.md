@@ -142,3 +142,20 @@ Files the party edit lane (SCRUM-907) is changing and this lane must leave alone
 15. Should the adults' own menu made by a fill also copy the kids' extras, as the editor's "Different for adults" switch does? Today it copies the kids' set-menu lines only.
 16. The adults' own choice now stands after the family submits the set-menu link, also when staff changed that choice by hand; before, the link overwrote it. Right?
 17. If the kids' choice of a group later becomes the same as the adults' own option, the two read as one dish from then on, and later changes of the kids' choice carry the adults' line along. Right?
+
+## The read-fix lane landed (13 November 06:54, main 97600c139)
+Ticket: SCRUM-970 (the fill with the real read), closing the open points of SCRUM-958 and SCRUM-946. Service: the OTO App only; no migration. Left and ticketed: SCRUM-976.
+The rule that changed: the "same as the kids" note and the chat's total are decided from the chat's own words, not from which field the read filled; the checks cover both shapes of answer. A price said for each ("450/each", "450 baht each") stays a price each; a total is never written as a price each.
+
+### Questions for the owner from this lane
+1. "The adults will eat the same as the kids" with no dish named is now said once in the review and the toast, as the whole set menu. Right?
+2. When the family says the adults eat the same and the team confirms it in a later message, it is said once (one note for each dish). Right?
+3. If the read returns a price each that the chat never writes (450 worked out of "2 for 900"), the app drops it, names the chat's 900 for 2, and writes the till's price each. Right?
+4. A total said in a different sentence part from the dish ("Total 900 THB, two Margherita pizzas") is not read as that dish's total. Should it be?
+5. A Thai or Russian sentence saying the adults eat the same is said, but a dish named in Thai or Russian script is not matched to the English set-menu option, so the note names no dish. Acceptable for now?
+6. The adults' own SET line now shows its till code (CF-43) in the BEO editor's adults list, as other coded lines do. Fine?
+7. If the kids later get the same option as the adults' own dish, the adults' line becomes the kids' dish and the till shows one line. Right?
+8. The PDF's footer date now follows the party's park time zone. Fine?
+9. A camp's or workshop's BEO PDF does not ask the till, so a coded EXTRA with no price prints "EXTRA" alone there. Fine?
+10. When the family writes a price for each ("2 pizzas at 450 each") and the read returns no price, the till's price is used. Should the fill take the price each from the chat's words?
+11. Still open from before: the park's cake priced in the BEO is charged nowhere by the till; a weekend party's line picked from the till's menu is written at the weekday price.
