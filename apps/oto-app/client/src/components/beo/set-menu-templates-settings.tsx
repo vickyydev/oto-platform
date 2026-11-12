@@ -145,11 +145,16 @@ function ItemEditor({
           title="Till product code, e.g. CF-24"
           data-testid={`input-set-menu-item-code-${item.id}`}
         />
-        {/* SCRUM-905: the till's menu for this code; the item's own words stay as they are. */}
+        {/* SCRUM-905: the till's menu for this code; the item's own words are never renamed. */}
         <TillMenuPick
           code={item.productCode}
           onPick={(picked) =>
-            onChange({ ...item, productCode: picked.code, label: item.label.trim() ? item.label : picked.name } as SetMenuTemplateItem)
+            onChange({
+              ...item,
+              productCode: picked.code,
+              // An item with no name yet takes the till's; a choice group's name is its question, never a dish.
+              label: item.label.trim() || item.type !== "always_included" ? item.label : picked.name,
+            } as SetMenuTemplateItem)
           }
           onClear={() => onChange({ ...item, productCode: null } as SetMenuTemplateItem)}
           testId={`button-set-menu-item-till-${item.id}`}

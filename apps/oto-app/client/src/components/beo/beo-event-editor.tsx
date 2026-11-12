@@ -2101,8 +2101,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
         </div>
 
         <TillMenuContext.Provider value={tillMenu}>
-        <Accordion
-          type="multiple"
+        <Accordion 
+          type="multiple" 
           value={expandedSections}
           onValueChange={setExpandedSections}
           className="space-y-2"
