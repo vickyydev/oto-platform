@@ -5,6 +5,7 @@ import { FakeAssistantClient, type AiDecision } from '@oto/assistant';
 import { schema as s, type AiMode } from '@oto/db';
 import type { ClassificationHint, SimulatorChannel } from '@oto/messaging';
 import { newId } from '@oto/shared';
+import type { Env } from '../src/env';
 import { SESSION_COOKIE, hashToken, newSessionToken } from '../src/plugins/session';
 import type { FileStorage } from '../src/services/files';
 import { runInboxAiJob, type AiSweep } from '../src/services/inbox/ai-engine';
@@ -63,7 +64,8 @@ export const memoryStorage = (presigns: string[]): FileStorage => ({
   probe: async () => ({ state: 'ready' }),
 });
 
-export async function aiWorld(): Promise<AiWorld> {
+/** `extraEnv` (SCRUM-908): a suite's own switches beside the assistant's, e.g. the Twilio test line. */
+export async function aiWorld(extraEnv: Partial<Record<keyof Env, string>> = {}): Promise<AiWorld> {
   const logLines: string[] = [];
   const presigns: string[] = [];
   const ctx = await createTestContext({
@@ -73,6 +75,7 @@ export async function aiWorld(): Promise<AiWorld> {
       INBOX_AI_ENABLED: 'true',
       // Required by the boot guard; under NODE_ENV=test no client is ever built from it.
       ANTHROPIC_API_KEY: 'unused-in-tests',
+      ...extraEnv,
     },
     logCapture: { stream: { write: (line) => void logLines.push(line) }, level: 'debug' },
   });
