@@ -63,3 +63,47 @@ export function resolveSetMenuLines(templateItems: unknown[], selections: SetMen
   }
   return resolved;
 }
+
+/**
+ * SCRUM-906 — THE SET MENU'S CHOICES AS THE KITCHEN PLAN NOW HOLDS THEM: the
+ * BEO's one record of a choice (the owner's decision 3, "Every record should
+ * get updated in this POS and BEO entries accordingly": the latest change
+ * wins). The parent's submit, an AI fill's approval and a staff edit in the
+ * BEO's set-menu block all write the kitchen plan's set-menu lines, and the
+ * till's plan view (app migration 0050) reads the choice from them; the
+ * parent's own link reads it from the same lines here, so a choice staff
+ * change after the parent submitted is what the parent sees too.
+ *
+ * Matched as the BEO's set-menu block matches them (beo-event-editor.tsx,
+ * SetMenuChoiceGroups): the set-menu lines of the kids' list when it holds
+ * one, else the adults'; a line of a group by its groupId, or — saved before
+ * groupId — by the note "(<group>)". Null when the kitchen plan holds no
+ * set-menu line at all (none written yet): the caller keeps what it had.
+ */
+export function setMenuChoicesOfKitchenPlan(templateItems: unknown[], menus: unknown): SetMenuChoice[] | null {
+  const m = menus && typeof menus === "object" && !Array.isArray(menus) ? (menus as Record<string, unknown>) : {};
+  type Line = { itemName?: unknown; notes?: unknown; source?: unknown; groupId?: unknown };
+  const setMenuLines = (list: unknown): Line[] =>
+    Array.isArray(list)
+      ? (list.filter((l) => l && typeof l === "object" && !Array.isArray(l) && (l as Line).source === "set_menu") as Line[])
+      : [];
+  const kids = setMenuLines(m.kids);
+  const lines = kids.length > 0 ? kids : setMenuLines(m.adults);
+  if (lines.length === 0) return null;
+  const choices: SetMenuChoice[] = [];
+  for (const raw of templateItems) {
+    const group = raw as { id?: unknown; type?: unknown; label?: unknown };
+    if (group.type !== "choice_group" || typeof group.id !== "string") continue;
+    const label = typeof group.label === "string" ? group.label : "";
+    const chosen = lines
+      .filter((line) => {
+        const groupId = typeof line.groupId === "string" ? line.groupId.trim() : "";
+        if (groupId) return groupId === group.id;
+        return typeof line.notes === "string" && line.notes.trim() === `(${label})`;
+      })
+      .map((line) => (typeof line.itemName === "string" ? line.itemName.trim() : ""))
+      .filter((name) => name.length > 0);
+    if (chosen.length > 0) choices.push({ groupId: group.id, chosenOptions: chosen });
+  }
+  return choices;
+}

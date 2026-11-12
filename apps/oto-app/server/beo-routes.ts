@@ -54,7 +54,7 @@ import { OBJECT_STORAGE } from "./config/env";
 import { uploadToObjectStorage } from "./file-storage";
 import { s3PresignedGet } from "./storage/s3Storage";
 import { onStaff } from "./lib/payOnlyAccess";
-import { resolveSetMenuLines } from "./lib/setMenuResolve";
+import { resolveSetMenuLines, setMenuChoicesOfKitchenPlan } from "./lib/setMenuResolve";
 import { adultsCopiesOf, adultsDifferOf } from "@shared/kitchenAdults";
 import { refuseStartTime } from "@shared/eventStartTime";
 
@@ -3052,10 +3052,19 @@ export function registerBeoRoutes(app: Express) {
       const [event] = await db.select({ title: coreEvents.title, childName: coreEvents.childName, eventDate: coreEvents.eventDate })
         .from(coreEvents).where(eq(coreEvents.id, sel.eventId));
 
+      // SCRUM-906 (decision 3): once submitted, the choices are the kitchen plan's, the one record
+      // the BEO and the till read, so a choice staff changed since is what the parent sees.
+      let selections = sel.selections;
+      if (sel.isSubmitted) {
+        const [kitchenPlan] = await db.select({ menus: beoKitchenPlans.menus }).from(beoKitchenPlans)
+          .where(eq(beoKitchenPlans.eventId, sel.eventId));
+        selections = setMenuChoicesOfKitchenPlan((tmpl.items as unknown[]) ?? [], kitchenPlan?.menus) ?? sel.selections;
+      }
+
       res.json({
         isSubmitted: sel.isSubmitted,
         submittedAt: sel.submittedAt,
-        selections: sel.selections,
+        selections,
         template: { id: tmpl.id, name: tmpl.name, items: tmpl.items },
         event: event || null,
       });

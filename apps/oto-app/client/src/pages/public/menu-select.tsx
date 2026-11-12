@@ -180,6 +180,22 @@ export default function MenuSelectPage() {
                   Submitted on {new Date(data.submittedAt).toLocaleDateString()}
                 </p>
               )}
+              {/* SCRUM-906 (decision 3): the choices as the team now has them, the same the BEO and the till show. */}
+              {data.isSubmitted && (() => {
+                const chosenGroups = choiceGroups
+                  .map((group) => ({ group, chosen: data.selections?.find((s) => s.groupId === group.id)?.chosenOptions ?? [] }))
+                  .filter(({ chosen }) => chosen.length > 0);
+                return chosenGroups.length > 0 ? (
+                  <ul className="space-y-1 pt-2 text-left inline-block" data-testid="list-submitted-choices">
+                    {chosenGroups.map(({ group, chosen }) => (
+                      <li key={group.id} className="flex items-center gap-2 text-sm" data-testid={`text-submitted-choice-${group.id}`}>
+                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span>{group.label}: {chosen.join(", ")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null;
+              })()}
             </CardContent>
           </Card>
         ) : (

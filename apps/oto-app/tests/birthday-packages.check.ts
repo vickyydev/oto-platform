@@ -580,9 +580,11 @@ try {
     const rows = await q("select * from otoapp_v.event_packages where event_id = $1", [party]);
     assert.equal(rows.length, 1);
     const row = rows[0] as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any -- a view row read field by field below
+    // SCRUM-906 (app migration 0050) adds the whole kitchen plan as one column at the end; the
+    // thirteen the platform read before keep their names, order and values.
     assert.deepEqual(Object.keys(row), [
       "event_id", "core_branch_id", "party_date", "start_time", "end_time", "package", "counts",
-      "add_ons", "entertainment", "set_menu", "bar_items", "kitchen", "settlement",
+      "add_ons", "entertainment", "set_menu", "bar_items", "kitchen", "settlement", "kitchen_plan",
     ]);
     assert.equal(row.event_id, party);
     assert.equal(row.core_branch_id, A.coreBranch);

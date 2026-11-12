@@ -1089,6 +1089,18 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/kitchen-adults-ui.check.ts
+      # SCRUM-906: the whole kitchen plan reaches the till — the plan view's
+      # kitchen_plan (migration 0050): every food line coded or typed with its
+      # badge, id and entered price; the set menu's choice read from the
+      # BEO's own lines, so a staff change after the parent submitted is the
+      # till's; the adults' marks exactly as 0048 puts them on the coded lines;
+      # the bar's lines with their codes, the cake and the bar time; a party
+      # with a kitchen plan and no package has a row; the thirteen columns of
+      # before unchanged; and the parent's own link reading the choice from
+      # the same lines once submitted.
+      - name: The app's whole kitchen plan view checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/kitchen-plan-view.check.ts
       # The day-of view reads and writes the same two lists: the adults' tab
       # mirrors the kids' with the switch off, the switch writes the copy and
       # the key at once, and a BEO of before opens as its lists stand.
