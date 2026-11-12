@@ -522,7 +522,10 @@ describe('A. fences and seams', () => {
       // family paid through the chat) instead of writing the form's old figure over it, decided under the event's
       // row lock (server/lib/depositSaveGuard.ts); the read and both answers carry the party's one deposit; where
       // the BEO's documents live is unchanged.
-      'beo-routes.ts': '441624ba42dd1ec342f32d92e8bf61ba00ca1d235aefc664dcf77d3dabe98df4',
+      // SCRUM-906: the parent link's read answers, once submitted, the choices the kitchen plan now holds
+      // (setMenuChoicesOfKitchenPlan in server/lib/setMenuResolve.ts), the record the BEO and the till read;
+      // where the BEO's documents live is unchanged.
+      'beo-routes.ts': '57523da073f3f51f84c42ac4188e7a24775906259eda4f5584f0c7f22aad8fbf',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
