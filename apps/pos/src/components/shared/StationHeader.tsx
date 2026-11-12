@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { Ticket, GlassWater, ShoppingBag, Users, ReceiptText, Settings, Baby, LineChart, MessageCircle, PackageX, AlertTriangle } from 'lucide-react';
 import { OperatorBadge } from '@/components/auth/OperatorBadge';
@@ -49,10 +49,57 @@ const baseBtn =
 const activeBtn = `${baseBtn} bg-background shadow`;
 const idleBtn = `${baseBtn} text-muted-foreground hover:text-foreground`;
 
+/** The tab band's own `p-1`: the active tab is shown clear of the band's edge by it. */
+const BAND_PAD = 4;
+
+/**
+ * SCRUM-881 — THE BAND SCROLLS TO THE SURFACE THE TILL IS ON.
+ *
+ * The band scrolls when the row runs out (the comment in the header below),
+ * and a scrolling band always ends part-way through some tab. Left at its
+ * start, that tab was sometimes the active one: on the Check-in board with a
+ * print job waiting, staging's header at 1680px read "Check", and with a
+ * longer name beside the chip the active tab was off the band altogether.
+ *
+ * So the band is scrolled just far enough to show the active tab whole, and
+ * again whenever the band's width or a tab's changes — the printer chip and
+ * the pricing chip arrive after their first read and take their width out of
+ * it, a window is resized, and the face loads after the first paint.
+ * Nothing else about the row changes: the clusters keep their content width
+ * and the tabs still overflow rather than squeeze.
+ * The active tab is the band's one plain `span`; the others are links.
+ * Measured at six widths in `test/scrum-881-active-tab-in-view.test.ts`.
+ */
+function useActiveTabInView(active: Surface) {
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const show = () => {
+      const tab = nav.querySelector(':scope > span');
+      if (!tab) return;
+      const band = nav.getBoundingClientRect();
+      const box = tab.getBoundingClientRect();
+      if (box.left < band.left + BAND_PAD) nav.scrollLeft -= band.left + BAND_PAD - box.left;
+      else if (box.right > band.right - BAND_PAD) nav.scrollLeft += box.right - (band.right - BAND_PAD);
+    };
+    show();
+    if (typeof ResizeObserver === 'undefined') return;
+    // The band's own width (a chip arriving, a resize) and each tab's (the
+    // till's face loading after the first paint widens every label).
+    const observer = new ResizeObserver(show);
+    observer.observe(nav);
+    for (const tab of Array.from(nav.children)) observer.observe(tab);
+    return () => observer.disconnect();
+  }, [active]);
+  return navRef;
+}
+
 // Shared top bar for every staff-facing surface so the brand logo and the POS
 // navigation (menu buttons) are identical on each screen.
 export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderProps) {
   const { station } = useStation();
+  const navRef = useActiveTabInView(active);
   // S2-14b round 2 — the strip reads the platform's counts (`api/stock.ts`),
   // refreshed after every sale the till closes and every stock write, not the
   // ported seed's in-memory inventory.
@@ -131,7 +178,7 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
 
       {/* Permanent POS navigation — always available between surfaces. */}
       <div className="grow basis-full min-w-[184px] order-last pb-3 flex justify-center lg:basis-0 lg:order-none lg:pb-0">
-      <nav className="max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1">
+      <nav ref={navRef} className="max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1">
           {active === 'tickets' ? (
             <span className={activeBtn}>
               <Ticket className="w-4 h-4" />

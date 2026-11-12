@@ -22,9 +22,11 @@ import '@/index.css';
  * string it is staging's own header (a park whose gate has never reported,
  * so the occupancy chip says "no gate"); the query string picks a variant:
  * `gate=live` or `gate=stale` for the occupancy chip, `pricing=holiday` for
- * the longest pricing chip, `printer=bad` or `printer=low` for the printer
- * chip, `operator=`, `park=` and `station=` for the names drawn, `cash=no` for
- * an account without the Cash action, `parks=one` for a single-park account.
+ * the longest pricing chip, `printer=bad`, `printer=low` or `printer=waiting`
+ * (one job queued, SCRUM-881) for the printer chip, `active=` for the surface
+ * the till is on (`dropoff` is the Check-in tab), `operator=`, `park=` and
+ * `station=` for the names drawn, `cash=no` for an account without the Cash
+ * action, `parks=one` for a single-park account.
  * Open it by hand with `startHeaderHarness()` (`server.ts`) to look at one.
  */
 const params = new URLSearchParams(window.location.search);
@@ -47,7 +49,9 @@ const printers: ApiStationPrinter[] =
     ? [printer({ lastError: 'PRINTER_COVER_OPEN', queued: 1 })]
     : params.get('printer') === 'low'
       ? [printer({ paperStatus: 'low' })]
-      : [printer({})];
+      : params.get('printer') === 'waiting'
+        ? [printer({ queued: 1 })]
+        : [printer({})];
 
 /** What the platform answers, by path; anything else is a 404, as on a deployment without that route. */
 function answer(path: string): unknown {
@@ -85,6 +89,9 @@ window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response>
   );
 };
 
+/** The surface whose tab is the active one; the Tickets till unless the query names another. */
+const active = (params.get('active') ?? 'tickets') as Parameters<typeof StationHeader>[0]['active'];
+
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 function Page() {
@@ -97,7 +104,7 @@ function Page() {
     : createElement(
         'div',
         { id: 'till', className: 'h-[100dvh] w-full flex flex-col bg-background' },
-        createElement(StationHeader, { active: 'tickets' }),
+        createElement(StationHeader, { active }),
       );
 }
 

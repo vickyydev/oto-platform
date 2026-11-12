@@ -47,6 +47,14 @@ export interface HeaderReading {
     labelsWhole: boolean;
     /** The band's `overflow-x`: what makes the tabs past its edge reachable. */
     overflowX: string;
+    /** The active surface's tab, as the band shows it (SCRUM-881). */
+    active: {
+      label: string;
+      /** Its whole box is inside the band as the band stands. */
+      whole: boolean;
+      /** How far the band has scrolled to show it. */
+      scrollLeft: number;
+    } | null;
   } | null;
   chip: {
     text: string;
@@ -143,6 +151,9 @@ export function readHeader(): HeaderReading {
     const navRect = nav.getBoundingClientRect();
     const tabs = Array.from(nav.children).map((t) => t.getBoundingClientRect());
     const labels = Array.from(nav.children).map((t) => t.querySelector('button') ?? t);
+    // The active tab is the one drawn as a plain span; the others are links.
+    const activeTab = Array.from(nav.children).find((t) => t.tagName === 'SPAN');
+    const activeRect = activeTab?.getBoundingClientRect();
     navReading = {
       width: navRect.width,
       scrollWidth: nav.scrollWidth,
@@ -152,6 +163,14 @@ export function readHeader(): HeaderReading {
       rows: new Set(tabs.map((t) => Math.round(t.top))).size,
       labelsWhole: labels.every((l) => lineCount(l) === 1 && l.scrollWidth <= l.clientWidth + EPS),
       overflowX: getComputedStyle(nav).overflowX,
+      active:
+        activeTab && activeRect
+          ? {
+              label: (activeTab.textContent ?? '').replace(/\s+/g, ' ').trim(),
+              whole: activeRect.left >= navRect.left - EPS && activeRect.right <= navRect.right + EPS,
+              scrollLeft: nav.scrollLeft,
+            }
+          : null,
     };
   } else {
     for (const el of Array.from(row.children)) {
