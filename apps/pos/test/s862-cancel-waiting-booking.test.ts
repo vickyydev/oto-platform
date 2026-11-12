@@ -201,7 +201,10 @@ describe("s862 — the till's cancel call", () => {
 });
 
 describe('s862 — the confirm step, in the Void dialog’s style', () => {
-  const source = readFileSync(new URL('../src/components/till/AddDropOffModal.tsx', import.meta.url), 'utf8');
+  // SCRUM-886 — the confirm moved, unchanged, into the dialog the picker and
+  // the Check-in board share; the pins follow it there.
+  const source = readFileSync(new URL('../src/components/dropoff/CancelBookingDialog.tsx', import.meta.url), 'utf8');
+  const picker = readFileSync(new URL('../src/components/till/AddDropOffModal.tsx', import.meta.url), 'utf8');
   const dialog = source.slice(source.indexOf('Cancel this waiting booking'));
 
   it('asks one reason, refuses to confirm without one, and calls the platform once confirmed', () => {
@@ -213,7 +216,9 @@ describe('s862 — the confirm step, in the Void dialog’s style', () => {
     expect(source).toContain('await checkinApi.cancelRegistration(group.registrationId, reason);');
     // The list is re-read after a cancel, as after a sibling is added.
     const after = source.slice(source.indexOf('await checkinApi.cancelRegistration('));
-    expect(after.slice(0, after.indexOf('} catch'))).toContain('setBump((b) => b + 1)');
+    expect(after.slice(0, after.indexOf('} catch'))).toContain('onCancelled(group)');
+    expect(picker).toContain('<CancelBookingDialog');
+    expect(picker).toContain('onCancelled={() => setBump((b) => b + 1)}');
   });
 
   it('tells the family the signed form stays on record', () => {
