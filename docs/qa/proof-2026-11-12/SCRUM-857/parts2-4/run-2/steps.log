@@ -1,0 +1,295 @@
+
+=== 2026-11-12T11:52:39.180Z run 2 setup: own till, numbers, sign in (staging now at 8e7f7d315, which contains 6080dc815)
+const { expect } = S;
+S.phase = 'run 2 setup: own till, numbers, sign in (staging now at 8e7f7d315, which contains 6080dc815)';
+const r = await S.setup();
+const till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1680, height: 1050 });
+S.till = till;
+S.keepAlive = () => S.till.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))).catch(() => null);
+S.alive = setInterval(S.keepAlive, 40000);
+const oldMasks = S.masks; S.masks = p => [...oldMasks(p), p.locator('svg:not(.lucide)')];
+S.oldPair = S.pair;
+S.pair = async (name, left, right, extra = {}) => {
+  const [a, b] = await Promise.all([
+    left.screenshot({ animations: 'disabled', mask: [...S.masks(left), ...(extra.left ?? [])], maskColor: '#18181b' }),
+    right.screenshot({ animations: 'disabled', mask: [...S.masks(right), ...(extra.right ?? [])], maskColor: '#18181b' }),
+  ]);
+  const page = await S.browser.newPage({ viewport: { width: 2400, height: 1100 } });
+  const img = buf => `data:image/png;base64,${buf.toString('base64')}`;
+  await page.setContent(`<html><body style="margin:0;background:#111;color:#eee;font-family:Segoe UI,Arial"><div style="padding:6px 10px;font-size:18px">${(extra.caption ?? '').replace(/[<>&]/g, '')} — taken ${new Date().toISOString()}</div><div style="display:flex;gap:8px;align-items:flex-start;padding:0 8px 8px"><figure style="margin:0;flex:1.62"><figcaption style="font-size:15px;padding:2px 0">Till (desk, 1680×1050)</figcaption><img style="width:100%;border:1px solid #444" src="${img(a)}"></figure><figure style="margin:0;flex:1"><figcaption style="font-size:15px;padding:2px 0">Customer display (own context)</figcaption><img style="width:100%;border:1px solid #444" src="${img(b)}"></figure></div></body></html>`);
+  await page.screenshot({ path: S.resolve(S.out, name), fullPage: true });
+  await page.close(); S.shots.push(name); return name;
+};
+S.fam = {};
+const bundle = await till.evaluate(async () => {
+  const urls = [...new Set(performance.getEntriesByType('resource').map(e => e.name).filter(n => /\.js(\?|$)/.test(n)))];
+  const f = { files: urls.length, notSavedLine: 0 };
+  for (const u of urls) { const t = await (await fetch(u, { cache: 'no-store' })).text(); f.notSavedLine += t.split('but it could not be saved').length - 1; }
+  return f;
+});
+return { r, bundle, free: S.free.filter(n => n >= '0898570230') };
+--> {
+ "ok": true,
+ "value": {
+  "r": {
+   "free": 25,
+   "first": "0898570211",
+   "last": "0898570239",
+   "station": "01a1cf9a-6500-7b30-88c9-cbc2081aca7b",
+   "prefix": "Z85707"
+  },
+  "bundle": {
+   "files": 1,
+   "notSavedLine": 1
+  },
+  "free": [
+   "0898570230",
+   "0898570231",
+   "0898570232",
+   "0898570233",
+   "0898570234",
+   "0898570235",
+   "0898570236",
+   "0898570237",
+   "0898570238",
+   "0898570239"
+  ]
+ }
+}
+
+=== 2026-11-12T11:53:04.885Z not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done
+const { expect } = S;
+S.phase = 'not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done';
+const till = S.till;
+await S.keepAlive();
+const d = await S.pairDisplay('w', { camera: 'fake' });
+S.receipt.numbers.W = '0898570230';
+await S.firstScreen(d, till, '0898570230');
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child W1');
+await S.setAge(d, consent, 6);
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+const photo = consent.getByTestId('consent-photo');
+await photo.getByRole('button', { name: 'Start camera', exact: true }).click();
+await photo.getByRole('button', { name: 'Take photo', exact: true }).click();
+await expect(photo.getByTestId('consent-photo-received')).toBeVisible({ timeout: 30000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.locator('#public-consent-guardian').fill('ZZ TEST 857 guardian W');
+for (const box of await consent.getByRole('checkbox').all()) if (await box.getAttribute('data-state') !== 'checked' && await box.isEnabled()) await box.click();
+const done = consent.getByRole('button', { name: 'Done', exact: true });
+await expect(done).toBeEnabled({ timeout: 20000 });
+S.regRoute = url => url.pathname === '/api/checkin/registrations';
+S.refused = 0;
+await till.route(S.regRoute, async route => {
+  if (route.request().method() !== 'POST') return route.continue();
+  S.refused += 1;
+  await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: { code: 'CONFLICT', message: 'ZZ TEST synthetic refusal: this child is already registered today.' } }) });
+});
+await done.click();
+const line = till.getByTestId('consent-staff-status');
+await expect(line).toContainText('could not be saved', { timeout: 30000 });
+await till.waitForTimeout(800);
+const toast = till.locator('li[data-sonner-toast], [role="status"]').filter({ hasText: /synthetic refusal/ }).first();
+const toastText = (await toast.count()) ? S.flat(await toast.innerText()) : null;
+await S.pair('11a-family-done-not-saved-staff-line-and-display.png', till, d, { caption: 'Not saved — the registration write was refused (harness 409): the till staff line gives the same reason as its message; the display says the team will check it' });
+return { refusedRequests: S.refused, staffLine: await S.staffLine(till), toastText, display: await S.displayState(d), onForm: await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count() };
+--> {
+ "ok": true,
+ "value": {
+  "refusedRequests": 1,
+  "staffLine": "The family pressed Done, but it could not be saved: ZZ TEST synthetic refusal: this child is already registered today. Check it with them; they press Done again, or press Continue here.",
+  "toastText": null,
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian W",
+   "phone": "0898570230",
+   "missing": null,
+   "finished": null,
+   "notSaved": "We couldn't save your details yet — the team will check them with you, then press Done again.",
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": true
+  },
+  "onForm": 1
+ }
+}
+
+=== 2026-11-12T11:53:53.933Z not saved: the refusal lifted; the family presses Done again; the sale moves on; cash
+const { expect } = S;
+S.phase = 'not saved: the refusal lifted; the family presses Done again; the sale moves on; cash';
+const till = S.till, d = S.displays.w.page;
+await S.keepAlive();
+await till.unroute(S.regRoute);
+const consent = d.getByTestId('display-consent');
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await consent.getByRole('button', { name: 'Done', exact: true }).click();
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+await till.waitForTimeout(2500);
+await S.pair('11b-done-again-moves-on.png', till, d, { caption: 'Not saved — the family pressed Done again once the write was accepted: Amount Due with no staff press' });
+const sale = await S.saleWritten('dropoff-sale-W');
+S.fam.W = { reg: regBody?.id, sale: sale.id };
+S.receipt.created.push({ kind: 'registration', family: 'W', id: regBody?.id }); S.save();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(regBody.id)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(regBody.id);
+return { regStatus: r.status(), regId: regBody?.id, posts: S.receipt.registrationsPosted.map(x => x.status), reg: { photo: reg.photoFileId, children: reg.children.map(c => c.childName + ':' + c.status) }, sale: (await S.sale(sale.id)).sale.status };
+--> {
+ "ok": true,
+ "value": {
+  "regStatus": 200,
+  "regId": "01a1cf9a-fc3e-761f-8b13-95a876bec3fa",
+  "posts": [
+   409,
+   200
+  ],
+  "reg": {
+   "photo": "01a1cf9b-767b-7ca0-8f2f-08b51465440b",
+   "children": [
+    "ZZ TEST 857 child W1:in_park"
+   ]
+  },
+  "sale": "finalised"
+ }
+}
+
+=== 2026-11-12T11:54:30.672Z run 2 clean up: release W, display revoked, prints, member archived, till retired, sign out, read back
+const { expect } = S;
+S.phase = 'run 2 clean up: release W, display revoked, prints, member archived, till retired, sign out, read back';
+clearInterval(S.alive);
+const res = {};
+await S.till.goto('/'); await S.till.waitForTimeout(1000);
+res.display = await S.dropDisplay('w');
+res.release = await S.releaseOwn(S.fam.W.reg);
+res.reg = (await S.registration(S.fam.W.reg)).children.map(c => c.childName + ':' + c.status);
+const sales = await S.stationSales();
+res.sales = [];
+for (const s of sales) {
+  S.assert.equal(s.stationId, S.station.id);
+  if (['tendering', 'open'].includes(s.status)) { res.sales.push({ id: s.id, void: (await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-857 parts 2-4 proof cleanup' })).status }); continue; }
+  let jobs = [];
+  await expect.poll(async () => { jobs = (await S.sale(s.id)).printJobs ?? []; return jobs.every(j => j.status === 'printed'); }, { timeout: 90000 }).toBe(true).catch(() => null);
+  res.sales.push({ id: s.id, status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang, jobs: jobs.map(j => j.status) });
+}
+const m = (await S.call('GET', '/members/lookup?phone=0898570230')).body?.member ?? null;
+if (m) { S.assert.ok(/ZZ TEST/.test(`${m.nickname ?? ''} ${m.name ?? ''}`)); res.member = { archive: (await S.call('DELETE', `/members/${m.id}`)).status, after: (await S.call('GET', '/members/lookup?phone=0898570230')).body?.member ?? null }; }
+S.assert.equal((await S.call('GET', `/stations/${S.station.id}`)).body.station.name, S.fixtureName);
+res.devicesOff = (await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status;
+res.deleted = (await S.call('DELETE', `/stations/${S.station.id}`)).status;
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+res.ownTillsBothRuns = stations.filter(s => /ZZ TEST SCRUM-857 p2-4/.test(s.name)).map(s => ({ prefix: s.codePrefix, archived: s.archived, devices: s.devices.length }));
+const t = S.pages.till.page;
+if ((await t.request.get('/api/me')).status() === 200) res.tillSignOut = (await t.request.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+res.tillMe = (await t.request.get('/api/me')).status();
+const board = (await S.call('GET', `/checkin/board?branchId=${S.branchId}`)).body;
+res.boardOfThisProof = board.families.filter(f => /ZZ TEST 857/.test(f.guardianName ?? '')).map(f => ({ tab: f.tab, children: f.children.map(c => c.status) }));
+res.notOut = res.boardOfThisProof.filter(f => f.tab !== 'out');
+res.waiting = ((await S.call('GET', `/checkin/registrations?branchId=${S.branchId}`)).body?.registrations ?? []).filter(r => /ZZ TEST 857/.test(r.guardianName ?? '')).length;
+res.membersLeft = [];
+for (let i = 10; i < 40; i++) { const n = S.zz(i); if ((await S.call('GET', `/members/lookup?phone=${n}`)).body?.member) res.membersLeft.push(n); }
+res.adminSignOut = (await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+res.adminMe = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.final = res; S.receipt.finishedAt = new Date().toISOString(); S.save();
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "label": "w",
+   "revoked": true
+  },
+  "release": [
+   {
+    "child": "ZZ TEST 857 child W1",
+    "status": 200
+   }
+  ],
+  "reg": [
+   "ZZ TEST 857 child W1:out"
+  ],
+  "sales": [
+   {
+    "id": "01a1cf9b-79bc-75d3-bec6-0e98d06baaa0",
+    "status": "finalised",
+    "receipt": "Z85707-000001",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   }
+  ],
+  "member": {
+   "archive": 200,
+   "after": null
+  },
+  "devicesOff": 200,
+  "deleted": 200,
+  "ownTillsBothRuns": [
+   {
+    "prefix": "Z85706",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "prefix": "Z85707",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "tillSignOut": 200,
+  "tillMe": 401,
+  "boardOfThisProof": [
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   }
+  ],
+  "notOut": [],
+  "waiting": 0,
+  "membersLeft": [],
+  "adminSignOut": 200,
+  "adminMe": 401
+ }
+}

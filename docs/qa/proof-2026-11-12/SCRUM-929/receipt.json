@@ -1,0 +1,1506 @@
+{
+  "tickets": [
+    "SCRUM-929"
+  ],
+  "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+  "startedAt": "2026-11-12T11:46:06.593Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqqaeijnfac739er580",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:34.184385Z",
+        "finishedAt": "2026-11-12T11:43:17.953003Z"
+      },
+      "serving": {
+        "id": "dep-dbqqaeijnfac739er580",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:34.184385Z",
+        "finishedAt": "2026-11-12T11:43:17.953003Z"
+      },
+      "readAt": "2026-11-12T11:44:18.846Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqqafbtqb8s73bo3cg0",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:37.496368Z",
+        "finishedAt": "2026-11-12T11:39:37.139674Z"
+      },
+      "serving": {
+        "id": "dep-dbqqafbtqb8s73bo3cg0",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:37.496368Z",
+        "finishedAt": "2026-11-12T11:39:37.139674Z"
+      },
+      "readAt": "2026-11-12T11:44:19.473Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqqaeqjnfac739er7gg",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:35.9903Z",
+        "finishedAt": "2026-11-12T11:41:48.220454Z"
+      },
+      "serving": {
+        "id": "dep-dbqqaeqjnfac739er7gg",
+        "status": "live",
+        "sha": "8e7f7d315c271ab00c1ddf4c164bb33dda46ca64",
+        "createdAt": "2026-11-12T11:38:35.9903Z",
+        "finishedAt": "2026-11-12T11:41:48.220454Z"
+      },
+      "readAt": "2026-11-12T11:44:20.127Z"
+    }
+  },
+  "numbers": {
+    "walkIn": "0898929010",
+    "dropOff": "0898929011"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "label": "A",
+      "id": "01a1cf94-7055-7b02-8039-0386f2c60ccb",
+      "name": "ZZ TEST SCRUM-929 proof till A 1794483973646",
+      "prefix": "Z92901"
+    },
+    {
+      "kind": "station",
+      "label": "B",
+      "id": "01a1cf94-7236-7651-b014-cae1a6df073c",
+      "name": "ZZ TEST SCRUM-929 proof till B 1794483974106",
+      "prefix": "Z92902"
+    },
+    {
+      "kind": "display",
+      "label": "A",
+      "id": "01a1cf94-cf4a-7bfe-80e5-6f204ef70488",
+      "station": "01a1cf94-7055-7b02-8039-0386f2c60ccb"
+    },
+    {
+      "kind": "sale",
+      "id": "01a1cf9a-5aa0-7171-b3bc-b8b8b34bbee9",
+      "receipt": "Z92901-000001",
+      "status": "finalised"
+    },
+    {
+      "kind": "display",
+      "label": "B",
+      "id": "01a1cf9e-ec17-791b-bbbf-b32d7ece93a9",
+      "station": "01a1cf94-7236-7651-b014-cae1a6df073c"
+    }
+  ],
+  "points": {
+    "1": {
+      "pass": true,
+      "pictures": [
+        "01-fresh-display-dark-till-menu-mirrors-dark.png",
+        "01b-till-theme-menu-close-up-display-dark.png"
+      ],
+      "seen": {
+        "before": "light",
+        "fresh": {
+          "stored": null,
+          "lookBeforePairing": "dark"
+        },
+        "look": "dark",
+        "stored": null,
+        "row": "dark",
+        "tMirror": 187,
+        "note": "Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+        "session": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": null,
+          "sequence": 2,
+          "stage": null
+        }
+      }
+    },
+    "2": {
+      "pass": true,
+      "pictures": [
+        "02a-press-display-light.png",
+        "02b-press-again-dark.png",
+        "02c-press-again-light.png"
+      ],
+      "seen": {
+        "presses": [
+          {
+            "to": "light",
+            "ms": null,
+            "msFromPublishSent": 148,
+            "note": "first press measured from the till's publish request to the display's class change (the driver step threw after the press on a selector, before returning its click time)"
+          },
+          {
+            "to": "dark",
+            "ms": 301
+          },
+          {
+            "to": "light",
+            "ms": 277
+          }
+        ],
+        "tillCustomerHalves": 0,
+        "sessionAfterFirst": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": "light",
+          "sequence": 3,
+          "stage": null
+        },
+        "rowNow": "light",
+        "lookAfter4s": "light",
+        "stored": "light",
+        "flipsSoFar": 3,
+        "publishesWithTheme": [
+          "light",
+          "dark",
+          "light"
+        ]
+      }
+    },
+    "3": {
+      "pass": true,
+      "pictures": [
+        "03a-display-reloaded-still-light.png",
+        "03b-display-browser-restart-still-light.png"
+      ],
+      "seen": {
+        "reload": {
+          "looks": [
+            {
+              "ms": 146,
+              "look": "light"
+            }
+          ],
+          "lookNow": "light",
+          "stored": "light"
+        },
+        "restart": {
+          "looks": [
+            {
+              "ms": 649,
+              "look": "light"
+            }
+          ],
+          "lookNow": "light",
+          "stored": "light",
+          "session": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "light",
+            "sequence": 5,
+            "stage": null
+          }
+        }
+      }
+    },
+    "4": {
+      "pass": true,
+      "pictures": [
+        "04a-till-reloaded-row-light-display-light.png",
+        "04b-till-signed-out-display.png",
+        "04c-till-signed-in-again-row-light-display-light.png"
+      ],
+      "seen": {
+        "afterReload": {
+          "row": "light",
+          "look": "light",
+          "flips": 0,
+          "publishesSinceReload": [
+            {
+              "stage": "identify",
+              "theme": null
+            }
+          ]
+        },
+        "afterSignIn": {
+          "signOut": {
+            "signOut": 200,
+            "meAfter": 401
+          },
+          "lookWhileSignedOut": "light",
+          "row": "light",
+          "look": "light",
+          "flips": 0,
+          "publishesSinceSignOut": [
+            {
+              "stage": "identify",
+              "theme": null
+            }
+          ]
+        }
+      }
+    },
+    "5": {
+      "pass": true,
+      "pictures": [
+        "05a-till-on-fnb-display-stays-light.png",
+        "05b-till-on-fnb-press-display-dark.png",
+        "05c-till-on-shop-display-stays-light.png",
+        "05d-till-on-shop-press-display-dark.png"
+      ],
+      "seen": {
+        "F&B": {
+          "lookOnArrival": "light",
+          "toDark": {
+            "to": "dark",
+            "ms": 475
+          },
+          "backToLight": {
+            "to": "light",
+            "ms": 414
+          },
+          "lookAfter": "light"
+        },
+        "Shop": {
+          "lookOnArrival": "light",
+          "toDark": {
+            "to": "dark",
+            "ms": 520
+          },
+          "backToLight": {
+            "to": "light",
+            "ms": 485
+          },
+          "lookAfter": "light"
+        },
+        "backOnTickets": "light"
+      }
+    },
+    "6": {
+      "pass": true,
+      "pictures": [
+        "06a-display-phone-entry-light.png",
+        "06b-till-new-member-offer-display-after-phone.png",
+        "06c-display-welcome-light.png",
+        "06d-display-ticket-order-with-total-light.png",
+        "06e-display-payment-screen-light.png",
+        "06f-cash-chosen-display-light.png",
+        "06g-display-thanks-light.png",
+        "06h-display-dropoff-form-first-step-light.png",
+        "06i-display-dropoff-age-picker-light.png",
+        "06j-display-dropoff-step-2-light.png",
+        "06k-display-dropoff-camera-notice-light.png",
+        "06l-display-camera-blocked-notice-light.png",
+        "06m-camera-notice-close-up-light.png"
+      ],
+      "seen": {
+        "dispPay": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+        "dispCash": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+        "dispThanks": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350",
+        "look": "light",
+        "sales": [
+          {
+            "receipt": "Z92901-000001",
+            "status": "finalised",
+            "gross": 1040
+          }
+        ],
+        "dropOff": {
+          "after": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. ZZ TEST 929 child Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Camera access blocked Reception will take the photo of you both at the counter instead. Try again Allergies / medical Dietary notes Ask the team Back Continue",
+          "notice": [
+            {
+              "text": "Camera access blocked",
+              "color": "oklch(0.879 0.169 91.605)",
+              "bg": "oklab(0 0 0 / 0.4)",
+              "cls": "text-base font-semibold"
+            }
+          ],
+          "notice2": {
+            "sub": {
+              "text": "Reception will take the photo of you both at the counter instead.",
+              "color": "oklab(0.296409 0.0199053 0.0280578 / 0.5)",
+              "cls": "text-sm text-foreground/50"
+            },
+            "framePixelNearNotice": [
+              147,
+              137,
+              127
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "pass": true,
+      "pictures": [
+        "07a-session-theme-dark-matches.png",
+        "07b-session-theme-light-matches.png"
+      ],
+      "seen": {
+        "earlier": {
+          "p1": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": null,
+            "sequence": 2,
+            "stage": null
+          },
+          "p2": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "light",
+            "sequence": 3,
+            "stage": null
+          },
+          "p3restart": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "light",
+            "sequence": 5,
+            "stage": null
+          }
+        },
+        "reads": [
+          {
+            "when": "now",
+            "shows": "light",
+            "session": {
+              "status": 200,
+              "hasThemeField": true,
+              "theme": "light",
+              "sequence": 44,
+              "stage": null
+            }
+          },
+          {
+            "when": "after press to dark",
+            "ms": 333,
+            "shows": "dark",
+            "session": {
+              "status": 200,
+              "hasThemeField": true,
+              "theme": "dark",
+              "sequence": 45,
+              "stage": null
+            }
+          },
+          {
+            "when": "after press to light",
+            "ms": 311,
+            "shows": "light",
+            "session": {
+              "status": 200,
+              "hasThemeField": true,
+              "theme": "light",
+              "sequence": 46,
+              "stage": null
+            }
+          }
+        ]
+      }
+    },
+    "8": {
+      "pass": true,
+      "pictures": [
+        "08a-second-display-on-till-b-dark-display-a-light.png",
+        "08b-till-a-pressed-dark-display-b-untouched.png",
+        "08c-till-a-pressed-light-display-b-still-dark.png"
+      ],
+      "seen": [
+        {
+          "when": "B just paired",
+          "A": "light",
+          "B": "dark",
+          "Bstored": null,
+          "Bsession": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": null,
+            "sequence": 0,
+            "stage": null
+          }
+        },
+        {
+          "when": "till A pressed dark",
+          "ms": 911,
+          "A": "dark",
+          "B": "dark",
+          "Bflips": 0,
+          "Bsession": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": null,
+            "sequence": 0,
+            "stage": null
+          }
+        },
+        {
+          "when": "till A pressed light",
+          "ms": 268,
+          "A": "light",
+          "B": "dark",
+          "Bflips": 0,
+          "Bsession": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": null,
+            "sequence": 0,
+            "stage": null
+          },
+          "Bstored": null
+        }
+      ]
+    }
+  },
+  "reads": {
+    "p1": {
+      "before": "light",
+      "fresh": {
+        "stored": null,
+        "lookBeforePairing": "dark"
+      },
+      "look": "dark",
+      "stored": null,
+      "row": "dark",
+      "tMirror": 187,
+      "note": "Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "session": {
+        "status": 200,
+        "hasThemeField": true,
+        "theme": null,
+        "sequence": 2,
+        "stage": null
+      }
+    },
+    "p2": {
+      "presses": [
+        {
+          "to": "light",
+          "ms": null,
+          "msFromPublishSent": 148,
+          "note": "first press measured from the till's publish request to the display's class change (the driver step threw after the press on a selector, before returning its click time)"
+        },
+        {
+          "to": "dark",
+          "ms": 301
+        },
+        {
+          "to": "light",
+          "ms": 277
+        }
+      ],
+      "tillCustomerHalves": 0,
+      "sessionAfterFirst": {
+        "status": 200,
+        "hasThemeField": true,
+        "theme": "light",
+        "sequence": 3,
+        "stage": null
+      },
+      "rowNow": "light",
+      "lookAfter4s": "light",
+      "stored": "light",
+      "flipsSoFar": 3,
+      "publishesWithTheme": [
+        "light",
+        "dark",
+        "light"
+      ]
+    },
+    "p3": {
+      "reload": {
+        "looks": [
+          {
+            "ms": 146,
+            "look": "light"
+          }
+        ],
+        "lookNow": "light",
+        "stored": "light"
+      },
+      "restart": {
+        "looks": [
+          {
+            "ms": 649,
+            "look": "light"
+          }
+        ],
+        "lookNow": "light",
+        "stored": "light",
+        "session": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": "light",
+          "sequence": 5,
+          "stage": null
+        }
+      }
+    },
+    "p4": {
+      "afterReload": {
+        "row": "light",
+        "look": "light",
+        "flips": 0,
+        "publishesSinceReload": [
+          {
+            "stage": "identify",
+            "theme": null
+          }
+        ]
+      },
+      "afterSignIn": {
+        "signOut": {
+          "signOut": 200,
+          "meAfter": 401
+        },
+        "lookWhileSignedOut": "light",
+        "row": "light",
+        "look": "light",
+        "flips": 0,
+        "publishesSinceSignOut": [
+          {
+            "stage": "identify",
+            "theme": null
+          }
+        ]
+      }
+    },
+    "p5": {
+      "F&B": {
+        "lookOnArrival": "light",
+        "toDark": {
+          "to": "dark",
+          "ms": 475
+        },
+        "backToLight": {
+          "to": "light",
+          "ms": 414
+        },
+        "lookAfter": "light"
+      },
+      "Shop": {
+        "lookOnArrival": "light",
+        "toDark": {
+          "to": "dark",
+          "ms": 520
+        },
+        "backToLight": {
+          "to": "light",
+          "ms": 485
+        },
+        "lookAfter": "light"
+      },
+      "backOnTickets": "light"
+    },
+    "p6": {
+      "dispPay": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+      "dispCash": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+      "dispThanks": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350",
+      "look": "light",
+      "sales": [
+        {
+          "receipt": "Z92901-000001",
+          "status": "finalised",
+          "gross": 1040
+        }
+      ]
+    },
+    "p6dropoff": {
+      "after": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. ZZ TEST 929 child Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Camera access blocked Reception will take the photo of you both at the counter instead. Try again Allergies / medical Dietary notes Ask the team Back Continue",
+      "notice": [
+        {
+          "text": "Camera access blocked",
+          "color": "oklch(0.879 0.169 91.605)",
+          "bg": "oklab(0 0 0 / 0.4)",
+          "cls": "text-base font-semibold"
+        }
+      ],
+      "notice2": {
+        "sub": {
+          "text": "Reception will take the photo of you both at the counter instead.",
+          "color": "oklab(0.296409 0.0199053 0.0280578 / 0.5)",
+          "cls": "text-sm text-foreground/50"
+        },
+        "framePixelNearNotice": [
+          147,
+          137,
+          127
+        ]
+      }
+    },
+    "lockUnlock": {
+      "displayLookAfterUnlock": "light"
+    },
+    "p7": {
+      "earlier": {
+        "p1": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": null,
+          "sequence": 2,
+          "stage": null
+        },
+        "p2": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": "light",
+          "sequence": 3,
+          "stage": null
+        },
+        "p3restart": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": "light",
+          "sequence": 5,
+          "stage": null
+        }
+      },
+      "reads": [
+        {
+          "when": "now",
+          "shows": "light",
+          "session": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "light",
+            "sequence": 44,
+            "stage": null
+          }
+        },
+        {
+          "when": "after press to dark",
+          "ms": 333,
+          "shows": "dark",
+          "session": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "dark",
+            "sequence": 45,
+            "stage": null
+          }
+        },
+        {
+          "when": "after press to light",
+          "ms": 311,
+          "shows": "light",
+          "session": {
+            "status": 200,
+            "hasThemeField": true,
+            "theme": "light",
+            "sequence": 46,
+            "stage": null
+          }
+        }
+      ]
+    },
+    "p8": [
+      {
+        "when": "B just paired",
+        "A": "light",
+        "B": "dark",
+        "Bstored": null,
+        "Bsession": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": null,
+          "sequence": 0,
+          "stage": null
+        }
+      },
+      {
+        "when": "till A pressed dark",
+        "ms": 911,
+        "A": "dark",
+        "B": "dark",
+        "Bflips": 0,
+        "Bsession": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": null,
+          "sequence": 0,
+          "stage": null
+        }
+      },
+      {
+        "when": "till A pressed light",
+        "ms": 268,
+        "A": "light",
+        "B": "dark",
+        "Bflips": 0,
+        "Bsession": {
+          "status": 200,
+          "hasThemeField": true,
+          "theme": null,
+          "sequence": 0,
+          "stage": null
+        },
+        "Bstored": null
+      }
+    ]
+  },
+  "odd": [
+    {
+      "what": "Point 6: the camera \"Camera access blocked\" notice on the light display has low contrast: amber-300 headline on the frame (about 2.4:1) and the sub-line \"Reception will take the photo of you both at the counter instead.\" in 50% dark text on the grey-brown frame (about 1.9:1). Known to the builder; confirmed."
+    },
+    {
+      "what": "Point 2: the first press of the run was timed from the till's publish request (148 ms), not from the click: the driver step threw on a selector after the press. Every other press was timed from the click: 268 to 911 ms."
+    },
+    {
+      "what": "After display A was unpaired at clean-up, till A at once drew its own customer half (the test harness split) and drew it light, agreeing with its Display row."
+    },
+    {
+      "what": "Till A locked from inactivity once during point 6; display A stayed light through the lock and the unlock."
+    },
+    {
+      "what": "While the till was signed out (point 4) display A kept showing the language screen in light; nothing about the look changed."
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "A",
+      "at": "setup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "setup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/sales/:id/refunds 403"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "B",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/box/v1/station/:id/display/session 401"
+    },
+    {
+      "page": "B",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "B",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/display/session 401"
+    },
+    {
+      "page": "B",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease/release 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease 409"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/box/v1/station/:id/display/session 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/display/session 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "A",
+      "at": "cleanup",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "publishes": [
+    {
+      "page": "A",
+      "at": "p1",
+      "t": 1794483998555,
+      "stage": "identify",
+      "theme": null
+    },
+    {
+      "page": "A",
+      "at": "p2",
+      "t": 1794484050528,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p2",
+      "t": 1794484070859,
+      "stage": "identify",
+      "theme": "dark"
+    },
+    {
+      "page": "A",
+      "at": "p2",
+      "t": 1794484073138,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "t": 1794484148315,
+      "stage": "identify",
+      "theme": null
+    },
+    {
+      "page": "A",
+      "at": "p4",
+      "t": 1794484165275,
+      "stage": "identify",
+      "theme": null
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484218741,
+      "stage": "welcome",
+      "theme": null
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484224818,
+      "stage": "welcome",
+      "theme": "dark"
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484226706,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484228601,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484234860,
+      "stage": "welcome",
+      "theme": "dark"
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484236991,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p5",
+      "t": 1794484238998,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484302116,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484302292,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484331103,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484332252,
+      "stage": "order",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484361957,
+      "stage": "payment",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484362448,
+      "stage": "payment",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484372026,
+      "stage": "payment",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484372473,
+      "stage": "thankyou",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6",
+      "t": 1794484373205,
+      "stage": "thankyou",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484402949,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484405181,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484405288,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484406261,
+      "stage": "welcome",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484407765,
+      "stage": "input",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484459147,
+      "stage": "input",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484462997,
+      "stage": "input",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-dropoff",
+      "t": 1794484463567,
+      "stage": "input",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-abandon",
+      "t": 1794484604089,
+      "stage": "order",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p6-abandon",
+      "t": 1794484605550,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p7",
+      "t": 1794484616323,
+      "stage": "identify",
+      "theme": "dark"
+    },
+    {
+      "page": "A",
+      "at": "p7",
+      "t": 1794484619219,
+      "stage": "identify",
+      "theme": "light"
+    },
+    {
+      "page": "A",
+      "at": "p8",
+      "t": 1794484668647,
+      "stage": "identify",
+      "theme": "dark"
+    },
+    {
+      "page": "A",
+      "at": "p8",
+      "t": 1794484672853,
+      "stage": "identify",
+      "theme": "light"
+    }
+  ],
+  "cleanup": {
+    "sales": {
+      "salesBefore": [
+        {
+          "receipt": "Z92901-000001",
+          "status": "finalised"
+        }
+      ],
+      "refund": {
+        "receipt": "Z92901-000001",
+        "status": 403,
+        "code": "REFUND_APPROVAL_REQUIRED"
+      },
+      "salesAfter": [
+        {
+          "receipt": "Z92901-000001",
+          "status": "finalised",
+          "gross": 1040,
+          "refunded": 0
+        }
+      ],
+      "salesTillB": 0
+    },
+    "refund": {
+      "managerAtOwnTill": true,
+      "refund": {
+        "status": 200,
+        "code": null
+      },
+      "saleAfter": {
+        "receipt": "Z92901-000001",
+        "status": "refunded",
+        "gross": 1040,
+        "refunded": 1040
+      }
+    },
+    "final": {
+      "revokeA": 200,
+      "A": {
+        "setupShown": true,
+        "look": "light",
+        "stored": "light",
+        "session": {
+          "status": 401,
+          "hasThemeField": null,
+          "theme": null,
+          "sequence": null,
+          "stage": null
+        }
+      },
+      "managerOut": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "stationA": {
+        "unassign": 200,
+        "archive": 200,
+        "archived": true,
+        "devices": 0
+      },
+      "stationB": {
+        "unassign": 200,
+        "archive": 200,
+        "archived": true,
+        "devices": 0
+      },
+      "members": {
+        "walkIn": null,
+        "dropOff": null
+      }
+    },
+    "adminSignOut": 200,
+    "adminMeAfter": 401
+  },
+  "checks": {
+    "numbersCheckedUnused": 10,
+    "first": "0898929010"
+  },
+  "finishedAt": "2026-11-12T12:00:05.725Z"
+}

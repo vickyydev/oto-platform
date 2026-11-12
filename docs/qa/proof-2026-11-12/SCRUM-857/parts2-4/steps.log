@@ -1,0 +1,3095 @@
+
+=== 2026-11-12T11:21:49.909Z sign in desk till
+S.phase = 'setup';
+const r = await S.setup();
+S.phase = 'sign in desk till';
+const till = await S.signIn('till', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 1680, height: 1050 });
+S.till = till;
+const bundle = await till.evaluate(async () => {
+  const urls = [...new Set(performance.getEntriesByType('resource').map(e => e.name).filter(n => /\.js(\?|$)/.test(n)))];
+  const found = { files: urls.length, mirror: 0, familyDone: 0, stillNeeded: 0, stillRegistering: 0, photoReceived: 0 };
+  for (const url of urls) { const t = await (await fetch(url, { cache: 'no-store' })).text();
+    found.mirror += t.split('consent-mirror').length - 1; found.familyDone += t.split('The family pressed Done: the children are being registered').length - 1;
+    found.stillNeeded += t.split('Still needed before Done').length - 1; found.stillRegistering += t.split('Still registering the children').length - 1; found.photoReceived += t.split('The team has this photo.').length - 1; }
+  return found;
+});
+S.receipt.reads.bundle = bundle;
+await S.landing(till).waitFor();
+await S.shot(till, '00-desk-till-signed-in-landing.png');
+return { r, bundle };
+--> {
+ "ok": true,
+ "value": {
+  "r": {
+   "free": 30,
+   "first": "0898570210",
+   "last": "0898570239",
+   "station": "01a1cf7e-28ca-70e7-afb0-b7253ef507c9",
+   "prefix": "Z85706"
+  },
+  "bundle": {
+   "files": 1,
+   "mirror": 3,
+   "familyDone": 1,
+   "stillNeeded": 1,
+   "stillRegistering": 1,
+   "photoReceived": 1
+  }
+ }
+}
+
+=== 2026-11-12T11:22:08.568Z probe: camera without a grant
+S.phase = 'probe: camera without a grant';
+const ctx = await S.browser.newContext({ baseURL: S.pos });
+const page = await ctx.newPage();
+await page.goto(S.pos + '/display');
+const r = await page.evaluate(async () => {
+  const out = {};
+  try { out.perm = (await navigator.permissions.query({ name: 'camera' })).state; } catch (e) { out.perm = 'query failed ' + e.name; }
+  try { out.devices = (await navigator.mediaDevices.enumerateDevices()).map(d => d.kind); } catch (e) { out.devices = 'failed ' + e.name; }
+  try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); out.gum = 'granted'; s.getTracks().forEach(t => t.stop()); } catch (e) { out.gum = e.name; }
+  return out;
+});
+await ctx.close();
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "perm": "granted",
+  "devices": [
+   "audioinput",
+   "audioinput",
+   "audioinput",
+   "videoinput",
+   "audiooutput",
+   "audiooutput",
+   "audiooutput"
+  ],
+  "gum": "granted"
+ }
+}
+
+=== 2026-11-12T11:22:16.740Z 1: pair the display, family L on the display, walk-in, one child, no adult
+S.phase = '1: pair the display, family L on the display, walk-in, one child, no adult';
+const till = S.till;
+await till.goto('/'); await S.landing(till).waitFor();
+const d = await S.pairDisplay('main', { camera: 'fake' });
+S.receipt.numbers.L = S.free[0];
+await S.firstScreen(d, till, S.free[0]);
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await till.getByTestId('consent-mirror').waitFor({ timeout: 20000 });
+await till.waitForTimeout(1000);
+await S.pair('01a-form-opened-both-screens.png', till, d, { caption: 'Point 1 — the form opens on the display; the till shows its copy, read-only' });
+return { mirror: await S.mirrorState(till), display: await S.displayState(d), staffLine: await S.staffLine(till) };
+--> {
+ "ok": true,
+ "value": {
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "1. Your children",
+   "childName": "",
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "display": {
+   "shown": true,
+   "step": "1. Your children",
+   "childName": "",
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask."
+ }
+}
+
+=== 2026-11-12T11:22:48.637Z 1: the family types the child name on the display; the till follows
+// The side-by-side canvas, wider (the same change as in driver.mjs line 219).
+const old = S.pair;
+S.pair = async (name, left, right, extra = {}) => {
+  const [a, b] = await Promise.all([
+    left.screenshot({ animations: 'disabled', mask: [...S.masks(left), ...(extra.left ?? [])], maskColor: '#18181b' }),
+    right.screenshot({ animations: 'disabled', mask: [...S.masks(right), ...(extra.right ?? [])], maskColor: '#18181b' }),
+  ]);
+  const page = await S.browser.newPage({ viewport: { width: 2400, height: 1100 } });
+  const img = buf => `data:image/png;base64,${buf.toString('base64')}`;
+  await page.setContent(`<html><body style="margin:0;background:#111;color:#eee;font-family:Segoe UI,Arial">
+    <div style="padding:6px 10px;font-size:18px">${(extra.caption ?? '').replace(/[<>&]/g, '')} — taken ${new Date().toISOString()}</div>
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:0 8px 8px">
+      <figure style="margin:0;flex:1.62"><figcaption style="font-size:15px;padding:2px 0">Till (desk, 1680×1050)</figcaption><img style="width:100%;border:1px solid #444" src="${img(a)}"></figure>
+      <figure style="margin:0;flex:1"><figcaption style="font-size:15px;padding:2px 0">Customer display (own context)</figcaption><img style="width:100%;border:1px solid #444" src="${img(b)}"></figure>
+    </div></body></html>`);
+  await page.screenshot({ path: S.resolve(S.out, name), fullPage: true });
+  await page.close();
+  S.shots.push(name);
+  return name;
+};
+S.phase = '1: the family types the child name on the display; the till follows';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+const mirror = till.getByTestId('consent-mirror');
+const field = consent.getByPlaceholder('Full name', { exact: true });
+await field.click();
+await field.pressSequentially('ZZ TEST 857 child L', { delay: 60 });
+const typed = Date.now();
+await expect(mirror.getByPlaceholder('Full name', { exact: true })).toHaveValue('ZZ TEST 857 child L', { timeout: 10000 });
+const lagNameMs = Date.now() - typed;
+// half-way through a word: the till's copy at the same moment
+await field.pressSequentially('1', { delay: 60 });
+await till.waitForTimeout(900);
+await S.pair('01b-child-name-typed-till-follows.png', till, d, { caption: 'Point 1 — the family typed the child name on the display (no Continue pressed); the till copy has it' });
+const m1 = await S.mirrorState(till);
+await S.setAge(d, consent, 6);
+const aged = Date.now();
+await expect(mirror.getByText(/Drop-off required|drop-off/i).first()).toBeVisible({ timeout: 10000 }).catch(() => null);
+const lagAgeMs = Date.now() - aged;
+await till.waitForTimeout(800);
+await S.pair('01c-age-set-till-follows.png', till, d, { caption: 'Point 1 — the family set the age (6) on the display; the till copy shows the same age and requirement' });
+return { lagNameMs, lagAgeMs, m1, mirror: await S.mirrorState(till), display: await S.displayState(d), mirrorText: S.flat(await mirror.innerText()).slice(0, 600) };
+--> {
+ "ok": false,
+ "error": "ReferenceError: expect is not defined"
+}
+
+=== 2026-11-12T11:22:55.431Z 1: the family types the child name on the display; the till follows
+const { expect } = S;
+// The side-by-side canvas, wider (the same change as in driver.mjs line 219).
+const old = S.pair;
+S.pair = async (name, left, right, extra = {}) => {
+  const [a, b] = await Promise.all([
+    left.screenshot({ animations: 'disabled', mask: [...S.masks(left), ...(extra.left ?? [])], maskColor: '#18181b' }),
+    right.screenshot({ animations: 'disabled', mask: [...S.masks(right), ...(extra.right ?? [])], maskColor: '#18181b' }),
+  ]);
+  const page = await S.browser.newPage({ viewport: { width: 2400, height: 1100 } });
+  const img = buf => `data:image/png;base64,${buf.toString('base64')}`;
+  await page.setContent(`<html><body style="margin:0;background:#111;color:#eee;font-family:Segoe UI,Arial">
+    <div style="padding:6px 10px;font-size:18px">${(extra.caption ?? '').replace(/[<>&]/g, '')} — taken ${new Date().toISOString()}</div>
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:0 8px 8px">
+      <figure style="margin:0;flex:1.62"><figcaption style="font-size:15px;padding:2px 0">Till (desk, 1680×1050)</figcaption><img style="width:100%;border:1px solid #444" src="${img(a)}"></figure>
+      <figure style="margin:0;flex:1"><figcaption style="font-size:15px;padding:2px 0">Customer display (own context)</figcaption><img style="width:100%;border:1px solid #444" src="${img(b)}"></figure>
+    </div></body></html>`);
+  await page.screenshot({ path: S.resolve(S.out, name), fullPage: true });
+  await page.close();
+  S.shots.push(name);
+  return name;
+};
+S.phase = '1: the family types the child name on the display; the till follows';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+const mirror = till.getByTestId('consent-mirror');
+const field = consent.getByPlaceholder('Full name', { exact: true });
+await field.click(); await field.fill('');
+await field.pressSequentially('ZZ TEST 857 child L', { delay: 60 });
+const typed = Date.now();
+await expect(mirror.getByPlaceholder('Full name', { exact: true })).toHaveValue('ZZ TEST 857 child L', { timeout: 10000 });
+const lagNameMs = Date.now() - typed;
+// half-way through a word: the till's copy at the same moment
+await field.pressSequentially('1', { delay: 60 });
+await till.waitForTimeout(900);
+await S.pair('01b-child-name-typed-till-follows.png', till, d, { caption: 'Point 1 — the family typed the child name on the display (no Continue pressed); the till copy has it' });
+const m1 = await S.mirrorState(till);
+await S.setAge(d, consent, 6);
+const aged = Date.now();
+await expect(mirror.getByText(/Drop-off required|drop-off/i).first()).toBeVisible({ timeout: 10000 }).catch(() => null);
+const lagAgeMs = Date.now() - aged;
+await till.waitForTimeout(800);
+await S.pair('01c-age-set-till-follows.png', till, d, { caption: 'Point 1 — the family set the age (6) on the display; the till copy shows the same age and requirement' });
+return { lagNameMs, lagAgeMs, m1, mirror: await S.mirrorState(till), display: await S.displayState(d), mirrorText: S.flat(await mirror.innerText()).slice(0, 600) };
+--> {
+ "ok": true,
+ "value": {
+  "lagNameMs": 831,
+  "lagAgeMs": 5,
+  "m1": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "1. Your children",
+   "childName": "ZZ TEST 857 child L1",
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "1. Your children",
+   "childName": "ZZ TEST 857 child L1",
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "display": {
+   "shown": true,
+   "step": "1. Your children",
+   "childName": "ZZ TEST 857 child L1",
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirrorText": "The customer is filling this in PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age 6 yrs Drop-off supervision needed Required for this age — ฿225 one-time Ask the team Continue"
+ }
+}
+
+=== 2026-11-12T11:23:18.720Z 1/2: Continue to care details on the display; the till follows; the family takes the photo
+const { expect } = S;
+S.phase = '1/2: Continue to care details on the display; the till follows; the family takes the photo';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+const mirror = till.getByTestId('consent-mirror');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+const pressed = Date.now();
+await expect(mirror.getByTestId('consent-care')).toHaveCount(1, { timeout: 10000 });
+const lagStepMs = Date.now() - pressed;
+await till.waitForTimeout(800);
+await S.pair('01d-care-step-till-follows.png', till, d, { caption: 'Point 1 — the family pressed Continue on the display; the till copy moved to step 2 (Care details) with them' });
+const photo = consent.getByTestId('consent-photo');
+const before = { fallback: await photo.getByTestId('consent-photo-fallback').count(), startCamera: await photo.getByRole('button', { name: 'Start camera', exact: true }).count() };
+await photo.getByRole('button', { name: 'Start camera', exact: true }).click();
+await photo.getByRole('button', { name: 'Take photo', exact: true }).waitFor({ timeout: 15000 });
+await d.waitForTimeout(1200);
+await S.shot(d, '02a-display-camera-live-fake.png');
+await photo.getByRole('button', { name: 'Take photo', exact: true }).click();
+const took = Date.now();
+await expect(photo.getByTestId('consent-photo-received')).toHaveText('The team has this photo.', { timeout: 30000 });
+const lagReceivedMs = Date.now() - took;
+await expect(mirror.getByTestId('consent-mirror-photo').locator('img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/, { timeout: 30000 });
+const lagMirrorPhotoMs = Date.now() - took;
+await till.waitForTimeout(1000);
+await S.pair('02b-photo-taken-display-and-till.png', till, d, { caption: 'Point 2 — the family took the photo on the display: "The team has this photo." and the photo on the till copy' });
+const staffBlockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { lagStepMs, before, lagReceivedMs, lagMirrorPhotoMs, mirror: await S.mirrorState(till), display: await S.displayState(d), uploads: S.receipt.displayPhotoUploads, staffBlockers };
+--> {
+ "ok": true,
+ "value": {
+  "lagStepMs": 207,
+  "before": {
+   "fallback": 0,
+   "startCamera": 1
+  },
+  "lagReceivedMs": 1336,
+  "lagMirrorPhotoMs": 1339,
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": "data:image/jpeg;base64,/9j/4AA",
+   "photoReceived": 1,
+   "inert": true
+  },
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": "The team has this photo.",
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "uploads": [
+   {
+    "display": "main",
+    "at": "1/2: Continue to care details on the display; the till follows; the family takes the photo",
+    "status": 200
+   }
+  ],
+  "staffBlockers": "Before payment • ZZ TEST 857 child L1 (age 6) needs drop-off supervision. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen."
+ }
+}
+
+=== 2026-11-12T11:23:42.859Z 1/4: agreements step; the family types the guardian name; Still needed before Done
+const { expect } = S;
+S.phase = '1/4: agreements step; the family types the guardian name; Still needed before Done';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+const mirror = till.getByTestId('consent-mirror');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await expect(mirror.locator('#public-consent-guardian')).toHaveCount(1, { timeout: 10000 });
+const g = consent.locator('#public-consent-guardian');
+await g.click();
+await g.pressSequentially('ZZ TEST 857 guardian L', { delay: 50 });
+const typed = Date.now();
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L', { timeout: 10000 });
+const lagGuardianMs = Date.now() - typed;
+await till.waitForTimeout(800);
+await S.pair('01e-agreements-guardian-typed-till-follows.png', till, d, { caption: 'Point 1 — step 3 (Agreements): the family typed the guardian name on the display; the till copy is on the same step with it' });
+const ds = await S.displayState(d);
+await consent.getByTestId('consent-missing').scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(d, '04a-display-still-needed-before-done-en.png');
+return { lagGuardianMs, mirror: await S.mirrorState(till), display: ds, checkboxes: await consent.getByRole('checkbox').count() };
+--> {
+ "ok": true,
+ "value": {
+  "lagGuardianMs": 814,
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "3. Agreements",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "898570210",
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation · confirming your WhatsApp number",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "checkboxes": 5
+ }
+}
+
+=== 2026-11-12T11:24:00.789Z 4: Still needed before Done, in Thai; one item ticked shortens it
+const { expect } = S;
+S.phase = '4: Still needed before Done, in Thai; one item ticked shortens it';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+const switchTo = async label => {
+  await d.getByRole('button', { name: /Change language|เปลี่ยนภาษา/ }).first().click();
+  await d.getByRole('button', { name: label, exact: true }).click();
+  await d.waitForTimeout(700);
+};
+await switchTo('ไทย');
+const th1 = S.flat(await consent.getByTestId('consent-missing').innerText());
+await S.shot(d, '04b-display-still-needed-thai.png');
+await consent.getByTestId('public-consent-contact-confirm').click();
+await d.waitForTimeout(800);
+const th2 = S.flat(await consent.getByTestId('consent-missing').innerText());
+await S.shot(d, '04c-display-still-needed-thai-number-ticked.png');
+const tillLineThai = await S.staffLine(till);
+await S.pair('04d-thai-display-till-stays-english.png', till, d, { caption: 'Point 4 — the display in Thai with "Still needed before Done"; the till copy stays in English' });
+const mirrorMissing = (await till.getByTestId('consent-mirror').getByTestId('consent-missing').count()) ? S.flat(await till.getByTestId('consent-mirror').getByTestId('consent-missing').innerText()) : null;
+await switchTo('English');
+const en2 = S.flat(await consent.getByTestId('consent-missing').innerText());
+const rawKey = /superviseConsent\.|\{\{/.test(await consent.innerText());
+return { th1, th2, en2, rawKey, mirrorMissing, tillLineThai, display: await S.displayState(d) };
+--> {
+ "ok": true,
+ "value": {
+  "th1": "ยังต้องกรอกก่อนกด เสร็จสิ้น: การยินยอมของคุณ · การยืนยันทุกข้อ · ยืนยันหมายเลข WhatsApp ของคุณ",
+  "th2": "ยังต้องกรอกก่อนกด เสร็จสิ้น: การยินยอมของคุณ · การยืนยันทุกข้อ",
+  "en2": "Still needed before Done: your consent · each confirmation",
+  "rawKey": false,
+  "mirrorMissing": "Still needed before Done: your consent · each confirmation",
+  "tillLineThai": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  }
+ }
+}
+
+=== 2026-11-12T11:24:19.645Z 5a: reload the display half-way (agreements step, name typed, number ticked)
+const { expect } = S;
+S.phase = '5a: reload the display half-way (agreements step, name typed, number ticked)';
+const till = S.till, d = S.displays.main.page;
+const before = await S.displayState(d);
+const tickBefore = await d.getByTestId('public-consent-contact-confirm').getAttribute('data-state');
+const t0 = Date.now();
+await d.reload();
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 60000 });
+await expect(consent.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L', { timeout: 20000 });
+const backMs = Date.now() - t0;
+await d.waitForTimeout(1500);
+const after = await S.displayState(d);
+const tickAfter = await d.getByTestId('public-consent-contact-confirm').getAttribute('data-state');
+const lang = S.flat(await d.getByRole('button', { name: /Change language|เปลี่ยนภาษา/ }).first().innerText().catch(() => ''));
+await S.pair('05a-display-reloaded-same-step-values-kept.png', till, d, { caption: 'Point 5 — the display was reloaded half-way: it reopens on step 3 with the name, the number and its tick; the till copy unchanged' });
+return { backMs, before, tickBefore, after, tickAfter, lang, mirror: await S.mirrorState(till), staffLine: await S.staffLine(till) };
+--> {
+ "ok": true,
+ "value": {
+  "backMs": 472,
+  "before": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "tickBefore": "checked",
+  "after": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "tickAfter": "checked",
+  "lang": "English",
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "3. Agreements",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "898570210",
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask."
+ }
+}
+
+=== 2026-11-12T11:24:34.679Z 5b: typing not yet sent, reload at once; then a connection drop of a few seconds
+const { expect } = S;
+S.phase = '5b: typing not yet sent, reload at once; then a connection drop of a few seconds';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+const mirror = till.getByTestId('consent-mirror');
+let consent = d.getByTestId('display-consent');
+// (i) unsent typing, reloaded within 100 ms
+const g = consent.locator('#public-consent-guardian');
+await g.click(); await g.press('End');
+await g.pressSequentially(' R', { delay: 20 });
+await d.reload();
+consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 60000 });
+const reloadValue = await consent.locator('#public-consent-guardian').inputValue();
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L R', { timeout: 10000 }).catch(() => null);
+const mirrorAfterReload = await mirror.locator('#public-consent-guardian').inputValue();
+// (ii) the connection drops: offline for ~6 s while the family ticks consent and types
+await ctx.setOffline(true);
+const offAt = Date.now();
+const g2 = consent.locator('#public-consent-guardian');
+await g2.click(); await g2.press('End');
+await g2.pressSequentially(' off', { delay: 40 });
+await consent.getByTestId('public-consent-ack').click();
+await d.waitForTimeout(2500);
+const offlineDisplay = await S.displayState(d);
+const offlineMirrorGuardian = await mirror.locator('#public-consent-guardian').inputValue();
+await S.pair('05b-connection-dropped-display-offline.png', till, d, { caption: 'Point 5 — the display is offline: the family typed " off" and ticked consent; the till copy does not have them yet' });
+await d.waitForTimeout(3500);
+const offlineDisplay2 = await S.displayState(d);
+await S.shot(d, '05c-display-still-offline-after-6s.png');
+await ctx.setOffline(false);
+const onAt = Date.now();
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L R off', { timeout: 30000 });
+const arrivedMs = Date.now() - onAt;
+await d.waitForTimeout(1500);
+const ackOnTill = S.flat(await till.getByText(/Supervision and photo consent/).first().locator('xpath=..').innerText().catch(() => ''));
+await S.pair('05d-connection-back-nothing-lost.png', till, d, { caption: 'Point 5 — the connection is back: the name typed and the consent ticked while offline reach the till; nothing lost' });
+return { reloadValue, mirrorAfterReload, offlineMs: onAt - offAt, offlineDisplay, offlineMirrorGuardian, offlineDisplay2, arrivedMs, ackOnTill, display: await S.displayState(d), mirror: await S.mirrorState(till) };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.inputValue: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByTestId('consent-mirror').locator('#public-consent-guardian')\u001b[22m | "
+}
+
+=== 2026-11-12T11:25:22.314Z 5b: look (the till copy was not found)
+S.phase = '5b: look (the till copy was not found)';
+const till = S.till, d = S.displays.main.page;
+await S.pair('x-5b-look.png', till, d, { caption: 'look' });
+return { display: await S.displayState(d), mirror: await S.mirrorState(till), staffLine: await S.staffLine(till), regs: S.receipt.registrationsPosted, errs: S.receipt.pageErrors.slice(-10) };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirror": {
+   "shown": false
+  },
+  "staffLine": null,
+  "regs": [],
+  "errs": [
+   {
+    "page": "till",
+    "at": "sign in desk till",
+    "kind": "http",
+    "text": "GET /api/me 401"
+   },
+   {
+    "page": "till",
+    "at": "sign in desk till",
+    "kind": "console.error",
+    "text": "Failed to load resource: the server responded with a status of 401 ()"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:25:47.628Z hunt: the till locked itself after 2 min idle while the family typed on the display
+const { expect } = S;
+S.phase = 'hunt: the till locked itself after 2 min idle while the family typed on the display';
+const till = S.till, d = S.displays.main.page;
+const consent = d.getByTestId('display-consent');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click().catch(() => null);
+await d.waitForTimeout(6000);
+const whileLocked = await S.displayState(d);
+await S.pair('hunt-a-till-locked-family-presses-continue.png', till, d, { caption: 'Hunt — the till locked itself after 2 minutes without a staff touch while the family filled the form; the family pressed Continue on the display' });
+const unlocked = await S.unlock('till');
+const t0 = Date.now();
+const mirror = till.getByTestId('consent-mirror');
+await mirror.waitFor({ timeout: 30000 });
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L R', { timeout: 30000 });
+const caughtUpMs = Date.now() - t0;
+await d.waitForTimeout(1500);
+await S.pair('hunt-b-till-unlocked-catches-up.png', till, d, { caption: 'Hunt — staff unlocked the till: its copy catches up with what the family typed while it was locked' });
+return { whileLocked, unlocked, caughtUpMs, display: await S.displayState(d), mirror: await S.mirrorState(till), staffLine: await S.staffLine(till) };
+--> {
+ "ok": true,
+ "value": {
+  "whileLocked": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "unlocked": true,
+  "caughtUpMs": 6,
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "3. Agreements",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": "ZZ TEST 857 guardian L R",
+   "phone": "898570210",
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  },
+  "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask."
+ }
+}
+
+=== 2026-11-12T11:26:17.979Z 5c: the connection drops for a few seconds while the family types and ticks consent
+const { expect } = S;
+S.phase = '5c: the connection drops for a few seconds while the family types and ticks consent';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.unlock('till');
+const mirror = till.getByTestId('consent-mirror');
+const consent = d.getByTestId('display-consent');
+const reloadValue = await consent.locator('#public-consent-guardian').inputValue();
+await ctx.setOffline(true);
+const offAt = Date.now();
+const g2 = consent.locator('#public-consent-guardian');
+await g2.click(); await g2.press('End');
+await g2.pressSequentially(' off', { delay: 40 });
+await consent.getByTestId('public-consent-ack').click();
+await d.waitForTimeout(2500);
+const offlineDisplay = await S.displayState(d);
+const offlineMirrorGuardian = await mirror.locator('#public-consent-guardian').inputValue();
+await S.pair('05b-connection-dropped-display-offline.png', till, d, { caption: 'Point 5 — the display is offline: the family typed " off" and ticked consent; the till copy does not have them yet' });
+await d.waitForTimeout(3500);
+const offlineDisplay2 = await S.displayState(d);
+await S.shot(d, '05c-display-still-offline-after-6s.png');
+await ctx.setOffline(false);
+const onAt = Date.now();
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L R off', { timeout: 45000 });
+const arrivedMs = Date.now() - onAt;
+await d.waitForTimeout(1500);
+const ack = await till.getByText(/^Supervision and photo consent/).first().locator('xpath=..').innerText().catch(() => '');
+await S.pair('05d-connection-back-nothing-lost.png', till, d, { caption: 'Point 5 — the connection is back: the name typed and the consent ticked while offline reach the till; nothing lost' });
+return { reloadValue, offlineMs: onAt - offAt, offlineDisplay, offlineMirrorGuardian, offlineDisplay2, arrivedMs, ack: S.flat(ack), display: await S.displayState(d), mirror: await S.mirrorState(till) };
+--> {
+ "ok": true,
+ "value": {
+  "reloadValue": "ZZ TEST 857 guardian L R",
+  "offlineMs": 6944,
+  "offlineDisplay": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R off",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "offlineMirrorGuardian": "ZZ TEST 857 guardian L R",
+  "offlineDisplay2": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R off",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "arrivedMs": 827,
+  "ack": "Supervision and photo consent · not ticked yet WhatsApp number +66 89 857 0210 · confirmed by the family I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet",
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L R off",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "3. Agreements",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": "ZZ TEST 857 guardian L R off",
+   "phone": "898570210",
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  }
+ }
+}
+
+=== 2026-11-12T11:27:10.337Z 5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop
+const { expect } = S;
+S.phase = '5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.unlock('till');
+const mirror = till.getByTestId('consent-mirror');
+const consent = d.getByTestId('display-consent');
+await ctx.setOffline(true);
+const offAt = Date.now();
+const g = consent.locator('#public-consent-guardian');
+await g.click(); await g.press('Control+a');
+await g.pressSequentially('ZZ TEST 857 guardian L', { delay: 30 });
+const typedAt = Date.now() - offAt;
+const t = [];
+for (let i = 0; i < 12; i++) {
+  t.push({ ms: Date.now() - offAt, banner: await d.getByText('Connection interrupted. Please retry when the connection returns.').count(),
+    nameDisabled: await g.isDisabled(), ackDisabled: await consent.getByTestId('public-consent-ack').isDisabled() });
+  await d.waitForTimeout(500);
+}
+const ackClickable = !(await consent.getByTestId('public-consent-ack').isDisabled());
+const offlineState = await S.displayState(d);
+const mirrorDuring = await mirror.locator('#public-consent-guardian').inputValue();
+await S.pair('05b-connection-dropped-display-offline.png', till, d, { caption: 'Point 5 — the display lost its connection while the family retyped the name: it says Reconnecting and holds the form; the till copy still has the old name' });
+await ctx.setOffline(false);
+const onAt = Date.now();
+await expect(mirror.locator('#public-consent-guardian')).toHaveValue('ZZ TEST 857 guardian L', { timeout: 45000 });
+const arrivedMs = Date.now() - onAt;
+const bannerGoneMs = await (async () => { const s = Date.now(); while (Date.now() - s < 20000) { if (!(await d.getByText('Connection interrupted. Please retry when the connection returns.').count())) return Date.now() - s; await d.waitForTimeout(250); } return null; })();
+await d.waitForTimeout(1000);
+await S.pair('05c-connection-back-nothing-lost.png', till, d, { caption: 'Point 5 — the connection is back (no Retry pressed): the name typed while offline reaches the till; nothing lost' });
+return { typedAt, timeline: t, ackClickable, offlineState, mirrorDuring, arrivedMs, bannerGoneMs, display: await S.displayState(d), mirror: await S.mirrorState(till) };
+--> {
+ "ok": true,
+ "value": {
+  "typedAt": 1675,
+  "timeline": [
+   {
+    "ms": 1675,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 2233,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 2747,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 3264,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 3788,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 4373,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 4919,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 5457,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 5996,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 6530,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 7064,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   },
+   {
+    "ms": 7594,
+    "banner": 1,
+    "nameDisabled": false,
+    "ackDisabled": false
+   }
+  ],
+  "ackClickable": true,
+  "offlineState": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirrorDuring": "ZZ TEST 857 guardian L R off",
+  "arrivedMs": 1984,
+  "bannerGoneMs": 12,
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: your consent · each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "3. Agreements",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "898570210",
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  }
+ }
+}
+
+=== 2026-11-12T11:27:38.592Z 5d: offline, the family ticks consent — does the tick stay and reach the till?
+const { expect } = S;
+S.phase = '5d: offline, the family ticks consent — does the tick stay and reach the till?';
+const till = S.till, d = S.displays.main.page, ctx = S.displays.main.ctx;
+await S.unlock('till');
+const consent = d.getByTestId('display-consent');
+const ack = consent.getByTestId('public-consent-ack');
+await ctx.setOffline(true);
+const offAt = Date.now();
+await d.waitForTimeout(1500);
+const t = [];
+const banner = () => d.getByText('Connection interrupted. Please retry when the connection returns.').count();
+t.push({ ms: Date.now() - offAt, banner: await banner(), ack: await ack.getAttribute('data-state'), disabled: await ack.isDisabled() });
+await ack.click();
+for (let i = 0; i < 10; i++) {
+  t.push({ ms: Date.now() - offAt, banner: await banner(), ack: await ack.getAttribute('data-state'), disabled: await ack.isDisabled() });
+  await d.waitForTimeout(400);
+}
+await S.pair('05d-offline-consent-ticked.png', S.till, d, { caption: 'Point 5 — offline: the family ticks the consent box on the display (state read below)' });
+await ctx.setOffline(false);
+const onAt = Date.now();
+for (let i = 0; i < 12; i++) {
+  t.push({ ms: Date.now() - offAt, online: true, banner: await banner(), ack: await ack.getAttribute('data-state') });
+  await d.waitForTimeout(500);
+}
+const tillAck = S.flat(await till.getByText(/^Supervision and photo consent/).first().locator('xpath=..').innerText().catch(() => ''));
+await S.pair('05e-online-again-consent-tick.png', S.till, d, { caption: 'Point 5 — back online: where the consent tick given during the drop stands on both screens' });
+return { t, tillAck, display: await S.displayState(d) };
+--> {
+ "ok": true,
+ "value": {
+  "t": [
+   {
+    "ms": 1501,
+    "banner": 0,
+    "ack": "unchecked",
+    "disabled": false
+   },
+   {
+    "ms": 1621,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 2054,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 2556,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 3001,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 3431,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 3872,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 4299,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 4756,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 5181,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 5699,
+    "banner": 1,
+    "ack": "checked",
+    "disabled": false
+   },
+   {
+    "ms": 7054,
+    "online": true,
+    "banner": 1,
+    "ack": "checked"
+   },
+   {
+    "ms": 7577,
+    "online": true,
+    "banner": 1,
+    "ack": "checked"
+   },
+   {
+    "ms": 8082,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 8606,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 9121,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 9659,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 10173,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 10700,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 11222,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 11738,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 12252,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   },
+   {
+    "ms": 12776,
+    "online": true,
+    "banner": 0,
+    "ack": "checked"
+   }
+  ],
+  "tillAck": "Supervision and photo consent · ticked WhatsApp number +66 89 857 0210 · confirmed by the family I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet",
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": "Still needed before Done: each confirmation",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  }
+ }
+}
+
+=== 2026-11-12T11:28:22.567Z 5d: offline, the family ticks consent — does the tick stay and reach the till?
+// Staff present at the counter: a keydown on the till's window every 40 s keeps its 2-minute idle lock from closing
+// the till while only the display is used (the hunt for the lock itself stops this first).
+S.keepAlive = () => S.till.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))).catch(() => null);
+clearInterval(S.alive);
+S.alive = setInterval(S.keepAlive, 40000);
+await S.keepAlive();
+await S.unlock('till');
+return { alive: true };
+--> {
+ "ok": true,
+ "value": {
+  "alive": true
+ }
+}
+
+=== 2026-11-12T11:28:45.347Z 6: the family ticks the rest and presses Done on the display
+const { expect } = S;
+S.phase = '6: the family ticks the rest and presses Done on the display';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+const consent = d.getByTestId('display-consent');
+for (const box of await consent.getByRole('checkbox').all()) if (await box.getAttribute('data-state') !== 'checked' && await box.isEnabled()) await box.click();
+const done = consent.getByRole('button', { name: 'Done', exact: true });
+await expect(done).toBeEnabled({ timeout: 20000 });
+await d.waitForTimeout(800);
+const before = { display: await S.displayState(d), staffLine: await S.staffLine(till), regs: S.receipt.registrationsPosted.length,
+  continueEnabled: await till.getByRole('button', { name: 'Continue to payment', exact: true }).isEnabled() };
+await done.scrollIntoViewIfNeeded();
+await S.pair('06a-everything-ticked-done-ready.png', till, d, { caption: 'Point 6 — every tick given on the display; Done is enabled; nobody has pressed anything on the till' });
+const regPromise = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+const t0 = Date.now();
+await done.click();
+const line = till.getByTestId('consent-staff-status');
+let lineSeen = null, lineAt = null, displaySeen = null;
+for (let i = 0; i < 40; i++) {
+  const txt = (await line.count()) ? S.flat(await line.innerText().catch(() => '')) : null;
+  if (txt && /The family pressed Done/.test(txt)) { lineSeen = txt; lineAt = Date.now() - t0; displaySeen = await S.displayState(d);
+    await S.pair('06b-family-pressed-done-till-line.png', till, d, { caption: 'Point 6 — the family pressed Done: the till says the children are being registered and the sale moves on by itself; the display says it is saving' }); break; }
+  await till.waitForTimeout(100);
+}
+const reg = await regPromise;
+const regMs = Date.now() - t0;
+const regBody = await reg.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const amountDueMs = Date.now() - t0;
+await d.waitForTimeout(2500);
+const due = await S.amountDue(till);
+await S.pair('06c-till-amount-due-display-payment-no-staff-press.png', till, d, { caption: 'Point 6 — with no staff press the till is at Amount Due; the display shows the payment' });
+const sale = await S.saleWritten('dropoff-sale-L');
+S.fam = { L: { reg: regBody?.id, sale: sale.id } };
+S.receipt.created.push({ kind: 'registration', family: 'L', id: regBody?.id }); S.save();
+return { before, lineSeen, lineAt, displaySeen, regStatus: reg.status(), regMs, regId: regBody?.id, amountDueMs, due, sale: sale.id, displayText: S.flat(await d.locator('body').innerText()).slice(0, 400), regsPosted: S.receipt.registrationsPosted, photoFiles: S.receipt.photoFiles };
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "display": {
+    "shown": true,
+    "step": "3. Agreements",
+    "childName": null,
+    "guardian": "ZZ TEST 857 guardian L",
+    "phone": "0898570210",
+    "missing": null,
+    "finished": null,
+    "notSaved": null,
+    "photoFallback": null,
+    "photoReceived": null,
+    "doneShown": 1,
+    "doneEnabled": true
+   },
+   "staffLine": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+   "regs": 0,
+   "continueEnabled": true
+  },
+  "lineSeen": "The family pressed Done: the children are being registered, then the sale moves on by itself.",
+  "lineAt": 303,
+  "displaySeen": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian L",
+   "phone": "0898570210",
+   "missing": null,
+   "finished": "Thank you — saving your details. The next screen opens in a moment.",
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "regStatus": 200,
+  "regMs": 1517,
+  "regId": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+  "amountDueMs": 1956,
+  "due": "฿915",
+  "sale": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+  "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display main Customer ZZ TEST 857 guardian L O Oto Play Park Your Order English 1 Hour Play ฿915 Kids1 × ฿690 ฿690 Drop-off service1 × ฿225 ฿225 VAT included ฿59.86 Total ฿915 Please pay ฿915.00 to our staff",
+  "regsPosted": [
+   {
+    "at": "6: the family ticks the rest and presses Done on the display",
+    "status": 200,
+    "replay": false,
+    "id": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+    "finishedAt": "2026-11-12T11:28:49.447Z"
+   }
+  ],
+  "photoFiles": [
+   {
+    "at": "6: the family ticks the rest and presses Done on the display",
+    "ownerEntityId": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+    "contentType": "image/jpeg"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:29:20.320Z 6: pay cash, Check in now; read back one registration with the photo
+const { expect } = S;
+S.phase = '6: pay cash, Check in now; read back one registration with the photo';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await till.waitForTimeout(800);
+await S.pair('06d-paid-cash-check-in-now-offered.png', till, d, { caption: 'Point 6 — paid in cash; the till offers Check in now or Leave as booked' });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.L.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+await till.waitForTimeout(1500);
+const reg = await S.registration(S.fam.L.reg);
+const sale = (await S.sale(S.fam.L.sale)).sale;
+const regs = await S.regsByGuardian('ZZ TEST 857 guardian L');
+const fam = await S.familyOnBoard(S.fam.L.reg);
+return { reg: { id: reg.id, guardianName: reg.guardianName, guardianPhone: reg.guardianPhone, contactChannel: reg.contactChannel, contactConfirmedBy: reg.contactConfirmedBy, photoFileId: reg.photoFileId,
+    children: reg.children.map(c => ({ id: c.id, name: c.childName, status: c.status, photoFileId: c.photoFileId, service: c.service ?? c.serviceKind ?? null })) },
+  sale: { id: sale.id, status: sale.status, receipt: sale.receiptNumber, gross: sale.totals?.grossSatang },
+  sameGuardianRegs: regs.map(r => r.id), boardFamily: fam ? { keys: Object.keys(fam), children: fam.children.map(c => ({ name: c.childName, status: c.status, photo: c.photoFileId ?? c.photoUrl ?? null })), photo: fam.photoFileId ?? fam.photoUrl ?? null } : null,
+  regsPosted: S.receipt.registrationsPosted.length };
+--> {
+ "ok": true,
+ "value": {
+  "reg": {
+   "id": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+   "guardianName": "ZZ TEST 857 guardian L",
+   "guardianPhone": "+66898570210",
+   "contactChannel": "whatsapp",
+   "contactConfirmedBy": "family",
+   "photoFileId": "01a1cf84-7edb-7d66-a78c-d8101ec787d5",
+   "children": [
+    {
+     "id": "01a1cf84-7e0a-7256-ad33-37092b7b7a64",
+     "name": "ZZ TEST 857 child L1",
+     "status": "in_park",
+     "photoFileId": "01a1cf84-7edb-7d66-a78c-d8101ec787d5",
+     "service": "drop_off"
+    }
+   ]
+  },
+  "sale": {
+   "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+   "status": "finalised",
+   "receipt": "Z85706-000001",
+   "gross": 91500
+  },
+  "sameGuardianRegs": [],
+  "boardFamily": {
+   "keys": [
+    "registrationId",
+    "branchId",
+    "memberId",
+    "guardianName",
+    "guardianPhone",
+    "contactChannel",
+    "consentRecordedAt",
+    "source",
+    "photoFileId",
+    "createdAt",
+    "contact",
+    "tab",
+    "children",
+    "checkedInChildNames"
+   ],
+   "children": [
+    {
+     "name": "ZZ TEST 857 child L1",
+     "status": "in_park",
+     "photo": "01a1cf84-7edb-7d66-a78c-d8101ec787d5"
+    }
+   ],
+   "photo": "01a1cf84-7edb-7d66-a78c-d8101ec787d5"
+  },
+  "regsPosted": 1
+ }
+}
+
+=== 2026-11-12T11:29:45.850Z 6: the board shows one registration with the photo; the photo read back through the api
+const { expect } = S;
+S.phase = '6: the board shows one registration with the photo; the photo read back through the api';
+const till = S.till;
+await S.keepAlive();
+const fileId = (await S.registration(S.fam.L.reg)).photoFileId;
+const url = await S.call('GET', `/files/${fileId}/url`);
+let photo = null;
+if (url.status === 200 && url.body?.url) {
+  const r = await S.admin.get(url.body.url).catch(() => null) ?? null;
+  const buf = r ? await r.body() : null;
+  photo = { status: r?.status(), contentType: r?.headers()['content-type'], bytes: buf?.length ?? null, jpeg: buf ? buf[0] === 0xff && buf[1] === 0xd8 : null };
+  if (buf) { const { writeFileSync } = await import('node:fs'); writeFileSync(S.resolve(S.out, '06f-registration-photo-as-stored.jpg'), buf); }
+}
+const board = await S.boardApi();
+const lFamilies = board.families.filter(f => f.guardianName === 'ZZ TEST 857 guardian L');
+await S.openBoard(till, 'In park').catch(async () => { await S.openBoard(till, 'In Park'); });
+await S.searchBoard(till, 'ZZ TEST 857 child L1');
+await till.waitForTimeout(1500);
+await S.shot(till, '06e-board-one-registration-with-photo.png');
+return { fileUrlStatus: url.status, photo, boardFamiliesOfL: lFamilies.map(f => ({ reg: f.registrationId, tab: f.tab, photoFileId: f.photoFileId, children: f.children.map(c => ({ name: c.childName, status: c.status, photoFileId: c.photoFileId })) })) };
+--> {
+ "ok": true,
+ "value": {
+  "fileUrlStatus": 200,
+  "photo": {
+   "status": 200,
+   "contentType": "image/jpeg",
+   "bytes": 6823,
+   "jpeg": true
+  },
+  "boardFamiliesOfL": [
+   {
+    "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+    "tab": "in_park",
+    "photoFileId": "01a1cf84-7edb-7d66-a78c-d8101ec787d5",
+    "children": [
+     {
+      "name": "ZZ TEST 857 child L1",
+      "status": "in_park",
+      "photoFileId": "01a1cf84-7edb-7d66-a78c-d8101ec787d5"
+     }
+    ]
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:30:56.322Z between: the till back to a new sale; the display after the sale
+S.phase = 'between: the till back to a new sale; the display after the sale';
+const till = S.till, d = S.displays.main.page;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+await d.waitForTimeout(3000);
+const draft = await d.evaluate(() => sessionStorage.getItem('oto.display.consentDraft.v1'));
+return { displayText: S.flat(await d.locator('body').innerText()).slice(0, 200), draftLeft: draft !== null };
+--> {
+ "ok": true,
+ "value": {
+  "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display main LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votr",
+  "draftLeft": false
+ }
+}
+
+=== 2026-11-12T11:31:12.874Z 3a: a display with no camera; family N
+const { expect } = S;
+S.phase = '3a: a display with no camera; family N';
+const till = S.till;
+await S.keepAlive();
+await S.dropDisplay('main');
+const d = await S.pairDisplay('nocam', { camera: 'none' });
+S.receipt.numbers.N = S.free[1];
+await S.firstScreen(d, till, S.free[1]);
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child N1');
+await S.setAge(d, consent, 6);
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.getByTestId('consent-care').waitFor();
+await d.waitForTimeout(1200);
+const ds = await S.displayState(d);
+await consent.getByTestId('consent-photo').scrollIntoViewIfNeeded();
+await S.shot(d, '03a-display-no-camera-line.png');
+await S.pair('03b-no-camera-display-and-till.png', till, d, { caption: 'Point 3 — the display has no camera: it says reception will take the photo at the counter; the till copy and gate still ask for the photo' });
+const blockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { display: ds, startCameraButtons: await consent.getByRole('button', { name: 'Start camera', exact: true }).count(), blockers, mirror: await S.mirrorState(till) };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": "No camera available · Reception will take the photo of you both at the counter instead.",
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "startCameraButtons": 0,
+  "blockers": "Before payment • ZZ TEST 857 child N1 (age 6) needs drop-off supervision. • ZZ TEST 857 child N1 needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen.",
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  }
+ }
+}
+
+=== 2026-11-12T11:31:41.922Z 3a: staff take the photo on the till (Private child details); the display hears it
+const { expect } = S;
+S.phase = '3a: staff take the photo on the till (Private child details); the display hears it';
+const till = S.till, d = S.displays.nocam.page;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Private child details', exact: true }).click();
+const details = till.getByRole('dialog', { name: 'Private child details', exact: true });
+await details.waitFor();
+await details.getByRole('button', { name: 'Start camera', exact: true }).first().click();
+await details.getByRole('button', { name: 'Take photo', exact: true }).first().click();
+await details.getByAltText('Captured', { exact: true }).first().waitFor({ timeout: 20000 });
+await till.waitForTimeout(1000);
+await S.shot(till, '03c-staff-take-photo-on-till.png');
+await details.getByRole('button', { name: 'Close', exact: true }).click();
+await details.waitFor({ state: 'hidden' });
+const consent = d.getByTestId('display-consent');
+await expect(consent.getByTestId('consent-photo-received')).toBeVisible({ timeout: 20000 }).catch(() => null);
+await till.waitForTimeout(1200);
+await S.pair('03d-staff-photo-reaches-display-and-copy.png', till, d, { caption: 'Point 3 — staff took the photo on the till: the till copy shows it; the display says the team has the photo' });
+const blockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { display: await S.displayState(d), mirror: await S.mirrorState(till), blockers };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('dialog', { name: 'Private child details', exact: true }).getByRole('button', { name: 'Take photo', exact: true }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T11:32:18.541Z 3a: look at the Private child details dialog
+S.phase = '3a: look at the Private child details dialog';
+const till = S.till;
+await S.keepAlive();
+await S.shot(till, 'x-3a-look-dialog.png');
+const details = till.getByRole('dialog', { name: 'Private child details', exact: true });
+return { open: await details.count(), text: S.flat(await details.innerText().catch(() => '')).slice(0, 800), btns: await details.getByRole('button').allInnerTexts().catch(() => []) };
+--> {
+ "ok": true,
+ "value": {
+  "open": 1,
+  "text": "Private child details Complete the child and guardian checks on this staff screen before continuing. English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. Child's name Age 6 yrs Drop-off supervision needed Required for this age — ฿225 one-time Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No camera available You can continue without a photo — staff will note it's missing. Try again Allergies / medical Dietary notes Food & drinks for ZZ TEST 857 child N1 No food Prepaid credit Choose items Staff will not be able to place food orders for ZZ TEST 857 child N1 without a manager override. Parent / guardian name Phone number 🇹🇭 +66 WhatsApp Telegram LINE Stored as: +66898",
+  "btns": [
+   "English",
+   "6 yrs",
+   "Try again",
+   "No food",
+   "Prepaid credit",
+   "Choose items",
+   "🇹🇭\n+66",
+   "WhatsApp",
+   "Telegram",
+   "LINE",
+   "Close"
+  ]
+ }
+}
+
+=== 2026-11-12T11:32:28.021Z 3a: why the till camera said No camera available
+S.phase = '3a: why the till camera said No camera available';
+const till = S.till;
+await S.keepAlive();
+const probe = await till.evaluate(async () => {
+  const out = {};
+  try { out.devices = (await navigator.mediaDevices.enumerateDevices()).map(d => d.kind); } catch (e) { out.devices = 'failed ' + e.name; }
+  try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }); out.gum = 'granted'; s.getTracks().forEach(t => t.stop()); } catch (e) { out.gum = e.name + ': ' + e.message; }
+  return out;
+});
+return probe;
+--> {
+ "ok": true,
+ "value": {
+  "devices": [
+   "audioinput",
+   "audioinput",
+   "audioinput",
+   "videoinput",
+   "audiooutput",
+   "audiooutput",
+   "audiooutput"
+  ],
+  "gum": "NotReadableError: Could not start video source"
+ }
+}
+
+=== 2026-11-12T11:32:39.941Z 3a: probe the camera again, in a fresh context too
+S.phase = '3a: probe the camera again, in a fresh context too';
+const till = S.till;
+await S.keepAlive();
+const tryIt = page => page.evaluate(async () => {
+  try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); const label = s.getVideoTracks()[0]?.label; s.getTracks().forEach(t => t.stop()); return 'granted ' + label; } catch (e) { return e.name + ': ' + e.message; }
+});
+const a = await tryIt(till);
+const ctx = await S.browser.newContext({ baseURL: S.pos, permissions: ['camera'] });
+const p = await ctx.newPage(); await p.goto(S.pos + '/display');
+const b = await tryIt(p);
+await ctx.close();
+return { till: a, fresh: b, contexts: S.browser.contexts().length };
+--> {
+ "ok": true,
+ "value": {
+  "till": "NotReadableError: Could not start video source",
+  "fresh": "NotReadableError: Could not start video source",
+  "contexts": 2
+ }
+}
+
+=== 2026-11-12T11:32:56.251Z harness: the browser fake camera stopped answering (NotReadableError in every context); cancel N and relaunch
+const { expect } = S;
+S.phase = 'harness: the browser fake camera stopped answering (NotReadableError in every context); cancel N and relaunch';
+const till = S.till;
+await S.keepAlive();
+const details = till.getByRole('dialog', { name: 'Private child details', exact: true });
+if (await details.count()) { await details.getByRole('button', { name: 'Close', exact: true }).click(); await details.waitFor({ state: 'hidden' }); }
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await till.waitForTimeout(1500);
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(3000);
+const regsN = S.receipt.registrationsPosted.length;
+const sales = (await S.stationSales()).map(s => ({ id: s.id, status: s.status }));
+S.odd('Harness: after the first display context was closed, the browser\'s generated fake camera answered NotReadableError ("Could not start video source") in every context, the till\'s included; family N\'s sale was cancelled before anything was written and the browser relaunched with a file-fed fake camera (a generated colour-bar frame). Not a product fault.');
+return { regsPosted: regsN, sales, landing: await S.landing(till).isVisible().catch(() => false) };
+--> {
+ "ok": true,
+ "value": {
+  "regsPosted": 1,
+  "sales": [
+   {
+    "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+    "status": "finalised"
+   }
+  ],
+  "landing": false
+ }
+}
+
+=== 2026-11-12T11:33:08.375Z harness: look after cancel
+S.phase = 'harness: look after cancel';
+await S.shot(S.till, 'x-after-cancel.png');
+return { d: S.flat(await S.displays.nocam.page.locator('body').innerText()).slice(0, 200) };
+--> {
+ "ok": true,
+ "value": {
+  "d": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display nocam LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez vot"
+ }
+}
+
+=== 2026-11-12T11:33:36.778Z harness: relaunch the browser with a file-fed fake camera (generated colour bars, nobody's picture)
+S.phase = 'harness: relaunch the browser with a file-fed fake camera (generated colour bars, nobody\'s picture)';
+const { writeFileSync } = await import('node:fs');
+const SP = '<scratchpad>';
+const W = 640, H = 480;
+const bars = [[235,128,128],[210,16,146],[170,166,16],[145,54,34],[106,202,222],[81,90,240],[41,240,110],[16,128,128]];
+const Y = Buffer.alloc(W * H), U = Buffer.alloc(W * H / 4), V = Buffer.alloc(W * H / 4);
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const b = bars[Math.floor(x / (W / 8))]; Y[y * W + x] = y > H * 0.8 ? 16 + ((x >> 4) & 1) * 200 : b[0]; }
+for (let y = 0; y < H / 2; y++) for (let x = 0; x < W / 2; x++) { const b = bars[Math.floor((x * 2) / (W / 8))]; const low = y * 2 > H * 0.8; U[y * W / 2 + x] = low ? 128 : b[1]; V[y * W / 2 + x] = low ? 128 : b[2]; }
+const video = `${SP}/camera-bars.y4m`;
+writeFileSync(video, Buffer.concat([Buffer.from(`YUV4MPEG2 W${W} H${H} F10:1 Ip A1:1 C420\nFRAME\n`), Y, U, V]));
+clearInterval(S.alive);
+const state = await S.pages.till.ctx.storageState();
+await S.dropDisplay('nocam');
+await S.browser.close();
+S.browser = await S.pw.chromium.launch({ channel: 'msedge', args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${video}`] });
+const ctx = await S.browser.newContext({ baseURL: S.pos, viewport: { width: 1680, height: 1050 }, timezoneId: 'Asia/Bangkok', locale: 'en-GB', permissions: ['camera'], storageState: state });
+ctx.setDefaultTimeout(30000);
+const page = await ctx.newPage(); S.watch(page, 'till'); S.watchTill(page);
+await page.goto(S.pos);
+await page.waitForTimeout(4000);
+S.pages.till = { ctx, page, passwordKey: 'STAGING_RECEPTION_PASSWORD' };
+S.till = page;
+await S.unlock('till');
+const me = await page.evaluate(async () => { const r = await fetch('/api/me', { credentials: 'include' }); return { status: r.status, body: await r.json().catch(() => null) }; });
+const atOwn = JSON.stringify(me.body ?? {}).includes(S.station.id);
+const gum = await page.evaluate(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); const l = s.getVideoTracks()[0]?.label; s.getTracks().forEach(t => t.stop()); return 'granted ' + l; } catch (e) { return e.name; } });
+S.alive = setInterval(S.keepAlive, 40000);
+await S.shot(page, '00b-till-after-relaunch.png');
+return { me: me.status, atOwn, gum, history: await page.locator('a[href="/history"]').first().isVisible().catch(() => false) };
+--> {
+ "ok": true,
+ "value": {
+  "me": 200,
+  "atOwn": true,
+  "gum": "granted <scratchpad>/camera-bars.y4m",
+  "history": true
+ }
+}
+
+=== 2026-11-12T11:34:33.123Z 3a: a display with no camera; family N
+const { expect } = S;
+S.phase = '3a: a display with no camera; family N';
+const till = S.till; await till.goto('/'); await till.waitForTimeout(1500);
+await S.keepAlive();
+
+const d = await S.pairDisplay('nocam', { camera: 'none' });
+S.receipt.numbers.N = S.free[2];
+await S.firstScreen(d, till, S.free[2]);
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child N1');
+await S.setAge(d, consent, 6);
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.getByTestId('consent-care').waitFor();
+await d.waitForTimeout(1200);
+const ds = await S.displayState(d);
+await consent.getByTestId('consent-photo').scrollIntoViewIfNeeded();
+await S.shot(d, '03a-display-no-camera-line.png');
+await S.pair('03b-no-camera-display-and-till.png', till, d, { caption: 'Point 3 — the display has no camera: it says reception will take the photo at the counter; the till copy and gate still ask for the photo' });
+const blockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { display: ds, startCameraButtons: await consent.getByRole('button', { name: 'Start camera', exact: true }).count(), blockers, mirror: await S.mirrorState(till) };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": "No camera available · Reception will take the photo of you both at the counter instead.",
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "startCameraButtons": 0,
+  "blockers": "Before payment • ZZ TEST 857 child N1 (age 6) needs drop-off supervision. • ZZ TEST 857 child N1 needs a photo taken. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen.",
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  }
+ }
+}
+
+=== 2026-11-12T11:34:52.614Z 3a: staff take the photo on the till (Private child details); the display hears it
+const { expect } = S;
+S.phase = '3a: staff take the photo on the till (Private child details); the display hears it';
+const till = S.till, d = S.displays.nocam.page;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Private child details', exact: true }).click();
+const details = till.getByRole('dialog', { name: 'Private child details', exact: true });
+await details.waitFor();
+await details.getByRole('button', { name: 'Start camera', exact: true }).first().click();
+await details.getByRole('button', { name: 'Take photo', exact: true }).first().click();
+await details.getByAltText('Captured', { exact: true }).first().waitFor({ timeout: 20000 });
+await till.waitForTimeout(1000);
+await S.shot(till, '03c-staff-take-photo-on-till.png');
+await details.getByRole('button', { name: 'Close', exact: true }).click();
+await details.waitFor({ state: 'hidden' });
+const consent = d.getByTestId('display-consent');
+await expect(consent.getByTestId('consent-photo-received')).toBeVisible({ timeout: 20000 }).catch(() => null);
+await till.waitForTimeout(1200);
+await S.pair('03d-staff-photo-reaches-display-and-copy.png', till, d, { caption: 'Point 3 — staff took the photo on the till: the till copy shows it; the display says the team has the photo' });
+const blockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { display: await S.displayState(d), mirror: await S.mirrorState(till), blockers };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": "The team has this photo.",
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": "data:image/jpeg;base64,/9j/4AA",
+   "photoReceived": 1,
+   "inert": true
+  },
+  "blockers": "Before payment • ZZ TEST 857 child N1 (age 6) needs drop-off supervision. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen."
+ }
+}
+
+=== 2026-11-12T11:35:14.834Z 8: family N completes the form; the registration write is held in the till; the family presses Done
+const { expect } = S;
+S.phase = '8: family N completes the form; the registration write is held in the till; the family presses Done';
+const till = S.till, d = S.displays.nocam.page;
+await S.keepAlive();
+const consent = d.getByTestId('display-consent');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+const g = consent.locator('#public-consent-guardian');
+await g.waitFor();
+await g.fill('ZZ TEST 857 guardian N');
+for (const box of await consent.getByRole('checkbox').all()) if (await box.getAttribute('data-state') !== 'checked' && await box.isEnabled()) await box.click();
+const done = consent.getByRole('button', { name: 'Done', exact: true });
+await expect(done).toBeEnabled({ timeout: 20000 });
+// hold the registration write in the till's own context
+let release; const released = new Promise(r => { release = r; });
+let reached; const reachedP = new Promise(r => { reached = r; });
+S.regHold = { release, count: 0 };
+S.regRoute = url => url.pathname === '/api/checkin/registrations';
+await till.route(S.regRoute, async route => {
+  if (route.request().method() !== 'POST') return route.continue();
+  S.regHold.count += 1; reached();
+  await released;
+  await route.continue();
+});
+await done.click();
+await Promise.race([reachedP, till.waitForTimeout(30000)]);
+await till.waitForTimeout(700);
+const line = await S.staffLine(till);
+await S.pair('08a-done-pressed-registration-held.png', till, d, { caption: 'Point 8 — the family pressed Done; the registration write is held in the till (harness); the till line and the display say it is saving' });
+return { heldRequests: S.regHold.count, line, display: await S.displayState(d), backEnabled: await till.getByRole('button', { name: 'Back', exact: true }).first().isEnabled() };
+--> {
+ "ok": true,
+ "value": {
+  "heldRequests": 1,
+  "line": "The family pressed Done: the children are being registered, then the sale moves on by itself.",
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian N",
+   "phone": "0898570212",
+   "missing": null,
+   "finished": "Thank you — saving your details. The next screen opens in a moment.",
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "backEnabled": true
+ }
+}
+
+=== 2026-11-12T11:35:28.571Z 8: staff press Back, then Pay, while the Done is still saving
+const { expect } = S;
+S.phase = '8: staff press Back, then Pay, while the Done is still saving';
+const till = S.till, d = S.displays.nocam.page;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await till.waitForTimeout(1200);
+const afterBack = { gateShown: await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count(), display: await S.displayState(d), displayText: S.flat(await d.locator('body').innerText()).slice(0, 300) };
+await S.pair('08b-staff-went-back-while-saving.png', till, d, { caption: 'Point 8 — staff pressed Back while the family\'s Done is still saving' });
+const pay = till.getByRole('button', { name: /^Pay ฿/ });
+const payText = S.flat(await pay.innerText());
+await pay.click();
+const toast = till.getByText('Still registering the children', { exact: true }).first();
+await toast.waitFor({ timeout: 10000 });
+const toastText = S.flat(await toast.locator('xpath=ancestor::li[1]').innerText().catch(async () => await toast.innerText()));
+await till.waitForTimeout(300);
+await S.pair('08c-pay-pressed-still-registering-the-children.png', till, d, { caption: 'Point 8 — staff pressed Pay while it is still saving: "Still registering the children"; the gate is not opened again' });
+const gateAfterPay = await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count();
+return { afterBack, payText, toastText, gateAfterPay, held: S.regHold.count };
+--> {
+ "ok": true,
+ "value": {
+  "afterBack": {
+   "gateShown": 0,
+   "display": {
+    "shown": false
+   },
+   "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display nocam Customer ZZ TEST 857 guardian N O Oto Play Park Your Order English 1 Hour Play ฿690 Kids1 × ฿690 ฿690 VAT included ฿45.14 Total ฿690"
+  },
+  "payText": "Pay ฿690",
+  "toastText": "Still registering the children The drop-off form is being saved. Wait a moment, then press again.",
+  "gateAfterPay": 0,
+  "held": 1
+ }
+}
+
+=== 2026-11-12T11:35:58.686Z 8: release the held registration; then staff press Pay again
+const { expect } = S;
+S.phase = '8: release the held registration; then staff press Pay again';
+const till = S.till, d = S.displays.nocam.page;
+await S.keepAlive();
+const regResp = till.waitForResponse(r => S.regRoute(new URL(r.url())) && r.request().method() === 'POST', { timeout: 60000 });
+S.regHold.release();
+const r = await regResp;
+const regBody = await r.json().catch(() => null);
+await till.waitForTimeout(2500);
+await till.unroute(S.regRoute);
+const cartText = S.flat(await till.locator('body').innerText()).match(/Current Order[\s\S]{0,400}/)?.[0]?.slice(0, 400);
+await S.pair('08d-saved-after-release-cart-carries-drop-off.png', till, d, { caption: 'Point 8 — the held write was released: one registration; staff stay where they went (the cart), which now carries the drop-off' });
+const pay = till.getByRole('button', { name: /^Pay ฿/ });
+const payText = S.flat(await pay.innerText());
+await pay.click();
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.waitForTimeout(2000);
+const due = await S.amountDue(till);
+await S.pair('08e-pay-again-amount-due-one-registration.png', till, d, { caption: 'Point 8 — Pay pressed again after the save: Amount Due, no second registration' });
+const sale = await S.saleWritten('dropoff-sale-N');
+S.fam.N = { reg: regBody?.id, sale: sale.id };
+S.receipt.created.push({ kind: 'registration', family: 'N', id: regBody?.id }); S.save();
+const posted = S.receipt.registrationsPosted.filter(x => /^8/.test(x.at ?? ''));
+const board = await S.boardApi();
+return { regStatus: r.status(), regId: regBody?.id, cartText, payText, due, sale: sale.id, postedInPoint8: posted, boardFamiliesN: board.families.filter(f => f.guardianName === 'ZZ TEST 857 guardian N').map(f => ({ reg: f.registrationId, tab: f.tab, photo: f.photoFileId, children: f.children.map(c => c.childName + ':' + c.status) })) };
+--> {
+ "ok": true,
+ "value": {
+  "regStatus": 200,
+  "regId": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+  "cartText": "Current Order TOURIST ZZ TEST 857 guardian N ZZ TEST 857 child N1 ฿915 1 Hour Play ฿690 Drop-off service ฿225 Configure Apply Redeem Issue a voucher… Add manual discount Subtotal ฿915 VAT included ฿59.86 Total ฿915 Cancel Pay ฿915",
+  "payText": "Pay ฿915",
+  "due": "฿915",
+  "sale": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+  "postedInPoint8": [
+   {
+    "at": "8: release the held registration; then staff press Pay again",
+    "status": 200,
+    "replay": false,
+    "id": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+    "finishedAt": "2026-11-12T11:35:58.907Z"
+   }
+  ],
+  "boardFamiliesN": [
+   {
+    "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+    "tab": "registered",
+    "photo": "01a1cf8b-0cb3-76d6-89eb-c4c91f77a2ca",
+    "children": [
+     "ZZ TEST 857 child N1:registered"
+    ]
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:36:26.168Z 8: family N pays cash, Check in now
+const { expect } = S;
+S.phase = '8: family N pays cash, Check in now';
+const till = S.till;
+await S.keepAlive();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.N.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(S.fam.N.reg);
+const sale = (await S.sale(S.fam.N.sale)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+await S.dropDisplay('nocam');
+return { reg: { id: reg.id, photoFileId: reg.photoFileId, contactConfirmedBy: reg.contactConfirmedBy, children: reg.children.map(c => ({ name: c.childName, status: c.status, photo: c.photoFileId })) }, sale: { status: sale.status, receipt: sale.receiptNumber, gross: sale.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "reg": {
+   "id": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+   "photoFileId": "01a1cf8b-0cb3-76d6-89eb-c4c91f77a2ca",
+   "contactConfirmedBy": "family",
+   "children": [
+    {
+     "name": "ZZ TEST 857 child N1",
+     "status": "in_park",
+     "photo": "01a1cf8b-0cb3-76d6-89eb-c4c91f77a2ca"
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z85706-000002",
+   "gross": 91500
+  }
+ }
+}
+
+=== 2026-11-12T11:36:45.826Z 3b/9: a display whose camera is refused; family R, a child aged 3 (nanny)
+const { expect } = S;
+S.phase = '3b/9: a display whose camera is refused; family R, a child aged 3 (nanny)';
+const till = S.till;
+await S.keepAlive();
+const d = await S.pairDisplay('refused', { camera: 'refused' });
+S.receipt.numbers.R = S.free[3];
+await S.firstScreen(d, till, S.free[3]);
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child R1');
+await S.setAge(d, consent, 3);
+await d.waitForTimeout(1200);
+const req = S.flat(await consent.getByTestId('consent-child').innerText());
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.getByTestId('consent-care').waitFor();
+const photo = consent.getByTestId('consent-photo');
+const startButtons = await photo.getByRole('button', { name: 'Start camera', exact: true }).count();
+await photo.getByRole('button', { name: 'Start camera', exact: true }).click();
+await d.waitForTimeout(1500);
+const refusedText = S.flat(await photo.innerText());
+await photo.scrollIntoViewIfNeeded();
+await S.shot(d, '03e-display-camera-refused-line.png');
+await S.pair('03f-camera-refused-display-and-till.png', till, d, { caption: 'Point 3 — the display\'s camera is refused: "Camera access blocked" and reception takes the photo at the counter; the till asks for the photo' });
+return { req, startButtons, refusedText, display: await S.displayState(d), mirror: await S.mirrorState(till) };
+--> {
+ "ok": true,
+ "value": {
+  "req": "Child's name Age 3 yrs A nanny will look after them Required for this age — ฿330/hour",
+  "startButtons": 1,
+  "refusedText": "Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Camera access blocked Reception will take the photo of you both at the counter instead. Try again",
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": null,
+   "photoReceived": 0,
+   "inert": true
+  }
+ }
+}
+
+=== 2026-11-12T11:37:08.810Z 3b: staff take the photo on the till (Private child details); the display hears it
+const { expect } = S;
+S.phase = '3b: staff take the photo on the till (Private child details); the display hears it';
+const till = S.till, d = S.displays.refused.page;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Private child details', exact: true }).click();
+const details = till.getByRole('dialog', { name: 'Private child details', exact: true });
+await details.waitFor();
+await details.getByRole('button', { name: 'Start camera', exact: true }).first().click();
+await details.getByRole('button', { name: 'Take photo', exact: true }).first().click();
+await details.getByAltText('Captured', { exact: true }).first().waitFor({ timeout: 20000 });
+await till.waitForTimeout(1000);
+await S.shot(till, '03g-refused-staff-take-photo-on-till.png');
+await details.getByRole('button', { name: 'Close', exact: true }).click();
+await details.waitFor({ state: 'hidden' });
+const consent = d.getByTestId('display-consent');
+await expect(consent.getByTestId('consent-photo-received')).toBeVisible({ timeout: 20000 }).catch(() => null);
+await till.waitForTimeout(1200);
+await S.pair('03h-refused-staff-photo-reaches-display.png', till, d, { caption: 'Point 3 — staff took the photo on the till: the till copy shows it; the display says the team has the photo' });
+const blockers = S.flat(await till.locator('div.rounded-2xl').filter({ has: till.getByText('Before payment', { exact: true }) }).last().innerText().catch(() => ''));
+return { display: await S.displayState(d), mirror: await S.mirrorState(till), blockers };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "2. Care details",
+   "childName": null,
+   "guardian": null,
+   "phone": null,
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": "The team has this photo.",
+   "doneShown": 0,
+   "doneEnabled": null
+  },
+  "mirror": {
+   "shown": true,
+   "status": "The customer is filling this in",
+   "step": "2. Care details",
+   "childName": null,
+   "childAge": "1. Your children",
+   "guardian": null,
+   "phone": null,
+   "photoImg": "data:image/jpeg;base64,/9j/4AA",
+   "photoReceived": 1,
+   "inert": true
+  },
+  "blockers": "Before payment • ZZ TEST 857 child R1 (age 3) needs a nanny before payment. • Parent must give their name and consent on the customer screen. • Parent must accept every required confirmation on the customer screen. • Parent must confirm that the number is the one for their messaging channel on the customer screen."
+ }
+}
+
+=== 2026-11-12T11:37:31.707Z 9: nanny family R: agreements and the family Done
+const { expect } = S;
+S.phase = '9: nanny family R: agreements and the family Done';
+const till = S.till, d = S.displays.refused.page;
+await S.keepAlive();
+const consent = d.getByTestId('display-consent');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+const g = consent.locator('#public-consent-guardian');
+await g.waitFor();
+await g.fill('ZZ TEST 857 guardian R');
+for (const box of await consent.getByRole('checkbox').all()) if (await box.getAttribute('data-state') !== 'checked' && await box.isEnabled()) await box.click();
+const done = consent.getByRole('button', { name: 'Done', exact: true });
+await expect(done).toBeEnabled({ timeout: 20000 });
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await done.click();
+const r = await regResp;
+const regBody = await r.json().catch(() => null);
+S.fam.R = { reg: regBody?.id };
+S.receipt.created.push({ kind: 'registration', family: 'R', id: regBody?.id }); S.save();
+await expect(till.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeHidden({ timeout: 30000 });
+await till.waitForTimeout(2500);
+const tillText = S.flat(await till.locator('body').innerText());
+await S.pair('09a-nanny-family-done-till-at-nanny-step.png', till, d, { caption: 'Point 9 — a child aged 3 (nanny): the family pressed Done; the till is at the nanny step, not at payment' }, );
+return { regStatus: r.status(), regId: regBody?.id, amountDueShown: await till.getByRole('heading', { name: 'Amount Due', exact: true }).count(), paymentStep: await S.paymentStep(till).count(),
+  tillSnippet: tillText.match(/(Nanny|nanny)[\s\S]{0,300}/)?.[0]?.slice(0, 300), displayText: S.flat(await d.locator('body').innerText()).slice(0, 300) };
+--> {
+ "ok": true,
+ "value": {
+  "regStatus": 200,
+  "regId": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+  "amountDueShown": 0,
+  "paymentStep": 0,
+  "tillSnippet": "nanny supervision hours. 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person Drop-off service Drop-Off Flat ฿225 Nanny ฿330/hr · shared ASSI",
+  "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display refused Customer ZZ TEST 857 guardian R O Oto Play Park Your Order English 1 Hour Play ฿1020 Kids1 × ฿690 ฿690 Nanny (1h)1 × ฿330 ฿330 VAT included ฿66.73 Total ฿1020"
+ }
+}
+
+=== 2026-11-12T11:37:55.687Z 9: back out of the nanny sale (no real nanny is assigned): Cancel on the till
+S.phase = '9: back out of the nanny sale (no real nanny is assigned): Cancel on the till';
+const till = S.till;
+await S.keepAlive();
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(2500);
+const dialog = till.getByRole('dialog');
+const dlg = (await dialog.count()) ? S.flat(await dialog.first().innerText()).slice(0, 400) : null;
+await S.shot(till, 'x-9-after-cancel.png');
+const reg = await S.registration(S.fam.R.reg);
+const sales = (await S.stationSales()).map(s => ({ id: s.id, status: s.status }));
+return { dlg, reg: { status: reg.children.map(c => c.status), cancelledAt: reg.cancelledAt ?? null }, sales };
+--> {
+ "ok": true,
+ "value": {
+  "dlg": null,
+  "reg": {
+   "status": [
+    "registered"
+   ],
+   "cancelledAt": null
+  },
+  "sales": [
+   {
+    "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+    "status": "finalised"
+   },
+   {
+    "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+    "status": "finalised"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:38:06.684Z 9: clean-up of family R: the waiting registration (own ZZ TEST) cancelled; the refused display revoked
+S.phase = '9: clean-up of family R: the waiting registration (own ZZ TEST) cancelled; the refused display revoked';
+const reg = await S.registration(S.fam.R.reg);
+S.assert.ok(S.isZz(reg.guardianName) && reg.children.every(c => S.isZz(c.childName)));
+const r = await S.call('POST', `/checkin/registrations/${S.fam.R.reg}/cancel`, { reason: 'ZZ TEST SCRUM-857 parts 2-4 proof cleanup' });
+const after = await S.registration(S.fam.R.reg);
+(S.receipt.cleanup.registrations ??= []).push({ family: 'R', id: S.fam.R.reg, cancel: r.status, children: after.children.map(c => c.status) });
+await S.dropDisplay('refused');
+await S.till.goto('/'); await S.till.waitForTimeout(1500);
+return { cancel: r.status, code: r.body?.error?.code ?? null, children: after.children.map(c => c.status) };
+--> {
+ "ok": true,
+ "value": {
+  "cancel": 200,
+  "code": null,
+  "children": [
+   "cancelled"
+  ]
+ }
+}
+
+=== 2026-11-12T11:38:24.914Z 7: split screen (no paired display), family S on the till's customer half
+const { expect } = S;
+S.phase = '7: split screen (no paired display), family S on the till\'s customer half';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+S.receipt.numbers.S = S.free[4];
+await S.firstScreen(till, till, S.free[4]);
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+const nameField = till.getByPlaceholder('Full name', { exact: true }).first();
+await nameField.waitFor();
+const half = S.halfOf(nameField);
+await nameField.fill('ZZ TEST 857 child S1');
+await S.setAge(till, half, 6);
+await half.getByPlaceholder('Your full name', { exact: true }).waitFor();
+const bar = half.getByTestId('consent-done-bar');
+const missing1 = (await half.getByTestId('consent-missing').count()) ? S.flat(await half.getByTestId('consent-missing').innerText()) : null;
+await bar.scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(till, '07a-split-still-needed-done-disabled.png');
+const doneBtn = bar.getByRole('button', { name: 'Done', exact: true });
+const doneEnabled1 = await doneBtn.isEnabled();
+// the customer half's own camera
+await half.getByRole('button', { name: 'Start camera', exact: true }).click();
+await half.getByRole('button', { name: 'Take photo', exact: true }).click();
+await half.getByAltText('Captured', { exact: true }).waitFor({ timeout: 20000 });
+await half.getByPlaceholder('Your full name', { exact: true }).fill('ZZ TEST 857 guardian S');
+for (const box of await half.getByRole('checkbox').all()) if (await box.getAttribute('data-testid') !== 'consent-contact-confirm' && await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') await box.click();
+await till.waitForTimeout(600);
+const missing2 = (await half.getByTestId('consent-missing').count()) ? S.flat(await half.getByTestId('consent-missing').innerText()) : null;
+await half.getByTestId('consent-contact-confirm').scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(till, '07b-split-photo-taken-only-number-left.png');
+await half.getByTestId('consent-contact-confirm').click();
+await expect(doneBtn).toBeEnabled({ timeout: 10000 });
+const missing3 = (await half.getByTestId('consent-missing').count()) ? S.flat(await half.getByTestId('consent-missing').innerText()) : null;
+await bar.scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(till, '07c-split-everything-given-done-enabled.png');
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+const t0 = Date.now();
+await doneBtn.click();
+const busyLine = await bar.innerText().then(S.flat).catch(() => null);
+const r = await regResp;
+const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const amountDueMs = Date.now() - t0;
+await till.waitForTimeout(1500);
+await S.shot(till, '07d-split-done-moved-to-amount-due.png');
+const sale = await S.saleWritten('dropoff-sale-S');
+S.fam.S = { reg: regBody?.id, sale: sale.id };
+S.receipt.created.push({ kind: 'registration', family: 'S', id: regBody?.id }); S.save();
+return { missing1, doneEnabled1, missing2, missing3, busyLine, regStatus: r.status(), regId: regBody?.id, amountDueMs, due: await S.amountDue(till), sale: sale.id };
+--> {
+ "ok": true,
+ "value": {
+  "missing1": "Still needed before Done: your name · your consent · each confirmation · confirming your WhatsApp number · a photo of each child with you",
+  "doneEnabled1": false,
+  "missing2": "Still needed before Done: confirming your WhatsApp number",
+  "missing3": null,
+  "busyLine": "Thank you — saving your details. The next screen opens in a moment.",
+  "regStatus": 200,
+  "regId": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+  "amountDueMs": 1587,
+  "due": "฿915",
+  "sale": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7"
+ }
+}
+
+=== 2026-11-12T11:38:55.049Z 7: family S pays cash, Check in now; read back
+const { expect } = S;
+S.phase = '7: family S pays cash, Check in now; read back';
+const till = S.till;
+await S.keepAlive();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.S.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(S.fam.S.reg);
+const sale = (await S.sale(S.fam.S.sale)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+return { reg: { id: reg.id, photoFileId: reg.photoFileId, contactConfirmedBy: reg.contactConfirmedBy, children: reg.children.map(c => ({ name: c.childName, status: c.status, photo: c.photoFileId })) }, sale: { status: sale.status, receipt: sale.receiptNumber, gross: sale.totals?.grossSatang }, posted: S.receipt.registrationsPosted.filter(x => /^7/.test(x.at ?? '')).length };
+--> {
+ "ok": true,
+ "value": {
+  "reg": {
+   "id": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+   "photoFileId": "01a1cf8d-6fe5-7457-8b60-07a0b20cba6f",
+   "contactConfirmedBy": "family",
+   "children": [
+    {
+     "name": "ZZ TEST 857 child S1",
+     "status": "in_park",
+     "photo": "01a1cf8d-6fe5-7457-8b60-07a0b20cba6f"
+    }
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z85706-000003",
+   "gross": 91500
+  },
+  "posted": 1
+ }
+}
+
+=== 2026-11-12T11:39:09.750Z 10a: an ordinary ticket sale, one child with an adult (no form)
+const { expect } = S;
+S.phase = '10a: an ordinary ticket sale, one child with an adult (no form)';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+S.receipt.numbers.O = S.free[5];
+const mark = S.receipt.registrationsPosted.length;
+await S.firstScreen(till, till, S.free[5]);
+await S.ticket(till, 1, 1);
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+const sale = await S.saleWritten('ordinary-sale-O');
+await till.waitForTimeout(1500);
+const formShown = await till.getByRole('heading', { name: 'Children playing alone', exact: true }).count();
+await S.shot(till, '10a-ordinary-sale-straight-to-payment.png');
+await S.payCash(till);
+await till.waitForTimeout(1500);
+const checkInOffer = await till.getByRole('button', { name: 'Check in now', exact: true }).count();
+await S.shot(till, '10b-ordinary-sale-paid-cash.png');
+const s = (await S.sale(sale.id)).sale;
+S.fam.O = { sale: sale.id };
+await till.goto('/'); await till.waitForTimeout(1500);
+return { formShown, checkInOffer, registrationsWritten: S.receipt.registrationsPosted.length - mark, sale: { id: s.id, status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "formShown": 0,
+  "checkInOffer": 0,
+  "registrationsWritten": 0,
+  "sale": {
+   "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97",
+   "status": "finalised",
+   "receipt": "Z85706-000004",
+   "gross": 104000
+  }
+ }
+}
+
+=== 2026-11-12T11:39:47.723Z harness: mask the credit-grant QR codes on 10b (drawn over the saved picture) and mask QR svgs from now on
+S.phase = 'harness: mask the credit-grant QR codes on 10b (drawn over the saved picture) and mask QR svgs from now on';
+const { readFileSync, writeFileSync } = await import('node:fs');
+const file = S.resolve(S.out, '10b-ordinary-sale-paid-cash.png');
+const b64 = readFileSync(file).toString('base64');
+const page = await S.browser.newPage({ viewport: { width: 1680, height: 1050 } });
+const out = await page.evaluate(async (src) => {
+  const img = new Image(); img.src = src; await img.decode();
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.fillStyle = '#18181b';
+  x.fillRect(466, 620, 72, 72); x.fillRect(982, 662, 78, 78);
+  return c.toDataURL('image/png').split(',')[1];
+}, 'data:image/png;base64,' + b64);
+await page.close();
+writeFileSync(file, Buffer.from(out, 'base64'));
+const oldMasks = S.masks;
+S.masks = p => [...oldMasks(p), p.locator('svg:not(.lucide)')];
+return { ok: true };
+--> {
+ "ok": true,
+ "value": {
+  "ok": true
+ }
+}
+
+=== 2026-11-12T11:40:03.804Z 10b: a drop-off sale filled wholly by staff on the till (split view), staff press Continue to payment
+const { expect } = S;
+S.phase = '10b: a drop-off sale filled wholly by staff on the till (split view), staff press Continue to payment';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await S.landing(till).waitFor({ timeout: 30000 });
+S.receipt.numbers.T = S.free[6];
+const mark = S.receipt.registrationsPosted.length;
+await S.firstScreen(till, till, S.free[6]);
+await S.ticket(till, 1, 0);
+await till.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+const nameField = till.getByPlaceholder('Full name', { exact: true }).first();
+const half = S.halfOf(nameField);
+await nameField.fill('ZZ TEST 857 child T1');
+await S.setAge(till, half, 6);
+await half.getByPlaceholder('Your full name', { exact: true }).fill('ZZ TEST 857 guardian T');
+await half.getByRole('button', { name: 'Start camera', exact: true }).click();
+await half.getByRole('button', { name: 'Take photo', exact: true }).click();
+await half.getByAltText('Captured', { exact: true }).waitFor({ timeout: 20000 });
+for (const box of await half.getByRole('checkbox').all()) if (await box.isEnabled() && await box.getAttribute('data-state') !== 'checked') await box.click();
+await till.waitForTimeout(800);
+const cont = till.getByRole('button', { name: 'Continue to payment', exact: true });
+await expect(cont).toBeEnabled({ timeout: 10000 });
+await S.shot(till, '10c-staff-filled-dropoff-continue-to-payment.png');
+const regResp = till.waitForResponse(r => new URL(r.url()).pathname === '/api/checkin/registrations' && r.request().method() === 'POST', { timeout: 60000 });
+await cont.click();
+const r = await regResp; const regBody = await r.json().catch(() => null);
+await expect(till.getByRole('heading', { name: 'Amount Due', exact: true })).toBeVisible({ timeout: 45000 });
+const sale = await S.saleWritten('dropoff-sale-T');
+S.fam.T = { reg: regBody?.id, sale: sale.id };
+S.receipt.created.push({ kind: 'registration', family: 'T', id: regBody?.id }); S.save();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await till.waitForTimeout(800);
+await S.shot(till, '10d-staff-filled-dropoff-paid-check-in-now.png');
+await now.click();
+await expect.poll(async () => (await S.registration(regBody.id)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(regBody.id);
+const s = (await S.sale(sale.id)).sale;
+await till.goto('/'); await till.waitForTimeout(1500);
+return { registrationsWritten: S.receipt.registrationsPosted.length - mark, reg: { id: reg.id, photo: reg.photoFileId, contactConfirmedBy: reg.contactConfirmedBy, children: reg.children.map(c => c.childName + ':' + c.status) }, sale: { status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang } };
+--> {
+ "ok": true,
+ "value": {
+  "registrationsWritten": 1,
+  "reg": {
+   "id": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+   "photo": "01a1cf8e-edb0-73dd-b802-fd30c6dc2f47",
+   "contactConfirmedBy": "family",
+   "children": [
+    "ZZ TEST 857 child T1:in_park"
+   ]
+  },
+  "sale": {
+   "status": "finalised",
+   "receipt": "Z85706-000005",
+   "gross": 91500
+  }
+ }
+}
+
+=== 2026-11-12T11:40:51.363Z hunt: family U fills the whole form on the display (photo included), then the till locks before Done
+const { expect } = S;
+S.phase = 'hunt: family U fills the whole form on the display (photo included), then the till locks before Done';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await till.waitForTimeout(1500);
+const d = await S.pairDisplay('main2', { camera: 'fake' });
+S.receipt.numbers.U = S.free[7];
+await S.firstScreen(d, till, S.free[7]);
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child U1');
+await S.setAge(d, consent, 6);
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+const photo = consent.getByTestId('consent-photo');
+await photo.getByRole('button', { name: 'Start camera', exact: true }).click();
+await photo.getByRole('button', { name: 'Take photo', exact: true }).click();
+await expect(photo.getByTestId('consent-photo-received')).toBeVisible({ timeout: 30000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.locator('#public-consent-guardian').fill('ZZ TEST 857 guardian U');
+for (const box of await consent.getByRole('checkbox').all()) if (await box.getAttribute('data-state') !== 'checked' && await box.isEnabled()) await box.click();
+await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20000 });
+clearInterval(S.alive);
+S.lockWaitStarted = Date.now();
+return { ready: true, display: await S.displayState(d) };
+--> {
+ "ok": true,
+ "value": {
+  "ready": true,
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian U",
+   "phone": "0898570217",
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": true
+  }
+ }
+}
+
+=== 2026-11-12T11:41:21.904Z hunt: the till locks by itself; the family presses Done while it is locked
+S.phase = 'hunt: the till locks by itself; the family presses Done while it is locked';
+const till = S.till, d = S.displays.main2.page;
+const locked = till.getByRole('heading', { name: 'Locked', exact: true });
+const t0 = Date.now();
+while (Date.now() - t0 < 170000 && !(await locked.isVisible().catch(() => false))) await till.waitForTimeout(2000);
+const lockedAfterMs = Date.now() - S.lockWaitStarted;
+const isLocked = await locked.isVisible().catch(() => false);
+const consent = d.getByTestId('display-consent');
+const before = await S.displayState(d);
+await consent.getByRole('button', { name: 'Done', exact: true }).click().catch(e => null);
+await d.waitForTimeout(12000);
+const after12s = await S.displayState(d);
+const displayText = S.flat(await d.locator('body').innerText()).slice(0, 300);
+await S.pair('hunt-c-till-locked-family-presses-done.png', till, d, { caption: 'Hunt — the till locked itself (2 minutes without a staff touch); the family pressed Done on the display 12 s ago' });
+return { isLocked, lockedAfterMs, before, after12s, displayText, regs: S.receipt.registrationsPosted.length };
+--> {
+ "ok": true,
+ "value": {
+  "isLocked": true,
+  "lockedAfterMs": 112944,
+  "before": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian U",
+   "phone": "0898570217",
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": true
+  },
+  "after12s": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian U",
+   "phone": "0898570217",
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display main2 English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 3 of 3 · The team s",
+  "regs": 5
+ }
+}
+
+=== 2026-11-12T11:43:46.138Z hunt: staff unlock the till; does the family's waiting Done move the sale on?
+S.phase = 'hunt: staff unlock the till; does the family\'s waiting Done move the sale on?';
+const till = S.till, d = S.displays.main2.page;
+const mark = S.receipt.registrationsPosted.length;
+const t0 = Date.now();
+await S.unlock('till');
+S.alive = setInterval(S.keepAlive, 40000);
+let movedMs = null;
+for (let i = 0; i < 40; i++) {
+  if (await till.getByRole('heading', { name: 'Amount Due', exact: true }).isVisible().catch(() => false)) { movedMs = Date.now() - t0; break; }
+  await till.waitForTimeout(500);
+}
+await till.waitForTimeout(1500);
+const staffLine = await S.staffLine(till);
+const disp = await S.displayState(d);
+await S.pair('hunt-d-till-unlocked-after-family-done.png', till, d, { caption: 'Hunt — staff unlocked the till after the family pressed Done while it was locked' });
+return { movedMs, staffLine, display: disp, displayText: S.flat(await d.locator('body').innerText()).slice(0, 300), regsNew: S.receipt.registrationsPosted.length - mark, continueEnabled: await till.getByRole('button', { name: 'Continue to payment', exact: true }).isEnabled().catch(() => null) };
+--> {
+ "ok": true,
+ "value": {
+  "movedMs": 3149,
+  "staffLine": null,
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian U",
+   "phone": "0898570217",
+   "missing": null,
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "displayText": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display main2 English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 3 of 3 · The team s",
+  "regsNew": 1,
+  "continueEnabled": null
+ }
+}
+
+=== 2026-11-12T11:44:49.640Z hunt: does the display catch up with the till after the unlock?
+S.phase = 'hunt: does the display catch up with the till after the unlock?';
+const till = S.till, d = S.displays.main2.page;
+const t0 = Date.now(); let caughtMs = null;
+for (let i = 0; i < 60; i++) {
+  if (!(await d.getByTestId('display-consent').count())) { caughtMs = Date.now() - t0; break; }
+  await d.waitForTimeout(500);
+}
+const text = S.flat(await d.locator('body').innerText()).slice(0, 300);
+await S.pair('hunt-e-display-after-unlock-later.png', till, d, { caption: 'Hunt — the display some seconds after the unlock (the till already at Amount Due)' });
+const sale = await S.saleWritten('dropoff-sale-U');
+const regId = S.receipt.registrationsPosted.at(-1)?.id;
+S.fam.U = { reg: regId, sale: sale.id };
+S.receipt.created.push({ kind: 'registration', family: 'U', id: regId }); S.save();
+return { caughtMsAfterPrevStep: caughtMs, text, regId, sale: sale.id };
+--> {
+ "ok": true,
+ "value": {
+  "caughtMsAfterPrevStep": 10,
+  "text": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 · ZZ TEST SCRUM-857 p2-4 proof till 1794482513557 display main2 Customer ZZ TEST 857 guardian U O Oto Play Park Your Order English 1 Hour Play ฿915 Kids1 × ฿690 ฿690 Drop-off service1 × ฿225 ฿225 VAT included ฿59.86 Total ฿915 Please pay ฿915.00 to our",
+  "regId": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+  "sale": "01a1cf92-375f-7749-bb78-f093659e639d"
+ }
+}
+
+=== 2026-11-12T11:45:01.790Z hunt: family U pays cash, Check in now
+const { expect } = S;
+S.phase = 'hunt: family U pays cash, Check in now';
+const till = S.till;
+await S.keepAlive();
+await S.payCash(till);
+const now = till.getByRole('button', { name: 'Check in now', exact: true });
+await now.waitFor({ timeout: 20000 });
+await now.click();
+await expect.poll(async () => (await S.registration(S.fam.U.reg)).children.every(c => c.status === 'in_park'), { timeout: 30000 }).toBe(true);
+const reg = await S.registration(S.fam.U.reg);
+await till.goto('/'); await till.waitForTimeout(1500);
+await S.dropDisplay('main2');
+return { reg: { photo: reg.photoFileId, children: reg.children.map(c => c.childName + ':' + c.status) }, sale: (await S.sale(S.fam.U.sale)).sale.status };
+--> {
+ "ok": true,
+ "value": {
+  "reg": {
+   "photo": "01a1cf92-3443-7f51-b805-d73534e00476",
+   "children": [
+    "ZZ TEST 857 child U1:in_park"
+   ]
+  },
+  "sale": "finalised"
+ }
+}
+
+=== 2026-11-12T11:45:21.636Z phone-size: the family form on a phone-sized display (390x844); then staff Back and Cancel (a half-done form writes nothing)
+const { expect } = S;
+S.phase = 'phone-size: the family form on a phone-sized display (390x844); then staff Back and Cancel (a half-done form writes nothing)';
+const till = S.till;
+await S.keepAlive();
+await till.goto('/'); await till.waitForTimeout(1500);
+const mark = S.receipt.registrationsPosted.length;
+const d = await S.pairDisplay('phone', { camera: 'fake', viewport: { width: 390, height: 844 } });
+S.receipt.numbers.V = S.free[8];
+await S.firstScreen(d, till, S.free[8]);
+await S.ticket(till, 1, 0);
+const consent = d.getByTestId('display-consent');
+await consent.waitFor({ timeout: 30000 });
+await consent.getByPlaceholder('Full name', { exact: true }).fill('ZZ TEST 857 child V1');
+await S.setAge(d, consent, 6);
+await expect(consent.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled({ timeout: 20000 });
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await d.waitForTimeout(800);
+await S.shot(d, 'phone-a-display-care-step-390.png');
+await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+await consent.locator('#public-consent-guardian').fill('ZZ TEST 857 guardian V');
+await d.waitForTimeout(1200);
+await S.shot(d, 'phone-b-display-agreements-still-needed-390.png');
+const ds = await S.displayState(d);
+const overflowX = await d.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+// staff go back and cancel: nothing written
+await S.keepAlive();
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await expect(consent).toBeHidden({ timeout: 30000 });
+await till.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+await till.waitForTimeout(3000);
+const draftLeft = await d.evaluate(() => sessionStorage.getItem('oto.display.consentDraft.v1'));
+await S.dropDisplay('phone');
+return { display: ds, overflowX, regsWritten: S.receipt.registrationsPosted.length - mark, draftLeft: draftLeft !== null, uploads: S.receipt.displayPhotoUploads.length };
+--> {
+ "ok": true,
+ "value": {
+  "display": {
+   "shown": true,
+   "step": "3. Agreements",
+   "childName": null,
+   "guardian": "ZZ TEST 857 guardian V",
+   "phone": "0898570218",
+   "missing": "Still needed before Done: your consent · each confirmation · confirming your WhatsApp number · a photo of each child with you",
+   "finished": null,
+   "notSaved": null,
+   "photoFallback": null,
+   "photoReceived": null,
+   "doneShown": 1,
+   "doneEnabled": false
+  },
+  "overflowX": false,
+  "regsWritten": 0,
+  "draftLeft": false,
+  "uploads": 2
+ }
+}
+
+=== 2026-11-12T11:46:16.386Z read: page errors so far
+S.phase = 'read: page errors so far';
+const groups = {};
+for (const e of S.receipt.pageErrors) { const k = `${e.page} | ${e.kind} | ${e.text}`; groups[k] = (groups[k] ?? 0) + 1; }
+return { total: S.receipt.pageErrors.length, groups, displays: Object.keys(S.displays), fam: S.fam };
+--> {
+ "ok": true,
+ "value": {
+  "total": 29,
+  "groups": {
+   "till | http | GET /api/me 401": 1,
+   "till | console.error | Failed to load resource: the server responded with a status of 401 ()": 1,
+   "display-main | console.error | Failed to load resource: net::ERR_INTERNET_DISCONNECTED": 27
+  },
+  "displays": [],
+  "fam": {
+   "L": {
+    "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+    "sale": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0"
+   },
+   "N": {
+    "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+    "sale": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db"
+   },
+   "R": {
+    "reg": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335"
+   },
+   "S": {
+    "reg": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+    "sale": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7"
+   },
+   "O": {
+    "sale": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97"
+   },
+   "T": {
+    "reg": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+    "sale": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca"
+   },
+   "U": {
+    "reg": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+    "sale": "01a1cf92-375f-7749-bb78-f093659e639d"
+   }
+  }
+ }
+}
+
+=== 2026-11-12T11:46:28.615Z clean up: release own children in the park (synthetic pickup picture), read back
+const { expect } = S;
+S.phase = 'clean up: release own children in the park (synthetic pickup picture), read back';
+clearInterval(S.alive);
+const out = [];
+for (const [fam, v] of Object.entries(S.fam)) {
+  if (!v.reg) continue;
+  const reg = await S.registration(v.reg);
+  S.assert.ok(S.isZz(reg.guardianName) && reg.children.every(c => S.isZz(c.childName)), 'own ZZ TEST registration only');
+  const done = await S.releaseOwn(v.reg);
+  const after = await S.registration(v.reg);
+  out.push({ fam, reg: v.reg, actions: done, children: after.children.map(c => c.childName + ':' + c.status) });
+}
+S.receipt.cleanup.registrations = [...(S.receipt.cleanup.registrations ?? []), ...out]; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "fam": "L",
+   "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+   "actions": [
+    {
+     "child": "ZZ TEST 857 child L1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 857 child L1:out"
+   ]
+  },
+  {
+   "fam": "N",
+   "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+   "actions": [
+    {
+     "child": "ZZ TEST 857 child N1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 857 child N1:out"
+   ]
+  },
+  {
+   "fam": "R",
+   "reg": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+   "actions": [],
+   "children": [
+    "ZZ TEST 857 child R1:cancelled"
+   ]
+  },
+  {
+   "fam": "S",
+   "reg": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+   "actions": [
+    {
+     "child": "ZZ TEST 857 child S1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 857 child S1:out"
+   ]
+  },
+  {
+   "fam": "T",
+   "reg": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+   "actions": [
+    {
+     "child": "ZZ TEST 857 child T1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 857 child T1:out"
+   ]
+  },
+  {
+   "fam": "U",
+   "reg": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+   "actions": [
+    {
+     "child": "ZZ TEST 857 child U1",
+     "status": 200
+    }
+   ],
+   "children": [
+    "ZZ TEST 857 child U1:out"
+   ]
+  }
+ ]
+}
+
+=== 2026-11-12T11:46:45.607Z clean up: sales (print jobs), members on the numbers, the till retired, sessions signed out
+const { expect } = S;
+S.phase = 'clean up: sales (print jobs), members on the numbers, the till retired, sessions signed out';
+const res = {};
+const sales = await S.stationSales();
+for (const s of sales) S.assert.equal(s.stationId, S.station.id);
+res.open = [];
+for (const s of sales.filter(x => ['tendering', 'open'].includes(x.status))) {
+  const v = await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-857 parts 2-4 proof cleanup' });
+  res.open.push({ id: s.id, void: v.status });
+}
+res.prints = [];
+for (const s of sales.filter(x => x.status === 'finalised')) {
+  let jobs = [];
+  await expect.poll(async () => { jobs = (await S.sale(s.id)).printJobs ?? []; return jobs.every(j => j.status === 'printed'); }, { timeout: 90000 }).toBe(true).catch(() => null);
+  res.prints.push({ id: s.id, receipt: s.receiptNumber, gross: s.totals?.grossSatang, jobs: jobs.map(j => j.status) });
+}
+res.salesFinal = (await S.stationSales()).map(s => ({ id: s.id, status: s.status, receipt: s.receiptNumber, gross: s.totals?.grossSatang }));
+res.members = [];
+for (const n of S.free.slice(0, 10)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null;
+  if (m) {
+    const label = `${m.nickname ?? ''} ${m.name ?? ''}`;
+    S.assert.ok(/ZZ TEST/.test(label), 'only own named test members: ' + n);
+    const del = await S.call('DELETE', `/members/${m.id}`);
+    const again = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null;
+    res.members.push({ n, id: m.id, archived: del.status, after: again === null });
+  } else res.members.push({ n, member: null });
+}
+S.receipt.cleanup.sales = res; S.save();
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "open": [],
+  "prints": [
+   {
+    "id": "01a1cf92-375f-7749-bb78-f093659e639d",
+    "receipt": "Z85706-000006",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   },
+   {
+    "id": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca",
+    "receipt": "Z85706-000005",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   },
+   {
+    "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97",
+    "receipt": "Z85706-000004",
+    "gross": 104000,
+    "jobs": [
+     "printed",
+     "printed",
+     "printed"
+    ]
+   },
+   {
+    "id": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7",
+    "receipt": "Z85706-000003",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   },
+   {
+    "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+    "receipt": "Z85706-000002",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   },
+   {
+    "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+    "receipt": "Z85706-000001",
+    "gross": 91500,
+    "jobs": [
+     "printed",
+     "printed"
+    ]
+   }
+  ],
+  "salesFinal": [
+   {
+    "id": "01a1cf92-375f-7749-bb78-f093659e639d",
+    "status": "finalised",
+    "receipt": "Z85706-000006",
+    "gross": 91500
+   },
+   {
+    "id": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca",
+    "status": "finalised",
+    "receipt": "Z85706-000005",
+    "gross": 91500
+   },
+   {
+    "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97",
+    "status": "finalised",
+    "receipt": "Z85706-000004",
+    "gross": 104000
+   },
+   {
+    "id": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7",
+    "status": "finalised",
+    "receipt": "Z85706-000003",
+    "gross": 91500
+   },
+   {
+    "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+    "status": "finalised",
+    "receipt": "Z85706-000002",
+    "gross": 91500
+   },
+   {
+    "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+    "status": "finalised",
+    "receipt": "Z85706-000001",
+    "gross": 91500
+   }
+  ],
+  "members": [
+   {
+    "n": "0898570210",
+    "id": "01a1cf84-7c55-7334-8da8-54c77bee373a",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570211",
+    "member": null
+   },
+   {
+    "n": "0898570212",
+    "id": "01a1cf8a-6c97-712d-895e-17327aefedf4",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570213",
+    "id": "01a1cf8c-7e6b-78e6-b7f9-e2c3c8bae46a",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570214",
+    "id": "01a1cf8d-6db6-7b08-9c97-839bb941f345",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570215",
+    "member": null
+   },
+   {
+    "n": "0898570216",
+    "id": "01a1cf8e-eb55-7322-be40-a3623b990aa0",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570217",
+    "id": "01a1cf92-31e2-7ea8-a77a-7199bdf90f9a",
+    "archived": 200,
+    "after": true
+   },
+   {
+    "n": "0898570218",
+    "member": null
+   },
+   {
+    "n": "0898570219",
+    "member": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:47:02.524Z clean up: retire the own till, sign out, read back that nothing is left
+S.phase = 'clean up: retire the own till, sign out, read back that nothing is left';
+const res = {};
+const own = (await S.call('GET', `/stations/${S.station.id}`)).body.station;
+S.assert.equal(own.name, S.fixtureName);
+res.devicesOff = (await S.call('PATCH', `/stations/${S.station.id}`, { devices: [] })).status;
+res.deleted = (await S.call('DELETE', `/stations/${S.station.id}`)).status;
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+const mine = stations.filter(s => /ZZ TEST SCRUM-857 p2-4/.test(s.name));
+res.ownTills = mine.map(s => ({ id: s.id, prefix: s.codePrefix, archived: s.archived, devices: s.devices.length }));
+// the till session
+const t = S.pages.till.page;
+const before = (await t.request.get('/api/me')).status();
+if (before === 200) res.tillSignOut = (await t.request.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+res.tillMeAfter = (await t.request.get('/api/me')).status();
+// leftovers
+const board = (await S.call('GET', `/checkin/board?branchId=${S.branchId}`)).body;
+res.boardFamiliesOfThisProof = board.families.filter(f => /ZZ TEST 857/.test(f.guardianName ?? '') || f.children.some(c => /ZZ TEST 857/.test(c.childName ?? ''))).map(f => ({ reg: f.registrationId, tab: f.tab, children: f.children.map(c => c.status) }));
+const regs = (await S.call('GET', `/checkin/registrations?branchId=${S.branchId}`)).body?.registrations ?? [];
+res.waitingRegistrationsOfThisProof = regs.filter(r => /ZZ TEST 857/.test(r.guardianName ?? '')).map(r => r.id);
+res.registrationsReadBack = [];
+for (const [fam, v] of Object.entries(S.fam)) if (v.reg) { const r = await S.registration(v.reg); res.registrationsReadBack.push({ fam, children: r.children.map(c => c.status) }); }
+res.membersOnNumbers = [];
+for (const n of S.free.slice(0, 10)) { const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member; if (m) res.membersOnNumbers.push(n); }
+res.displaysStillPaired = Object.keys(S.displays);
+res.displaysRevoked = S.receipt.cleanup.displays;
+S.receipt.cleanup.final = res; S.save();
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "devicesOff": 200,
+  "deleted": 200,
+  "ownTills": [
+   {
+    "id": "01a1cf7e-28ca-70e7-afb0-b7253ef507c9",
+    "prefix": "Z85706",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "tillSignOut": 200,
+  "tillMeAfter": 401,
+  "boardFamiliesOfThisProof": [
+   {
+    "reg": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "reg": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "reg": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+    "tab": "out",
+    "children": [
+     "out"
+    ]
+   }
+  ],
+  "waitingRegistrationsOfThisProof": [],
+  "registrationsReadBack": [
+   {
+    "fam": "L",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "fam": "N",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "fam": "R",
+    "children": [
+     "cancelled"
+    ]
+   },
+   {
+    "fam": "S",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "fam": "T",
+    "children": [
+     "out"
+    ]
+   },
+   {
+    "fam": "U",
+    "children": [
+     "out"
+    ]
+   }
+  ],
+  "membersOnNumbers": [],
+  "displaysStillPaired": [],
+  "displaysRevoked": [
+   {
+    "label": "main",
+    "id": "01a1cf7e-8d64-70d2-a5d7-028242b4c82a",
+    "revoked": true
+   },
+   {
+    "label": "nocam",
+    "id": "01a1cf86-b8f5-75e9-99af-f30c55456586",
+    "revoked": true
+   },
+   {
+    "label": "nocam",
+    "id": "01a1cf89-d087-7fac-a111-3ef089f326db",
+    "revoked": true
+   },
+   {
+    "label": "refused",
+    "id": "01a1cf8b-cb12-781c-a8eb-c0d964c2394e",
+    "revoked": true
+   },
+   {
+    "label": "main2",
+    "id": "01a1cf8f-94a0-70f0-a635-a615309e8df5",
+    "revoked": true
+   },
+   {
+    "label": "phone",
+    "id": "01a1cf93-b7cb-7d70-a592-4033445ba254",
+    "revoked": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:47:22.369Z read-back picture, then sign the admin out
+S.phase = 'read-back picture, then sign the admin out';
+const rows = [];
+const regL = await S.registration(S.fam.L.reg);
+rows.push(['Family L registration (family Done on the paired display, point 6)', { id: regL.id, guardian: regL.guardianName, phone: regL.guardianPhone, channel: regL.contactChannel, confirmedBy: regL.contactConfirmedBy, photoFileId: regL.photoFileId, children: regL.children.map(c => ({ name: c.childName, photoFileId: c.photoFileId })) }]);
+rows.push(['The stored photo of family L (GET /api/files/:id/url, then the object)', 'image/jpeg, 6823 bytes, JPEG header ff d8 — saved as 06f-registration-photo-as-stored.jpg (the display camera frame)']);
+rows.push(['POST /api/checkin/registrations seen in the till, per family', S.receipt.registrationsPosted.map(r => `${r.status}${r.replay ? ' replay' : ''} ${r.id?.slice(0, 13)} @ ${String(r.at).slice(0, 40)}`)]);
+rows.push(['Registration photo uploads by the till (POST /api/files, owner registration)', S.receipt.photoFiles.map(f => `${f.contentType} → ${f.ownerEntityId.slice(0, 13)}`)]);
+rows.push(['Display photo uploads (POST /api/display/consent-photos)', S.receipt.displayPhotoUploads.map(u => `${u.display}: ${u.status}`)]);
+rows.push(['Sales of the own till (cash)', S.receipt.cleanup.sales.salesFinal.map(s => `${s.receipt} ${s.status} ${s.gross} satang`)]);
+rows.push(['After clean-up', { registrations: S.receipt.cleanup.final.registrationsReadBack, waiting: S.receipt.cleanup.final.waitingRegistrationsOfThisProof, members: S.receipt.cleanup.final.membersOnNumbers, till: S.receipt.cleanup.final.ownTills, displaysPaired: S.receipt.cleanup.final.displaysStillPaired }]);
+await S.facts('06g-readback-registrations-photos-sales.png', 'SCRUM-857 parts 2-4 — read back through the APIs (registrations, photos, sales, clean-up)', rows);
+const out = (await S.admin.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+const me = (await S.admin.get('/api/me')).status();
+S.receipt.cleanup.admin = { signOut: out, me }; S.receipt.finishedAt = new Date().toISOString(); S.save();
+return { out, me };
+--> {
+ "ok": true,
+ "value": {
+  "out": 200,
+  "me": 401
+ }
+}

@@ -1,0 +1,1181 @@
+
+=== 2026-11-12T11:46:13.048Z setup
+S.phase = 'setup';
+const a = await S.makeTill('A');
+const b = await S.makeTill('B');
+// a ZZ TEST walk-in number, unused
+const free = [];
+for (let i = 10; i < 20; i++) { const n = S.zz(i); const m = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ?? null; if (!m) free.push(n); }
+S.free = free; S.receipt.numbers.walkIn = free[0]; S.receipt.checks = { numbersCheckedUnused: free.length, first: free[0] };
+const till = await S.tillContext('A');
+await S.signIn(till, a.name, a.id);
+return { a: a.prefix, b: b.prefix, free: free.length, first: free[0], row: await S.displayRow(till) };
+--> {
+ "ok": true,
+ "value": {
+  "a": "Z92901",
+  "b": "Z92902",
+  "free": 10,
+  "first": "0898929010",
+  "row": "light"
+ }
+}
+
+=== 2026-11-12T11:46:34.593Z p1
+S.phase = 'p1';
+const till = S.tills.A.page;
+await S.closeTheme(till);
+const before = await S.displayRow(till); await S.closeTheme(till);
+const d = await S.displayContext('A');
+await d.goto(`${S.pos}/display`);
+const fresh = { stored: await S.stored(d), lookBeforePairing: await S.look(d) };
+await S.pair('A', S.stations.A.id);
+await d.getByTestId('language-choice').or(d.getByRole('heading', { name: 'Welcome to OTO Park' })).first().waitFor({ timeout: 30000 });
+await S.watchFlips(d);
+// the till's switch mirrors what the box holds for the display
+let row = null; const t0 = Date.now();
+await S.expect.poll(async () => { row = await S.displayRow(till); return row; }, { timeout: 20000, intervals: [500] }).toBe('dark');
+const tMirror = Date.now() - t0;
+await S.openTheme(till);
+const note = S.flat(await till.getByText(/Staff follows your account/).textContent());
+const pic = await S.both('01-fresh-display-dark-till-menu-mirrors-dark.png', 'Point 1: a fresh paired display (never told a look) is dark; the till\'s Theme menu shows Display as dark', till, d);
+const session = await S.sessionTheme(d);
+S.receipt.reads.p1 = { before, fresh, look: await S.look(d), stored: await S.stored(d), row, tMirror, note, session };
+return S.receipt.reads.p1;
+--> {
+ "ok": true,
+ "value": {
+  "before": "light",
+  "fresh": {
+   "stored": null,
+   "lookBeforePairing": "dark"
+  },
+  "look": "dark",
+  "stored": null,
+  "row": "dark",
+  "tMirror": 187,
+  "note": "Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+  "session": {
+   "status": 200,
+   "hasThemeField": true,
+   "theme": null,
+   "sequence": 2,
+   "stage": null
+  }
+ }
+}
+
+=== 2026-11-12T11:47:05.004Z p1
+// a close-up of the open Theme menu, so the Display row's moon and the note read
+S.menuCloseUp = async (name, caption) => {
+  const till = S.tills.A.page;
+  await S.openTheme(till);
+  const menu = till.getByRole('menu');
+  const img = await menu.screenshot({ animations: 'disabled' });
+  const row = await till.getByRole('button', { name: /^Switch display theme to / }).getAttribute('data-theme-preference');
+  const title = await till.getByRole('button', { name: /^Switch display theme to / }).getAttribute('title');
+  const sheet = await S.tills.A.ctx.newPage(); await sheet.setViewportSize({ width: 700, height: 600 });
+  await sheet.setContent(`<html><body style="margin:0;font:15px system-ui;background:#fff;color:#111"><div style="padding:8px 12px"><b>SCRUM-929</b> · ${caption}<br><span style="font-size:13px">Display row: data-theme-preference="${row}", its hover title "${title}"</span></div><img style="width:520px;margin:6px 12px;border:1px solid #888;image-rendering:auto" src="data:image/png;base64,${img.toString('base64')}"></body></html>`);
+  await sheet.screenshot({ path: S.resolve(S.out, name), fullPage: true }); await sheet.close();
+  return { row, title };
+};
+return await S.menuCloseUp('01b-till-theme-menu-close-up-display-dark.png', 'Point 1 close-up: the till\'s Theme menu with a fresh paired display (the Display row shows the moon, the display\'s look)');
+--> {
+ "ok": true,
+ "value": {
+  "row": "dark",
+  "title": "Display theme: dark — tap for light"
+ }
+}
+
+=== 2026-11-12T11:47:30.391Z p2
+S.point('1', true, ['01-fresh-display-dark-till-menu-mirrors-dark.png', '01b-till-theme-menu-close-up-display-dark.png'], S.receipt.reads.p1);
+S.phase = 'p2';
+const till = S.tills.A.page, d = S.displays.A.page;
+const presses = [];
+let r = await S.press(till, d, 'light'); presses.push(r);
+await S.sleep(800);
+const halves = await till.locator('div.w-1\/2').count();
+await S.both('02a-press-display-light.png', `Point 2: Display pressed once on the till: the paired display turned light in ${r.ms} ms`, till, d);
+const s1 = await S.sessionTheme(d);
+r = await S.press(till, d, 'dark'); presses.push(r);
+await S.sleep(800);
+await S.both('02b-press-again-dark.png', `Point 2: pressed again: dark in ${r.ms} ms`, till, d);
+r = await S.press(till, d, 'light'); presses.push(r);
+await S.sleep(800);
+await S.both('02c-press-again-light.png', `Point 2: and again: light in ${r.ms} ms`, till, d);
+const row = await till.getByRole('button', { name: /^Switch display theme to / }).getAttribute('data-theme-preference');
+await S.sleep(4000);
+const flipsAll = await S.flips(d);
+S.receipt.reads.p2 = { presses, tillCustomerHalves: halves, sessionAfterFirst: s1, rowNow: row, lookAfter4s: await S.look(d), stored: await S.stored(d), flipsSoFar: flipsAll.length, publishesWithTheme: S.receipt.publishes.filter(p => p.at === 'p2' && p.theme).map(p => p.theme) };
+return S.receipt.reads.p2;
+--> {
+ "ok": false,
+ "error": "Error: locator.count: Unexpected token \"/\" while parsing css selector \"div.w-1/2\". Did you mean to CSS.escape it?"
+}
+
+=== 2026-11-12T11:47:38.432Z p2
+const d = S.displays.A.page;
+return { flips: await S.flips(d), pubs: S.receipt.publishes.filter(p => p.at === 'p2'), look: await S.look(d) };
+--> {
+ "ok": true,
+ "value": {
+  "flips": [
+   {
+    "t": 1794484050676,
+    "to": "light"
+   }
+  ],
+  "pubs": [
+   {
+    "page": "A",
+    "at": "p2",
+    "t": 1794484050528,
+    "stage": "identify",
+    "theme": "light"
+   }
+  ],
+  "look": "light"
+ }
+}
+
+=== 2026-11-12T11:47:49.026Z p2
+S.phase = 'p2';
+const till = S.tills.A.page, d = S.displays.A.page;
+const f0 = (await S.flips(d))[0]; const p0 = S.receipt.publishes.find(p => p.at === 'p2');
+const presses = [{ to: 'light', ms: null, msFromPublishSent: f0.t - p0.t, note: 'first press measured from the till\'s publish request to the display\'s class change (the driver step threw after the press on a selector, before returning its click time)' }];
+const halves = await till.locator('div[class~="w-1/2"]').count();
+await S.both('02a-press-display-light.png', `Point 2: Display pressed once on the till: the paired display turned light ${f0.t - p0.t} ms after the till sent it`, till, d);
+const s1 = await S.sessionTheme(d);
+let r = await S.press(till, d, 'dark'); presses.push(r);
+await S.sleep(800);
+await S.both('02b-press-again-dark.png', `Point 2: pressed again: dark ${r.ms} ms after the press`, till, d);
+r = await S.press(till, d, 'light'); presses.push(r);
+await S.sleep(800);
+await S.both('02c-press-again-light.png', `Point 2: and again: light ${r.ms} ms after the press`, till, d);
+const row = await till.getByRole('button', { name: /^Switch display theme to / }).getAttribute('data-theme-preference');
+await S.sleep(4000);
+const flipsAll = await S.flips(d);
+S.receipt.reads.p2 = { presses, tillCustomerHalves: halves, sessionAfterFirst: s1, rowNow: row, lookAfter4s: await S.look(d), stored: await S.stored(d), flipsSoFar: flipsAll.length, publishesWithTheme: S.receipt.publishes.filter(p => p.at === 'p2' && p.theme).map(p => p.theme) };
+return S.receipt.reads.p2;
+--> {
+ "ok": true,
+ "value": {
+  "presses": [
+   {
+    "to": "light",
+    "ms": null,
+    "msFromPublishSent": 148,
+    "note": "first press measured from the till's publish request to the display's class change (the driver step threw after the press on a selector, before returning its click time)"
+   },
+   {
+    "to": "dark",
+    "ms": 301
+   },
+   {
+    "to": "light",
+    "ms": 277
+   }
+  ],
+  "tillCustomerHalves": 0,
+  "sessionAfterFirst": {
+   "status": 200,
+   "hasThemeField": true,
+   "theme": "light",
+   "sequence": 3,
+   "stage": null
+  },
+  "rowNow": "light",
+  "lookAfter4s": "light",
+  "stored": "light",
+  "flipsSoFar": 3,
+  "publishesWithTheme": [
+   "light",
+   "dark",
+   "light"
+  ]
+ }
+}
+
+=== 2026-11-12T11:48:23.073Z p3
+S.point('2', true, ['02a-press-display-light.png', '02b-press-again-dark.png', '02c-press-again-light.png'], S.receipt.reads.p2);
+S.phase = 'p3';
+const till = S.tills.A.page;
+await S.closeTheme(till);
+// every look the display root shows from the first paint after a navigation
+S.looksInit = () => {
+  const w = window; w.__looks = []; const t0 = performance.now();
+  const seen = () => { const el = document.querySelector('[data-testid="separate-display"]'); if (!el) return; const c = el.className; const l = /(^|\s)light(\s|$)/.test(c) ? 'light' : /(^|\s)dark(\s|$)/.test(c) ? 'dark' : 'other'; if (w.__looks.at(-1)?.look !== l) w.__looks.push({ ms: Math.round(performance.now() - t0), look: l }); };
+  new MutationObserver(seen).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+};
+await S.displays.A.ctx.addInitScript(S.looksInit);
+let d = S.displays.A.page;
+await d.reload();
+await d.getByTestId('separate-display').waitFor();
+await d.getByTestId('language-choice').or(d.getByRole('heading', { name: 'Welcome to OTO Park' })).first().waitFor({ timeout: 30000 });
+await S.sleep(3000);
+const reload = { looks: await d.evaluate(() => window.__looks), lookNow: await S.look(d), stored: await S.stored(d) };
+await S.watchFlips(d);
+await S.both('03a-display-reloaded-still-light.png', `Point 3: the display page reloaded: light from its first paint (looks seen: ${reload.looks.map(l => l.look + '@' + l.ms + 'ms').join(', ')})`, till, d);
+// a browser restart: the same storage in a new context, the old one closed
+const state = await S.displays.A.ctx.storageState();
+await S.displays.A.ctx.close();
+d = await S.displayContext('A', state);
+await S.displays.A.ctx.addInitScript(S.looksInit);
+await d.goto(`${S.pos}/display`);
+await d.getByTestId('separate-display').waitFor();
+await d.getByTestId('language-choice').or(d.getByRole('heading', { name: 'Welcome to OTO Park' })).first().waitFor({ timeout: 30000 });
+await S.sleep(3000);
+const restart = { looks: await d.evaluate(() => window.__looks), lookNow: await S.look(d), stored: await S.stored(d), session: await S.sessionTheme(d) };
+await S.watchFlips(d);
+await S.both('03b-display-browser-restart-still-light.png', `Point 3: the display's browser closed and opened again with the same storage: light (looks seen: ${restart.looks.map(l => l.look + '@' + l.ms + 'ms').join(', ')})`, till, d);
+S.receipt.reads.p3 = { reload, restart };
+return S.receipt.reads.p3;
+--> {
+ "ok": true,
+ "value": {
+  "reload": {
+   "looks": [
+    {
+     "ms": 146,
+     "look": "light"
+    }
+   ],
+   "lookNow": "light",
+   "stored": "light"
+  },
+  "restart": {
+   "looks": [
+    {
+     "ms": 649,
+     "look": "light"
+    }
+   ],
+   "lookNow": "light",
+   "stored": "light",
+   "session": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": "light",
+    "sequence": 5,
+    "stage": null
+   }
+  }
+ }
+}
+
+=== 2026-11-12T11:49:05.029Z p4
+S.point('3', true, ['03a-display-reloaded-still-light.png', '03b-display-browser-restart-still-light.png'], S.receipt.reads.p3);
+S.phase = 'p4';
+const till = S.tills.A.page, d = S.displays.A.page;
+const pubs0 = S.receipt.publishes.length;
+await till.reload();
+await till.locator('a[href="/history"]').first().waitFor({ timeout: 60000 });
+await S.unlock(till);
+await S.sleep(6000);
+let row = await S.displayRow(till);
+const afterReload = { row, look: await S.look(d), flips: (await S.flips(d)).length, publishesSinceReload: S.receipt.publishes.slice(pubs0).map(p => ({ stage: p.stage, theme: p.theme })) };
+await S.both('04a-till-reloaded-row-light-display-light.png', `Point 4: the till reloaded: its Display row shows light (data-theme-preference="${row}") and the display stays light; publications since the reload carrying a theme: ${afterReload.publishesSinceReload.filter(p => p.theme).length}`, till, d);
+await S.closeTheme(till);
+// sign out and in again
+const pubs1 = S.receipt.publishes.length;
+const out1 = await S.signOutPage(till);
+await till.goto(S.pos);
+await S.sleep(4000);
+const lookWhileSignedOut = await S.look(d);
+await S.both('04b-till-signed-out-display.png', `Point 4: the till signed out (sign-out ${out1.signOut}, /api/me after: ${out1.meAfter}); the display meanwhile`, till, d);
+await S.signIn(till, S.stations.A.name, S.stations.A.id);
+await S.sleep(6000);
+row = await S.displayRow(till);
+const afterSignIn = { signOut: out1, lookWhileSignedOut, row, look: await S.look(d), flips: (await S.flips(d)).length, publishesSinceSignOut: S.receipt.publishes.slice(pubs1).map(p => ({ stage: p.stage, theme: p.theme })) };
+await S.both('04c-till-signed-in-again-row-light-display-light.png', `Point 4: signed in again at the same till: the Display row shows light (data-theme-preference="${row}"), the display stays light; publications carrying a theme since the sign-out: ${afterSignIn.publishesSinceSignOut.filter(p => p.theme).length}`, till, d);
+await S.closeTheme(till);
+S.receipt.reads.p4 = { afterReload, afterSignIn };
+return S.receipt.reads.p4;
+--> {
+ "ok": true,
+ "value": {
+  "afterReload": {
+   "row": "light",
+   "look": "light",
+   "flips": 0,
+   "publishesSinceReload": [
+    {
+     "stage": "identify",
+     "theme": null
+    }
+   ]
+  },
+  "afterSignIn": {
+   "signOut": {
+    "signOut": 200,
+    "meAfter": 401
+   },
+   "lookWhileSignedOut": "light",
+   "row": "light",
+   "look": "light",
+   "flips": 0,
+   "publishesSinceSignOut": [
+    {
+     "stage": "identify",
+     "theme": null
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-12T11:49:58.297Z p4
+// the lock screen keeps the account's phone in its field: mask phone inputs from now on, and box it on 04b
+const base = S.masks;
+S.masks = page => [...base(page), page.locator('input[inputmode="tel"],input[type="tel"]')];
+const file = S.resolve(S.out, '04b-till-signed-out-display.png');
+const fs = await import('node:fs');
+const png = fs.readFileSync(file).toString('base64');
+const sheet = await S.tills.A.ctx.newPage();
+const outB64 = await sheet.evaluate(async (src) => {
+  const img = new Image(); img.src = 'data:image/png;base64,' + src; await img.decode();
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  g.fillStyle = '#18181b'; g.fillRect(444, 262, 254, 36);
+  return c.toDataURL('image/png').split(',')[1];
+}, png);
+await sheet.close();
+fs.writeFileSync(file, Buffer.from(outB64, 'base64'));
+return { boxed: true };
+--> {
+ "ok": true,
+ "value": {
+  "boxed": true
+ }
+}
+
+=== 2026-11-12T11:50:17.939Z p5
+S.point('4', true, ['04a-till-reloaded-row-light-display-light.png', '04b-till-signed-out-display.png', '04c-till-signed-in-again-row-light-display-light.png'], S.receipt.reads.p4);
+S.phase = 'p5';
+const till = S.tills.A.page, d = S.displays.A.page;
+await S.closeTheme(till);
+const res = {};
+for (const tab of ['F&B', 'Shop']) {
+  await till.getByRole('button', { name: tab, exact: true }).click();
+  await S.sleep(5000);
+  const look0 = await S.look(d);
+  const slug = tab === 'F&B' ? 'fnb' : 'shop';
+  const n = tab === 'F&B' ? 'a' : 'c';
+  await S.both(`05${n}-till-on-${slug}-display-stays-light.png`, `Point 5: the till on ${tab}: the display stays ${look0}`, till, d);
+  const p1 = await S.press(till, d, 'dark'); await S.sleep(800);
+  const n2 = tab === 'F&B' ? 'b' : 'd';
+  await S.both(`05${n2}-till-on-${slug}-press-display-dark.png`, `Point 5: Display pressed on ${tab}: the display turned dark in ${p1.ms} ms`, till, d);
+  const p2 = await S.press(till, d, 'light'); await S.sleep(800);
+  await S.closeTheme(till);
+  res[tab] = { lookOnArrival: look0, toDark: p1, backToLight: p2, lookAfter: await S.look(d) };
+}
+await till.getByRole('button', { name: 'Tickets', exact: true }).click();
+await S.sleep(4000);
+res.backOnTickets = await S.look(d);
+S.receipt.reads.p5 = res;
+return res;
+--> {
+ "ok": true,
+ "value": {
+  "F&B": {
+   "lookOnArrival": "light",
+   "toDark": {
+    "to": "dark",
+    "ms": 475
+   },
+   "backToLight": {
+    "to": "light",
+    "ms": 414
+   },
+   "lookAfter": "light"
+  },
+  "Shop": {
+   "lookOnArrival": "light",
+   "toDark": {
+    "to": "dark",
+    "ms": 520
+   },
+   "backToLight": {
+    "to": "light",
+    "ms": 485
+   },
+   "lookAfter": "light"
+  },
+  "backOnTickets": "light"
+ }
+}
+
+=== 2026-11-12T11:51:38.673Z p6
+S.point('5', true, ['05a-till-on-fnb-display-stays-light.png', '05b-till-on-fnb-press-display-dark.png', '05c-till-on-shop-display-stays-light.png', '05d-till-on-shop-press-display-dark.png'], S.receipt.reads.p5);
+S.phase = 'p6';
+const { expect } = S;
+const till = S.tills.A.page, d = S.displays.A.page;
+const n = S.free[0];
+S.assert.equal((await S.call('GET', `/members/lookup?phone=${n}`)).body.member, null, 'the ZZ TEST number is still unused');
+await d.getByTestId('language-choice-en').click();
+for (const c of n) await d.getByRole('button', { name: c, exact: true }).last().click();
+await S.sleep(500);
+await S.both('06a-display-phone-entry-light.png', 'Point 6: phone entry on the light display (a ZZ TEST number, checked unused)', till, d);
+await d.getByRole('button', { name: 'Continue', exact: true }).click();
+const offer = till.getByRole('button', { name: 'Continue as walk-in', exact: true }); const tiers = till.getByRole('heading', { name: 'Tourist', exact: true });
+await expect.poll(async () => (await offer.isVisible()) || (await tiers.isVisible()), { timeout: 30000 }).toBe(true);
+await S.sleep(1200);
+await S.both('06b-till-new-member-offer-display-after-phone.png', 'Point 6: the display after Continue; the till offers New member? / walk-in', till, d);
+if (await offer.isVisible()) await offer.click();
+await tiers.first().waitFor();
+await S.sleep(2000);
+await S.both('06c-display-welcome-light.png', 'Point 6: walk-in chosen: the welcome on the light display', till, d);
+return { look: await S.look(d), text: S.flat(await d.locator('body').innerText()).slice(0, 400) };
+--> {
+ "ok": true,
+ "value": {
+  "look": "light",
+  "text": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English O Welcome to Oto Thailand's happiest indoor play park. Let's get you ready to play! Our staff will help you at the counter"
+ }
+}
+
+=== 2026-11-12T11:52:10.873Z p6
+S.phase = 'p6';
+const { expect } = S;
+const till = S.tills.A.page, d = S.displays.A.page;
+await till.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await till.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+const quantity = async (label, target) => {
+  const add = till.getByRole('button', { name: `Add one ${label}`, exact: true }).first();
+  const remove = till.getByRole('button', { name: `Remove one ${label}`, exact: true }).first();
+  const value = add.locator('xpath=preceding-sibling::span[1]');
+  for (let i = 0; i < 8; i++) { const c = Number(await value.textContent()); if (c === target) return; await (c < target ? add : remove).click(); await till.waitForTimeout(300); }
+};
+await quantity('Kids', 1); await quantity('Adults', 1);
+await d.getByText('Your Order', { exact: true }).waitFor({ timeout: 20000 });
+await S.sleep(2500);
+await S.both('06d-display-ticket-order-with-total-light.png', 'Point 6: a ticket order (1 Hour Play, 1 kid + 1 adult) with its total on the light display', till, d);
+const disp = S.flat(await d.locator('body').innerText());
+const buttons = await till.getByRole('button').evaluateAll(bs => bs.map(b => b.textContent.trim()).filter(t => /Continue|Pay/.test(t)));
+return { display: disp.slice(0, 500), buttons };
+--> {
+ "ok": true,
+ "value": {
+  "display": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040",
+  "buttons": [
+   "Continue",
+   "Pay ฿1040"
+  ]
+ }
+}
+
+=== 2026-11-12T11:52:41.797Z p6
+S.phase = 'p6';
+const { expect } = S;
+const till = S.tills.A.page, d = S.displays.A.page;
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await S.sleep(2500);
+const onPayment = await till.getByTestId('payment-step').isVisible().catch(() => false);
+if (!onPayment) { await till.getByRole('button', { name: /^Pay ฿/ }).first().click(); }
+await expect(till.getByTestId('payment-step')).toBeVisible({ timeout: 30000 });
+await S.sleep(3000);
+await S.both('06e-display-payment-screen-light.png', 'Point 6: the payment step on the till; the light display\'s payment screen', till, d);
+const dispPay = S.flat(await d.locator('body').innerText()).slice(0, 500);
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+await S.sleep(2000);
+await S.both('06f-cash-chosen-display-light.png', 'Point 6: Cash chosen on the till; the light display', till, d);
+const dispCash = S.flat(await d.locator('body').innerText()).slice(0, 500);
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await expect(confirm).toBeEnabled({ timeout: 20000 });
+await confirm.scrollIntoViewIfNeeded();
+await confirm.click();
+await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 45000 });
+await S.sleep(3000);
+await S.both('06g-display-thanks-light.png', 'Point 6: paid in cash: the thanks screen on the light display', till, d);
+const dispThanks = S.flat(await d.locator('body').innerText()).slice(0, 500);
+const sales = (await S.call('GET', `/sales?branchId=${S.branchId}&stationId=${S.stations.A.id}&limit=10`)).body.sales;
+S.receipt.created.push(...sales.map(s => ({ kind: 'sale', id: s.id, receipt: s.receiptNumber, status: s.status })));
+S.receipt.reads.p6 = { dispPay, dispCash, dispThanks, look: await S.look(d), sales: sales.map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals?.grossSatang / 100 })) };
+return S.receipt.reads.p6;
+--> {
+ "ok": true,
+ "value": {
+  "dispPay": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+  "dispCash": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040.00 to our staff",
+  "dispThanks": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English Thank you! Here's what you're receiving — enjoy your play! 1 Child bracelet 1 Adult bracelet Credit Grants Credit ฿350",
+  "look": "light",
+  "sales": [
+   {
+    "receipt": "Z92901-000001",
+    "status": "finalised",
+    "gross": 1040
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:53:22.747Z p6-dropoff
+S.phase = 'p6-dropoff';
+const { expect } = S;
+const till = S.tills.A.page, d = S.displays.A.page;
+await till.getByRole('button', { name: 'Start New Sale', exact: true }).click();
+await d.getByTestId('language-choice').waitFor({ timeout: 30000 });
+const n = S.free[1]; S.receipt.numbers.dropOff = n;
+S.assert.equal((await S.call('GET', `/members/lookup?phone=${n}`)).body.member, null, 'the second ZZ TEST number is unused');
+await d.getByTestId('language-choice-en').click();
+for (const c of n) await d.getByRole('button', { name: c, exact: true }).last().click();
+await d.getByRole('button', { name: 'Continue', exact: true }).click();
+const offer = till.getByRole('button', { name: 'Continue as walk-in', exact: true }); const tiers = till.getByRole('heading', { name: 'Tourist', exact: true });
+await expect.poll(async () => (await offer.isVisible()) || (await tiers.isVisible()), { timeout: 30000 }).toBe(true);
+if (await offer.isVisible()) await offer.click();
+await tiers.first().click();
+await till.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click();
+const add = till.getByRole('button', { name: 'Add one Kids', exact: true }).first();
+const remove = till.getByRole('button', { name: 'Remove one Adults', exact: true }).first();
+const kv = add.locator('xpath=preceding-sibling::span[1]');
+const av = till.getByRole('button', { name: 'Add one Adults', exact: true }).first().locator('xpath=preceding-sibling::span[1]');
+for (let i = 0; i < 5 && Number(await kv.textContent()) < 1; i++) { await add.click(); await till.waitForTimeout(300); }
+for (let i = 0; i < 5 && Number(await av.textContent()) > 0; i++) { await remove.click(); await till.waitForTimeout(300); }
+await till.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await d.getByRole('heading', { name: 'Children playing alone', exact: true }).waitFor({ timeout: 30000 });
+await S.sleep(2000);
+await S.both('06h-display-dropoff-form-first-step-light.png', 'Point 6: the drop-off form\'s first step on the light display (a ZZ TEST walk-in, 1 child, no adult)', till, d);
+const formText = S.flat(await d.locator('body').innerText()).slice(0, 900);
+// the photo box: press Start camera (this headless display has no camera)
+const start = d.getByRole('button', { name: 'Start camera', exact: true }).first();
+let camera = null;
+if (await start.isVisible().catch(() => false)) {
+  await start.scrollIntoViewIfNeeded(); await start.click(); await S.sleep(2500);
+  const box = start.locator('xpath=ancestor::div[contains(@class,"relative")][1]');
+  camera = S.flat(await d.locator('body').innerText()).match(/(Camera[^.]*\.|No camera[^.]*\.|[^.]*blocked[^.]*\.|[^.]*not available[^.]*\.)/gi)?.slice(0, 4) ?? null;
+}
+await S.both('06i-display-dropoff-camera-notice-light.png', 'Point 6: the drop-off form\'s photo box after Start camera on the light display (no camera on this headless display)', till, d);
+S.receipt.reads.p6dropoff = { formText, camera, look: await S.look(d) };
+return S.receipt.reads.p6dropoff;
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('heading', { name: 'Children playing alone', exact: true }) to be visible\u001b[22m | "
+}
+
+=== 2026-11-12T11:54:02.700Z p6-dropoff
+const till = S.tills.A.page, d = S.displays.A.page;
+await S.both('06x-debug-dropoff.png', 'debug: where the drop-off step stands', till, d);
+return { till: S.flat(await till.locator('main, body').first().innerText()).slice(0, 900), disp: S.flat(await d.locator('body').innerText()).slice(0, 600) };
+--> {
+ "ok": true,
+ "value": {
+  "till": "Display connected: ZZ TEST SCRUM-929 display A Hide customer display 1 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask. Private child details Agreements — ticked by the family on their screen I will remain within 15 minutes of the venue · not ticked yet I understand early pickup does not qualify for refund · not ticked yet I acknowledge the emergency evacuation point · not ticked yet Children playing alone No adult on this sale. Name each child and confirm their age so we know who needs supervision. Tap to set age Before payment • Every child needs a name. • Parent must accept every required confi",
+  "disp": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age Tap to set age Add each child's name and age to continue. Ask the team Continue"
+ }
+}
+
+=== 2026-11-12T11:54:17.419Z p6-dropoff
+S.phase = 'p6-dropoff';
+const till = S.tills.A.page, d = S.displays.A.page;
+await S.both('06h-display-dropoff-form-first-step-light.png', 'Point 6: the drop-off form\'s first step on the light display (a ZZ TEST walk-in, 1 child, no adult)', till, d);
+// name and age on the display, then on to the next step, to reach the photo box
+const name = d.getByRole('textbox').first();
+await name.fill('ZZ TEST 929 child');
+await d.getByRole('button', { name: /Tap to set age/ }).first().click();
+const dialog = d.getByRole('dialog').last(); await dialog.waitFor();
+await S.sleep(600);
+const dlgText = S.flat(await dialog.innerText()).slice(0, 300);
+await S.both('06i-display-dropoff-age-picker-light.png', 'Point 6: the age picker on the light display', till, d);
+await dialog.getByRole('button', { name: '6', exact: true }).click(); await S.sleep(400);
+await dialog.getByRole('button', { name: /^Jan/ }).first().click(); await S.sleep(400);
+await dialog.getByRole('button', { name: '1', exact: true }).first().click(); await S.sleep(400);
+await dialog.getByRole('button', { name: /Confirm/ }).click();
+await dialog.waitFor({ state: 'hidden' });
+await d.getByRole('button', { name: 'Continue', exact: true }).click();
+await S.sleep(2500);
+const step2 = S.flat(await d.locator('body').innerText()).slice(0, 900);
+await S.both('06j-display-dropoff-step-2-light.png', 'Point 6: the drop-off form\'s second step on the light display', till, d);
+return { dlgText, step2, startCamera: await d.getByRole('button', { name: 'Start camera', exact: true }).count() };
+--> {
+ "ok": true,
+ "value": {
+  "dlgText": "Age › Month › Day How old is ZZ TEST 929 child? 0 1 2 3 4 5 6 7 8 9 10 11 12 Close",
+  "step2": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. ZZ TEST 929 child Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No photo yet Start camera Allergies / medical Dietary notes Ask the team Back Continue",
+  "startCamera": 1
+ }
+}
+
+=== 2026-11-12T11:54:34.250Z p6-dropoff
+S.phase = 'p6-dropoff';
+const till = S.tills.A.page, d = S.displays.A.page;
+const start = d.getByRole('button', { name: 'Start camera', exact: true }).first();
+await start.scrollIntoViewIfNeeded(); await start.click(); await S.sleep(3000);
+const after = S.flat(await d.locator('body').innerText()).slice(0, 900);
+await S.both('06k-display-dropoff-camera-notice-light.png', 'Point 6: Start camera pressed on the light display (this headless display has no camera)', till, d);
+// the notice's colours, for the contrast reading
+const notice = await d.evaluate(() => {
+  const els = [...document.querySelectorAll('p,span,div')].filter(e => e.children.length === 0 && /camera/i.test(e.textContent) && e.offsetParent);
+  return els.slice(0, 6).map(e => { const cs = getComputedStyle(e); let bg = 'rgba(0, 0, 0, 0)'; let p = e; while (p && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent')) { bg = getComputedStyle(p).backgroundColor; p = p.parentElement; } return { text: e.textContent.trim().slice(0, 120), color: cs.color, bg, cls: e.className.slice(0, 120) }; });
+});
+S.receipt.reads.p6dropoff = { after, notice };
+return S.receipt.reads.p6dropoff;
+--> {
+ "ok": true,
+ "value": {
+  "after": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. ZZ TEST 929 child Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. Camera access blocked Reception will take the photo of you both at the counter instead. Try again Allergies / medical Dietary notes Ask the team Back Continue",
+  "notice": [
+   {
+    "text": "Camera access blocked",
+    "color": "oklch(0.879 0.169 91.605)",
+    "bg": "oklab(0 0 0 / 0.4)",
+    "cls": "text-base font-semibold"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:55:05.127Z p6-dropoff
+S.phase = 'p6-dropoff';
+const till = S.tills.A.page, d = S.displays.A.page;
+const t = d.getByText('Camera access blocked', { exact: true }).first();
+await t.scrollIntoViewIfNeeded(); await S.sleep(500);
+await S.both('06l-display-camera-blocked-notice-light.png', 'Point 6: the camera\'s "Camera access blocked" notice on the light display, scrolled into view', till, d);
+// the notice's sub-line too
+const sub = await d.evaluate(() => { const e = [...document.querySelectorAll('p,span,div')].find(x => x.children.length === 0 && /Reception will take the photo/.test(x.textContent)); if (!e) return null; const cs = getComputedStyle(e); return { text: e.textContent.trim(), color: cs.color, cls: e.className }; });
+// the effective background behind the notice, from pixels: the pixel colour at a point inside the frame
+const box = await t.boundingBox();
+const img = await d.screenshot({ clip: { x: Math.max(0, box.x - 40), y: Math.max(0, box.y - 40), width: Math.min(560, box.width + 80), height: box.height + 110 } });
+const sheet = await S.tills.A.ctx.newPage(); await sheet.setViewportSize({ width: 900, height: 500 });
+await sheet.setContent(`<html><body style="margin:0;font:15px system-ui;background:#fff;color:#111"><div style="padding:8px 12px"><b>SCRUM-929</b> · Point 6 close-up: the camera notice on the light display, at 2x</div><img style="width:${Math.min(560, box.width + 80) * 1.5}px;margin:6px 12px;border:1px solid #888" src="data:image/png;base64,${img.toString('base64')}"></body></html>`);
+const px = await sheet.evaluate(async (src) => { const im = new Image(); im.src = 'data:image/png;base64,' + src; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); const p = g.getImageData(8, 8, 1, 1).data; return [p[0], p[1], p[2]]; }, img.toString('base64'));
+await sheet.screenshot({ path: S.resolve(S.out, '06m-camera-notice-close-up-light.png'), fullPage: true }); await sheet.close();
+S.receipt.reads.p6dropoff.notice2 = { sub, framePixelNearNotice: px };
+return S.receipt.reads.p6dropoff.notice2;
+--> {
+ "ok": true,
+ "value": {
+  "sub": {
+   "text": "Reception will take the photo of you both at the counter instead.",
+   "color": "oklab(0.296409 0.0199053 0.0280578 / 0.5)",
+   "cls": "text-sm text-foreground/50"
+  },
+  "framePixelNearNotice": [
+   147,
+   137,
+   127
+  ]
+ }
+}
+
+=== 2026-11-12T11:55:41.319Z p6-abandon
+S.point('6', true, ['06a-display-phone-entry-light.png', '06b-till-new-member-offer-display-after-phone.png', '06c-display-welcome-light.png', '06d-display-ticket-order-with-total-light.png', '06e-display-payment-screen-light.png', '06f-cash-chosen-display-light.png', '06g-display-thanks-light.png', '06h-display-dropoff-form-first-step-light.png', '06i-display-dropoff-age-picker-light.png', '06j-display-dropoff-step-2-light.png', '06k-display-dropoff-camera-notice-light.png', '06l-display-camera-blocked-notice-light.png', '06m-camera-notice-close-up-light.png'], { ...S.receipt.reads.p6, dropOff: S.receipt.reads.p6dropoff });
+S.phase = 'p6-abandon';
+const till = S.tills.A.page, d = S.displays.A.page;
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await S.sleep(1500);
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).last();
+await cancel.click(); await S.sleep(1500);
+const dlg = till.getByRole('dialog').last();
+let dialog = null;
+if (await dlg.isVisible().catch(() => false)) { dialog = S.flat(await dlg.innerText()).slice(0, 300); }
+return { dialog, till: S.flat(await till.locator('body').innerText()).slice(0, 400), disp: S.flat(await d.locator('body').innerText()).slice(0, 200) };
+--> {
+ "ok": false,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - waiting for getByRole('button', { name: 'Back', exact: true }).first()\u001b[22m | "
+}
+
+=== 2026-11-12T11:56:19.602Z p6-abandon
+const till = S.tills.A.page;
+const bs = await till.getByRole('button').evaluateAll(b => b.map(x => ({ t: x.textContent.trim().slice(0, 40), a: x.getAttribute('aria-label'), dis: x.disabled, vis: !!x.offsetParent })).filter(x => /Back|Cancel|Close|Start/i.test(x.t + (x.a ?? ''))));
+return { bs, text: S.flat(await till.locator('body').innerText()).slice(0, 500) };
+--> {
+ "ok": true,
+ "value": {
+  "bs": [],
+  "text": "Locked [staff] is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked"
+ }
+}
+
+=== 2026-11-12T11:56:28.761Z p6-abandon
+const till = S.tills.A.page, d = S.displays.A.page;
+const unlocked = await S.unlock(till);
+await S.sleep(2000);
+const bs = await till.getByRole('button').evaluateAll(b => b.map(x => ({ t: x.textContent.trim().slice(0, 40), dis: x.disabled, vis: !!x.offsetParent })).filter(x => /Back|Cancel|Close|Start/i.test(x.t)));
+return { unlocked, bs, look: await S.look(d), disp: S.flat(await d.locator('body').innerText()).slice(0, 250) };
+--> {
+ "ok": true,
+ "value": {
+  "unlocked": true,
+  "bs": [
+   {
+    "t": "Back",
+    "dis": false,
+    "vis": true
+   },
+   {
+    "t": "Back",
+    "dis": false,
+    "vis": true
+   }
+  ],
+  "look": "light",
+  "disp": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A English PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3"
+ }
+}
+
+=== 2026-11-12T11:56:43.755Z p6-abandon
+S.phase = 'p6-abandon';
+const till = S.tills.A.page, d = S.displays.A.page;
+S.receipt.reads.lockUnlock = { displayLookAfterUnlock: await S.look(d) };
+await till.getByRole('button', { name: 'Back', exact: true }).first().click();
+await S.sleep(1500);
+const cancel = till.getByRole('button', { name: 'Cancel', exact: true }).last();
+await cancel.click(); await S.sleep(1500);
+const dlg = till.getByRole('dialog').last();
+let dialog = null;
+if (await dlg.isVisible().catch(() => false)) dialog = S.flat(await dlg.innerText()).slice(0, 300);
+return { dialog, till: S.flat(await till.locator('body').innerText()).slice(0, 300), disp: S.flat(await d.locator('body').innerText()).slice(0, 200) };
+--> {
+ "ok": true,
+ "value": {
+  "dialog": null,
+  "till": "Display connected: ZZ TEST SCRUM-929 display A Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Me",
+  "disp": "ZZ TEST SCRUM-929 proof till A 1794483973646 · ZZ TEST SCRUM-929 display A LANGUAGE Choose your language 请选择您的语言 · เลือกภาษาของคุณ · Выберите язык · Choisissez votre langue English Continue in English"
+ }
+}
+
+=== 2026-11-12T11:56:55.579Z p7
+S.phase = 'p7';
+const till = S.tills.A.page, d = S.displays.A.page;
+const reads = [];
+reads.push({ when: 'now', shows: await S.look(d), session: await S.sessionTheme(d) });
+let r = await S.press(till, d, 'dark'); await S.sleep(1500);
+reads.push({ when: 'after press to dark', ms: r.ms, shows: await S.look(d), session: await S.sessionTheme(d) });
+await S.both('07a-session-theme-dark-matches.png', `Point 7: Display pressed to dark; GET /api/display/session (the display's own bearer) says theme "${reads.at(-1).session.theme}", the display shows ${reads.at(-1).shows}`, till, d);
+r = await S.press(till, d, 'light'); await S.sleep(1500);
+reads.push({ when: 'after press to light', ms: r.ms, shows: await S.look(d), session: await S.sessionTheme(d) });
+await S.both('07b-session-theme-light-matches.png', `Point 7: pressed back to light; the session says theme "${reads.at(-1).session.theme}", the display shows ${reads.at(-1).shows}`, till, d);
+await S.closeTheme(till);
+S.receipt.reads.p7 = { earlier: { p1: S.receipt.reads.p1.session, p2: S.receipt.reads.p2.sessionAfterFirst, p3restart: S.receipt.reads.p3.restart.session }, reads };
+return S.receipt.reads.p7;
+--> {
+ "ok": true,
+ "value": {
+  "earlier": {
+   "p1": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": null,
+    "sequence": 2,
+    "stage": null
+   },
+   "p2": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": "light",
+    "sequence": 3,
+    "stage": null
+   },
+   "p3restart": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": "light",
+    "sequence": 5,
+    "stage": null
+   }
+  },
+  "reads": [
+   {
+    "when": "now",
+    "shows": "light",
+    "session": {
+     "status": 200,
+     "hasThemeField": true,
+     "theme": "light",
+     "sequence": 44,
+     "stage": null
+    }
+   },
+   {
+    "when": "after press to dark",
+    "ms": 333,
+    "shows": "dark",
+    "session": {
+     "status": 200,
+     "hasThemeField": true,
+     "theme": "dark",
+     "sequence": 45,
+     "stage": null
+    }
+   },
+   {
+    "when": "after press to light",
+    "ms": 311,
+    "shows": "light",
+    "session": {
+     "status": 200,
+     "hasThemeField": true,
+     "theme": "light",
+     "sequence": 46,
+     "stage": null
+    }
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T11:57:38.130Z p8
+S.phase = 'p8';
+S.point('7', true, ['07a-session-theme-dark-matches.png', '07b-session-theme-light-matches.png'], S.receipt.reads.p7);
+const till = S.tills.A.page, dA = S.displays.A.page;
+const dB = await S.displayContext('B');
+await dB.goto(`${S.pos}/display`);
+await S.pair('B', S.stations.B.id);
+await dB.getByTestId('separate-display').waitFor();
+await S.sleep(3000);
+await S.watchFlips(dB);
+S.three = async (name, caption) => {
+  const at = new Date();
+  const [a, b, c] = await Promise.all([S.cap(till), S.cap(dA), S.cap(dB)]);
+  const when = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(at);
+  const sheet = await S.tills.A.ctx.newPage(); await sheet.setViewportSize({ width: 2400, height: 700 });
+  const fig = (label, buf, flex) => `<figure style="margin:0;flex:${flex}"><figcaption style="font-size:13px;margin-bottom:3px">${label}</figcaption><img style="width:100%;border:1px solid #888" src="data:image/png;base64,${buf.toString('base64')}"></figure>`;
+  await sheet.setContent(`<html><body style="margin:0;background:#fff;font:15px system-ui;color:#111"><div style="padding:8px 12px"><b>SCRUM-929</b> · ${caption} · captured together at ${when} Bangkok</div><div style="display:flex;gap:10px;padding:0 10px 10px;align-items:flex-start">${fig('Till A (staff screen)', a, 1440)}${fig('Display A, paired to till A', b, 1280)}${fig('Display B, paired to ANOTHER ZZ TEST till (B)', c, 1280)}</div></body></html>`);
+  await sheet.screenshot({ path: S.resolve(S.out, name), fullPage: true }); await sheet.close();
+  return name;
+};
+const reads = [{ when: 'B just paired', A: await S.look(dA), B: await S.look(dB), Bstored: await S.stored(dB), Bsession: await S.sessionTheme(dB) }];
+await S.three('08a-second-display-on-till-b-dark-display-a-light.png', 'Point 8: display B, paired to another ZZ TEST till, is dark (never told); display A is light');
+let r = await S.press(till, dA, 'dark'); await S.sleep(2500);
+reads.push({ when: 'till A pressed dark', ms: r.ms, A: await S.look(dA), B: await S.look(dB), Bflips: (await S.flips(dB)).length, Bsession: await S.sessionTheme(dB) });
+await S.three('08b-till-a-pressed-dark-display-b-untouched.png', `Point 8: Display pressed to dark on till A: display A dark (${r.ms} ms); display B untouched`);
+r = await S.press(till, dA, 'light'); await S.sleep(2500);
+reads.push({ when: 'till A pressed light', ms: r.ms, A: await S.look(dA), B: await S.look(dB), Bflips: (await S.flips(dB)).length, Bsession: await S.sessionTheme(dB), Bstored: await S.stored(dB) });
+await S.three('08c-till-a-pressed-light-display-b-still-dark.png', `Point 8: pressed to light on till A: display A light (${r.ms} ms); display B still dark, no change`);
+await S.closeTheme(till);
+S.receipt.reads.p8 = reads;
+return reads;
+--> {
+ "ok": true,
+ "value": [
+  {
+   "when": "B just paired",
+   "A": "light",
+   "B": "dark",
+   "Bstored": null,
+   "Bsession": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": null,
+    "sequence": 0,
+    "stage": null
+   }
+  },
+  {
+   "when": "till A pressed dark",
+   "ms": 911,
+   "A": "dark",
+   "B": "dark",
+   "Bflips": 0,
+   "Bsession": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": null,
+    "sequence": 0,
+    "stage": null
+   }
+  },
+  {
+   "when": "till A pressed light",
+   "ms": 268,
+   "A": "light",
+   "B": "dark",
+   "Bflips": 0,
+   "Bsession": {
+    "status": 200,
+    "hasThemeField": true,
+    "theme": null,
+    "sequence": 0,
+    "stage": null
+   },
+   "Bstored": null
+  }
+ ]
+}
+
+=== 2026-11-12T11:58:31.404Z cleanup
+S.point('8', true, ['08a-second-display-on-till-b-dark-display-a-light.png', '08b-till-a-pressed-dark-display-b-untouched.png', '08c-till-a-pressed-light-display-b-still-dark.png'], S.receipt.reads.p8);
+S.phase = 'cleanup';
+const till = S.tills.A.page, dA = S.displays.A.page, dB = S.displays.B.page;
+const out = {};
+// 1. the cash sale: a whole refund from the till's own session, at its own ZZ TEST till
+await S.unlock(till);
+const sales = (await S.call('GET', `/sales?branchId=${S.branchId}&stationId=${S.stations.A.id}&limit=20`)).body.sales;
+out.salesBefore = sales.map(s => ({ receipt: s.receiptNumber, status: s.status }));
+for (const s of sales.filter(x => x.status === 'finalised')) {
+  const r = await till.evaluate(async ({ id, key }) => { const res = await fetch(`/api/sales/${id}/refunds`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'idempotency-key': key }, body: JSON.stringify({ mode: 'whole', reason: 'ZZ TEST SCRUM-929 proof cleanup' }) }); const b = await res.json().catch(() => null); return { status: res.status, code: b?.error?.code ?? null }; }, { id: s.id, key: S.randomUUID() });
+  out.refund = { receipt: s.receiptNumber, ...r };
+}
+for (const s of sales.filter(x => ['tendering', 'open'].includes(x.status))) {
+  const r = await S.call('POST', `/sales/${s.id}/void`, { reason: 'ZZ TEST SCRUM-929 proof cleanup' });
+  (out.voided ??= []).push(r.status);
+}
+const after = (await S.call('GET', `/sales?branchId=${S.branchId}&stationId=${S.stations.A.id}&limit=20`)).body.sales;
+out.salesAfter = after.map(s => ({ receipt: s.receiptNumber, status: s.status, gross: s.totals?.grossSatang / 100, refunded: (s.totals?.refundedSatang ?? 0) / 100 }));
+const afterB = (await S.call('GET', `/sales?branchId=${S.branchId}&stationId=${S.stations.B.id}&limit=20`)).body.sales;
+out.salesTillB = afterB.length;
+S.receipt.cleanup.sales = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "salesBefore": [
+   {
+    "receipt": "Z92901-000001",
+    "status": "finalised"
+   }
+  ],
+  "refund": {
+   "receipt": "Z92901-000001",
+   "status": 403,
+   "code": "REFUND_APPROVAL_REQUIRED"
+  },
+  "salesAfter": [
+   {
+    "receipt": "Z92901-000001",
+    "status": "finalised",
+    "gross": 1040,
+    "refunded": 0
+   }
+  ],
+  "salesTillB": 0
+ }
+}
+
+=== 2026-11-12T11:58:54.948Z cleanup
+S.phase = 'cleanup';
+const out = {};
+// display B: revoke, read back, close its context
+const dB = S.displays.B.page;
+out.revokeB = (await S.call('POST', `/credentials/${S.displays.B.deviceId}/revoke`, { reason: 'ZZ TEST SCRUM-929 proof complete' })).status;
+await dB.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 30000 }).catch(() => {});
+out.B = { setupShown: await dB.getByRole('heading', { name: 'Set up this display' }).isVisible().catch(() => false), session: await S.sessionTheme(dB).catch(e => String(e).slice(0, 80)) };
+await S.displays.B.ctx.close(); delete S.displays.B.page;
+// till A: reception out; the manager in at the same own till for the refund
+const till = S.tills.A.page;
+await S.unlock(till);
+out.receptionOut = await S.signOutPage(till);
+await till.goto(S.pos);
+await till.locator('input[inputmode="tel"],input[type="tel"]').first().fill(S.need ? '' : '');
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "revokeB": 200,
+  "B": {
+   "setupShown": true,
+   "session": {
+    "status": 401,
+    "hasThemeField": null,
+    "theme": null,
+    "sequence": null,
+    "stage": null
+   }
+  },
+  "receptionOut": {
+   "signOut": 200,
+   "meAfter": 401
+  }
+ }
+}
+
+=== 2026-11-12T11:59:15.653Z cleanup
+S.phase = 'cleanup';
+const { need } = await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs');
+const till = S.tills.A.page;
+const out = {};
+await till.goto(S.pos);
+await till.locator('input[inputmode="tel"],input[type="tel"]').first().fill(need('STAGING_MANAGER_PHONE').replace(/^\+66/, '0'));
+await till.locator('input[type="password"]').first().fill(need('STAGING_MANAGER_PASSWORD'));
+await till.getByRole('button', { name: 'Sign in', exact: true }).click();
+const pick = till.getByRole('button', { name: S.stations.A.name, exact: false }).first();
+const picker = till.getByRole('heading', { name: 'Which station are you on?' });
+const deadline = Date.now() + 60000;
+while (Date.now() < deadline) { if (await picker.isVisible()) { if (await pick.isVisible()) { await pick.click(); break; } } else if (await till.locator('a[href="/history"]').first().isVisible()) break; await till.waitForTimeout(500); }
+await till.locator('a[href="/history"]').first().waitFor({ timeout: 60000 });
+const me = await till.evaluate(async () => (await (await fetch('/api/me', { credentials: 'include' })).json()));
+const walk = (o, dd = 0) => { if (!o || dd > 3) return; for (const [k, v] of Object.entries(o)) { if (typeof v === 'string' && /^(name|nickname|fullName|displayName|firstName|lastName)$/i.test(k) && v.trim().length >= 2) { S.names.add(v.trim()); for (const p of v.trim().split(/\s+/)) if (p.length >= 3) S.names.add(p); } else if (v && typeof v === 'object' && !/branch|operator|station|role/i.test(k)) walk(v, dd + 1); } };
+walk(me);
+out.managerAtOwnTill = JSON.stringify(me).includes(S.stations.A.id);
+S.assert.ok(out.managerAtOwnTill);
+const sale = (await S.call('GET', `/sales?branchId=${S.branchId}&stationId=${S.stations.A.id}&limit=20`)).body.sales.find(s => s.receiptNumber === 'Z92901-000001');
+S.assert.ok(sale && sale.status === 'finalised');
+out.refund = await till.evaluate(async ({ id, key }) => { const res = await fetch(`/api/sales/${id}/refunds`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'idempotency-key': key }, body: JSON.stringify({ mode: 'whole', reason: 'ZZ TEST SCRUM-929 proof cleanup' }) }); const b = await res.json().catch(() => null); return { status: res.status, code: b?.error?.code ?? null }; }, { id: sale.id, key: S.randomUUID() });
+const after = (await S.call('GET', `/sales/${sale.id}`)).body;
+const s = after.sale ?? after;
+out.saleAfter = { receipt: s.receiptNumber, status: s.status, gross: s.totals?.grossSatang / 100, refunded: (s.totals?.refundedSatang ?? 0) / 100 };
+S.receipt.cleanup.refund = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "managerAtOwnTill": true,
+  "refund": {
+   "status": 200,
+   "code": null
+  },
+  "saleAfter": {
+   "receipt": "Z92901-000001",
+   "status": "refunded",
+   "gross": 1040,
+   "refunded": 1040
+  }
+ }
+}
+
+=== 2026-11-12T11:59:32.136Z cleanup
+S.phase = 'cleanup';
+const till = S.tills.A.page, dA = S.displays.A.page;
+const out = {};
+out.revokeA = (await S.call('POST', `/credentials/${S.displays.A.deviceId}/revoke`, { reason: 'ZZ TEST SCRUM-929 proof complete' })).status;
+await dA.getByRole('heading', { name: 'Set up this display' }).waitFor({ timeout: 30000 }).catch(() => {});
+await S.sleep(1500);
+out.A = { setupShown: await dA.getByRole('heading', { name: 'Set up this display' }).isVisible().catch(() => false), look: await S.look(dA), stored: await S.stored(dA), session: await S.sessionTheme(dA).catch(e => String(e).slice(0, 80)) };
+await S.both('09-cleanup-display-a-unpaired-keeps-light.png', `Clean-up: display A unpaired (credential revoked, its session now ${out.A.session.status}); its setup screen keeps the light look it remembers (pairing code masked)`, till, dA);
+await S.displays.A.ctx.close(); delete S.displays.A.page;
+out.managerOut = await S.signOutPage(till);
+await S.tills.A.ctx.close();
+// stations: devices off, archived, read back
+for (const k of ['A', 'B']) {
+  const id = S.stations[k].id;
+  const un = (await S.call('PATCH', `/stations/${id}`, { devices: [] })).status;
+  const del = (await S.call('DELETE', `/stations/${id}`)).status;
+  const back = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === id);
+  out['station' + k] = { unassign: un, archive: del, archived: back?.archived ?? null, devices: back?.devices?.length ?? null };
+}
+// no member made for either number
+out.members = {};
+for (const [k, n] of Object.entries(S.receipt.numbers)) out.members[k] = (await S.call('GET', `/members/lookup?phone=${n}`)).body?.member ? 'EXISTS' : null;
+S.receipt.cleanup.final = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "revokeA": 200,
+  "A": {
+   "setupShown": true,
+   "look": "light",
+   "stored": "light",
+   "session": {
+    "status": 401,
+    "hasThemeField": null,
+    "theme": null,
+    "sequence": null,
+    "stage": null
+   }
+  },
+  "managerOut": {
+   "signOut": 200,
+   "meAfter": 401
+  },
+  "stationA": {
+   "unassign": 200,
+   "archive": 200,
+   "archived": true,
+   "devices": 0
+  },
+  "stationB": {
+   "unassign": 200,
+   "archive": 200,
+   "archived": true,
+   "devices": 0
+  },
+  "members": {
+   "walkIn": null,
+   "dropOff": null
+  }
+ }
+}
+
+=== 2026-11-12T12:00:05.471Z end
+S.phase = 'end';
+S.receipt.cleanup.adminSignOut = await S.adminSignOut();
+const me = await S.admin.fetch('/api/me'); S.receipt.cleanup.adminMeAfter = me.status();
+S.receipt.odd.push(
+  { what: 'Point 6: the camera "Camera access blocked" notice on the light display has low contrast: amber-300 headline on the frame (about 2.4:1) and the sub-line "Reception will take the photo of you both at the counter instead." in 50% dark text on the grey-brown frame (about 1.9:1). Known to the builder; confirmed.' },
+  { what: 'Point 2: the first press of the run was timed from the till\'s publish request (148 ms), not from the click: the driver step threw on a selector after the press. Every other press was timed from the click: 268 to 911 ms.' },
+  { what: 'After display A was unpaired at clean-up, till A at once drew its own customer half (the test harness split) and drew it light, agreeing with its Display row.' },
+  { what: 'Till A locked from inactivity once during point 6; display A stayed light through the lock and the unlock.' },
+  { what: 'While the till was signed out (point 4) display A kept showing the language screen in light; nothing about the look changed.' }
+);
+S.receipt.finishedAt = new Date().toISOString();
+S.save();
+return S.receipt.cleanup;
+--> {
+ "ok": true,
+ "value": {
+  "sales": {
+   "salesBefore": [
+    {
+     "receipt": "Z92901-000001",
+     "status": "finalised"
+    }
+   ],
+   "refund": {
+    "receipt": "Z92901-000001",
+    "status": 403,
+    "code": "REFUND_APPROVAL_REQUIRED"
+   },
+   "salesAfter": [
+    {
+     "receipt": "Z92901-000001",
+     "status": "finalised",
+     "gross": 1040,
+     "refunded": 0
+    }
+   ],
+   "salesTillB": 0
+  },
+  "refund": {
+   "managerAtOwnTill": true,
+   "refund": {
+    "status": 200,
+    "code": null
+   },
+   "saleAfter": {
+    "receipt": "Z92901-000001",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040
+   }
+  },
+  "final": {
+   "revokeA": 200,
+   "A": {
+    "setupShown": true,
+    "look": "light",
+    "stored": "light",
+    "session": {
+     "status": 401,
+     "hasThemeField": null,
+     "theme": null,
+     "sequence": null,
+     "stage": null
+    }
+   },
+   "managerOut": {
+    "signOut": 200,
+    "meAfter": 401
+   },
+   "stationA": {
+    "unassign": 200,
+    "archive": 200,
+    "archived": true,
+    "devices": 0
+   },
+   "stationB": {
+    "unassign": 200,
+    "archive": 200,
+    "archived": true,
+    "devices": 0
+   },
+   "members": {
+    "walkIn": null,
+    "dropOff": null
+   }
+  },
+  "adminSignOut": 200,
+  "adminMeAfter": 401
+ }
+}

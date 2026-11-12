@@ -1,0 +1,2448 @@
+{
+  "unit": "SCRUM-939 staging proof",
+  "ticket": "SCRUM-939",
+  "title": "The till menu search in the BEO lists the best match first and never matches scattered letters",
+  "landed": "5517eb0da6a7931f9b39e626b2edef92b9ce8cab (one commit: apps/oto-app/shared/tillMenu.ts tillMenuSearchScore, client/src/components/beo/till-menu-picker.tsx, tests/till-menu-search.check.ts)",
+  "deploys": {
+    "file": "deploys.json (before 11:19Z and after 11:25Z)",
+    "app": "oto-app-staging dep-dbqpvdgn74is73ctte50 live 11:18:04Z at 5517eb0da, still live at the end: the whole run was on it.",
+    "api": "oto-api-staging (the menu the door reads) went live at 6080dc815 (dep-dbqpvk0n74is73ctttig, 11:20:10Z) before the run started (11:20:33Z); 6080dc815 contains 5517eb0da. The search is client-side in the app; the api only supplies the menu."
+  },
+  "startedAt": "2026-11-12T11:20:33.558Z",
+  "finishedAt": "2026-11-12T11:24:50.693Z",
+  "browser": "Headless Chromium [number] (Playwright), one browser for the whole run, closed at the end",
+  "rules": "One ZZ TEST party only, deleted and read back gone on the app and the till; no template created, edited or deleted (a new-template dialog opened and closed with Cancel, never saved); no POS product created; nothing printed (party on 25 Nov; the park names no party slips station); no payment; no direct database access; staff names held in memory for masking only; the signed-in initials masked",
+  "viewer": {
+    "role": "global_admin",
+    "park": "Oto Play Park, Central Floresta",
+    "linkedTillBranch": "Oto Play Park, Central Floresta",
+    "tillMenuDoor": {
+      "park": {
+        "route": "GET /api/beo/till-menu?parkId=<Central Floresta>",
+        "status": 200,
+        "parkStatus": "ok",
+        "message": null,
+        "readAt": "2026-11-12T11:20:53.467Z",
+        "count": 143
+      },
+      "all": {
+        "route": "GET /api/beo/till-menu",
+        "status": 200,
+        "parks": [
+          {
+            "parkName": "Head Office",
+            "status": "not_linked",
+            "count": 0,
+            "message": "This park is not linked to the till yet, so the till's menu cannot be offered. Type the item instead."
+          },
+          {
+            "parkName": "Oto Play Park, Central Floresta ",
+            "status": "ok",
+            "count": 143,
+            "message": null
+          },
+          {
+            "parkName": "Oto Play Park, Robinson Chalong",
+            "status": "ok",
+            "count": 134,
+            "message": null
+          }
+        ]
+      }
+    }
+  },
+  "party": {
+    "id": "671c6076-56a8-464f-8e95-6c62eb71736a",
+    "title": "ZZ TEST 939 till menu search",
+    "date": "2026-11-25",
+    "startTime": "14:00",
+    "route": "POST /api/admin/events",
+    "status": 201,
+    "createdAt": "2026-11-12T11:20:59.318Z"
+  },
+  "points": {
+    "p1_fries": {
+      "result": "PASS",
+      "typed": "fries",
+      "listed": [
+        "French fries | CF-11 | ฿175",
+        "Sweet potato fries | CF-12 | ฿175"
+      ],
+      "picture": "02-p1-kitchen-search-fries.png",
+      "before": "SCRUM-905 picture 12: 34 items, French fries 15th"
+    },
+    "p2_searches": {
+      "result": "PASS",
+      "pepperoni": {
+        "typed": "pepperoni",
+        "count": 1,
+        "listed": [
+          "Pepperoni | CF-31 | ฿420"
+        ],
+        "headings": [
+          "Pizza (1)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": "03a-p2-kitchen-search-pepperoni.png"
+      },
+      "pizza": {
+        "typed": "pizza",
+        "count": 9,
+        "listed": [
+          "Margherita | CF-24 | ฿400",
+          "Mushroom & olives | CF-25 | ฿480",
+          "Four cheese | CF-26 | ฿515",
+          "Hawaiian | CF-27 | ฿515",
+          "Smoked salmon | CF-28 | ฿560",
+          "Burrata & parma ham | CF-29 | ฿590",
+          "Sausage, brie & onion | CF-30 | ฿480",
+          "Pepperoni | CF-31 | ฿420",
+          "Veggie delight | CF-32 | ฿390"
+        ],
+        "headings": [
+          "Pizza (9)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": "03b-p2-kitchen-search-pizza.png"
+      },
+      "juice": {
+        "typed": "juice",
+        "count": 7,
+        "listed": [
+          "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+          "Fresh watermelon juice | CF-63-2 | ฿210",
+          "Apple | CF-66-1 | ฿50",
+          "Orange | CF-66-2 | ฿50",
+          "Pineapple | CF-66-3 | ฿50",
+          "Cranberry mors | CF-66-4 | ฿50",
+          "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+        ],
+        "headings": [
+          "Juice (2)",
+          "Kids juice (4)",
+          "Made for a party (BEO only) (1)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": "03c-p2-kitchen-search-juice.png"
+      },
+      "CF-24": {
+        "typed": "CF-24",
+        "count": 1,
+        "listed": [
+          "Margherita | CF-24 | ฿400"
+        ],
+        "headings": [
+          "Pizza (1)"
+        ],
+        "notFromTheTillOffered": false,
+        "empty": null,
+        "picture": "03d-p2-kitchen-search-cf-24.png"
+      }
+    },
+    "p3_pickAfterSearch": {
+      "result": "PASS",
+      "picked": "French fries CF-11 ฿175",
+      "from": "the \"fries\" search on the first kids line",
+      "save": {
+        "putStatus": 200,
+        "writes": [
+          {
+            "method": "PUT",
+            "path": "/api/events/:id/beo",
+            "status": 200
+          }
+        ],
+        "toasts": [
+          "BEO data saved successfully"
+        ]
+      },
+      "readBackAfterSave": {
+        "route": "GET /api/events/:id/beo",
+        "status": 200,
+        "kids": [
+          "French fries | code CF-11 | qty 1 | price 175 | included true"
+        ]
+      },
+      "afterReload": "the line shows French fries and CF-11 (picture 04b)",
+      "pictures": [
+        "04a-p3-picked-french-fries-before-save.png",
+        "04b-p3-after-save-and-reload-french-fries-kept.png"
+      ]
+    },
+    "p4_nothingTyped": {
+      "result": "PASS",
+      "count": 143,
+      "scrum905Count": 143,
+      "doorCount": 143,
+      "codedLine": {
+        "nothingTypedCount": 143,
+        "notFromTheTillOffered": true,
+        "remove": {
+          "typed": "remove",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": "05-p4-coded-line-search-remove-not-from-the-till.png"
+        },
+        "clear": {
+          "typed": "clear",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": null
+        },
+        "not from": {
+          "typed": "not from",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": null
+        }
+      },
+      "pictures": [
+        "01-p4-kitchen-line-nothing-typed.png",
+        "05-p4-coded-line-search-remove-not-from-the-till.png"
+      ]
+    },
+    "p5_settingsNewTemplate": {
+      "result": "PASS",
+      "dialog": "New Set Menu Template",
+      "nothingTyped": {
+        "count": 277,
+        "headings": [
+          "Breakfast (17)",
+          "Sides (36)",
+          "Sharing (8)",
+          "Soup (2)",
+          "Salads (12)",
+          "Pasta (8)",
+          "Pizza (18)",
+          "Mains (15)",
+          "Asian Food (14)",
+          "Kids (15)",
+          "Desserts (2)",
+          "Coffee (14)",
+          "Iced Coffee (12)",
+          "Chocolate (4)",
+          "Soda (4)",
+          "Smoothies (6)",
+          "Juice (4)",
+          "Tea pot (12)",
+          "Soft drinks (14)",
+          "Kids juice (8)",
+          "Wine (14)",
+          "Beer (2)",
+          "Specials (4)",
+          "Free Drinks Menu (26)",
+          "Made for a party (BEO only) (6)"
+        ]
+      },
+      "fries": {
+        "count": 4,
+        "listed": [
+          "French fries | CF-11 | ฿175",
+          "Sweet potato fries | CF-12 | ฿175",
+          "French fries | RC-10 | ฿175",
+          "Sweet potato fries | RC-11 | ฿175"
+        ]
+      },
+      "closedWith": "Cancel",
+      "dialogClosed": true,
+      "templates": {
+        "before": 9,
+        "after": 9,
+        "unchanged": true
+      },
+      "picture": "07-p5-settings-new-template-code-search-fries.png"
+    },
+    "p6_barPlan": {
+      "result": "PASS",
+      "run": {
+        "at": "2026-11-12T11:23:18.914Z",
+        "button": "button-till-menu-bar-0",
+        "nothingTyped": {
+          "count": 143,
+          "headingsInOrder": [
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Made for a party (BEO only) (6)"
+          ],
+          "firstItems": [
+            "Espresso | CF-58-1 | ฿115",
+            "Americano | CF-58-2 | ฿115",
+            "Cappuccino | CF-58-3 | ฿140",
+            "Latte | CF-58-4 | ฿145",
+            "Mocha | CF-58-5 | ฿155",
+            "Vanilla latte | CF-58-6 | ฿155",
+            "Caramel macchiato | CF-58-7 | ฿155",
+            "Iced americano | CF-59-1 | ฿140"
+          ],
+          "notFromTheTillOffered": false,
+          "picture": "06a-p6-bar-line-nothing-typed-bar-first.png"
+        },
+        "searches": [
+          {
+            "typed": "juice",
+            "count": 7,
+            "listed": [
+              "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "Apple | CF-66-1 | ฿50",
+              "Orange | CF-66-2 | ฿50",
+              "Pineapple | CF-66-3 | ฿50",
+              "Cranberry mors | CF-66-4 | ฿50",
+              "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+            ],
+            "headings": [
+              "Juice (2)",
+              "Kids juice (4)",
+              "Made for a party (BEO only) (1)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "06b-p6-bar-search-juice.png"
+          },
+          {
+            "typed": "fries",
+            "count": 2,
+            "listed": [
+              "French fries | CF-11 | ฿175",
+              "Sweet potato fries | CF-12 | ฿175"
+            ],
+            "headings": [
+              "Sharing (2)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "water",
+            "count": 4,
+            "listed": [
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+              "Acqua Panna mineral water | CF-65-5 | ฿155",
+              "Mineral water | CF-65-6 | ฿60"
+            ],
+            "headings": [
+              "Juice (1)",
+              "Soft drinks (3)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          }
+        ],
+        "picked": null,
+        "closedAfterPick": null
+      },
+      "pictures": [
+        "06a-p6-bar-line-nothing-typed-bar-first.png",
+        "06b-p6-bar-search-juice.png"
+      ]
+    }
+  },
+  "searchRuns": {
+    "kids0": {
+      "at": "2026-11-12T11:21:14.803Z",
+      "button": "button-till-menu-kids-0",
+      "nothingTyped": {
+        "count": 143,
+        "headingsInOrder": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)",
+          "Salads (6)",
+          "Pasta (4)",
+          "Pizza (9)",
+          "Mains (8)",
+          "Asian Food (7)",
+          "Kids (8)",
+          "Desserts (1)",
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)",
+          "Smoothies (3)",
+          "Juice (2)",
+          "Tea pot (6)",
+          "Soft drinks (7)",
+          "Kids juice (4)",
+          "Wine (7)",
+          "Beer (1)",
+          "Specials (2)",
+          "Free Drinks Menu (13)",
+          "Made for a party (BEO only) (6)"
+        ],
+        "firstItems": [
+          "Big breakfast | CF-1 | ฿460",
+          "Vegetarian breakfast | CF-2 | ฿400",
+          "Smashed avocado + bruschetta | CF-3 | ฿370",
+          "Waffles | CF-4 | ฿255",
+          "Pancakes | CF-5 | ฿255",
+          "Porridge | CF-6 | ฿230",
+          "Yogurt | CF-7 | ฿230",
+          "Syrniki | CF-8 | ฿230"
+        ],
+        "notFromTheTillOffered": false,
+        "picture": "01-p4-kitchen-line-nothing-typed.png"
+      },
+      "searches": [
+        {
+          "typed": "pepperoni",
+          "count": 1,
+          "listed": [
+            "Pepperoni | CF-31 | ฿420"
+          ],
+          "headings": [
+            "Pizza (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03a-p2-kitchen-search-pepperoni.png"
+        },
+        {
+          "typed": "pizza",
+          "count": 9,
+          "listed": [
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390"
+          ],
+          "headings": [
+            "Pizza (9)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03b-p2-kitchen-search-pizza.png"
+        },
+        {
+          "typed": "juice",
+          "count": 7,
+          "listed": [
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+          ],
+          "headings": [
+            "Juice (2)",
+            "Kids juice (4)",
+            "Made for a party (BEO only) (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03c-p2-kitchen-search-juice.png"
+        },
+        {
+          "typed": "CF-24",
+          "count": 1,
+          "listed": [
+            "Margherita | CF-24 | ฿400"
+          ],
+          "headings": [
+            "Pizza (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03d-p2-kitchen-search-cf-24.png"
+        },
+        {
+          "typed": "french",
+          "count": 1,
+          "listed": [
+            "French fries | CF-11 | ฿175"
+          ],
+          "headings": [
+            "Sharing (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "fry",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": false,
+          "empty": "Not on the till's menu. Type the item instead.",
+          "picture": null
+        },
+        {
+          "typed": "chips",
+          "count": 1,
+          "listed": [
+            "Fish & chips | CF-36 | ฿445"
+          ],
+          "headings": [
+            "Mains (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "margarita",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": false,
+          "empty": "Not on the till's menu. Type the item instead.",
+          "picture": null
+        },
+        {
+          "typed": "coke",
+          "count": 2,
+          "listed": [
+            "Coke | CF-65-1 | ฿95",
+            "Coke zero | CF-65-2 | ฿95"
+          ],
+          "headings": [
+            "Soft drinks (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "water",
+          "count": 4,
+          "listed": [
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60"
+          ],
+          "headings": [
+            "Juice (1)",
+            "Soft drinks (3)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "nugget",
+          "count": 1,
+          "listed": [
+            "ZZ TEST 829 nuggets [Party only] | PARTY-CCFACA10 | ฿0"
+          ],
+          "headings": [
+            "Made for a party (BEO only) (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "chicken",
+          "count": 7,
+          "listed": [
+            "Grilled chicken | CF-10-11 | ฿70",
+            "Caesar salad — With chicken | CF-15-1 | ฿415",
+            "Chicken schnitzel | CF-37 | ฿425",
+            "Honey balsamic chicken | CF-34 | ฿480",
+            "Grilled chicken wrap | CF-39 | ฿380",
+            "Chinese dumpling in chicken broth | CF-45 | ฿240",
+            "Chicken soup | CF-52 | ฿210"
+          ],
+          "headings": [
+            "Sides (1)",
+            "Salads (1)",
+            "Mains (3)",
+            "Asian Food (1)",
+            "Kids (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "kids",
+          "count": 12,
+          "listed": [
+            "Mac & cheese | CF-48 | ฿220",
+            "Waffle | CF-49 | ฿180",
+            "Pancake | CF-50 | ฿180",
+            "Pelmeni | CF-51 | ฿250",
+            "Chicken soup | CF-52 | ฿210",
+            "Vegetable sticks | CF-53 | ฿90",
+            "Cutlet & mash | CF-54 | ฿260",
+            "Hotdog | CF-55 | ฿210",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50"
+          ],
+          "headings": [
+            "Kids (8)",
+            "Kids juice (4)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "bar",
+          "count": 66,
+          "listed": [
+            "Barley & quinoa warm salad | CF-16 | ฿415",
+            "Espresso | CF-58-1 | ฿115",
+            "Americano | CF-58-2 | ฿115",
+            "Cappuccino | CF-58-3 | ฿140",
+            "Latte | CF-58-4 | ฿145",
+            "Mocha | CF-58-5 | ฿155",
+            "Vanilla latte | CF-58-6 | ฿155",
+            "Caramel macchiato | CF-58-7 | ฿155",
+            "Iced americano | CF-59-1 | ฿140",
+            "Iced latte | CF-59-2 | ฿155",
+            "Iced cappuccino | CF-59-3 | ฿155",
+            "Iced mocha | CF-59-4 | ฿170",
+            "Iced vanilla latte | CF-59-5 | ฿170",
+            "Iced caramel macchiato | CF-59-6 | ฿170",
+            "Hot chocolate | CF-60-1 | ฿130",
+            "Iced chocolate | CF-60-2 | ฿150",
+            "Honey lemon | CF-61-1 | ฿135",
+            "Ginger lime | CF-61-2 | ฿135",
+            "Banana | CF-62-1 | ฿225",
+            "Mixed berry | CF-62-2 | ฿225",
+            "Mango & passion fruit | CF-62-3 | ฿225",
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "English breakfast | CF-64-1 | ฿115",
+            "Earl grey | CF-64-2 | ฿115",
+            "Peppermint | CF-64-3 | ฿115",
+            "Green tea | CF-64-4 | ฿115",
+            "Camomile | CF-64-5 | ฿115",
+            "Chinese TeaCF-CHINESE-TEA฿140",
+            "Coke | CF-65-1 | ฿95",
+            "Coke zero | CF-65-2 | ฿95",
+            "S.Pellegrino Lemonata | CF-65-3 | ฿115",
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60",
+            "Cranberry mors | CF-65-7 | ฿95",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50",
+            "Zardetto Prosecco DOC Burt, Italy (glass)CF-67-GLASS฿350",
+            "Zardetto Prosecco DOC Burt, Italy (bottle)CF-67-BOTTLE฿1,350",
+            "La Vie En Rose, France (glass)CF-68-GLASS฿350",
+            "La Vie En Rose, France (bottle)CF-68-BOTTLE฿1,550",
+            "Villa Maria, New Zealand (glass)CF-69-GLASS฿350",
+            "Villa Maria, New Zealand (bottle)CF-69-BOTTLE฿1,550",
+            "Prope Montepulciano d’Abruzzo, Italy (bottle)CF-70-BOTTLE฿1,650",
+            "Singha | CF-71 | ฿125",
+            "Sea Salt & Maple LatteCF-SPECIAL-01฿170",
+            "EspressoCF-FREE-58-1฿0",
+            "AmericanoCF-FREE-58-2฿0",
+            "CappuccinoCF-FREE-58-3฿0",
+            "LatteCF-FREE-58-4฿0",
+            "MochaCF-FREE-58-5฿0",
+            "Iced AmericanoCF-FREE-59-1฿0",
+            "Iced LatteCF-FREE-59-2฿0",
+            "Iced CappuccinoCF-FREE-59-3฿0",
+            "Iced MochaCF-FREE-59-4฿0",
+            "Hot ChocolateCF-FREE-60-1฿0",
+            "Iced ChocolateCF-FREE-60-2฿0",
+            "Honey Lemon SodaCF-FREE-61-1฿0",
+            "Ginger Lime SodaCF-FREE-61-2฿0",
+            "ZZ TEST 822 bubble tea [Party only] | PARTY-B73D36CC | ฿125",
+            "ZZ TEST 829 bubble tea [Party only] | PARTY-CBB7D66D | ฿125",
+            "ZZ TEST 829 coffee [Party only] | PARTY-BCA4EB4E | ฿60",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+          ],
+          "headings": [
+            "Salads (1)",
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (1)",
+            "Free Drinks Menu (13)",
+            "Made for a party (BEO only) (4)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "kitchen",
+          "count": 78,
+          "listed": [
+            "Big breakfast | CF-1 | ฿460",
+            "Vegetarian breakfast | CF-2 | ฿400",
+            "Smashed avocado + bruschetta | CF-3 | ฿370",
+            "Waffles | CF-4 | ฿255",
+            "Pancakes | CF-5 | ฿255",
+            "Porridge | CF-6 | ฿230",
+            "Yogurt | CF-7 | ฿230",
+            "Syrniki | CF-8 | ฿230",
+            "Smoked salmon toast | CF-9 | ฿390",
+            "Sautéed mushrooms | CF-10-1 | ฿60",
+            "Grilled tomato | CF-10-2 | ฿50",
+            "Baked beans | CF-10-3 | ฿50",
+            "Hashbrown | CF-10-4 | ฿50",
+            "Bread | CF-10-5 | ฿70",
+            "Avocado | CF-10-6 | ฿110",
+            "Plain pasta | CF-10-7 | ฿115",
+            "Bacon | CF-10-8 | ฿70",
+            "Sausages | CF-10-9 | ฿95",
+            "Grilled shrimp | CF-10-10 | ฿95",
+            "Grilled chicken | CF-10-11 | ฿70",
+            "Smoked salmon | CF-10-12 | ฿115",
+            "Pico de gallo | CF-10-13 | ฿50",
+            "Parma ham | CF-10-14 | ฿175",
+            "Yogurt | CF-10-15 | ฿135",
+            "Sour cream | CF-10-16 | ฿50",
+            "Steamed jasmine rice | CF-10-17 | ฿50",
+            "Eggs your way | CF-10-18 | ฿50",
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175",
+            "Hummus | CF-13 | ฿275",
+            "Calamari | CF-14 | ฿295",
+            "Special soup of the month | CF-19 | ฿240",
+            "Caesar salad | CF-15 | ฿370",
+            "Caesar salad — With chicken | CF-15-1 | ฿415",
+            "Caesar salad — With shrimp | CF-15-2 | ฿425",
+            "Barley & quinoa warm salad | CF-16 | ฿415",
+            "Kale & rocket salad | CF-17 | ฿370",
+            "Burrata salad | CF-18 | ฿560",
+            "Spaghetti Bolognese | CF-20 | ฿400",
+            "Fettuccine gorgonzola & mushroom | CF-21 | ฿445",
+            "Spaghetti AOP | CF-22 | ฿380",
+            "Fettuccine Arrabbiata | CF-23 | ฿380",
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390",
+            "Sea bass with chimichurri | CF-33 | ฿580",
+            "Honey balsamic chicken | CF-34 | ฿480",
+            "Beef burger | CF-35 | ฿480",
+            "Fish & chips | CF-36 | ฿445",
+            "Chicken schnitzel | CF-37 | ฿425",
+            "Beef stroganoff | CF-38 | ฿490",
+            "Grilled chicken wrap | CF-39 | ฿380",
+            "Falafel wrap | CF-40 | ฿330",
+            "Pad krapao | CF-41 | ฿280",
+            "Pad Thai | CF-42 | ฿280",
+            "Fried rice | CF-43 | ฿240",
+            "Sichuan dumpling | CF-44 | ฿299",
+            "Chinese dumpling in chicken broth | CF-45 | ฿240",
+            "Sichuan dan dan noodle | CF-46 | ฿299",
+            "Gyoza | CF-47 | ฿299",
+            "Mac & cheese | CF-48 | ฿220",
+            "Waffle | CF-49 | ฿180",
+            "Pancake | CF-50 | ฿180",
+            "Pelmeni | CF-51 | ฿250",
+            "Chicken soup | CF-52 | ฿210",
+            "Vegetable sticks | CF-53 | ฿90",
+            "Cutlet & mash | CF-54 | ฿260",
+            "Hotdog | CF-55 | ฿210",
+            "Ice cream | CF-56 | ฿90",
+            "OTO Buffalo WingsCF-SPECIAL-02฿240",
+            "7 balloons [Party only] | PARTY-A678D0E1 | ฿350",
+            "ZZ TEST 829 nuggets [Party only] | PARTY-CCFACA10 | ฿0"
+          ],
+          "headings": [
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Specials (1)",
+            "Made for a party (BEO only) (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "Sharing (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "02-p1-kitchen-search-fries.png"
+        }
+      ],
+      "picked": "French fries CF-11 ฿175",
+      "closedAfterPick": true
+    },
+    "kids0Coded": {
+      "at": "2026-11-12T11:23:04.431Z",
+      "button": "button-till-menu-kids-0",
+      "nothingTyped": {
+        "count": 143,
+        "headingsInOrder": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)",
+          "Salads (6)",
+          "Pasta (4)",
+          "Pizza (9)",
+          "Mains (8)",
+          "Asian Food (7)",
+          "Kids (8)",
+          "Desserts (1)",
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)",
+          "Smoothies (3)",
+          "Juice (2)",
+          "Tea pot (6)",
+          "Soft drinks (7)",
+          "Kids juice (4)",
+          "Wine (7)",
+          "Beer (1)",
+          "Specials (2)",
+          "Free Drinks Menu (13)",
+          "Made for a party (BEO only) (6)"
+        ],
+        "firstItems": [
+          "Big breakfast | CF-1 | ฿460",
+          "Vegetarian breakfast | CF-2 | ฿400",
+          "Smashed avocado + bruschetta | CF-3 | ฿370",
+          "Waffles | CF-4 | ฿255",
+          "Pancakes | CF-5 | ฿255",
+          "Porridge | CF-6 | ฿230",
+          "Yogurt | CF-7 | ฿230",
+          "Syrniki | CF-8 | ฿230"
+        ],
+        "notFromTheTillOffered": true,
+        "picture": null
+      },
+      "searches": [
+        {
+          "typed": "remove",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": "05-p4-coded-line-search-remove-not-from-the-till.png"
+        },
+        {
+          "typed": "clear",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "not from",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": null
+        }
+      ],
+      "picked": null,
+      "closedAfterPick": null
+    },
+    "bar0": {
+      "at": "2026-11-12T11:23:18.914Z",
+      "button": "button-till-menu-bar-0",
+      "nothingTyped": {
+        "count": 143,
+        "headingsInOrder": [
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)",
+          "Smoothies (3)",
+          "Juice (2)",
+          "Tea pot (6)",
+          "Soft drinks (7)",
+          "Kids juice (4)",
+          "Wine (7)",
+          "Beer (1)",
+          "Specials (2)",
+          "Free Drinks Menu (13)",
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)",
+          "Salads (6)",
+          "Pasta (4)",
+          "Pizza (9)",
+          "Mains (8)",
+          "Asian Food (7)",
+          "Kids (8)",
+          "Desserts (1)",
+          "Made for a party (BEO only) (6)"
+        ],
+        "firstItems": [
+          "Espresso | CF-58-1 | ฿115",
+          "Americano | CF-58-2 | ฿115",
+          "Cappuccino | CF-58-3 | ฿140",
+          "Latte | CF-58-4 | ฿145",
+          "Mocha | CF-58-5 | ฿155",
+          "Vanilla latte | CF-58-6 | ฿155",
+          "Caramel macchiato | CF-58-7 | ฿155",
+          "Iced americano | CF-59-1 | ฿140"
+        ],
+        "notFromTheTillOffered": false,
+        "picture": "06a-p6-bar-line-nothing-typed-bar-first.png"
+      },
+      "searches": [
+        {
+          "typed": "juice",
+          "count": 7,
+          "listed": [
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+          ],
+          "headings": [
+            "Juice (2)",
+            "Kids juice (4)",
+            "Made for a party (BEO only) (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "06b-p6-bar-search-juice.png"
+        },
+        {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "Sharing (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "water",
+          "count": 4,
+          "listed": [
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60"
+          ],
+          "headings": [
+            "Juice (1)",
+            "Soft drinks (3)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        }
+      ],
+      "picked": null,
+      "closedAfterPick": null
+    },
+    "kids1Retake": {
+      "at": "2026-11-12T11:24:16.266Z",
+      "button": "button-till-menu-kids-1",
+      "nothingTyped": {
+        "count": 143,
+        "headingsInOrder": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)",
+          "Salads (6)",
+          "Pasta (4)",
+          "Pizza (9)",
+          "Mains (8)",
+          "Asian Food (7)",
+          "Kids (8)",
+          "Desserts (1)",
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)",
+          "Smoothies (3)",
+          "Juice (2)",
+          "Tea pot (6)",
+          "Soft drinks (7)",
+          "Kids juice (4)",
+          "Wine (7)",
+          "Beer (1)",
+          "Specials (2)",
+          "Free Drinks Menu (13)",
+          "Made for a party (BEO only) (6)"
+        ],
+        "firstItems": [
+          "Big breakfast | CF-1 | ฿460",
+          "Vegetarian breakfast | CF-2 | ฿400",
+          "Smashed avocado + bruschetta | CF-3 | ฿370",
+          "Waffles | CF-4 | ฿255",
+          "Pancakes | CF-5 | ฿255",
+          "Porridge | CF-6 | ฿230",
+          "Yogurt | CF-7 | ฿230",
+          "Syrniki | CF-8 | ฿230"
+        ],
+        "notFromTheTillOffered": false,
+        "picture": null
+      },
+      "searches": [
+        {
+          "typed": "pizza",
+          "count": 9,
+          "listed": [
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390"
+          ],
+          "headings": [
+            "Pizza (9)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03b-p2-kitchen-search-pizza.png"
+        },
+        {
+          "typed": "juice",
+          "count": 7,
+          "listed": [
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+          ],
+          "headings": [
+            "Juice (2)",
+            "Kids juice (4)",
+            "Made for a party (BEO only) (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "03c-p2-kitchen-search-juice.png"
+        },
+        {
+          "typed": "Margherita",
+          "count": 1,
+          "listed": [
+            "Margherita | CF-24 | ฿400"
+          ],
+          "headings": [
+            "Pizza (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "Sharing (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        }
+      ],
+      "picked": null,
+      "closedAfterPick": null
+    },
+    "kids1Odd": {
+      "at": "2026-11-12T11:24:33.178Z",
+      "button": "button-till-menu-kids-1",
+      "nothingTyped": {
+        "count": 143,
+        "headingsInOrder": [
+          "Breakfast (9)",
+          "Sides (18)",
+          "Sharing (4)",
+          "Soup (1)",
+          "Salads (6)",
+          "Pasta (4)",
+          "Pizza (9)",
+          "Mains (8)",
+          "Asian Food (7)",
+          "Kids (8)",
+          "Desserts (1)",
+          "Coffee (7)",
+          "Iced Coffee (6)",
+          "Chocolate (2)",
+          "Soda (2)",
+          "Smoothies (3)",
+          "Juice (2)",
+          "Tea pot (6)",
+          "Soft drinks (7)",
+          "Kids juice (4)",
+          "Wine (7)",
+          "Beer (1)",
+          "Specials (2)",
+          "Free Drinks Menu (13)",
+          "Made for a party (BEO only) (6)"
+        ],
+        "firstItems": [
+          "Big breakfast | CF-1 | ฿460",
+          "Vegetarian breakfast | CF-2 | ฿400",
+          "Smashed avocado + bruschetta | CF-3 | ฿370",
+          "Waffles | CF-4 | ฿255",
+          "Pancakes | CF-5 | ฿255",
+          "Porridge | CF-6 | ฿230",
+          "Yogurt | CF-7 | ฿230",
+          "Syrniki | CF-8 | ฿230"
+        ],
+        "notFromTheTillOffered": false,
+        "picture": null
+      },
+      "searches": [
+        {
+          "typed": "chicken",
+          "count": 7,
+          "listed": [
+            "Grilled chicken | CF-10-11 | ฿70",
+            "Caesar salad — With chicken | CF-15-1 | ฿415",
+            "Chicken schnitzel | CF-37 | ฿425",
+            "Honey balsamic chicken | CF-34 | ฿480",
+            "Grilled chicken wrap | CF-39 | ฿380",
+            "Chinese dumpling in chicken broth | CF-45 | ฿240",
+            "Chicken soup | CF-52 | ฿210"
+          ],
+          "headings": [
+            "Sides (1)",
+            "Salads (1)",
+            "Mains (3)",
+            "Asian Food (1)",
+            "Kids (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "08-odd-chicken-category-order-holds-across-headings.png"
+        },
+        {
+          "typed": "soup",
+          "count": 2,
+          "listed": [
+            "Special soup of the month | CF-19 | ฿240",
+            "Chicken soup | CF-52 | ฿210"
+          ],
+          "headings": [
+            "Soup (1)",
+            "Kids (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "schnitzel",
+          "count": 1,
+          "listed": [
+            "Chicken schnitzel | CF-37 | ฿425"
+          ],
+          "headings": [
+            "Mains (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "french fries",
+          "count": 1,
+          "listed": [
+            "French fries | CF-11 | ฿175"
+          ],
+          "headings": [
+            "Sharing (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "fries french",
+          "count": 1,
+          "listed": [
+            "French fries | CF-11 | ฿175"
+          ],
+          "headings": [
+            "Sharing (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        {
+          "typed": "sweet potato",
+          "count": 1,
+          "listed": [
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "Sharing (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        }
+      ],
+      "picked": null,
+      "closedAfterPick": null
+    }
+  },
+  "odd": [
+    "Across headings the menu order holds: \"chicken\" lists Grilled chicken (Sides) and Caesar salad — With chicken (Salads) before Chicken schnitzel (Mains) and puts Chicken soup (Kids) last, though both names start with the word (picture 08). Within a heading the best match is first (Chicken schnitzel above Honey balsamic chicken). cmdk 1.1.1 tries to move the best group up but looks groups up by an internal id against the heading, so groups never move.",
+    "\"water\" lists Fresh watermelon juice first (Juice heading comes before Soft drinks), then the three waters.",
+    "\"fry\" finds nothing (singular of fries); \"margarita\" finds nothing (the menu spells Margherita).",
+    "\"nugget\" finds only \"ZZ TEST 829 nuggets\" (Party only); \"juice\" also lists \"ZZ TEST 829 juice\" (Party only): two earlier test items still on the staging till as BEO-only products.",
+    "\"bar\" lists Barley & quinoa warm salad first, then every bar item (found by station); \"kids\" lists the 8 Kids dishes and the 4 Kids juices (by category)."
+  ],
+  "pageErrors": [
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T11:21:09.052Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T11:22:57.217Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    },
+    {
+      "page": "app-admin",
+      "at": "2026-11-12T11:24:10.384Z",
+      "kind": "console.error",
+      "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+    }
+  ],
+  "cleanup": {
+    "at": "2026-11-12T11:24:50.596Z",
+    "party": {
+      "id": "671c6076-56a8-464f-8e95-6c62eb71736a",
+      "title": "ZZ TEST 939 till menu search",
+      "delete": {
+        "route": "DELETE /api/admin/events/:id",
+        "status": 204,
+        "error": null
+      }
+    },
+    "readBack": {
+      "appEvent": {
+        "route": "GET /api/admin/events/:id",
+        "status": 404
+      },
+      "appBeo": {
+        "route": "GET /api/events/:id/beo",
+        "status": 404
+      },
+      "tillParty": {
+        "route": "GET /api/parties/:id?branchId=<Central Floresta> (till)",
+        "status": 404,
+        "code": "NOT_FOUND"
+      },
+      "zzTest939AtCentralFloresta": []
+    },
+    "setMenuTemplates": {
+      "count": 9,
+      "unchangedSinceStart": true
+    }
+  },
+  "signOut": {
+    "at": "2026-11-12T11:24:50.693Z",
+    "app": {
+      "appLogout": 200,
+      "launcherSignOut": 200,
+      "appUserAfter": 401,
+      "launcherMeAfter": 401
+    },
+    "pos": {
+      "signOut": 200,
+      "meAfter": 401
+    }
+  },
+  "images": [
+    {
+      "file": "01-p4-kitchen-line-nothing-typed.png",
+      "at": "2026-11-12T11:21:15.645Z",
+      "shows": "button-till-menu-kids-0: the picker open, nothing typed",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "02-p1-kitchen-search-fries.png",
+      "at": "2026-11-12T11:21:35.877Z",
+      "shows": "button-till-menu-kids-0: \"fries\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03a-p2-kitchen-search-pepperoni.png",
+      "at": "2026-11-12T11:21:17.461Z",
+      "shows": "button-till-menu-kids-0: \"pepperoni\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03b-p2-kitchen-search-pizza.png",
+      "at": "2026-11-12T11:24:18.074Z",
+      "shows": "button-till-menu-kids-1: \"pizza\" typed in the picker",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "03c-p2-kitchen-search-juice.png",
+      "at": "2026-11-12T11:24:19.924Z",
+      "shows": "button-till-menu-kids-1: \"juice\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "03d-p2-kitchen-search-cf-24.png",
+      "at": "2026-11-12T11:21:22.978Z",
+      "shows": "button-till-menu-kids-0: \"CF-24\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04a-p3-picked-french-fries-before-save.png",
+      "at": "2026-11-12T11:22:43.776Z",
+      "shows": "The kids line after picking French fries from the fries search: name and code taken, before Save",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "04b-p3-after-save-and-reload-french-fries-kept.png",
+      "at": "2026-11-12T11:23:03.055Z",
+      "shows": "After Save and a reload: the kids line keeps French fries and CF-11",
+      "namesMasked": 63,
+      "masks": 0
+    },
+    {
+      "file": "05-p4-coded-line-search-remove-not-from-the-till.png",
+      "at": "2026-11-12T11:23:06.297Z",
+      "shows": "button-till-menu-kids-0: \"remove\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06a-p6-bar-line-nothing-typed-bar-first.png",
+      "at": "2026-11-12T11:23:19.742Z",
+      "shows": "button-till-menu-bar-0: the picker open, nothing typed",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "06b-p6-bar-search-juice.png",
+      "at": "2026-11-12T11:23:21.646Z",
+      "shows": "button-till-menu-bar-0: \"juice\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    },
+    {
+      "file": "07-p5-settings-new-template-code-search-fries.png",
+      "at": "2026-11-12T11:23:35.826Z",
+      "shows": "Settings > Set menu templates > Add (a new template, never saved): the Code box's search, \"fries\" typed",
+      "namesMasked": 0,
+      "masks": 1
+    },
+    {
+      "file": "08-odd-chicken-category-order-holds-across-headings.png",
+      "at": "2026-11-12T11:24:35.047Z",
+      "shows": "button-till-menu-kids-1: \"chicken\" typed in the picker",
+      "namesMasked": 0,
+      "masks": 0
+    }
+  ],
+  "round2": {
+    "landed": "84f5bd5ceea50b88dbb2d980ae4b1ba845267efc (fix(oto-app): one ranked list for a till menu search, across categories; contains 5517eb0da)",
+    "deploys": {
+      "file": "deploys.json keys round2-before (11:40Z) and round2-after (11:44Z)",
+      "app": "oto-app-staging dep-dbqq9jd6e07s73fviihg live 11:39:48Z at 84f5bd5ce, still live at the end: the whole round was on it.",
+      "api": "oto-api-staging served 6080dc815 for the till menu read (11:40Z) and every search; it moved to 8e7f7d315 (dep-dbqqaeijnfac739er580) at 11:43:17Z, before the clean-up read-backs (11:43:52Z). The search is client-side in the app."
+    },
+    "startedAt": "2026-11-12T11:40:19.055Z",
+    "finishedAt": "2026-11-12T11:43:52.570Z",
+    "party": {
+      "id": "68695b33-0876-4b5a-831a-86d494fdc19a",
+      "title": "ZZ TEST 939 r2 till menu search",
+      "date": "2026-11-25",
+      "startTime": "14:00",
+      "route": "POST /api/admin/events",
+      "status": 201,
+      "createdAt": "2026-11-12T11:40:45.892Z"
+    },
+    "points": {
+      "p1_chicken": {
+        "result": "PASS",
+        "expected": "names starting with \"chicken\" first, no headings",
+        "search": {
+          "typed": "chicken",
+          "count": 7,
+          "listed": [
+            "Chicken schnitzel | CF-37 | ฿425",
+            "Chicken soup | CF-52 | ฿210",
+            "Grilled chicken | CF-10-11 | ฿70",
+            "Caesar salad — With chicken | CF-15-1 | ฿415",
+            "Honey balsamic chicken | CF-34 | ฿480",
+            "Grilled chicken wrap | CF-39 | ฿380",
+            "Chinese dumpling in chicken broth | CF-45 | ฿240"
+          ],
+          "headings": [
+            "null (7)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-02-p1-kitchen-search-chicken-one-list.png"
+        },
+        "headingsShown": false
+      },
+      "p2_water": {
+        "result": "FAIL",
+        "expected": "S.Pellegrino sparkling water, Acqua Panna mineral water and Mineral water before Fresh watermelon juice",
+        "search": {
+          "typed": "water",
+          "count": 4,
+          "listed": [
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+            "Acqua Panna mineral water | CF-65-5 | ฿155",
+            "Mineral water | CF-65-6 | ฿60"
+          ],
+          "headings": [
+            "null (4)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-03-p2-kitchen-search-water.png"
+        },
+        "why": "tillMenuSearchScore gives 0.9 to \"the start of one of its words\": \"water\" is the start of the word \"watermelon\", so Fresh watermelon juice scores 0.9 like the three waters (whole word \"water\"); equal answers keep the menu order, and Juice (CF-63) comes before Soft drinks (CF-65). No whole-word tier above the word-start tier."
+      },
+      "p3_unchanged": {
+        "result": "PASS",
+        "fries": {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "null (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-04-p3-kitchen-search-fries.png"
+        },
+        "pizza": {
+          "typed": "pizza",
+          "count": 9,
+          "listed": [
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390"
+          ],
+          "headings": [
+            "null (9)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-05-p3-kitchen-search-pizza.png"
+        },
+        "juice": {
+          "typed": "juice",
+          "count": 7,
+          "listed": [
+            "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+            "Fresh watermelon juice | CF-63-2 | ฿210",
+            "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0",
+            "Apple | CF-66-1 | ฿50",
+            "Orange | CF-66-2 | ฿50",
+            "Pineapple | CF-66-3 | ฿50",
+            "Cranberry mors | CF-66-4 | ฿50"
+          ],
+          "headings": [
+            "null (7)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-06-p3-kitchen-search-juice.png"
+        },
+        "CF-24": {
+          "typed": "CF-24",
+          "count": 1,
+          "listed": [
+            "Margherita | CF-24 | ฿400"
+          ],
+          "headings": [
+            "null (1)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-07-p3-kitchen-search-cf-24.png"
+        },
+        "juiceOrderChanged": "round 1 (by heading): orange, watermelon, Apple, Orange, Pineapple, Cranberry mors, ZZ TEST 829 juice; round 2 (one list): the three names with \"juice\" first (ZZ TEST 829 juice third), then the four Kids juices found by their category"
+      },
+      "p4_nothingTypedAndClearedBox": {
+        "result": "PASS",
+        "kitchen": {
+          "count": 143,
+          "headings": [
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Made for a party (BEO only) (6)"
+          ]
+        },
+        "bar": {
+          "count": 143,
+          "headings": [
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Made for a party (BEO only) (6)"
+          ]
+        },
+        "searchBoxAfterPick": {
+          "picked": "French fries CF-11 ฿175",
+          "closedAfterPick": true,
+          "lastTypedBeforePick": "fries",
+          "boxWhenReopened": ""
+        },
+        "searchBoxAfterEscape": {
+          "lastTypedBeforeEscape": "fries",
+          "boxWhenReopened": ""
+        },
+        "pictures": [
+          "r2-01-p4-kitchen-line-nothing-typed-headings.png",
+          "r2-08-p4-reopened-after-pick-box-empty.png",
+          "r2-11-p4-bar-line-nothing-typed-bar-first.png"
+        ]
+      },
+      "p5_codedLine": {
+        "result": "PASS",
+        "nothingTyped": {
+          "notFromTheTillOffered": true
+        },
+        "remove": {
+          "typed": "remove",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": "r2-09-p5-coded-line-search-remove.png"
+        },
+        "clear": {
+          "typed": "clear",
+          "count": 0,
+          "listed": [],
+          "headings": [],
+          "notFromTheTillOffered": true,
+          "empty": null,
+          "picture": null
+        },
+        "pizza": {
+          "typed": "pizza",
+          "count": 9,
+          "listed": [
+            "Margherita | CF-24 | ฿400",
+            "Mushroom & olives | CF-25 | ฿480",
+            "Four cheese | CF-26 | ฿515",
+            "Hawaiian | CF-27 | ฿515",
+            "Smoked salmon | CF-28 | ฿560",
+            "Burrata & parma ham | CF-29 | ฿590",
+            "Sausage, brie & onion | CF-30 | ฿480",
+            "Pepperoni | CF-31 | ฿420",
+            "Veggie delight | CF-32 | ฿390"
+          ],
+          "headings": [
+            "null (9)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": "r2-10-p5-coded-line-food-word-no-not-from-the-till.png"
+        },
+        "fries": {
+          "typed": "fries",
+          "count": 2,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175"
+          ],
+          "headings": [
+            "null (2)"
+          ],
+          "notFromTheTillOffered": false,
+          "empty": null,
+          "picture": null
+        },
+        "pictures": [
+          "r2-09-p5-coded-line-search-remove.png",
+          "r2-10-p5-coded-line-food-word-no-not-from-the-till.png"
+        ]
+      },
+      "p6_settingsNewTemplate": {
+        "result": "PASS",
+        "dialog": "New Set Menu Template",
+        "nothingTyped": {
+          "count": 277,
+          "headings": 25
+        },
+        "fries": {
+          "count": 4,
+          "listed": [
+            "French fries | CF-11 | ฿175",
+            "Sweet potato fries | CF-12 | ฿175",
+            "French fries | RC-10 | ฿175",
+            "Sweet potato fries | RC-11 | ฿175"
+          ],
+          "headings": [
+            null
+          ]
+        },
+        "closedWith": "Cancel",
+        "templates": {
+          "before": 9,
+          "after": 9,
+          "unchanged": true
+        },
+        "picture": "r2-13-p6-settings-new-template-code-search-fries.png"
+      }
+    },
+    "searchRuns": {
+      "kids0": {
+        "at": "2026-11-12T11:41:07.373Z",
+        "button": "button-till-menu-kids-0",
+        "nothingTyped": {
+          "count": 143,
+          "headingsInOrder": [
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Made for a party (BEO only) (6)"
+          ],
+          "firstItems": [
+            "Big breakfast | CF-1 | ฿460",
+            "Vegetarian breakfast | CF-2 | ฿400",
+            "Smashed avocado + bruschetta | CF-3 | ฿370",
+            "Waffles | CF-4 | ฿255",
+            "Pancakes | CF-5 | ฿255",
+            "Porridge | CF-6 | ฿230",
+            "Yogurt | CF-7 | ฿230",
+            "Syrniki | CF-8 | ฿230"
+          ],
+          "notFromTheTillOffered": false,
+          "picture": "r2-01-p4-kitchen-line-nothing-typed-headings.png"
+        },
+        "searches": [
+          {
+            "typed": "chicken",
+            "count": 7,
+            "listed": [
+              "Chicken schnitzel | CF-37 | ฿425",
+              "Chicken soup | CF-52 | ฿210",
+              "Grilled chicken | CF-10-11 | ฿70",
+              "Caesar salad — With chicken | CF-15-1 | ฿415",
+              "Honey balsamic chicken | CF-34 | ฿480",
+              "Grilled chicken wrap | CF-39 | ฿380",
+              "Chinese dumpling in chicken broth | CF-45 | ฿240"
+            ],
+            "headings": [
+              "null (7)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-02-p1-kitchen-search-chicken-one-list.png"
+          },
+          {
+            "typed": "water",
+            "count": 4,
+            "listed": [
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+              "Acqua Panna mineral water | CF-65-5 | ฿155",
+              "Mineral water | CF-65-6 | ฿60"
+            ],
+            "headings": [
+              "null (4)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-03-p2-kitchen-search-water.png"
+          },
+          {
+            "typed": "pizza",
+            "count": 9,
+            "listed": [
+              "Margherita | CF-24 | ฿400",
+              "Mushroom & olives | CF-25 | ฿480",
+              "Four cheese | CF-26 | ฿515",
+              "Hawaiian | CF-27 | ฿515",
+              "Smoked salmon | CF-28 | ฿560",
+              "Burrata & parma ham | CF-29 | ฿590",
+              "Sausage, brie & onion | CF-30 | ฿480",
+              "Pepperoni | CF-31 | ฿420",
+              "Veggie delight | CF-32 | ฿390"
+            ],
+            "headings": [
+              "null (9)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-05-p3-kitchen-search-pizza.png"
+          },
+          {
+            "typed": "juice",
+            "count": 7,
+            "listed": [
+              "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0",
+              "Apple | CF-66-1 | ฿50",
+              "Orange | CF-66-2 | ฿50",
+              "Pineapple | CF-66-3 | ฿50",
+              "Cranberry mors | CF-66-4 | ฿50"
+            ],
+            "headings": [
+              "null (7)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-06-p3-kitchen-search-juice.png"
+          },
+          {
+            "typed": "CF-24",
+            "count": 1,
+            "listed": [
+              "Margherita | CF-24 | ฿400"
+            ],
+            "headings": [
+              "null (1)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-07-p3-kitchen-search-cf-24.png"
+          },
+          {
+            "typed": "pepperoni",
+            "count": 1,
+            "listed": [
+              "Pepperoni | CF-31 | ฿420"
+            ],
+            "headings": [
+              "null (1)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "soup",
+            "count": 2,
+            "listed": [
+              "Special soup of the month | CF-19 | ฿240",
+              "Chicken soup | CF-52 | ฿210"
+            ],
+            "headings": [
+              "null (2)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "kids",
+            "count": 12,
+            "listed": [
+              "Mac & cheese | CF-48 | ฿220",
+              "Waffle | CF-49 | ฿180",
+              "Pancake | CF-50 | ฿180",
+              "Pelmeni | CF-51 | ฿250",
+              "Chicken soup | CF-52 | ฿210",
+              "Vegetable sticks | CF-53 | ฿90",
+              "Cutlet & mash | CF-54 | ฿260",
+              "Hotdog | CF-55 | ฿210",
+              "Apple | CF-66-1 | ฿50",
+              "Orange | CF-66-2 | ฿50",
+              "Pineapple | CF-66-3 | ฿50",
+              "Cranberry mors | CF-66-4 | ฿50"
+            ],
+            "headings": [
+              "null (12)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "bar",
+            "count": 66,
+            "listed": [
+              "Barley & quinoa warm salad | CF-16 | ฿415",
+              "Espresso | CF-58-1 | ฿115",
+              "Americano | CF-58-2 | ฿115",
+              "Cappuccino | CF-58-3 | ฿140",
+              "Latte | CF-58-4 | ฿145",
+              "Mocha | CF-58-5 | ฿155",
+              "Vanilla latte | CF-58-6 | ฿155",
+              "Caramel macchiato | CF-58-7 | ฿155",
+              "Iced americano | CF-59-1 | ฿140",
+              "Iced latte | CF-59-2 | ฿155",
+              "Iced cappuccino | CF-59-3 | ฿155",
+              "Iced mocha | CF-59-4 | ฿170",
+              "Iced vanilla latte | CF-59-5 | ฿170",
+              "Iced caramel macchiato | CF-59-6 | ฿170",
+              "Hot chocolate | CF-60-1 | ฿130",
+              "Iced chocolate | CF-60-2 | ฿150",
+              "Honey lemon | CF-61-1 | ฿135",
+              "Ginger lime | CF-61-2 | ฿135",
+              "Banana | CF-62-1 | ฿225",
+              "Mixed berry | CF-62-2 | ฿225",
+              "Mango & passion fruit | CF-62-3 | ฿225",
+              "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "English breakfast | CF-64-1 | ฿115",
+              "Earl grey | CF-64-2 | ฿115",
+              "Peppermint | CF-64-3 | ฿115",
+              "Green tea | CF-64-4 | ฿115",
+              "Camomile | CF-64-5 | ฿115",
+              "Chinese TeaCF-CHINESE-TEA฿140",
+              "Coke | CF-65-1 | ฿95",
+              "Coke zero | CF-65-2 | ฿95",
+              "S.Pellegrino Lemonata | CF-65-3 | ฿115",
+              "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+              "Acqua Panna mineral water | CF-65-5 | ฿155",
+              "Mineral water | CF-65-6 | ฿60",
+              "Cranberry mors | CF-65-7 | ฿95",
+              "Apple | CF-66-1 | ฿50",
+              "Orange | CF-66-2 | ฿50",
+              "Pineapple | CF-66-3 | ฿50",
+              "Cranberry mors | CF-66-4 | ฿50",
+              "Zardetto Prosecco DOC Burt, Italy (glass)CF-67-GLASS฿350",
+              "Zardetto Prosecco DOC Burt, Italy (bottle)CF-67-BOTTLE฿1,350",
+              "La Vie En Rose, France (glass)CF-68-GLASS฿350",
+              "La Vie En Rose, France (bottle)CF-68-BOTTLE฿1,550",
+              "Villa Maria, New Zealand (glass)CF-69-GLASS฿350",
+              "Villa Maria, New Zealand (bottle)CF-69-BOTTLE฿1,550",
+              "Prope Montepulciano d’Abruzzo, Italy (bottle)CF-70-BOTTLE฿1,650",
+              "Singha | CF-71 | ฿125",
+              "Sea Salt & Maple LatteCF-SPECIAL-01฿170",
+              "EspressoCF-FREE-58-1฿0",
+              "AmericanoCF-FREE-58-2฿0",
+              "CappuccinoCF-FREE-58-3฿0",
+              "LatteCF-FREE-58-4฿0",
+              "MochaCF-FREE-58-5฿0",
+              "Iced AmericanoCF-FREE-59-1฿0",
+              "Iced LatteCF-FREE-59-2฿0",
+              "Iced CappuccinoCF-FREE-59-3฿0",
+              "Iced MochaCF-FREE-59-4฿0",
+              "Hot ChocolateCF-FREE-60-1฿0",
+              "Iced ChocolateCF-FREE-60-2฿0",
+              "Honey Lemon SodaCF-FREE-61-1฿0",
+              "Ginger Lime SodaCF-FREE-61-2฿0",
+              "ZZ TEST 822 bubble tea [Party only] | PARTY-B73D36CC | ฿125",
+              "ZZ TEST 829 bubble tea [Party only] | PARTY-CBB7D66D | ฿125",
+              "ZZ TEST 829 coffee [Party only] | PARTY-BCA4EB4E | ฿60",
+              "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0"
+            ],
+            "headings": [
+              "null (66)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "remove",
+            "count": 0,
+            "listed": [],
+            "headings": [],
+            "notFromTheTillOffered": false,
+            "empty": "Not on the till's menu. Type the item instead.",
+            "picture": null
+          },
+          {
+            "typed": "fries",
+            "count": 2,
+            "listed": [
+              "French fries | CF-11 | ฿175",
+              "Sweet potato fries | CF-12 | ฿175"
+            ],
+            "headings": [
+              "null (2)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-04-p3-kitchen-search-fries.png"
+          }
+        ],
+        "picked": "French fries CF-11 ฿175",
+        "closedAfterPick": true
+      },
+      "kids0Coded": {
+        "at": "2026-11-12T11:41:53.579Z",
+        "button": "button-till-menu-kids-0",
+        "nothingTyped": {
+          "count": 143,
+          "headingsInOrder": [
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Made for a party (BEO only) (6)"
+          ],
+          "firstItems": [
+            "Big breakfast | CF-1 | ฿460",
+            "Vegetarian breakfast | CF-2 | ฿400",
+            "Smashed avocado + bruschetta | CF-3 | ฿370",
+            "Waffles | CF-4 | ฿255",
+            "Pancakes | CF-5 | ฿255",
+            "Porridge | CF-6 | ฿230",
+            "Yogurt | CF-7 | ฿230",
+            "Syrniki | CF-8 | ฿230"
+          ],
+          "notFromTheTillOffered": true,
+          "picture": "r2-08-p4-reopened-after-pick-box-empty.png"
+        },
+        "searches": [
+          {
+            "typed": "remove",
+            "count": 0,
+            "listed": [],
+            "headings": [],
+            "notFromTheTillOffered": true,
+            "empty": null,
+            "picture": "r2-09-p5-coded-line-search-remove.png"
+          },
+          {
+            "typed": "pizza",
+            "count": 9,
+            "listed": [
+              "Margherita | CF-24 | ฿400",
+              "Mushroom & olives | CF-25 | ฿480",
+              "Four cheese | CF-26 | ฿515",
+              "Hawaiian | CF-27 | ฿515",
+              "Smoked salmon | CF-28 | ฿560",
+              "Burrata & parma ham | CF-29 | ฿590",
+              "Sausage, brie & onion | CF-30 | ฿480",
+              "Pepperoni | CF-31 | ฿420",
+              "Veggie delight | CF-32 | ฿390"
+            ],
+            "headings": [
+              "null (9)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-10-p5-coded-line-food-word-no-not-from-the-till.png"
+          },
+          {
+            "typed": "clear",
+            "count": 0,
+            "listed": [],
+            "headings": [],
+            "notFromTheTillOffered": true,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "fries",
+            "count": 2,
+            "listed": [
+              "French fries | CF-11 | ฿175",
+              "Sweet potato fries | CF-12 | ฿175"
+            ],
+            "headings": [
+              "null (2)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          }
+        ],
+        "picked": null,
+        "closedAfterPick": null
+      },
+      "kids0AfterEscape": {
+        "at": "2026-11-12T11:42:05.546Z",
+        "button": "button-till-menu-kids-0",
+        "nothingTyped": {
+          "count": 143,
+          "headingsInOrder": [
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Made for a party (BEO only) (6)"
+          ],
+          "firstItems": [
+            "Big breakfast | CF-1 | ฿460",
+            "Vegetarian breakfast | CF-2 | ฿400",
+            "Smashed avocado + bruschetta | CF-3 | ฿370",
+            "Waffles | CF-4 | ฿255",
+            "Pancakes | CF-5 | ฿255",
+            "Porridge | CF-6 | ฿230",
+            "Yogurt | CF-7 | ฿230",
+            "Syrniki | CF-8 | ฿230"
+          ],
+          "notFromTheTillOffered": true,
+          "picture": null
+        },
+        "searches": [],
+        "picked": null,
+        "closedAfterPick": null
+      },
+      "bar0": {
+        "at": "2026-11-12T11:42:27.695Z",
+        "button": "button-till-menu-bar-0",
+        "nothingTyped": {
+          "count": 143,
+          "headingsInOrder": [
+            "Coffee (7)",
+            "Iced Coffee (6)",
+            "Chocolate (2)",
+            "Soda (2)",
+            "Smoothies (3)",
+            "Juice (2)",
+            "Tea pot (6)",
+            "Soft drinks (7)",
+            "Kids juice (4)",
+            "Wine (7)",
+            "Beer (1)",
+            "Specials (2)",
+            "Free Drinks Menu (13)",
+            "Breakfast (9)",
+            "Sides (18)",
+            "Sharing (4)",
+            "Soup (1)",
+            "Salads (6)",
+            "Pasta (4)",
+            "Pizza (9)",
+            "Mains (8)",
+            "Asian Food (7)",
+            "Kids (8)",
+            "Desserts (1)",
+            "Made for a party (BEO only) (6)"
+          ],
+          "firstItems": [
+            "Espresso | CF-58-1 | ฿115",
+            "Americano | CF-58-2 | ฿115",
+            "Cappuccino | CF-58-3 | ฿140",
+            "Latte | CF-58-4 | ฿145",
+            "Mocha | CF-58-5 | ฿155",
+            "Vanilla latte | CF-58-6 | ฿155",
+            "Caramel macchiato | CF-58-7 | ฿155",
+            "Iced americano | CF-59-1 | ฿140"
+          ],
+          "notFromTheTillOffered": false,
+          "picture": "r2-11-p4-bar-line-nothing-typed-bar-first.png"
+        },
+        "searches": [
+          {
+            "typed": "juice",
+            "count": 7,
+            "listed": [
+              "Fresh cold pressed orange juice | CF-63-1 | ฿210",
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "ZZ TEST 829 juice [Party only] | PARTY-2F15AC99 | ฿0",
+              "Apple | CF-66-1 | ฿50",
+              "Orange | CF-66-2 | ฿50",
+              "Pineapple | CF-66-3 | ฿50",
+              "Cranberry mors | CF-66-4 | ฿50"
+            ],
+            "headings": [
+              "null (7)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": "r2-12-p3-bar-search-juice.png"
+          },
+          {
+            "typed": "water",
+            "count": 4,
+            "listed": [
+              "Fresh watermelon juice | CF-63-2 | ฿210",
+              "S.Pellegrino sparkling water | CF-65-4 | ฿155",
+              "Acqua Panna mineral water | CF-65-5 | ฿155",
+              "Mineral water | CF-65-6 | ฿60"
+            ],
+            "headings": [
+              "null (4)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          },
+          {
+            "typed": "chicken",
+            "count": 7,
+            "listed": [
+              "Chicken schnitzel | CF-37 | ฿425",
+              "Chicken soup | CF-52 | ฿210",
+              "Grilled chicken | CF-10-11 | ฿70",
+              "Caesar salad — With chicken | CF-15-1 | ฿415",
+              "Honey balsamic chicken | CF-34 | ฿480",
+              "Grilled chicken wrap | CF-39 | ฿380",
+              "Chinese dumpling in chicken broth | CF-45 | ฿240"
+            ],
+            "headings": [
+              "null (7)"
+            ],
+            "notFromTheTillOffered": false,
+            "empty": null,
+            "picture": null
+          }
+        ],
+        "picked": null,
+        "closedAfterPick": null
+      }
+    },
+    "odd": [
+      "\"water\": Fresh watermelon juice still first (point 2): the start of a word (\"watermelon\") ranks with a whole word.",
+      "\"juice\" now puts the party-only \"ZZ TEST 829 juice\" third, above the four Kids juices (a name match outranks a category match); that item and \"ZZ TEST 829 nuggets\" are earlier test products still on the staging till.",
+      "\"bar\" still lists Barley & quinoa warm salad first, then the 65 bar items by station; \"remove\" on a line with no code lists \"Not on the till's menu\"."
+    ],
+    "pageErrors": [
+      {
+        "page": "app-admin",
+        "at": "2026-11-12T11:40:59.110Z",
+        "kind": "console.error",
+        "text": "`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users."
+      }
+    ],
+    "cleanup": {
+      "at": "2026-11-12T11:43:52.301Z",
+      "party": {
+        "id": "68695b33-0876-4b5a-831a-86d494fdc19a",
+        "title": "ZZ TEST 939 r2 till menu search",
+        "delete": {
+          "route": "DELETE /api/admin/events/:id",
+          "status": 204,
+          "error": null
+        }
+      },
+      "readBack": {
+        "appEvent": {
+          "route": "GET /api/admin/events/:id",
+          "status": 404
+        },
+        "appBeo": {
+          "route": "GET /api/events/:id/beo",
+          "status": 404
+        },
+        "tillParty": {
+          "route": "GET /api/parties/:id?branchId=<Central Floresta> (till)",
+          "status": 404,
+          "code": "NOT_FOUND"
+        },
+        "zzTest939AtCentralFloresta": []
+      },
+      "setMenuTemplates": {
+        "count": 9,
+        "unchangedSinceStart": true
+      }
+    },
+    "signOut": {
+      "at": "2026-11-12T11:43:52.570Z",
+      "app": {
+        "appLogout": 200,
+        "launcherSignOut": 200,
+        "appUserAfter": 401,
+        "launcherMeAfter": 401
+      },
+      "pos": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "images": [
+      {
+        "file": "r2-01-p4-kitchen-line-nothing-typed-headings.png",
+        "at": "2026-11-12T11:41:08.734Z",
+        "shows": "button-till-menu-kids-0: the picker open, nothing typed",
+        "namesMasked": 63,
+        "masks": 0
+      },
+      {
+        "file": "r2-02-p1-kitchen-search-chicken-one-list.png",
+        "at": "2026-11-12T11:41:11.068Z",
+        "shows": "button-till-menu-kids-0: \"chicken\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-03-p2-kitchen-search-water.png",
+        "at": "2026-11-12T11:41:13.889Z",
+        "shows": "button-till-menu-kids-0: \"water\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-04-p3-kitchen-search-fries.png",
+        "at": "2026-11-12T11:41:29.741Z",
+        "shows": "button-till-menu-kids-0: \"fries\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-05-p3-kitchen-search-pizza.png",
+        "at": "2026-11-12T11:41:16.283Z",
+        "shows": "button-till-menu-kids-0: \"pizza\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-06-p3-kitchen-search-juice.png",
+        "at": "2026-11-12T11:41:18.643Z",
+        "shows": "button-till-menu-kids-0: \"juice\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-07-p3-kitchen-search-cf-24.png",
+        "at": "2026-11-12T11:41:21.014Z",
+        "shows": "button-till-menu-kids-0: \"CF-24\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-08-p4-reopened-after-pick-box-empty.png",
+        "at": "2026-11-12T11:41:54.728Z",
+        "shows": "button-till-menu-kids-0: the picker open, nothing typed",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-09-p5-coded-line-search-remove.png",
+        "at": "2026-11-12T11:41:57.080Z",
+        "shows": "button-till-menu-kids-0: \"remove\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-10-p5-coded-line-food-word-no-not-from-the-till.png",
+        "at": "2026-11-12T11:41:59.768Z",
+        "shows": "button-till-menu-kids-0: \"pizza\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-11-p4-bar-line-nothing-typed-bar-first.png",
+        "at": "2026-11-12T11:42:29.003Z",
+        "shows": "button-till-menu-bar-0: the picker open, nothing typed",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-12-p3-bar-search-juice.png",
+        "at": "2026-11-12T11:42:31.248Z",
+        "shows": "button-till-menu-bar-0: \"juice\" typed in the picker",
+        "namesMasked": 0,
+        "masks": 0
+      },
+      {
+        "file": "r2-13-p6-settings-new-template-code-search-fries.png",
+        "at": "2026-11-12T11:42:43.119Z",
+        "shows": "Settings > Set menu templates > Add (a new template, never saved): the Code box's search, \"fries\" typed",
+        "namesMasked": 0,
+        "masks": 1
+      }
+    ]
+  }
+}

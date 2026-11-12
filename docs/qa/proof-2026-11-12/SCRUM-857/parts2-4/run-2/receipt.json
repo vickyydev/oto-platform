@@ -1,0 +1,706 @@
+{
+  "tickets": [
+    "SCRUM-857 parts 2-4",
+    "SCRUM-874",
+    "SCRUM-875"
+  ],
+  "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+  "startedAt": "2026-11-12T11:52:24.479Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqpvk0n74is73ctttig",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:28.707125Z",
+        "finishedAt": "2026-11-12T11:20:10.618468Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvk0n74is73ctttig",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:28.707125Z",
+        "finishedAt": "2026-11-12T11:20:10.618468Z"
+      },
+      "readAt": "2026-11-12T11:21:31.399Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqpvkmc6qcc73830r1g",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:30.218186Z",
+        "finishedAt": "2026-11-12T11:18:56.277541Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvkmc6qcc73830r1g",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:30.218186Z",
+        "finishedAt": "2026-11-12T11:18:56.277541Z"
+      },
+      "readAt": "2026-11-12T11:21:32.035Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqpvkt6e07s73fur5e0",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:31.737663Z",
+        "finishedAt": "2026-11-12T11:16:47.007048Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvkt6e07s73fur5e0",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:31.737663Z",
+        "finishedAt": "2026-11-12T11:16:47.007048Z"
+      },
+      "readAt": "2026-11-12T11:21:32.627Z"
+    }
+  },
+  "numbers": {
+    "W": "0898570230"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cf9a-6500-7b30-88c9-cbc2081aca7b",
+      "name": "ZZ TEST SCRUM-857 p2-4 proof till 1794484363949",
+      "prefix": "Z85707"
+    },
+    {
+      "kind": "display",
+      "label": "w",
+      "id": "01a1cf9a-be0b-7fa1-b62b-3b5e7a5d02b1",
+      "camera": "fake"
+    },
+    {
+      "kind": "dropoff-sale-W",
+      "id": "01a1cf9b-79bc-75d3-bec6-0e98d06baaa0"
+    },
+    {
+      "kind": "registration",
+      "family": "W",
+      "id": "01a1cf9a-fc3e-761f-8b13-95a876bec3fa"
+    }
+  ],
+  "points": {},
+  "reads": {},
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "run 2 setup: own till, numbers, sign in (staging now at 8e7f7d315, which contains 6080dc815)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "run 2 setup: own till, numbers, sign in (staging now at 8e7f7d315, which contains 6080dc815)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done",
+      "kind": "http",
+      "text": "POST /api/checkin/registrations 409"
+    },
+    {
+      "page": "till",
+      "at": "not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "page": "till",
+      "at": "run 2 clean up: release W, display revoked, prints, member archived, till retired, sign out, read back",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "run 2 clean up: release W, display revoked, prints, member archived, till retired, sign out, read back",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [
+    {
+      "at": "not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done",
+      "status": 409,
+      "replay": false,
+      "id": null,
+      "finishedAt": "2026-11-12T11:53:23.342Z"
+    },
+    {
+      "at": "not saved: the refusal lifted; the family presses Done again; the sale moves on; cash",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf9a-fc3e-761f-8b13-95a876bec3fa",
+      "finishedAt": "2026-11-12T11:53:54.575Z"
+    }
+  ],
+  "photoFiles": [
+    {
+      "at": "not saved: the refusal lifted; the family presses Done again; the sale moves on; cash",
+      "ownerEntityId": "01a1cf9a-fc3e-761f-8b13-95a876bec3fa",
+      "contentType": "image/jpeg"
+    }
+  ],
+  "displayPhotoUploads": [
+    {
+      "display": "w",
+      "at": "not saved: family W fills the form on the display; the registration write is refused (harness) when they press Done",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "w",
+        "id": "01a1cf9a-be0b-7fa1-b62b-3b5e7a5d02b1",
+        "revoked": true
+      }
+    ],
+    "final": {
+      "display": {
+        "label": "w",
+        "revoked": true
+      },
+      "release": [
+        {
+          "child": "ZZ TEST 857 child W1",
+          "status": 200
+        }
+      ],
+      "reg": [
+        "ZZ TEST 857 child W1:out"
+      ],
+      "sales": [
+        {
+          "id": "01a1cf9b-79bc-75d3-bec6-0e98d06baaa0",
+          "status": "finalised",
+          "receipt": "Z85707-000001",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        }
+      ],
+      "member": {
+        "archive": 200,
+        "after": null
+      },
+      "devicesOff": 200,
+      "deleted": 200,
+      "ownTillsBothRuns": [
+        {
+          "prefix": "Z85706",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "prefix": "Z85707",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "tillSignOut": 200,
+      "tillMe": 401,
+      "boardOfThisProof": [
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        }
+      ],
+      "notOut": [],
+      "waiting": 0,
+      "membersLeft": [],
+      "adminSignOut": 200,
+      "adminMe": 401
+    }
+  },
+  "checks": {
+    "numbersCheckedUnused": 25,
+    "first": "0898570211",
+    "last": "0898570239"
+  },
+  "finishedAt": "2026-11-12T11:54:40.406Z"
+}

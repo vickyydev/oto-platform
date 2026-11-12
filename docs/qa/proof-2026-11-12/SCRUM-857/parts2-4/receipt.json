@@ -1,0 +1,1877 @@
+{
+  "tickets": [
+    "SCRUM-857 parts 2-4",
+    "SCRUM-874",
+    "SCRUM-875"
+  ],
+  "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+  "startedAt": "2026-11-12T11:21:38.306Z",
+  "deploys": {
+    "oto-api-staging": {
+      "named": {
+        "id": "dep-dbqpvk0n74is73ctttig",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:28.707125Z",
+        "finishedAt": "2026-11-12T11:20:10.618468Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvk0n74is73ctttig",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:28.707125Z",
+        "finishedAt": "2026-11-12T11:20:10.618468Z"
+      },
+      "readAt": "2026-11-12T11:21:31.399Z"
+    },
+    "oto-pos-web-staging": {
+      "named": {
+        "id": "dep-dbqpvkmc6qcc73830r1g",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:30.218186Z",
+        "finishedAt": "2026-11-12T11:18:56.277541Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvkmc6qcc73830r1g",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:30.218186Z",
+        "finishedAt": "2026-11-12T11:18:56.277541Z"
+      },
+      "readAt": "2026-11-12T11:21:32.035Z"
+    },
+    "oto-pos-staging": {
+      "named": {
+        "id": "dep-dbqpvkt6e07s73fur5e0",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:31.737663Z",
+        "finishedAt": "2026-11-12T11:16:47.007048Z"
+      },
+      "serving": {
+        "id": "dep-dbqpvkt6e07s73fur5e0",
+        "status": "live",
+        "sha": "6080dc81585e0ee8191fb98ca5848a97c4c1d2c1",
+        "createdAt": "2026-11-12T11:15:31.737663Z",
+        "finishedAt": "2026-11-12T11:16:47.007048Z"
+      },
+      "readAt": "2026-11-12T11:21:32.627Z"
+    }
+  },
+  "numbers": {
+    "L": "0898570210",
+    "N": "0898570212",
+    "R": "0898570213",
+    "S": "0898570214",
+    "O": "0898570215",
+    "T": "0898570216",
+    "U": "0898570217",
+    "V": "0898570218"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1cf7e-28ca-70e7-afb0-b7253ef507c9",
+      "name": "ZZ TEST SCRUM-857 p2-4 proof till 1794482513557",
+      "prefix": "Z85706"
+    },
+    {
+      "kind": "display",
+      "label": "main",
+      "id": "01a1cf7e-8d64-70d2-a5d7-028242b4c82a",
+      "camera": "fake"
+    },
+    {
+      "kind": "dropoff-sale-L",
+      "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0"
+    },
+    {
+      "kind": "registration",
+      "family": "L",
+      "id": "01a1cf84-7e0a-7256-ad33-37081d9d126a"
+    },
+    {
+      "kind": "display",
+      "label": "nocam",
+      "id": "01a1cf86-b8f5-75e9-99af-f30c55456586",
+      "camera": "none"
+    },
+    {
+      "kind": "display",
+      "label": "nocam",
+      "id": "01a1cf89-d087-7fac-a111-3ef089f326db",
+      "camera": "none"
+    },
+    {
+      "kind": "dropoff-sale-N",
+      "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db"
+    },
+    {
+      "kind": "registration",
+      "family": "N",
+      "id": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd"
+    },
+    {
+      "kind": "display",
+      "label": "refused",
+      "id": "01a1cf8b-cb12-781c-a8eb-c0d964c2394e",
+      "camera": "refused"
+    },
+    {
+      "kind": "registration",
+      "family": "R",
+      "id": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335"
+    },
+    {
+      "kind": "dropoff-sale-S",
+      "id": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7"
+    },
+    {
+      "kind": "registration",
+      "family": "S",
+      "id": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208"
+    },
+    {
+      "kind": "ordinary-sale-O",
+      "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97"
+    },
+    {
+      "kind": "dropoff-sale-T",
+      "id": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca"
+    },
+    {
+      "kind": "registration",
+      "family": "T",
+      "id": "01a1cf8e-ece8-7af7-8155-d2da13cef097"
+    },
+    {
+      "kind": "display",
+      "label": "main2",
+      "id": "01a1cf8f-94a0-70f0-a635-a615309e8df5",
+      "camera": "fake"
+    },
+    {
+      "kind": "dropoff-sale-U",
+      "id": "01a1cf92-375f-7749-bb78-f093659e639d"
+    },
+    {
+      "kind": "registration",
+      "family": "U",
+      "id": "01a1cf92-3385-7c6a-a529-770395ccc74e"
+    },
+    {
+      "kind": "display",
+      "label": "phone",
+      "id": "01a1cf93-b7cb-7d70-a592-4033445ba254",
+      "camera": "fake"
+    }
+  ],
+  "points": {
+    "1 live staff view": {
+      "pass": true,
+      "pictures": [
+        "01a-form-opened-both-screens.png",
+        "01b-child-name-typed-till-follows.png",
+        "01c-age-set-till-follows.png",
+        "01d-care-step-till-follows.png",
+        "01e-agreements-guardian-typed-till-follows.png"
+      ],
+      "seen": "typed child name on the till copy 0.83 s after the last key, no Continue pressed; age and requirement at once; step change 0.21 s; guardian name 0.81 s; copy inert, \"The customer is filling this in\""
+    },
+    "2 photo on the display (fake camera)": {
+      "pass": true,
+      "pictures": [
+        "02a-display-camera-live-fake.png",
+        "02b-photo-taken-display-and-till.png"
+      ],
+      "seen": "\"The team has this photo.\" 1.3 s after Take photo; same JPEG on the till copy 1.3 s; POST /api/display/consent-photos 200; gate dropped \"needs a photo taken\""
+    },
+    "3 no camera / camera refused": {
+      "pass": true,
+      "pictures": [
+        "03a-display-no-camera-line.png",
+        "03b-no-camera-display-and-till.png",
+        "03c-staff-take-photo-on-till.png",
+        "03d-staff-photo-reaches-display-and-copy.png",
+        "03e-display-camera-refused-line.png",
+        "03f-camera-refused-display-and-till.png",
+        "03g-refused-staff-take-photo-on-till.png",
+        "03h-refused-staff-photo-reaches-display.png"
+      ],
+      "seen": "no camera: \"No camera available · Reception will take the photo of you both at the counter instead.\" (no Start camera); refused (getUserMedia NotAllowedError, init script, the fake-ui flag grants every context): \"Camera access blocked\" + same reception line + Try again; staff photo in Private child details reaches the till copy and the display says \"The team has this photo.\""
+    },
+    "4 Still needed before Done, en + th": {
+      "pass": true,
+      "pictures": [
+        "04a-display-still-needed-before-done-en.png",
+        "04b-display-still-needed-thai.png",
+        "04c-display-still-needed-thai-number-ticked.png",
+        "04d-thai-display-till-stays-english.png"
+      ],
+      "seen": "en: Still needed before Done: your consent · each confirmation · confirming your WhatsApp number; th: ยังต้องกรอกก่อนกด เสร็จสิ้น: การยินยอมของคุณ · การยืนยันทุกข้อ · ยืนยันหมายเลข WhatsApp ของคุณ; shortens as items are ticked; no raw key; till copy stays English"
+    },
+    "5 reload / connection drop": {
+      "pass": true,
+      "pictures": [
+        "05a-display-reloaded-same-step-values-kept.png",
+        "05b-connection-dropped-display-offline.png",
+        "05c-connection-back-nothing-lost.png",
+        "05d-offline-consent-ticked.png",
+        "05e-online-again-consent-tick.png"
+      ],
+      "seen": "reload: back in 0.5 s on step 3 with name, number and tick; typing reloaded within ~100 ms kept and sent; offline 7-8 s: Reconnecting banner, form stays editable, typed name and a consent tick given offline reach the till ~2 s after the line returns, no Retry pressed"
+    },
+    "6 family Done": {
+      "pass": true,
+      "pictures": [
+        "06a-everything-ticked-done-ready.png",
+        "06b-family-pressed-done-till-line.png",
+        "06c-till-amount-due-display-payment-no-staff-press.png",
+        "06d-paid-cash-check-in-now-offered.png",
+        "06e-board-one-registration-with-photo.png",
+        "06f-registration-photo-as-stored.jpg",
+        "06g-readback-registrations-photos-sales.png"
+      ],
+      "seen": "staff line at 0.3 s; registration 200 at 1.5 s; Amount Due at 2.0 s with no staff press; display Please pay ฿915.00; one registration (01a1cf84-7e0a), photoFileId on registration and child, image/jpeg 6823 bytes; cash Z85706-000001 finalised 91500; board one family, in park, photo avatar"
+    },
+    "7 split screen": {
+      "pass": true,
+      "pictures": [
+        "07a-split-still-needed-done-disabled.png",
+        "07b-split-photo-taken-only-number-left.png",
+        "07c-split-everything-given-done-enabled.png",
+        "07d-split-done-moved-to-amount-due.png"
+      ],
+      "seen": "customer half: own camera, Still needed line (5 items, then only the number), Done disabled until ready; Done -> saving line -> Amount Due 1.6 s; one registration with photo; cash Z85706-000003"
+    },
+    "8 Back and Pay while saving": {
+      "pass": true,
+      "pictures": [
+        "08a-done-pressed-registration-held.png",
+        "08b-staff-went-back-while-saving.png",
+        "08c-pay-pressed-still-registering-the-children.png",
+        "08d-saved-after-release-cart-carries-drop-off.png",
+        "08e-pay-again-amount-due-one-registration.png"
+      ],
+      "seen": "registration POST held in the till context; Back enabled; Pay ฿690 -> toast \"Still registering the children / The drop-off form is being saved. Wait a moment, then press again.\", gate not reopened; after release one POST (200, not replay), cart carries child + drop-off ฿915; Pay -> Amount Due; cash Z85706-000002"
+    },
+    "9 nanny": {
+      "pass": true,
+      "pictures": [
+        "09a-nanny-family-done-till-at-nanny-step.png"
+      ],
+      "seen": "age 3 (\"A nanny will look after them\"); family Done -> registration 200 -> till on the nanny step (Assign a nanny), not payment; display shows order with Nanny (1h) ฿330; backed out without assigning a real nanny; registration cancelled at clean-up"
+    },
+    "10 nothing else moved": {
+      "pass": true,
+      "pictures": [
+        "10a-ordinary-sale-straight-to-payment.png",
+        "10b-ordinary-sale-paid-cash.png",
+        "10c-staff-filled-dropoff-continue-to-payment.png",
+        "10d-staff-filled-dropoff-paid-check-in-now.png"
+      ],
+      "seen": "ordinary 1 kid + 1 adult: no form, straight to payment, no registration, cash Z85706-000004 ฿1040; staff-filled split drop-off with Continue to payment: one registration, cash Z85706-000005, check-in offered"
+    },
+    "7b not-saved staff line (lane item 7, second half; run-2/)": {
+      "pass": true,
+      "pictures": [
+        "run-2/11a-family-done-not-saved-staff-line-and-display.png",
+        "run-2/11b-done-again-moves-on.png"
+      ],
+      "seen": "registration POST answered 409 by the harness: staff line \"The family pressed Done, but it could not be saved: <reason> Check it with them; they press Done again, or press Continue here.\" = toast cause \"Couldn't register these children — <reason> Nobody has been checked in or charged — the details are still on screen.\"; display \"We couldn't save your details yet — the team will check them with you, then press Done again.\" Done enabled; second Done 200 -> Amount Due; cash Z85707-000001; on 8e7f7d315"
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 1,
+      "mirror": 3,
+      "familyDone": 1,
+      "stillNeeded": 1,
+      "stillRegistering": 1,
+      "photoReceived": 1
+    }
+  },
+  "odd": [
+    {
+      "what": "Harness: after the first display context was closed, the browser's generated fake camera answered NotReadableError (\"Could not start video source\") in every context, the till's included; family N's sale was cancelled before anything was written and the browser relaunched with a file-fed fake camera (a generated colour-bar frame). Not a product fault."
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "sign in desk till",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c: the connection drops for a few seconds while the family types and ticks consent",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5c (again, read precisely): offline, the family retypes the name; what the form allows during the drop",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "5d: offline, the family ticks consent — does the tick stay and reach the till?",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "http",
+      "text": "GET /api/stations/:id/displays 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "http",
+      "text": "POST /api/box/v1/station/:id/lease/release 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: retire the own till, sign out, read back that nothing is left",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/files/:id/url",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/registrations/:id/cancel",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [
+    {
+      "at": "6: the family ticks the rest and presses Done on the display",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+      "finishedAt": "2026-11-12T11:28:49.447Z"
+    },
+    {
+      "at": "8: release the held registration; then staff press Pay again",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+      "finishedAt": "2026-11-12T11:35:58.907Z"
+    },
+    {
+      "at": "9: nanny family R: agreements and the family Done",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+      "finishedAt": "2026-11-12T11:37:34.124Z"
+    },
+    {
+      "at": "7: split screen (no paired display), family S on the till's customer half",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+      "finishedAt": "2026-11-12T11:38:35.364Z"
+    },
+    {
+      "at": "10b: a drop-off sale filled wholly by staff on the till (split view), staff press Continue to payment",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+      "finishedAt": "2026-11-12T11:40:13.104Z"
+    },
+    {
+      "at": "hunt: staff unlock the till; does the family's waiting Done move the sale on?",
+      "status": 200,
+      "replay": false,
+      "id": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+      "finishedAt": "2026-11-12T11:43:47.809Z"
+    }
+  ],
+  "photoFiles": [
+    {
+      "at": "6: the family ticks the rest and presses Done on the display",
+      "ownerEntityId": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+      "contentType": "image/jpeg"
+    },
+    {
+      "at": "8: release the held registration; then staff press Pay again",
+      "ownerEntityId": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+      "contentType": "image/jpeg"
+    },
+    {
+      "at": "9: nanny family R: agreements and the family Done",
+      "ownerEntityId": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+      "contentType": "image/jpeg"
+    },
+    {
+      "at": "7: split screen (no paired display), family S on the till's customer half",
+      "ownerEntityId": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+      "contentType": "image/jpeg"
+    },
+    {
+      "at": "10b: a drop-off sale filled wholly by staff on the till (split view), staff press Continue to payment",
+      "ownerEntityId": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+      "contentType": "image/jpeg"
+    },
+    {
+      "at": "hunt: staff unlock the till; does the family's waiting Done move the sale on?",
+      "ownerEntityId": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+      "contentType": "image/jpeg"
+    }
+  ],
+  "displayPhotoUploads": [
+    {
+      "display": "main",
+      "at": "1/2: Continue to care details on the display; the till follows; the family takes the photo",
+      "status": 200
+    },
+    {
+      "display": "main2",
+      "at": "hunt: family U fills the whole form on the display (photo included), then the till locks before Done",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "main",
+        "id": "01a1cf7e-8d64-70d2-a5d7-028242b4c82a",
+        "revoked": true
+      },
+      {
+        "label": "nocam",
+        "id": "01a1cf86-b8f5-75e9-99af-f30c55456586",
+        "revoked": true
+      },
+      {
+        "label": "nocam",
+        "id": "01a1cf89-d087-7fac-a111-3ef089f326db",
+        "revoked": true
+      },
+      {
+        "label": "refused",
+        "id": "01a1cf8b-cb12-781c-a8eb-c0d964c2394e",
+        "revoked": true
+      },
+      {
+        "label": "main2",
+        "id": "01a1cf8f-94a0-70f0-a635-a615309e8df5",
+        "revoked": true
+      },
+      {
+        "label": "phone",
+        "id": "01a1cf93-b7cb-7d70-a592-4033445ba254",
+        "revoked": true
+      }
+    ],
+    "registrations": [
+      {
+        "family": "R",
+        "id": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+        "cancel": 200,
+        "children": [
+          "cancelled"
+        ]
+      },
+      {
+        "fam": "L",
+        "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+        "actions": [
+          {
+            "child": "ZZ TEST 857 child L1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 857 child L1:out"
+        ]
+      },
+      {
+        "fam": "N",
+        "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+        "actions": [
+          {
+            "child": "ZZ TEST 857 child N1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 857 child N1:out"
+        ]
+      },
+      {
+        "fam": "R",
+        "reg": "01a1cf8c-7ff0-7a2c-a523-5838d41a6335",
+        "actions": [],
+        "children": [
+          "ZZ TEST 857 child R1:cancelled"
+        ]
+      },
+      {
+        "fam": "S",
+        "reg": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+        "actions": [
+          {
+            "child": "ZZ TEST 857 child S1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 857 child S1:out"
+        ]
+      },
+      {
+        "fam": "T",
+        "reg": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+        "actions": [
+          {
+            "child": "ZZ TEST 857 child T1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 857 child T1:out"
+        ]
+      },
+      {
+        "fam": "U",
+        "reg": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+        "actions": [
+          {
+            "child": "ZZ TEST 857 child U1",
+            "status": 200
+          }
+        ],
+        "children": [
+          "ZZ TEST 857 child U1:out"
+        ]
+      }
+    ],
+    "sales": {
+      "open": [],
+      "prints": [
+        {
+          "id": "01a1cf92-375f-7749-bb78-f093659e639d",
+          "receipt": "Z85706-000006",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        },
+        {
+          "id": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca",
+          "receipt": "Z85706-000005",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        },
+        {
+          "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97",
+          "receipt": "Z85706-000004",
+          "gross": 104000,
+          "jobs": [
+            "printed",
+            "printed",
+            "printed"
+          ]
+        },
+        {
+          "id": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7",
+          "receipt": "Z85706-000003",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        },
+        {
+          "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+          "receipt": "Z85706-000002",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        },
+        {
+          "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+          "receipt": "Z85706-000001",
+          "gross": 91500,
+          "jobs": [
+            "printed",
+            "printed"
+          ]
+        }
+      ],
+      "salesFinal": [
+        {
+          "id": "01a1cf92-375f-7749-bb78-f093659e639d",
+          "status": "finalised",
+          "receipt": "Z85706-000006",
+          "gross": 91500
+        },
+        {
+          "id": "01a1cf8e-f0e7-75d6-b9ed-f0e74cd537ca",
+          "status": "finalised",
+          "receipt": "Z85706-000005",
+          "gross": 91500
+        },
+        {
+          "id": "01a1cf8e-0bfc-7584-bfd1-8d98760cfc97",
+          "status": "finalised",
+          "receipt": "Z85706-000004",
+          "gross": 104000
+        },
+        {
+          "id": "01a1cf8d-72f8-751f-b3b9-376ec6c6e6a7",
+          "status": "finalised",
+          "receipt": "Z85706-000003",
+          "gross": 91500
+        },
+        {
+          "id": "01a1cf8b-19d1-7ca7-9cd4-16ab305b02db",
+          "status": "finalised",
+          "receipt": "Z85706-000002",
+          "gross": 91500
+        },
+        {
+          "id": "01a1cf84-824a-79fc-beb0-ae815bb7f9d0",
+          "status": "finalised",
+          "receipt": "Z85706-000001",
+          "gross": 91500
+        }
+      ],
+      "members": [
+        {
+          "n": "0898570210",
+          "id": "01a1cf84-7c55-7334-8da8-54c77bee373a",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570211",
+          "member": null
+        },
+        {
+          "n": "0898570212",
+          "id": "01a1cf8a-6c97-712d-895e-17327aefedf4",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570213",
+          "id": "01a1cf8c-7e6b-78e6-b7f9-e2c3c8bae46a",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570214",
+          "id": "01a1cf8d-6db6-7b08-9c97-839bb941f345",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570215",
+          "member": null
+        },
+        {
+          "n": "0898570216",
+          "id": "01a1cf8e-eb55-7322-be40-a3623b990aa0",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570217",
+          "id": "01a1cf92-31e2-7ea8-a77a-7199bdf90f9a",
+          "archived": 200,
+          "after": true
+        },
+        {
+          "n": "0898570218",
+          "member": null
+        },
+        {
+          "n": "0898570219",
+          "member": null
+        }
+      ]
+    },
+    "final": {
+      "devicesOff": 200,
+      "deleted": 200,
+      "ownTills": [
+        {
+          "id": "01a1cf7e-28ca-70e7-afb0-b7253ef507c9",
+          "prefix": "Z85706",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "tillSignOut": 200,
+      "tillMeAfter": 401,
+      "boardFamiliesOfThisProof": [
+        {
+          "reg": "01a1cf92-3385-7c6a-a529-770395ccc74e",
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "reg": "01a1cf8e-ece8-7af7-8155-d2da13cef097",
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "reg": "01a1cf8d-6f44-7d5d-a9cf-bcbaf9209208",
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "reg": "01a1cf8a-6e58-7f9f-9645-bd7df6674edd",
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "reg": "01a1cf84-7e0a-7256-ad33-37081d9d126a",
+          "tab": "out",
+          "children": [
+            "out"
+          ]
+        }
+      ],
+      "waitingRegistrationsOfThisProof": [],
+      "registrationsReadBack": [
+        {
+          "fam": "L",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "fam": "N",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "fam": "R",
+          "children": [
+            "cancelled"
+          ]
+        },
+        {
+          "fam": "S",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "fam": "T",
+          "children": [
+            "out"
+          ]
+        },
+        {
+          "fam": "U",
+          "children": [
+            "out"
+          ]
+        }
+      ],
+      "membersOnNumbers": [],
+      "displaysStillPaired": [],
+      "displaysRevoked": [
+        {
+          "label": "main",
+          "id": "01a1cf7e-8d64-70d2-a5d7-028242b4c82a",
+          "revoked": true
+        },
+        {
+          "label": "nocam",
+          "id": "01a1cf86-b8f5-75e9-99af-f30c55456586",
+          "revoked": true
+        },
+        {
+          "label": "nocam",
+          "id": "01a1cf89-d087-7fac-a111-3ef089f326db",
+          "revoked": true
+        },
+        {
+          "label": "refused",
+          "id": "01a1cf8b-cb12-781c-a8eb-c0d964c2394e",
+          "revoked": true
+        },
+        {
+          "label": "main2",
+          "id": "01a1cf8f-94a0-70f0-a635-a615309e8df5",
+          "revoked": true
+        },
+        {
+          "label": "phone",
+          "id": "01a1cf93-b7cb-7d70-a592-4033445ba254",
+          "revoked": true
+        }
+      ]
+    },
+    "admin": {
+      "signOut": 200,
+      "me": 401
+    }
+  },
+  "checks": {
+    "numbersCheckedUnused": 30,
+    "first": "0898570210",
+    "last": "0898570239"
+  },
+  "finishedAt": "2026-11-12T11:47:23.501Z",
+  "hunt": {
+    "pictures": [
+      "hunt-a-till-locked-family-presses-continue.png",
+      "hunt-b-till-unlocked-catches-up.png",
+      "hunt-c-till-locked-family-presses-done.png",
+      "hunt-d-till-unlocked-after-family-done.png",
+      "hunt-e-display-after-unlock-later.png",
+      "phone-a-display-care-step-390.png",
+      "phone-b-display-agreements-still-needed-390.png"
+    ]
+  },
+  "deployTimeline": {
+    "note": "A later landing, 8e7f7d315 (contains 6080dc815; adds the paired display theme), was deployed during the run. pos-web (the till and display bundle used here) served 6080dc815 until 11:41:48Z and the api until 11:43:17Z (deploys-after.json). Points 1-10 ran 11:21:51Z-11:40:51Z, all on 6080dc815. The lock hunt (family U) started on 6080dc815 pages; the api switched during its 2-minute lock wait, so its unlock and Done ran on the 8e7f7d315 api. The phone-size look, the clean-up and run-2 (the not-saved path) ran on 8e7f7d315.",
+    "pointsRan": "2026-11-12T11:21:51Z..2026-11-12T11:40:51Z",
+    "posWebSwitched": "2026-11-12T11:41:48Z",
+    "apiSwitched": "2026-11-12T11:43:17Z"
+  }
+}
