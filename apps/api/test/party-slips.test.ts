@@ -7,6 +7,7 @@ import {
   device,
   partySlipBaseline,
   partySlipPrint,
+  partySlipScheduleStart,
   prepSlipPrint,
   printJob,
   product,
@@ -145,6 +146,8 @@ interface AppParty {
   bar?: Array<{ itemName: string; quantity: number }>;
   withPackage?: boolean;
   status?: string;
+  /** The party's start and end, "HH:MM" (13:00 to 16:00 when not given). */
+  times?: [string, string];
 }
 
 /** A party written into the OTO App's own tables, as the BEO writes it. */
@@ -155,7 +158,7 @@ async function appParty(p: AppParty): Promise<string> {
       total_value, prepayment_amount, child_name, parent_name, whatsapp_phone_e164,
       kid_turning_age, num_children, num_adults, location_text, status, created_at, updated_at)
     values (
-      ${p.id}, ${appTenant}, ${p.appBranch ?? appCentral}, 'birthday', ${p.title}, ${p.date}, '13:00', '16:00',
+      ${p.id}, ${appTenant}, ${p.appBranch ?? appCentral}, 'birthday', ${p.title}, ${p.date}, ${p.times?.[0] ?? '13:00'}, ${p.times?.[1] ?? '16:00'},
       16900, 3000, 'Mali', 'Nok', '+66812345678',
       6, 10, 4, 'Party room 1', ${p.status ?? 'upcoming'},
       (now() at time zone 'UTC') - interval '1 hour', (now() at time zone 'UTC') - interval '1 hour')`);
@@ -1151,6 +1154,28 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
        where event_id = ${id}`);
   const baselinesOf = (id: string) =>
     ctx.db.select().from(partySlipBaseline).where(eq(partySlipBaseline.eventId, id)).orderBy(asc(partySlipBaseline.station));
+  /**
+   * When the park's job began printing a party with no package
+   * (`pos.party_slip_schedule_start`): at a given clock, or, with none, not
+   * yet — the release's first tick writes it.
+   */
+  const scheduleStartAt = async (at: Date | null) => {
+    await ctx.db.delete(partySlipScheduleStart).where(eq(partySlipScheduleStart.branchId, central));
+    if (at) {
+      await ctx.db
+        .insert(partySlipScheduleStart)
+        .values({ id: newId(), operatorId, branchId: central, kind: 'no_package', startedAt: at });
+    }
+  };
+  /** A party with a kitchen plan and no package: one dish typed by hand. Slips at 11:00, as for any party naming none. */
+  const noPackageParty = async (title: string, times?: [string, string]) => {
+    const id = await appParty({ id: newId(), title, date: T, withPackage: false, ...(times ? { times } : {}) });
+    await ctx.db.execute(sql`
+      insert into otoapp.beo_kitchen_plans (id, event_id, set_menu_enabled, menus, kitchen_ready_offset_minutes)
+      values (${newId()}, ${id}, false,
+              ${JSON.stringify({ kidsFoodTime: '14:00', kids: [{ id: 'k1', itemName: 'Chicken nuggets', quantity: 10, notes: '', included: false, price: 0 }], adults: [] })}::jsonb, 20)`);
+    return id;
+  };
 
   it('decision 3: a choice staff change after the parent submitted reaches the till and the slip; the latest wins', async () => {
     const id = await appParty({ id: newId(), title: "Mint's 6th", date: T, slipsTime: '16:00', chosen: ['Margherita'] });
@@ -1197,6 +1222,8 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
       kitchen: { kidsFoodTime: '14:00', slipsTime: '11:00', barServiceTime: '14:00' },
     });
     expect(page.body.slips).toMatchObject({ slipsTime: '11:00', latest: { kitchen: null, bar: null } });
+    // The park's job began printing parties with no package before this one's slip time (see the next tests).
+    await scheduleStartAt(atBangkok(T, '10:00'));
     await runPartySlipsJob(ctx.db, atBangkok(T, '16:01'));
     const rows = await slipsOf(id);
     expect(rows.map((r) => [r.station, r.status])).toEqual([
@@ -1214,6 +1241,66 @@ describe('SCRUM-906 — the whole kitchen plan, through the OTO App view (0050)'
     await ctx.db.execute(sql`delete from otoapp.beo_bar_plans where event_id = ${none}`);
     const empty = await detail(none);
     expect([empty.body.plan, empty.body.kitchenPlan, empty.body.slips]).toEqual([null, null, null]);
+  });
+
+  /**
+   * A RELEASE DOES NOT CATCH UP. Before this release only a party with a
+   * package printed, so no party with no package has a scheduled run; caught
+   * up, every one of the day whose slip time had passed would print at the
+   * release's first tick, parties already over among them. The park's job
+   * records when it began printing them (`pos.party_slip_schedule_start`, its
+   * first tick) and leaves alone one whose slip time came before.
+   */
+  it('a release does not catch up (1): its first tick records when the park began printing parties with no package; one due then prints', async () => {
+    await nameStation(t1.id);
+    await scheduleStartAt(null);
+    const id = await noPackageParty("Ploy's 3rd");
+    const summary = await runPartySlipsJob(ctx.db, atBangkok(T, '11:00'));
+    expect(summary.failed).toBe(0);
+    const started = () => ctx.db.select().from(partySlipScheduleStart).where(eq(partySlipScheduleStart.branchId, central));
+    expect(await started()).toMatchObject([{ kind: 'no_package', startedAt: atBangkok(T, '11:00') }]);
+    const audited = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'party.slips_schedule_start'), eq(auditLog.entityId, central)));
+    expect(audited.map((a) => a.after)).toContainEqual({ kind: 'no_package', startedAt: atBangkok(T, '11:00').toISOString() });
+    expect((await slipsOf(id)).map((r) => [r.station, r.trigger, r.status])).toEqual([
+      ['kitchen', 'schedule', 'printed'],
+      ['bar', 'schedule', 'nothing_to_print'],
+    ]);
+    // The ticks after it keep the moment it began.
+    await runPartySlipsJob(ctx.db, atBangkok(T, '11:30'));
+    expect(await started()).toMatchObject([{ startedAt: atBangkok(T, '11:00') }]);
+  });
+
+  it('a release does not catch up (2): a party with no package whose slip time passed before it is not printed by the schedule, over or not; a press prints it; a party with a package is caught up as before', async () => {
+    await nameStation(t1.id);
+    await scheduleStartAt(null);
+    const over = await noPackageParty('Over before the release', ['09:00', '13:00']);
+    const on = await noPackageParty('Still on at the release', ['13:00', '16:00']);
+    const packaged = await appParty({ id: newId(), title: 'A package, its slip time missed', date: T, slipsTime: '11:31' });
+    // The release's first tick at the park, at 15:00: both parties with no package were due at 11:00.
+    const summary = await runPartySlipsJob(ctx.db, atBangkok(T, '15:00'));
+    expect(summary.failed).toBe(0);
+    expect(summary.notCaughtUp).toBe(2);
+    expect(await slipsOf(over)).toEqual([]);
+    expect(await slipsOf(on)).toEqual([]);
+    expect((await slipsOf(packaged)).map((r) => [r.station, r.trigger])).toEqual([
+      ['kitchen', 'schedule'],
+      ['bar', 'schedule'],
+    ]);
+    // Nor on the ticks after it.
+    await runPartySlipsJob(ctx.db, atBangkok(T, '15:01'));
+    expect([await slipsOf(over), await slipsOf(on)]).toEqual([[], []]);
+    // "Print party slips now" prints it; the schedule still leaves it alone after.
+    const pressed = await printNow(over, { actionId: newId() });
+    expect(pressed.status, JSON.stringify(pressed.body)).toBe(200);
+    await runPartySlipsJob(ctx.db, atBangkok(T, '15:02'));
+    expect((await slipsOf(over)).map((r) => [r.station, r.trigger])).toEqual([
+      ['kitchen', 'reprint'],
+      ['bar', 'reprint'],
+    ]);
+    expect(await slipsOf(on)).toEqual([]);
   });
 
   /**

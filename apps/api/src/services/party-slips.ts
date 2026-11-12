@@ -5,6 +5,7 @@ import {
   employee,
   partySlipBaseline,
   partySlipPrint,
+  partySlipScheduleStart,
   prepSlipPrint,
   printJob,
   product,
@@ -18,6 +19,7 @@ import {
   clockMinutes,
   clockOf,
   composePartySlips,
+  isoDateInTz,
   newId,
   parseDayStart,
   partySlipsTime,
@@ -50,7 +52,7 @@ import {
   OtoAppSeamNotGrantedError,
   type SeamEvent,
 } from './otoapp-events';
-import { partyKitchenOfRow, readPartyPlan, type PartyPlanSource } from './party-plan';
+import { partyKitchenOfRow, partyPlanOfRow, readPartyPlan, type PartyPlanSource } from './party-plan';
 import { overlayPartyEdits, partyLedgersOf } from './party-tab';
 import { nextPartyChangeRun, partySlipsLastGiven, writePrepSlips } from './prep-slips';
 import { routeOnBox } from './print';
@@ -798,6 +800,60 @@ async function partiesWithSlipsOn(db: Exec, q: { branchId: string; date: string 
   return rows.map((r) => r.eventId).sort();
 }
 
+// --- A release does not catch up (SCRUM-906) -----------------------------------------
+
+/**
+ * SCRUM-906 — when the slip time's job began printing a party with no package
+ * at the park (`pos.party_slip_schedule_start`): the job's clock at its first
+ * tick there under this release, written by that tick (audited), read after.
+ *
+ * Before this release only a party with a package printed, so no party with a
+ * kitchen plan and no package has a scheduled run. Were the job to catch them
+ * up, its first tick would print at once every such party of the day whose
+ * slip time had passed — parties already over among them. The job prints one
+ * only when its slip time is at or after this moment; "Print party slips now"
+ * prints any. A party with a package is not touched: the release brings it
+ * nothing new to print.
+ */
+async function noPackageScheduleStart(db: Db, b: { id: string; operatorId: string }, now: Date): Promise<Date> {
+  const read = async (): Promise<Date | null> => {
+    const [row] = await db
+      .select({ startedAt: partySlipScheduleStart.startedAt })
+      .from(partySlipScheduleStart)
+      .where(and(eq(partySlipScheduleStart.branchId, b.id), eq(partySlipScheduleStart.kind, 'no_package')))
+      .limit(1);
+    return row?.startedAt ?? null;
+  };
+  const held = await read();
+  if (held) return held;
+  await withTx(db, { actorAccountId: null, operatorId: b.operatorId, branchId: b.id }, 'party.slips_schedule_start', async (tx) => {
+    const [row] = await tx
+      .insert(partySlipScheduleStart)
+      .values({ id: newId(), operatorId: b.operatorId, branchId: b.id, kind: 'no_package', startedAt: now })
+      .onConflictDoNothing()
+      .returning();
+    if (!row) return;
+    await audit.record(tx, {
+      actorAccountId: null,
+      operatorId: b.operatorId,
+      branchId: b.id,
+      action: 'party.slips_schedule_start',
+      entityType: 'branch',
+      entityId: b.id,
+      after: { kind: row.kind, startedAt: row.startedAt.toISOString() },
+    });
+  });
+  // Two instances at once: the row either wrote is the one both read.
+  return (await read()) ?? now;
+}
+
+/** The party's slip time, on its own day and the park's clock, fell before `start`. */
+function slipTimeBefore(plan: Pick<PartyKitchenPlan, 'partyDate' | 'kitchen'>, start: Date, timeZone: string): boolean {
+  const startDate = isoDateInTz(start, timeZone);
+  if (plan.partyDate !== startDate) return plan.partyDate < startDate;
+  return clockMinutes(partySlipsTime(plan))! < wallClockMinutesInTz(start, timeZone);
+}
+
 // --- The job -------------------------------------------------------------------------
 
 export interface PartySlipsJobSummary extends Record<string, unknown> {
@@ -819,6 +875,8 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
   changesUnknown: number;
   /** SCRUM-906 — looks that took a slip printed before this composer as the plan now composes it, printing nothing. */
   changesRebased: number;
+  /** SCRUM-906 — parties with no package whose slip time passed before the job began printing them: not caught up. */
+  notCaughtUp: number;
   failed: number;
 }
 
@@ -827,7 +885,9 @@ export interface PartySlipsJobSummary extends Record<string, unknown> {
  * (`businessDate` in the branch's zone, the day the till's party list shows)
  * whose slip time has passed on the park's clock and which have no scheduled
  * run recorded for the day yet (a press before it does not count): one run
- * each, the slips queued or recorded as not.
+ * each, the slips queued or recorded as not. SCRUM-906: a party with no
+ * package prints too, unless its slip time passed before the park's job began
+ * printing such parties (`noPackageScheduleStart`): a release does not catch up.
  * A party that cannot be printed is counted and the job fails naming how many,
  * after every other party has had its turn. Counts only in the detail.
  */
@@ -857,15 +917,25 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
     changeNoPrinter: 0,
     changesUnknown: 0,
     changesRebased: 0,
+    notCaughtUp: 0,
     failed: 0,
   };
   for (const b of branches) {
     const date = businessDate(now, b.timezone, parseDayStart(b.businessDayStart));
     const clock = wallClockMinutesInTz(now, b.timezone);
+    // SCRUM-906: the moment this park's job began printing a party with no package;
+    // unknown (not read or written), no such party prints this tick, and the rest do.
+    let noPackageStart: Date | null = null;
+    try {
+      noPackageStart = await noPackageScheduleStart(db, b, now);
+    } catch {
+      summary.failed += 1;
+    }
     for (const row of await listEventPackagesOn(db, { branchId: b.id, date })) {
       summary.parties += 1;
       // SCRUM-906: a party's kitchen plan prints with or without a package.
-      const plan = partyKitchenOfRow(row);
+      const withPackage = partyPlanOfRow(row);
+      const plan = partyKitchenOfRow(row, withPackage);
       if (!plan) {
         summary.skipped += 1;
         continue;
@@ -888,6 +958,11 @@ export async function runPartySlipsJob(db: Db, now: Date): Promise<PartySlipsJob
         .limit(1);
       if (done) {
         summary.alreadyPrinted += 1;
+        continue;
+      }
+      // SCRUM-906: a release does not catch up a party with no package whose slip time it missed.
+      if (!withPackage && (!noPackageStart || slipTimeBefore(plan, noPackageStart, b.timezone))) {
+        summary.notCaughtUp += 1;
         continue;
       }
       try {

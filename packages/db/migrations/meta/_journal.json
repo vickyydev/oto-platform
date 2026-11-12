@@ -869,6 +869,13 @@
       "when": 1794485795656,
       "tag": "0123_party_slip_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1794485859219,
+      "tag": "0124_party_slip_schedule_start",
+      "breakpoints": true
     }
   ]
 }

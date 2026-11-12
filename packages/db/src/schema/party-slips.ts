@@ -157,3 +157,46 @@ export const partySlipBaseline = pos.table(
     check('party_slip_baseline_station_check', sql`${t.station} in ('kitchen','bar')`),
   ],
 );
+
+// --- When the schedule began printing a party with no package (SCRUM-906) ----
+
+/** The kinds of party the schedule began printing in a release: a party with a kitchen plan and no package. */
+export const PARTY_SLIP_SCHEDULE_KIND_VALUES = ['no_package'] as const;
+export type PartySlipScheduleKindValue = (typeof PARTY_SLIP_SCHEDULE_KIND_VALUES)[number];
+
+/**
+ * SCRUM-906 — A RELEASE DOES NOT CATCH UP. Before SCRUM-906 the slip time's
+ * job printed only a party with a package; from it, a party with a kitchen
+ * plan and no package prints too (the owner's decision 8). No such party has
+ * a scheduled run, so the first tick after the release would print at once
+ * every one of the day whose slip time had already passed, parties already
+ * over among them.
+ *
+ * ONE ROW PER PARK AND KIND: the job's clock at its first tick at the park
+ * under the release (written by the job itself, so it is the moment the
+ * release began printing there, whatever the deploy order). A party with no
+ * package whose slip time passed before it is not printed by the schedule;
+ * "Print party slips now" still prints it. From the next slip time on, a
+ * party with no package prints as a party with a package does.
+ */
+export const partySlipScheduleStart = pos.table(
+  'party_slip_schedule_start',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<PartySlipScheduleKindValue>().notNull(),
+    /** The job's clock at its first tick at the park that printed this kind of party. */
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('party_slip_schedule_start_kind_unique').on(t.branchId, t.kind),
+    index('party_slip_schedule_start_operator_idx').on(t.operatorId),
+    check('party_slip_schedule_start_kind_check', sql`${t.kind} in ('no_package')`),
+  ],
+);
