@@ -9,7 +9,13 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { billQuoteOf, partyBillShown } from '@/lib/partySettlementBill';
+import {
+  NO_PLANNED_QUOTE,
+  partyBillShown,
+  partyBillUnpriced,
+  plannedQuoteOf,
+  type PlannedQuote,
+} from '@/lib/partySettlementBill';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import { withPartyKitchen } from '@/api/events';
 import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
@@ -34,7 +40,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { bahtText, satangText } from '@/lib/bahtText';
-import type { PartySettleQuote } from '@oto/shared';
 
 const STATUS_STYLE: Record<PartyBooking['status'], string> = {
   upcoming: 'bg-sky-500/15 text-sky-400',
@@ -101,8 +106,8 @@ function InfoRow({
 
 interface MobilePartyDetailProps {
   party: PartyBooking;
-  /** SCRUM-936 — the platform's quote for Settle party, while the party is not settled. */
-  planned?: PartySettleQuote | null;
+  /** SCRUM-936 — the platform's price of Settle party, while the party is not settled. */
+  planned?: PlannedQuote;
   onBack: () => void;
   onTakePayment: () => void;
   onAddFnb: () => void;
@@ -110,7 +115,7 @@ interface MobilePartyDetailProps {
 
 export function MobilePartyDetail({
   party: given,
-  planned: quote = null,
+  planned: plannedQuote = NO_PLANNED_QUOTE,
   onBack,
   onTakePayment,
   onAddFnb,
@@ -122,7 +127,9 @@ export function MobilePartyDetail({
   const party = withPartyKitchen(given, kitchenPlan);
   // A party the platform settles on its tab (walk-ups, money taken there)
   // reads the tab's bill, and is taken on the tab here.
-  const planned = billQuoteOf(party, quote);
+  const planned = plannedQuoteOf(party, plannedQuote);
+  // Its package owed but not priced yet: a dash, never "Fully paid".
+  const unpriced = partyBillUnpriced(party, plannedQuote);
   // The tab's own balance: what Take payment takes on this phone.
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);
@@ -167,7 +174,12 @@ export function MobilePartyDetail({
           </div>
           {/* Outstanding badge */}
           <div className="shrink-0 text-right">
-            {bill.outstanding > 0 ? (
+            {unpriced ? (
+              <>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Due</div>
+                <div className="text-xl font-black tabular-nums text-muted-foreground">—</div>
+              </>
+            ) : bill.outstanding > 0 ? (
               <>
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Due</div>
                 <div className="text-xl font-black tabular-nums text-amber-400">฿{bahtText(bill.outstanding)}</div>
@@ -191,7 +203,7 @@ export function MobilePartyDetail({
                 <>
                   <InfoRow
                     label={party.packageName ?? 'Base package'}
-                    value={planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
+                    value={unpriced ? '—' : planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
                   />
                   {planned && planned.totalSatang > planned.packageSatang && (
                     <InfoRow label="Add-ons and extras" value={`฿${satangText(planned.totalSatang - planned.packageSatang)}`} />
@@ -216,7 +228,7 @@ export function MobilePartyDetail({
               )}
               <div className="flex items-center justify-between py-1 font-semibold border-t mt-1 pt-1.5">
                 <span>Total</span>
-                <span className="tabular-nums">฿{bahtText(bill.total)}</span>
+                <span className="tabular-nums">{unpriced ? '—' : `฿${bahtText(bill.total)}`}</span>
               </div>
               <InfoRow label="Deposit paid" value={`−฿${bahtText(bill.deposit)}`} />
               {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bahtText(bill.paid)}`} />}
@@ -224,12 +236,13 @@ export function MobilePartyDetail({
                 <span className="font-bold">Outstanding</span>
                 <span
                   className={`text-2xl font-black tabular-nums ${
-                    bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
+                    unpriced ? 'text-muted-foreground' : bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
                   }`}
                 >
-                  ฿{bahtText(bill.outstanding)}
+                  {unpriced ? '—' : `฿${bahtText(bill.outstanding)}`}
                 </span>
               </div>
+              {unpriced?.note && <p className="text-muted-foreground mt-1.5">{unpriced.note}</p>}
             </div>
           </SectionCard>
 
@@ -435,17 +448,19 @@ export function MobilePartyDetail({
         </Button>
         <Button
           className="w-full h-14 text-lg font-bold gap-2"
-          disabled={outstanding <= 0}
+          disabled={unpriced !== null || outstanding <= 0}
           onClick={onTakePayment}
         >
           <Wallet className="w-5 h-5" />
-          {outstanding > 0
+          {unpriced
+            ? 'Take payment · —'
+            : outstanding > 0
             ? `Take payment · ฿${bahtText(outstanding)}`
             : bill.settlementOwed > 0
               ? `${settlementOpen ? 'Settlement open' : 'Not settled'} · ฿${bahtText(bill.settlementOwed)}`
               : 'Fully paid'}
         </Button>
-        {outstanding <= 0 && bill.settlementOwed > 0 && (
+        {!unpriced && outstanding <= 0 && bill.settlementOwed > 0 && (
           <p className="text-xs text-muted-foreground text-center">
             {settlementOpen
               ? "Take it with Resume settlement on a counter till's party page."

@@ -4,7 +4,8 @@ import { addDaysToIsoDate } from '@oto/shared';
 import { eventsToday, useEventsForDate } from '@/api/events';
 import { useBranch } from '@/branch/BranchContext';
 import { PARTY_STATUS_LABELS } from '@/lib/party';
-import { partyListFigure } from '@/lib/partySettlementBill';
+import { partyListFigure, usePartyPlannedQuote } from '@/lib/partySettlementBill';
+import { useStation } from '@/station/StationContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -60,6 +61,29 @@ const fmtDate = (iso: string) =>
     month: 'short',
     year: 'numeric',
   });
+
+/**
+ * SCRUM-936 — A PARTY ROW'S FIGURE on the phone: the bill its page shows,
+ * priced as its page prices it, so the row never reads Paid while the page
+ * reads Due. No figure while that price is being read.
+ */
+export function MobilePartyRowFigure({ party }: { party: PartyBooking }) {
+  const { station } = useStation();
+  const figure = partyListFigure(party, usePartyPlannedQuote(party, station?.stationId ?? null));
+  if (!figure) return null;
+  return figure.kind === 'owed' ? (
+    <div className="text-right">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Due
+      </div>
+      <div className="text-base font-bold tabular-nums text-amber-400">
+        ฿{bahtText(figure.amount)}
+      </div>
+    </div>
+  ) : (
+    <span className="text-xs font-semibold text-emerald-400">Paid</span>
+  );
+}
 
 interface MobileEventsListProps {
   version: number;
@@ -154,8 +178,6 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
           <div className="p-4 space-y-3">
             {events.map((ev) => {
               const isParty = ev.type === 'party';
-              // SCRUM-936 — the bill the party page shows: never Paid while it is owed.
-              const figure = isParty ? partyListFigure(ev as unknown as PartyBooking) : null;
               const attendeeCount = ev.attendees?.length ?? 0;
 
               return (
@@ -216,20 +238,8 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
 
                       {/* Balance / chevron */}
                       <div className="flex items-center gap-2 shrink-0">
-                        {isParty && figure ? (
-                          figure.kind === 'owed' ? (
-                            <div className="text-right">
-                              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                Due
-                              </div>
-                              <div className="text-base font-bold tabular-nums text-amber-400">
-                                ฿{bahtText(figure.amount)}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-xs font-semibold text-emerald-400">Paid</span>
-                          )
-                        ) : null}
+                        {/* SCRUM-936 — the bill the party page shows: never Paid while it is owed. */}
+                        {isParty && <MobilePartyRowFigure party={ev as unknown as PartyBooking} />}
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>

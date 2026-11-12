@@ -8,7 +8,15 @@ import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import { PartySettleModal } from '@/components/parties/PartySettleModal';
 import { MobilePartyDetail } from '@/components/mobile/parties/MobilePartyDetail';
 import { StepPayment } from '@/components/till/StepPayment';
-import { partyBillShown, partyListFigure, settlesOnTab } from '@/lib/partySettlementBill';
+import {
+  NO_PLANNED_QUOTE,
+  partyBillShown,
+  partyListFigure,
+  settlesOnTab,
+  type PlannedQuote,
+} from '@/lib/partySettlementBill';
+import { PartyRowFigure } from '@/pages/Events';
+import { MobilePartyRowFigure } from '@/components/mobile/parties/MobileEventsList';
 import type { PartyBooking } from '@/types';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -187,6 +195,24 @@ function viewOf(settlement: PartySettlementView | null, totalValueSatang = 0): E
 const partyOf = (settlement: PartySettlementView | null, totalValueSatang = 0) =>
   toOtoEvent(viewOf(settlement, totalValueSatang), 'hkt-central') as unknown as PartyBooking;
 
+const priced = (quote: PartySettleQuote = QUOTE): PlannedQuote => ({ state: 'priced', quote });
+
+/** A ฿2,500 F&B charge on the tab, beside the package Settle party prices. */
+const withTabCharge = (party: PartyBooking): PartyBooking => ({
+  ...party,
+  partyExtraCharges: [
+    {
+      id: 'fnb-2500',
+      kind: 'fnb',
+      items: [{ name: 'Pizza', qty: 1, lineTotal: 2_500 }],
+      total: 2_500,
+      chargedBy: 'Som',
+      chargedById: 'acc-som',
+      chargedAt: `${T}T08:00:00.000Z`,
+    },
+  ],
+});
+
 let saleRead: Promise<unknown> | null = null;
 
 function serve() {
@@ -206,6 +232,16 @@ function serve() {
     if (url === `/parties/${PARTY}/settle/preview`) return { quote: QUOTE };
     return undefined;
   }) as unknown as typeof api.post);
+}
+
+/** The platform holds no plan for the party (no package in the OTO App). */
+function noPlan() {
+  getMock.mockImplementation((async (url: string) => {
+    if (url.startsWith(`/parties/${PARTY}`)) {
+      return { branchId: HKT_CENTRAL, date: T, event: viewOf(null), plan: null, planStatus: 'no_package' };
+    }
+    return { member: null };
+  }) as unknown as typeof api.get);
 }
 
 beforeEach(() => {
@@ -297,9 +333,25 @@ describe('SCRUM-936 — the parties list reads the page’s bill, never Paid whi
     expect(partyListFigure(partyOf(OPEN))).toEqual({ kind: 'owed', amount: 15_800 });
   });
 
-  it('a party not settled whose tab carries no package names no figure', () => {
-    expect(partyListFigure(partyOf(null))).toBeNull();
-    expect(partyListFigure(partyOf({ ...OPEN, state: 'voided' }))).toBeNull();
+  it('a party not settled reads the package the platform prices, as its page does', () => {
+    expect(partyListFigure(partyOf(null), priced())).toEqual({ kind: 'owed', amount: 15_900 });
+    expect(partyListFigure(partyOf({ ...OPEN, state: 'voided' }), priced())).toEqual({ kind: 'owed', amount: 15_900 });
+    // A ฿2,500 charge on the tab: the list and the page both say ฿18,400, never the charge alone.
+    const charged = withTabCharge(partyOf(null));
+    expect(partyListFigure(charged, priced())).toEqual({ kind: 'owed', amount: 18_400 });
+    expect(partyBillShown(charged, QUOTE).outstanding).toBe(18_400);
+  });
+
+  it('no figure while the price is being read, nor for a package owed that could not be priced', () => {
+    expect(partyListFigure(partyOf(null), { state: 'reading' })).toBeNull();
+    expect(partyListFigure(partyOf(null, 1_690_000), { state: 'reading' })).toBeNull();
+    expect(partyListFigure(partyOf(null), { state: 'refused', message: 'offline' })).toBeNull();
+  });
+
+  it('a party the platform holds no plan for reads as before: Paid with nothing owed, its tab when it has one', () => {
+    expect(partyListFigure(partyOf(null))).toEqual({ kind: 'paid' });
+    expect(partyListFigure(partyOf(null), NO_PLANNED_QUOTE)).toEqual({ kind: 'paid' });
+    expect(partyListFigure(partyOf(null, 1_690_000), { state: 'refused', message: 'offline' })).toEqual({ kind: 'owed', amount: 15_900 });
   });
 
   it('a party with its bill on the tab, and a settled one with nothing left, read as before', () => {
@@ -308,12 +360,42 @@ describe('SCRUM-936 — the parties list reads the page’s bill, never Paid whi
     expect(partyListFigure(partyOf(settled))).toEqual({ kind: 'paid' });
   });
 
-  it('both lists read it', () => {
-    for (const file of ['pages/Events.tsx', 'components/mobile/parties/MobileEventsList.tsx']) {
+  it('both lists price each row as its page does', () => {
+    for (const [file, row] of [
+      ['pages/Events.tsx', '<PartyRowFigure party={ev as unknown as PartyBooking} />'],
+      ['components/mobile/parties/MobileEventsList.tsx', '<MobilePartyRowFigure party={ev as unknown as PartyBooking} />'],
+    ] as const) {
       const text = src(file);
-      expect(text).toContain('partyListFigure(ev as unknown as PartyBooking)');
+      expect(text).toContain(row);
+      expect(text).toContain('partyListFigure(party, usePartyPlannedQuote(party, station?.stationId ?? null))');
       expect(text).not.toContain('computePartyOutstanding(ev');
     }
+  });
+
+  it('the counter’s row: no figure while the price is read, then the page’s Outstanding', async () => {
+    const row = renderHook((p: { party: PartyBooking }) => PartyRowFigure(p), { party: withTabCharge(partyOf(null)) });
+    expect(row.result.current === null).toBe(true);
+    await settle();
+    const text = textOf(row.result.current).replace(/\s+/g, ' ');
+    expect(text).toContain('Outstanding');
+    expect(text).toContain('฿18400');
+    expect(text.includes('Paid')).toBe(false);
+  });
+
+  it('the phone’s row: no figure while the price is read, then the page’s Due', async () => {
+    const row = renderHook((p: { party: PartyBooking }) => MobilePartyRowFigure(p), { party: partyOf(null) });
+    expect(row.result.current === null).toBe(true);
+    await settle();
+    const text = textOf(row.result.current).replace(/\s+/g, ' ');
+    expect(text).toContain('Due');
+    expect(text).toContain('฿15900');
+  });
+
+  it('a row for a party the platform holds no plan for still reads Paid with nothing owed', async () => {
+    noPlan();
+    const row = renderHook((p: { party: PartyBooking }) => PartyRowFigure(p), { party: partyOf(null) });
+    await settle();
+    expect(textOf(row.result.current).trim()).toBe('Paid');
   });
 });
 
@@ -351,19 +433,69 @@ describe('SCRUM-936 — the counter’s party page before Settle party', () => {
     expect(buttonIn(page.result.current, 'Take balance ฿15900') === null).toBe(false);
   });
 
-  it('when the platform will not price it, the page reads as before', async () => {
+  /** The bill while its price is not in: dashes, and Take balance off — never Fully paid. */
+  function expectDashes(tree: unknown, packageLabel: string) {
+    const text = flat(tree);
+    expect(text).toContain(`${packageLabel} —`);
+    expect(text).toContain('Total —');
+    expect(text).toContain('Outstanding —');
+    expect(text).toContain('Deposit paid −฿1000');
+    expect(text.includes('Fully paid')).toBe(false);
+    expect(text.includes('Total ฿0')).toBe(false);
+    expect(text.includes('Outstanding ฿0')).toBe(false);
+    const take = buttonIn(tree, 'Take balance —');
+    expect(take === null).toBe(false);
+    expect(take!.props.disabled).toBe(true);
+    return text;
+  }
+
+  it('while the platform prices it, the bill shows a dash and takes nothing', async () => {
+    postMock.mockImplementation((() => new Promise(() => undefined)) as unknown as typeof api.post);
+    const page = partyPage(partyOf(null));
+    await settle();
+    const text = expectDashes(page.result.current, 'Birthday package, Central Floresta');
+    expect(text.includes('could not be read')).toBe(false);
+  });
+
+  it('while the plan is being read, the same', async () => {
+    getMock.mockImplementation((() => new Promise(() => undefined)) as unknown as typeof api.get);
+    const page = partyPage(partyOf(null));
+    await settle();
+    expectDashes(page.result.current, 'Base package');
+  });
+
+  it('when the platform will not price it, the dash stays and its sentence says why', async () => {
     postMock.mockImplementation((async () => {
       throw new Error('offline');
     }) as unknown as typeof api.post);
     const page = partyPage(partyOf(null));
     await settle();
+    const text = expectDashes(page.result.current, 'Birthday package, Central Floresta');
+    expect(text).toContain('What this party owes could not be read from the platform — offline');
+  });
+
+  it('when the plan cannot be read at all, the dash stays and says so', async () => {
+    getMock.mockImplementation((async () => {
+      throw new Error('offline');
+    }) as unknown as typeof api.get);
+    const page = partyPage(partyOf(null));
+    await settle();
+    const text = expectDashes(page.result.current, 'Base package');
+    expect(text).toContain('What this party owes could not be read from the platform. Open the party again to read it.');
+  });
+
+  it('a party the platform holds no plan for reads as before', async () => {
+    noPlan();
+    const page = partyPage(partyOf(null));
+    await settle();
     expect(buttonIn(page.result.current, 'Fully paid') === null).toBe(false);
+    expect(flat(page.result.current)).toContain('Outstanding ฿0');
   });
 });
 
 describe('SCRUM-936 — the phone’s party page before Settle party', () => {
   it('reads the package as owed and sends staff to a counter till to settle it', () => {
-    const tree = MobilePartyDetail({ party: partyOf(null), planned: QUOTE, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    const tree = MobilePartyDetail({ party: partyOf(null), planned: priced(), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
     const text = flat(tree);
     expect(text).toContain('Due ฿15900');
     expect(text).toContain('Total ฿16900');
@@ -375,8 +507,29 @@ describe('SCRUM-936 — the phone’s party page before Settle party', () => {
     expect(text).toContain("Take it with Settle party on a counter till's party page.");
   });
 
+  it('while the price is being read: a dash, never Fully paid, and nothing taken', () => {
+    const tree = MobilePartyDetail({ party: partyOf(null), planned: { state: 'reading' }, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    const text = flat(tree);
+    expect(text).toContain('Due —');
+    expect(text).toContain('Total —');
+    expect(text).toContain('Outstanding —');
+    expect(text.includes('Fully paid')).toBe(false);
+    const button = buttonIn(tree, 'Take payment · —');
+    expect(button === null).toBe(false);
+    expect(button!.props.disabled).toBe(true);
+  });
+
+  it('when the platform will not price it, the dash stays and its sentence says why', () => {
+    const message = 'What this party owes could not be read from the platform — offline';
+    const tree = MobilePartyDetail({ party: partyOf(null), planned: { state: 'refused', message }, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    const text = flat(tree);
+    expect(text).toContain(message);
+    expect(text).toContain('Outstanding —');
+    expect(text.includes('Fully paid')).toBe(false);
+  });
+
   it('an open settlement still reads as SCRUM-916 left it', () => {
-    const tree = MobilePartyDetail({ party: partyOf(OPEN), planned: null, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    const tree = MobilePartyDetail({ party: partyOf(OPEN), planned: NO_PLANNED_QUOTE, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
     expect(buttonIn(tree, 'Settlement open · ฿15800') === null).toBe(false);
     expect(flat(tree)).toContain("Take it with Resume settlement on a counter till's party page.");
   });
@@ -456,12 +609,12 @@ describe('SCRUM-936 — a party the platform settles on its tab reads the tab, a
       [withWalkUp(0), WALK_UP_QUOTE],
       [paidOnTab(1_690_000), QUOTE],
     ] as const) {
-      const tree = MobilePartyDetail({ party, planned: quote, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+      const tree = MobilePartyDetail({ party, planned: priced(quote), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
       const text = flat(tree);
       expect(text.includes('Settle party')).toBe(false);
       expect(text.includes('Not settled')).toBe(false);
     }
-    const tree = MobilePartyDetail({ party: withWalkUp(1_690_000), planned: WALK_UP_QUOTE, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+    const tree = MobilePartyDetail({ party: withWalkUp(1_690_000), planned: priced(WALK_UP_QUOTE), onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
     expect(buttonIn(tree, 'Take payment · ฿16350') === null).toBe(false);
   });
 });

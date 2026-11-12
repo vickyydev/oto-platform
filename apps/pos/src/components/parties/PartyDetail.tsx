@@ -20,7 +20,7 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { billQuoteOf, partyBillShown, usePlannedSettleQuote } from '@/lib/partySettlementBill';
+import { partyBillShown, partyBillUnpriced, plannedQuoteOf, usePlannedSettleQuote } from '@/lib/partySettlementBill';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
@@ -44,7 +44,7 @@ import {
   type PartyWriteOutcome,
 } from '@/api/parties';
 import { toast } from '@/hooks/use-toast';
-import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
+import { usePartyPlanReadState } from '@/hooks/usePartyPlanRead';
 import { partyBarLineLabel, partyCakeLabel, partyCakeOf, partyMenuLineLabel } from '@/lib/partyKitchen';
 import { PartyBalanceModal } from './PartyBalanceModal';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
@@ -182,7 +182,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
 
   // SCRUM-906 — read on opening, and again on focus and every minute while the page is open,
   // held still while a settlement or an edit is in progress.
-  const planRead = usePartyPlanRead(party, { paused: showSettle || editing, nonce: planNonce });
+  // SCRUM-936 — the one read feeds the kitchen sections and the bill: undefined
+  // until it answers, null when it answered with nothing.
+  const planRead = usePartyPlanReadState(party, { paused: showSettle || editing, nonce: planNonce });
   const plan = planRead?.plan ?? null;
   // SCRUM-906 — the whole kitchen plan, with or without a package; a platform before it gives the plan's own.
   const kitchenPlan = planRead?.kitchenPlan ?? plan;
@@ -198,7 +200,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   // the platform as Settle party will price it.
   // A party the platform settles on its tab (walk-ups, money taken there)
   // reads the tab's bill, and Take balance takes it there.
-  const planned = billQuoteOf(party, usePlannedSettleQuote(party, plan, station?.stationId ?? null));
+  const plannedQuote = usePlannedSettleQuote(party, planRead, station?.stationId ?? null);
+  const planned = plannedQuoteOf(party, plannedQuote);
+  // Its package owed but not priced yet: a dash, never "Fully paid".
+  const unpriced = partyBillUnpriced(party, plannedQuote);
   const bill = partyBillShown(party, planned);
   const takesSettlement = bill.settlementOwed > 0;
 
@@ -418,7 +423,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           <>
             <InfoRow
               label={plan?.package.name ?? party.packageName ?? 'Base package'}
-              value={planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
+              value={unpriced ? '—' : planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
             />
             {/* SCRUM-936 — what Settle party adds to the package as planned. */}
             {planned && planned.totalSatang > planned.packageSatang && (
@@ -444,7 +449,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         )}
         <div className="flex items-center justify-between py-1.5 font-semibold border-t mt-1 pt-2">
           <span>Total</span>
-          <span className="tabular-nums">฿{bahtText(bill.total)}</span>
+          <span className="tabular-nums">{unpriced ? '—' : `฿${bahtText(bill.total)}`}</span>
         </div>
         <InfoRow label="Deposit paid" value={`−฿${bahtText(bill.deposit)}`} />
         {bill.paid > 0 && <InfoRow label="Payments taken" value={`−฿${bahtText(bill.paid)}`} />}
@@ -452,12 +457,13 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           <span className="font-bold">Outstanding</span>
           <span
             className={`text-3xl font-black tabular-nums ${
-              bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
+              unpriced ? 'text-muted-foreground' : bill.outstanding > 0 ? 'text-amber-400' : 'text-emerald-400'
             }`}
           >
-            ฿{bahtText(bill.outstanding)}
+            {unpriced ? '—' : `฿${bahtText(bill.outstanding)}`}
           </span>
         </div>
+        {unpriced?.note && <p className="text-xs text-muted-foreground mt-2">{unpriced.note}</p>}
       </div>
     </SectionCard>
   );
@@ -841,7 +847,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             <Button
               size="lg"
               className="gap-2 h-12"
-              disabled={bill.outstanding <= 0 || (takesSettlement && !plan)}
+              disabled={unpriced !== null || bill.outstanding <= 0 || (takesSettlement && !plan)}
               onClick={() =>
                 takesSettlement
                   ? openUnlessBlocked(() => setShowSettle(true), true)
@@ -849,7 +855,11 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               }
             >
               <Wallet className="w-5 h-5" />
-              {bill.outstanding > 0 ? `Take balance ฿${bahtText(takesSettlement ? bill.settlementOwed : outstanding)}` : 'Fully paid'}
+              {unpriced
+                ? 'Take balance —'
+                : bill.outstanding > 0
+                  ? `Take balance ฿${bahtText(takesSettlement ? bill.settlementOwed : outstanding)}`
+                  : 'Fully paid'}
             </Button>
           </div>
         </div>

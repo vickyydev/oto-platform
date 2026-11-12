@@ -6,7 +6,8 @@ import { addDaysToIsoDate } from '@oto/shared';
 import { eventsToday, useEventsForDate } from '@/api/events';
 import { useBranch } from '@/branch/BranchContext';
 import { PARTY_STATUS_LABELS } from '@/lib/party';
-import { partyListFigure } from '@/lib/partySettlementBill';
+import { partyListFigure, usePartyPlannedQuote } from '@/lib/partySettlementBill';
+import { useStation } from '@/station/StationContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -67,6 +68,30 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: 'camp', label: 'Camps' },
   { value: 'event', label: 'Events' },
 ];
+
+/**
+ * SCRUM-936 — A PARTY ROW'S FIGURE: the bill its page shows, priced as its
+ * page prices it (`usePartyPlannedQuote`, the platform's Settle party
+ * preview), so the row never reads Paid while the page reads Outstanding. No
+ * figure while that price is being read.
+ */
+export function PartyRowFigure({ party }: { party: PartyBooking }) {
+  const { station } = useStation();
+  const figure = partyListFigure(party, usePartyPlannedQuote(party, station?.stationId ?? null));
+  if (!figure) return null;
+  return figure.kind === 'owed' ? (
+    <span className="text-right">
+      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+        Outstanding
+      </span>
+      <span className="block text-lg font-bold tabular-nums text-amber-400">
+        ฿{bahtText(figure.amount)}
+      </span>
+    </span>
+  ) : (
+    <span className="text-xs font-semibold text-emerald-400">Paid</span>
+  );
+}
 
 export default function Events() {
   const search = useSearch();
@@ -178,8 +203,6 @@ export default function Events() {
                   <div className="space-y-2">
                     {events.map((ev) => {
                       const isParty = ev.type === 'party';
-                      // SCRUM-936 — the bill the party page shows: never Paid while it is owed.
-                      const figure = isParty ? partyListFigure(ev as unknown as PartyBooking) : null;
                       const attendeeCount = ev.attendees?.length ?? 0;
 
                       return (
@@ -241,20 +264,10 @@ export default function Events() {
 
                             {/* Right side */}
                             <div className="flex items-center gap-3 shrink-0">
-                              {isParty && figure ? (
-                                figure.kind === 'owed' ? (
-                                  <span className="text-right">
-                                    <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                                      Outstanding
-                                    </span>
-                                    <span className="block text-lg font-bold tabular-nums text-amber-400">
-                                      ฿{bahtText(figure.amount)}
-                                    </span>
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-semibold text-emerald-400">Paid</span>
-                                )
-                              ) : !isParty ? (
+                              {/* SCRUM-936 — the bill the party page shows: never Paid while it is owed. */}
+                              {isParty ? (
+                                <PartyRowFigure party={ev as unknown as PartyBooking} />
+                              ) : (
                                 <span className="text-xs text-muted-foreground">
                                   {ev.type === 'camp' ? (
                                     <Tent className="w-4 h-4" />
@@ -262,7 +275,7 @@ export default function Events() {
                                     <Sparkles className="w-4 h-4" />
                                   )}
                                 </span>
-                              ) : null}
+                              )}
                               <ChevronRight className="w-5 h-5 text-muted-foreground" />
                             </div>
                           </Card>

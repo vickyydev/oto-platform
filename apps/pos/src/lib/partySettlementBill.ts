@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
-import { partySettleFormDefaults, partySettlementLive, type PartyPlan, type PartySettleQuote } from '@oto/shared';
-import { previewSettlementOnPlatform, readPartyPlanOnPlatform } from '@/api/parties';
+import { partySettleFormDefaults, partySettlementLive, type PartySettleQuote } from '@oto/shared';
+import {
+  previewSettlementOnPlatform,
+  readPartyPlanOnPlatform,
+  type PartyPlanRead,
+  type PartySettlePreviewOutcome,
+} from '@/api/parties';
 import type { PartyBooking } from '@/types';
 import {
   computePartyOutstanding,
@@ -104,46 +109,84 @@ export function partyBillShown(party: PartyBooking, quote?: PartySettleQuote | n
 }
 
 /**
+ * SCRUM-936 — WHERE THE PLATFORM'S PRICE OF A PARTY NOT YET SETTLED STANDS:
+ * nothing to price (no plan the platform holds, or a settlement open or
+ * settled, which carries its own figures); being read (the plan, then the
+ * Settle party preview on its counts); priced; or not priced, with the
+ * sentence that says why (the platform's refusal, or no connection).
+ */
+export type PlannedQuote =
+  | { state: 'none' }
+  | { state: 'reading' }
+  | { state: 'priced'; quote: PartySettleQuote }
+  | { state: 'refused'; message: string };
+
+export const NO_PLANNED_QUOTE: PlannedQuote = { state: 'none' };
+const READING: PlannedQuote = { state: 'reading' };
+
+/** What the bill says when the platform's price of the party could not be read. */
+export const PARTY_BILL_UNREAD = 'What this party owes could not be read from the platform';
+
+/** The quote the bill is read on, once priced: none for a party settled on its tab. */
+export function plannedQuoteOf(party: PartyBooking, planned: PlannedQuote): PartySettleQuote | null {
+  return planned.state === 'priced' ? billQuoteOf(party, planned.quote) : null;
+}
+
+/**
+ * SCRUM-936 — WHAT THE BILL CANNOT SAY YET. A party not settled whose tab
+ * carries no package of its own (`basePrice` 0: the OTO App planned it, and
+ * Settle party prices it) is owed its package. Until the platform's price is
+ * in, its page shows a dash for the package, Total and Outstanding and takes
+ * nothing — never "Fully paid"; when the platform would not price it, the
+ * dash stays and `note` says why. Null when the bill can be read.
+ */
+export function partyBillUnpriced(party: PartyBooking, planned: PlannedQuote): { note: string | null } | null {
+  if (partySettlementLive(party.settlement) || party.basePrice > 0) return null;
+  if (planned.state === 'reading') return { note: null };
+  if (planned.state === 'refused') return { note: planned.message };
+  return null;
+}
+
+/**
  * SCRUM-936 — WHAT A PARTIES LIST ROW SAYS ON ITS RIGHT: the outstanding the
- * party page shows (`partyBillShown`, an open settlement's balance included),
- * else "Paid". A party not yet settled whose tab carries no package of its own
- * (`basePrice` 0: the OTO App planned it, and Settle party prices it) is not
- * known to be paid from the list's read, so the row names no figure rather
- * than saying Paid while its package is owed; its page says what it owes.
+ * party page shows (`partyBillShown` on the same quote, an open settlement's
+ * balance included), else "Paid". While a party not settled is being priced
+ * the row names no figure, and so does one whose package is owed but could
+ * not be priced: never "Paid" while its package is owed.
  */
 export type PartyListFigure = { kind: 'owed'; amount: number } | { kind: 'paid' } | null;
 
-export function partyListFigure(party: PartyBooking): PartyListFigure {
-  const bill = partyBillShown(party);
+export function partyListFigure(party: PartyBooking, planned: PlannedQuote = NO_PLANNED_QUOTE): PartyListFigure {
+  if (planned.state === 'reading' || partyBillUnpriced(party, planned)) return null;
+  const bill = partyBillShown(party, plannedQuoteOf(party, planned));
   if (bill.outstanding > 0) return { kind: 'owed', amount: bill.outstanding };
-  if (!partySettlementLive(party.settlement) && party.basePrice <= 0) return null;
   return { kind: 'paid' };
 }
 
 /**
- * SCRUM-936 — THE PLATFORM'S QUOTE FOR SETTLING A PARTY NOT YET SETTLED, on the
+ * SCRUM-936 — THE PLATFORM'S PRICE OF SETTLING A PARTY NOT YET SETTLED, on the
  * plan's counts (`partySettleFormDefaults`, the counts Settle party opens on),
  * through the same preview the Settle form reads (`POST /parties/:id/settle/
- * preview`, which writes nothing). Null while there is no plan, while the
- * party's settlement is open or settled, before the answer, or when the
- * platform would not price it (no package, no permission, no connection) —
- * the page then reads the tab's bill as before.
+ * preview`, which writes nothing). `planRead` is the page's read of the plan:
+ * undefined while it is being read, null when it could not be read.
  */
 export function usePlannedSettleQuote(
   party: PartyBooking | null,
-  plan: PartyPlan | null,
+  planRead: PartyPlanRead | null | undefined,
   stationId: string | null,
-): PartySettleQuote | null {
-  const [answer, setAnswer] = useState<{ key: string; quote: PartySettleQuote } | null>(null);
+): PlannedQuote {
+  const [answer, setAnswer] = useState<{ key: string; outcome: PartySettlePreviewOutcome } | null>(null);
+  const plan = planRead?.plan ?? null;
+  const settling = party !== null && !partySettlementLive(party.settlement);
   const key =
-    party && plan && !partySettlementLive(party.settlement)
+    party && settling && plan
       ? JSON.stringify([party.id, party.settlement?.id ?? null, party.settlement?.state ?? null, partySettleFormDefaults(plan, party)])
       : null;
   useEffect(() => {
     if (!key || !plan || !party) return;
     let live = true;
     void previewSettlementOnPlatform({ party, form: partySettleFormDefaults(plan, party), stationId }).then((outcome) => {
-      if (live && outcome.ok) setAnswer({ key, quote: outcome.quote });
+      if (live) setAnswer({ key, outcome });
     });
     return () => {
       live = false;
@@ -151,23 +194,30 @@ export function usePlannedSettleQuote(
     // The key holds everything the quote is asked on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  return key && answer?.key === key ? answer.quote : null;
+  if (!settling) return NO_PLANNED_QUOTE;
+  if (planRead === undefined) return READING;
+  if (planRead === null) return { state: 'refused', message: `${PARTY_BILL_UNREAD}. Open the party again to read it.` };
+  if (!key) return NO_PLANNED_QUOTE;
+  if (answer?.key !== key) return READING;
+  return answer.outcome.ok
+    ? { state: 'priced', quote: answer.outcome.quote }
+    : { state: 'refused', message: `${PARTY_BILL_UNREAD} — ${answer.outcome.message}` };
 }
 
 /**
- * SCRUM-936 — the same quote for a screen that has not read the party's plan:
- * the phone's party page, which shows the bill and sends staff to a counter
- * till to settle. Reads the plan (`GET /parties/:id`) for a party not yet
- * settled, then asks for the quote as the counter's page does.
+ * SCRUM-936 — the same price for a screen that has not read the party's plan:
+ * the phone's party page and the parties lists. Reads the plan (`GET
+ * /parties/:id`) for a party not yet settled, then asks for the price as the
+ * counter's page does.
  */
-export function usePartyPlannedQuote(party: PartyBooking | null, stationId: string | null): PartySettleQuote | null {
-  const [read, setRead] = useState<{ id: string; plan: PartyPlan | null } | null>(null);
+export function usePartyPlannedQuote(party: PartyBooking | null, stationId: string | null): PlannedQuote {
+  const [read, setRead] = useState<{ id: string; read: PartyPlanRead | null } | null>(null);
   const id = party && !partySettlementLive(party.settlement) ? party.id : null;
   useEffect(() => {
     if (!id || !party) return;
     let live = true;
     void readPartyPlanOnPlatform({ id: party.id, branchId: party.branchId }).then((answer) => {
-      if (live) setRead({ id, plan: answer?.plan ?? null });
+      if (live) setRead({ id, read: answer });
     });
     return () => {
       live = false;
@@ -175,5 +225,5 @@ export function usePartyPlannedQuote(party: PartyBooking | null, stationId: stri
     // The party's id is what the plan is read for.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-  return usePlannedSettleQuote(party, id && read?.id === id ? read.plan : null, stationId);
+  return usePlannedSettleQuote(party, id && read?.id === id ? read.read : undefined, stationId);
 }

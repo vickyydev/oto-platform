@@ -16,7 +16,23 @@ export function usePartyPlanRead(
   party: Pick<PartyBooking, 'id' | 'branchId'>,
   opts: { paused?: boolean; nonce?: number } = {},
 ): PartyPlanRead | null {
-  const [read, setRead] = useState<PartyPlanRead | null>(null);
+  return usePartyPlanReadState(party, opts) ?? null;
+}
+
+/**
+ * SCRUM-936 — THE SAME READ, SAYING WHETHER IT HAS ANSWERED: undefined until
+ * this party's first read answers, null when it answered with nothing
+ * (offline, not linked), else the plan, kept as `usePartyPlanRead` keeps it.
+ * The party page reads the plan once with it: its kitchen sections take the
+ * plan, and its bill waits for the first answer before it prices the party
+ * (`usePlannedSettleQuote`), so it never reads "could not be read" while the
+ * plan is still on its way.
+ */
+export function usePartyPlanReadState(
+  party: Pick<PartyBooking, 'id' | 'branchId'>,
+  opts: { paused?: boolean; nonce?: number } = {},
+): PartyPlanRead | null | undefined {
+  const [read, setRead] = useState<PartyPlanRead | null | undefined>(undefined);
   const [tick, setTick] = useState(0);
   const paused = useRef(false);
   paused.current = !!opts.paused;
@@ -47,12 +63,12 @@ export function usePartyPlanRead(
     const key = `${party.branchId}:${party.id}`;
     if (shown.current !== key) {
       shown.current = key;
-      setRead(null);
+      setRead(undefined);
     }
     void readPartyPlanOnPlatform({ id: party.id, branchId: party.branchId }).then((next) => {
       if (!live) return;
       // A read that came back with nothing (offline, not linked) keeps the last one of this party.
-      setRead((previous) => next ?? previous);
+      setRead((previous) => next ?? previous ?? null);
     });
     return () => {
       live = false;
