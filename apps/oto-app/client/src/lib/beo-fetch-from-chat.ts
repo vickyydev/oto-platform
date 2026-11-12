@@ -1,7 +1,7 @@
-import { foodNamesFor, laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
+import { beoAiMatchLabel, foodNamesFor, laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
-import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, type ApprovedMarks } from "./beo-ai-review";
+import { depositOpensPaid, namesPhone, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, tillMatchOf, type ApprovedMarks } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826) — the diff and the memory.
@@ -499,7 +499,11 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
     );
     if (line && line.quantity === l.quantity) continue;
     // SCRUM-904: the chat's note on the dish rides with it.
-    const now = withQty(name, l.quantity) + (l.notInMenu ? " (not on the menu)" : "") + (l.notes ? ` — ${l.notes}` : "");
+    // SCRUM-944: a dish or drink the till sells, as the review shows it: the chat's words, the till's
+    // item and code, and the till's price.
+    const till = l.notInMenu ? null : tillMatchOf(review, l.productCode);
+    const said = till ? `${withQty(beoAiMatchLabel(l.itemName, name, l.productCode), l.quantity)} · Till ${thb(till.price)}` : withQty(name, l.quantity);
+    const now = said + (l.notInMenu ? " (not on the menu)" : "") + (l.notes ? ` — ${l.notes}` : "");
     list("food", MENU_LABEL[l.menu], line ? withQty(line.itemName, line.quantity) : NONE, now, l.from);
   }
 

@@ -17,6 +17,8 @@ import {
   foodNamesFor,
   foodOfSetMenus,
   foodOptionNamed,
+  codedLineNameOf,
+  tillItemOf,
   laterLineWins,
   type BeoAiCatalogueView,
   type BeoAiDetails,
@@ -50,9 +52,11 @@ import type { DbExecutor } from "./packageSnapshot";
  * is a free line in the message's own words), and the source of every value
  * is the transcript's — the line's author — never the model's say-so.
  *
- * The till's F&B catalogue is not readable from this app: the food the fill
- * matches to is what the park's set menus name with a till product code
- * (SCRUM-803), and anything else is a free line marked `notInMenu`.
+ * The food the fill matches to is what the park's set menus name with a till
+ * product code (SCRUM-803) and, SCRUM-944 (Phase C), the party's park's till
+ * menu itself (`catalogue.till`, read through SCRUM-905's door,
+ * server/lib/beoFillTillMenu.ts): a code is accepted only when one of the two
+ * holds it, and anything else is a free line marked `notInMenu`.
  */
 
 /**
@@ -448,8 +452,21 @@ export function catalogueForModel(c: BeoAiCatalogueView): unknown {
       ...(e.priceIsFrom ? { priceIsFrom: true } : {}),
     })),
     food: c.food,
+    // SCRUM-944: the till's food and drink, as a table to keep the prompt small (about 140 items
+    // at a park): its code, name, category and station; no prices, which the model does not need.
+    ...(c.till && c.till.length > 0
+      ? { tillMenu: { columns: ["code", "name", "category", "station"], items: c.till.map((t) => [t.code, t.name, t.category ?? "", t.station]) } }
+      : {}),
   };
 }
+
+/**
+ * SCRUM-944: how a dish or drink is matched to the till's menu, added to the
+ * catalogue's rules only when the till's menu is handed over (a park whose
+ * till was not read reads the rules of before, word for word).
+ */
+export const BEO_TILL_MENU_RULES = `
+- "tillMenu" is every dish and drink the park's till sells: each row is its code, name, category and station ("kitchen" or "bar"). A dish or drink the conversation names beyond the set menu's choices is a menu line whose "productCode" is the code of the item it is, from "food" or from "tillMenu", matched by what the conversation means whatever language it is in ("a Coke" is the till's Coke). Only a code listed there, never one you make up; with no item that fits, null and "notInMenu": true. A drink made at the bar ("station": "bar") is a "bar" line`;
 
 /**
  * The rules for reading a whole conversation: which line wins, what the
@@ -592,7 +609,7 @@ Matching to the catalogue:
 - A deposit is "paid": true only when the conversation says it was received
 - The cake's "mode" is NOT_SAID when the conversation gives a cake time or cake details but does not say whether the park or the family brings the cake: never guess it
 - "requests": each wish or instruction the conversation gives beyond the catalogue, one entry each, in the conversation's own words — "special_request" for a request or a need (an allergy, a quiet corner, a surprise), "decoration" for a decoration wish (a theme, colours, balloons), "activity" for something planned that is not an entertainment line (games, a treasure hunt). A wish repeated or changed later is one entry, the later line's; a wish the team declined is left out
-- "timeline": each step the conversation gives a clock time for (the cake, a show, the food, the end), with that time as HH:MM and the conversation's words for it. Never invent a time or a step
+- "timeline": each step the conversation gives a clock time for (the cake, a show, the food, the end), with that time as HH:MM and the conversation's words for it. Never invent a time or a step${catalogue.till && catalogue.till.length > 0 ? BEO_TILL_MENU_RULES : ""}
 
 Add this key at the top level of the JSON object, leaving out any entry the conversation does not speak to:
 ${BEO_CATALOGUE_OUTPUT_FORMAT}` +
@@ -989,21 +1006,29 @@ export function resolveCatalogueAnswer(
   const partyMenuId = proposal.setMenu?.templateId ?? null;
   for (const m of readMany(MenuLineWithNotes, answer.menuLines, 100)) {
     const food = m.productCode ? codes.get(m.productCode.trim().toUpperCase()) : undefined;
+    // SCRUM-944: a code the till's menu holds is accepted as well, never one it lacks (a code the
+    // model made up is a line the menu lacks, as before).
+    const till = tillItemOf(catalogue, m.productCode);
     const names = food ? foodNamesFor(catalogue, food.code, partyMenuId) : [];
-    const itemName = m.itemName ?? names[0];
+    const itemName = m.itemName ?? names[0] ?? till?.name;
     if (!itemName) continue;
-    const menu = (m.menu ?? "kids") as BeoAiMenu;
+    // SCRUM-944: a drink made at the bar goes to the bar plan, a dish to the kids' or the adults' list.
+    const said = (m.menu ?? "kids") as BeoAiMenu;
+    const menu: BeoAiMenu = till ? (till.station === "bar" ? "bar" : said === "bar" ? "kids" : said) : said;
     // SCRUM-926: of the names one code carries (a set menu's options sharing it), the option the
     // read names when it is one of them, else the one the chat's words name; none (null) when
-    // neither says which: staff choose it in the review, never the first option.
-    const matchedName = food ? foodOptionNamed(names, m.option) ?? foodNameFor(names, m.itemName) : null;
+    // neither says which: staff choose it in the review, never the first option. SCRUM-944: any
+    // other code the till sells is named by the till's own name.
+    const shared = food ? foodOptionNamed(names, m.option) ?? foodNameFor(names, m.itemName) : null;
+    const matchedName = food || till ? codedLineNameOf(names, till, shared) : null;
+    const code = food?.code ?? till?.code ?? null;
     const line = {
       menu,
       itemName,
       quantity: m.quantity ?? 1,
-      productCode: food?.code ?? null,
+      productCode: code,
       matchedName,
-      notInMenu: !food,
+      notInMenu: !code,
       chatPrice: m.chatPrice ?? null,
       // SCRUM-904: the chat's note on the dish ("no cheese") rides on its line.
       ...(m.notes ? { notes: m.notes } : {}),
@@ -1011,9 +1036,9 @@ export function resolveCatalogueAnswer(
     };
     // A dish the menu codes is one line per list (per option, when options share the code; a
     // line whose option is not said, by its words); one it lacks stays as the conversation said it.
-    if (food) {
+    if (code) {
       merge(proposal.menuLines, line, (x) =>
-        x.productCode === food.code && x.menu === menu && (matchedName ? x.matchedName === matchedName : x.matchedName === null && fold(x.itemName) === fold(itemName)),
+        x.productCode === code && x.menu === menu && (matchedName ? x.matchedName === matchedName : x.matchedName === null && fold(x.itemName) === fold(itemName)),
       );
     }
     // SCRUM-904: the same dish the menu lacks named twice is one line too, the later line's.

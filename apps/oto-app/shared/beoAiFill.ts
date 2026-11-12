@@ -156,11 +156,46 @@ export interface BeoAiFood {
   names: string[];
 }
 
+/**
+ * SCRUM-944 (Phase C): an item of the till's menu at the party's park, as the
+ * fill reads it (SCRUM-905's door, `server/lib/tillMenu.ts`): food and drink
+ * made at the kitchen or the bar, coded, on sale. Items made from a BEO for a
+ * party (BEO only) are left out: another party's item is no dish of this one's.
+ * Money is satang, as the till answers it.
+ */
+export interface BeoAiTillItem {
+  code: string;
+  name: string;
+  category: string | null;
+  station: "kitchen" | "bar";
+  /** Satang: the till's weekday price, which a picked EXTRA takes (SCRUM-905). */
+  priceSatang: number;
+}
+
 export interface BeoAiCatalogueView {
   packages: BeoAiPackage[];
   setMenus: BeoAiSetMenu[];
   entertainment: BeoAiEntertainment[];
   food: BeoAiFood[];
+  /** SCRUM-944: the till's food and drink at the party's park; absent or empty when it was not read. */
+  till?: BeoAiTillItem[];
+}
+
+/** SCRUM-944: the till's item a code names, when the till's menu was read and holds it. */
+export function tillItemOf(catalogue: Pick<BeoAiCatalogueView, "till">, code: string | null | undefined): BeoAiTillItem | undefined {
+  const key = code?.trim().toUpperCase();
+  return key ? catalogue.till?.find((t) => t.code.trim().toUpperCase() === key) : undefined;
+}
+
+/**
+ * SCRUM-944: the name a coded line is written by. A code several of the party's
+ * set menu's options share keeps SCRUM-926's rule (`names`, the option shown or
+ * named, else none); any other code the till sells is named by the till's own
+ * name; one only a set menu names, by that name.
+ */
+export function codedLineNameOf(names: string[], till: Pick<BeoAiTillItem, "name"> | undefined, fallback: string | null): string | null {
+  if (names.length > 1) return fallback;
+  return till?.name ?? names[0] ?? fallback;
 }
 
 /**
@@ -452,6 +487,13 @@ export interface BeoAiReview {
    * catalogue empty. Absent when it was read.
    */
   catalogueUnread?: boolean;
+  /**
+   * SCRUM-944: whether the till's menu was read for the fill ("ok"), or why
+   * not, in the till door's words: then dishes were matched to the set menus
+   * only, as before, and nothing is called "no longer on the till". Absent
+   * from a server before this rule.
+   */
+  tillMenu?: { status: "ok" | "not_linked" | "unconfigured" | "not_reachable"; message: string | null };
   /** How many conversation lines were read, and whether older ones were left out. */
   transcript: { lines: number; cut: boolean };
   /** Sections the BEO already holds that approving replaces. */

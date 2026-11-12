@@ -17,13 +17,15 @@ import {
   employees,
   entertainmentPackageTemplates,
 } from "@shared/schema";
-import { CHOICE_FROM_CHAT, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, type BeoAiApproveBody, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
+import { CHOICE_FROM_CHAT, codedLineNameOf, foodNameFor, foodNamesFor, foodOptionNamed, sharedFoodLabel, tillItemOf, type BeoAiApproveBody, type BeoAiTillItem, type BeoAiSetMenuChoices, type BeoAiSetMenuItem } from "@shared/beoAiFill";
 import { adultsCopiesOf, adultsDifferOf, sameKitchenDishNames } from "@shared/kitchenAdults";
 import { depositNotApprovedWords, type DepositSaveReason } from "@shared/partyDeposit";
 import type { db as appDb } from "../db";
 import { normalizeThaiPhone, validatePhoneInput } from "../phone-utils";
 import type { ActivityLogInput } from "../storage";
 import { loadBeoCatalogue, type BeoCatalogue } from "./beoCatalogueFill";
+import { tillItemsForFill } from "./beoFillTillMenu";
+import type { TillMenuItem } from "@shared/tillMenu";
 import { applyPackageSnapshot, type DbExecutor } from "./packageSnapshot";
 import { decideDepositSave, expectedDepositOf, lowersDeliberately, noDepositDay, type GatewayFloor } from "./depositSaveGuard";
 import { currentDeposit, writePartyDeposit, type PartyDeposit } from "./partyDeposit";
@@ -187,7 +189,16 @@ async function checkTeam(db: DbExecutor, tenantId: string, team: ApprovedTeam | 
 }
 
 /** Why the reviewed BEO cannot be written as it is, in one line; null when it can. */
-export function refuseApproval(body: BeoAiApproveBody, catalogue: BeoCatalogue, current: { startTime: string | null; endTime: string | null }): string | null {
+export function refuseApproval(
+  body: BeoAiApproveBody,
+  catalogue: BeoCatalogue,
+  current: { startTime: string | null; endTime: string | null },
+  /**
+   * SCRUM-944: the till's menu as read now, for a code no set menu has: null when it could not
+   * be read (such a code cannot be checked, so it is not written), undefined when not asked.
+   */
+  till?: BeoAiTillItem[] | null,
+): string | null {
   if (body.package) {
     const pkg = catalogue.packages.find((p) => p.id === body.package!.templateId);
     if (!pkg) return "The package is not one this park sells. Choose it again in the review.";
@@ -207,8 +218,12 @@ export function refuseApproval(body: BeoAiApproveBody, catalogue: BeoCatalogue, 
     if (new Set(body.setMenu.choices.map((c) => c.itemId)).size !== body.setMenu.choices.length) return "A set-menu choice is given twice.";
   }
   const codes = new Set(catalogue.food.map((f) => f.code.toUpperCase()));
-  if (body.menuLines.some((l) => l.productCode && !codes.has(l.productCode.toUpperCase()))) {
-    return "A menu line names a product code the set menus do not have.";
+  const offMenus = body.menuLines.filter((l) => l.productCode && !codes.has(l.productCode.toUpperCase()));
+  if (offMenus.length > 0) {
+    // SCRUM-944: a code the till sells is a dish of the party's too, checked against the till's menu again.
+    if (till === undefined) return "A menu line names a product code the set menus do not have.";
+    if (till === null) return "The till's menu could not be read just now to check a dish's till code. Try Approve and create again in a moment.";
+    if (offMenus.some((l) => !tillItemOf({ till }, l.productCode))) return "A menu line names a till code the till's menu does not have. Open the review again.";
   }
   if (body.entertainment.some((e) => e.templateId && !catalogue.entertainment.some((t) => t.id === e.templateId))) {
     return "An entertainment line is not on this park group's entertainment menu. Choose it again in the review.";
@@ -307,15 +322,23 @@ export async function approveBeoAiFill(
      * ask, such a lowering is not written.
      */
     gatewayFloor?: () => Promise<GatewayFloor>;
+    /**
+     * SCRUM-944: the party's park's till menu (held a minute), or null when it cannot be read:
+     * asked only when a line carries a till code, to check it and to name the line by the till.
+     */
+    tillMenu?: () => Promise<TillMenuItem[] | null>;
   },
 ): Promise<ApproveOutcome> {
   const { event, body } = input;
   const catalogue = await loadBeoCatalogue(db, { tenantId: event.tenantId, branchId: event.branchId });
+  // SCRUM-944: the till's menu, when a line carries a code (asked before anything is held).
+  const till: BeoAiTillItem[] | null | undefined =
+    input.tillMenu && body.menuLines.some((l) => l.productCode) ? await input.tillMenu().then((items) => (items ? tillItemsForFill(items) : null)) : undefined;
   const [current] = await db
     .select({ startTime: coreEvents.startTime, endTime: coreEvents.endTime })
     .from(coreEvents)
     .where(and(eq(coreEvents.id, event.id), eq(coreEvents.tenantId, event.tenantId)));
-  const refused = refuseApproval(body, catalogue, { startTime: current?.startTime ?? null, endTime: current?.endTime ?? null });
+  const refused = refuseApproval(body, catalogue, { startTime: current?.startTime ?? null, endTime: current?.endTime ?? null }, till);
   if (refused) return { ok: false, status: 400, message: refused };
   // SCRUM-827: the people ticked for the team are the park group's, checked again here.
   const teamRefused = await checkTeam(db, event.tenantId, body.details?.team);
@@ -332,6 +355,21 @@ export async function approveBeoAiFill(
       : undefined;
 
   const food = new Map(catalogue.food.map((f) => [f.code.toUpperCase(), f]));
+  /**
+   * SCRUM-944: a line's till code and the name it is written by. A code the set menus have: the
+   * option the review showed when the party's set menu shares the code among options (SCRUM-926,
+   * never the first), else the till's own name when the till sells it, else the set menu's. A
+   * code only the till has: the till's name. No code: the line's own words.
+   */
+  const codedLine = (l: BeoAiApproveBody["menuLines"][number], setMenuId: string | null): { code: string | null; name: string | null } => {
+    const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
+    const onTill = till ? tillItemOf({ till }, l.productCode) : undefined;
+    if (matched) {
+      const names = foodNamesFor(catalogue, matched.code, setMenuId);
+      return { code: onTill?.code ?? matched.code, name: codedLineNameOf(names, onTill, catalogueNameOf(names, l)) };
+    }
+    return onTill ? { code: onTill.code, name: onTill.name } : { code: null, name: null };
+  };
   const written: Record<string, number | boolean> = {};
   const notWritten: NotWritten = {};
   const matches: Array<Record<string, unknown>> = [];
@@ -452,20 +490,23 @@ export async function approveBeoAiFill(
         }
       }
       const lineOf = (l: BeoAiApproveBody["menuLines"][number]): KitchenLine => {
-        const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
         // SCRUM-926: the option the review showed when options share one code (never the first).
         // SCRUM-946: among the names the party's own set menu gives the code.
-        const matchedName = matched ? catalogueNameOf(foodNamesFor(catalogue, matched.code, setMenuTemplateId), l) : null;
-        if (matched) matches.push({ kind: "menu", code: matched.code, name: matchedName });
+        const coded = codedLine(l, setMenuTemplateId);
+        if (coded.code) matches.push({ kind: "menu", code: coded.code, name: coded.name });
         return {
           id: `ai_${randomUUID()}`,
-          itemName: matchedName ?? l.itemName,
+          itemName: coded.name ?? l.itemName,
           quantity: l.quantity,
-          notes: [matched ? matched.code : "Not in the menu", l.notes?.trim() || null].filter(Boolean).join(" · "),
+          // SCRUM-944: the till's code is the line's own product code, as a line picked from the
+          // till's menu holds it (SCRUM-905), never in its note; a line no menu codes says so.
+          notes: [coded.code ? null : "Not in the menu", l.notes?.trim() || null].filter(Boolean).join(" · "),
           included: false,
-          // SCRUM-946: an EXTRA, at the price the review shows for each item (the chat's), else none.
+          // SCRUM-946: an EXTRA, at the price the review shows for each item (the chat's, or the
+          // till's weekday price as the picker writes it), else none.
           price: priceOf(l),
           ...(setMenuEnabled ? { source: "additional" } : {}),
+          ...(coded.code ? { productCode: coded.code } : {}),
         };
       };
       const kidsSaid = kitchenLines.filter((l) => l.menu === "kids");
@@ -547,16 +588,17 @@ export async function approveBeoAiFill(
     }
     if (barLines.length > 0) {
       const items = barLines.map((l) => {
-        const matched = l.productCode ? food.get(l.productCode.toUpperCase()) : undefined;
-        const matchedName = matched ? catalogueNameOf(foodNamesFor(catalogue, matched.code, body.setMenu?.templateId ?? null), l) : null;
-        if (matched) matches.push({ kind: "bar", code: matched.code, name: matchedName });
+        const coded = codedLine(l, body.setMenu?.templateId ?? null);
+        if (coded.code) matches.push({ kind: "bar", code: coded.code, name: coded.name });
         return {
           id: `ai_${randomUUID()}`,
-          itemName: matchedName ?? l.itemName,
+          itemName: coded.name ?? l.itemName,
           quantity: l.quantity,
-          notes: [matched ? matched.code : null, l.notes?.trim() || null].filter(Boolean).join(" · "),
+          // SCRUM-944: the drink's till code on the line itself, as a drink picked from the till's menu.
+          notes: l.notes?.trim() || "",
           included: false,
           price: priceOf(l),
+          ...(coded.code ? { productCode: coded.code } : {}),
         };
       });
       const [bar] = await tx.select({ id: beoBarPlans.id }).from(beoBarPlans).where(eq(beoBarPlans.eventId, event.id));

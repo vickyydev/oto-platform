@@ -27,6 +27,8 @@ import {
   initialReviewState,
   menuLinePriceWords,
   packageOf,
+  tillMatchOf,
+  tillMenuUnreadWords,
   packagePrices,
   priceBeside,
   requestFromsOf,
@@ -769,6 +771,12 @@ function ReviewSections({
                 ) : (
                   <span className="flex-1 min-w-[8rem]" data-testid="text-ai-review-match">{beoAiMatchLabel(l.itemName, l.matchedName, l.productCode)}</span>
                 )}
+                {/* SCRUM-944: the till's own item the line is matched to, with the till's price. */}
+                {!l.notInMenu && tillMatchOf(review, l.productCode) && (
+                  <span className="text-xs text-muted-foreground shrink-0" data-testid="text-ai-review-till-price">
+                    {`Till ${thb(tillMatchOf(review, l.productCode)!.price)}`}
+                  </span>
+                )}
                 <SourceMark field={l} />
                 <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => set({ menuLines: state.menuLines.filter((_, j) => j !== i) })} aria-label="Remove the line">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -1167,6 +1175,12 @@ export function BeoAiReviewDialog({
             {unconfirmed && (
               <p className="text-amber-700 dark:text-amber-300" data-testid="text-ai-review-no-ruling">
                 Nothing is confirmed by the team yet: no message of the team's names the date, the time and the party details. Every value is what the chat says so far — check each one before approving.
+              </p>
+            )}
+            {/* SCRUM-944: the till's menu was not read: matched to the set menus only, as before. */}
+            {tillMenuUnreadWords(review) && (
+              <p className="text-amber-700 dark:text-amber-300" data-testid="text-ai-review-no-till-menu">
+                {tillMenuUnreadWords(review)}
               </p>
             )}
             {catalogueIsEmpty(review) && (

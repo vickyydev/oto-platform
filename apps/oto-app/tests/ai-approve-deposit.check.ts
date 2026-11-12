@@ -59,6 +59,12 @@ let platformDown = false;
 const askedOf: string[] = [];
 const platform = createServer((req: IncomingMessage, res: ServerResponse) => {
   const eventId = /\/otoapp\/parties\/([^/]+)\/deposit-request$/.exec(req.url ?? "")?.[1] ?? "";
+  // SCRUM-944: the fill now also reads the park's till menu from the platform; that is no deposit
+  // ask. This stands in for the deposit door only: another path is not found, and not counted.
+  if (!eventId) {
+    res.writeHead(404, { "content-type": "application/json" });
+    return void res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "ZZ not this stand-in's door" } }));
+  }
   askedOf.push(eventId);
   if (platformDown) return void req.socket.destroy();
   const history = paidThroughChat.get(eventId) ?? [];

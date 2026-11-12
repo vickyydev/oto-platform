@@ -514,7 +514,8 @@ try {
     const hawaiian = (rows.kitchen.menus.kids as any[]).find((l) => l.itemName === "Hawaiian");
     assert.ok(hawaiian?.notes.includes("no cheese on it"), `the note on the dish's line: ${JSON.stringify(hawaiian)}`);
     const rice = (rows.kitchen.menus.adults as any[]).filter((l) => l.source !== "set_menu");
-    assert.deepEqual(rice.map((l) => [l.itemName, l.notes]), [["Fried rice (Chicken)", "CF-43"]], "SCRUM-926: written as the option the chat names");
+    // SCRUM-944 (the owner's Phase C): the till code is the line's own product code, no longer its note.
+    assert.deepEqual(rice.map((l) => [l.itemName, l.notes, l.productCode]), [["Fried rice (Chicken)", "", "CF-43"]], "SCRUM-926: written as the option the chat names");
     assert.equal(rows.bar.service_time, "14:15");
     assert.equal(rows.setup.setup_notes, "keep it away from the stage");
     assert.equal(rows.setup.setup_tasks.readyBy, "13:30");

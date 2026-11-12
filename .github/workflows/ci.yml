@@ -981,6 +981,19 @@ jobs:
         env:
           TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
         run: npx tsx tests/beo-fill-corrections.check.ts
+      # SCRUM-944 (Phase C): the fill matches the chat's dishes and drinks to
+      # the till's items — the read handed the park's till food and drink (no
+      # prices, nothing made for another party), a code accepted only when the
+      # till has it, named by the till, a drink to the bar; the review and
+      # Fetch from chat showing the till's item, code and price; the approval
+      # writing the code as the line's own product code (checked again), the
+      # till's plan and the "No longer on the till" mark reading it; a till
+      # not read leaving the fill as it was; every guard holding.
+      - name: The app's AI fill till menu checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: npx tsx tests/beo-fill-till-menu.check.ts
       # SCRUM-827: the BEO pre-filled in one pass, the form under jsdom: Create
       # BEO's review opens with every section proposed and marked (the chat's
       # lines, the park's default for the title), a value the form holds kept

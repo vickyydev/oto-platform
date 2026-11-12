@@ -48,7 +48,8 @@ import { approveBeoAiFill, depositHeld, parentSelectionOf, sectionsHeld } from "
 import { oneDepositOf, type GatewayFloor } from "./lib/depositSaveGuard";
 import { gatewayDepositFloor } from "./party-deposit-routes";
 import type { DbExecutor } from "./lib/packageSnapshot";
-import { BeoAiApproveBodySchema, type BeoAiFrom, type BeoAiProposal, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
+import { readFillTillMenu, withTillMenu, type FillTillMenu } from "./lib/beoFillTillMenu";
+import { BeoAiApproveBodySchema, tillItemOf, type BeoAiFrom, type BeoAiProposal, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 
 interface ExtractEventRequest {
   notes_text: string;
@@ -117,6 +118,12 @@ export interface AiRouteDeps {
    * platform holds it: asked before an approval may lower a received deposit.
    */
   gatewayFloor: (event: BeoFillEvent, requestId?: string) => Promise<GatewayFloor>;
+  /**
+   * SCRUM-944 (Phase C): the party's park's till menu (SCRUM-905's door, held a minute), which
+   * the fill matches dishes and drinks to as well as the set menus, and the approval checks a
+   * till code against; never throws.
+   */
+  tillMenu: (event: BeoFillEvent, requestId?: string) => Promise<FillTillMenu>;
 }
 
 const PARKS_ZONE: ParkPlace = { name: null, timeZone: DEFAULT_PARK_TIME_ZONE };
@@ -229,6 +236,7 @@ export const defaultAiRouteDeps: AiRouteDeps = {
     event.eventType
       ? gatewayDepositFloor({ id: event.id, tenantId: event.tenantId, branchId: event.branchId, eventType: event.eventType }, requestId)
       : { known: false },
+  tillMenu: (event, requestId) => readFillTillMenu(db, event, requestId),
 };
 
 /** The run's schema with the catalogue section the model adds when it is handed the catalogue (read apart, leniently). */
@@ -248,7 +256,7 @@ const CatalogueOnlySchema = z.object({ catalogue: z.unknown().optional() }).pass
 /** SCRUM-904: a count the activity row names only when there is one. */
 const countOf = (key: string, n: number): Record<string, number> => (n > 0 ? { [key]: n } : {});
 /** What the activity row says of a catalogue proposal: counts and sources, never the chat's words. */
-const catalogueCounts = (p: BeoAiProposal) => ({
+const catalogueCounts = (p: BeoAiProposal, c?: BeoCatalogue | null) => ({
   package: p.package !== null,
   addOns: p.addOns.length,
   setMenu: p.setMenu !== null,
@@ -267,6 +275,8 @@ const catalogueCounts = (p: BeoAiProposal) => ({
   ...countOf("event", (["eventDate", "childAge", "whatsapp", "kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const).filter((k) => p.event[k] !== undefined).length),
   ...countOf("allergies", p.details.requests.filter((r) => r.kind === "allergy").length),
   ...countOf("acts", p.entertainment.filter((e) => e.time).length),
+  // SCRUM-944: the dishes and drinks matched to the till's menu that no set menu codes, as a count.
+  ...countOf("tillLines", p.menuLines.filter((l) => !!l.productCode && !!c && !!tillItemOf(c, l.productCode) && !c.food.some((f) => f.code.toUpperCase() === l.productCode!.toUpperCase())).length),
 });
 
 /** The sections a fill gave, for the activity row: names of sections, never their contents. */
@@ -465,7 +475,7 @@ export async function runBeoFill(
           : {}),
         // SCRUM-903: no message of the team's confirmed the party: the conversation alone was read.
         ...(formRun ? {} : { ruling: false }),
-        ...(proposal ? { catalogue: catalogueCounts(proposal) } : {}),
+        ...(proposal ? { catalogue: catalogueCounts(proposal, catalogue) } : {}),
       }),
     });
   } catch (error) {
@@ -629,7 +639,9 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               return emptyCatalogue();
             })
           : null;
-      const matched = event && catalogue ? catalogue : null;
+      // SCRUM-944: the till's food and drink at the party's park, matched to as well.
+      const till = event && catalogue ? await deps.tillMenu(event, req.requestId) : null;
+      const matched = event && catalogue ? (till ? withTillMenu(catalogue, till) : catalogue) : null;
       const place = await deps.parkPlace(req, event);
       const pastedAt = deps.now().toISOString();
       const rendered = matched ? renderTranscript([], { id: "pasted", body: text, at: pastedAt }, place.timeZone) : null;
@@ -658,6 +670,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
               ruling: rulingFrom,
               timeZone: place.timeZone,
               ...(catalogueUnread ? { catalogueUnread: true } : {}),
+              ...(till ? { tillMenu: { status: till.status, message: till.message } } : {}),
               transcript: { lines: 1, cut: false },
               replaces: await sectionsHeld(db, event.id),
               parentSelection: await parentSelectionOf(db, event.id),
@@ -739,12 +752,17 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       const ruling = message ? { id: message.id, body: message.body, at: message.sentAt ?? message.createdAt } : null;
       // SCRUM-904: a catalogue that could not be read is said so in the review, not called empty.
       let catalogueUnread = false;
-      const catalogue = await deps.catalogue(event).catch((error: unknown) => {
-        // The fill still runs. SCRUM-903: as with an empty catalogue, every item the chat names is a line to keep or leave out.
-        log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
-        catalogueUnread = true;
-        return emptyCatalogue();
-      });
+      // SCRUM-944: the till's food and drink at the party's park, read beside the catalogue.
+      const [setMenusCatalogue, till] = await Promise.all([
+        deps.catalogue(event).catch((error: unknown) => {
+          // The fill still runs. SCRUM-903: as with an empty catalogue, every item the chat names is a line to keep or leave out.
+          log().warn({ err: (error as Error)?.message ?? String(error), eventId: event.id }, "the park's catalogue was not read for the AI fill");
+          catalogueUnread = true;
+          return emptyCatalogue();
+        }),
+        deps.tillMenu(event, req.requestId),
+      ]);
+      const catalogue = withTillMenu(setMenusCatalogue, till);
       // SCRUM-814's park, read once: the prompt's today and the transcript's clock.
       const place = await deps.parkPlace(req, event);
       const transcriptCut = confirmation.transcriptCut ?? false;
@@ -783,6 +801,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
             conversationId: confirmation.conversationId,
             timeZone: place.timeZone,
             ...(catalogueUnread ? { catalogueUnread: true } : {}),
+            tillMenu: { status: till.status, message: till.message },
             transcript: { lines: conversation?.refs.length ?? 1, cut: conversation?.cut ?? false },
             replaces: await sectionsHeld(db, event.id),
             parentSelection: await parentSelectionOf(db, event.id),
@@ -848,6 +867,11 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
         now: new Date(),
         recordActivity: (entry, executor) => deps.recordActivity(entry, executor),
         gatewayFloor: () => deps.gatewayFloor(event, req.requestId),
+        // SCRUM-944: a till code is checked against the till's menu again (held a minute).
+        tillMenu: async () => {
+          const till = await deps.tillMenu(event, req.requestId);
+          return till.status === "ok" ? till.items : null;
+        },
       });
       if (!outcome.ok) return res.status(outcome.status).json({ message: outcome.message });
       try {

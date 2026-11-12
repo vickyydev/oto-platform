@@ -1,6 +1,7 @@
 import {
   foodNamesFor,
   laterLineWins,
+  tillItemOf,
   type BeoAiApproveBody,
   type BeoAiCakeMode,
   type BeoAiFrom,
@@ -90,8 +91,11 @@ export interface ReviewMenuLine {
    * one; null writes none. The reviewer may change it.
    */
   price: number | null;
-  /** Where the price shown came from: the chat, or the reviewer ("staff"); null with none. */
-  priceFrom: "chat" | "staff" | null;
+  /**
+   * Where the price shown came from: the chat, the till's weekday price for its item (SCRUM-944,
+   * as the till menu's picker writes it), or the reviewer ("staff"); null with none.
+   */
+  priceFrom: "chat" | "till" | "staff" | null;
   /**
    * SCRUM-926: the catalogue's names of the options that share this line's
    * till code ("Fried rice (Veggie)", "Fried rice (Chicken)"…), present only
@@ -379,9 +383,9 @@ export function initialReviewState(
         decision: null,
         ...(l.notes ? { notes: l.notes } : {}),
         ...(options.length > 1 ? { options } : {}),
-        // SCRUM-946: the chat's price is the line's, per item, as it will be written.
-        price: l.chatPrice,
-        priceFrom: l.chatPrice !== null ? "chat" : null,
+        // SCRUM-946: the chat's price is the line's, per item, as it will be written. SCRUM-944: else
+        // the till's weekday price for a dish or drink the till sells, as its picker writes an EXTRA.
+        ...priceOfLine(review, l),
       };
     }),
     entertainment: p.entertainment.map((e) => ({
@@ -730,13 +734,44 @@ export function priceBeside(chatPrice: number | null, catalogueSatang: Array<num
 export const thb = (baht: number) => `฿${baht.toLocaleString("en", { maximumFractionDigits: 2 })}`;
 
 /**
+ * SCRUM-944: the price a dish line opens with, for each item: the chat's when it names one, else
+ * the till's weekday price for the item the till sells (what the till's picker writes on an
+ * EXTRA, SCRUM-905), else none.
+ */
+export function priceOfLine(
+  review: Pick<BeoAiReview, "catalogue">,
+  line: Pick<BeoAiReview["proposal"]["menuLines"][number], "chatPrice" | "productCode" | "notInMenu">,
+): Pick<ReviewMenuLine, "price" | "priceFrom"> {
+  if (line.chatPrice !== null) return { price: line.chatPrice, priceFrom: "chat" };
+  const till = line.notInMenu ? undefined : tillItemOf(review.catalogue, line.productCode);
+  return till ? { price: Math.round(till.priceSatang) / 100, priceFrom: "till" } : { price: null, priceFrom: null };
+}
+
+/**
+ * SCRUM-944: the till's item a review line is matched to, with its price in baht, for "Till ฿190"
+ * beside the match; null when the line's code is not on the till's menu as read.
+ */
+export function tillMatchOf(review: Pick<BeoAiReview, "catalogue">, code: string | null | undefined): { code: string; name: string; price: number } | null {
+  const till = tillItemOf(review.catalogue, code);
+  return till ? { code: till.code, name: till.name, price: Math.round(till.priceSatang) / 100 } : null;
+}
+
+/** SCRUM-944: the review's header line when the till's menu was not read for the fill; null when it was (or the server is older). */
+export function tillMenuUnreadWords(review: Pick<BeoAiReview, "tillMenu">): string | null {
+  const t = review.tillMenu;
+  if (!t || t.status === "ok") return null;
+  return `The till's menu was not available${t.message ? ` (${t.message.replace(/[.\s]+$/, "")})` : ""}: dishes and drinks are matched to the set menus only, and none is marked "No longer on the till".`;
+}
+
+/**
  * SCRUM-946: the words beside a dish line's price in the review, as Approve
  * and create writes it: an EXTRA at that price for each item, where it came
  * from; with none, that none is written.
  */
 export function menuLinePriceWords(line: Pick<ReviewMenuLine, "price" | "priceFrom" | "quantity">): string {
   if (typeof line.price !== "number" || !(line.price > 0)) return "No price is written on the line.";
-  const from = line.priceFrom === "chat" ? " — the chat's price" : line.priceFrom === "staff" ? " — changed here" : "";
+  const from =
+    line.priceFrom === "chat" ? " — the chat's price" : line.priceFrom === "till" ? " — the till's price" : line.priceFrom === "staff" ? " — changed here" : "";
   const total = line.quantity > 1 ? ` (${line.quantity} × ${thb(line.price)} = ${thb(Math.round(line.price * line.quantity * 100) / 100)})` : "";
   return `THB each, written on the line as an EXTRA${total}${from}.`;
 }

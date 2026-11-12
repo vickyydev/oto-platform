@@ -780,7 +780,9 @@ try {
     const kids = rows.kitchen.menus.kids as any[];
     assert.deepEqual(setMenuLinesOf(rows.kitchen), byMenuOrder([["Margherita", PIZZA], ["French fries", "item_cf_bday_fries"], ["Fruit skewers", "item_cf_bday_fruit_skewers"]]));
     const extras = kids.filter((l) => l.source !== "set_menu");
-    assert.deepEqual(extras.map((l) => [l.itemName, l.notes, l.source]), [["French fries", "CF-11", "additional"], ["суши", "Not in the menu", "additional"]]);
+    // SCRUM-944 (the owner's Phase C): the till code is the line's own product code, no longer its note;
+    // a line no menu codes keeps saying so in its note, as before.
+    assert.deepEqual(extras.map((l) => [l.itemName, l.notes, l.source, l.productCode ?? null]), [["French fries", "", "additional", "CF-11"], ["суши", "Not in the menu", "additional", null]]);
     assert.deepEqual(rows.kitchen.simplified_menus.kids, kids);
     assert.equal(rows.kitchen.cake_mode, "INTERNAL");
     assert.equal(rows.selection.template_id, cat.setMenu);
