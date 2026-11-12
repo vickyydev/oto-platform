@@ -364,6 +364,15 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
     expect(new URL(lookedUp.url()).searchParams.get('phone') === expectedPhone).toBe(true);
     expect((await lookedUp.json()).member === null).toBe(true);
     await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 20_000 });
+    // SCRUM-885 — every welcome the till publishes from here, with the member it creates.
+    const welcomes: unknown[] = [];
+    const recordWelcome = (request: Request) => {
+      const path = new URL(request.url()).pathname;
+      if (!path.startsWith('/api/box/v1/station/') || !path.endsWith('/intents') || request.method() !== 'POST') return;
+      const body = request.postDataJSON();
+      if (body?.type === 'session.publish_display' && body.payload?.stage === 'welcome') welcomes.push(body.payload.member ?? null);
+    };
+    page.on('request', recordWelcome);
     await page.getByPlaceholder('e.g. Mali').fill('Smoke visitor');
     const created = page.waitForResponse((response) => response.url().endsWith('/api/members') && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Create member', exact: true }).click();
@@ -374,6 +383,19 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
     createdMemberId = member.id;
     expect(member.nickname === 'Smoke visitor').toBe(true);
     await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 20_000 });
+    // SCRUM-885 — the family registered a moment ago is welcomed on the display
+    // as a first visit, never "Welcome back": two of the display's own reads
+    // after the create, and no welcome the till published names the member.
+    for (let read = 0; read < 2; read += 1) {
+      await fixture.display.waitForResponse(response => response.url().endsWith('/display/session')
+        && response.request().method() === 'GET' && response.status() === 200);
+    }
+    page.off('request', recordWelcome);
+    expect(welcomes.length > 0 && welcomes.every(shown => shown === null)).toBe(true);
+    await expect(fixture.display.getByRole('heading', { name: 'Welcome to Oto', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByText("Thailand's happiest indoor play park. Let's get you ready to play!", { exact: true })).toBeVisible();
+    await expect(fixture.display.getByRole('heading', { name: /^Welcome back/ })).toHaveCount(0);
+    await captureLocalCheck(fixture.display, 'ticket-display-new-member-welcome-local.png');
     await signOut(page);
   } finally {
     try {
