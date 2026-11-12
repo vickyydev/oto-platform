@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { newId, partyAdultsNoteMark, partySettlementLive } from '@oto/shared';
+import { newId, partySettlementLive } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -35,17 +35,17 @@ import {
   partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
-  readPartyPlanOnPlatform,
   updatePartyOnPlatform,
   type PartyChargeConfirmation,
   type PartyChargeLine,
   type PartyPaymentConfirmation,
-  type PartyPlanRead,
   type PartyTenderPress,
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
 import { toast } from '@/hooks/use-toast';
+import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
+import { partyBarLineLabel, partyCakeLabel, partyCakeOf, partyMenuLineLabel } from '@/lib/partyKitchen';
 import { PartyBalanceModal } from './PartyBalanceModal';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { PartyFnbModal } from './PartyFnbModal';
@@ -161,7 +161,6 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const [showMessage, setShowMessage] = useState(false);
   const [editing, setEditing] = useState(false);
   // SCRUM-804 — the plan the OTO App published for this party, and the Settle form.
-  const [planRead, setPlanRead] = useState<PartyPlanRead | null>(null);
   const [planNonce, setPlanNonce] = useState(0);
   const [showSettle, setShowSettle] = useState(false);
   // SCRUM-876 — Cancel settlement: the reason being typed, and whether the void is out.
@@ -180,16 +179,12 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       }
     : null;
 
-  useEffect(() => {
-    let live = true;
-    void readPartyPlanOnPlatform({ id: party.id, branchId: party.branchId }).then((read) => {
-      if (live) setPlanRead(read);
-    });
-    return () => {
-      live = false;
-    };
-  }, [party.id, party.branchId, planNonce]);
+  // SCRUM-906 — read on opening, and again on focus and every minute while the page is open,
+  // held still while a settlement or an edit is in progress.
+  const planRead = usePartyPlanRead(party, { paused: showSettle || editing, nonce: planNonce });
   const plan = planRead?.plan ?? null;
+  // SCRUM-906 — the whole kitchen plan, with or without a package; a platform before it gives the plan's own.
+  const kitchenPlan = planRead?.kitchenPlan ?? plan;
   const settlement = party.settlement ?? null;
   const settledByPlan = partySettlementLive(settlement);
 
@@ -508,31 +503,44 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     </SectionCard>
   );
 
-  const planSection = plan && (
+  // SCRUM-906 — the cake as the BEO's cake choice says it; nothing when it says no cake.
+  const planCake = kitchenPlan?.cake ? partyCakeOf(kitchenPlan) : null;
+  const planSection = kitchenPlan && (
     <SectionCard icon={UtensilsCrossed} title="Kitchen plan">
       <div className="text-sm space-y-1">
-        <InfoRow icon={Cake} label="Package" value={plan.package.name} />
-        {plan.kitchen?.kidsFoodTime && <InfoRow icon={Clock} label="Kids' food" value={plan.kitchen.kidsFoodTime} />}
-        {plan.kitchen?.adultsFoodTime && <InfoRow icon={Clock} label="Adults' food" value={plan.kitchen.adultsFoodTime} />}
-        {plan.kitchen?.readyOffsetMinutes != null && (
-          <InfoRow label="Ready" value={`${plan.kitchen.readyOffsetMinutes} min before`} />
+        {plan && <InfoRow icon={Cake} label="Package" value={plan.package.name} />}
+        {kitchenPlan.kitchen?.kidsFoodTime && <InfoRow icon={Clock} label="Kids' food" value={kitchenPlan.kitchen.kidsFoodTime} />}
+        {kitchenPlan.kitchen?.adultsFoodTime && <InfoRow icon={Clock} label="Adults' food" value={kitchenPlan.kitchen.adultsFoodTime} />}
+        {kitchenPlan.kitchen?.readyOffsetMinutes != null && (
+          <InfoRow label="Ready" value={`${kitchenPlan.kitchen.readyOffsetMinutes} min before`} />
         )}
-        {plan.kitchen?.slipsTime && <InfoRow label="Slips print" value={plan.kitchen.slipsTime} />}
-        {plan.setMenu.length > 0 && (
+        {kitchenPlan.kitchen?.slipsTime && <InfoRow label="Slips print" value={kitchenPlan.kitchen.slipsTime} />}
+        {kitchenPlan.setMenu.length > 0 && (
           <div className="border-t mt-2 pt-2 space-y-1">
-            {plan.setMenu.map((m, i) => (
+            {kitchenPlan.setMenu.map((m, i) => (
               <InfoRow
-                key={`${m.productCode ?? m.name}-${i}`}
-                // SCRUM-829: a line the BEO marks as the kids' only, the adults' own, or the adults' with another note says so (the slip prints the same words).
-                label={`${m.name}${m.chosenOption ? ` · ${m.chosenOption}` : ''}${m.audience === 'kids' ? ' · kids only' : m.audience === 'adults' ? ' · adults' : ''}${
-                  m.adultsNote === undefined ? '' : ` · ${partyAdultsNoteMark(m.adultsNote)}`
-                }`}
+                key={`${m.lineId ?? m.productCode ?? m.name}-${i}`}
+                // SCRUM-829 / SCRUM-906: the marks the slip prints — the kids' only, the adults' own or
+                // their note, and a line no live till product carries ("not on the till menu").
+                label={partyMenuLineLabel(m)}
                 value={m.qty === null ? '' : `×${m.qty}`}
               />
             ))}
           </div>
         )}
-        {plan.package.includedLines.length > 0 && (
+        {planCake && (
+          <div className="mt-3 rounded-lg bg-primary/10 p-3 flex items-start gap-2">
+            <Cake className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <div className="font-semibold">
+                {partyCakeLabel(planCake)}
+                {planCake.time ? ` · ${planCake.time}` : ''}
+              </div>
+              {planCake.note && <div className="text-xs text-muted-foreground">{planCake.note}</div>}
+            </div>
+          </div>
+        )}
+        {plan && plan.package.includedLines.length > 0 && (
           <div className="mt-3 rounded-lg bg-primary/10 p-3 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">Included: </span>
             {plan.package.includedLines.map((l) => l.label).join(' · ')}
@@ -582,11 +590,14 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     </SectionCard>
   );
 
-  const barSection = plan && plan.barItems.length > 0 ? (
+  const barSection = kitchenPlan && kitchenPlan.barItems.length > 0 ? (
     <SectionCard icon={GlassWater} title="Bar plan">
       <div className="text-sm">
-        {plan.barItems.map((b, i) => (
-          <InfoRow key={`${b.productCode ?? b.name}-${i}`} label={b.name} value={`×${b.qty}`} />
+        {kitchenPlan.kitchen?.barServiceTime && (
+          <InfoRow icon={Clock} label="Bar service" value={kitchenPlan.kitchen.barServiceTime} />
+        )}
+        {kitchenPlan.barItems.map((b, i) => (
+          <InfoRow key={`${b.lineId ?? b.productCode ?? b.name}-${i}`} label={partyBarLineLabel(b)} value={`×${b.qty}`} />
         ))}
       </div>
     </SectionCard>

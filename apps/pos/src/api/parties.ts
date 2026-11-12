@@ -23,6 +23,7 @@ import type {
   EventDetailAnswer,
   PartyDetailAnswer,
   PartyEditFields,
+  PartyKitchenPlan,
   PartyPlan,
   PartyPlanStatus,
   PartySettleAnswer,
@@ -470,6 +471,11 @@ export async function updatePartyOnPlatform(args: {
 export interface PartyPlanRead {
   plan: PartyPlan | null;
   status: PartyPlanStatus;
+  /**
+   * SCRUM-906 — the party's whole kitchen plan, with or without a package:
+   * every line, the cake, the bar. Absent from a platform that predates it.
+   */
+  kitchenPlan?: PartyKitchenPlan | null;
 }
 
 /**
@@ -484,7 +490,11 @@ export async function readPartyPlanOnPlatform(party: Pick<PartyBooking, 'id' | '
   try {
     const answer = (await partiesApi.detail(branchId, party.id)) as Partial<PartyDetailAnswer> | undefined;
     if (!answer || typeof answer !== 'object' || !('planStatus' in answer) || !answer.planStatus) return null;
-    return { plan: answer.plan ?? null, status: answer.planStatus };
+    return {
+      plan: answer.plan ?? null,
+      status: answer.planStatus,
+      ...(answer.kitchenPlan !== undefined ? { kitchenPlan: answer.kitchenPlan } : {}),
+    };
   } catch {
     return null;
   }

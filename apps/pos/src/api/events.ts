@@ -20,11 +20,12 @@ import type { ApiResponse } from '@oto/api-types';
 // puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView, partySettlementLive } from '@oto/shared';
+import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyKitchenPlan, type PartyPaymentView, partySettlementLive } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge, PartyPayment } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
 import { paymentMethodKind } from '@/lib/payments';
+import { partyBarLineLabel, partyCakeOf, partyMenuLineLabel } from '@/lib/partyKitchen';
 import { currentLane, viaLane } from '@/lib/lane';
 import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, idemKey, NetworkError } from './client';
@@ -154,9 +155,11 @@ export function partyPaymentToPrototype(p: PartyPaymentView): PartyPayment {
  * slug. A party carries the bill the OTO App holds — its total as the base,
  * its deposit — as the till last edited it, and the POS's tab (E4): the
  * walk-up charges (E2) and the till's charges in the order they were made,
- * the payments taken, and the `updateParty` stamp. The kitchen plan, the run
- * of show and the line items are not in the views yet, so the party screen
- * shows none.
+ * the payments taken, and the `updateParty` stamp. The run of show and the
+ * line items are not in the views yet, so the party screen shows none. The
+ * kitchen plan is not in the day's read: it is the party's own read
+ * (`GET /parties/:id`), laid over the party by `withPartyKitchen` below
+ * (SCRUM-906); until it is read, the party carries no kitchen.
  */
 export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
   const event: OtoEvent = {
@@ -192,6 +195,7 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     lineItems: [],
     deposit: settled ? 0 : baht(v.party.depositSatang),
     ...(v.party.depositDate ? { depositDate: v.party.depositDate } : {}),
+    // SCRUM-906: none until the party's own read brings its kitchen plan (`withPartyKitchen`).
     kitchen: { needed: false, kidsMenu: [], adultsMenu: [], foodItems: [], cake: { type: 'none' } },
     timeline: [],
     // The walk-ups and the till's charges share one ledger, as in the
@@ -212,6 +216,39 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     ...(v.party.settlement ? { settlement: v.party.settlement } : {}),
   };
   return { ...event, ...party };
+}
+
+/**
+ * SCRUM-906 — THE PARTY WITH ITS KITCHEN PLAN, in the prototype's words: every
+ * food line of the BEO's kitchen plan with the marks the slip prints beside it,
+ * the kids' food time, whether a set menu is on it, the cake as the BEO's cake
+ * choice says it, and the bar's lines with its service time. A party with no
+ * kitchen plan read is returned as it is.
+ */
+export function withPartyKitchen(party: PartyBooking, kitchen: PartyKitchenPlan | null | undefined): PartyBooking {
+  if (!kitchen) return party;
+  const cake = partyCakeOf(kitchen);
+  const hasOrigin = kitchen.setMenu.some((m) => m.origin !== undefined);
+  return {
+    ...party,
+    kitchen: {
+      needed: kitchen.setMenu.length > 0 || cake.type !== 'none',
+      kidsMenu: [],
+      adultsMenu: [],
+      ...(hasOrigin ? { setMenu: kitchen.setMenu.some((m) => m.origin === 'set_menu') } : {}),
+      foodItems: kitchen.setMenu.map((m, i) => ({ id: m.lineId ?? `line-${i + 1}`, name: partyMenuLineLabel(m), qty: m.qty ?? 0 })),
+      cake,
+      ...(kitchen.kitchen?.kidsFoodTime ? { serviceTime: kitchen.kitchen.kidsFoodTime } : {}),
+    },
+    ...(kitchen.barItems.length > 0
+      ? {
+          bar: {
+            ...(kitchen.kitchen?.barServiceTime ? { serviceTime: kitchen.kitchen.barServiceTime } : {}),
+            items: kitchen.barItems.map((b, i) => ({ id: b.lineId ?? `bar-${i + 1}`, name: partyBarLineLabel(b), qty: b.qty })),
+          },
+        }
+      : {}),
+  };
 }
 
 function messageOf(err: unknown): string {

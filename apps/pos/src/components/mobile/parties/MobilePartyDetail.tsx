@@ -11,6 +11,9 @@ import {
 } from '@/lib/party';
 import { partyBillShown } from '@/lib/partySettlementBill';
 import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
+import { withPartyKitchen } from '@/api/events';
+import { usePartyPlanRead } from '@/hooks/usePartyPlanRead';
+import { partyCakeLabel } from '@/lib/partyKitchen';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -102,11 +105,16 @@ interface MobilePartyDetailProps {
 }
 
 export function MobilePartyDetail({
-  party,
+  party: given,
   onBack,
   onTakePayment,
   onAddFnb,
 }: MobilePartyDetailProps) {
+  // SCRUM-906 — the party's kitchen plan, read on opening, on focus and every minute while open,
+  // laid over the party in the page's own words (every line, the cake, the bar).
+  const planRead = usePartyPlanRead(given);
+  const kitchenPlan = planRead?.kitchenPlan ?? planRead?.plan ?? null;
+  const party = withPartyKitchen(given, kitchenPlan);
   // The tab's own balance: what Take payment takes on this phone.
   const outstanding = computePartyOutstanding(party);
   const extras = partyExtraChargesTotal(party);
@@ -117,12 +125,7 @@ export function MobilePartyDetail({
   const bill = partyBillShown(party);
   const settlementOpen = party.settlement?.state === 'open';
   const cake = party.kitchen.cake;
-  const cakeLabel =
-    cake.type === 'none'
-      ? 'No cake'
-      : cake.type === 'own'
-        ? 'Customer brings their own'
-        : `Our cake${cake.qty ? ` ×${cake.qty}` : ''}`;
+  const cakeLabel = partyCakeLabel(cake);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -286,10 +289,13 @@ export function MobilePartyDetail({
                 {party.kitchen.foodItems.length > 0 && (
                   <div className="border-t mt-1.5 pt-1.5 space-y-0.5">
                     {party.kitchen.foodItems.map((f) => (
-                      <InfoRow key={f.id} label={f.name} value={`×${f.qty}`} />
+                      // A choice split over several dishes carries no count of its own (SCRUM-906).
+                      <InfoRow key={f.id} label={f.name} value={f.qty ? `×${f.qty}` : ''} />
                     ))}
                   </div>
                 )}
+                {/* SCRUM-906: the cake as the BEO says it; nothing when the BEO says no cake. */}
+                {(cake.type !== 'none' || !kitchenPlan) && (
                 <div className="mt-2 rounded-lg bg-primary/10 p-2.5 flex items-start gap-2">
                   <Cake className="w-4 h-4 text-primary shrink-0 mt-px" />
                   <div className="min-w-0">
@@ -302,6 +308,7 @@ export function MobilePartyDetail({
                     )}
                   </div>
                 </div>
+                )}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">No kitchen service for this party.</p>

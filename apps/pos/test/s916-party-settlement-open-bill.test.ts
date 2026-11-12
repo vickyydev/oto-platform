@@ -288,8 +288,14 @@ const partyPage = (party: PartyBooking) =>
     onChanged: () => undefined,
   } as Record<string, unknown>);
 
+// The phone's page reads the party's kitchen plan with a hook (SCRUM-906), so it renders as the desk's does.
 const phonePage = (party: PartyBooking) =>
-  MobilePartyDetail({ party, onBack: () => undefined, onTakePayment: vi.fn(), onAddFnb: () => undefined });
+  renderHook((p: Record<string, unknown>) => MobilePartyDetail(p as never), {
+    party,
+    onBack: () => undefined,
+    onTakePayment: vi.fn(),
+    onAddFnb: () => undefined,
+  } as Record<string, unknown>).result.current;
 
 // =============================================================================
 
