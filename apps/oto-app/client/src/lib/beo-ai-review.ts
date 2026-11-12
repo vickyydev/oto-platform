@@ -448,7 +448,7 @@ export function reviewDateLine(review: BeoAiReview, fill: unknown, bookedDate: s
  * party's one deposit the till settles against). A ruling message's review
  * opens as the proposal says. The wider asked-vs-received rule is SCRUM-844's.
  */
-function depositOpensPaid(review: BeoAiReview): boolean {
+export function depositOpensPaid(review: BeoAiReview): boolean {
   const d = review.proposal.deposit;
   if (!d?.paid) return false;
   return !(review.ruling === null && d.from.source === "family");

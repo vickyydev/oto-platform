@@ -1523,6 +1523,9 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     setupResponsible,
     posName: packageName,
     posNotes: packageNotes,
+    // SCRUM-904: the family's number and the setup notes the form holds, never overwritten.
+    whatsapp: eventData.whatsappPhoneRaw ?? "",
+    setupNotes,
   });
 
   /**
@@ -1549,6 +1552,8 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       setupResponsible: s(sp?.responsible) || s(tasks?.responsible),
       posName: s(pd?.packageName),
       posNotes: s(pd?.notes),
+      whatsapp: s(saved?.whatsappPhoneRaw) || s(saved?.whatsappPhoneE164),
+      setupNotes: s(sp?.setupNotes),
     };
   };
 
@@ -1610,6 +1615,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
     depositDate,
     packageName,
     packageNotes,
+    // SCRUM-904: the fields the conversation's read gives since Phase B.
+    whatsappPhoneRaw: eventData.whatsappPhoneRaw ?? "",
+    kidTurningAge: typeof (eventData as any).kidTurningAge === "number" ? (eventData as any).kidTurningAge : null,
+    setupNotes,
+    cakeQuantity,
+    cakeIncluded: cakeIncluded ? "included" : "extra",
+    cakePrice,
+    kidsFoodTime,
+    adultsFoodTime,
+    barServiceTime,
   });
 
   /**
@@ -1648,7 +1663,16 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
    * fetched as text is nobody linked, so the team's mark on it is let go.
    */
   const applyFetched = (patch: Partial<FetchFormValues>, accepted: FetchChange[] = []) => {
-    const { locationText: loc, setupReadyBy: ready, setupResponsible: who, cakeMode: mode, cakeNotes: notes, cakeTime: at, prepaymentReceived: paid, depositDate: on, packageName: pkg, packageNotes: posNotes, ...event } = patch;
+    // SCRUM-904: the setup notes, the cake's count, package and price, the food and bar times; the age and the number are the event's.
+    const { setupNotes: setupNote, cakeQuantity: cakes, cakeIncluded: cakeIn, cakePrice: cakeCost, kidsFoodTime: kidsAt, adultsFoodTime: adultsAt, barServiceTime: barAt, ...rest } = patch;
+    if (setupNote !== undefined) setSetupNotes(setupNote);
+    if (typeof cakes === "number") setCakeQuantity(cakes);
+    if (cakeIn) setCakeIncluded(cakeIn === "included");
+    if (cakeCost !== undefined) setCakePrice(cakeCost);
+    if (kidsAt !== undefined) setKidsFoodTime(kidsAt);
+    if (adultsAt !== undefined) setAdultsFoodTime(adultsAt);
+    if (barAt !== undefined) setBarServiceTime(barAt);
+    const { locationText: loc, setupReadyBy: ready, setupResponsible: who, cakeMode: mode, cakeNotes: notes, cakeTime: at, prepaymentReceived: paid, depositDate: on, packageName: pkg, packageNotes: posNotes, ...event } = rest;
     if (Object.keys(event).length > 0) setEventData((prev) => ({ ...prev, ...event }));
     if (loc !== undefined) setLocationText(loc);
     if (ready !== undefined) setSetupReadyBy(ready);

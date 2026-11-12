@@ -1,7 +1,7 @@
-import { laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview } from "@shared/beoAiFill";
+import { laterLineWins, type BeoAiFrom, type BeoAiMenu, type BeoAiRequestKind, type BeoAiReview, type BeoAiSourced } from "@shared/beoAiFill";
 import { aiFillDateLine, dayLabel } from "./beo-ai-date";
 import { AI_FILL_CAKE_TYPE } from "./beo-ai-preview";
-import { thb, type ApprovedMarks } from "./beo-ai-review";
+import { depositOpensPaid, requestLineText, requestsOfField, reviewDateLine, samePhone, thb, type ApprovedMarks } from "./beo-ai-review";
 
 /**
  * "FETCH FROM CHAT" ON THE BEO FORM (SCRUM-826) — the diff and the memory.
@@ -41,7 +41,11 @@ import { thb, type ApprovedMarks } from "./beo-ai-review";
  * under the row.
  */
 
-/** What the form holds now, in the fields a fetch knows. */
+/**
+ * What the form holds now, in the fields a fetch knows. SCRUM-904: the
+ * fields the conversation's read gives since Phase B are optional, so a
+ * caller from before it holds nothing there.
+ */
 export interface FetchFormValues {
   title: string;
   childName: string;
@@ -67,6 +71,18 @@ export interface FetchFormValues {
   depositDate: string;
   packageName: string;
   packageNotes: string;
+  /** SCRUM-904: the family's WhatsApp number, the age the child turns, the setup plan's notes. */
+  whatsappPhoneRaw?: string;
+  kidTurningAge?: number | null;
+  setupNotes?: string;
+  /** SCRUM-904: how many cakes, "included" or "extra" (the cake's INCL/EXTRA), its price in baht. */
+  cakeQuantity?: number | null;
+  cakeIncluded?: "included" | "extra" | "";
+  cakePrice?: number;
+  /** SCRUM-904: when the kids' and the adults' food is served, and when the bar serves the drinks. */
+  kidsFoodTime?: string;
+  adultsFoodTime?: string;
+  barServiceTime?: string;
 }
 export type FetchField = keyof FetchFormValues;
 
@@ -131,7 +147,9 @@ export const FETCH_LABELS: Record<FetchField, string> = {
   eventDate: "Date",
   title: "Title",
   childName: "Child",
+  kidTurningAge: "Age",
   bookingName: "Booking name",
+  whatsappPhoneRaw: "WhatsApp",
   numChildren: "Children",
   numAdults: "Adults",
   startTime: "Start time",
@@ -142,9 +160,16 @@ export const FETCH_LABELS: Record<FetchField, string> = {
   decoration: "Decoration",
   setupReadyBy: "Setup ready by",
   setupResponsible: "Setup who",
+  setupNotes: "Setup notes",
   cakeMode: "Cake",
   cakeNotes: "Cake notes",
   cakeTime: "Cake time",
+  cakeQuantity: "Cakes",
+  cakeIncluded: "Cake in the package",
+  cakePrice: "Cake price",
+  kidsFoodTime: "Kids' food",
+  adultsFoodTime: "Adults' food",
+  barServiceTime: "Bar service",
   packageName: "POS package",
   prepaymentReceived: "Deposit",
   depositDate: "Deposit date",
@@ -174,6 +199,13 @@ const day = (v: unknown): string | null => {
   return d && DAY.test(d) ? d : null;
 };
 const sameText = (a: string, b: string) => a.normalize("NFC").trim() === b.normalize("NFC").trim();
+/** SCRUM-904: whether typed text already holds a line, case and spacing aside (an allergy's line with or without its "Allergy: "). */
+const foldText = (t: string) => t.normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
+const holds = (held: string, line: string) => {
+  const h = foldText(held);
+  return !!h && (h.includes(foldText(line)) || h.includes(foldText(line.replace(/^Allergy:\s*/, ""))));
+};
+const CAKE_INCLUDED: Record<"included" | "extra", string> = { included: "In the package", extra: "Extra" };
 const shownText = (v: string) => (v.trim() ? v.trim() : NONE);
 const cakeLabel = (mode: string) => (mode in AI_FILL_CAKE_TYPE ? AI_FILL_CAKE_TYPE[mode as keyof typeof AI_FILL_CAKE_TYPE] : mode || NONE);
 
@@ -204,30 +236,52 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     const value = str(read);
     if (value && !sameText(form[field], value)) offer(field, shownText(form[field]), value, value, from);
   };
-  // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line, from the latest line.
-  const requests = (kind: BeoAiRequestKind): { value: string | null; from: BeoAiFrom | null } => {
-    const lines = proposal?.details.requests.filter((r) => r.kind === kind) ?? [];
-    if (lines.length === 0) return { value: null, from: null };
-    return { value: lines.map((r) => r.text).join("\n"), from: lines.reduce((a, r) => (laterLineWins(r.from, a) ? r.from : a), lines[0]!.from) };
+  /**
+   * SCRUM-904: the conversation's own lines for a text field the form may
+   * already hold words in: offered BESIDE what is typed — the typed text
+   * stays, the chat's lines it lacks are added under it — never in its
+   * place; nothing when the form holds every line already.
+   */
+  const beside = (field: Extract<FetchField, "specialRequests" | "activities" | "decoration" | "setupNotes">, lines: Array<{ text: string; from: BeoAiFrom }>) => {
+    const held = (form[field] ?? "").trim();
+    const missing = lines.filter((l) => !holds(held, l.text));
+    if (missing.length === 0) return;
+    const value = [held, ...missing.map((l) => l.text)].filter(Boolean).join("\n");
+    offer(field, shownText(held), value, value, missing.reduce((a, l) => (laterLineWins(l.from, a) ? l.from : a), missing[0]!.from));
   };
+  // SCRUM-903: with no ruling message, the conversation's own requests of a kind, one per line (SCRUM-904: allergies first).
+  const requests = (kind: Exclude<BeoAiRequestKind, "allergy">) =>
+    requestsOfField(proposal?.details.requests ?? [], kind).map((r) => ({ text: requestLineText(r), from: r.from }));
+  // SCRUM-904: the rest of the form the conversation's read gives (the ruling's read only where it gives nothing).
+  const detail = (chat: BeoAiSourced<string> | null | undefined, read: unknown): { value: string | null; from: BeoAiFrom | null } =>
+    chat ? { value: str(chat.value), from: chat.from } : { value: str(read), from: ruling };
   // SCRUM-827: the title is never the model's own (`event.title` is its guess): the one a
   // fetch offers is the park's default the proposal carries — the app's naming rule from the
   // child and the age — and only where it differs from the form, marked as the default.
   const title = proposal?.details.title ?? null;
   if (title && !sameText(form.title, title.value)) offer("title", shownText(form.title), title.value, title.value, title.from);
-  text("bookingName", event.bookingName);
-  text("locationText", event.locationText);
+  const bookingName = detail(proposal?.details.bookingName, event.bookingName);
+  text("bookingName", bookingName.value, bookingName.from);
+  // SCRUM-904: the family's WhatsApp number when the chat gives another than the form's.
+  const phone = proposal?.event.whatsapp;
+  if (phone && !samePhone(form.whatsappPhoneRaw ?? "", phone.value)) {
+    offer("whatsappPhoneRaw", shownText(form.whatsappPhoneRaw ?? ""), phone.value, phone.value, phone.from);
+  }
+  const location = detail(proposal?.details.locationText, event.locationText);
+  text("locationText", location.value, location.from);
   for (const [field, kind] of [
     ["specialRequests", "special_request"],
     ["activities", "activity"],
     ["decoration", "decoration"],
   ] as const) {
-    if (answer.review && !ruling) {
-      const read = requests(kind);
-      text(field, read.value, read.from);
-    } else {
-      text(field, event[field]);
-    }
+    // SCRUM-904: the conversation's lines beside what is typed, never over it.
+    if (answer.review && !ruling) beside(field, requests(kind));
+    else text(field, event[field]);
+  }
+  // SCRUM-904: the age the child turns.
+  const age = proposal?.event.childAge;
+  if (age && age.value !== (form.kidTurningAge ?? null)) {
+    offer("kidTurningAge", typeof form.kidTurningAge === "number" ? String(form.kidTurningAge) : NONE, String(age.value), age.value, age.from);
   }
 
   // The child, the counts and the times: the whole conversation's reading where there is one.
@@ -245,14 +299,23 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   }
 
   // The date: as SCRUM-814 has it, never applied silently — here one row to accept.
-  const date = aiFillDateLine(answer.fill, form.eventDate || null);
-  if (date?.differs) offer("eventDate", date.booked ? dayLabel(date.booked) : NONE, dayLabel(date.read), date.read, ruling, date.readText);
+  // SCRUM-904: the conversation's own date first (its words and its line), the ruling's read for a gap.
+  const date: (ReturnType<typeof aiFillDateLine> & { from?: BeoAiFrom | null }) | null = answer.review
+    ? reviewDateLine(answer.review, answer.fill, form.eventDate || null)
+    : aiFillDateLine(answer.fill, form.eventDate || null);
+  const dateFrom = date?.from !== undefined ? date.from : ruling;
+  if (date?.differs) offer("eventDate", date.booked ? dayLabel(date.booked) : NONE, dayLabel(date.read), date.read, dateFrom, date.readText);
 
-  // The setup plan's two fields.
-  const readyBy = str(setup.readyBy);
-  if (readyBy && !sameText(form.setupReadyBy, readyBy)) offer("setupReadyBy", shownText(form.setupReadyBy), readyBy, readyBy, ruling);
-  const responsible = str(setup.responsible);
-  if (responsible && !sameText(form.setupResponsible, responsible)) offer("setupResponsible", shownText(form.setupResponsible), responsible, responsible, ruling);
+  // The setup plan's fields.
+  const readyBy = detail(proposal?.details.setup.readyBy, setup.readyBy);
+  if (readyBy.value && !sameText(form.setupReadyBy, readyBy.value)) offer("setupReadyBy", shownText(form.setupReadyBy), readyBy.value, readyBy.value, readyBy.from);
+  const responsible = detail(proposal?.details.setup.responsible, setup.responsible);
+  if (responsible.value && !sameText(form.setupResponsible, responsible.value)) {
+    offer("setupResponsible", shownText(form.setupResponsible), responsible.value, responsible.value, responsible.from);
+  }
+  // SCRUM-904: the setup plan's notes, beside what is typed.
+  const setupNotes = proposal?.details.setup.notes;
+  if (setupNotes) beside("setupNotes", [{ text: setupNotes.value, from: setupNotes.from }]);
 
   // The cake: whose it is only when the chat says so, its notes and its time.
   // The whole conversation's reading leaves the cake out when the chat does
@@ -274,17 +337,39 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
     }
     if (cake.notes && !sameText(form.cakeNotes, cake.notes)) offer("cakeNotes", shownText(form.cakeNotes), cake.notes, cake.notes, cake.from);
     if (cake.time && cake.time !== form.cakeTime) offer("cakeTime", shownText(form.cakeTime), cake.time, cake.time, cake.from);
+    // SCRUM-904: how many cakes, whether it comes with the package and its price, only as the chat says them.
+    const more = proposal?.cake;
+    if (more?.quantity !== undefined && more.quantity !== (form.cakeQuantity ?? null)) {
+      offer("cakeQuantity", typeof form.cakeQuantity === "number" ? String(form.cakeQuantity) : NONE, String(more.quantity), more.quantity, more.from);
+    }
+    if (more?.included !== undefined) {
+      const now = more.included ? "included" : "extra";
+      if (now !== (form.cakeIncluded || "")) offer("cakeIncluded", form.cakeIncluded ? CAKE_INCLUDED[form.cakeIncluded] : NONE, CAKE_INCLUDED[now], now, more.from);
+    }
+    if (more?.price !== undefined && more.price !== (form.cakePrice ?? 0)) {
+      offer("cakePrice", form.cakePrice ? thb(form.cakePrice) : NONE, thb(more.price), more.price, more.from);
+    }
+  }
+  // SCRUM-904: when the kids' and the adults' food is served, and when the bar serves the drinks.
+  for (const field of ["kidsFoodTime", "adultsFoodTime", "barServiceTime"] as const) {
+    const read = proposal?.event[field];
+    const value = read ? time(read.value) : null;
+    if (read && value && value !== (form[field] ?? "")) offer(field, shownText(form[field] ?? ""), value, value, read.from);
   }
 
   // Party Details: the POS package's name, the deposit and its day, the notes.
-  const packageName = str(party.packageName);
-  if (packageName && !sameText(form.packageName, packageName)) offer("packageName", shownText(form.packageName), packageName, packageName, ruling);
+  const packageName = detail(proposal?.details.pos.name, party.packageName);
+  if (packageName.value && !sameText(form.packageName, packageName.value)) {
+    offer("packageName", shownText(form.packageName), packageName.value, packageName.value, packageName.from);
+  }
   // The deposit the form holds is the one RECEIVED. The whole chat's reading
   // says whether it was: a deposit only asked for ("please transfer 5,000")
   // is billing's deposit required, which this fetch does not cover, so it
   // offers nothing — never the asked-for amount as received.
+  // SCRUM-904: with no team confirmation, a deposit only the family says was paid is read as
+  // asked (the review's rule, SCRUM-903): never offered as received.
   const deposit = proposal?.deposit
-    ? proposal.deposit.paid
+    ? proposal.deposit.paid && depositOpensPaid(answer.review!)
       ? { amount: proposal.deposit.amount, date: day(proposal.deposit.date), from: proposal.deposit.from }
       : { amount: null, date: null, from: proposal.deposit.from }
     : { amount: num(party.prepaymentReceived), date: day(party.depositDate), from: ruling };
@@ -294,8 +379,8 @@ export function fetchChangesOf(answer: Pick<FetchAnswer, "fill" | "review">, for
   if (deposit.date && deposit.date !== form.depositDate) {
     offer("depositDate", form.depositDate ? dayLabel(form.depositDate) : NONE, dayLabel(deposit.date), deposit.date, deposit.from);
   }
-  const notes = str(party.notes);
-  if (notes && !sameText(form.packageNotes, notes)) offer("packageNotes", shownText(form.packageNotes), notes, notes, ruling);
+  const notes = detail(proposal?.details.pos.notes, party.notes);
+  if (notes.value && !sameText(form.packageNotes, notes.value)) offer("packageNotes", shownText(form.packageNotes), notes.value, notes.value, notes.from);
 
   return changes.sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field));
 }
@@ -352,13 +437,15 @@ export function fetchCatalogueChangesOf(review: BeoAiReview | null, held: FetchH
       (h) => (l.productCode && h.productCode && h.productCode.toUpperCase() === l.productCode.toUpperCase()) || sameName(h.itemName, name) || sameName(h.itemName, l.itemName),
     );
     if (line && line.quantity === l.quantity) continue;
-    const now = withQty(name, l.quantity) + (l.notInMenu ? " (not on the menu)" : "");
+    // SCRUM-904: the chat's note on the dish rides with it.
+    const now = withQty(name, l.quantity) + (l.notInMenu ? " (not on the menu)" : "") + (l.notes ? ` — ${l.notes}` : "");
     list("food", MENU_LABEL[l.menu], line ? withQty(line.itemName, line.quantity) : NONE, now, l.from);
   }
 
   for (const e of p.entertainment) {
     if (held.entertainment.some((h) => (e.templateId && h.templateId === e.templateId) || sameName(h.name, e.name))) continue;
-    list("entertainment", "Entertainment", NONE, withQty(e.name, e.quantity) + (e.notInCatalogue ? " (not on the menu)" : ""), e.from);
+    // SCRUM-904: a show the chat times, with its time.
+    list("entertainment", "Entertainment", NONE, withQty(e.name, e.quantity) + (e.notInCatalogue ? " (not on the menu)" : "") + (e.time ? ` at ${e.time}` : ""), e.from);
   }
 
   for (const o of p.otherLines) {
@@ -437,9 +524,18 @@ export const FETCH_MARK_KEYS: Record<FetchField, string> = {
   decoration: "decoration",
   setupReadyBy: "setupReadyBy",
   setupResponsible: "setupResponsible",
+  setupNotes: "setupNotes",
   cakeMode: "cake",
   cakeNotes: "cake",
   cakeTime: "cake",
+  cakeQuantity: "cake",
+  cakeIncluded: "cake",
+  cakePrice: "cake",
+  kidTurningAge: "kidTurningAge",
+  whatsappPhoneRaw: "whatsapp",
+  kidsFoodTime: "kidsFoodTime",
+  adultsFoodTime: "adultsFoodTime",
+  barServiceTime: "barServiceTime",
   packageName: "posName",
   prepaymentReceived: "deposit",
   depositDate: "deposit",
