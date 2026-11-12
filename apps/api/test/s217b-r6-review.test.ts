@@ -507,7 +507,10 @@ describe('A. fences and seams', () => {
       // SCRUM-958 (SCRUM-949, SCRUM-940 point 3): the bar plan's EXTRA drink prints its price "145฿ each"
       // as the kitchen's lines do, and a set-menu choice prints its group in one pair of brackets
       // ("Margherita (Pizza)", no longer "((Pizza))"); where the BEO's documents live is unchanged.
-      'pdf.ts': '4ad401f20c3e896e37b0b8f274eb07887e147b4eb74d4bf6bf5fdc5ffce1630d',
+      // SCRUM-970: an EXTRA line prints what the BEO editor's hint says for it (shared/beoExtras.ts: "120฿ each",
+      // "till price 420", "not charged"), and every date the PDF prints is on the park's clock (the set menu's
+      // received date, the footer's); where the BEO's documents live is unchanged.
+      'pdf.ts': '5f71e610aa8cdc0b06c431d7c00d596e11bd8ef1c1b651af1559d73e9325d58f',
       // SCRUM-803 / SCRUM-806: Generate from BEO bills the package in baht and only the add-ons a party bought; where the BEO's documents live is unchanged.
       // SCRUM-769: the BEO's staff list leaves out a login whose employment has ended (onStaff); where documents live is unchanged.
       // SCRUM-815: the parent link's set-menu lines are resolved by server/lib/setMenuResolve.ts (moved, not changed) and the
@@ -537,7 +540,10 @@ describe('A. fences and seams', () => {
       // SCRUM-958: the parent link's submit keeps a dish of the adults' own in a set-menu group (an AI
       // fill's "chicken fried rice for the adults") and refreshes only the adults' copies of the kids'
       // lines (writeResolvedSetMenu); where the BEO's documents live is unchanged.
-      'beo-routes.ts': '55ff3132dd571323d164d115a210539007a63147c9570ba9d75bec88d3c3609a',
+      // SCRUM-970: an adults' set-menu line that becomes the kids' dish in its group drops its own till code
+      // (writeResolvedSetMenu, withAdultsDiffer), and the BEO PDF route hands the PDF the park's time zone and
+      // the party's park's till menu (readFillTillMenu); where the BEO's documents live is unchanged.
+      'beo-routes.ts': '6c3372cba1a912568a0ddc1990700aedd9b4c435f04628b03788444a08001c0b',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);
