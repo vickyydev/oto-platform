@@ -9,12 +9,16 @@ import { closedOnBox, laneSale } from '@/api/boxSales';
 import { NetworkError } from '@/api/client';
 import type { SaleCartPayload, SaleTenderPayload } from '@/api/sales';
 import { gateOnlineHold, type GateOnlineHold } from '@/lib/gateOnline';
+import { BOX_LANE_NO_HOLD, BOX_SALE_NOT_HELD, holdButtonReasons } from '@/lib/heldSales';
 import {
   currentLane,
+  holdPlatformLane,
   noteLaneFailure,
   platformLaneHeld,
+  saleLane,
   setHeldRetryDelays,
   setLaneStation,
+  useSaleLane,
 } from '@/lib/lane';
 import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
 
@@ -42,7 +46,15 @@ import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
  * The sale writer, the lane arbiter and the box lane run for real here, with
  * `fetch` replaced by a fake platform and a fake counter box.
  */
-vi.mock('react', () => import('./support/hooks'));
+const subscribed = vi.hoisted(() => ({ stores: [] as Array<(listener: () => void) => () => void> }));
+vi.mock('react', async () => ({
+  ...(await import('./support/hooks')),
+  useSyncExternalStore: (subscribe: (listener: () => void) => () => void, snapshot: () => unknown) => {
+    subscribed.stores.push(subscribe);
+    return snapshot();
+  },
+}));
+vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }));
 
 const STATION = '018f0000-0000-7000-8000-0000000897c1';
 const GUARDIAN = '018f0000-0000-7000-8000-0000000897c2';
@@ -285,5 +297,88 @@ describe('SCRUM-897 (1) — a promo code\'s use is counted on this till only for
       expect(page.slice(guard, at)).not.toMatch(/\r?\n {4}\}/);
       expect(page, file).not.toContain('currentLane()');
     }
+  });
+});
+
+describe('SCRUM-897 (3) — Hold sale says what is true of the sale on screen', () => {
+  const reasonsFor = (saleId: string, boxLane: boolean) =>
+    holdButtonReasons({
+      saleId,
+      online: true,
+      boxLane,
+      boxSale: laneSale(saleId)?.lane === 'box',
+      paymentInProgress: false,
+      paidSatang: 0,
+      outstandingSatang: 54_000,
+      canHold: true,
+    });
+
+  it('after the long outage the family\'s sale is online: the sale\'s lane is the platform though the lane says box, and no counter-box note', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(rung).toMatchObject({ ok: true, written: true });
+      expect(currentLane()).toBe('box');
+      expect(saleLane()).toBe('platform');
+      expect(reasonsFor(rung.saleId, saleLane() === 'box')).toEqual({
+        hold: null,
+        partPaid: 'Take a part payment first — nothing has been paid on this sale yet.',
+      });
+      // What the lane alone said under Hold sale for this online sale.
+      expect(reasonsFor(rung.saleId, currentLane() === 'box').hold).toBe(BOX_LANE_NO_HOLD);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+    // The hold released with the written sale: the lane's own rule again.
+    expect(saleLane()).toBe('box');
+  });
+
+  it('the link really down and no hold: the note stays, and a sale rung up on the box says so, as before', async () => {
+    world.linkDown = true;
+    world.boxHasFamily = true;
+    noteLaneFailure(new NetworkError());
+    expect(saleLane()).toBe('box');
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(reasonsFor(rung.saleId, saleLane() === 'box').hold).toBe(BOX_SALE_NOT_HELD);
+      expect(reasonsFor('018f0000-0000-7000-8000-0000000897ff', saleLane() === 'box').hold).toBe(BOX_LANE_NO_HOLD);
+    } finally {
+      unmount();
+    }
+  });
+
+  it('a hold taken or released is heard by a screen that reads the sale\'s lane', () => {
+    noteLaneFailure(new NetworkError());
+    const view = renderHook(() => useSaleLane());
+    try {
+      expect(view.result.current).toBe('box');
+      const listener = vi.fn();
+      const unsubscribe = subscribed.stores.at(-1)!(listener);
+      const release = holdPlatformLane();
+      expect(listener).toHaveBeenCalled();
+      view.rerender(undefined);
+      expect(view.result.current).toBe('platform');
+      listener.mockClear();
+      release();
+      expect(listener).toHaveBeenCalled();
+      view.rerender(undefined);
+      expect(view.result.current).toBe('box');
+      unsubscribe();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('the counter\'s till reads the sale\'s lane for Hold sale and the Held sales list; the phone till, with no gate, the lane', () => {
+    const till = src('pages/Till.tsx');
+    expect(till).toContain('const lane = useSaleLane();');
+    expect(till).not.toContain('useLane()');
+    expect(till.match(/boxLane: lane === 'box',/g)).toHaveLength(2);
+    const phone = src('components/mobile/MobileTill.tsx');
+    expect(phone).toContain('const lane = useLane();');
+    expect(phone).not.toContain('gateOnlineHold');
   });
 });

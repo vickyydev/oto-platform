@@ -130,6 +130,8 @@ export function holdPlatformLane(onRetry?: (attempt: number) => void, onGiveUp?:
   platformHolds += 1;
   if (onRetry) heldRetryListeners.add(onRetry);
   if (onGiveUp) heldGiveUpListeners.add(onGiveUp);
+  // SCRUM-897: a screen reading the sale's lane (`useSaleLane`) hears the hold.
+  emit();
   let held = true;
   return () => {
     if (!held) return;
@@ -137,11 +139,25 @@ export function holdPlatformLane(onRetry?: (attempt: number) => void, onGiveUp?:
     platformHolds -= 1;
     if (onRetry) heldRetryListeners.delete(onRetry);
     if (onGiveUp) heldGiveUpListeners.delete(onGiveUp);
+    emit();
   };
 }
 
 export function platformLaneHeld(): boolean {
   return platformHolds > 0;
+}
+
+/**
+ * SCRUM-897 — THE LANE THE SALE ON SCREEN WORKS ON. The till's lane, except
+ * while a hold is taken: the drop-off gate's hold, carried to its family's sale
+ * and to its door choice, sends those calls to the platform first whatever the
+ * lane says (SCRUM-887), so that sale is online. What the payment step says
+ * about it — Hold sale, the Held sales list's Resume — follows this, and never
+ * says the till is working through its counter box under a sale written
+ * online. Without a hold it is the lane, exactly as before.
+ */
+export function saleLane(): BridgeLane {
+  return platformHolds > 0 ? 'platform' : lane;
 }
 
 /** Tests only: the waits between held retries (null restores the defaults). */
@@ -287,5 +303,17 @@ export function useLane(): BridgeLane {
     },
     () => lane,
     () => lane,
+  );
+}
+
+/** SCRUM-897 — `saleLane` for a screen: it renders again when the lane or a hold changes. */
+export function useSaleLane(): BridgeLane {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    saleLane,
+    saleLane,
   );
 }

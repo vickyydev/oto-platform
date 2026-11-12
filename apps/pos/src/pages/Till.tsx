@@ -159,7 +159,7 @@ import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Baby } from 'lucide-react';
 import type { Booking } from '@/types';
-import { useLane } from '@/lib/lane';
+import { useSaleLane } from '@/lib/lane';
 import { useLanguageChoice } from '@/lib/languageChoice';
 
 // Break a ticket line into its discountable component rows (kids/adults/socks/
@@ -353,8 +353,12 @@ export default function Till() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [rungUpUnpaid]);
-  /** SCRUM-774 — which way this till is working: Held sales need the platform. */
-  const lane = useLane();
+  /**
+   * SCRUM-774 — which way this till is working: Held sales need the platform.
+   * SCRUM-897 — the way the sale on screen works: the platform while the
+   * drop-off gate's hold is carried to it (SCRUM-887), whatever the lane says.
+   */
+  const lane = useSaleLane();
   const leftBehind = useLeftBehindSales({
     branchId: apiBranchIdForSlug(branch.id),
     stationId: station?.stationId ?? null,
