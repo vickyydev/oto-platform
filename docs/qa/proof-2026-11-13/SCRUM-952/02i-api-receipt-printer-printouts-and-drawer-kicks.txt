@@ -1,0 +1,20 @@
+GET /api/devices/<ZZ TEST 952 receipt printer id>/printouts?limit=20   -> 200   (read now, 2026-11-12T23:03:59.598Z)
+printouts (seq 1 is the Controls test page):
+  #1  2026-11-12T22:48:03.765Z  576x1010 dots  72801 bytes  truncated=false
+  #2  2026-11-12T22:50:08.753Z  576x1088 dots  78425 bytes  truncated=false
+  #3  2026-11-12T22:50:23.617Z  576x1089 dots  78497 bytes  truncated=false
+  #4  2026-11-12T23:02:23.789Z  576x1088 dots  78425 bytes  truncated=false
+
+The same GET, read a few seconds after each sale (its events window is short and fills with status reads, so the
+kicks are no longer in a read made now); events since the sale started, status.read lines left out:
+  Z95201-000001 cash ฿1040: new printouts ["#2 1088 dots"]
+    2026-11-12T22:50:08.753Z  cut  {"seq":2}
+    2026-11-12T22:50:08.760Z  job.printed  {"seq":2,"bands":9,"cuts":1,"drawerKicks":0,"unknown":0,"truncated":false}
+    2026-11-12T22:50:08.952Z  drawer.kick  {"pin":0,"onMs":50,"offMs":500,"jobBytes":5,"paper":false}
+  Z95201-000002 cash ฿1040: new printouts ["#3 1089 dots"]
+    2026-11-12T22:50:23.617Z  cut  {"seq":3}
+    2026-11-12T22:50:23.633Z  job.printed  {"seq":3,"bands":9,"cuts":1,"drawerKicks":0,"unknown":0,"truncated":false}
+    2026-11-12T22:50:23.808Z  drawer.kick  {"pin":0,"onMs":50,"offMs":500,"jobBytes":5,"paper":false}
+  Z95202-000001 card (simulator) ฿1040: new printouts ["#4 1088 dots"]
+    2026-11-12T23:02:23.789Z  cut  {"seq":4}
+    2026-11-12T23:02:23.798Z  job.printed  {"seq":4,"bands":9,"cuts":1,"drawerKicks":0,"unknown":0,"truncated":false}

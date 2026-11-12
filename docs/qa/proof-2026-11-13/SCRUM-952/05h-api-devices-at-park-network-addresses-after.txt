@@ -1,0 +1,8 @@
+The six devices at 192.168.88.x addresses, read back at the end (2026-11-12T23:13:59.982Z): none was changed.
+
+Virtual box 1  "Band Printer (adults)"  band_printer  192.168.88.210:9100  model=4B-2082A  protocol=tspl2  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true
+Virtual box 1  "Band Printer (kids)"  band_printer  192.168.88.204:9100  model=4B-2082A  protocol=tspl2  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true
+Virtual box 1  "Kitchen Printer"  kitchen_printer  192.168.88.206:9100  model=Xprinter XP-80  protocol=escpos  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true
+Virtual box 1  "Receipt Printer 1"  receipt_printer  192.168.88.202:9100  model=Welltech G4 (Xprinter XP-C260)  protocol=escpos  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true
+Virtual box 1  "Receipt Printer 2"  receipt_printer  192.168.88.207:9100  model=Xprinter XP-80  protocol=escpos  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true
+Virtual box 2  "Receipt Printer 3"  receipt_printer  192.168.88.208:9100  model=Xprinter XP-80  protocol=escpos  settings=null  reading now=reachable/ok/null (before reachable/ok/null)  label/kind/model/protocol/settings/roles unchanged=true

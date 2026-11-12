@@ -1,0 +1,11 @@
+Read only, 2026-11-12T23:09:33.313Z
+
+GET /api/ops/kiosks -> 200: []
+
+GET /api/booths/<id>/status for every booth of every branch:
+  Oto Play Park, Central Floresta / Booth 2 (proof): 200 printer={"deviceId":"01a0d4f5-6f06-722e-b263-376d35040371","label":"Proof printer (bench)","reachability":"reachable","paperStatus":"ok","lastError":null,"lastSeenAt":"2026-09-24T20:33:42.297Z"}
+  Oto Play Park, Central Floresta / Booth 3 (fixes): 200 printer={"deviceId":"01a0d65d-89bc-705a-957a-230d6df48b48","label":"Proof printer 2 (bench)","reachability":"reachable","paperStatus":"ok","lastError":null,"lastSeenAt":"2026-09-25T02:48:06.019Z"}
+  Oto Play Park, Central Floresta / FortuneWheelBooth: 200 printer=null
+  Oto Play Park, Central Floresta / FWBooth1: 200 printer={"deviceId":"01a0e722-c741-7da5-ba1b-73012cecb8f2","label":"Booth Voucher Printer","reachability":"reachable","paperStatus":"ok","lastError":null,"lastSeenAt":"2026-11-10T11:28:59.526Z"}
+
+Stations (any kind) whose assigned printer has no address: [{"branch":"Oto Play Park, Robinson Chalong","station":"Reception Till 1","kind":"till","role":"receipt","printer":"Receipt Printer 1"}]

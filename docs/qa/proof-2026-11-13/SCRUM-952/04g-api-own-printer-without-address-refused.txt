@@ -1,0 +1,12 @@
+Own printer: ZZ TEST 952 receipt printer (address 192.0.2.52:9100); read 2026-11-12T23:05:46.022Z
+
+PATCH /api/devices/<id> {"address":""}    -> 400 PRINTER_ADDRESS_REQUIRED: A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.
+PATCH /api/devices/<id> {"address":null}  -> 400 PRINTER_ADDRESS_REQUIRED
+POST /api/boxes/<Virtual box 1>/devices {kind receipt_printer, no address} -> 400 PRINTER_ADDRESS_REQUIRED
+
+Read back: address 192.0.2.52:9100; printers named "ZZ TEST 952 printer with no address" on the box: 0
+
+So a ZZ TEST printer cannot be given no address (SCRUM-899 / SCRUM-932, assertPrinterAddress in
+apps/api/src/services/fleet.ts:2382-2387; the Console form holds Save back). The "not set up" reading on a printer of
+my own, its Health / box drawer / till header light words, and the time it keeps "not set up" after an address is
+put back cannot be produced through the apps; Robinson Chalong's seeded Receipt Printer 1 is the only such printer.

@@ -1,0 +1,18 @@
+GET /api/stations/<Robinson Chalong "Reception Till 1" id>/printers   (read only; 2026-11-12T23:04:41.511Z)
+
+{
+  "status": 200,
+  "printers": [
+    {
+      "deviceId": "01a0c9ae-5405-7ff2-a42c-c7ececf2ac9b",
+      "label": "Receipt Printer 1",
+      "role": "receipt",
+      "kind": "receipt_printer",
+      "reachability": "unknown",
+      "paperStatus": "unknown",
+      "lastError": "DEVICE_NO_ADDRESS",
+      "lastSeenAt": null,
+      "queued": 1
+    }
+  ]
+}

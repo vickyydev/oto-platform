@@ -1,0 +1,16 @@
+GET /api/ops/health  -> boxes[] entry for Virtual box 3   (read only; 2026-11-12T23:04:41.732Z)
+
+{
+  "name": "Virtual box 3",
+  "state": "unknown",
+  "status": "unclaimed",
+  "devices": [
+    {
+      "label": "Receipt Printer 1",
+      "kind": "receipt_printer",
+      "reachability": "unknown",
+      "paperStatus": "unknown",
+      "lastError": "DEVICE_NO_ADDRESS"
+    }
+  ]
+}

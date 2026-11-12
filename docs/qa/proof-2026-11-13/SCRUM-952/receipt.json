@@ -1,0 +1,3684 @@
+{
+  "tickets": [
+    "SCRUM-952"
+  ],
+  "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+  "startedAt": "2026-11-12T22:47:04.461Z",
+  "deploys": {
+    "landedCommit": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+    "oto-api-staging": {
+      "live": {
+        "id": "dep-dbr3tjoae00c73egeo5g",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+        "createdAt": "2026-11-12T22:33:51.113775Z",
+        "finishedAt": "2026-11-12T22:38:43.550126Z",
+        "atLandedCommit": true
+      },
+      "latest": {
+        "id": "dep-dbr3tjoae00c73egeo5g",
+        "status": "live",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1"
+      },
+      "readAt": "2026-11-12T22:43:57.122Z"
+    },
+    "oto-console-staging": {
+      "live": {
+        "id": "dep-dbr3tk0ae00c73egepeg",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+        "createdAt": "2026-11-12T22:33:52.480276Z",
+        "finishedAt": "2026-11-12T22:34:59.394719Z",
+        "atLandedCommit": true
+      },
+      "latest": {
+        "id": "dep-dbr3tk0ae00c73egepeg",
+        "status": "live",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1"
+      },
+      "readAt": "2026-11-12T22:43:57.392Z"
+    },
+    "oto-pos-staging": {
+      "live": {
+        "id": "dep-dbr2mhjtqb8s73cojm6g",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:30.047739Z",
+        "finishedAt": "2026-11-12T21:11:53.394512Z",
+        "atLandedCommit": false
+      },
+      "latest": {
+        "id": "dep-dbr2mhjtqb8s73cojm6g",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68"
+      },
+      "readAt": "2026-11-12T22:43:57.654Z"
+    },
+    "oto-pos-web-staging": {
+      "live": {
+        "id": "dep-dbr2mh0m7kps73eqhtmg",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68",
+        "createdAt": "2026-11-12T21:10:28.681254Z",
+        "finishedAt": "2026-11-12T21:14:51.060182Z",
+        "atLandedCommit": false
+      },
+      "latest": {
+        "id": "dep-dbr2mh0m7kps73eqhtmg",
+        "status": "live",
+        "sha": "5033d46ca15b063edcaf95f483941fdc3e9c7e68"
+      },
+      "readAt": "2026-11-12T22:43:57.915Z"
+    }
+  },
+  "numbers": {
+    "cash1": "0898952010",
+    "cash2": "0898952011",
+    "card": "0898952012",
+    "card2": "0898952013"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "key": "receipt",
+      "id": "f17f9295-85c6-4da6-9d05-8a9001fd0085",
+      "label": "ZZ TEST 952 receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "band",
+      "id": "a7810e01-8a1e-4d93-885a-196a5b492207",
+      "label": "ZZ TEST 952 band printer"
+    },
+    {
+      "kind": "device",
+      "key": "nomodel",
+      "id": "1cb524d1-a349-4fd1-804c-7e8f8736697c",
+      "label": "ZZ TEST 952 no-model receipt printer"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+      "name": "ZZ TEST 952 till",
+      "prefix": "Z95201"
+    },
+    {
+      "kind": "cash-sale-1",
+      "id": "01a1d1f4-2bf6-738e-9ddb-babfb3fe3102"
+    },
+    {
+      "kind": "sale-cash",
+      "id": "01a1d1f4-2bf6-738e-9ddb-babfb3fe3102",
+      "receipt": "Z95201-000001"
+    },
+    {
+      "kind": "cash-sale-2",
+      "id": "01a1d1f4-6d0d-7c51-8342-d95c2a77243e"
+    },
+    {
+      "kind": "sale-cash",
+      "id": "01a1d1f4-6d0d-7c51-8342-d95c2a77243e",
+      "receipt": "Z95201-000002"
+    },
+    {
+      "kind": "device",
+      "key": "card",
+      "id": "8cbb95de-6635-492a-a4f0-ee91cddf15e7",
+      "label": "ZZ TEST 952 card terminal"
+    },
+    {
+      "kind": "card-sale",
+      "id": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d1fd-9686-7be0-bccb-d32e8e4969a0",
+      "name": "ZZ TEST 952 card till",
+      "prefix": "Z95202"
+    },
+    {
+      "kind": "card-sale-2",
+      "id": "01a1d1ff-4f8f-74e1-8e2f-103c670d115d"
+    },
+    {
+      "kind": "sale-card",
+      "id": "01a1d1ff-4f8f-74e1-8e2f-103c670d115d",
+      "receipt": "Z95202-000001"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d201-40dd-7a84-8d0d-555c2a4c7892",
+      "name": "ZZ TEST 952 display"
+    }
+  ],
+  "points": {},
+  "reads": {
+    "setup": {
+      "box": "Virtual box 1",
+      "boxStatus": "online",
+      "prefix": "Z95201",
+      "numbersFree": 10,
+      "reused": [],
+      "configVersion": 1,
+      "roles": {
+        "adult_band": "ZZ TEST 952 band printer",
+        "bar": "ZZ TEST 952 no-model receipt printer",
+        "dropoff_band": "ZZ TEST 952 band printer",
+        "kids_band": "ZZ TEST 952 band printer",
+        "receipt": "ZZ TEST 952 receipt printer"
+      },
+      "capabilities": [],
+      "printers": [
+        {
+          "label": "ZZ TEST 952 band printer",
+          "kind": "band_printer",
+          "transport": "simulated",
+          "address": "192.0.2.53:9100",
+          "model": null,
+          "protocol": "tspl2",
+          "settings": null,
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 952 no-model receipt printer",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.0.2.54:9100",
+          "model": null,
+          "protocol": "escpos",
+          "settings": null,
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        },
+        {
+          "label": "ZZ TEST 952 receipt printer",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.0.2.52:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": null
+        }
+      ],
+      "boxNow": {
+        "name": "Virtual box 1",
+        "status": "online",
+        "lastHeartbeatAt": "2026-11-12T22:46:48.325Z"
+      },
+      "receiptPrinterPrintoutsAtStart": {
+        "status": 409,
+        "printouts": 0,
+        "events": 0
+      }
+    },
+    "p1a": {
+      "before": {
+        "printouts": 0
+      },
+      "printerOptions": [
+        "ZZ TEST 952 band printer",
+        "ZZ TEST 952 no-model receipt printer",
+        "ZZ TEST 952 band printer",
+        "ZZ TEST 952 band printer",
+        "ZZ TEST 952 receipt printer"
+      ],
+      "sent": {
+        "kind": "test_page",
+        "role": "receipt"
+      },
+      "answer": {
+        "status": 200,
+        "job": {
+          "id": "01a1d1f2-48f9-7435-9b6c-40811edf6723",
+          "kind": "test_page",
+          "role": "receipt",
+          "status": "queued",
+          "onZzReceipt": true
+        }
+      },
+      "note": "ft from the old one is recognisably stale rather than replayed. Used when a box is repurposed or its store is corrupt — never to clear a fault. Reset the store…",
+      "printout": {
+        "seq": 1,
+        "at": "2026-11-12T22:48:03.765Z",
+        "widthDots": 576,
+        "heightDots": 1010,
+        "jobBytes": 72801,
+        "truncated": false
+      },
+      "askedAtBangkok": "13/11/2026, 05:47:57",
+      "preview": 200
+    },
+    "p1aPanels": {
+      "jobsText": "printed test page ZZ TEST 952 receipt printer · receipt 05:47:58 printed kids wristband Band Printer (kids) · kids_band 04:37:13 printed receipt Receipt Printer 1 · receipt 04:37:10 printed adult wristband Band Printer (adults) · adult_band 04:33:35 printed kids wristband Band Printer (kids) · kids_band 04:33:35 printed receipt Receipt Printer 1 · receipt 04:33:35 skipped kitchen ticket no printer · kitchen NO_DEVICE_FOR_ROLE — No kitchen printer is assigned to this station 04:28:01 printed receipt Receipt Printer 1 · receipt 04:28:01 printed adult wristband Band Printer (adults) · adult_band ",
+      "tiles": [
+        "#1 · 576×1010 dots · 72.801 bytes"
+      ],
+      "history": [
+        "succeeded Test print 33s ago queued 13 Nov, 05:47 finished 13 Nov, 05:48 01a1d1f2-48f6-72b9-8f1c-c6e73405b4b6",
+        "succeeded Drawer kick 1h 8m ago queued 13 Nov, 04:40 finished 13 Nov, 04:40 01a1d1b4-30ab-74be-9008-f8f28392aa9a",
+        "succeeded Print kids' wristband 1h 11m ago queued 13 Nov, 04:37 finished 13 Nov, 04:37 01a1d1b1-809c-74a6-8f41-ea30580e3119",
+        "succeeded Drawer kick 1h 11m ago queued 13 Nov, 04:37 finished 13 Nov, 04:37 01a1d1b1-7109-7303-a334-b5e13da5214e"
+      ],
+      "apiCommands": [
+        {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "test_page",
+          "document": "platform",
+          "reprintOf": null,
+          "jobIsOurs": true
+        },
+        {
+          "kind": "drawer_kick",
+          "state": "succeeded",
+          "payloadKind": null,
+          "document": null,
+          "reprintOf": null,
+          "jobIsOurs": false
+        },
+        {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "kids_wristband",
+          "document": "platform",
+          "reprintOf": null,
+          "jobIsOurs": false
+        }
+      ],
+      "branchTemplates": [
+        "Standard receipt",
+        "Kids wristband",
+        "Adult wristband",
+        "Kitchen ticket",
+        "Bar ticket",
+        "Credit voucher"
+      ]
+    },
+    "p1b": {
+      "options": [
+        {
+          "label": "Band Printer (adults)",
+          "selected": false
+        },
+        {
+          "label": "Band Printer (kids)",
+          "selected": false
+        },
+        {
+          "label": "ZZ TEST 952 band printer",
+          "selected": true
+        }
+      ],
+      "sent": {
+        "kind": "test_page",
+        "role": "dropoff_band"
+      },
+      "answer": {
+        "status": 200,
+        "job": {
+          "id": "01a1d1f3-5557-7d22-b0ba-62b90f14a59f",
+          "kind": "test_page",
+          "role": "dropoff_band",
+          "status": "queued",
+          "onZzBand": true
+        }
+      },
+      "printout": {
+        "seq": 1,
+        "at": "2026-11-12T22:49:08.753Z",
+        "widthDots": 400,
+        "heightDots": 1048,
+        "jobBytes": 52535,
+        "truncated": false,
+        "setup": [
+          "SIZE 50 mm,250 mm",
+          "GAP 3 mm,0 mm",
+          "DIRECTION 1",
+          "REFERENCE 0,0",
+          "DENSITY 10",
+          "SPEED 4",
+          "SET TEAR ON",
+          "CLS"
+        ]
+      },
+      "askedAtBangkok": "13/11/2026, 05:49:06",
+      "preview": 200
+    },
+    "p1c": {
+      "options": [],
+      "sent": {
+        "kind": "test_page",
+        "role": "bar"
+      },
+      "answer": {
+        "status": 200,
+        "job": {
+          "id": "01a1d1f3-a7f2-7aad-b399-4b9a8e154f50",
+          "kind": "test_page",
+          "role": "bar",
+          "status": "queued",
+          "onNoModel": true
+        }
+      },
+      "printout": {
+        "seq": 1,
+        "widthDots": 576,
+        "heightDots": 1010,
+        "truncated": false
+      },
+      "preview": 200
+    },
+    "p2cash": {
+      "mgrClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "sales": [
+        {
+          "id": "01a1d1f4-2bf6-738e-9ddb-babfb3fe3102",
+          "receipt": "Z95201-000001",
+          "status": "finalised",
+          "gross": 1040,
+          "tenders": [],
+          "printJobs": [
+            {
+              "kind": "adult_wristband",
+              "role": "adult_band",
+              "device": "ZZ TEST 952 band printer",
+              "status": "printed",
+              "error": null
+            },
+            {
+              "kind": "kids_wristband",
+              "role": "kids_band",
+              "device": "ZZ TEST 952 band printer",
+              "status": "printed",
+              "error": null
+            },
+            {
+              "kind": "receipt",
+              "role": "receipt",
+              "device": "ZZ TEST 952 receipt printer",
+              "status": "printed",
+              "error": null
+            }
+          ],
+          "newPrintouts": [
+            {
+              "seq": 2,
+              "at": "2026-11-12T22:50:08.753Z",
+              "widthDots": 576,
+              "heightDots": 1088,
+              "jobBytes": 78425,
+              "truncated": false
+            }
+          ],
+          "events": [
+            {
+              "at": "2026-11-12T22:50:08.751Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.751Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.751Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.751Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.753Z",
+              "kind": "cut",
+              "detail": {
+                "seq": 2
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.760Z",
+              "kind": "job.printed",
+              "detail": {
+                "seq": 2,
+                "bands": 9,
+                "cuts": 1,
+                "drawerKicks": 0,
+                "unknown": 0,
+                "truncated": false
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.761Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.761Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.761Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.761Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.952Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.952Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.952Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.952Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:08.952Z",
+              "kind": "drawer.kick",
+              "detail": {
+                "pin": 0,
+                "onMs": 50,
+                "offMs": 500,
+                "jobBytes": 5,
+                "paper": false
+              }
+            }
+          ],
+          "preview": 200
+        },
+        {
+          "id": "01a1d1f4-6d0d-7c51-8342-d95c2a77243e",
+          "receipt": "Z95201-000002",
+          "status": "finalised",
+          "gross": 1040,
+          "tenders": [],
+          "printJobs": [
+            {
+              "kind": "adult_wristband",
+              "role": "adult_band",
+              "device": "ZZ TEST 952 band printer",
+              "status": "printed",
+              "error": null
+            },
+            {
+              "kind": "kids_wristband",
+              "role": "kids_band",
+              "device": "ZZ TEST 952 band printer",
+              "status": "printed",
+              "error": null
+            },
+            {
+              "kind": "receipt",
+              "role": "receipt",
+              "device": "ZZ TEST 952 receipt printer",
+              "status": "printed",
+              "error": null
+            }
+          ],
+          "newPrintouts": [
+            {
+              "seq": 3,
+              "at": "2026-11-12T22:50:23.617Z",
+              "widthDots": 576,
+              "heightDots": 1089,
+              "jobBytes": 78497,
+              "truncated": false
+            }
+          ],
+          "events": [
+            {
+              "at": "2026-11-12T22:50:23.614Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.614Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.615Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.615Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.617Z",
+              "kind": "cut",
+              "detail": {
+                "seq": 3
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.633Z",
+              "kind": "job.printed",
+              "detail": {
+                "seq": 3,
+                "bands": 9,
+                "cuts": 1,
+                "drawerKicks": 0,
+                "unknown": 0,
+                "truncated": false
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.633Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.633Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.633Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.633Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.808Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 1",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.808Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 2",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.808Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 3",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.808Z",
+              "kind": "status.read",
+              "detail": {
+                "query": "DLE EOT 4",
+                "byte": 18
+              }
+            },
+            {
+              "at": "2026-11-12T22:50:23.808Z",
+              "kind": "drawer.kick",
+              "detail": {
+                "pin": 0,
+                "onMs": 50,
+                "offMs": 500,
+                "jobBytes": 5,
+                "paper": false
+              }
+            }
+          ],
+          "preview": 200
+        }
+      ],
+      "drawerCommands": [
+        {
+          "state": "succeeded",
+          "at": "2026-11-12T22:50:20.934Z",
+          "finishedAt": "2026-11-12T22:50:23.827Z",
+          "error": null
+        },
+        {
+          "state": "succeeded",
+          "at": "2026-11-12T22:50:04.365Z",
+          "finishedAt": "2026-11-12T22:50:08.972Z",
+          "error": null
+        },
+        {
+          "state": "succeeded",
+          "at": "2026-11-12T21:40:10.719Z",
+          "finishedAt": "2026-11-12T21:40:10.940Z",
+          "error": null
+        }
+      ]
+    },
+    "p2cardSetup": {
+      "terminalCreate": 200,
+      "stationPatch": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 952 band printer",
+          "bar": "ZZ TEST 952 no-model receipt printer",
+          "card_terminal": "ZZ TEST 952 card terminal",
+          "dropoff_band": "ZZ TEST 952 band printer",
+          "kids_band": "ZZ TEST 952 band printer",
+          "receipt": "ZZ TEST 952 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "readiness": null
+      },
+      "methods": [
+        "Select Payment Method",
+        "Cash",
+        "Card",
+        "PromptPay"
+      ],
+      "afterCard": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Partial payment Hold sale Back Start card payment",
+      "buttons": [
+        "Partial payment",
+        "Hold sale",
+        "Back",
+        "Start card payment"
+      ]
+    },
+    "p2card": {
+      "paymentSuccessful": false,
+      "screen": "Locked [staff] is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked",
+      "sale": {
+        "receipt": null,
+        "status": "tendering",
+        "gross": 1040,
+        "payments": []
+      },
+      "printJobs": [],
+      "newPrintouts": [],
+      "eventsSince": [],
+      "drawerKicksSince": 0,
+      "commandsSince": [
+        {
+          "kind": "terminal_sale",
+          "state": "failed",
+          "payloadKind": null
+        }
+      ]
+    },
+    "stuckCard": {
+      "sale": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+      "attempt": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+      "saleStatus": "tendering",
+      "attemptStatus": "sent_to_terminal",
+      "command": {
+        "state": "failed",
+        "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+        "result": {
+          "mode": "sale",
+          "outcome": null,
+          "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+          "terminalRef": null,
+          "responseCode": null
+        }
+      }
+    },
+    "p2card2": {
+      "recClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "paymentSuccessful": true,
+      "secondsToPaid": 5,
+      "sale": {
+        "receipt": "Z95202-000001",
+        "status": "finalised",
+        "gross": 1040,
+        "attempts": [
+          {
+            "status": "approved",
+            "provider": "simulator"
+          }
+        ]
+      },
+      "printJobs": [
+        {
+          "kind": "adult_wristband",
+          "role": "adult_band",
+          "device": "ZZ TEST 952 band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "kids_wristband",
+          "role": "kids_band",
+          "device": "ZZ TEST 952 band printer",
+          "status": "printed",
+          "error": null
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "device": "ZZ TEST 952 receipt printer",
+          "status": "printed",
+          "error": null
+        }
+      ],
+      "newPrintouts": [
+        {
+          "seq": 4,
+          "at": "2026-11-12T23:02:23.789Z",
+          "widthDots": 576,
+          "heightDots": 1088,
+          "jobBytes": 78425,
+          "truncated": false
+        }
+      ],
+      "eventsSince": [
+        {
+          "at": "2026-11-12T23:02:23.789Z",
+          "kind": "cut",
+          "detail": {
+            "seq": 4
+          }
+        },
+        {
+          "at": "2026-11-12T23:02:23.798Z",
+          "kind": "job.printed",
+          "detail": {
+            "seq": 4,
+            "bands": 9,
+            "cuts": 1,
+            "drawerKicks": 0,
+            "unknown": 0,
+            "truncated": false
+          }
+        }
+      ],
+      "drawerKicksSince": 0,
+      "commandsSince": [
+        {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "adult_wristband",
+          "stationIsCardTill": true
+        },
+        {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "kids_wristband",
+          "stationIsCardTill": true
+        },
+        {
+          "kind": "test_print",
+          "state": "succeeded",
+          "payloadKind": "receipt",
+          "stationIsCardTill": true
+        },
+        {
+          "kind": "terminal_sale",
+          "state": "succeeded",
+          "payloadKind": null,
+          "stationIsCardTill": true
+        }
+      ]
+    },
+    "p2console": {
+      "rec2Closed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "tiles": [
+        "#4 · 576×1088 dots · 78.425 bytes",
+        "#3 · 576×1089 dots · 78.497 bytes",
+        "#2 · 576×1088 dots · 78.425 bytes",
+        "#1 · 576×1010 dots · 72.801 bytes"
+      ],
+      "pulseTiles": 0,
+      "alts": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Printout 4, 576 by 1088 dots",
+        "Printout 3, 576 by 1089 dots",
+        "Printout 2, 576 by 1088 dots",
+        "Printout 1, 576 by 1010 dots"
+      ],
+      "masked": 3,
+      "history": [
+        "succeeded Print adult wristband 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+        "succeeded Print kids' wristband 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+        "succeeded Print receipt 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+        "succeeded Terminal sale 54s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-5115-741a-93a3-446de263c086",
+        "failed Terminal sale 11m ago queued 13 Nov, 05:51 finished 13 Nov, 05:51 01a1d1f5-a7ab-70e8-a0d8-803f4747eada TERMINAL_NOT_ON_THIS_BOX: this box has no card_terminal for 01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+        "succeeded Drawer kick 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+        "succeeded Print adult wristband 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+        "succeeded Print kids' wristband 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+        "succeeded Print receipt 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+        "succeeded Drawer kick 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b",
+        "succeeded Print adult wristband 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b",
+        "succeeded Print kids' wristband 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b"
+      ]
+    },
+    "p3till": {
+      "formAOpenedAt": {
+        "version": 2,
+        "title": "ZZ TEST 952 till",
+        "apiVersion": 2
+      },
+      "B": {
+        "status": 200,
+        "version": 3,
+        "name": "ZZ TEST 952 till B"
+      },
+      "consoleBClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "A": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+        "expectedConfigVersionSent": 2,
+        "onScreen": {
+          "exactSentence": true,
+          "oldTillWording": false,
+          "around": "nfig v2 at Oto Play Park, Central Floresta This station was changed since you opened it. Close it and open it again. Ready for selling Saving bumps"
+        }
+      },
+      "apiAfter": {
+        "version": 3,
+        "name": "ZZ TEST 952 till B"
+      }
+    },
+    "p3display": {
+      "create": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "kind": "display",
+        "version": 1
+      },
+      "formAOpenedAt": {
+        "version": 1,
+        "title": "ZZ TEST 952 display"
+      },
+      "B": {
+        "status": 200,
+        "version": 2,
+        "name": "ZZ TEST 952 display B",
+        "code": null,
+        "message": null
+      },
+      "consoleBClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "A": {
+        "status": 409,
+        "errorCode": "STATION_CHANGED",
+        "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+        "expectedConfigVersionSent": 1,
+        "onScreen": {
+          "exactSentence": true,
+          "kindWording": false,
+          "around": "nfig v1 at Oto Play Park, Central Floresta This station was changed since you opened it. Close it and open it again. Saving bumps the config versio"
+        }
+      },
+      "apiAfter": {
+        "version": 2,
+        "name": "ZZ TEST 952 display B",
+        "kind": "display"
+      }
+    },
+    "p4api": {
+      "box": {
+        "branch": "Oto Play Park, Robinson Chalong",
+        "box": "Virtual box 3",
+        "role": "virtual",
+        "status": "unclaimed",
+        "lastHeartbeatAt": null
+      },
+      "devices": [
+        {
+          "id": "…f2ac9b",
+          "label": "Receipt Printer 1",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": null,
+          "model": null,
+          "protocol": "escpos",
+          "reachability": "unknown",
+          "paperStatus": "unknown",
+          "lastError": "DEVICE_NO_ADDRESS",
+          "lastSeenAt": null
+        }
+      ],
+      "stationPrinters": {
+        "status": 200,
+        "station": "Reception Till 1",
+        "body": {
+          "printers": [
+            {
+              "deviceId": "01a0c9ae-5405-7ff2-a42c-c7ececf2ac9b",
+              "label": "Receipt Printer 1",
+              "role": "receipt",
+              "kind": "receipt_printer",
+              "reachability": "unknown",
+              "paperStatus": "unknown",
+              "lastError": "DEVICE_NO_ADDRESS",
+              "lastSeenAt": null,
+              "queued": 1
+            }
+          ]
+        }
+      },
+      "healthBox": {
+        "name": "Virtual box 3",
+        "state": "unknown",
+        "status": "unclaimed",
+        "devices": [
+          {
+            "label": "Receipt Printer 1",
+            "kind": "receipt_printer",
+            "reachability": "unknown",
+            "paperStatus": "unknown",
+            "lastError": "DEVICE_NO_ADDRESS"
+          }
+        ]
+      },
+      "healthTop": {
+        "status": 200,
+        "keys": [
+          "status",
+          "checks",
+          "jobs",
+          "boxes",
+          "alerts",
+          "watchdogAgeSeconds",
+          "generatedAt",
+          "reach",
+          "rollups",
+          "evidence"
+        ],
+        "overall": "down",
+        "problems": 0
+      }
+    },
+    "p4console": {
+      "verdictBar": "O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print ",
+      "vb3Row": "Virtual box 3 Virtual never reported Waiting to be claimed last sync not recorded Receipt Printer 1 not set up Receipt printer",
+      "vb3Marks": [],
+      "notSetUpChip": 1,
+      "drawerRow": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to."
+    },
+    "p4own": {
+      "addressBefore": "192.0.2.52:9100",
+      "saveEnabled": false,
+      "hint": "ADDRESS A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.",
+      "api": {
+        "patchEmpty": {
+          "status": 400,
+          "code": "PRINTER_ADDRESS_REQUIRED",
+          "message": "A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it."
+        },
+        "patchNull": {
+          "status": 400,
+          "code": "PRINTER_ADDRESS_REQUIRED"
+        },
+        "createWithout": {
+          "status": 400,
+          "code": "PRINTER_ADDRESS_REQUIRED"
+        },
+        "addressAfter": "192.0.2.52:9100",
+        "created": 0
+      }
+    },
+    "p5list": {
+      "at": "2026-11-12T23:05:56.478Z",
+      "found": [
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 1",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "boxRole": "virtual",
+          "boxStatus": "online",
+          "id": "01a0be8c-89b2-7f21-84e0-74c754838f5b",
+          "label": "Band Printer (adults)",
+          "kind": "band_printer",
+          "transport": "simulated",
+          "address": "192.168.88.210:9100",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [
+            "Reception Till 1: adult_band",
+            "ZZ TEST SCRUM-730 till (retired): adult_band",
+            "ZZ TEST SCRUM-741 till (retired): adult_band"
+          ],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 1",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "boxRole": "virtual",
+          "boxStatus": "online",
+          "id": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b",
+          "label": "Band Printer (kids)",
+          "kind": "band_printer",
+          "transport": "simulated",
+          "address": "192.168.88.204:9100",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [
+            "Reception Till 1: kids_band",
+            "ZZ TEST SCRUM-730 till (retired): kids_band",
+            "ZZ TEST SCRUM-741 till (retired): kids_band"
+          ],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 1",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "boxRole": "virtual",
+          "boxStatus": "online",
+          "id": "01a0be8c-89a9-7c0b-a630-a16c81fdea52",
+          "label": "Kitchen Printer",
+          "kind": "kitchen_printer",
+          "transport": "simulated",
+          "address": "192.168.88.206:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [
+            "Reception Till 1: kitchen"
+          ],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 1",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "boxRole": "virtual",
+          "boxStatus": "online",
+          "id": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+          "label": "Receipt Printer 1",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.168.88.202:9100",
+          "model": "Welltech G4 (Xprinter XP-C260)",
+          "protocol": "escpos",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [
+            "Reception Till 1: receipt",
+            "ZZ TEST SCRUM-730 till (retired): receipt",
+            "ZZ TEST SCRUM-741 till (retired): receipt"
+          ],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 1",
+          "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+          "boxRole": "virtual",
+          "boxStatus": "online",
+          "id": "01a0be8c-89ac-7196-8b7f-9855cfab6003",
+          "label": "Receipt Printer 2",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.168.88.207:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "box": "Virtual box 2",
+          "boxId": "01a0c0fa-2fb3-77c8-b21b-ee16fa96501f",
+          "boxRole": "virtual",
+          "boxStatus": "unclaimed",
+          "id": "01a0c0fa-2fc0-7204-9297-fb068243fc70",
+          "label": "Receipt Printer 3",
+          "kind": "receipt_printer",
+          "transport": "simulated",
+          "address": "192.168.88.208:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "archived": false,
+          "reachability": "reachable",
+          "paperStatus": "ok",
+          "lastError": null,
+          "roles": [
+            "Counter 2: bar",
+            "Counter 2: receipt"
+          ],
+          "virtualBox": true,
+          "simulated": true,
+          "eligible": true
+        }
+      ],
+      "boxesRead": 11
+    },
+    "p5second": {
+      "contextKeys": [
+        "homeOperatorId",
+        "effectiveOperatorId",
+        "operatorOverride",
+        "branchId",
+        "stationId",
+        "revision",
+        "sessionId"
+      ],
+      "switch": {
+        "status": 200,
+        "code": null
+      },
+      "branches": [
+        "Second Operator, Branch 1"
+      ],
+      "devices": [],
+      "parkAddresses": [],
+      "signOut": 200,
+      "meAfter": 401
+    },
+    "p5edits": [
+      {
+        "label": "Band Printer (adults)",
+        "box": "Virtual box 1",
+        "oldAddress": "192.168.88.210:9100",
+        "wantAddress": "192.0.2.210:9100",
+        "sent": {
+          "label": "Band Printer (adults)",
+          "address": "192.0.2.210:9100",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "label": {
+              "sensing": "gap"
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"label\":{\"sensing\":\"gap\"}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.210:9100",
+          "label": "Band Printer (adults)",
+          "kind": "band_printer",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      },
+      {
+        "label": "Band Printer (kids)",
+        "box": "Virtual box 1",
+        "oldAddress": "192.168.88.204:9100",
+        "wantAddress": "192.0.2.204:9100",
+        "sent": {
+          "label": "Band Printer (kids)",
+          "address": "192.0.2.204:9100",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "label": {
+              "sensing": "gap"
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"label\":{\"sensing\":\"gap\"}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.204:9100",
+          "label": "Band Printer (kids)",
+          "kind": "band_printer",
+          "model": "4B-2082A",
+          "protocol": "tspl2",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      },
+      {
+        "label": "Kitchen Printer",
+        "box": "Virtual box 1",
+        "oldAddress": "192.168.88.206:9100",
+        "wantAddress": "192.0.2.206:9100",
+        "sent": {
+          "label": "Kitchen Printer",
+          "address": "192.0.2.206:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 576
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.206:9100",
+          "label": "Kitchen Printer",
+          "kind": "kitchen_printer",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      },
+      {
+        "label": "Receipt Printer 1",
+        "box": "Virtual box 1",
+        "oldAddress": "192.168.88.202:9100",
+        "wantAddress": "192.0.2.202:9100",
+        "sent": {
+          "label": "Receipt Printer 1",
+          "address": "192.0.2.202:9100",
+          "model": "Welltech G4 (Xprinter XP-C260)",
+          "protocol": "escpos",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 576
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.202:9100",
+          "label": "Receipt Printer 1",
+          "kind": "receipt_printer",
+          "model": "Welltech G4 (Xprinter XP-C260)",
+          "protocol": "escpos",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      },
+      {
+        "label": "Receipt Printer 2",
+        "box": "Virtual box 1",
+        "oldAddress": "192.168.88.207:9100",
+        "wantAddress": "192.0.2.207:9100",
+        "sent": {
+          "label": "Receipt Printer 2",
+          "address": "192.0.2.207:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 576
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.207:9100",
+          "label": "Receipt Printer 2",
+          "kind": "receipt_printer",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      },
+      {
+        "label": "Receipt Printer 3",
+        "box": "Virtual box 2",
+        "oldAddress": "192.168.88.208:9100",
+        "wantAddress": "192.0.2.208:9100",
+        "sent": {
+          "label": "Receipt Printer 3",
+          "address": "192.0.2.208:9100",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "terminalId": null,
+          "merchantId": null,
+          "settings": {
+            "escpos": {
+              "dotsPerLine": 576
+            }
+          }
+        },
+        "extra": [
+          "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+        ],
+        "outcome": "stopped in the browser: the form would change more than the address",
+        "formMessage": "Failed to fetch",
+        "after": {
+          "address": "192.168.88.208:9100",
+          "label": "Receipt Printer 3",
+          "kind": "receipt_printer",
+          "model": "Xprinter XP-80",
+          "protocol": "escpos",
+          "settings": null,
+          "updatedAt": null
+        },
+        "unchanged": true
+      }
+    ],
+    "huntKioskBooth": {
+      "kiosks": {
+        "status": 200,
+        "list": []
+      },
+      "booths": [
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "booth": "Booth 2 (proof)",
+          "status": 200,
+          "printer": {
+            "deviceId": "01a0d4f5-6f06-722e-b263-376d35040371",
+            "label": "Proof printer (bench)",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "lastSeenAt": "2026-09-24T20:33:42.297Z"
+          }
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "booth": "Booth 3 (fixes)",
+          "status": 200,
+          "printer": {
+            "deviceId": "01a0d65d-89bc-705a-957a-230d6df48b48",
+            "label": "Proof printer 2 (bench)",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "lastSeenAt": "2026-09-25T02:48:06.019Z"
+          }
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "booth": "FortuneWheelBooth",
+          "status": 200,
+          "printer": null
+        },
+        {
+          "branch": "Oto Play Park, Central Floresta",
+          "booth": "FWBooth1",
+          "status": 200,
+          "printer": {
+            "deviceId": "01a0e722-c741-7da5-ba1b-73012cecb8f2",
+            "label": "Booth Voucher Printer",
+            "reachability": "reachable",
+            "paperStatus": "ok",
+            "lastError": null,
+            "lastSeenAt": "2026-11-10T11:28:59.526Z"
+          }
+        }
+      ],
+      "stationsWithPrinterWithoutAddress": [
+        {
+          "branch": "Oto Play Park, Robinson Chalong",
+          "station": "Reception Till 1",
+          "kind": "till",
+          "role": "receipt",
+          "printer": "Receipt Printer 1"
+        }
+      ]
+    },
+    "huntReprint": {
+      "reprint": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "job": {
+          "kind": "test_page",
+          "role": "receipt",
+          "status": "queued"
+        }
+      },
+      "printout": {
+        "seq": 1,
+        "heightDots": 1010
+      },
+      "preview": 200,
+      "command": {
+        "kind": "test_print",
+        "state": "succeeded",
+        "payloadKind": "test_page",
+        "document": "platform",
+        "hasReprintOf": true
+      },
+      "history": [
+        "succeeded Reprint test page just now queued 13 Nov, 06:09 finished 13 Nov, 06:09 01a1d206-672d-715c-8c5a-acb2d1f0c518",
+        "succeeded Print adult wristband 7m ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+        "succeeded Print kids' wristband 7m ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8"
+      ]
+    },
+    "huntBandWindow": {
+      "patch": {
+        "status": 200,
+        "code": null,
+        "settings": {
+          "label": {
+            "labelWidthMm": 25,
+            "labelHeightMm": 246,
+            "gapMm": 4,
+            "sensing": "bline",
+            "printOffsetMm": 50,
+            "printLengthMm": 80
+          }
+        }
+      },
+      "testPrint": {
+        "status": 200,
+        "code": null,
+        "onBand": true
+      },
+      "printout": {
+        "seq": 1,
+        "widthDots": 200,
+        "heightDots": 1108,
+        "jobBytes": 27839,
+        "truncated": false,
+        "setup": [
+          "SIZE 25 mm,246 mm",
+          "BLINE 4 mm,0 mm",
+          "DIRECTION 1",
+          "REFERENCE 0,400",
+          "DENSITY 10",
+          "SPEED 4",
+          "SET TEAR ON",
+          "CLS"
+        ]
+      },
+      "preview": 200,
+      "job": {
+        "status": "printed",
+        "errorCode": null,
+        "errorMessage": null
+      }
+    },
+    "p5after": [
+      {
+        "label": "Band Printer (adults)",
+        "box": "Virtual box 1",
+        "address": "192.168.88.210:9100",
+        "kind": "band_printer",
+        "model": "4B-2082A",
+        "protocol": "tspl2",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      },
+      {
+        "label": "Band Printer (kids)",
+        "box": "Virtual box 1",
+        "address": "192.168.88.204:9100",
+        "kind": "band_printer",
+        "model": "4B-2082A",
+        "protocol": "tspl2",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      },
+      {
+        "label": "Kitchen Printer",
+        "box": "Virtual box 1",
+        "address": "192.168.88.206:9100",
+        "kind": "kitchen_printer",
+        "model": "Xprinter XP-80",
+        "protocol": "escpos",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      },
+      {
+        "label": "Receipt Printer 1",
+        "box": "Virtual box 1",
+        "address": "192.168.88.202:9100",
+        "kind": "receipt_printer",
+        "model": "Welltech G4 (Xprinter XP-C260)",
+        "protocol": "escpos",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      },
+      {
+        "label": "Receipt Printer 2",
+        "box": "Virtual box 1",
+        "address": "192.168.88.207:9100",
+        "kind": "receipt_printer",
+        "model": "Xprinter XP-80",
+        "protocol": "escpos",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      },
+      {
+        "label": "Receipt Printer 3",
+        "box": "Virtual box 2",
+        "address": "192.168.88.208:9100",
+        "kind": "receipt_printer",
+        "model": "Xprinter XP-80",
+        "protocol": "escpos",
+        "settings": null,
+        "reading": "reachable/ok/null",
+        "sameAsBefore": true,
+        "readingBefore": "reachable/ok/null"
+      }
+    ]
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "console",
+      "at": "1a: the Console box drawer, Controls: Test print on the ZZ TEST 952 receipt printer",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "1a: the Console box drawer, Controls: Test print on the ZZ TEST 952 receipt printer",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "1b: the till as a manager, Station settings, the Drop-off bracelet printer card, Test print",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "1b: the till as a manager, Station settings, the Drop-off bracelet printer card, Test print",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "rec",
+      "at": "2: two ZZ TEST walk-in sales, 1 Hour Play 1 child + 1 adult, cash; one printout per receipt",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec",
+      "at": "2: two ZZ TEST walk-in sales, 1 Hour Play 1 child + 1 adult, cash; one printout per receipt",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "rec",
+      "at": "2: try to void the own ZZ card sale stuck in tendering; then the till from its home",
+      "kind": "http",
+      "text": "POST /api/sales/:id/void 409"
+    },
+    {
+      "page": "rec",
+      "at": "2: try to void the own ZZ card sale stuck in tendering; then the till from its home",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "rec2",
+      "at": "2: a ZZ TEST walk-in sale paid by the simulated card terminal; no drawer kick",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec2",
+      "at": "2: a ZZ TEST walk-in sale paid by the simulated card terminal; no drawer kick",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "2: the Console Printing panel (one tile per receipt, no empty tile) and the drawer commands",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "2: the Console Printing panel (one tile per receipt, no empty tile) and the drawer commands",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the ZZ till open in Console form A; a second Console context saves; then form A saves",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the ZZ till open in Console form A; a second Console context saves; then form A saves",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: the ZZ till open in Console form A; a second Console context saves; then form A saves",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "console",
+      "at": "3: the ZZ till open in Console form A; a second Console context saves; then form A saves",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "http",
+      "text": "GET /api/boxes/:id/devices 401"
+    },
+    {
+      "page": "consoleB",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "http",
+      "text": "PATCH /api/stations/:id 409"
+    },
+    {
+      "page": "console",
+      "at": "3: the same stale save on a second kind of station: a ZZ TEST customer display station",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "http",
+      "text": "GET /api/devices/:id/printouts 409"
+    },
+    {
+      "page": "console",
+      "at": "5: each eligible device through the Console edit form, address only; a guard stops any save that changes more",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 409 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "DEVICE_NOT_SIMULATED"
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 409,
+      "errorCode": "DEVICE_NOT_SIMULATED"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/print-templates",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/printers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 400,
+      "errorCode": "PRINTER_ADDRESS_REQUIRED"
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/operators",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/kiosks",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/booths",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/booths/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/booths/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/booths/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/booths/:id/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/booths",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/print-jobs/:id/reprint",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/test-print",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/print-jobs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "sales": {
+      "refunds": [
+        {
+          "receipt": "Z95201-000001",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040,
+          "refundStatus": null
+        },
+        {
+          "receipt": "Z95201-000002",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040,
+          "refundStatus": null
+        },
+        {
+          "receipt": "Z95202-000001",
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040,
+          "refundStatus": null
+        }
+      ],
+      "mgrSignIn": 200,
+      "stuckVoid": {
+        "status": 409,
+        "code": "PAYMENT_IN_FLIGHT"
+      },
+      "mgrSignOut": {
+        "status": 200,
+        "me": 401
+      },
+      "readBack": [
+        {
+          "receipt": "Z95201-000001",
+          "status": "refunded",
+          "gross": 1040,
+          "refunded": 1040,
+          "refundStatus": "refunded",
+          "attempts": [
+            "approved"
+          ]
+        },
+        {
+          "receipt": "Z95201-000002",
+          "status": "refunded",
+          "gross": 1040,
+          "refunded": 1040,
+          "refundStatus": "refunded",
+          "attempts": [
+            "approved"
+          ]
+        },
+        {
+          "receipt": "Z95202-000001",
+          "status": "refunded",
+          "gross": 1040,
+          "refunded": 1040,
+          "refundStatus": "refunded",
+          "attempts": [
+            "approved"
+          ]
+        },
+        {
+          "receipt": null,
+          "status": "tendering",
+          "gross": 1040,
+          "refunded": 0,
+          "refundStatus": "none",
+          "attempts": [
+            "sent_to_terminal"
+          ]
+        }
+      ]
+    },
+    "records": {
+      "members": [
+        {
+          "key": "cash1",
+          "member": "none"
+        },
+        {
+          "key": "cash2",
+          "member": "none"
+        },
+        {
+          "key": "card",
+          "member": "none"
+        },
+        {
+          "key": "card2",
+          "member": "none"
+        }
+      ],
+      "stations": [
+        {
+          "name": "ZZ TEST 952 till B",
+          "kind": "till",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null,
+          "retireMessage": null
+        },
+        {
+          "name": "ZZ TEST 952 card till",
+          "kind": "till",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null,
+          "retireMessage": null
+        },
+        {
+          "name": "ZZ TEST 952 display B",
+          "kind": "display",
+          "devicesCleared": 200,
+          "clearCode": null,
+          "retired": 200,
+          "retireCode": null,
+          "retireMessage": null
+        }
+      ],
+      "devices": [
+        {
+          "key": "receipt",
+          "label": "ZZ TEST 952 receipt printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "key": "band",
+          "label": "ZZ TEST 952 band printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "key": "nomodel",
+          "label": "ZZ TEST 952 no-model receipt printer",
+          "archive": 200,
+          "stillAssignedTo": 0
+        },
+        {
+          "key": "card",
+          "label": "ZZ TEST 952 card terminal",
+          "archive": 200,
+          "stillAssignedTo": 0
+        }
+      ],
+      "stationsReadBack": [
+        {
+          "name": "ZZ TEST 952 till B",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "name": "ZZ TEST 952 card till",
+          "archived": true,
+          "devices": 0
+        },
+        {
+          "name": "ZZ TEST 952 display B",
+          "archived": true,
+          "devices": 0
+        }
+      ],
+      "devicesReadBack": [
+        {
+          "label": "ZZ TEST 952 band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 952 no-model receipt printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 952 receipt printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 952 card terminal",
+          "archived": true
+        }
+      ],
+      "zzLiveOnBox": []
+    },
+    "adminMe": 401
+  },
+  "sessions": [
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T22:48:58.219Z"
+    },
+    {
+      "label": "mgr",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T22:49:56.432Z"
+    },
+    {
+      "label": "rec",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T23:02:06.311Z"
+    },
+    {
+      "label": "rec2",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T23:02:57.969Z"
+    },
+    {
+      "label": "consoleB",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T23:03:43.215Z"
+    },
+    {
+      "label": "consoleB",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T23:04:29.580Z"
+    },
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-12T23:14:08.815Z"
+    }
+  ],
+  "finishedAt": "2026-11-12T23:14:09.446Z",
+  "renamed": {
+    "02c-till-card-sale-paid-simulator.png": "02c0-till-locked-while-first-card-attempt-waited.png (taken while the first card attempt waited; the payment did not succeed)"
+  }
+}

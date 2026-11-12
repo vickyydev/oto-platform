@@ -1,0 +1,29 @@
+ZZ TEST 952 card sale 01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0 on the ZZ TEST 952 till; read 2026-11-12T22:59:56.421Z
+
+GET /api/sales/<id>  -> sale.status: tendering; attempts: [{"id":"01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3","status":"sent_to_terminal","provider":"simulator"}]
+GET /api/payments/attempts/<id> (runs recoverMissingTerminalResult first) -> 200 attempt.status: sent_to_terminal
+
+GET /api/boxes/<Virtual box 1>/commands -> the terminal_sale command for that attempt:
+{
+  "kind": "terminal_sale",
+  "state": "failed",
+  "createdAt": "2026-11-12T22:51:40.949Z",
+  "claimedAt": "2026-11-12T22:51:43.384Z",
+  "finishedAt": "2026-11-12T22:51:43.395Z",
+  "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+  "errorMessage": "this box has no card_terminal for <station id>",
+  "result": {
+    "mode": "sale",
+    "outcome": null,
+    "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+    "terminalRef": null,
+    "responseCode": null
+  }
+}
+
+POST /api/sales/<id>/void (the till session) -> 409 PAYMENT_IN_FLIGHT "A payment on this sale is still in progress — finish or cancel it before voiding the sale"
+
+Why it never settles: recoverMissingTerminalResult (apps/api/src/services/payments/terminal.ts:344-351) only matches a
+failed terminal_sale command whose result IS NULL, but the box always answers a terminal command with a result object
+(packages/box-agent/src/agent.ts:4155-4169: { attemptId, mode, outcome: null, terminalRef: null, responseCode: null }).
+POST /payments/attempts/:id/inquire is refused for a GHL card, /confirm needs awaiting_staff_confirmation, /cancel is QR only.

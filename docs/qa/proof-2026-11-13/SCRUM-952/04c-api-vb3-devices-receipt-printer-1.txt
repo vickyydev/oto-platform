@@ -1,0 +1,17 @@
+GET /api/boxes/<Virtual box 3 id>/devices   (Robinson Chalong, read only; 2026-11-12T23:04:41.335Z)
+
+[
+  {
+    "id": "…f2ac9b",
+    "label": "Receipt Printer 1",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": null,
+    "model": null,
+    "protocol": "escpos",
+    "reachability": "unknown",
+    "paperStatus": "unknown",
+    "lastError": "DEVICE_NO_ADDRESS",
+    "lastSeenAt": null
+  }
+]

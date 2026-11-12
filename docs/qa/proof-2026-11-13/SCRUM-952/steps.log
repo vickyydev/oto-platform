@@ -1,0 +1,3058 @@
+
+=== 2026-11-12T22:47:13.364Z setup: ZZ TEST 952 printers and the ZZ TEST 952 till on Virtual box 1
+S.phase = 'setup: ZZ TEST 952 printers and the ZZ TEST 952 till on Virtual box 1';
+const r = await S.setup();
+const box = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes.find(b => b.id === S.box.id);
+r.boxNow = { name: box.name, status: box.status, lastHeartbeatAt: box.lastHeartbeatAt ?? null };
+const list = await S.printoutsFull(S.dev.receipt.id);
+r.receiptPrinterPrintoutsAtStart = { status: list.status, printouts: list.printouts.length, events: list.events.length };
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "box": "Virtual box 1",
+  "boxStatus": "online",
+  "prefix": "Z95201",
+  "numbersFree": 10,
+  "reused": [],
+  "configVersion": 1,
+  "roles": {
+   "adult_band": "ZZ TEST 952 band printer",
+   "bar": "ZZ TEST 952 no-model receipt printer",
+   "dropoff_band": "ZZ TEST 952 band printer",
+   "kids_band": "ZZ TEST 952 band printer",
+   "receipt": "ZZ TEST 952 receipt printer"
+  },
+  "capabilities": [],
+  "printers": [
+   {
+    "label": "ZZ TEST 952 band printer",
+    "kind": "band_printer",
+    "transport": "simulated",
+    "address": "192.0.2.53:9100",
+    "model": null,
+    "protocol": "tspl2",
+    "settings": null,
+    "reachability": "unknown",
+    "paperStatus": "unknown",
+    "lastError": null
+   },
+   {
+    "label": "ZZ TEST 952 no-model receipt printer",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": "192.0.2.54:9100",
+    "model": null,
+    "protocol": "escpos",
+    "settings": null,
+    "reachability": "unknown",
+    "paperStatus": "unknown",
+    "lastError": null
+   },
+   {
+    "label": "ZZ TEST 952 receipt printer",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": "192.0.2.52:9100",
+    "model": "Xprinter XP-80",
+    "protocol": "escpos",
+    "settings": null,
+    "reachability": "unknown",
+    "paperStatus": "unknown",
+    "lastError": null
+   }
+  ],
+  "boxNow": {
+   "name": "Virtual box 1",
+   "status": "online",
+   "lastHeartbeatAt": "2026-11-12T22:46:48.325Z"
+  },
+  "receiptPrinterPrintoutsAtStart": {
+   "status": 409,
+   "printouts": 0,
+   "events": 0
+  }
+ }
+}
+
+=== 2026-11-12T22:47:23.838Z setup: is Virtual box 1 running in the api process?
+S.phase = 'setup: is Virtual box 1 running in the api process?';
+const r = { now: new Date().toISOString() };
+const list = await S.printoutsFull(S.dev.receipt.id);
+r.printoutsRead = { status: list.status, code: list.code };
+const boxes = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes;
+r.boxes = boxes.map(b => ({ name: b.name, role: b.role, slot: b.slot, status: b.status, lastHeartbeatAt: b.lastHeartbeatAt ?? null }));
+const cmds = await S.commands(S.box.id, 5);
+r.lastCommands = cmds.map(c => ({ kind: c.kind, status: c.status, at: c.createdAt ?? c.queuedAt ?? null }));
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "now": "2026-11-12T22:47:23.838Z",
+  "printoutsRead": {
+   "status": 409,
+   "code": "DEVICE_NOT_SIMULATED"
+  },
+  "boxes": [
+   {
+    "name": "FortuneWheelBox",
+    "role": "booth",
+    "slot": "booth-1",
+    "status": "offline",
+    "lastHeartbeatAt": "2026-11-10T11:28:59.526Z"
+   },
+   {
+    "name": "Evidence box 206-G",
+    "role": "counter",
+    "slot": "evidence-206g",
+    "status": "offline",
+    "lastHeartbeatAt": null
+   },
+   {
+    "name": "Evidence box 361",
+    "role": "counter",
+    "slot": "evidence-361",
+    "status": "offline",
+    "lastHeartbeatAt": null
+   },
+   {
+    "name": "Proof box (25 Sept)",
+    "role": "booth",
+    "slot": "proof-bench",
+    "status": "offline",
+    "lastHeartbeatAt": "2026-09-24T20:33:42.297Z"
+   },
+   {
+    "name": "Proof box 2 (26 Sept)",
+    "role": "booth",
+    "slot": "proof-bench-2",
+    "status": "offline",
+    "lastHeartbeatAt": "2026-09-25T02:48:06.019Z"
+   },
+   {
+    "name": "HKT till box (Pi 5)",
+    "role": "counter",
+    "slot": "till-1",
+    "status": "offline",
+    "lastHeartbeatAt": "2026-11-12T11:25:47.649Z"
+   },
+   {
+    "name": "Virtual box 1",
+    "role": "virtual",
+    "slot": "virtual-1",
+    "status": "online",
+    "lastHeartbeatAt": "2026-11-12T22:46:48.325Z"
+   },
+   {
+    "name": "Virtual box 2",
+    "role": "virtual",
+    "slot": "virtual-2",
+    "status": "unclaimed",
+    "lastHeartbeatAt": null
+   },
+   {
+    "name": "ZZ TEST SCRUM-710 display",
+    "role": "virtual",
+    "slot": "zz-test-s710",
+    "status": "unclaimed",
+    "lastHeartbeatAt": null
+   },
+   {
+    "name": "ZZ TEST SCRUM-718 path",
+    "role": "virtual",
+    "slot": "zz-test-s718",
+    "status": "unclaimed",
+    "lastHeartbeatAt": null
+   }
+  ],
+  "lastCommands": [
+   {
+    "kind": "drawer_kick",
+    "at": "2026-11-12T21:40:10.719Z"
+   },
+   {
+    "kind": "test_print",
+    "at": "2026-11-12T21:37:13.353Z"
+   },
+   {
+    "kind": "drawer_kick",
+    "at": "2026-11-12T21:37:10.524Z"
+   },
+   {
+    "kind": "test_print",
+    "at": "2026-11-12T21:37:10.451Z"
+   },
+   {
+    "kind": "drawer_kick",
+    "at": "2026-11-12T21:33:35.573Z"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T22:47:49.741Z 1a: the Console box drawer, Controls: Test print on the ZZ TEST 952 receipt printer
+S.phase = '1a: the Console box drawer, Controls: Test print on the ZZ TEST 952 receipt printer';
+const { expect } = S;
+const r = {};
+// the box has the new printers once its simulator answers for them
+await expect.poll(async () => (await S.printoutsFull(S.dev.receipt.id)).status, { timeout: 180000, intervals: [5000] }).toBe(200);
+r.before = { printouts: (await S.printoutsFull(S.dev.receipt.id)).printouts.length };
+const c = S.pages.console?.page ?? await S.consoleIn('console');
+const box = await S.goBox(c, S.branchId, S.box.name);
+const controls = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Controls', exact: true }) }).first();
+await controls.scrollIntoViewIfNeeded();
+await controls.getByLabel('Station a test print goes to').selectOption(S.station.id);
+await c.waitForTimeout(500);
+const printerSel = controls.getByLabel('Printer it comes out of');
+r.printerOptions = await printerSel.locator('option').allInnerTexts();
+await printerSel.selectOption(S.dev.receipt.id);
+const t0 = new Date();
+const [res] = await Promise.all([
+  c.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/stations\/[^/]+\/test-print$/.test(new URL(rr.url()).pathname), { timeout: 30000 }),
+  controls.getByRole('button', { name: 'Test print', exact: true }).click(),
+]);
+const body = await res.json().catch(() => null);
+r.sent = res.request().postDataJSON?.() ?? null;
+r.answer = { status: res.status(), job: body?.printJob ? { id: body.printJob.id, kind: body.printJob.kind, role: body.printJob.role, status: body.printJob.status, onZzReceipt: body.printJob.deviceId === S.dev.receipt.id } : body };
+S.p1aJob = body?.printJob?.id;
+await c.waitForTimeout(800);
+r.note = S.flat(await controls.innerText()).slice(-160);
+await S.shot(c, '01a-console-controls-test-print-zz-receipt-printer.png');
+let fresh = [];
+await expect.poll(async () => { fresh = (await S.printoutsFull(S.dev.receipt.id)).printouts; return fresh.length; }, { timeout: 120000, intervals: [3000] }).toBeGreaterThan(r.before.printouts);
+const p = fresh[fresh.length - 1];
+r.printout = { seq: p.seq, at: p.at, widthDots: p.widthDots, heightDots: p.heightDots, jobBytes: p.jobBytes, truncated: p.truncated };
+r.askedAtBangkok = t0.toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' });
+r.preview = await S.preview(S.dev.receipt.id, p.seq, S.resolve(S.out, '01c-test-page-preview-zz-receipt-printer.png'));
+S.receipt.reads.p1a = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "before": {
+   "printouts": 0
+  },
+  "printerOptions": [
+   "ZZ TEST 952 band printer",
+   "ZZ TEST 952 no-model receipt printer",
+   "ZZ TEST 952 band printer",
+   "ZZ TEST 952 band printer",
+   "ZZ TEST 952 receipt printer"
+  ],
+  "sent": {
+   "kind": "test_page",
+   "role": "receipt"
+  },
+  "answer": {
+   "status": 200,
+   "job": {
+    "id": "01a1d1f2-48f9-7435-9b6c-40811edf6723",
+    "kind": "test_page",
+    "role": "receipt",
+    "status": "queued",
+    "onZzReceipt": true
+   }
+  },
+  "note": "ft from the old one is recognisably stale rather than replayed. Used when a box is repurposed or its store is corrupt — never to clear a fault. Reset the store…",
+  "printout": {
+   "seq": 1,
+   "at": "2026-11-12T22:48:03.765Z",
+   "widthDots": 576,
+   "heightDots": 1010,
+   "jobBytes": 72801,
+   "truncated": false
+  },
+  "askedAtBangkok": "13/11/2026, 05:47:57",
+  "preview": 200
+ }
+}
+
+=== 2026-11-12T22:48:29.046Z 1a: the Printing panel preview and the Command history
+S.phase = '1a: the Printing panel preview and the Command history';
+const { expect } = S;
+const r = {};
+const c = S.pages.console.page;
+const box = c.getByRole('dialog', { name: S.box.name, exact: true });
+const printing = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Printing', exact: true }) }).first();
+await printing.scrollIntoViewIfNeeded();
+await printing.getByRole('button', { name: S.dev.receipt.label, exact: true }).click();
+await printing.getByRole('button', { name: 'Refresh', exact: true }).click();
+await expect(printing.getByRole('img', { name: /^Printout 1,/ })).toBeVisible({ timeout: 30000 });
+await c.waitForFunction(() => [...document.querySelectorAll('img')].filter(i => /^Printout /.test(i.alt)).every(i => i.complete && i.naturalWidth > 0), null, { timeout: 30000 }).catch(() => {});
+r.jobsText = S.flat(await printing.locator('ul').first().innerText()).slice(0, 600);
+r.tiles = (await printing.locator('ul').last().locator('li').allInnerTexts()).map(S.flat);
+await printing.locator('ul').last().scrollIntoViewIfNeeded();
+await S.shot(c, '01b-console-printing-panel-test-page-zz-receipt-printer.png');
+const history = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Command history', exact: true }) }).first();
+await history.getByRole('button', { name: 'Refresh', exact: true }).click();
+await c.waitForTimeout(2500);
+await history.scrollIntoViewIfNeeded();
+r.history = (await history.locator('li').allInnerTexts()).slice(0, 4).map(S.flat);
+await S.shot(c, '01d-console-command-history-test-print.png');
+const cmds = await S.commands(S.box.id, 5);
+r.apiCommands = cmds.slice(0, 3).map(x => ({ kind: x.kind, state: x.state, payloadKind: x.payload?.kind ?? null, document: x.payload?.document ?? null, reprintOf: x.payload?.reprintOf ?? null, jobIsOurs: x.payload?.printJobId === S.p1aJob || x.payload?.jobId === S.p1aJob }));
+const tpl = await S.call('GET', `/branches/${S.branchId}/print-templates`);
+r.branchTemplates = tpl.status === 200 ? (tpl.body.templates ?? tpl.body).map(t => t.name ?? t) : { status: tpl.status };
+S.receipt.reads.p1aPanels = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "jobsText": "printed test page ZZ TEST 952 receipt printer · receipt 05:47:58 printed kids wristband Band Printer (kids) · kids_band 04:37:13 printed receipt Receipt Printer 1 · receipt 04:37:10 printed adult wristband Band Printer (adults) · adult_band 04:33:35 printed kids wristband Band Printer (kids) · kids_band 04:33:35 printed receipt Receipt Printer 1 · receipt 04:33:35 skipped kitchen ticket no printer · kitchen NO_DEVICE_FOR_ROLE — No kitchen printer is assigned to this station 04:28:01 printed receipt Receipt Printer 1 · receipt 04:28:01 printed adult wristband Band Printer (adults) · adult_band ",
+  "tiles": [
+   "#1 · 576×1010 dots · 72.801 bytes"
+  ],
+  "history": [
+   "succeeded Test print 33s ago queued 13 Nov, 05:47 finished 13 Nov, 05:48 01a1d1f2-48f6-72b9-8f1c-c6e73405b4b6",
+   "succeeded Drawer kick 1h 8m ago queued 13 Nov, 04:40 finished 13 Nov, 04:40 01a1d1b4-30ab-74be-9008-f8f28392aa9a",
+   "succeeded Print kids' wristband 1h 11m ago queued 13 Nov, 04:37 finished 13 Nov, 04:37 01a1d1b1-809c-74a6-8f41-ea30580e3119",
+   "succeeded Drawer kick 1h 11m ago queued 13 Nov, 04:37 finished 13 Nov, 04:37 01a1d1b1-7109-7303-a334-b5e13da5214e"
+  ],
+  "apiCommands": [
+   {
+    "kind": "test_print",
+    "state": "succeeded",
+    "payloadKind": "test_page",
+    "document": "platform",
+    "reprintOf": null,
+    "jobIsOurs": true
+   },
+   {
+    "kind": "drawer_kick",
+    "state": "succeeded",
+    "payloadKind": null,
+    "document": null,
+    "reprintOf": null,
+    "jobIsOurs": false
+   },
+   {
+    "kind": "test_print",
+    "state": "succeeded",
+    "payloadKind": "kids_wristband",
+    "document": "platform",
+    "reprintOf": null,
+    "jobIsOurs": false
+   }
+  ],
+  "branchTemplates": [
+   "Standard receipt",
+   "Kids wristband",
+   "Adult wristband",
+   "Kitchen ticket",
+   "Bar ticket",
+   "Credit voucher"
+  ]
+ }
+}
+
+=== 2026-11-12T22:48:56.524Z 1b: the till as a manager, Station settings, the Drop-off bracelet printer card, Test print
+S.phase = '1b: the till as a manager, Station settings, the Drop-off bracelet printer card, Test print';
+const { expect } = S;
+const r = {};
+await S.close('console');
+const till = await S.signIn('mgr', 'STAGING_MANAGER_PHONE', 'STAGING_MANAGER_PASSWORD');
+S.till = till;
+await till.goto('/station-setup/settings');
+await till.getByRole('button', { name: 'Save changes', exact: true }).waitFor({ timeout: 30000 });
+await till.waitForTimeout(4000);
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Drop-off bracelet printer', exact: true }) }).last();
+r.options = [];
+for (const b of await card.locator('button.rounded-xl').all()) r.options.push({ label: S.flat(await b.locator('span.font-semibold').innerText()), selected: (await b.getAttribute('class')).includes('border-primary') });
+const before = (await S.printoutsFull(S.dev.band.id)).printouts.map(S.keyOf);
+const t0 = new Date();
+const [res] = await Promise.all([
+  till.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/stations\/[^/]+\/test-print/.test(new URL(rr.url()).pathname), { timeout: 30000 }),
+  card.getByRole('button', { name: 'Test print', exact: true }).click(),
+]);
+const body = await res.json().catch(() => null);
+r.sent = res.request().postDataJSON?.() ?? null;
+r.answer = { status: res.status(), job: body?.printJob ? { id: body.printJob.id, kind: body.printJob.kind, role: body.printJob.role, status: body.printJob.status, onZzBand: body.printJob.deviceId === S.dev.band.id } : body };
+S.p1bJob = body?.printJob?.id;
+await till.waitForTimeout(800);
+await card.scrollIntoViewIfNeeded();
+const access = till.getByText('Who may use this station', { exact: true }).locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " p-6 ")][1]');
+await S.shot(till, '01e-till-dropoff-card-test-print-sent.png', [access]);
+let fresh = [];
+await expect.poll(async () => { fresh = (await S.printoutsFull(S.dev.band.id)).printouts.filter(p => !before.includes(S.keyOf(p))); return fresh.length; }, { timeout: 120000, intervals: [3000] }).toBeGreaterThan(0);
+const p = fresh[fresh.length - 1];
+r.printout = { seq: p.seq, at: p.at, widthDots: p.widthDots, heightDots: p.heightDots, jobBytes: p.jobBytes, truncated: p.truncated, setup: p.setup ?? null };
+r.askedAtBangkok = t0.toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' });
+r.preview = await S.preview(S.dev.band.id, p.seq, S.resolve(S.out, '01f-test-page-preview-zz-band-printer.png'));
+S.receipt.reads.p1b = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "options": [
+   {
+    "label": "Band Printer (adults)",
+    "selected": false
+   },
+   {
+    "label": "Band Printer (kids)",
+    "selected": false
+   },
+   {
+    "label": "ZZ TEST 952 band printer",
+    "selected": true
+   }
+  ],
+  "sent": {
+   "kind": "test_page",
+   "role": "dropoff_band"
+  },
+  "answer": {
+   "status": 200,
+   "job": {
+    "id": "01a1d1f3-5557-7d22-b0ba-62b90f14a59f",
+    "kind": "test_page",
+    "role": "dropoff_band",
+    "status": "queued",
+    "onZzBand": true
+   }
+  },
+  "printout": {
+   "seq": 1,
+   "at": "2026-11-12T22:49:08.753Z",
+   "widthDots": 400,
+   "heightDots": 1048,
+   "jobBytes": 52535,
+   "truncated": false,
+   "setup": [
+    "SIZE 50 mm,250 mm",
+    "GAP 3 mm,0 mm",
+    "DIRECTION 1",
+    "REFERENCE 0,0",
+    "DENSITY 10",
+    "SPEED 4",
+    "SET TEAR ON",
+    "CLS"
+   ]
+  },
+  "askedAtBangkok": "13/11/2026, 05:49:06",
+  "preview": 200
+ }
+}
+
+=== 2026-11-12T22:49:27.547Z 1c: Test print on a receipt printer with no model (the till, Bar printer card)
+S.phase = '1c: Test print on a receipt printer with no model (the till, Bar printer card)';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('mgr');
+const card = till.locator('div.p-6').filter({ has: till.getByRole('heading', { name: 'Bar printer', exact: true }) }).last();
+await card.scrollIntoViewIfNeeded();
+r.options = [];
+for (const b of await card.locator('button.rounded-xl').all()) r.options.push({ label: S.flat(await b.locator('span.font-semibold').innerText()), selected: (await b.getAttribute('class')).includes('border-primary') });
+const before = (await S.printoutsFull(S.dev.nomodel.id)).printouts.map(S.keyOf);
+const [res] = await Promise.all([
+  till.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/stations\/[^/]+\/test-print/.test(new URL(rr.url()).pathname), { timeout: 30000 }),
+  card.getByRole('button', { name: 'Test print', exact: true }).click(),
+]);
+const body = await res.json().catch(() => null);
+r.sent = res.request().postDataJSON?.() ?? null;
+r.answer = { status: res.status(), job: body?.printJob ? { id: body.printJob.id, kind: body.printJob.kind, role: body.printJob.role, status: body.printJob.status, onNoModel: body.printJob.deviceId === S.dev.nomodel.id } : body };
+S.p1cJob = body?.printJob?.id;
+let fresh = [];
+await expect.poll(async () => { fresh = (await S.printoutsFull(S.dev.nomodel.id)).printouts.filter(p => !before.includes(S.keyOf(p))); return fresh.length; }, { timeout: 120000, intervals: [3000] }).toBeGreaterThan(0);
+const p = fresh[fresh.length - 1];
+r.printout = { seq: p.seq, widthDots: p.widthDots, heightDots: p.heightDots, truncated: p.truncated };
+r.preview = await S.preview(S.dev.nomodel.id, p.seq, S.resolve(S.out, '01g-test-page-preview-no-model-receipt-printer.png'));
+S.receipt.reads.p1c = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "options": [],
+  "sent": {
+   "kind": "test_page",
+   "role": "bar"
+  },
+  "answer": {
+   "status": 200,
+   "job": {
+    "id": "01a1d1f3-a7f2-7aad-b399-4b9a8e154f50",
+    "kind": "test_page",
+    "role": "bar",
+    "status": "queued",
+    "onNoModel": true
+   }
+  },
+  "printout": {
+   "seq": 1,
+   "widthDots": 576,
+   "heightDots": 1010,
+   "truncated": false
+  },
+  "preview": 200
+ }
+}
+
+=== 2026-11-12T22:49:56.153Z 2: two ZZ TEST walk-in sales, 1 Hour Play 1 child + 1 adult, cash; one printout per receipt
+S.phase = '2: two ZZ TEST walk-in sales, 1 Hour Play 1 child + 1 adult, cash; one printout per receipt';
+const { expect } = S;
+const r = { mgrClosed: await S.close('mgr') };
+const till = await S.signIn('rec', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.till = till;
+S.cashSales = [];
+for (const [i, number] of [S.free[0], S.free[1]].entries()) {
+  const before = await S.printoutsFull(S.dev.receipt.id);
+  const seenKeys = before.printouts.map(S.keyOf);
+  const t0 = Date.now();
+  S.receipt.numbers['cash' + (i + 1)] = number;
+  await S.walkIn(till, number);
+  await S.ticket(till, 1, 1);
+  const sale = await S.saleWritten('cash-sale-' + (i + 1));
+  await S.payCash(till);
+  await till.waitForTimeout(3000);
+  if (i === 0) await S.shot(till, '02a-till-cash-sale-1-paid.png', [till.locator('span.font-mono')]);
+  await expect.poll(async () => { const j = (await S.sale(sale.id)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+  await S.sleep(6000);
+  const s = await S.sale(sale.id);
+  const after = await S.printoutsFull(S.dev.receipt.id);
+  const fresh = after.printouts.filter(p => !seenKeys.includes(S.keyOf(p)));
+  const events = after.events.filter(e => Date.parse(e.at) >= t0 - 1000);
+  const one = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, tenders: (s.payments ?? s.sale.payments ?? []).map(p => p.method ?? p.kind ?? null),
+    printJobs: (s.printJobs ?? []).map(S.jobFacts),
+    newPrintouts: fresh.map(p => ({ seq: p.seq, at: p.at, widthDots: p.widthDots, heightDots: p.heightDots, jobBytes: p.jobBytes, truncated: p.truncated })),
+    events: events.map(e => ({ at: e.at, kind: e.kind, detail: e.detail })) };
+  if (fresh[0]) one.preview = await S.preview(S.dev.receipt.id, fresh[0].seq, S.resolve(S.scratch, 'raw', `cash-${i + 1}-receipt.png`));
+  S.cashSales.push({ id: sale.id, ...one });
+  S.receipt.created.push({ kind: 'sale-cash', id: sale.id, receipt: s.sale.receiptNumber }); S.save();
+}
+r.sales = S.cashSales;
+const cmds = await S.commands(S.box.id, 12);
+r.drawerCommands = cmds.filter(c => c.kind === 'drawer_kick').slice(0, 3).map(c => ({ state: c.state, at: c.createdAt, finishedAt: c.finishedAt ?? null, error: c.errorCode ?? null }));
+S.receipt.reads.p2cash = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "mgrClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "sales": [
+   {
+    "id": "01a1d1f4-2bf6-738e-9ddb-babfb3fe3102",
+    "receipt": "Z95201-000001",
+    "status": "finalised",
+    "gross": 1040,
+    "tenders": [],
+    "printJobs": [
+     {
+      "kind": "adult_wristband",
+      "role": "adult_band",
+      "device": "ZZ TEST 952 band printer",
+      "status": "printed",
+      "error": null
+     },
+     {
+      "kind": "kids_wristband",
+      "role": "kids_band",
+      "device": "ZZ TEST 952 band printer",
+      "status": "printed",
+      "error": null
+     },
+     {
+      "kind": "receipt",
+      "role": "receipt",
+      "device": "ZZ TEST 952 receipt printer",
+      "status": "printed",
+      "error": null
+     }
+    ],
+    "newPrintouts": [
+     {
+      "seq": 2,
+      "at": "2026-11-12T22:50:08.753Z",
+      "widthDots": 576,
+      "heightDots": 1088,
+      "jobBytes": 78425,
+      "truncated": false
+     }
+    ],
+    "events": [
+     {
+      "at": "2026-11-12T22:50:08.751Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 1",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.751Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 2",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.751Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 3",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.751Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 4",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.753Z",
+      "kind": "cut",
+      "detail": {
+       "seq": 2
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.760Z",
+      "kind": "job.printed",
+      "detail": {
+       "seq": 2,
+       "bands": 9,
+       "cuts": 1,
+       "drawerKicks": 0,
+       "unknown": 0,
+       "truncated": false
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.761Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 1",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.761Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 2",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.761Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 3",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.761Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 4",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.952Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 1",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.952Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 2",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.952Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 3",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.952Z",
+      "kind": "status.read",
+      "detail": {
+       "query": "DLE EOT 4",
+       "byte": 18
+      }
+     },
+     {
+      "at": "2026-11-12T22:50:08.952Z",
+      "kind": "drawer.kick",
+      "detail": {
+       "pin": 0,
+       "onMs": 50,
+       "offMs": 500,
+       "jobBytes": 5,
+       "paper": false
+      }
+     }
+    ],
+    "preview": 200
+   },
+   {
+    "id": "01a1d1f4-6d0d-7c51-8342-d95c2a77243e",
+    "receipt": "Z95201-000002",
+    "status": "finalised",
+    "gross": 1040,
+    "tenders": [],
+    "printJobs": [
+     {
+      "kind": "adult_wristband",
+      "role": "adult_band",
+      "device": "ZZ TEST 952 band printer",
+      "status": "printed",
+      "error": null
+     },
+     {
+      "kind": "kids_wristband",
+      "role": "kids_band",
+      "device": "ZZ TEST 952 band printer",
+      "status": "printed",
+      "error": null
+     },
+     {
+      "kind": "receipt",
+      "r
+
+=== 2026-11-12T22:51:05.591Z 2: a ZZ TEST simulated card terminal on the ZZ till; the till offers Card
+S.phase = '2: a ZZ TEST simulated card terminal on the ZZ till; the till offers Card';
+const { expect } = S;
+const r = {};
+const onBox = await S.devicesOnBox(S.box.id);
+const label = 'ZZ TEST 952 card terminal';
+let term = onBox.find(x => !x.archived && x.label === label);
+if (!term) {
+  const made = await S.call('POST', `/boxes/${S.box.id}/devices`, { id: S.randomUUID(), kind: 'terminal', label, transport: 'simulated', protocol: 'ghl_linkpos', model: 'NEXGO N5' });
+  r.terminalCreate = made.status;
+  S.assert.equal(made.status, 200);
+  term = made.body.device;
+  S.receipt.created.push({ kind: 'device', key: 'card', id: term.id, label }); S.save();
+}
+S.dev.card = { id: term.id, label, kind: 'terminal' };
+const row = await S.stationRow();
+const devices = row.devices.filter(d => d.role !== 'card_terminal').map(d => ({ role: d.role, deviceId: d.deviceId })).concat([{ role: 'card_terminal', deviceId: term.id }]);
+const p = await S.call('PATCH', `/stations/${S.station.id}`, { devices, paymentRouting: { card: 'card_terminal', qr: 'none' } });
+r.stationPatch = { status: p.status, code: p.body?.error?.code ?? null, roles: S.rolesOf(p.body?.station), paymentRouting: p.body?.station?.paymentRouting ?? null, readiness: p.body?.station?.sellingReadiness ?? null };
+// wait for the box to know the terminal
+await S.sleep(15000);
+const till = S.till;
+await S.unlock('rec');
+await S.walkIn(till, S.free[2]);
+S.receipt.numbers.card = S.free[2];
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('card-sale');
+S.cardSale = sale.id;
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+r.methods = (await S.paymentStep(till).getByRole('heading', { level: 3 }).allInnerTexts()).map(S.flat);
+await till.getByRole('heading', { name: 'Card', exact: true }).first().click();
+await till.waitForTimeout(1500);
+r.afterCard = S.flat(await S.paymentStep(till).innerText()).slice(0, 900);
+r.buttons = (await S.paymentStep(till).getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean);
+await S.shot(till, '02b-till-card-selected-simulated-terminal.png', [till.locator('span.font-mono')]);
+S.receipt.reads.p2cardSetup = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "terminalCreate": 200,
+  "stationPatch": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 952 band printer",
+    "bar": "ZZ TEST 952 no-model receipt printer",
+    "card_terminal": "ZZ TEST 952 card terminal",
+    "dropoff_band": "ZZ TEST 952 band printer",
+    "kids_band": "ZZ TEST 952 band printer",
+    "receipt": "ZZ TEST 952 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "readiness": null
+  },
+  "methods": [
+   "Select Payment Method",
+   "Cash",
+   "Card",
+   "PromptPay"
+  ],
+  "afterCard": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Partial payment Hold sale Back Start card payment",
+  "buttons": [
+   "Partial payment",
+   "Hold sale",
+   "Back",
+   "Start card payment"
+  ]
+ }
+}
+
+=== 2026-11-12T22:51:39.731Z 2: the card sale through the simulated terminal; no drawer kick
+S.phase = '2: the card sale through the simulated terminal; no drawer kick';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+const before = await S.printoutsFull(S.dev.receipt.id);
+const seenKeys = before.printouts.map(S.keyOf);
+const t0 = Date.now();
+await till.getByRole('button', { name: 'Start card payment', exact: true }).click();
+const done = await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 150000 }).then(() => true).catch(() => false);
+r.paymentSuccessful = done;
+await till.waitForTimeout(2500);
+r.screen = S.flat(await till.locator('body').innerText()).slice(0, 600);
+await S.shot(till, '02c-till-card-sale-paid-simulator.png', [till.locator('span.font-mono')]);
+await expect.poll(async () => { const j = (await S.sale(S.cardSale)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+await S.sleep(8000);
+const s = await S.sale(S.cardSale);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, payments: (s.payments ?? []).map(p => ({ method: p.method ?? p.tender ?? null, provider: p.provider ?? null, status: p.status ?? null, amount: (p.amountSatang ?? 0) / 100 })) };
+r.printJobs = (s.printJobs ?? []).map(S.jobFacts);
+const after = await S.printoutsFull(S.dev.receipt.id);
+const fresh = after.printouts.filter(p => !seenKeys.includes(S.keyOf(p)));
+r.newPrintouts = fresh.map(p => ({ seq: p.seq, at: p.at, widthDots: p.widthDots, heightDots: p.heightDots, jobBytes: p.jobBytes, truncated: p.truncated }));
+r.eventsSince = after.events.filter(e => Date.parse(e.at) >= t0 - 1000).filter(e => e.kind !== 'status.read').map(e => ({ at: e.at, kind: e.kind, detail: e.detail }));
+r.drawerKicksSince = r.eventsSince.filter(e => e.kind === 'drawer.kick').length;
+const cmds = await S.commands(S.box.id, 15);
+r.commandsSince = cmds.filter(c => Date.parse(c.createdAt) >= t0 - 1000).map(c => ({ kind: c.kind, state: c.state, payloadKind: c.payload?.kind ?? null }));
+S.receipt.reads.p2card = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "paymentSuccessful": false,
+  "screen": "Locked [staff] is still signed in — enter your password to continue. Password Unlock Sign out and hand over the till The shift stays open while the till is locked",
+  "sale": {
+   "receipt": null,
+   "status": "tendering",
+   "gross": 1040,
+   "payments": []
+  },
+  "printJobs": [],
+  "newPrintouts": [],
+  "eventsSince": [],
+  "drawerKicksSince": 0,
+  "commandsSince": [
+   {
+    "kind": "terminal_sale",
+    "state": "failed",
+    "payloadKind": null
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T22:56:30.826Z 2: why the simulated card payment failed
+S.phase = '2: why the simulated card payment failed';
+const r = {};
+const cmds = await S.commands(S.box.id, 20);
+r.terminalCommands = cmds.filter(c => /terminal/.test(c.kind)).slice(0, 4).map(c => ({ kind: c.kind, state: c.state, createdAt: c.createdAt, finishedAt: c.finishedAt ?? null, errorCode: c.errorCode ?? null, errorMessage: c.errorMessage ?? null, attempts: c.attempts ?? null, payloadKeys: Object.keys(c.payload ?? {}) }));
+const s = await S.sale(S.cardSale);
+r.sale = { status: s.sale.status, attempts: (s.paymentAttempts ?? s.attempts ?? []).map(a => ({ status: a.status, provider: a.provider ?? null, errorCode: a.errorCode ?? null, errorMessage: a.errorMessage ?? null })) , keys: Object.keys(s) };
+const devs = await S.devicesOnBox(S.box.id);
+const t = devs.find(d => d.id === S.dev.card.id);
+r.terminal = { label: t.label, transport: t.transport, protocol: t.protocol, reachability: t.reachability, lastError: t.lastError ?? null, lastSeenAt: t.lastSeenAt ?? null };
+const other = devs.filter(d => d.kind === 'terminal' && !d.archived).map(d => ({ label: d.label, protocol: d.protocol, transport: d.transport, reachability: d.reachability, lastError: d.lastError ?? null, tid: Boolean(d.terminalId) }));
+r.terminalsOnBox = other;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "terminalCommands": [
+   {
+    "kind": "terminal_sale",
+    "state": "failed",
+    "createdAt": "2026-11-12T22:51:40.949Z",
+    "finishedAt": "2026-11-12T22:51:43.395Z",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "errorMessage": "this box has no card_terminal for 01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+    "attempts": 1,
+    "payloadKeys": [
+     "mode",
+     "role",
+     "tender",
+     "deviceId",
+     "attemptId",
+     "stationId",
+     "amountSatang"
+    ]
+   }
+  ],
+  "sale": {
+   "status": "tendering",
+   "attempts": [
+    {
+     "status": "sent_to_terminal",
+     "provider": "simulator",
+     "errorCode": null,
+     "errorMessage": null
+    }
+   ],
+   "keys": [
+    "timeExtension",
+    "sale",
+    "correctionBandShortCode",
+    "refundStatus",
+    "refundableSatang",
+    "refunds",
+    "printJobs",
+    "bands",
+    "grants",
+    "issuedVouchers",
+    "pickupCode",
+    "attempts",
+    "taxBreakdown",
+    "taxConfig",
+    "lines",
+    "discounts"
+   ]
+  },
+  "terminal": {
+   "label": "ZZ TEST 952 card terminal",
+   "transport": "simulated",
+   "protocol": "ghl_linkpos",
+   "reachability": "unknown",
+   "lastError": null,
+   "lastSeenAt": "2026-11-12T22:55:48.329Z"
+  },
+  "terminalsOnBox": [
+   {
+    "label": "EDC 1",
+    "protocol": "ghl_linkpos",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": true
+   },
+   {
+    "label": "EDC 3",
+    "protocol": "digio_tlv",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": true
+   },
+   {
+    "label": "Native payment shop-inquiry-confirm 0d008153 terminal",
+    "protocol": "digio_tlv",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": false
+   },
+   {
+    "label": "Native payment shop-partial-refused 0d008153 terminal",
+    "protocol": "ghl_linkpos",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": false
+   },
+   {
+    "label": "ZZ TEST 952 card terminal",
+    "protocol": "ghl_linkpos",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": false
+   },
+   {
+    "label": "ZZ TEST setup traps terminal 20261102",
+    "protocol": "digio_tlv",
+    "transport": "simulated",
+    "reachability": "unknown",
+    "lastError": null,
+    "tid": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T22:56:42.260Z 2: the till after the failed terminal command
+S.phase = '2: the till after the failed terminal command';
+const till = S.till;
+const r = { unlocked: await S.unlock('rec') };
+await till.waitForTimeout(2000);
+r.step = S.flat(await S.paymentStep(till).innerText().catch(() => '')).slice(0, 900);
+r.buttons = (await S.paymentStep(till).getByRole('button').allInnerTexts().catch(() => [])).map(S.flat).filter(Boolean);
+r.alerts = (await till.locator('[role="alert"], [role="status"]').allInnerTexts().catch(() => [])).map(S.flat).filter(Boolean).slice(0, 6);
+await S.shot(till, '02c-till-card-attempt-after-terminal-not-on-box.png', [till.locator('span.font-mono')]);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "unlocked": true,
+  "step": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment",
+  "buttons": [
+   "Hold sale",
+   "Back",
+   "Start card payment"
+  ],
+  "alerts": [
+   "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks"
+  ]
+ }
+}
+
+=== 2026-11-12T22:57:58.670Z 2: read the stuck attempt (the read settles a failed command), look at the till again
+S.phase = '2: read the stuck attempt (the read settles a failed command), look at the till again';
+const r = {};
+const s = await S.sale(S.cardSale);
+const att = (s.attempts ?? [])[0];
+r.attemptBefore = { status: att?.status, provider: att?.provider };
+const a = await S.call('GET', `/payments/attempts/${att.id}`);
+r.attemptRead = { status: a.status, attemptStatus: a.body?.attempt?.status ?? null, route: a.body?.route ?? null, responseText: a.body?.responseText ?? null };
+S.cardAttempt = att.id;
+const till = S.till;
+await S.unlock('rec');
+await till.waitForTimeout(8000);
+r.step = S.flat(await S.paymentStep(till).innerText().catch(() => '')).slice(0, 900);
+r.dialogs = (await till.getByRole('dialog').allInnerTexts().catch(() => [])).map(S.flat).slice(0, 3);
+r.buttons = (await till.getByRole('button').allInnerTexts().catch(() => [])).map(S.flat).filter(t => t && t.length < 60).slice(0, 60);
+await till.screenshot({ path: S.resolve(S.scratch, 'raw', 'card-after-read.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "attemptBefore": {
+   "status": "sent_to_terminal",
+   "provider": "simulator"
+  },
+  "attemptRead": {
+   "status": 200,
+   "attemptStatus": "sent_to_terminal",
+   "route": "card_terminal",
+   "responseText": null
+  },
+  "step": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment",
+  "dialogs": [],
+  "buttons": [
+   "Hide customer display",
+   "0 in park no gate",
+   "F&B",
+   "Shop",
+   "Events",
+   "Check-in",
+   "History",
+   "Today",
+   "7 Messages",
+   "Cash",
+   "ZZ TEST 952 till",
+   "7 overdue Review →",
+   "Hold sale",
+   "Back",
+   "Start card payment",
+   "Apply",
+   "Redeem",
+   "Issue a voucher…",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1040",
+   "English"
+  ]
+ }
+}
+
+=== 2026-11-12T22:58:21.404Z 2: the failed terminal_sale command as the platform holds it
+S.phase = '2: the failed terminal_sale command as the platform holds it';
+const cmds = await S.commands(S.box.id, 30);
+const c = cmds.find(x => x.kind === 'terminal_sale' && x.payload?.attemptId === S.cardAttempt);
+return { keys: c ? Object.keys(c) : null, state: c?.state, result: c?.result ?? '(no result field in the list)', errorCode: c?.errorCode, claimedAt: c?.claimedAt ?? null, payload: c ? { mode: c.payload.mode, role: c.payload.role, tender: c.payload.tender, deviceIsZz: c.payload.deviceId === S.dev.card.id, stationIsZz: c.payload.stationId === S.station.id } : null };
+--> {
+ "ok": true,
+ "value": {
+  "keys": [
+   "id",
+   "kind",
+   "state",
+   "payload",
+   "result",
+   "actionId",
+   "requestedByAccountId",
+   "attempts",
+   "createdAt",
+   "claimedAt",
+   "finishedAt",
+   "expiresAt",
+   "errorCode",
+   "errorMessage"
+  ],
+  "state": "failed",
+  "result": {
+   "mode": "sale",
+   "outcome": null,
+   "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+   "terminalRef": null,
+   "responseCode": null
+  },
+  "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+  "claimedAt": "2026-11-12T22:51:43.384Z",
+  "payload": {
+   "mode": "sale",
+   "role": "card_terminal",
+   "tender": "card",
+   "deviceIsZz": true,
+   "stationIsZz": true
+  }
+ }
+}
+
+=== 2026-11-12T22:59:23.370Z 2: try to void the own ZZ card sale stuck in tendering; then the till from its home
+S.phase = '2: try to void the own ZZ card sale stuck in tendering; then the till from its home';
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+const sale0 = await S.sale(S.cardSale);
+S.assert.equal(sale0.sale.stationId, S.station.id, 'own ZZ till');
+r.voidTry = await till.evaluate(async ({ id, key }) => {
+  const res = await fetch(`/api/sales/${id}/void`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'idempotency-key': key }, body: JSON.stringify({ reason: 'ZZ TEST SCRUM-952 proof: card attempt never reached the terminal' }) });
+  const b = await res.json().catch(() => null);
+  return { status: res.status, code: b?.error?.code ?? null, message: b?.error?.message ?? null, details: b?.error?.details ?? null };
+}, { id: S.cardSale, key: S.randomUUID() });
+await till.goto('/');
+await till.waitForTimeout(5000);
+r.home = S.flat(await till.locator('body').innerText()).slice(0, 700);
+await till.screenshot({ path: S.resolve(S.scratch, 'raw', 'till-home-after-stuck.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "voidTry": {
+   "status": 409,
+   "code": "PAYMENT_IN_FLIGHT",
+   "message": "A payment on this sale is still in progress — finish or cancel it before voiding the sale",
+   "details": {
+    "attempts": [
+     {
+      "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+      "status": "sent_to_terminal"
+     }
+    ]
+   }
+  },
+  "home": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 952 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 05:51. Take the payment, or Cancel to void it. Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adu"
+ }
+}
+
+=== 2026-11-12T22:59:56.117Z finding: a terminal command the box refused leaves the card attempt in flight and the till blocked
+S.phase = 'finding: a terminal command the box refused leaves the card attempt in flight and the till blocked';
+const till = S.till;
+await S.shot(till, '02d-till-resumed-sale-blocked-payment-in-progress.png', [till.locator('span.font-mono')]);
+const cmds = await S.commands(S.box.id, 40);
+const c = cmds.find(x => x.kind === 'terminal_sale' && x.payload?.attemptId === S.cardAttempt);
+const s = await S.sale(S.cardSale);
+const a = await S.call('GET', `/payments/attempts/${S.cardAttempt}`);
+const text = [
+  `ZZ TEST 952 card sale ${S.cardSale} on the ZZ TEST 952 till; read ${new Date().toISOString()}`,
+  '',
+  `GET /api/sales/<id>  -> sale.status: ${s.sale.status}; attempts: ${JSON.stringify((s.attempts ?? []).map(x => ({ id: x.id, status: x.status, provider: x.provider })))}`,
+  `GET /api/payments/attempts/<id> (runs recoverMissingTerminalResult first) -> ${a.status} attempt.status: ${a.body?.attempt?.status}`,
+  '',
+  `GET /api/boxes/<Virtual box 1>/commands -> the terminal_sale command for that attempt:`,
+  JSON.stringify({ kind: c.kind, state: c.state, createdAt: c.createdAt, claimedAt: c.claimedAt, finishedAt: c.finishedAt, errorCode: c.errorCode, errorMessage: c.errorMessage.replace(S.ID, '<station id>'), result: c.result }, null, 2),
+  '',
+  `POST /api/sales/<id>/void (the till session) -> 409 PAYMENT_IN_FLIGHT "A payment on this sale is still in progress — finish or cancel it before voiding the sale"`,
+  '',
+  'Why it never settles: recoverMissingTerminalResult (apps/api/src/services/payments/terminal.ts:344-351) only matches a',
+  'failed terminal_sale command whose result IS NULL, but the box always answers a terminal command with a result object',
+  '(packages/box-agent/src/agent.ts:4155-4169: { attemptId, mode, outcome: null, terminalRef: null, responseCode: null }).',
+  'POST /payments/attempts/:id/inquire is refused for a GHL card, /confirm needs awaiting_staff_confirmation, /cancel is QR only.',
+].join('\n');
+await S.txtShot(text, '02e-api-card-attempt-stuck-sent-to-terminal.png', 'Finding: the box refused the terminal command (TERMINAL_NOT_ON_THIS_BOX); the attempt stays sent_to_terminal');
+S.receipt.reads.stuckCard = { sale: S.cardSale, attempt: S.cardAttempt, saleStatus: s.sale.status, attemptStatus: a.body?.attempt?.status, command: { state: c.state, errorCode: c.errorCode, result: c.result } };
+return S.receipt.reads.stuckCard;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+  "attempt": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+  "saleStatus": "tendering",
+  "attemptStatus": "sent_to_terminal",
+  "command": {
+   "state": "failed",
+   "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+   "result": {
+    "mode": "sale",
+    "outcome": null,
+    "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+    "terminalRef": null,
+    "responseCode": null
+   }
+  }
+ }
+}
+
+=== 2026-11-12T23:00:18.470Z 2: a second ZZ TEST till for the simulator card sale (the first is blocked by the stuck attempt)
+S.phase = '2: a second ZZ TEST till for the simulator card sale (the first is blocked by the stuck attempt)';
+const { expect } = S;
+const r = {};
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+const prefix = Array.from({ length: 99 }, (_, i) => `Z952${String(i + 1).padStart(2, '0')}`).find(p => !stations.some(s => s.codePrefix === p));
+const name = 'ZZ TEST 952 card till';
+S.assert.ok(!stations.some(s => s.name === name && !s.archived));
+const devices = [['receipt', 'receipt'], ['kids_band', 'band'], ['adult_band', 'band'], ['card_terminal', 'card']].map(([role, key]) => ({ role, deviceId: S.dev[key].id }));
+const made = await S.call('POST', `/branches/${S.branchId}/stations`, { name, kind: 'till', boxId: S.box.id, codePrefix: prefix, accessScope: 'all_staff', paymentRouting: { card: 'card_terminal', qr: 'none' }, capabilities: [], devices });
+r.create = { status: made.status, code: made.body?.error?.code ?? null, roles: S.rolesOf(made.body?.station) };
+S.assert.equal(made.status, 200);
+S.station2 = { id: made.body.station.id, name, prefix };
+S.receipt.created.push({ kind: 'station', id: S.station2.id, name, prefix }); S.save();
+const createdAt = Date.now();
+// two heartbeats of the box after the station exists, so its bundle carries the station and its terminal
+let beats = 0, last = null;
+await expect.poll(async () => {
+  const b = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes.find(x => x.id === S.box.id);
+  const at = Date.parse(b.lastHeartbeatAt ?? 0);
+  if (at > createdAt + 2000 && at !== last) { beats += 1; last = at; }
+  return beats;
+}, { timeout: 240000, intervals: [5000] }).toBeGreaterThanOrEqual(2);
+r.heartbeatsAfter = beats;
+r.waitedS = Math.round((Date.now() - createdAt) / 1000);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "create": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 952 band printer",
+    "card_terminal": "ZZ TEST 952 card terminal",
+    "kids_band": "ZZ TEST 952 band printer",
+    "receipt": "ZZ TEST 952 receipt printer"
+   }
+  },
+  "heartbeatsAfter": 2,
+  "waitedS": 92
+ }
+}
+
+=== 2026-11-12T23:02:06.021Z 2: a ZZ TEST walk-in sale paid by the simulated card terminal; no drawer kick
+S.phase = '2: a ZZ TEST walk-in sale paid by the simulated card terminal; no drawer kick';
+const { expect } = S;
+const r = { recClosed: await S.close('rec') };
+S.station1 = S.station;
+S.station = S.station2;
+try {
+  const till = await S.signIn('rec2', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+  S.till = till;
+  S.receipt.numbers.card2 = S.free[3];
+  const before = await S.printoutsFull(S.dev.receipt.id);
+  const seenKeys = before.printouts.map(S.keyOf);
+  await S.walkIn(till, S.free[3]);
+  await S.ticket(till, 1, 1);
+  const sale = await S.saleWritten('card-sale-2');
+  S.cardSale2 = sale.id;
+  await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+  await till.getByRole('heading', { name: 'Card', exact: true }).first().click();
+  const t0 = Date.now();
+  await till.getByRole('button', { name: 'Start card payment', exact: true }).click();
+  const ok = await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 100000 }).then(() => true).catch(() => false);
+  r.paymentSuccessful = ok;
+  r.secondsToPaid = Math.round((Date.now() - t0) / 1000);
+  await till.waitForTimeout(2500);
+  await S.shot(till, '02f-till-card-sale-paid-simulator.png', [till.locator('span.font-mono')]);
+  await expect.poll(async () => { const j = (await S.sale(sale.id)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+  await S.sleep(10000);
+  const s = await S.sale(sale.id);
+  r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, attempts: (s.attempts ?? []).map(a => ({ status: a.status, provider: a.provider })) };
+  r.printJobs = (s.printJobs ?? []).map(S.jobFacts);
+  const after = await S.printoutsFull(S.dev.receipt.id);
+  r.newPrintouts = after.printouts.filter(p => !seenKeys.includes(S.keyOf(p))).map(p => ({ seq: p.seq, at: p.at, widthDots: p.widthDots, heightDots: p.heightDots, jobBytes: p.jobBytes, truncated: p.truncated }));
+  r.eventsSince = after.events.filter(e => Date.parse(e.at) >= t0 - 1000 && e.kind !== 'status.read').map(e => ({ at: e.at, kind: e.kind, detail: e.detail }));
+  r.drawerKicksSince = r.eventsSince.filter(e => e.kind === 'drawer.kick').length;
+  const cmds = await S.commands(S.box.id, 20);
+  r.commandsSince = cmds.filter(c => Date.parse(c.createdAt) >= t0 - 1000).map(c => ({ kind: c.kind, state: c.state, payloadKind: c.payload?.kind ?? null, stationIsCardTill: c.payload?.stationId === S.station2.id }));
+  S.receipt.created.push({ kind: 'sale-card', id: sale.id, receipt: s.sale.receiptNumber }); S.save();
+} finally {
+  S.station = S.station1;
+}
+S.receipt.reads.p2card2 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "recClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "paymentSuccessful": true,
+  "secondsToPaid": 5,
+  "sale": {
+   "receipt": "Z95202-000001",
+   "status": "finalised",
+   "gross": 1040,
+   "attempts": [
+    {
+     "status": "approved",
+     "provider": "simulator"
+    }
+   ]
+  },
+  "printJobs": [
+   {
+    "kind": "adult_wristband",
+    "role": "adult_band",
+    "device": "ZZ TEST 952 band printer",
+    "status": "printed",
+    "error": null
+   },
+   {
+    "kind": "kids_wristband",
+    "role": "kids_band",
+    "device": "ZZ TEST 952 band printer",
+    "status": "printed",
+    "error": null
+   },
+   {
+    "kind": "receipt",
+    "role": "receipt",
+    "device": "ZZ TEST 952 receipt printer",
+    "status": "printed",
+    "error": null
+   }
+  ],
+  "newPrintouts": [
+   {
+    "seq": 4,
+    "at": "2026-11-12T23:02:23.789Z",
+    "widthDots": 576,
+    "heightDots": 1088,
+    "jobBytes": 78425,
+    "truncated": false
+   }
+  ],
+  "eventsSince": [
+   {
+    "at": "2026-11-12T23:02:23.789Z",
+    "kind": "cut",
+    "detail": {
+     "seq": 4
+    }
+   },
+   {
+    "at": "2026-11-12T23:02:23.798Z",
+    "kind": "job.printed",
+    "detail": {
+     "seq": 4,
+     "bands": 9,
+     "cuts": 1,
+     "drawerKicks": 0,
+     "unknown": 0,
+     "truncated": false
+    }
+   }
+  ],
+  "drawerKicksSince": 0,
+  "commandsSince": [
+   {
+    "kind": "test_print",
+    "state": "succeeded",
+    "payloadKind": "adult_wristband",
+    "stationIsCardTill": true
+   },
+   {
+    "kind": "test_print",
+    "state": "succeeded",
+    "payloadKind": "kids_wristband",
+    "stationIsCardTill": true
+   },
+   {
+    "kind": "test_print",
+    "state": "succeeded",
+    "payloadKind": "receipt",
+    "stationIsCardTill": true
+   },
+   {
+    "kind": "terminal_sale",
+    "state": "succeeded",
+    "payloadKind": null,
+    "stationIsCardTill": true
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T23:02:57.689Z 2: the Console Printing panel (one tile per receipt, no empty tile) and the drawer commands
+S.phase = '2: the Console Printing panel (one tile per receipt, no empty tile) and the drawer commands';
+const { expect } = S;
+const r = { rec2Closed: await S.close('rec2') };
+const c = await S.consoleIn('console');
+const box = await S.goBox(c, S.branchId, S.box.name);
+const printing = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Printing', exact: true }) }).first();
+await printing.scrollIntoViewIfNeeded();
+await printing.getByRole('button', { name: S.dev.receipt.label, exact: true }).click();
+await printing.getByRole('button', { name: 'Refresh', exact: true }).click();
+await expect(printing.getByRole('img', { name: /^Printout 4,/ })).toBeVisible({ timeout: 30000 });
+await c.waitForFunction(() => [...document.querySelectorAll('img')].filter(i => /^Printout /.test(i.alt)).every(i => i.complete && i.naturalWidth > 0), null, { timeout: 30000 }).catch(() => {});
+const tiles = printing.locator('ul').last().locator('li');
+r.tiles = (await tiles.allInnerTexts()).map(S.flat);
+r.pulseTiles = await printing.getByText('Cash drawer pulse', { exact: true }).count();
+r.alts = await printing.getByRole('img').evaluateAll(els => els.map(e => e.alt));
+await tiles.first().scrollIntoViewIfNeeded();
+await c.mouse.wheel(0, 120);
+await c.waitForTimeout(500);
+// the receipts print the cashier's name ("Served by …"): a solid box over that line on each receipt tile
+r.masked = await c.evaluate(() => {
+  let n = 0;
+  for (const img of document.querySelectorAll('img')) {
+    if (!/^Printout \d+, 576 by 10(8|9)\d dots$/.test(img.alt)) continue;
+    const b = img.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.style.cssText = `position:fixed;left:${b.left}px;top:${b.top + b.height * 0.226}px;width:${b.width * 0.42}px;height:${b.height * 0.036}px;background:#18181b;z-index:99999`;
+    document.body.appendChild(d); n += 1;
+  }
+  return n;
+});
+await S.shot(c, '02g-console-printing-panel-one-tile-per-receipt.png');
+await c.evaluate(() => { for (const d of [...document.body.children]) if (d.style?.zIndex === '99999') d.remove(); });
+const history = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Command history', exact: true }) }).first();
+await history.getByRole('button', { name: 'Refresh', exact: true }).click();
+await c.waitForTimeout(2500);
+await history.scrollIntoViewIfNeeded();
+r.history = (await history.locator('li').allInnerTexts()).slice(0, 12).map(S.flat);
+await S.shot(c, '02h-console-command-history-drawer-kicks-succeeded.png');
+S.receipt.reads.p2console = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "rec2Closed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "tiles": [
+   "#4 · 576×1088 dots · 78.425 bytes",
+   "#3 · 576×1089 dots · 78.497 bytes",
+   "#2 · 576×1088 dots · 78.425 bytes",
+   "#1 · 576×1010 dots · 72.801 bytes"
+  ],
+  "pulseTiles": 0,
+  "alts": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   "Printout 4, 576 by 1088 dots",
+   "Printout 3, 576 by 1089 dots",
+   "Printout 2, 576 by 1088 dots",
+   "Printout 1, 576 by 1010 dots"
+  ],
+  "masked": 3,
+  "history": [
+   "succeeded Print adult wristband 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+   "succeeded Print kids' wristband 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+   "succeeded Print receipt 50s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+   "succeeded Terminal sale 54s ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-5115-741a-93a3-446de263c086",
+   "failed Terminal sale 11m ago queued 13 Nov, 05:51 finished 13 Nov, 05:51 01a1d1f5-a7ab-70e8-a0d8-803f4747eada TERMINAL_NOT_ON_THIS_BOX: this box has no card_terminal for 01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+   "succeeded Drawer kick 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+   "succeeded Print adult wristband 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+   "succeeded Print kids' wristband 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+   "succeeded Print receipt 12m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-6eba-75fb-8cfa-357a945da23e",
+   "succeeded Drawer kick 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b",
+   "succeeded Print adult wristband 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b",
+   "succeeded Print kids' wristband 13m ago queued 13 Nov, 05:50 finished 13 Nov, 05:50 01a1d1f4-2dc3-7709-aa2e-dc9e35a5bb8b"
+  ]
+ }
+}
+
+=== 2026-11-12T23:03:30.826Z 2: the platform answer GET /api/devices/<ZZ receipt printer>/printouts?limit=20 as text
+S.phase = '2: the platform answer GET /api/devices/<ZZ receipt printer>/printouts?limit=20 as text';
+const a = await S.printoutsFull(S.dev.receipt.id);
+const sales = [...S.cashSales.map(s => `${s.receipt} cash ฿${s.gross}`), `${S.receipt.reads.p2card2.sale.receipt} card (simulator) ฿${S.receipt.reads.p2card2.sale.gross}`];
+const text = [
+  `GET /api/devices/<ZZ TEST 952 receipt printer id>/printouts?limit=20   -> ${a.status}   (read ${new Date().toISOString()})`,
+  `Sales on it: ${sales.join('; ')}. Seq 1 is the Controls test page.`,
+  '',
+  'printouts:',
+  ...a.printouts.map(p => `  #${p.seq}  ${p.at}  ${p.widthDots}x${p.heightDots} dots  ${p.jobBytes} bytes  truncated=${p.truncated}`),
+  '',
+  'events (status.read lines left out):',
+  ...a.events.filter(e => e.kind !== 'status.read').map(e => `  ${e.at}  ${e.kind}  ${JSON.stringify(e.detail)}`),
+].join('\n');
+await S.txtShot(text, '02i-api-receipt-printer-printouts-and-drawer-kicks.png', 'Point 2: one printout per receipt; a cash sale\'s drawer pulse is a drawer.kick event with paper:false and jobBytes:5');
+return { printouts: a.printouts.length, kicks: a.events.filter(e => e.kind === 'drawer.kick').length };
+--> {
+ "ok": true,
+ "value": {
+  "printouts": 4,
+  "kicks": 0
+ }
+}
+
+=== 2026-11-12T23:03:31.121Z 3: the ZZ till open in Console form A; a second Console context saves; then form A saves
+S.phase = '3: the ZZ till open in Console form A; a second Console context saves; then form A saves';
+const { expect } = S;
+const r = {};
+if (S.pages.rec) r.recClosed = await S.close('rec');
+const A = S.pages.console?.page ?? await S.consoleIn('console');
+await A.reload();
+await S.goStations(A);
+const dA = await S.openDrawer(A);
+const opened = await S.stationRow();
+r.formAOpenedAt = { version: await S.versionShown(dA), title: S.flat(await dA.getByRole('heading').first().innerText()), apiVersion: opened.configVersion };
+// the second context saves a change to the same station
+const B = await S.consoleIn('consoleB');
+await S.goStations(B);
+const dB = await S.openDrawer(B);
+await dB.getByLabel(/^Name/).first().fill('ZZ TEST 952 till B');
+const sb = await S.saveDrawer(B, dB);
+r.B = { status: sb.status, version: sb.body?.station?.configVersion, name: sb.body?.station?.name };
+S.station.name = 'ZZ TEST 952 till B';
+await expect(dB).toHaveCount(0, { timeout: 10000 });
+r.consoleBClosed = await S.close('consoleB');
+// form A saves
+await dA.getByLabel(/^Name/).first().fill('ZZ TEST 952 till A');
+const sa = await S.saveDrawer(A, dA);
+r.A = { status: sa.status, errorCode: sa.body?.error?.code ?? null, apiMessage: sa.body?.error?.message ?? null, expectedConfigVersionSent: sa.sent.expectedConfigVersion ?? null };
+await A.waitForTimeout(2500);
+const words = 'This station was changed since you opened it. Close it and open it again.';
+const drawerText = S.flat(await dA.innerText());
+r.A.onScreen = { exactSentence: drawerText.includes(words), oldTillWording: /This till was changed/.test(drawerText), around: (drawerText.match(/.{0,60}changed since you opened it.{0,60}/) ?? [null])[0] };
+const refusal = dA.getByText(/changed since you opened it/).first();
+await refusal.scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(A, '03a-console-form-a-stale-save-refused-till.png');
+const after = await S.stationRow();
+r.apiAfter = { version: after.configVersion, name: after.name };
+await dA.getByRole('button', { name: 'Cancel', exact: true }).click();
+S.receipt.reads.p3till = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "formAOpenedAt": {
+   "version": 2,
+   "title": "ZZ TEST 952 till",
+   "apiVersion": 2
+  },
+  "B": {
+   "status": 200,
+   "version": 3,
+   "name": "ZZ TEST 952 till B"
+  },
+  "consoleBClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "A": {
+   "status": 409,
+   "errorCode": "STATION_CHANGED",
+   "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+   "expectedConfigVersionSent": 2,
+   "onScreen": {
+    "exactSentence": true,
+    "oldTillWording": false,
+    "around": "nfig v2 at Oto Play Park, Central Floresta This station was changed since you opened it. Close it and open it again. Ready for selling Saving bumps"
+   }
+  },
+  "apiAfter": {
+   "version": 3,
+   "name": "ZZ TEST 952 till B"
+  }
+ }
+}
+
+=== 2026-11-12T23:03:59.528Z 2: the printouts answer as text, with the events read right after each sale
+S.phase = '2: the printouts answer as text, with the events read right after each sale';
+const a = await S.printoutsFull(S.dev.receipt.id);
+const ev = list => list.filter(e => e.kind !== 'status.read').map(e => `    ${e.at}  ${e.kind}  ${JSON.stringify(e.detail)}`);
+const c2 = S.receipt.reads.p2card2;
+const text = [
+  `GET /api/devices/<ZZ TEST 952 receipt printer id>/printouts?limit=20   -> ${a.status}   (read now, ${new Date().toISOString()})`,
+  'printouts (seq 1 is the Controls test page):',
+  ...a.printouts.map(p => `  #${p.seq}  ${p.at}  ${p.widthDots}x${p.heightDots} dots  ${p.jobBytes} bytes  truncated=${p.truncated}`),
+  '',
+  'The same GET, read a few seconds after each sale (its events window is short and fills with status reads, so the',
+  'kicks are no longer in a read made now); events since the sale started, status.read lines left out:',
+  ...S.cashSales.flatMap(s => [`  ${s.receipt} cash ฿${s.gross}: new printouts ${JSON.stringify(s.newPrintouts.map(p => '#' + p.seq + ' ' + p.heightDots + ' dots'))}`, ...ev(s.events)]),
+  `  ${c2.sale.receipt} card (simulator) ฿${c2.sale.gross}: new printouts ${JSON.stringify(c2.newPrintouts.map(p => '#' + p.seq + ' ' + p.heightDots + ' dots'))}`, ...ev(c2.eventsSince),
+].join('\n');
+await S.txtShot(text, '02i-api-receipt-printer-printouts-and-drawer-kicks.png', 'Point 2: one printout per receipt; each cash sale\'s pulse is one drawer.kick (paper:false, jobBytes:5); the card sale has none');
+return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T23:04:18.661Z 3: the same stale save on a second kind of station: a ZZ TEST customer display station
+S.phase = '3: the same stale save on a second kind of station: a ZZ TEST customer display station';
+const { expect } = S;
+const r = {};
+const name = 'ZZ TEST 952 display';
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+S.assert.ok(!stations.some(s => s.name === name && !s.archived));
+const made = await S.call('POST', `/branches/${S.branchId}/stations`, { name, kind: 'display', boxId: S.box.id, accessScope: 'all_staff', capabilities: [], devices: [] });
+r.create = { status: made.status, code: made.body?.error?.code ?? null, message: made.body?.error?.message ?? null, kind: made.body?.station?.kind ?? null, version: made.body?.station?.configVersion ?? null };
+S.assert.equal(made.status, 200);
+S.station3 = { id: made.body.station.id, name };
+S.receipt.created.push({ kind: 'station', id: S.station3.id, name }); S.save();
+const A = S.pages.console.page;
+await A.reload();
+await S.goStations(A, name);
+const dA = await S.openDrawer(A, name, false);
+r.formAOpenedAt = { version: await S.versionShown(dA), title: S.flat(await dA.getByRole('heading').first().innerText()) };
+const B = await S.consoleIn('consoleB');
+await S.goStations(B, name);
+const dB = await S.openDrawer(B, name, false);
+await dB.getByLabel(/^Name/).first().fill('ZZ TEST 952 display B');
+const sb = await S.saveDrawer(B, dB, S.station3.id);
+r.B = { status: sb.status, version: sb.body?.station?.configVersion, name: sb.body?.station?.name, code: sb.body?.error?.code ?? null, message: sb.body?.error?.message ?? null };
+S.station3.name = sb.status === 200 ? 'ZZ TEST 952 display B' : name;
+r.consoleBClosed = await S.close('consoleB');
+await dA.getByLabel(/^Name/).first().fill('ZZ TEST 952 display A');
+const sa = await S.saveDrawer(A, dA, S.station3.id);
+r.A = { status: sa.status, errorCode: sa.body?.error?.code ?? null, apiMessage: sa.body?.error?.message ?? null, expectedConfigVersionSent: sa.sent.expectedConfigVersion ?? null };
+await A.waitForTimeout(2500);
+const words = 'This station was changed since you opened it. Close it and open it again.';
+const drawerText = S.flat(await dA.innerText());
+r.A.onScreen = { exactSentence: drawerText.includes(words), kindWording: /This (display|customer display|screen) was changed/i.test(drawerText), around: (drawerText.match(/.{0,60}changed since you opened it.{0,60}/) ?? [null])[0] };
+await dA.getByText(/changed since you opened it/).first().scrollIntoViewIfNeeded().catch(() => {});
+await S.shot(A, '03b-console-form-a-stale-save-refused-display-station.png');
+const after = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(s => s.id === S.station3.id);
+r.apiAfter = { version: after.configVersion, name: after.name, kind: after.kind };
+await dA.getByRole('button', { name: 'Cancel', exact: true }).click();
+S.receipt.reads.p3display = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "create": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "kind": "display",
+   "version": 1
+  },
+  "formAOpenedAt": {
+   "version": 1,
+   "title": "ZZ TEST 952 display"
+  },
+  "B": {
+   "status": 200,
+   "version": 2,
+   "name": "ZZ TEST 952 display B",
+   "code": null,
+   "message": null
+  },
+  "consoleBClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "A": {
+   "status": 409,
+   "errorCode": "STATION_CHANGED",
+   "apiMessage": "This station was changed since you opened it. Close it and open it again.",
+   "expectedConfigVersionSent": 1,
+   "onScreen": {
+    "exactSentence": true,
+    "kindWording": false,
+    "around": "nfig v1 at Oto Play Park, Central Floresta This station was changed since you opened it. Close it and open it again. Saving bumps the config versio"
+   }
+  },
+  "apiAfter": {
+   "version": 2,
+   "name": "ZZ TEST 952 display B",
+   "kind": "display"
+  }
+ }
+}
+
+=== 2026-11-12T23:04:40.914Z 4: READ ONLY, Robinson Chalong Virtual box 3, Receipt Printer 1 (no address): api reads
+S.phase = '4: READ ONLY, Robinson Chalong Virtual box 3, Receipt Printer 1 (no address): api reads';
+const r = {};
+const branches = (await S.call('GET', '/branches')).body.branches;
+const chalong = branches.find(b => /Chalong/i.test(b.name));
+const boxes = (await S.call('GET', `/branches/${chalong.id}/boxes`)).body.boxes;
+const vb3 = boxes.find(b => b.name === 'Virtual box 3');
+S.chalong = { branchId: chalong.id, branchName: chalong.name, boxId: vb3.id, boxName: vb3.name, boxRole: vb3.role, boxStatus: vb3.status };
+const devs = (await S.call('GET', `/boxes/${vb3.id}/devices`)).body.devices;
+const pick = d => ({ id: '…' + d.id.slice(-6), label: d.label, kind: d.kind, transport: d.transport, address: d.address ?? null, model: d.model ?? null, protocol: d.protocol ?? null, reachability: d.reachability, paperStatus: d.paperStatus, lastError: d.lastError ?? null, lastSeenAt: d.lastSeenAt ?? null });
+r.box = { branch: chalong.name, box: vb3.name, role: vb3.role, status: vb3.status, lastHeartbeatAt: vb3.lastHeartbeatAt ?? null };
+r.devices = devs.map(pick);
+const rp1 = devs.find(d => d.label === 'Receipt Printer 1' && !d.archived);
+S.chalong.rp1 = rp1?.id;
+const stations = (await S.call('GET', `/branches/${chalong.id}/stations`)).body.stations;
+const till1 = stations.find(s => s.name === 'Reception Till 1' && !s.archived);
+S.chalong.till1 = till1?.id;
+const sp = await S.call('GET', `/stations/${till1.id}/printers`);
+r.stationPrinters = { status: sp.status, station: till1.name, body: sp.body };
+const h = await S.call('GET', '/ops/health');
+const hb = (h.body?.boxes ?? []).find(b => b.id === vb3.id);
+r.healthBox = hb ? { name: hb.name, state: hb.state, status: hb.status, devices: (hb.devices ?? []).map(d => ({ label: d.label, kind: d.kind, reachability: d.reachability, paperStatus: d.paperStatus, lastError: d.lastError ?? null })) } : 'not in /ops/health';
+r.healthTop = { status: h.status, keys: Object.keys(h.body ?? {}), overall: h.body?.status ?? h.body?.overall ?? null, problems: (h.body?.problems ?? []).length ?? null };
+S.receipt.reads.p4api = r;
+const txt1 = `GET /api/boxes/<Virtual box 3 id>/devices   (Robinson Chalong, read only; ${new Date().toISOString()})\n\n` + JSON.stringify(r.devices, null, 2);
+await S.txtShot(txt1, '04c-api-vb3-devices-receipt-printer-1.png', 'GET /api/boxes/<Virtual box 3>/devices: Receipt Printer 1 reads reachability unknown, paper unknown, lastError DEVICE_NO_ADDRESS');
+const spShort = { status: sp.status, printers: (sp.body?.printers ?? sp.body?.devices ?? sp.body) };
+const txt2 = `GET /api/stations/<Robinson Chalong "Reception Till 1" id>/printers   (read only; ${new Date().toISOString()})\n\n` + JSON.stringify(spShort, null, 2);
+await S.txtShot(txt2, '04d-api-chalong-till-1-printers.png', 'GET /api/stations/<Chalong Reception Till 1>/printers');
+const txt3 = `GET /api/ops/health  -> boxes[] entry for Virtual box 3   (read only; ${new Date().toISOString()})\n\n` + JSON.stringify(r.healthBox, null, 2);
+await S.txtShot(txt3, '04e-api-ops-health-vb3.png', 'GET /api/ops/health: the Virtual box 3 entry');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "box": {
+   "branch": "Oto Play Park, Robinson Chalong",
+   "box": "Virtual box 3",
+   "role": "virtual",
+   "status": "unclaimed",
+   "lastHeartbeatAt": null
+  },
+  "devices": [
+   {
+    "id": "…f2ac9b",
+    "label": "Receipt Printer 1",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": null,
+    "model": null,
+    "protocol": "escpos",
+    "reachability": "unknown",
+    "paperStatus": "unknown",
+    "lastError": "DEVICE_NO_ADDRESS",
+    "lastSeenAt": null
+   }
+  ],
+  "stationPrinters": {
+   "status": 200,
+   "station": "Reception Till 1",
+   "body": {
+    "printers": [
+     {
+      "deviceId": "01a0c9ae-5405-7ff2-a42c-c7ececf2ac9b",
+      "label": "Receipt Printer 1",
+      "role": "receipt",
+      "kind": "receipt_printer",
+      "reachability": "unknown",
+      "paperStatus": "unknown",
+      "lastError": "DEVICE_NO_ADDRESS",
+      "lastSeenAt": null,
+      "queued": 1
+     }
+    ]
+   }
+  },
+  "healthBox": {
+   "name": "Virtual box 3",
+   "state": "unknown",
+   "status": "unclaimed",
+   "devices": [
+    {
+     "label": "Receipt Printer 1",
+     "kind": "receipt_printer",
+     "reachability": "unknown",
+     "paperStatus": "unknown",
+     "lastError": "DEVICE_NO_ADDRESS"
+    }
+   ]
+  },
+  "healthTop": {
+   "status": 200,
+   "keys": [
+    "status",
+    "checks",
+    "jobs",
+    "boxes",
+    "alerts",
+    "watchdogAgeSeconds",
+    "generatedAt",
+    "reach",
+    "rollups",
+    "evidence"
+   ],
+   "overall": "down",
+   "problems": 0
+  }
+ }
+}
+
+=== 2026-11-12T23:04:55.849Z 4: READ ONLY, Console Health > The boxes > Virtual box 3; the Chalong box drawer
+S.phase = '4: READ ONLY, Console Health > The boxes > Virtual box 3; the Chalong box drawer';
+const { expect } = S;
+const r = {};
+const c = S.pages.console.page;
+await c.goto(S.CONSOLE + '/health');
+const card = c.locator('section, div').filter({ has: c.getByRole('heading', { name: 'The boxes', exact: true }) }).last();
+await c.getByText('The boxes', { exact: true }).first().waitFor({ timeout: 30000 });
+await c.waitForTimeout(3000);
+r.verdictBar = S.flat(await c.locator('body').innerText()).slice(0, 400);
+await S.shot(c, '04a0-console-health-top-verdict.png');
+const row = c.getByRole('listitem').filter({ has: c.getByRole('link', { name: 'Virtual box 3', exact: true }) }).first();
+await row.scrollIntoViewIfNeeded();
+await c.waitForTimeout(500);
+r.vb3Row = S.flat(await row.innerText());
+r.vb3Marks = await row.evaluate(el => [...el.querySelectorAll('span')].filter(s => /rounded-full/.test(s.className) && s.getBoundingClientRect().width <= 14).map(s => ({ cls: s.className.slice(0, 120), bg: getComputedStyle(s).backgroundColor, color: getComputedStyle(s).color })));
+r.notSetUpChip = await row.getByText('not set up', { exact: true }).count();
+await S.shot(c, '04a-console-health-boxes-vb3-receipt-printer-1-not-set-up.png');
+// the box drawer of Virtual box 3, read only: nothing pressed but the box's card
+const box = await S.goBox(c, S.chalong.branchId, 'Virtual box 3');
+const drow = box.getByRole('listitem').filter({ has: c.getByText('Receipt Printer 1', { exact: true }) }).first();
+await drow.scrollIntoViewIfNeeded();
+r.drawerRow = S.flat(await drow.innerText());
+await S.shot(c, '04b-console-vb3-drawer-receipt-printer-1-not-set-up.png');
+await c.keyboard.press('Escape').catch(() => {});
+S.receipt.reads.p4console = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "verdictBar": "O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print ",
+  "vb3Row": "Virtual box 3 Virtual never reported Waiting to be claimed last sync not recorded Receipt Printer 1 not set up Receipt printer",
+  "vb3Marks": [],
+  "notSetUpChip": 1,
+  "drawerRow": "Receipt Printer 1 Receipt printer Simulated not set up Edit escpos No address, so nothing prints on it. Edit it and enter the address the box prints to."
+ }
+}
+
+=== 2026-11-12T23:05:42.959Z 4: own ZZ printer with no address: the Console edit form and the api both refuse it
+S.phase = '4: own ZZ printer with no address: the Console edit form and the api both refuse it';
+const { expect } = S;
+const r = {};
+const c = S.pages.console.page;
+const box = await S.goBox(c, S.branchId, S.box.name);
+const row = box.getByRole('listitem').filter({ has: c.getByText(S.dev.receipt.label, { exact: true }) }).first();
+await row.scrollIntoViewIfNeeded();
+await row.getByRole('button', { name: 'Edit', exact: true }).click();
+const editing = box.getByRole('listitem').filter({ has: c.getByRole('button', { name: 'Archive it', exact: true }) });
+await expect(editing).toHaveCount(1);
+const addr = editing.getByLabel(/^Address/);
+r.addressBefore = await addr.inputValue();
+await addr.fill('');
+await c.waitForTimeout(400);
+r.saveEnabled = await editing.getByRole('button', { name: 'Save', exact: true }).isEnabled();
+r.hint = S.flat(await editing.locator('label').filter({ hasText: /^Address/ }).innerText().catch(() => ''));
+await addr.scrollIntoViewIfNeeded();
+await S.shot(c, '04f-console-zz-printer-address-cleared-save-held-back.png');
+await editing.getByRole('button', { name: 'Cancel', exact: true }).click();
+const p = await S.call('PATCH', `/devices/${S.dev.receipt.id}`, { address: '' });
+const p2 = await S.call('PATCH', `/devices/${S.dev.receipt.id}`, { address: null });
+const add = await S.call('POST', `/boxes/${S.box.id}/devices`, { id: S.randomUUID(), kind: 'receipt_printer', label: 'ZZ TEST 952 printer with no address', transport: 'simulated', protocol: 'escpos' });
+const now = (await S.devicesOnBox()).find(d => d.id === S.dev.receipt.id);
+const noAddrMade = (await S.devicesOnBox()).filter(d => d.label === 'ZZ TEST 952 printer with no address');
+r.api = { patchEmpty: { status: p.status, code: p.body?.error?.code ?? null, message: p.body?.error?.message ?? null }, patchNull: { status: p2.status, code: p2.body?.error?.code ?? null },
+  createWithout: { status: add.status, code: add.body?.error?.code ?? null }, addressAfter: now.address, created: noAddrMade.length };
+const text = [
+  `Own printer: ZZ TEST 952 receipt printer (address ${r.addressBefore}); read ${new Date().toISOString()}`,
+  '',
+  `PATCH /api/devices/<id> {"address":""}    -> ${p.status} ${r.api.patchEmpty.code}: ${r.api.patchEmpty.message}`,
+  `PATCH /api/devices/<id> {"address":null}  -> ${p2.status} ${r.api.patchNull.code}`,
+  `POST /api/boxes/<Virtual box 1>/devices {kind receipt_printer, no address} -> ${add.status} ${r.api.createWithout.code}`,
+  '',
+  `Read back: address ${now.address}; printers named "ZZ TEST 952 printer with no address" on the box: ${noAddrMade.length}`,
+  '',
+  'So a ZZ TEST printer cannot be given no address (SCRUM-899 / SCRUM-932, assertPrinterAddress in',
+  'apps/api/src/services/fleet.ts:2382-2387; the Console form holds Save back). The "not set up" reading on a printer of',
+  'my own, its Health / box drawer / till header light words, and the time it keeps "not set up" after an address is',
+  'put back cannot be produced through the apps; Robinson Chalong\'s seeded Receipt Printer 1 is the only such printer.',
+].join('\n');
+await S.txtShot(text, '04g-api-own-printer-without-address-refused.png', 'Point 4: an own ZZ TEST printer without an address is refused by the platform');
+S.receipt.reads.p4own = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "addressBefore": "192.0.2.52:9100",
+  "saveEnabled": false,
+  "hint": "ADDRESS A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it.",
+  "api": {
+   "patchEmpty": {
+    "status": 400,
+    "code": "PRINTER_ADDRESS_REQUIRED",
+    "message": "A printer needs the address the box prints to, for example 192.0.2.10:9100 for a printer on the park network, or 127.0.0.1:9100 for a USB printer on the box. Without one nothing prints on it."
+   },
+   "patchNull": {
+    "status": 400,
+    "code": "PRINTER_ADDRESS_REQUIRED"
+   },
+   "createWithout": {
+    "status": 400,
+    "code": "PRINTER_ADDRESS_REQUIRED"
+   },
+   "addressAfter": "192.0.2.52:9100",
+   "created": 0
+  }
+ }
+}
+
+=== 2026-11-12T23:05:56.478Z 5: list every device at a 192.168.88.x address, every box of every branch (read only)
+S.phase = '5: list every device at a 192.168.88.x address, every box of every branch (read only)';
+const r = { at: new Date().toISOString(), found: [], boxesRead: 0 };
+const branches = (await S.call('GET', '/branches')).body.branches;
+for (const b of branches) {
+  const boxes = (await S.call('GET', `/branches/${b.id}/boxes`)).body?.boxes ?? [];
+  const stations = (await S.call('GET', `/branches/${b.id}/stations?includeArchived=true`)).body?.stations ?? [];
+  for (const bx of boxes) {
+    r.boxesRead += 1;
+    const devs = (await S.call('GET', `/boxes/${bx.id}/devices?includeArchived=true`)).body?.devices ?? [];
+    for (const d of devs) {
+      if (!String(d.address ?? '').startsWith('192.168.88.')) continue;
+      const roles = stations.flatMap(s => (s.devices ?? []).filter(x => x.deviceId === d.id).map(x => `${s.name}${s.archived ? ' (retired)' : ''}: ${x.role}`));
+      r.found.push({ branch: b.name, branchId: b.id, box: bx.name, boxId: bx.id, boxRole: bx.role, boxStatus: bx.status, id: d.id, label: d.label, kind: d.kind, transport: d.transport, address: d.address,
+        model: d.model ?? null, protocol: d.protocol ?? null, settings: d.settings ?? null, archived: Boolean(d.archived), reachability: d.reachability, paperStatus: d.paperStatus, lastError: d.lastError ?? null, roles });
+    }
+  }
+}
+r.found.forEach(f => { f.virtualBox = f.boxRole === 'virtual'; f.simulated = f.transport === 'simulated'; f.eligible = f.virtualBox && f.simulated && !f.archived; });
+S.p5 = r;
+S.receipt.reads.p5list = r;
+const lines = r.found.map(f => `${f.eligible ? 'ELIGIBLE ' : 'LEAVE    '} ${f.branch} / ${f.box} (${f.boxRole}, ${f.boxStatus})  "${f.label}"  ${f.kind}  ${f.transport}  ${f.address}  model=${f.model}  protocol=${f.protocol}  settings=${JSON.stringify(f.settings)}  archived=${f.archived}  reading=${f.reachability}/${f.paperStatus}/${f.lastError}  roles=[${f.roles.join('; ')}]`);
+await S.txtShot(`Every device whose address starts 192.168.88., on every box of every branch (${r.boxesRead} boxes read; ${r.at})\n\n` + lines.join('\n'), '05a-api-devices-at-park-network-addresses.png', 'Point 5: devices at 192.168.88.x addresses, before');
+return { boxesRead: r.boxesRead, found: r.found.map(f => ({ branch: f.branch, box: f.box, boxRole: f.boxRole, label: f.label, kind: f.kind, transport: f.transport, address: f.address, settings: f.settings, archived: f.archived, eligible: f.eligible, roles: f.roles })) };
+--> {
+ "ok": true,
+ "value": {
+  "boxesRead": 11,
+  "found": [
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 1",
+    "boxRole": "virtual",
+    "label": "Band Printer (adults)",
+    "kind": "band_printer",
+    "transport": "simulated",
+    "address": "192.168.88.210:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": [
+     "Reception Till 1: adult_band",
+     "ZZ TEST SCRUM-730 till (retired): adult_band",
+     "ZZ TEST SCRUM-741 till (retired): adult_band"
+    ]
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 1",
+    "boxRole": "virtual",
+    "label": "Band Printer (kids)",
+    "kind": "band_printer",
+    "transport": "simulated",
+    "address": "192.168.88.204:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": [
+     "Reception Till 1: kids_band",
+     "ZZ TEST SCRUM-730 till (retired): kids_band",
+     "ZZ TEST SCRUM-741 till (retired): kids_band"
+    ]
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 1",
+    "boxRole": "virtual",
+    "label": "Kitchen Printer",
+    "kind": "kitchen_printer",
+    "transport": "simulated",
+    "address": "192.168.88.206:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": [
+     "Reception Till 1: kitchen"
+    ]
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 1",
+    "boxRole": "virtual",
+    "label": "Receipt Printer 1",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": "192.168.88.202:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": [
+     "Reception Till 1: receipt",
+     "ZZ TEST SCRUM-730 till (retired): receipt",
+     "ZZ TEST SCRUM-741 till (retired): receipt"
+    ]
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 1",
+    "boxRole": "virtual",
+    "label": "Receipt Printer 2",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": "192.168.88.207:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": []
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "box": "Virtual box 2",
+    "boxRole": "virtual",
+    "label": "Receipt Printer 3",
+    "kind": "receipt_printer",
+    "transport": "simulated",
+    "address": "192.168.88.208:9100",
+    "settings": null,
+    "archived": false,
+    "eligible": true,
+    "roles": [
+     "Counter 2: bar",
+     "Counter 2: receipt"
+    ]
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T23:06:20.195Z 5: every box the estate health knows, against the boxes read per branch
+S.phase = '5: every box the estate health knows, against the boxes read per branch';
+const h = await S.call('GET', '/ops/health');
+const boxes = (h.body?.boxes ?? []).map(b => ({ name: b.name, slot: b.slot, role: b.role, status: b.status, branch: b.branchName, devices: (b.devices ?? []).length }));
+const ops = await S.call('GET', '/operators');
+return { reach: h.body?.reach ?? null, boxes, operators: ops.status === 200 ? (ops.body.operators ?? ops.body).map(o => ({ name: o.name, archived: Boolean(o.archived ?? o.archivedAt) })) : { status: ops.status } };
+--> {
+ "ok": true,
+ "value": {
+  "reach": {
+   "scope": "operator",
+   "branches": []
+  },
+  "boxes": [
+   {
+    "name": "FortuneWheelBox",
+    "slot": "booth-1",
+    "role": "booth",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 1
+   },
+   {
+    "name": "Evidence box 206-G",
+    "slot": "evidence-206g",
+    "role": "counter",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 0
+   },
+   {
+    "name": "Evidence box 361",
+    "slot": "evidence-361",
+    "role": "counter",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 0
+   },
+   {
+    "name": "Proof box (25 Sept)",
+    "slot": "proof-bench",
+    "role": "booth",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 1
+   },
+   {
+    "name": "Proof box 2 (26 Sept)",
+    "slot": "proof-bench-2",
+    "role": "booth",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 1
+   },
+   {
+    "name": "HKT till box (Pi 5)",
+    "slot": "till-1",
+    "role": "counter",
+    "status": "offline",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 3
+   },
+   {
+    "name": "Virtual box 1",
+    "slot": "virtual-1",
+    "role": "virtual",
+    "status": "online",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 17
+   },
+   {
+    "name": "Virtual box 2",
+    "slot": "virtual-2",
+    "role": "virtual",
+    "status": "unclaimed",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 1
+   },
+   {
+    "name": "ZZ TEST SCRUM-710 display",
+    "slot": "zz-test-s710",
+    "role": "virtual",
+    "status": "unclaimed",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 0
+   },
+   {
+    "name": "ZZ TEST SCRUM-718 path",
+    "slot": "zz-test-s718",
+    "role": "virtual",
+    "status": "unclaimed",
+    "branch": "Oto Play Park, Central Floresta",
+    "devices": 0
+   },
+   {
+    "name": "Virtual box 3",
+    "slot": "virtual-3",
+    "role": "virtual",
+    "status": "unclaimed",
+    "branch": "Oto Play Park, Robinson Chalong",
+    "devices": 1
+   }
+  ],
+  "operators": [
+   {
+    "name": "OTO",
+    "archived": false
+   },
+   {
+    "name": "Second Operator",
+    "archived": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T23:06:44.657Z 5: READ ONLY, the Second Operator's boxes, in a separate api session switched to it and signed out after
+S.phase = '5: READ ONLY, the Second Operator\'s boxes, in a separate api session switched to it and signed out after';
+const r = {};
+const ctx = await S.pw.request.newContext({ baseURL: S.pos });
+try {
+  S.assert.equal((await ctx.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_ADMIN_PHONE'), password: S.need('STAGING_ADMIN_PASSWORD') } })).status(), 200);
+  const get = async p => { const x = await ctx.get('/api' + p); return { status: x.status(), body: await x.json().catch(() => null) }; };
+  const me = (await get('/me')).body;
+  const oc = me?.operatorContext ?? {};
+  r.contextKeys = Object.keys(oc);
+  const ops = (await get('/operators')).body;
+  const second = (ops.operators ?? ops).find(o => o.name === 'Second Operator');
+  const rev = oc.revision ?? oc.epoch ?? oc.operatorRevision ?? 0;
+  const sw = await ctx.put('/api/me/session/operator', { data: { operatorId: second.id, expectedRevision: rev }, headers: { 'idempotency-key': S.randomUUID() } });
+  r.switch = { status: sw.status(), code: (await sw.json().catch(() => null))?.error?.code ?? null };
+  if (sw.status() === 200) {
+    const branches = (await get('/branches')).body?.branches ?? [];
+    r.branches = branches.map(b => b.name);
+    r.devices = [];
+    for (const b of branches) {
+      const boxes = (await get(`/branches/${b.id}/boxes`)).body?.boxes ?? [];
+      for (const bx of boxes) {
+        const devs = (await get(`/boxes/${bx.id}/devices?includeArchived=true`)).body?.devices ?? [];
+        for (const d of devs) r.devices.push({ branch: b.name, box: bx.name, boxRole: bx.role, label: d.label, kind: d.kind, transport: d.transport, address: d.address ?? null, archived: Boolean(d.archived) });
+      }
+    }
+    r.parkAddresses = r.devices.filter(d => String(d.address ?? '').startsWith('192.168.88.'));
+  }
+} finally {
+  const so = await ctx.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } }).catch(() => null);
+  r.signOut = so ? so.status() : null;
+  r.meAfter = (await ctx.get('/api/me')).status();
+  await ctx.dispose();
+}
+S.receipt.reads.p5second = r;
+return r;
+--> {
+ "ok": false,
+ "error": "TypeError: S.need is not a function"
+}
+
+=== 2026-11-12T23:06:51.308Z 5: READ ONLY, the Second Operator's boxes, in a separate api session switched to it and signed out after
+S.need = (await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs')).need; return 'ok';
+--> {
+ "ok": true,
+ "value": "ok"
+}
+
+=== 2026-11-12T23:06:51.401Z 5: READ ONLY, the Second Operator's boxes, in a separate api session switched to it and signed out after
+S.phase = '5: READ ONLY, the Second Operator\'s boxes, in a separate api session switched to it and signed out after';
+const r = {};
+const ctx = await S.pw.request.newContext({ baseURL: S.pos });
+try {
+  S.assert.equal((await ctx.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_ADMIN_PHONE'), password: S.need('STAGING_ADMIN_PASSWORD') } })).status(), 200);
+  const get = async p => { const x = await ctx.get('/api' + p); return { status: x.status(), body: await x.json().catch(() => null) }; };
+  const me = (await get('/me')).body;
+  const oc = me?.operatorContext ?? {};
+  r.contextKeys = Object.keys(oc);
+  const ops = (await get('/operators')).body;
+  const second = (ops.operators ?? ops).find(o => o.name === 'Second Operator');
+  const rev = oc.revision ?? oc.epoch ?? oc.operatorRevision ?? 0;
+  const sw = await ctx.put('/api/me/session/operator', { data: { operatorId: second.id, expectedRevision: rev }, headers: { 'idempotency-key': S.randomUUID() } });
+  r.switch = { status: sw.status(), code: (await sw.json().catch(() => null))?.error?.code ?? null };
+  if (sw.status() === 200) {
+    const branches = (await get('/branches')).body?.branches ?? [];
+    r.branches = branches.map(b => b.name);
+    r.devices = [];
+    for (const b of branches) {
+      const boxes = (await get(`/branches/${b.id}/boxes`)).body?.boxes ?? [];
+      for (const bx of boxes) {
+        const devs = (await get(`/boxes/${bx.id}/devices?includeArchived=true`)).body?.devices ?? [];
+        for (const d of devs) r.devices.push({ branch: b.name, box: bx.name, boxRole: bx.role, label: d.label, kind: d.kind, transport: d.transport, address: d.address ?? null, archived: Boolean(d.archived) });
+      }
+    }
+    r.parkAddresses = r.devices.filter(d => String(d.address ?? '').startsWith('192.168.88.'));
+  }
+} finally {
+  const so = await ctx.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } }).catch(() => null);
+  r.signOut = so ? so.status() : null;
+  r.meAfter = (await ctx.get('/api/me')).status();
+  await ctx.dispose();
+}
+S.receipt.reads.p5second = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "contextKeys": [
+   "homeOperatorId",
+   "effectiveOperatorId",
+   "operatorOverride",
+   "branchId",
+   "stationId",
+   "revision",
+   "sessionId"
+  ],
+  "switch": {
+   "status": 200,
+   "code": null
+  },
+  "branches": [
+   "Second Operator, Branch 1"
+  ],
+  "devices": [],
+  "parkAddresses": [],
+  "signOut": 200,
+  "meAfter": 401
+ }
+}
+
+=== 2026-11-12T23:07:40.147Z 5: control run of the guard on the own ZZ TEST 952 no-model receipt printer (settings none, like the seeded rows)
+S.phase = '5: control run of the guard on the own ZZ TEST 952 no-model receipt printer (settings none, like the seeded rows)';
+const d = (await S.devicesOnBox(S.box.id)).find(x => x.id === S.dev.nomodel.id);
+S.p5targets = [{ branchId: S.branchId, box: S.box.name, boxId: S.box.id, boxRole: 'virtual', id: d.id, label: d.label, address: '192.168.88.254:9100'.replace('192.168.88.254', '192.168.88.254'), transport: d.transport, eligible: true }];
+// the control types a documentation address over the ZZ printer's own (192.0.2.54 -> 192.0.2.55): the guard decides
+S.p5targets[0].address = '192.168.88.55:9100';
+return 'set';
+--> {
+ "ok": true,
+ "value": "set"
+}
+
+=== 2026-11-12T23:07:40.303Z 5: each eligible device through the Console edit form, address only; a guard stops any save that changes more
+S.phase = '5: each eligible device through the Console edit form, address only; a guard stops any save that changes more';
+const { expect } = S;
+const c = S.pages.console.page;
+const stable = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x);
+const out = [];
+let n = 0;
+for (const f of (S.p5targets ?? S.p5.found.filter(x => x.eligible))) {
+  n += 1;
+  const tag = S.p5targets ? `05z${n}-control` : `05${String.fromCharCode(97 + n)}`; // 05b.. per device
+  const slug = f.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
+  const newAddress = f.address.replace(/^192\.168\.88\./, '192.0.2.');
+  const before = (await S.call('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body.devices.find(d => d.id === f.id);
+  const rec = { label: f.label, box: f.box, oldAddress: before.address, wantAddress: newAddress, sent: null, extra: [], outcome: null };
+  S.assert.equal(before.transport, 'simulated'); S.assert.equal(f.boxRole, 'virtual');
+  await c.reload();
+  const box = await S.goBox(c, f.branchId, f.box);
+  const row = box.getByRole('listitem').filter({ has: c.getByText(f.label, { exact: true }) }).first();
+  await row.scrollIntoViewIfNeeded();
+  await S.shot(c, `${tag}1-console-${slug}-before.png`);
+  await row.getByRole('button', { name: 'Edit', exact: true }).click();
+  const editing = box.getByRole('listitem').filter({ has: c.getByRole('button', { name: 'Archive it', exact: true }) });
+  await expect(editing).toHaveCount(1);
+  await editing.getByLabel(/^Address/).fill(newAddress);
+  // the guard: only a PATCH that changes the address and nothing else goes to the platform
+  const route = `**/api/devices/${f.id}`;
+  await c.route(route, async (req) => {
+    if (req.request().method() !== 'PATCH') return req.continue();
+    const body = req.request().postDataJSON() ?? {};
+    rec.sent = body;
+    const known = ['label', 'address', 'model', 'protocol', 'terminalId', 'merchantId', 'serialNumber', 'settings'];
+    for (const k of Object.keys(body)) if (!known.includes(k)) rec.extra.push(`${k} (unknown field)`);
+    if ('label' in body && body.label !== before.label) rec.extra.push(`label ${JSON.stringify(before.label)} -> ${JSON.stringify(body.label)}`);
+    for (const k of ['model', 'protocol', 'terminalId', 'merchantId', 'serialNumber']) if (k in body && (body[k] ?? null) !== (before[k] ?? null)) rec.extra.push(`${k} ${JSON.stringify(before[k] ?? null)} -> ${JSON.stringify(body[k] ?? null)}`);
+    if ('settings' in body && stable(body.settings ?? null) !== stable(before.settings ?? null)) rec.extra.push(`settings ${stable(before.settings ?? null)} -> ${stable(body.settings ?? null)}`);
+    if (body.address !== newAddress) rec.extra.push(`address sent ${JSON.stringify(body.address)} (wanted ${newAddress})`);
+    if (rec.extra.length === 0) { rec.outcome = 'sent'; return req.continue(); }
+    rec.outcome = 'stopped in the browser: the form would change more than the address';
+    return req.abort('failed');
+  });
+  await editing.getByRole('button', { name: 'Save', exact: true }).click();
+  await c.waitForTimeout(2500);
+  rec.formMessage = S.flat(await editing.locator('p.text-destructive').allInnerTexts().then(a => a.join(' | ')).catch(() => '')) || null;
+  await editing.getByLabel(/^Address/).scrollIntoViewIfNeeded().catch(() => {});
+  await S.shot(c, `${tag}2-console-${slug}-form-${rec.outcome === 'sent' ? 'saved' : 'save-stopped'}.png`);
+  await c.unroute(route);
+  if (await editing.count()) await editing.getByRole('button', { name: 'Cancel', exact: true }).click().catch(() => {});
+  const after = (await S.call('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body.devices.find(d => d.id === f.id);
+  rec.after = { address: after.address, label: after.label, kind: after.kind, model: after.model ?? null, protocol: after.protocol ?? null, settings: after.settings ?? null, updatedAt: after.updatedAt ?? null };
+  rec.unchanged = stable({ a: after.address, l: after.label, k: after.kind, m: after.model ?? null, p: after.protocol ?? null, s: after.settings ?? null }) === stable({ a: before.address, l: before.label, k: before.kind, m: before.model ?? null, p: before.protocol ?? null, s: before.settings ?? null });
+  out.push(rec);
+  S.receipt.reads.p5edits = out; S.save();
+}
+return out.map(x => ({ label: x.label, box: x.box, oldAddress: x.oldAddress, wantAddress: x.wantAddress, outcome: x.outcome, extra: x.extra, formMessage: x.formMessage, afterAddress: x.after.address, unchanged: x.unchanged }));
+--> {
+ "ok": true,
+ "value": [
+  {
+   "label": "ZZ TEST 952 no-model receipt printer",
+   "box": "Virtual box 1",
+   "oldAddress": "192.0.2.54:9100",
+   "wantAddress": "192.0.2.55:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.0.2.54:9100",
+   "unchanged": true
+  }
+ ]
+}
+
+=== 2026-11-12T23:07:53.660Z 5: each eligible device through the Console edit form, address only; a guard stops any save that changes more
+S.p5targets = undefined; return 'unset';
+--> {
+ "ok": true,
+ "value": "unset"
+}
+
+=== 2026-11-12T23:07:53.744Z 5: each eligible device through the Console edit form, address only; a guard stops any save that changes more
+S.phase = '5: each eligible device through the Console edit form, address only; a guard stops any save that changes more';
+const { expect } = S;
+const c = S.pages.console.page;
+const stable = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x);
+const out = [];
+let n = 0;
+for (const f of (S.p5targets ?? S.p5.found.filter(x => x.eligible))) {
+  n += 1;
+  const tag = S.p5targets ? `05z${n}-control` : `05${String.fromCharCode(97 + n)}`; // 05b.. per device
+  const slug = f.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
+  const newAddress = f.address.replace(/^192\.168\.88\./, '192.0.2.');
+  const before = (await S.call('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body.devices.find(d => d.id === f.id);
+  const rec = { label: f.label, box: f.box, oldAddress: before.address, wantAddress: newAddress, sent: null, extra: [], outcome: null };
+  S.assert.equal(before.transport, 'simulated'); S.assert.equal(f.boxRole, 'virtual');
+  await c.reload();
+  const box = await S.goBox(c, f.branchId, f.box);
+  const row = box.getByRole('listitem').filter({ has: c.getByText(f.label, { exact: true }) }).first();
+  await row.scrollIntoViewIfNeeded();
+  await S.shot(c, `${tag}1-console-${slug}-before.png`);
+  await row.getByRole('button', { name: 'Edit', exact: true }).click();
+  const editing = box.getByRole('listitem').filter({ has: c.getByRole('button', { name: 'Archive it', exact: true }) });
+  await expect(editing).toHaveCount(1);
+  await editing.getByLabel(/^Address/).fill(newAddress);
+  // the guard: only a PATCH that changes the address and nothing else goes to the platform
+  const route = `**/api/devices/${f.id}`;
+  await c.route(route, async (req) => {
+    if (req.request().method() !== 'PATCH') return req.continue();
+    const body = req.request().postDataJSON() ?? {};
+    rec.sent = body;
+    const known = ['label', 'address', 'model', 'protocol', 'terminalId', 'merchantId', 'serialNumber', 'settings'];
+    for (const k of Object.keys(body)) if (!known.includes(k)) rec.extra.push(`${k} (unknown field)`);
+    if ('label' in body && body.label !== before.label) rec.extra.push(`label ${JSON.stringify(before.label)} -> ${JSON.stringify(body.label)}`);
+    for (const k of ['model', 'protocol', 'terminalId', 'merchantId', 'serialNumber']) if (k in body && (body[k] ?? null) !== (before[k] ?? null)) rec.extra.push(`${k} ${JSON.stringify(before[k] ?? null)} -> ${JSON.stringify(body[k] ?? null)}`);
+    if ('settings' in body && stable(body.settings ?? null) !== stable(before.settings ?? null)) rec.extra.push(`settings ${stable(before.settings ?? null)} -> ${stable(body.settings ?? null)}`);
+    if (body.address !== newAddress) rec.extra.push(`address sent ${JSON.stringify(body.address)} (wanted ${newAddress})`);
+    if (rec.extra.length === 0) { rec.outcome = 'sent'; return req.continue(); }
+    rec.outcome = 'stopped in the browser: the form would change more than the address';
+    return req.abort('failed');
+  });
+  await editing.getByRole('button', { name: 'Save', exact: true }).click();
+  await c.waitForTimeout(2500);
+  rec.formMessage = S.flat(await editing.locator('p.text-destructive').allInnerTexts().then(a => a.join(' | ')).catch(() => '')) || null;
+  await editing.getByLabel(/^Address/).scrollIntoViewIfNeeded().catch(() => {});
+  await S.shot(c, `${tag}2-console-${slug}-form-${rec.outcome === 'sent' ? 'saved' : 'save-stopped'}.png`);
+  await c.unroute(route);
+  if (await editing.count()) await editing.getByRole('button', { name: 'Cancel', exact: true }).click().catch(() => {});
+  const after = (await S.call('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body.devices.find(d => d.id === f.id);
+  rec.after = { address: after.address, label: after.label, kind: after.kind, model: after.model ?? null, protocol: after.protocol ?? null, settings: after.settings ?? null, updatedAt: after.updatedAt ?? null };
+  rec.unchanged = stable({ a: after.address, l: after.label, k: after.kind, m: after.model ?? null, p: after.protocol ?? null, s: after.settings ?? null }) === stable({ a: before.address, l: before.label, k: before.kind, m: before.model ?? null, p: before.protocol ?? null, s: before.settings ?? null });
+  out.push(rec);
+  S.receipt.reads.p5edits = out; S.save();
+}
+return out.map(x => ({ label: x.label, box: x.box, oldAddress: x.oldAddress, wantAddress: x.wantAddress, outcome: x.outcome, extra: x.extra, formMessage: x.formMessage, afterAddress: x.after.address, unchanged: x.unchanged }));
+--> {
+ "ok": true,
+ "value": [
+  {
+   "label": "Band Printer (adults)",
+   "box": "Virtual box 1",
+   "oldAddress": "192.168.88.210:9100",
+   "wantAddress": "192.0.2.210:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"label\":{\"sensing\":\"gap\"}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.210:9100",
+   "unchanged": true
+  },
+  {
+   "label": "Band Printer (kids)",
+   "box": "Virtual box 1",
+   "oldAddress": "192.168.88.204:9100",
+   "wantAddress": "192.0.2.204:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"label\":{\"sensing\":\"gap\"}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.204:9100",
+   "unchanged": true
+  },
+  {
+   "label": "Kitchen Printer",
+   "box": "Virtual box 1",
+   "oldAddress": "192.168.88.206:9100",
+   "wantAddress": "192.0.2.206:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.206:9100",
+   "unchanged": true
+  },
+  {
+   "label": "Receipt Printer 1",
+   "box": "Virtual box 1",
+   "oldAddress": "192.168.88.202:9100",
+   "wantAddress": "192.0.2.202:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.202:9100",
+   "unchanged": true
+  },
+  {
+   "label": "Receipt Printer 2",
+   "box": "Virtual box 1",
+   "oldAddress": "192.168.88.207:9100",
+   "wantAddress": "192.0.2.207:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.207:9100",
+   "unchanged": true
+  },
+  {
+   "label": "Receipt Printer 3",
+   "box": "Virtual box 2",
+   "oldAddress": "192.168.88.208:9100",
+   "wantAddress": "192.0.2.208:9100",
+   "outcome": "stopped in the browser: the form would change more than the address",
+   "extra": [
+    "settings null -> {\"escpos\":{\"dotsPerLine\":576}}"
+   ],
+   "formMessage": "Failed to fetch",
+   "afterAddress": "192.168.88.208:9100",
+   "unchanged": true
+  }
+ ]
+}
+
+=== 2026-11-12T23:09:31.775Z hunt: READ ONLY, the kiosk summary and the booth status for printers on staging
+S.phase = 'hunt: READ ONLY, the kiosk summary and the booth status for printers on staging';
+const r = {};
+const k = await S.call('GET', '/ops/kiosks');
+const kiosks = k.body?.kiosks ?? k.body ?? [];
+r.kiosks = { status: k.status, list: (Array.isArray(kiosks) ? kiosks : []).map(x => ({ station: x.stationName ?? x.name ?? null, printer: x.printer ? { label: x.printer.label, reachability: x.printer.reachability, paperStatus: x.printer.paperStatus, keys: Object.keys(x.printer) } : null })) };
+const branches = (await S.call('GET', '/branches')).body.branches;
+r.booths = [];
+for (const b of branches) {
+  const list = (await S.call('GET', `/branches/${b.id}/booths`)).body?.booths ?? [];
+  for (const bo of list) {
+    const st = await S.call('GET', `/booths/${bo.id}/status`);
+    r.booths.push({ branch: b.name, booth: bo.name ?? bo.stationName ?? null, status: st.status, printer: st.body?.printer ?? null });
+  }
+}
+// which stations of each kind carry a printer with no address
+const noAddr = [];
+for (const b of branches) {
+  const stations = (await S.call('GET', `/branches/${b.id}/stations`)).body?.stations ?? [];
+  const boxes = (await S.call('GET', `/branches/${b.id}/boxes`)).body?.boxes ?? [];
+  const devs = new Map();
+  for (const bx of boxes) for (const d of (await S.call('GET', `/boxes/${bx.id}/devices`)).body?.devices ?? []) devs.set(d.id, d);
+  for (const s of stations) for (const a of s.devices ?? []) { const d = devs.get(a.deviceId); if (d && /printer$/.test(d.kind) && !d.address) noAddr.push({ branch: b.name, station: s.name, kind: s.kind, role: a.role, printer: d.label }); }
+}
+r.stationsWithPrinterWithoutAddress = noAddr;
+const text = [
+  `Read only, ${new Date().toISOString()}`,
+  '',
+  `GET /api/ops/kiosks -> ${k.status}: ${JSON.stringify(r.kiosks.list)}`,
+  '',
+  'GET /api/booths/<id>/status for every booth of every branch:',
+  ...r.booths.map(x => `  ${x.branch} / ${x.booth}: ${x.status} printer=${JSON.stringify(x.printer)}`),
+  '',
+  `Stations (any kind) whose assigned printer has no address: ${JSON.stringify(noAddr)}`,
+].join('\n');
+await S.txtShot(text, '06a-api-kiosks-and-booths-printer-readings.png', 'Hunt: what the kiosk summary and the booth status carry for their printers (read only)');
+S.receipt.reads.huntKioskBooth = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "kiosks": {
+   "status": 200,
+   "list": []
+  },
+  "booths": [
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "booth": "Booth 2 (proof)",
+    "status": 200,
+    "printer": {
+     "deviceId": "01a0d4f5-6f06-722e-b263-376d35040371",
+     "label": "Proof printer (bench)",
+     "reachability": "reachable",
+     "paperStatus": "ok",
+     "lastError": null,
+     "lastSeenAt": "2026-09-24T20:33:42.297Z"
+    }
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "booth": "Booth 3 (fixes)",
+    "status": 200,
+    "printer": {
+     "deviceId": "01a0d65d-89bc-705a-957a-230d6df48b48",
+     "label": "Proof printer 2 (bench)",
+     "reachability": "reachable",
+     "paperStatus": "ok",
+     "lastError": null,
+     "lastSeenAt": "2026-09-25T02:48:06.019Z"
+    }
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "booth": "FortuneWheelBooth",
+    "status": 200,
+    "printer": null
+   },
+   {
+    "branch": "Oto Play Park, Central Floresta",
+    "booth": "FWBooth1",
+    "status": 200,
+    "printer": {
+     "deviceId": "01a0e722-c741-7da5-ba1b-73012cecb8f2",
+     "label": "Booth Voucher Printer",
+     "reachability": "reachable",
+     "paperStatus": "ok",
+     "lastError": null,
+     "lastSeenAt": "2026-11-10T11:28:59.526Z"
+    }
+   }
+  ],
+  "stationsWithPrinterWithoutAddress": [
+   {
+    "branch": "Oto Play Park, Robinson Chalong",
+    "station": "Reception Till 1",
+    "kind": "till",
+    "role": "receipt",
+    "printer": "Receipt Printer 1"
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T23:09:56.196Z hunt: a copy of the ZZ test page (POST /print-jobs/:id/reprint, the route History uses); its name in the command history
+S.phase = 'hunt: a copy of the ZZ test page (POST /print-jobs/:id/reprint, the route History uses); its name in the command history';
+const { expect } = S;
+const r = {};
+const before = (await S.printoutsFull(S.dev.receipt.id)).printouts.map(S.keyOf);
+const rp = await S.call('POST', `/print-jobs/${S.p1aJob}/reprint`, { reason: 'ZZ TEST SCRUM-952 proof: copy of a test page' });
+r.reprint = { status: rp.status, code: rp.body?.error?.code ?? null, message: rp.body?.error?.message ?? null, job: rp.body?.printJob ? { kind: rp.body.printJob.kind, role: rp.body.printJob.role, status: rp.body.printJob.status } : null };
+if (rp.status === 200) {
+  let fresh = [];
+  await expect.poll(async () => { fresh = (await S.printoutsFull(S.dev.receipt.id)).printouts.filter(p => !before.includes(S.keyOf(p))); return fresh.length; }, { timeout: 120000, intervals: [3000] }).toBeGreaterThan(0).catch(() => {});
+  if (fresh[0]) { r.printout = { seq: fresh[0].seq, heightDots: fresh[0].heightDots }; r.preview = await S.preview(S.dev.receipt.id, fresh[0].seq, S.resolve(S.out, '06b-test-page-copy-preview.png')); }
+  const cmds = await S.commands(S.box.id, 10);
+  const cmd = cmds.find(c => c.payload?.reprintOf);
+  r.command = cmd ? { kind: cmd.kind, state: cmd.state, payloadKind: cmd.payload.kind, document: cmd.payload.document ?? null, hasReprintOf: Boolean(cmd.payload.reprintOf) } : null;
+  const c = S.pages.console.page;
+  await c.reload();
+  const box = await S.goBox(c, S.branchId, S.box.name);
+  const history = box.locator('section').filter({ has: c.getByRole('heading', { name: 'Command history', exact: true }) }).first();
+  await history.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await c.waitForTimeout(2500);
+  await history.scrollIntoViewIfNeeded();
+  r.history = (await history.locator('li').allInnerTexts()).slice(0, 3).map(S.flat);
+  await S.shot(c, '06c-console-command-history-test-page-copy.png');
+}
+S.receipt.reads.huntReprint = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "reprint": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "job": {
+    "kind": "test_page",
+    "role": "receipt",
+    "status": "queued"
+   }
+  },
+  "printout": {
+   "seq": 1,
+   "heightDots": 1010
+  },
+  "preview": 200,
+  "command": {
+   "kind": "test_print",
+   "state": "succeeded",
+   "payloadKind": "test_page",
+   "document": "platform",
+   "hasReprintOf": true
+  },
+  "history": [
+   "succeeded Reprint test page just now queued 13 Nov, 06:09 finished 13 Nov, 06:09 01a1d206-672d-715c-8c5a-acb2d1f0c518",
+   "succeeded Print adult wristband 7m ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8",
+   "succeeded Print kids' wristband 7m ago queued 13 Nov, 06:02 finished 13 Nov, 06:02 01a1d1ff-642c-70bf-bb86-cf1ea3d09dc8"
+  ]
+ }
+}
+
+=== 2026-11-12T23:10:17.190Z check: why the receipt printer's printouts start again at #1
+S.phase = 'check: why the receipt printer\'s printouts start again at #1';
+const a = await S.printoutsFull(S.dev.receipt.id);
+const h = (await S.call('GET', '/ops/health')).body.boxes.find(b => b.id === S.box.id);
+const band = await S.printoutsFull(S.dev.band.id);
+return { receiptPrintouts: a.printouts.map(p => ({ seq: p.seq, at: p.at, h: p.heightDots })), bandPrintouts: band.printouts.map(p => ({ seq: p.seq, at: p.at })), box: { uptimeSeconds: h?.uptimeSeconds ?? null, lastHeartbeatAt: h?.lastHeartbeatAt, agentVersion: h?.agentVersion }, now: new Date().toISOString() };
+--> {
+ "ok": true,
+ "value": {
+  "receiptPrintouts": [
+   {
+    "seq": 1,
+    "at": "2026-11-12T23:09:57.963Z",
+    "h": 1010
+   }
+  ],
+  "bandPrintouts": [],
+  "box": {
+   "uptimeSeconds": 61,
+   "lastHeartbeatAt": "2026-11-12T23:09:37.572Z",
+   "agentVersion": "0.1.0"
+  },
+  "now": "2026-11-12T23:10:17.427Z"
+ }
+}
+
+=== 2026-11-12T23:11:01.665Z hunt: the band test page on the park's band stock settings (own ZZ band printer only)
+S.phase = 'hunt: the band test page on the park\'s band stock settings (own ZZ band printer only)';
+const { expect } = S;
+const r = {};
+const label = { sensing: 'bline', gapMm: 4, labelWidthMm: 25, labelHeightMm: 246, printOffsetMm: 50, printLengthMm: 80 };
+const p = await S.call('PATCH', `/devices/${S.dev.band.id}`, { settings: { label } });
+r.patch = { status: p.status, code: p.body?.error?.code ?? null, settings: p.body?.device?.settings ?? null };
+// the box pulls the new bundle on its next heartbeat; wait for two
+const t = Date.now(); let beats = 0, last = null;
+await expect.poll(async () => { const b = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes.find(x => x.id === S.box.id); const at = Date.parse(b.lastHeartbeatAt ?? 0); if (at > t + 1000 && at !== last) { beats += 1; last = at; } return beats; }, { timeout: 240000, intervals: [5000] }).toBeGreaterThanOrEqual(2);
+const before = (await S.printoutsFull(S.dev.band.id)).printouts.map(S.keyOf);
+const tp = await S.call('POST', `/stations/${S.station.id}/test-print`, { kind: 'test_page', role: 'dropoff_band' });
+r.testPrint = { status: tp.status, code: tp.body?.error?.code ?? null, onBand: tp.body?.printJob?.deviceId === S.dev.band.id };
+let fresh = [];
+await expect.poll(async () => { fresh = (await S.printoutsFull(S.dev.band.id)).printouts.filter(x => !before.includes(S.keyOf(x))); return fresh.length; }, { timeout: 120000, intervals: [3000] }).toBeGreaterThan(0);
+const pr = fresh[fresh.length - 1];
+r.printout = { seq: pr.seq, widthDots: pr.widthDots, heightDots: pr.heightDots, jobBytes: pr.jobBytes, truncated: pr.truncated, setup: pr.setup ?? null };
+r.preview = await S.preview(S.dev.band.id, pr.seq, S.resolve(S.out, '06d-band-test-page-on-park-band-stock-preview.png'));
+const job = (await S.jobs(S.box.id, 10)).find(j => j.kind === 'test_page' && j.role === 'dropoff_band');
+r.job = job ? { status: job.status, errorCode: job.errorCode ?? null, errorMessage: job.errorMessage ?? null } : null;
+S.receipt.reads.huntBandWindow = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "patch": {
+   "status": 200,
+   "code": null,
+   "settings": {
+    "label": {
+     "labelWidthMm": 25,
+     "labelHeightMm": 246,
+     "gapMm": 4,
+     "sensing": "bline",
+     "printOffsetMm": 50,
+     "printLengthMm": 80
+    }
+   }
+  },
+  "testPrint": {
+   "status": 200,
+   "code": null,
+   "onBand": true
+  },
+  "printout": {
+   "seq": 1,
+   "widthDots": 200,
+   "heightDots": 1108,
+   "jobBytes": 27839,
+   "truncated": false,
+   "setup": [
+    "SIZE 25 mm,246 mm",
+    "BLINE 4 mm,0 mm",
+    "DIRECTION 1",
+    "REFERENCE 0,400",
+    "DENSITY 10",
+    "SPEED 4",
+    "SET TEAR ON",
+    "CLS"
+   ]
+  },
+  "preview": 200,
+  "job": {
+   "status": "printed",
+   "errorCode": null,
+   "errorMessage": null
+  }
+ }
+}
+
+=== 2026-11-12T23:13:21.909Z clean up: the manager refunds the three ZZ sales; the stuck one is tried for a void again
+S.phase = 'clean up: the manager refunds the three ZZ sales; the stuck one is tried for a void again';
+const out = { refunds: [] };
+const mgr = await S.pw.request.newContext({ baseURL: S.pos });
+const si = await mgr.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } });
+out.mgrSignIn = si.status();
+try {
+  const ids = [...S.cashSales.map(s => s.id), S.cardSale2];
+  for (const id of ids) {
+    const s = await S.sale(id);
+    S.assert.ok([S.station1?.id ?? S.station.id, S.station2.id].includes(s.sale.stationId), 'own ZZ till');
+    S.assert.ok(String(s.sale.receiptNumber).startsWith('Z952'), 'own ZZ receipt series');
+    const res = await mgr.post(`/api/sales/${id}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason: 'ZZ TEST SCRUM-952 proof cleanup' } });
+    const b = await res.json().catch(() => null);
+    out.refunds.push({ receipt: s.sale.receiptNumber, status: res.status(), code: b?.error?.code ?? null, message: res.status() >= 400 ? (b?.error?.message ?? null) : null, amount: b?.refund?.amountSatang != null ? b.refund.amountSatang / 100 : null, refundStatus: b?.refund?.status ?? null });
+  }
+  const v = await mgr.post(`/api/sales/${S.cardSale}/void`, { headers: { 'idempotency-key': S.randomUUID() }, data: { reason: 'ZZ TEST SCRUM-952 proof cleanup: card attempt never reached a terminal' } });
+  const vb = await v.json().catch(() => null);
+  out.stuckVoid = { status: v.status(), code: vb?.error?.code ?? null };
+} finally {
+  const so = await mgr.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+  out.mgrSignOut = { status: so.status(), me: (await mgr.get('/api/me')).status() };
+  await mgr.dispose();
+}
+const read = async id => { const s = await S.sale(id); return { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, refunded: (s.sale.totals.refundedSatang ?? 0) / 100, refundStatus: s.refundStatus ?? null, attempts: (s.attempts ?? []).map(a => a.status) }; };
+out.readBack = [];
+for (const id of [...S.cashSales.map(s => s.id), S.cardSale2, S.cardSale]) out.readBack.push(await read(id));
+S.receipt.cleanup.sales = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "refunds": [
+   {
+    "receipt": "Z95201-000001",
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 1040,
+    "refundStatus": null
+   },
+   {
+    "receipt": "Z95201-000002",
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 1040,
+    "refundStatus": null
+   },
+   {
+    "receipt": "Z95202-000001",
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 1040,
+    "refundStatus": null
+   }
+  ],
+  "mgrSignIn": 200,
+  "stuckVoid": {
+   "status": 409,
+   "code": "PAYMENT_IN_FLIGHT"
+  },
+  "mgrSignOut": {
+   "status": 200,
+   "me": 401
+  },
+  "readBack": [
+   {
+    "receipt": "Z95201-000001",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040,
+    "refundStatus": "refunded",
+    "attempts": [
+     "approved"
+    ]
+   },
+   {
+    "receipt": "Z95201-000002",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040,
+    "refundStatus": "refunded",
+    "attempts": [
+     "approved"
+    ]
+   },
+   {
+    "receipt": "Z95202-000001",
+    "status": "refunded",
+    "gross": 1040,
+    "refunded": 1040,
+    "refundStatus": "refunded",
+    "attempts": [
+     "approved"
+    ]
+   },
+   {
+    "receipt": null,
+    "status": "tendering",
+    "gross": 1040,
+    "refunded": 0,
+    "refundStatus": "none",
+    "attempts": [
+     "sent_to_terminal"
+    ]
+   }
+  ]
+ }
+}
+
+=== 2026-11-12T23:13:39.153Z clean up: members, the three ZZ stations retired, the ZZ devices archived, read back
+S.phase = 'clean up: members, the three ZZ stations retired, the ZZ devices archived, read back';
+const out = { members: [], stations: [], devices: [] };
+for (const [key, phone] of Object.entries(S.receipt.numbers)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+  if (m) {
+    S.assert.ok(`${m.nickname ?? ''} ${m.name ?? ''}`.includes('ZZ TEST'), 'only own named test members');
+    const d = await S.call('DELETE', `/members/${m.id}`);
+    out.members.push({ key, archived: d.status });
+  } else out.members.push({ key, member: 'none' });
+}
+const all = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+for (const st of [S.station1 ?? S.station, S.station2, S.station3]) {
+  const row = all.find(s => s.id === st.id);
+  S.assert.ok(row.name.startsWith('ZZ TEST 952'), 'own station');
+  const cleared = await S.call('PATCH', `/stations/${st.id}`, { devices: [] });
+  const del = await S.call('DELETE', `/stations/${st.id}`);
+  out.stations.push({ name: row.name, kind: row.kind, devicesCleared: cleared.status, clearCode: cleared.body?.error?.code ?? null, retired: del.status, retireCode: del.body?.error?.code ?? null, retireMessage: del.status >= 400 ? del.body?.error?.message ?? null : null });
+}
+const after = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+out.stationsReadBack = [S.station1 ?? S.station, S.station2, S.station3].map(st => { const r = after.find(s => s.id === st.id); return { name: r.name, archived: Boolean(r.archived), devices: r.devices.length }; });
+for (const [key, d] of Object.entries(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 952 '), 'own device');
+  const del = now.archived ? { status: 'already' } : await S.call('DELETE', `/devices/${d.id}`);
+  out.devices.push({ key, label: now.label, archive: del.status, stillAssignedTo: (del.body?.stillAssignedTo ?? []).length });
+}
+out.devicesReadBack = (await S.devicesOnBox()).filter(x => Object.values(S.dev).some(d => d.id === x.id)).map(x => ({ label: x.label, archived: Boolean(x.archived) }));
+out.zzLiveOnBox = (await S.devicesOnBox()).filter(x => !x.archived && /^ZZ TEST 952/.test(x.label)).map(x => x.label);
+S.receipt.cleanup.records = out;
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "members": [
+   {
+    "key": "cash1",
+    "member": "none"
+   },
+   {
+    "key": "cash2",
+    "member": "none"
+   },
+   {
+    "key": "card",
+    "member": "none"
+   },
+   {
+    "key": "card2",
+    "member": "none"
+   }
+  ],
+  "stations": [
+   {
+    "name": "ZZ TEST 952 till B",
+    "kind": "till",
+    "devicesCleared": 200,
+    "clearCode": null,
+    "retired": 200,
+    "retireCode": null,
+    "retireMessage": null
+   },
+   {
+    "name": "ZZ TEST 952 card till",
+    "kind": "till",
+    "devicesCleared": 200,
+    "clearCode": null,
+    "retired": 200,
+    "retireCode": null,
+    "retireMessage": null
+   },
+   {
+    "name": "ZZ TEST 952 display B",
+    "kind": "display",
+    "devicesCleared": 200,
+    "clearCode": null,
+    "retired": 200,
+    "retireCode": null,
+    "retireMessage": null
+   }
+  ],
+  "devices": [
+   {
+    "key": "receipt",
+    "label": "ZZ TEST 952 receipt printer",
+    "archive": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "key": "band",
+    "label": "ZZ TEST 952 band printer",
+    "archive": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "key": "nomodel",
+    "label": "ZZ TEST 952 no-model receipt printer",
+    "archive": 200,
+    "stillAssignedTo": 0
+   },
+   {
+    "key": "card",
+    "label": "ZZ TEST 952 card terminal",
+    "archive": 200,
+    "stillAssignedTo": 0
+   }
+  ],
+  "stationsReadBack": [
+   {
+    "name": "ZZ TEST 952 till B",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "name": "ZZ TEST 952 card till",
+    "archived": true,
+    "devices": 0
+   },
+   {
+    "name": "ZZ TEST 952 display B",
+    "archived": true,
+    "devices": 0
+   }
+  ],
+  "devicesReadBack": [
+   {
+    "label": "ZZ TEST 952 band printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 952 no-model receipt printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 952 receipt printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 952 card terminal",
+    "archived": true
+   }
+  ],
+  "zzLiveOnBox": []
+ }
+}
+
+=== 2026-11-12T23:13:58.928Z 5: read back the six devices at the end (nothing was changed)
+S.phase = '5: read back the six devices at the end (nothing was changed)';
+const stable = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x);
+const rows = [];
+for (const f of S.p5.found) {
+  const d = (await S.call('GET', `/boxes/${f.boxId}/devices?includeArchived=true`)).body.devices.find(x => x.id === f.id);
+  const branchStations = (await S.call('GET', `/branches/${f.branchId}/stations?includeArchived=true`)).body.stations;
+  const roles = branchStations.flatMap(s => (s.devices ?? []).filter(x => x.deviceId === f.id).map(x => `${s.name}${s.archived ? ' (retired)' : ''}: ${x.role}`));
+  rows.push({ label: d.label, box: f.box, address: d.address, kind: d.kind, model: d.model ?? null, protocol: d.protocol ?? null, settings: d.settings ?? null, reading: `${d.reachability}/${d.paperStatus}/${d.lastError ?? null}`, sameAsBefore: stable({ a: d.address, k: d.kind, m: d.model ?? null, p: d.protocol ?? null, s: d.settings ?? null, l: d.label }) === stable({ a: f.address, k: f.kind, m: f.model, p: f.protocol, s: f.settings, l: f.label }) && stable(roles) === stable(f.roles), readingBefore: `${f.reachability}/${f.paperStatus}/${f.lastError}` });
+}
+await S.txtShot(`The six devices at 192.168.88.x addresses, read back at the end (${new Date().toISOString()}): none was changed.\n\n` + rows.map(r => `${r.box}  "${r.label}"  ${r.kind}  ${r.address}  model=${r.model}  protocol=${r.protocol}  settings=${JSON.stringify(r.settings)}  reading now=${r.reading} (before ${r.readingBefore})  label/kind/model/protocol/settings/roles unchanged=${r.sameAsBefore}`).join('\n'), '05h-api-devices-at-park-network-addresses-after.png', 'Point 5: read back after the guarded attempts');
+S.receipt.reads.p5after = rows;
+return rows.map(r => ({ label: r.label, address: r.address, unchanged: r.sameAsBefore, reading: r.reading, before: r.readingBefore }));
+--> {
+ "ok": true,
+ "value": [
+  {
+   "label": "Band Printer (adults)",
+   "address": "192.168.88.210:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  },
+  {
+   "label": "Band Printer (kids)",
+   "address": "192.168.88.204:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  },
+  {
+   "label": "Kitchen Printer",
+   "address": "192.168.88.206:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  },
+  {
+   "label": "Receipt Printer 1",
+   "address": "192.168.88.202:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  },
+  {
+   "label": "Receipt Printer 2",
+   "address": "192.168.88.207:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  },
+  {
+   "label": "Receipt Printer 3",
+   "address": "192.168.88.208:9100",
+   "unchanged": true,
+   "reading": "reachable/ok/null",
+   "before": "reachable/ok/null"
+  }
+ ]
+}
