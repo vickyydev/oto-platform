@@ -30,11 +30,22 @@ import type { Box, Reading } from './support/splitview-harness/measure';
  * is on screen without scrolling. With the staff screen at full width (a
  * separate customer display) every text and control must sit exactly where
  * it sat before SCRUM-884 (`full-width-layout.json`, recorded on the base
- * commit): the full-width layout cannot move.
+ * commit): the full-width layout cannot move. The same holds for the party
+ * modals' payment step, which is under @xl at every window and keeps the
+ * prototype's footer row (`stickyFoot={false}`).
+ *
+ * WHERE THE BOXES ARE EXACT. The fixture names the platform it was recorded
+ * on (Windows: Edge lays text out to the subpixel). On another platform (CI's
+ * Linux runner lays text on whole pixels, a pixel or so apart) the same pin
+ * is kept without the fonts: the same texts and controls in the same order,
+ * each text on as many lines as before, and every query container in the
+ * till's column at least 36rem wide, so none of SCRUM-884's `md:@max-*`
+ * variants can be in effect at full width.
  *
  * The browser is the machine's own Edge or Chrome, or Playwright's Chromium;
  * with none of them the file is skipped and says so. Re-record the full-width
- * layout only for a deliberate change to it: SPLITVIEW_RECORD=1.
+ * layout only for a deliberate change to it, on Windows, from the commit
+ * before the change: SPLITVIEW_RECORD=1.
  */
 const RECORD = process.env.SPLITVIEW_RECORD === '1';
 const REPORT = process.env.SPLITVIEW_REPORT;
@@ -63,8 +74,22 @@ const { browser, why } = await launchBrowser();
 if (!browser) console.warn(`SCRUM-884 split view measurement skipped: no browser to lay the page out (${why})`);
 
 let harness: SplitViewHarness;
-const recorded: Record<string, { key: string; box: Box }[]> = {};
+/** What `full-width-layout.json` holds: the boxes and line counts, and where they were laid out. */
+interface Fixture {
+  platform: NodeJS.Platform;
+  layouts: Record<string, { key: string; box: Box }[]>;
+  lines: Record<string, Record<string, number>>;
+}
+const recorded: Fixture = { platform: process.platform, layouts: {}, lines: {} };
 const reported: Record<string, Reading> = {};
+const fixture: Fixture | null = existsSync(FIXTURE) && !RECORD ? (JSON.parse(readFileSync(FIXTURE, 'utf8')) as Fixture) : null;
+/** The boxes are compared to the half pixel only where they were recorded. */
+const EXACT = fixture?.platform === process.platform;
+if (browser && fixture && !EXACT) {
+  console.warn(`SCRUM-884 full-width pin: boxes recorded on ${fixture.platform}, read on ${process.platform}: compared without the fonts`);
+}
+/** 36rem: under it a `@max-xl` variant applies. */
+const XL_PX = 576;
 
 beforeAll(async () => {
   if (browser) harness = await startSplitViewHarness(browser);
@@ -92,6 +117,44 @@ async function shoot(id: string): Promise<void> {
 
 const control = (reading: Reading, name: string) => reading.controls.find((c) => c.name === name);
 const faultsOf = (reading: Reading) => reading.faults.map((f) => `${f.kind}: ${f.text} — ${f.detail}`);
+
+/**
+ * The layout recorded before SCRUM-884 for `id`, kept: recorded under
+ * SPLITVIEW_RECORD; otherwise the same texts and controls in the same order,
+ * each text on as many lines, and (on the platform it was recorded on) every
+ * box where it was, to the half pixel.
+ */
+function pinLayout(id: string, reading: Reading): void {
+  if (RECORD) {
+    recorded.layouts[id] = reading.layout;
+    recorded.lines[id] = reading.textLines;
+    return;
+  }
+  const before = fixture?.layouts[id];
+  expect(before, `a recorded layout for ${id}`).toBeDefined();
+  expect(reading.layout.map((l) => l.key)).toEqual(before!.map((l) => l.key));
+  expect(reading.textLines).toEqual(fixture!.lines[id]);
+  if (!EXACT) return;
+  const moved = reading.layout.flatMap((now, i) => {
+    const was = before![i]!.box;
+    const off = (['left', 'top', 'width', 'height'] as const).some((k) => Math.abs(now.box[k] - was[k]) > 0.5);
+    return off ? [`${now.key}: ${JSON.stringify(was)} -> ${JSON.stringify(now.box)}`] : [];
+  });
+  expect(moved).toEqual([]);
+}
+
+/** Back's row on the payment step: how it is placed and painted (strings only). */
+async function paymentFoot(): Promise<{ position: string; backgroundColor: string; backgroundImage: string; paddingBottom: string } | null> {
+  return harness.page.evaluate(() => {
+    const back = Array.from(document.querySelectorAll('#region button')).find((b) => b.textContent?.trim() === 'Back');
+    const row = back?.parentElement;
+    if (!row) return null;
+    const style = getComputedStyle(row);
+    return { position: style.position, backgroundColor: style.backgroundColor, backgroundImage: style.backgroundImage, paddingBottom: style.paddingBottom };
+  });
+}
+/** The prototype's footer row: in the flow, unpainted. */
+const PLAIN_FOOT = { position: 'static', backgroundColor: 'rgba(0, 0, 0, 0)', backgroundImage: 'none', paddingBottom: '0px' };
 
 /** What each screen must show without scrolling in the split view. */
 const IN_VIEW: Record<TillScreen, { controls: string[]; text: string[] }> = {
@@ -137,31 +200,50 @@ describe.skipIf(!browser)('the split view: every name readable, nothing out of i
 });
 
 describe.skipIf(!browser)('full width (a separate customer display): the layout is exactly as before', () => {
-  const baseline: Record<string, { key: string; box: Box }[]> = existsSync(FIXTURE) && !RECORD
-    ? (JSON.parse(readFileSync(FIXTURE, 'utf8')) as Record<string, { key: string; box: Box }[]>)
-    : {};
   for (const size of FULL_SIZES) {
     for (const screen of TILL_SCREENS) {
       const id = `${screen}@${size.width}x${size.height}`;
       it(id, async () => {
         const reading = await readTill(screen, false, size);
         expect(reading.region.width).toBe(size.width - 361);
-        if (RECORD) {
-          recorded[id] = reading.layout;
-          return;
-        }
-        const before = baseline[id];
-        expect(before, `a recorded layout for ${id}`).toBeDefined();
-        expect(reading.layout.map((l) => l.key)).toEqual(before!.map((l) => l.key));
-        const moved = reading.layout.flatMap((now, i) => {
-          const was = before![i]!.box;
-          const off = (['left', 'top', 'width', 'height'] as const).some((k) => Math.abs(now.box[k] - was[k]) > 0.5);
-          return off ? [`${now.key}: ${JSON.stringify(was)} -> ${JSON.stringify(now.box)}`] : [];
-        });
-        expect(moved).toEqual([]);
+        if (RECORD) return pinLayout(id, reading);
+        // Every query container in the column is 36rem or wider: no `md:@max-*` variant is in effect.
+        expect(reading.containers.length).toBeGreaterThan(0);
+        expect(reading.containers.filter((c) => c.width < XL_PX).map((c) => `${c.key}: ${c.width}px`)).toEqual([]);
+        pinLayout(id, reading);
+        if (screen.startsWith('payment')) expect(await paymentFoot()).toEqual(PLAIN_FOOT);
       }, 120_000);
     }
   }
+});
+
+describe.skipIf(!browser)("the party modals' payment step: the prototype's footer, exactly as before", () => {
+  // PartySettleModal ("Take the balance") and AddAttendeeModal hold the step in
+  // a 448px pane: under @xl at every window. Its Back and Confirm row stays in
+  // the flow, unpainted, where it was; only the counter till's column turns the
+  // split view's footer on.
+  for (const { size, split } of [
+    { size: { width: 1024, height: 768 }, split: false },
+    { size: { width: 1440, height: 900 }, split: false },
+    { size: { width: 1680, height: 1050 }, split: false },
+    { size: { width: 1440, height: 900 }, split: true },
+  ]) {
+    const id = `party-payment@${size.width}x${size.height}${split ? ' split' : ''}`;
+    it(id, async () => {
+      const reading = await harness.read(`screen=party-payment&split=${split ? 1 : 0}`, size);
+      reported[id] = reading;
+      await shoot(id);
+      expect(reading.region.width).toBe(448);
+      if (RECORD) return pinLayout(id, reading);
+      pinLayout(id, reading);
+      expect(await paymentFoot()).toEqual(PLAIN_FOOT);
+    }, 120_000);
+  }
+
+  it("the counter till's column in the split view keeps its footer at the panel's foot", async () => {
+    await readTill('payment', true, { width: 1440, height: 900 });
+    expect((await paymentFoot())?.position).toBe('sticky');
+  }, 120_000);
 });
 
 describe.skipIf(!browser)('SCRUM-901: a long check-in label stays inside its button', () => {
@@ -182,13 +264,8 @@ describe.skipIf(!browser)('SCRUM-901: a long check-in label stays inside its but
 
   it('a one-word Check in keeps its 44px button (the card exactly as before)', async () => {
     const reading = await harness.read('screen=card-single&w=560', { width: 1440, height: 900 });
-    const id = 'card-single@560';
-    if (RECORD) {
-      recorded[id] = reading.layout;
-      return;
-    }
-    const before = (JSON.parse(readFileSync(FIXTURE, 'utf8')) as Record<string, { key: string; box: Box }[]>)[id]!;
-    expect(reading.layout).toEqual(before);
+    pinLayout('card-single@560', reading);
+    if (RECORD) return;
     expect(control(reading, 'Check in')?.box.height).toBe(44);
   }, 120_000);
 
@@ -210,7 +287,8 @@ describe.skipIf(!browser)('SCRUM-901: a long check-in label stays inside its but
 describe("the harness draws the till's own frame", () => {
   // If Till.tsx's frame changes, the measurement above is of the wrong frame:
   // this fails first, and the harness's `TillFrame` is brought back in line.
-  const till = readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'pages', 'Till.tsx'), 'utf8');
+  const source = (...rel: string[]) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', ...rel), 'utf8');
+  const till = source('pages', 'Till.tsx');
   const harnessPage = readFileSync(path.join(import.meta.dirname, 'support', 'splitview-harness', 'main.ts'), 'utf8');
   for (const cls of [
     'flex h-full w-full bg-background text-foreground overflow-hidden',
@@ -225,6 +303,24 @@ describe("the harness draws the till's own frame", () => {
     });
   }
 
+  // The party modals' frame, the same way (`PartyFrame`), and the prop that
+  // keeps their footer the prototype's.
+  const settle = source('components', 'parties', 'PartySettleModal.tsx');
+  const attendee = source('components', 'parties', 'AddAttendeeModal.tsx');
+  for (const cls of [
+    'fixed inset-0 z-50 bg-background text-foreground flex flex-col',
+    'shrink-0 flex items-center justify-between gap-3 px-5 h-14 border-b border-white/10',
+    'flex-1 flex min-h-0',
+    "'w-1/2 border-r border-white/10' : 'w-full'} h-full min-w-0",
+    'h-full p-6',
+    'mx-auto w-full max-w-md h-full',
+  ]) {
+    it(`the party modals: ${cls}`, () => {
+      expect(settle).toContain(cls);
+      expect(attendee).toContain(cls);
+      expect(harnessPage).toContain(cls);
+    });
+  }
   it("the payment step's footer: the till's split-view classes by default, the prototype's row with stickyFoot={false}", () => {
     vi.stubGlobal('React', React);
     try {
@@ -244,10 +340,11 @@ describe("the harness draws the till's own frame", () => {
     }
   });
 
-  it('the party modals: stickyFoot={false}; the counter till leaves it on (the default)', () => {
-    const party = (name: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', 'components', 'parties', name), 'utf8');
-    expect(party('PartySettleModal.tsx')).toContain('stickyFoot={false}');
-    expect(party('AddAttendeeModal.tsx')).toContain('stickyFoot={false}');
+  it('the party modals: stickyFoot={false}', () => {
+    expect(settle).toContain('stickyFoot={false}');
+    expect(attendee).toContain('stickyFoot={false}');
+    expect(harnessPage).toContain('stickyFoot: false');
+    // The counter till leaves it on (the default).
     expect(till).not.toContain('stickyFoot');
   });
 });

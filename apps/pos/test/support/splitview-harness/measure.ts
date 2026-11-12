@@ -57,6 +57,13 @@ export interface Reading {
   textInView: Record<string, boolean>;
   /** The most lines any one occurrence of each text is drawn on. */
   textLines: Record<string, number>;
+  /**
+   * Every query container (`@container`) in the region, the region's own
+   * included, with the inline size its queries are answered against (its
+   * content box, less any scrollbar): the full-width pin reads that none is
+   * under 36rem, so no `@max-xl` variant can be in effect there.
+   */
+  containers: { key: string; width: number }[];
 }
 
 const EPS = 1;
@@ -194,6 +201,16 @@ export function readSplitView(): Reading {
     layout.push({ key: `${base}|${n}`, box: boxOf(el.getBoundingClientRect()) });
   }
 
+  const containers: { key: string; width: number }[] = [];
+  for (const el of [region, ...Array.from(region.querySelectorAll('*'))]) {
+    if (!shown(el)) continue;
+    const style = getComputedStyle(el);
+    if (!style.containerType || style.containerType === 'normal') continue;
+    const name = style.containerName && style.containerName !== 'none' ? style.containerName : '(unnamed)';
+    const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    containers.push({ key: `${el.tagName.toLowerCase()}|${name}|${containers.length + 1}`, width: round(width) });
+  }
+
   return {
     viewport: { width: window.innerWidth, height: window.innerHeight },
     region: boxOf(region.getBoundingClientRect()),
@@ -202,6 +219,7 @@ export function readSplitView(): Reading {
     layout,
     textInView,
     textLines,
+    containers,
   };
 }
 

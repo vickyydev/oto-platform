@@ -32,6 +32,14 @@ import '@/index.css';
  * branch catalogue the till seeds, with the add-ons out of stock as staging's
  * were and a member named as staging's ZZ TEST members are.
  *
+ * THE PARTY PAYMENT (`screen=party-payment`) draws the same payment step as the
+ * party modals hold it (`PartySettleModal` "Take the balance", and
+ * `AddAttendeeModal`): their full-screen frame, copied class for class (pinned
+ * by the test), the step in its `max-w-md` pane (the region read) with
+ * `stickyFoot={false}` as they pass it, beside the customer half when
+ * `split=1`. The step is under @xl there at every window, so it is the screen
+ * that proves the counter till's split-view footer stays the till's own.
+ *
  * A BOARD SCREEN (`screen=card|card-single`) draws the Check-in board's family
  * card at `w=` px wide; `screen=phone-card` the phone's family screen. Their
  * family is SCRUM-886 picture 07a's: one child paid for, three long-named
@@ -105,6 +113,31 @@ function PaymentScreen() {
     // As the counter till passes them (`pages/Till.tsx`): Save as partly paid once Partial payment is on.
     holdControls: h(HoldSaleButtons, { holdReason: null, partPaidReason: null, showPartPaid: partPaidShown(stage.state.partial, 0), onHold: noop, onSavePartPaid: noop }),
   });
+}
+
+/** The party modals' payment step: no held sales, Back and Confirm in the prototype's row. */
+function PartyPaymentStep() {
+  const stage = usePaymentStage({
+    scope: 'harness-party', isCurrentScope: () => true, active: true, totalSatang: 150_000,
+    prepareSale: () => new Promise(() => undefined),
+    finaliseSale: () => new Promise(() => undefined),
+    onComplete: noop,
+  });
+  return h(StepPayment, {
+    total: 1500, selectedMethod: stage.state.method, onSelectMethod: noop, onComplete: noop, onBack: noop,
+    paymentStage: stage, stickyFoot: false,
+  });
+}
+
+/** `PartySettleModal`'s frame at its payment phase (classes pinned by the test). */
+function PartyFrame() {
+  return h('div', { className: 'fixed inset-0 z-50 bg-background text-foreground flex flex-col' },
+    h('div', { className: 'shrink-0 flex items-center justify-between gap-3 px-5 h-14 border-b border-white/10' }, 'Take the balance'),
+    h('div', { className: 'flex-1 flex min-h-0' },
+      h('div', { className: `${split ? 'w-1/2 border-r border-white/10' : 'w-full'} h-full min-w-0` },
+        h('div', { className: 'h-full p-6' },
+          h('div', { id: 'region', className: 'mx-auto w-full max-w-md h-full' }, h(PartyPaymentStep)))),
+      split ? h('div', { className: 'w-1/2 h-full min-w-0' }) : null));
 }
 
 function tillScreen(): ReactNode {
@@ -198,6 +231,7 @@ function Page() {
   }, []);
   if (screen === 'card' || screen === 'card-single') return h(BoardCard);
   if (screen === 'phone-card') return h(PhoneCard);
+  if (screen === 'party-payment') return h(PartyFrame);
   return h(TillFrame);
 }
 
