@@ -18,6 +18,7 @@ import {
   noteLaneFailure,
   onPlatformWhileHeld,
   paymentRefusalMessage,
+  platformLaneHeld,
 } from './lane';
 import { ORDER_CHANGED_AFTER_PAY } from './voidReasons';
 import {
@@ -84,6 +85,14 @@ import {
  *    tender is never moved (plan §2.1). After an online sale the till tells its
  *    box the number the platform gave it, so the box's offline series never
  *    re-issues it (OD-4, `receipt.observed`).
+ *
+ *    SCRUM-887 — the one exception: while the drop-off gate's hold is carried
+ *    to its family's sale (`platformLaneHeld`, `lib/gateOnline.ts`), Pay and
+ *    the cash press ask the platform first even when the lane says box. The
+ *    gate wrote that family online and the box has not pulled them yet; a long
+ *    outage moves the lane to the box through the till's other calls, and the
+ *    sale that follows the restored link must not be sent there. The held
+ *    retries and the sale's own ids apply; when those run out, the rule above.
  *
  * 6. A CORRECTED ORDER LEAVES NO SALE BEHIND (SCRUM-865). The sale rung up at
  *    Pay for the order as it was is voided — reason "Order changed at the till
@@ -662,7 +671,9 @@ export function useSaleWriter(): SaleWriter {
       try {
         // On the box lane the platform is out of reach: a sale left behind
         // there stays for Cancel, or for the left-unpaid list when it is back.
-        if (station && currentLane() === 'box') return await onBox(station);
+        // SCRUM-887: not while the gate's hold is carried — that family is
+        // online only, so the platform is asked first, with the held retries.
+        if (station && currentLane() === 'box' && !platformLaneHeld()) return await onBox(station);
         if (superseded.length > 0) {
           const letGo = voidSuperseded(superseded);
           if (voidFirst) await letGo;
@@ -957,7 +968,10 @@ export function useSaleWriter(): SaleWriter {
     };
     const cashOrNothing = !tender || tender.kind === 'cash' || tender.amountSatang === 0;
     try {
-      if (onTheBox && (onTheBox.lane === 'box' || (cashOrNothing && station && currentLane() === 'box'))) {
+      // A sale rung up on the box is closed there. One rung up online goes to
+      // the box with the lane, unless the gate's hold is carried (SCRUM-887):
+      // then the cash press is tried online first, as Pay was.
+      if (onTheBox && (onTheBox.lane === 'box' || (cashOrNothing && station && currentLane() === 'box' && !platformLaneHeld()))) {
         return await closeOnBox();
       }
       // A split uses one explicit identity per deliberate tender; retries keep it.

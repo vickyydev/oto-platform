@@ -15,7 +15,14 @@ import {
   type GateOnlineHold,
   type GateRetryWords,
 } from '@/lib/gateOnline';
-import { currentLane, platformLaneHeld, setHeldRetryDelays, setLaneStation, viaLane } from '@/lib/lane';
+import {
+  currentLane,
+  noteLaneFailure,
+  platformLaneHeld,
+  setHeldRetryDelays,
+  setLaneStation,
+  viaLane,
+} from '@/lib/lane';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteState } from '@/lib/saleWriter';
 
 /**
@@ -79,7 +86,7 @@ const card: SaleTenderPayload = { method: 'card', kind: 'card', amountSatang: 54
 
 /** The platform's sales routes and the counter's box, as the till reaches them. */
 class World {
-  sales = new Map<string, { id: string; status: 'tendering' | 'finalised' }>();
+  sales = new Map<string, { id: string; status: 'tendering' | 'finalised' | 'voided' }>();
   platform: { method: string; path: string; body: Record<string, unknown> }[] = [];
   box: { type: string; payload: Record<string, unknown> }[] = [];
   /** Drop the link on the listed calls (1-based) to a path, before it reaches the platform. */
@@ -119,6 +126,12 @@ class World {
         finalised: true,
         outstandingSatang: 0,
       });
+    }
+    const voided = /^\/sales\/([^/]+)\/void$/.exec(path);
+    if (method === 'POST' && voided) {
+      const sale = this.sales.get(decodeURIComponent(voided[1]!))!;
+      sale.status = 'voided';
+      return reply({ sale: apiSale({ id: sale.id, stationId: STATION, status: 'voided' }) });
     }
     return reply({ error: { code: 'ROUTE_NOT_FOUND', message: `no ${method} ${path}` } }, 404);
   });
@@ -160,6 +173,41 @@ function gateFinishedOnline(): GateOnlineHold {
   hold.endPress(); // handleSupervisionContinue's finally
   return hold;
 }
+
+/**
+ * The staging proof's point 2 in the gate's own calls: the first Continue
+ * wrote the guardian and the children online, then the registration ran out
+ * of held retries and the press ended short of payment ("press Continue
+ * again"). While the link stayed down the till's other calls — the display's
+ * presence check — moved the lane to the box. The link came back, Continue was
+ * pressed again, the registration finished online and the press reached
+ * payment. The lane still says box: only the box's next status read moves it.
+ */
+function gateRecoveredAfterLongOutage(): GateOnlineHold {
+  const hold = gateOnlineHold((words) => said.push(words));
+  hold.beginPress();
+  hold.noteWrite(); // the guardian and the children, answered on the platform
+  hold.endPress(); // the registration's held retries ran out
+  expect(platformLaneHeld()).toBe(false);
+  noteLaneFailure(new NetworkError()); // another call met the dropped link
+  expect(currentLane()).toBe('box');
+  hold.beginPress(); // the link is back: Continue again
+  hold.noteWrite(); // the same registration, answered on the platform
+  hold.carryToSale();
+  hold.endPress();
+  expect(platformLaneHeld()).toBe(true);
+  expect(currentLane()).toBe('box');
+  return hold;
+}
+
+/** The order with one more child: a different cart, so a different sale. */
+const corrected = (): SaleWriteInput => {
+  const base = cart();
+  return {
+    cart: { ...base, lines: [{ ...base.lines[0]!, kids: 2, lineTotalSatang: 108_000 }], expectedTotalSatang: 108_000 },
+    finalise: false,
+  };
+};
 
 /** What the box was asked to sell (a receipt the till saw is only a notice to it). */
 const boxSales = () => world.box.filter((c) => c.type !== 'receipt.observed');
@@ -287,6 +335,152 @@ describe('SCRUM-887: the family\'s sale after a gate that wrote online', () => {
   });
 });
 
+describe('SCRUM-887: the link stayed down past the retries and the lane moved to the box', () => {
+  it('Continue again after the outage: Pay and the cash press go online under the same ids while the lane still says box, and the box is never asked', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(rung).toMatchObject({ ok: true, written: true });
+      expect(salePosts().map((c) => c.body.id)).toEqual([rung.saleId]);
+      expect(result.current.state).toMatchObject({ kind: 'committed', saleId: rung.saleId });
+      expect(boxSales()).toEqual([]);
+
+      const paid = await result.current.finalise(cash, 'cash-press');
+      expect(paid).toMatchObject({ ok: true, written: true, finalised: true, saleId: rung.saleId });
+      expect(finalisePosts().map((c) => c.path)).toEqual([`/sales/${encodeURIComponent(rung.saleId)}/finalise`]);
+      expect([...world.sales.values()]).toEqual([{ id: rung.saleId, status: 'finalised' }]);
+      expect(result.current.state).toMatchObject({ kind: 'written', saleId: rung.saleId });
+      expect(boxSales()).toEqual([]);
+      expect(said).toEqual([]);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+  });
+
+  it('a dropped link at Pay on the box lane is retried online under the same id: one sale, the box never asked', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    world.drops.push({ path: /^POST \/sales$/, at: [1] });
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(rung).toMatchObject({ ok: true, written: true });
+      expect(world.drops[0]!.seen).toBe(2);
+      expect(salePosts().map((c) => c.body.id)).toEqual([rung.saleId]);
+      expect(world.sales.size).toBe(1);
+      expect(said).toEqual([GATE_SALE_RETRYING]);
+      expect(boxSales()).toEqual([]);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+  });
+
+  it('the lane moves to the box between Pay and the cash press: the cash press is still closed online, retried there once', async () => {
+    const hold = gateFinishedOnline();
+    world.drops.push({ path: /^POST \/sales\/[^/]+\/finalise$/, at: [1] });
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(currentLane()).toBe('platform');
+      noteLaneFailure(new NetworkError()); // the display's presence check met a dropped link
+      expect(currentLane()).toBe('box');
+      const paid = await result.current.finalise(cash, 'cash-press');
+      expect(paid).toMatchObject({ ok: true, written: true, finalised: true, saleId: rung.saleId });
+      expect(finalisePosts()).toHaveLength(1);
+      expect([...world.sales.values()]).toEqual([{ id: rung.saleId, status: 'finalised' }]);
+      expect(said).toEqual([GATE_SALE_RETRYING]);
+      expect(boxSales()).toEqual([]);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+  });
+
+  it('the link is still down at Pay: the held retries run out, the hold ends, and the lane rule applies — the box, under the same sale', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    world.drops.push({ path: /^POST \/sales$/, at: [1, 2, 3, 4, 5] });
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      expect(rung).toMatchObject({ ok: false });
+      expect(world.drops[0]!.seen).toBe(4); // the press and its three held retries
+      expect(platformLaneHeld()).toBe(false);
+      expect(boxSales().map((c) => c.type)).toEqual(['cart.quote']);
+      expect(gateSaleFailure(result.current.state, hold.startedOnline)).toMatchObject({
+        kind: 'failed', saleId: rung.saleId, message: GATE_SALE_BOX_NOT_SYNCED, retryable: true,
+      });
+      // Try again: no hold now, the lane says box — the box again, under the same sale.
+      const again = await result.current.commit(order());
+      expect(again).toMatchObject({ ok: false, saleId: rung.saleId });
+      expect(world.drops[0]!.seen).toBe(4);
+      expect(boxSales().map((c) => c.type)).toEqual(['cart.quote', 'cart.quote']);
+      expect(world.sales.size).toBe(0);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+  });
+
+  it('a corrected order while held on the box lane: the sale rung up first is voided, then the corrected one is written online (SCRUM-865)', async () => {
+    const hold = gateRecoveredAfterLongOutage();
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const first = await result.current.commit(order());
+      expect(first).toMatchObject({ ok: true, written: true });
+      const second = await result.current.commit(corrected());
+      expect(second).toMatchObject({ ok: true, written: true });
+      expect(second.saleId).not.toBe(first.saleId);
+      expect(world.platform.filter((c) => c.method === 'POST').map((c) => c.path)).toEqual([
+        '/sales',
+        `/sales/${encodeURIComponent(first.saleId)}/void`,
+        '/sales',
+      ]);
+      expect(world.sales.get(first.saleId)?.status).toBe('voided');
+      expect(world.sales.get(second.saleId)?.status).toBe('tendering');
+      expect(boxSales()).toEqual([]);
+    } finally {
+      unmount();
+      hold.endSale();
+    }
+  });
+
+  it('no carried hold and the lane on the box: Pay goes to the box as today, and the platform is never asked', async () => {
+    noteLaneFailure(new NetworkError());
+    expect(currentLane()).toBe('box');
+    expect(platformLaneHeld()).toBe(false);
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      await result.current.commit(order());
+      expect(salePosts()).toEqual([]);
+      expect(boxSales().map((c) => c.type)).toEqual(['cart.quote']);
+    } finally {
+      unmount();
+    }
+  });
+
+  it('a till offline from the start: the box answered the gate, so no hold is taken and the sale goes to the box as today', async () => {
+    noteLaneFailure(new NetworkError());
+    const hold = gateOnlineHold((words) => said.push(words));
+    hold.beginPress();
+    hold.noteWrite(); // answered by the box
+    hold.carryToSale();
+    hold.endPress();
+    expect(hold.startedOnline).toBe(false);
+    expect(platformLaneHeld()).toBe(false);
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      await result.current.commit(order());
+      expect(salePosts()).toEqual([]);
+      expect(boxSales().map((c) => c.type)).toEqual(['cart.quote']);
+    } finally {
+      unmount();
+      hold.reset();
+    }
+  });
+});
+
 describe('SCRUM-887: the general rule is unchanged', () => {
   it('a gate press that did not reach payment releases its hold: a dropped Pay goes to the box', async () => {
     const hold = gateOnlineHold((words) => said.push(words));
@@ -378,6 +572,16 @@ describe('SCRUM-887: the till carries its gate to the sale', () => {
     expect(writer).toMatch(/result = await \(cashOrNothing \? onPlatformWhileHeld\(press\) : press\(\)\);/);
     expect(writer).toMatch(/if \(station && !triedBox && isBoxLaneTrigger\(err\)\) \{/);
     expect(writer).toMatch(/if \(onTheBox && station && cashOrNothing && isBoxLaneTrigger\(err\)\) \{/);
+  });
+
+  it('the box lane is skipped only while a hold is carried, and before the SCRUM-865 void and the commit', () => {
+    const atBox = writer.indexOf("if (station && currentLane() === 'box' && !platformLaneHeld()) return await onBox(station);");
+    const voids = writer.indexOf('const letGo = voidSuperseded(superseded);');
+    const commits = writer.indexOf('await onPlatformWhileHeld(() => commitSale({');
+    expect(atBox).toBeGreaterThan(0);
+    expect(voids).toBeGreaterThan(atBox);
+    expect(commits).toBeGreaterThan(voids);
+    expect(writer).toMatch(/onTheBox\.lane === 'box' \|\| \(cashOrNothing && station && currentLane\(\) === 'box' && !platformLaneHeld\(\)\)/);
   });
 
   it('the words differ for the gate and the sale', () => {
