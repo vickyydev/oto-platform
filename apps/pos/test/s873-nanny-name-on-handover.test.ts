@@ -115,6 +115,15 @@ describe('SCRUM-873: the Add drop-off picker keeps the assignment', () => {
     const attach = src.slice(src.indexOf('const handleAttachDropOff'), src.indexOf('const cartNannyLoadsFor'));
     expect(attach).toMatch(/nannyName:\s*ci\.assignedNannyName\s*\?\?\s*nannyRoster\.find\(/);
   });
+
+  it("the phone till's picker hand-over names her the same way", () => {
+    const src = readFileSync(fileURLToPath(new URL('../src/components/mobile/MobileTill.tsx', import.meta.url)), 'utf8');
+    const start = src.indexOf('const handleAttachDropOff');
+    expect(start).toBeGreaterThan(-1);
+    const attach = src.slice(start, src.indexOf("setMStep('dropoff-config')", start));
+    expect(attach).toMatch(/nannyId:\s*ci\.assignedNannyId/);
+    expect(attach).toMatch(/nannyName:\s*ci\.assignedNannyName\s*\?\?\s*nannyRoster\.find\(\(n\) => n\.id === ci\.assignedNannyId\)\?\.name/);
+  });
 });
 
 describe("SCRUM-873: the board's Check in names the nanny", () => {
