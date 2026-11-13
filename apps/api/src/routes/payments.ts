@@ -311,7 +311,11 @@ export async function paymentRoutes(app: App): Promise<void> {
       // row outside the caller's operator is "not found" before either.
       const row = await loadAttempt(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('pos:payment:read', { branchId: row.branchId });
-      await recoverTerminalAttempt(app.db, opCtx(req), auth.operatorId, row.id);
+      try {
+        await recoverTerminalAttempt(app.db, opCtx(req), auth.operatorId, row.id);
+      } catch (err) {
+        req.log.error({ err, attemptId: row.id }, 'a held card payment could not be settled on the attempt read');
+      }
       return readAttempt(app.db, auth.operatorId, row.id);
     },
   );

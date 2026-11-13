@@ -726,6 +726,33 @@ describe('a held payment freed without its own read', () => {
     expect(detail.attempts.find((a) => a.id === held.attemptId)?.status).toBe('approved');
   });
 
+  it('a status poll stays readable when recovery collides with another terminal reference', async () => {
+    // Medium finding: a recovery write must not turn the till's status read
+    // into an error response. Keep the attempt held for investigation, without tendering
+    // again or accepting an acknowledgement that belongs to another payment.
+    const other = await claimedTender();
+    const terminalRef = '261113979099';
+    await ctx.db.update(paymentAttempt).set({ terminalRef }).where(eq(paymentAttempt.id, other.attemptId));
+    const stuck = await claimedTender();
+    const ack = boxAck({
+      attemptId: stuck.attemptId, mode: 'sale', deviceId: cardDeviceId, protocol: 'ghl_linkpos',
+      outcome: 'approved', terminalRef, responseCode: '00',
+    });
+    await endCommandUnsettled(stuck.command.id, { state: 'succeeded', result: ack.result as never });
+    const before = await attemptRow(stuck.attemptId);
+    const commandsBefore = await terminalCommands(stuck.attemptId);
+    try {
+      for (let poll = 0; poll < 2; poll += 1) {
+        const status = await readAttempt(stuck.attemptId);
+        expect(status.attempt.status).toBe('sent_to_terminal');
+        expect(await attemptRow(stuck.attemptId)).toEqual(before);
+      }
+      expect(await terminalCommands(stuck.attemptId)).toEqual(commandsBefore);
+    } finally {
+      await ctx.db.update(paymentAttempt).set({ terminalRef: null }).where(eq(paymentAttempt.id, other.attemptId));
+    }
+  });
+
   it('the sweep frees a held attempt nobody reads, and one that cannot be settled never stops it', async () => {
     // One the sweep can free: refused by the box, recorded by the old code.
     const free = await claimedTender();
