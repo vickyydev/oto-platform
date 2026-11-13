@@ -379,3 +379,22 @@ Tickets: SCRUM-971 (the points that need no answer) and point 5 of SCRUM-969 (En
 7. A band printer with no stock settings uses the box's default 50 by 250 mm label, which has no print window, so its test page keeps everything. Should a band printer with no settings be assumed to have the park's 80 mm window?
 8. A gate or customer display station no longer shows the code prefix field; a prefix an older set-up saved on one is kept and sent back unchanged. Keep it, or clear it?
 9. Days already closed keep the long band code in their saved list; nothing old is rewritten. All right?
+
+## The kept-sale and party-bill lane landed (13 November 10:26, main 3d58a9d88)
+Tickets: SCRUM-964 (a kept sale after a session end), SCRUM-967 (the party page after a kitchen edit), points 1 and 2 of SCRUM-969, SCRUM-973 (the two end-to-end checks). Services: both tills and the platform (End of Day's sentence is composed there); no migration; no box release. Left and ticketed: SCRUM-981.
+Planner's own change before landing: the lane's first rule for "Reconnecting" would have left a display on the box's own machine stuck when the park's network is down (the browser says offline while the box still answers); a read asked after the browser said so now lifts the word (apps/pos/src/pages/Display.tsx, test in s720-display).
+
+### Questions for the owner from this lane
+1. While the ended session's hold on the display runs out (up to a minute), the till says "Display connection: The display is still held under the session that ended here; it follows this till within a minute. The team can continue using this screen." Are those the right words?
+2. At a session's end the display keeps the ended person's last screen (the cart, or a QR still waiting) until that hold runs out; the till does not release it early at the twelve-hour mark, because a release blanks the display while a family may be paying. Keep that, or blank it at once?
+3. After a reload at the sign-in form, the browser tab keeps the line and who may have the screen: staff name and account, park, station, trading day, times, and a rung-up sale's number. No customer details. Acceptable?
+4. After a reload only a ticket sale the counter till had rung up is offered again; an unwritten cart is lost, and rung-up F&B, Shop and phone-till sales are not offered again (they stay open in History). Acceptable for now?
+5. The phone's F&B now keeps its order through any lock (inactivity or a session end), as the phone's till and Shop already did. Right?
+6. On the party page, while the platform prices the party again after a plan change, the button reads "Take balance —" and cannot be pressed. Acceptable?
+7. A food line's note on the Kitchen plan card goes after the chosen dish and before the marks ("Fried rice · Veggie · no sauce · not on the till menu"). Right order?
+8. In the Edit form a line's marks are on their own small line under the name box, not a chip. The look you want?
+9. The refusal after the BEO changed now says "<Dish> was changed in the BEO since this form opened. Close this form and open it again to see the latest plan." Right?
+10. The prototype writes amounts ungrouped on its party page and payment step ("฿18010"); the Settle party form (ours) groups them ("฿18,010"). Should the Settle form go ungrouped like the prototype, or should all of them be grouped?
+11. End of Day's new words for an F&B or Shop order: "For a restaurant or shop order, have a manager refund what was paid from History, then close the day." And the dialog's: "Close Day waits until a manager has refunded it from History." Right words?
+12. The display says "Reconnecting" after 8 seconds of silence when the browser does not know the line is down. Is 8 seconds right?
+13. When a second person continues a cart, the first person's approved member rate is dropped with no word (the cart is priced again). Should the till say so, or should the approval carry over?
