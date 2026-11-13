@@ -2,7 +2,7 @@
   "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
   "atUtc": "2026-11-13T23:19:46.206580+00:00",
   "branch": "lane/codex-slip-baseline-20261114",
-  "sourceReview": "53be requested changes HIGH S1; corrected candidate awaiting focused independent re-review",
+  "sourceReview": "Independent re-review approved exact089f71f396e403a4fa0f023c7b17a8b0fdbb407f; HIGH S1 resolved, no unresolved HIGH/CRITICAL",
   "sourceHashes": {
     "apps/api/src/services/party-slips.ts": "a3c85c96fc1d657fdf9498cbf7af43ecc88b123e56c2fc7740c2b6d6b097b812",
     "apps/api/src/services/party-plan.ts": "bdfa951a175fd736c93087350bcf9bad49c21ef32875e72fc591465b00aff2c6",
@@ -169,6 +169,13 @@
       "passed": 99,
       "files": 4
     },
-    "status": "implemented, final independent re-review pending"
+    "status": "resolved and independently approved on089f71f396e403a4fa0f023c7b17a8b0fdbb407f"
+  },
+  "independentReview": {
+    "candidate": "089f71f396e403a4fa0f023c7b17a8b0fdbb407f",
+    "verdict": "APPROVED",
+    "file": "independent-review-089f.md",
+    "checks": "all source/log fingerprints independently matched, types/lint zero,51 recorded own PG PIDs not live",
+    "rerunsByReviewer": false
   }
 }
