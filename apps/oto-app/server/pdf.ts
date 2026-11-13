@@ -7,7 +7,7 @@ import { getFileFromObjectStorage } from "./file-storage";
 import { formatParkSignedDate, getLocalDateString } from "./timezone-utils";
 import { tillFiguresOf, type TillBillingReading } from "@shared/tillBilling";
 import { ADULTS_ONLY_MARK, ADULTS_SAME_AS_KIDS, adultsDifferOf, kitchenAdultsMarks } from "@shared/kitchenAdults";
-import { beoExtraChargeOf, beoExtraPrintWordsOf, type BeoExtraContext } from "@shared/beoExtras";
+import { beoExtraChargeOf, beoExtraPrintWordsOf, beoPrintFoldable, type BeoExtraContext } from "@shared/beoExtras";
 import { beoPdfTillMoneyHtml } from "./lib/beoPdfMoney";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
@@ -620,7 +620,16 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   const formattedTime = data.startTime + (data.endTime ? ` – ${data.endTime}` : '');
   const locationDisplay = data.locationText || data.location || '';
 
-  const partyHostHtml = data.partyHost ? `
+  // SCRUM-978: a section with nothing to print prints no heading. The editor's Save keeps a party
+  // host and a setup plan row with nothing in them, and the PDF then printed "PARTY HOST" and
+  // "SETUP PLAN" with nothing under them (before any Save, neither was printed).
+  const partyHostHasText = !!data.partyHost && !!(
+    data.partyHost.assignedName || data.partyHost.backupName || data.partyHost.roleName || data.partyHost.notes
+  );
+  const setupPlanHasText = !!data.setupPlan && !!(
+    data.setupPlan.readyBy || data.setupPlan.responsible || data.setupPlan.tasks?.length || data.setupPlan.notes
+  );
+  const partyHostHtml = partyHostHasText && data.partyHost ? `
     <div class="section">
       <h2>Party Host</h2>
       <div class="info-grid">
@@ -669,7 +678,7 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
     `;
   })();
 
-  const setupHtml = data.setupPlan ? `
+  const setupHtml = setupPlanHasText && data.setupPlan ? `
     <div class="section">
       <h2>Setup Plan</h2>
       <div class="info-grid" style="margin-bottom: 6px;">
@@ -730,9 +739,15 @@ export async function beoPdfHtml(data: BeoPdfData): Promise<string> {
   // "Different for adults" is on, and then their changes are marked beside the kids' lines
   // ("kids only", "kids N · adults M", "adults: <note>") and their own dishes listed after,
   // marked "adults only" — never a second list.
-  const pdfKids = kp?.simplifiedMenus?.kids || kp?.menus?.kids || [];
+  // SCRUM-978: the kids' list the editor and the till read: `menus` (canonical, kitchenPlanDbDataOf in
+  // beo-routes.ts), `simplifiedMenus` only for a plan of before that has no `menus` list.
+  const pdfKids = Array.isArray(kp?.menus?.kids) ? kp!.menus!.kids : kp?.simplifiedMenus?.kids || [];
   const pdfAdultsDiffer = !!kp && adultsDifferOf({ kids: pdfKids, adults: kp.menus?.adults, adultsDiffer: kp.menus?.adultsDiffer });
-  const pdfAdults = kitchenAdultsMarks(pdfKids, kp?.menus?.adults ?? [], pdfAdultsDiffer);
+  // SCRUM-978: an adults' line is marked beside the kids' row of its name only when that row's price
+  // cell holds for it too (the same kind of line at the same price each, or the one dish the till
+  // charges once); else it prints as its own row, with its own count and price, as the editor shows
+  // it and the till charges it.
+  const pdfAdults = kitchenAdultsMarks(pdfKids, kp?.menus?.adults ?? [], pdfAdultsDiffer, beoPrintFoldable(extrasCtx));
   const adultsMarkOf = (item: unknown) => {
     const at = (pdfKids as unknown[]).indexOf(item);
     return at >= 0 ? pdfAdults.marks[at] ?? null : null;

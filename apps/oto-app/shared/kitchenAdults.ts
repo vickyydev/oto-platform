@@ -145,15 +145,27 @@ export const adultsCountMark = (kidsQty: number, adultsQty: number): string => `
  * The adults' changes against the kids' list. With the switch off there are
  * none. Each kids' line takes the first adults' line of its name not taken by
  * an earlier kids' line.
+ *
+ * SCRUM-978: and, when the caller says so (`foldable`), only an adults' line
+ * whose own words beside the mark would be the kids' line's (the BEO PDF: the
+ * same kind of line at the same price each). Any other adults' line of that
+ * name is listed among the adults' own, with its own count and price: kids
+ * Margherita 3 at 400 and adults 2 at 450 are two rows, never "kids 3 ·
+ * adults 2" at 400.
  */
-export function kitchenAdultsMarks(kids: unknown, adults: unknown, adultsDiffer: boolean): KitchenAdultsMarks {
+export function kitchenAdultsMarks(
+  kids: unknown,
+  adults: unknown,
+  adultsDiffer: boolean,
+  foldable: (kidsLine: KitchenLineLike, adultsLine: KitchenLineLike) => boolean = () => true,
+): KitchenAdultsMarks {
   const k = kitchenLinesOf(kids);
   const a = kitchenLinesOf(adults);
   if (!adultsDiffer) return { marks: k.map(() => null), adultsOnly: [] };
   const taken = new Set<number>();
   const marks = k.map((line) => {
     const name = foldDishName(line.itemName);
-    const at = a.findIndex((other, i) => !taken.has(i) && foldDishName(other.itemName) === name);
+    const at = a.findIndex((other, i) => !taken.has(i) && foldDishName(other.itemName) === name && foldable(line, other));
     if (at < 0) return KIDS_ONLY_MARK;
     taken.add(at);
     const match = a[at]!;

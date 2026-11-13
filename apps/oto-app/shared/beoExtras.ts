@@ -180,5 +180,53 @@ export function beoExtraPrintWordsOf(charge: BeoExtraCharge): string | null {
   return beoExtraHintOf(charge);
 }
 
+/** A kitchen line as the BEO PDF reads it (only these fields matter here). */
+export interface BeoPrintLine {
+  itemName?: string;
+  quantity?: number;
+  notes?: string;
+  price?: number | null;
+  source?: string | null;
+  productCode?: string | null;
+}
+
+/**
+ * SCRUM-978: the words the BEO PDF prints in a food line's price cell: "SET"
+ * for a set-menu line; for an EXTRA its badge and what the till charges for
+ * it (`beoExtraPrintWordsOf`): "EXTRA 400฿ each", "EXTRA till price 450",
+ * "EXTRA not charged", or the badge alone when it cannot be priced here.
+ */
+export function beoFoodPrintWordsOf(line: BeoPrintLine, ctx: BeoExtraContext): string {
+  if (line.source === "set_menu") return "SET";
+  const words = beoExtraPrintWordsOf(
+    beoExtraChargeOf(
+      { itemName: line.itemName ?? "", quantity: line.quantity ?? 1, price: line.price ?? null, source: line.source ?? null, productCode: line.productCode ?? null },
+      "food",
+      ctx,
+    ),
+  );
+  return words ? `EXTRA ${words}` : "EXTRA";
+}
+
+/**
+ * SCRUM-978 (the read-fix lane's staging proof: kids Margherita 3 at 400 and
+ * adults 2 at 450 printed as ONE row, "3x Margherita — kids 3 · adults 2
+ * EXTRA 400฿ each", while the editor shows each list's own price and the till
+ * charges 3 × 400 + 2 × 450): whether the PDF may fold an adults' line into the
+ * kids' row of the same name, beside its "kids N · adults M" or "adults:
+ * <note>" mark. Only when what the row prints beside the mark holds for both:
+ * the same kind of line at the same price each (`beoFoodPrintWordsOf`), or the
+ * one dish the till charges once with the kids' line (`sameKitchenDish`: name,
+ * count and code, the editor's "charged once, with the kids' line"). Any other
+ * adults' line prints as its own row, with its own count and price.
+ */
+export function beoPrintFoldable(ctx: BeoExtraContext): (kids: BeoPrintLine, adults: BeoPrintLine) => boolean {
+  return (kids, adults) =>
+    sameKitchenDish(
+      { itemName: kids.itemName, quantity: kids.quantity, productCode: kids.productCode ?? undefined },
+      { itemName: adults.itemName, quantity: adults.quantity, productCode: adults.productCode ?? undefined },
+    ) || beoFoodPrintWordsOf(kids, ctx) === beoFoodPrintWordsOf(adults, ctx);
+}
+
 /** The plan's extras total, as the till will charge them: "Extras charged at the till: ฿1,180". */
 export const beoExtrasTotalWords = (satang: number): string => `Extras charged at the till: ฿${baht(satang)}`;
