@@ -1,0 +1,7031 @@
+{
+  "tickets": [
+    "SCRUM-963",
+    "SCRUM-962 (points 2 to 4)",
+    "SCRUM-969 (points 7 and 8)"
+  ],
+  "sha": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+  "startedAt": "2026-11-12T23:52:07.998Z",
+  "deploysAtStart": {
+    "readAt": "2026-11-12T23:49:30.187Z",
+    "lane": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+    "oto-pos-web-staging": {
+      "live": {
+        "id": "dep-dbr4tbl6e07s73ahdgv0",
+        "status": "live",
+        "sha": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+        "createdAt": "2026-11-12T23:41:34.356013Z",
+        "finishedAt": "2026-11-12T23:45:31.343738Z"
+      },
+      "newest": {
+        "id": "dep-dbr4tbl6e07s73ahdgv0",
+        "status": "live",
+        "sha": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+        "createdAt": "2026-11-12T23:41:34.356013Z",
+        "finishedAt": "2026-11-12T23:45:31.343738Z"
+      }
+    },
+    "oto-pos-staging": {
+      "live": {
+        "id": "dep-dbr4tbdbedkc73chf0qg",
+        "status": "live",
+        "sha": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+        "createdAt": "2026-11-12T23:41:33.046565Z",
+        "finishedAt": "2026-11-12T23:42:37.568696Z"
+      },
+      "newest": {
+        "id": "dep-dbr4tbdbedkc73chf0qg",
+        "status": "live",
+        "sha": "92d8e3977b0c8f9b8761558190f8a2ce8724ab85",
+        "createdAt": "2026-11-12T23:41:33.046565Z",
+        "finishedAt": "2026-11-12T23:42:37.568696Z"
+      }
+    },
+    "oto-api-staging": {
+      "live": {
+        "id": "dep-dbr4apu7bikc73eh1isg",
+        "status": "live",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+        "createdAt": "2026-11-12T23:01:59.438432Z",
+        "finishedAt": "2026-11-12T23:07:35.961493Z"
+      },
+      "newest": {
+        "id": "dep-dbr4apu7bikc73eh1isg",
+        "status": "live",
+        "sha": "8c3a6efd77c875a84066cd5c0a0b8554334878c1",
+        "createdAt": "2026-11-12T23:01:59.438432Z",
+        "finishedAt": "2026-11-12T23:07:35.961493Z"
+      }
+    }
+  },
+  "numbers": {
+    "A": "0898963010",
+    "H": "0898963011"
+  },
+  "created": [
+    {
+      "kind": "station",
+      "id": "01a1d22d-4096-7f3a-8512-86b60809b48c",
+      "name": "ZZ TEST SCRUM-963 desk till 1794527542269",
+      "prefix": "Z96301"
+    },
+    {
+      "kind": "display",
+      "label": "main",
+      "id": "01a1d22d-da8c-7cd6-952a-1f5bb47179f2",
+      "station": "01a1d22d-4096-7f3a-8512-86b60809b48c"
+    },
+    {
+      "kind": "registration",
+      "family": "A",
+      "id": "01a1d235-0b98-7861-a122-b9069bd2d430"
+    },
+    {
+      "kind": "dropoff-sale-A",
+      "id": "01a1d235-0ebb-73a2-94aa-cc23cb06a32b",
+      "station": "01a1d22d-4096-7f3a-8512-86b60809b48c"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d23d-3e6e-72ac-bd67-a9ee225857f2",
+      "name": "ZZ TEST SCRUM-963 phone till 1794528590273",
+      "prefix": "Z96302"
+    },
+    {
+      "kind": "shop-part-paid-sale",
+      "id": "01a1d243-9d66-7981-8a85-7ee7a0996373"
+    },
+    {
+      "kind": "fnb-part-paid-sale",
+      "id": "01a1d244-03ef-763e-a92b-8b3503c6fb6b"
+    }
+  ],
+  "points": {
+    "1 offline language on Care details (HIGH)": {
+      "pass": true,
+      "pictures": [
+        "01c-600-care-offline-reconnecting-line-english.png",
+        "01d-600-care-offline-thai-at-once-no-retry-not-pushed-down.png",
+        "01e-offline-thai-typed-with-the-keys-till-copy-not-yet.png",
+        "01f-online-again-line-gone-till-copy-has-allergy-and-thai.png",
+        "01g-till-copy-scrolled-to-the-allergy-display-in-thai.png"
+      ],
+      "seen": {
+        "thaiAtOnce": "บอกเราเกี่ยวกับลูกของคุณ",
+        "retryBar": null,
+        "headingTop": [
+          64,
+          64
+        ],
+        "waitLineAbsent": {
+          "atOnce": true,
+          "whileTyped": true,
+          "after": true
+        },
+        "typed": "Zz Test Nuts",
+        "offlineMs": 8001,
+        "lineGoneMs": 797,
+        "tillHasAllergyMs": 1319,
+        "boxLanguage": "th",
+        "tillCopyDrawnIn": "English (the staff copy shows no language)"
+      }
+    },
+    "1 control: Ask the team offline": {
+      "pass": true,
+      "pictures": [
+        "01h-600-control-ask-the-team-offline-form-locked-retry.png",
+        "01i-control-restored-ask-the-team-went-through-till-takes-over.png"
+      ],
+      "seen": {
+        "locked": true,
+        "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+        "headingTop": [
+          64,
+          120
+        ],
+        "wentByItselfMs": null,
+        "retryPressed": true,
+        "tillLine": "The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display."
+      }
+    },
+    "2 language list light and dark": {
+      "pass": true,
+      "pictures": [
+        "02a-600-dark-display-language-list-slate.png",
+        "02b-600-light-display-language-list-cream-dark-words-chosen-marked.png",
+        "02b2-600-light-display-language-list-close-up.png",
+        "02d-600-dark-again-language-list-slate-as-before.png"
+      ],
+      "seen": {
+        "light": {
+          "listBg": "rgb(254, 253, 251)",
+          "word": [
+            "#3b281c",
+            "#fefdfb",
+            13.71
+          ],
+          "chosen": [
+            "#9f2d00",
+            "#fce5dc",
+            6.11
+          ]
+        },
+        "dark": {
+          "listBg": "oklch(0.208 0.042 265.755)",
+          "word": 17.04,
+          "chosen": 4.04
+        }
+      }
+    },
+    "3 returning review badges": {
+      "pass": true,
+      "pictures": [
+        "03a-600-dark-returning-review-saved-still-correct.png",
+        "03b-600-light-returning-review-saved-still-correct-deep-amber.png",
+        "03c-600-light-returning-review-confirmed-deep-green.png",
+        "03d-600-dark-returning-review-confirmed-as-before.png"
+      ],
+      "seen": {
+        "lightCheck": {
+          "ground": "#f5e9dc",
+          "ink": "#963c00",
+          "ratio": 5.97,
+          "size": [
+            215,
+            38
+          ]
+        },
+        "lightDone": {
+          "ground": "#c2e6cd",
+          "ink": "#006045",
+          "ratio": 5.62,
+          "size": [
+            130,
+            38
+          ]
+        },
+        "darkCheck": {
+          "ground": "#11273c",
+          "ink": "#ffd235",
+          "ratio": 10.53,
+          "size": [
+            215,
+            38
+          ]
+        },
+        "darkDone": {
+          "ground": "#044343",
+          "ink": "#5ee9b5",
+          "ratio": 7.3,
+          "size": [
+            130,
+            38
+          ]
+        }
+      }
+    },
+    "4 sizes on the display form, and the till half unchanged": {
+      "pass": true,
+      "pictures": [
+        "04a-600x1024-age-picker-age-step-close-and-crumbs.png",
+        "04b-600x1024-age-picker-month-step-back-close-crumbs.png",
+        "04c-600x1024-agreements-channel-buttons.png",
+        "04d-600x1024-guardian-keys-below-the-box.png",
+        "04f-1024x600-agreements-channel-buttons.png",
+        "04g-1024x600-guardian-keys-below-the-box.png",
+        "04h-1024x600-age-picker-back-close-crumbs.png",
+        "04i-1680-till-half-form-opened-as-before.png",
+        "04j-1680-till-half-age-picker-small-as-before.png"
+      ],
+      "seen": {
+        "under44_600": [],
+        "under44_1024": [],
+        "half": {
+          "lang": 34,
+          "done": 38,
+          "continue": null,
+          "askTeam": null,
+          "pills": []
+        },
+        "halfPicker": {
+          "close": [
+            16,
+            16
+          ],
+          "back": [
+            36,
+            36
+          ],
+          "crumbH": [
+            28,
+            28,
+            28
+          ]
+        },
+        "scrum954Half": {
+          "lang": 34,
+          "done": 38
+        }
+      }
+    },
+    "5 first screen: language button never over the number box": {
+      "pass": true,
+      "pictures": [
+        "05a-600x1024-first-screen-keys-closed-top.png",
+        "05b-600x1024-first-screen-keys-open-scrolled-down.png",
+        "05b2-600x1024-first-screen-keys-open-scrolled-up.png",
+        "05c-1024x600-first-screen-keys-closed-top.png",
+        "05d-1024x600-first-screen-keys-open-scrolled-down.png",
+        "05d2-1024x600-first-screen-keys-open-scrolled-up.png"
+      ],
+      "seen": {
+        "600x1024": [
+          {
+            "s": "keysClosed",
+            "worstSeenOverlapPx2": 0,
+            "positions": 18,
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "numberRowTop": [
+              76,
+              364,
+              524,
+              428
+            ],
+            "numberRowBottom": [
+              76,
+              231,
+              524,
+              295
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ]
+          },
+          {
+            "s": "keysOpen",
+            "worstSeenOverlapPx2": 0,
+            "positions": 46,
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "numberRowTop": [
+              76,
+              364,
+              524,
+              428
+            ],
+            "numberRowBottom": [
+              76,
+              9,
+              524,
+              73
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ]
+          }
+        ],
+        "1024x600": [
+          {
+            "s": "keysClosed",
+            "worstSeenOverlapPx2": 0,
+            "positions": 59,
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "numberRowTop": [
+              288,
+              264,
+              736,
+              328
+            ],
+            "numberRowBottom": [
+              288,
+              -193,
+              736,
+              -129
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ]
+          },
+          {
+            "s": "keysOpen",
+            "worstSeenOverlapPx2": 0,
+            "positions": 82,
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "numberRowTop": [
+              288,
+              264,
+              736,
+              328
+            ],
+            "numberRowBottom": [
+              288,
+              -383,
+              736,
+              -319
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ]
+          }
+        ]
+      }
+    },
+    "6 phone gate and sideways form": {
+      "pass": "PARTLY: gate passes at 390x844 and 360x740; sideways at 844x390 the phone till becomes the desk till and the form and sale are lost; at 740x360 the heading scrolls away",
+      "pictures": [
+        "06a-phone-390x844-gate-long-name-own-line-age-under-back-continue-at-foot.png",
+        "06b-phone-360x740-gate-long-name-own-line-age-under-back-continue-at-foot.png",
+        "06c-phone-844x390-sideways-family-form-top.png",
+        "06e-phone-390x844-after-turning-back-upright.png",
+        "06f-phone-740x360-sideways-family-form-top.png",
+        "06g-phone-740x360-sideways-scrolled-heading-gone.png",
+        "06h-phone-844x390-sideways-desk-layout-form-gone.png",
+        "06i-phone-360x740-upright-again-sale-gone.png"
+      ],
+      "seen": {
+        "gate390": {
+          "viewport": "390x844",
+          "docScrollWidth": 390,
+          "input": {
+            "box": [
+              65,
+              250,
+              353,
+              298
+            ],
+            "value": "ZZ TEST PHONE P",
+            "scrollWidth": 262,
+            "clientWidth": 262,
+            "wholeNameShows": true
+          },
+          "age": {
+            "box": [
+              33,
+              310,
+              353,
+              366
+            ],
+            "text": "Tap to set age",
+            "underTheName": true,
+            "width": 320
+          },
+          "card": {
+            "box": [
+              16,
+              233,
+              370,
+              383
+            ],
+            "height": 150,
+            "wholeInView": true
+          },
+          "gateScroll": {
+            "box": [
+              16,
+              125,
+              374,
+              645
+            ],
+            "display": "flex",
+            "overflowY": "auto",
+            "scrollHeight": 520,
+            "clientHeight": 520
+          },
+          "back": {
+            "box": [
+              16,
+              661,
+              124.5,
+              717
+            ],
+            "fromFoot": 127
+          },
+          "continue": {
+            "box": [
+              136.5,
+              661,
+              374,
+              717
+            ],
+            "fromFoot": 127,
+            "rightMargin": 16,
+            "enabled": true
+          },
+          "buttonsBelowScroll": true
+        },
+        "gate360": {
+          "viewport": "360x740",
+          "docScrollWidth": 360,
+          "input": {
+            "box": [
+              65,
+              250,
+              323,
+              298
+            ],
+            "value": "ZZ TEST PHONE P",
+            "scrollWidth": 232,
+            "clientWidth": 232,
+            "wholeNameShows": true
+          },
+          "age": {
+            "box": [
+              33,
+              310,
+              323,
+              366
+            ],
+            "text": "Tap to set age",
+            "underTheName": true,
+            "width": 290
+          },
+          "card": {
+            "box": [
+              16,
+              233,
+              340,
+              383
+            ],
+            "height": 150,
+            "wholeInView": true
+          },
+          "gateScroll": {
+            "box": [
+              16,
+              125,
+              344,
+              541
+            ],
+            "display": "flex",
+            "overflowY": "auto",
+            "scrollHeight": 416,
+            "clientHeight": 416
+          },
+          "back": {
+            "box": [
+              16,
+              557,
+              124.5,
+              613
+            ],
+            "fromFoot": 127
+          },
+          "continue": {
+            "box": [
+              136.5,
+              557,
+              344,
+              613
+            ],
+            "fromFoot": 127,
+            "rightMargin": 16,
+            "enabled": true
+          },
+          "buttonsBelowScroll": true
+        },
+        "sideways844": {
+          "form844": 0,
+          "formAfterUpright": 0,
+          "sales": []
+        },
+        "sideways740": {
+          "headingGone": true,
+          "scrollerHeight": 140,
+          "formShare": 38.9
+        }
+      }
+    },
+    "7 door check-in success line at once": {
+      "pass": true,
+      "pictures": [
+        "07b-door-check-in-dialog-first-picture-at-once.png",
+        "07c-door-check-in-dialog-a-second-later.png",
+        "07d-door-check-in-dialog-close-up.png"
+      ],
+      "seen": {
+        "first": {
+          "at": 1794528057826,
+          "line": "Receipt Z96301-000001 • ฿915 • Cash",
+          "lineAfterPicture": "Receipt Z96301-000001 • ฿915 • Cash",
+          "pictureTookMs": 138
+        },
+        "second": {
+          "line": "Receipt Z96301-000001 • ฿915 • Cash",
+          "msAfterFirst": 1004
+        },
+        "observed": {
+          "t0": 514813.1999999881,
+          "seen": [
+            {
+              "ms": 0,
+              "text": "Receipt Z96301-000001 • ฿915 • Cash"
+            }
+          ]
+        },
+        "title": "Check in the drop-off child?",
+        "buttons": [
+          "Leave as booked",
+          "Check in now"
+        ]
+      }
+    },
+    "8 one-row categories with a mouse wheel": {
+      "pass": true,
+      "pictures": [
+        "08a-1440x900-split-fnb-row-at-the-start.png",
+        "08b-1440x900-split-fnb-wheel-moved-the-row-both-arrows.png",
+        "08c-1440x900-split-fnb-rolled-to-the-last-right-arrow-gone.png",
+        "08d-1440x900-split-fnb-left-arrow-moved-back-a-row-width.png",
+        "08e-1440x900-split-fnb-far-category-chosen-row-rolled-back-to-start.png",
+        "08f-1440x900-split-fnb-search-typed.png",
+        "08g-1440x900-split-fnb-search-cleared-chosen-category-back-in-view.png",
+        "08sa-1440x900-split-shop-row-at-the-start.png",
+        "08sb2-1440x900-split-shop-row-close-up-both-arrows.png",
+        "08sc2-1440x900-split-shop-row-close-up-at-the-end.png",
+        "08sd-1440x900-split-shop-left-arrow-moved-back-a-row-width.png",
+        "08h-1440x900-full-width-fnb-categories-wrap-no-arrows.png",
+        "08sh-1440x900-full-width-shop-categories-wrap-no-arrows.png"
+      ],
+      "seen": {
+        "fnb": {
+          "rollsToTheEnd": 31,
+          "last": {
+            "text": "Free Drinks Menu",
+            "whole": true
+          },
+          "pastTheEnd": [
+            {
+              "prevented": false,
+              "dx": 0,
+              "dy": 100
+            },
+            {
+              "prevented": false,
+              "dx": 0,
+              "dy": 100
+            }
+          ],
+          "leftArrow": {
+            "before": 3056,
+            "after": 2846,
+            "moved": 210,
+            "rowWidth": 306,
+            "share": 0.69,
+            "arrows": {
+              "earlier": true,
+              "more": true
+            }
+          },
+          "afterClear": {
+            "text": "Specials",
+            "box": [
+              139.7,
+              226,
+              274.1,
+              274
+            ],
+            "whole": true
+          }
+        },
+        "shop": {
+          "rollsToTheEnd": 4,
+          "last": {
+            "text": "Workshop",
+            "whole": true
+          },
+          "leftArrow": {
+            "before": 352,
+            "after": 142,
+            "moved": 210,
+            "rowWidth": 306,
+            "share": 0.69,
+            "arrows": {
+              "earlier": true,
+              "more": true
+            }
+          }
+        },
+        "full": {
+          "fnb": {
+            "wrap": "wrap",
+            "lines": 4,
+            "count": 24,
+            "box": [
+              24,
+              226,
+              1035,
+              442
+            ],
+            "scrollWidth": 1011,
+            "clientWidth": 1011,
+            "earlier": null,
+            "more": null,
+            "seenAll": true,
+            "wheel": [
+              false,
+              false
+            ],
+            "scrollLeftAfterWheel": 0,
+            "arrowButtons": 0
+          },
+          "shop": {
+            "wrap": "wrap",
+            "lines": 1,
+            "count": 5,
+            "box": [
+              24,
+              170,
+              1035,
+              218
+            ],
+            "scrollWidth": 1011,
+            "clientWidth": 1011,
+            "earlier": null,
+            "more": null,
+            "seenAll": true,
+            "wheel": [
+              false,
+              false
+            ],
+            "scrollLeftAfterWheel": 0,
+            "arrowButtons": 0
+          }
+        }
+      }
+    },
+    "9 Save as partly paid says sale on the Shop, order on F&B; refunded": {
+      "pass": true,
+      "pictures": [
+        "09b-1440x900-split-shop-save-as-partly-paid-dialog-words.png",
+        "09c-1440x900-split-shop-dialog-close-up.png",
+        "09fc-1440x900-split-fnb-dialog-close-up.png",
+        "09g-manager-history-partly-paid-own-sales.png",
+        "09h-manager-refund-dialog-part-paid.png"
+      ],
+      "seen": {
+        "shop": "฿50 paid, balance ฿50. The sale is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new sale.",
+        "fnb": "฿50 paid, balance ฿125. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.",
+        "refunds": [
+          {
+            "id": "c6fb6b",
+            "hhmm": "07:17",
+            "gross": 175,
+            "label": "Refund ฿50",
+            "status": 200,
+            "saleAfter": "voided",
+            "refundStatus": "refunded"
+          },
+          {
+            "id": "996373",
+            "hhmm": "07:16",
+            "gross": 100,
+            "label": "Refund ฿50",
+            "status": 200,
+            "saleAfter": "voided",
+            "refundStatus": "refunded"
+          }
+        ]
+      }
+    }
+  },
+  "reads": {
+    "bundle": {
+      "files": 2,
+      "categoryRow": 1,
+      "earlier": 2,
+      "more": 2,
+      "cdMenu": 10,
+      "badgeDone": 5,
+      "gateScroll": 1,
+      "saleWord": 1,
+      "maxH520": 4
+    },
+    "p5first": {
+      "facts": {
+        "url": "/display?keyboard=screen",
+        "touch": 1,
+        "w": 600,
+        "h": 1024,
+        "theme": "dark"
+      },
+      "600x1024": {
+        "keysClosed": {
+          "viewport": "600x1024",
+          "maxScroll": 133,
+          "positionsRead": 18,
+          "worstSeenOverlapPx2": 0,
+          "worstRawOverlapPx2": 0,
+          "top": {
+            "scrollTop": 0,
+            "numberRow": [
+              76,
+              364,
+              524,
+              428
+            ],
+            "numberBox": [
+              216.5,
+              364,
+              524,
+              428
+            ],
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "bottom": {
+            "scrollTop": 133,
+            "numberRow": [
+              76,
+              231,
+              524,
+              295
+            ],
+            "numberBox": [
+              216.5,
+              231,
+              524,
+              295
+            ],
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "scrollerClass": "flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300 max-[640px]:mt-13 max-[640px]:pt-1"
+        },
+        "keysOpen": {
+          "viewport": "600x1024",
+          "maxScroll": 355,
+          "positionsRead": 46,
+          "worstSeenOverlapPx2": 0,
+          "worstRawOverlapPx2": 1271.3,
+          "top": {
+            "scrollTop": 0,
+            "numberRow": [
+              76,
+              364,
+              524,
+              428
+            ],
+            "numberBox": [
+              216.5,
+              364,
+              524,
+              428
+            ],
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "bottom": {
+            "scrollTop": 355,
+            "numberRow": [
+              76,
+              9,
+              524,
+              73
+            ],
+            "numberBox": [
+              216.5,
+              9,
+              524,
+              73
+            ],
+            "language": [
+              486.6,
+              16,
+              584,
+              50
+            ],
+            "scroller": [
+              0,
+              52,
+              600,
+              879
+            ],
+            "rawOverlapPx2": 1271.3,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "scrollerClass": "flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300 max-[640px]:mt-13 max-[640px]:pt-1"
+        },
+        "keysAfterHide": 0
+      },
+      "1024x600": {
+        "keysClosed": {
+          "viewport": "1024x600",
+          "maxScroll": 457,
+          "positionsRead": 59,
+          "worstSeenOverlapPx2": 0,
+          "worstRawOverlapPx2": 0,
+          "top": {
+            "scrollTop": 0,
+            "numberRow": [
+              288,
+              264,
+              736,
+              328
+            ],
+            "numberBox": [
+              428.5,
+              264,
+              736,
+              328
+            ],
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "bottom": {
+            "scrollTop": 457,
+            "numberRow": [
+              288,
+              -193,
+              736,
+              -129
+            ],
+            "numberBox": [
+              428.5,
+              -193,
+              736,
+              -129
+            ],
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "scrollerClass": "flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300 max-[640px]:mt-13 max-[640px]:pt-1"
+        },
+        "keysOpen": {
+          "viewport": "1024x600",
+          "maxScroll": 647,
+          "positionsRead": 82,
+          "worstSeenOverlapPx2": 0,
+          "worstRawOverlapPx2": 0,
+          "top": {
+            "scrollTop": 0,
+            "numberRow": [
+              288,
+              264,
+              736,
+              328
+            ],
+            "numberBox": [
+              428.5,
+              264,
+              736,
+              328
+            ],
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "bottom": {
+            "scrollTop": 647,
+            "numberRow": [
+              288,
+              -383,
+              736,
+              -319
+            ],
+            "numberBox": [
+              428.5,
+              -383,
+              736,
+              -319
+            ],
+            "language": [
+              910.6,
+              16,
+              1008,
+              50
+            ],
+            "scroller": [
+              0,
+              0,
+              1024,
+              455
+            ],
+            "rawOverlapPx2": 0,
+            "seenOverlapPx2": 0,
+            "topmostAtLangIsLang": true
+          },
+          "scrollerClass": "flex-1 flex flex-col p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300 max-[640px]:mt-13 max-[640px]:pt-1"
+        },
+        "keysAfterHide": 0
+      }
+    },
+    "p1start": {
+      "namePlacing600": {
+        "fieldInView": true,
+        "keysInView": true,
+        "keysBelowField": true,
+        "keysOverField": false,
+        "clearOfBar": true,
+        "viewport": "600x1024",
+        "scrollTop": 0,
+        "field": [
+          329,
+          385
+        ],
+        "keys": [
+          397,
+          607
+        ],
+        "bar": [
+          947,
+          1024
+        ]
+      },
+      "pickerAge600": {
+        "viewport": "600x1024",
+        "surface": "dark",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 44,
+          "h": 44,
+          "box": [
+            477,
+            306.5,
+            521,
+            350.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          491,
+          320.5,
+          16,
+          16
+        ],
+        "back": null,
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "Age",
+            "w": 47,
+            "h": 44,
+            "box": [
+              97,
+              320.5,
+              144,
+              364.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 44,
+            "box": [
+              161.8,
+              320.5,
+              225.4,
+              364.5
+            ],
+            "disabled": true
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 44,
+            "box": [
+              243.2,
+              320.5,
+              289.4,
+              364.5
+            ],
+            "disabled": true
+          }
+        ],
+        "under44": []
+      },
+      "pickerMonth600": {
+        "viewport": "600x1024",
+        "surface": "dark",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 44,
+          "h": 44,
+          "box": [
+            477,
+            306.5,
+            521,
+            350.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          491,
+          320.5,
+          16,
+          16
+        ],
+        "back": {
+          "label": "back",
+          "text": "Back",
+          "w": 44,
+          "h": 44,
+          "box": [
+            97,
+            320.5,
+            141,
+            364.5
+          ],
+          "disabled": false
+        },
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "6 yrs",
+            "w": 54,
+            "h": 44,
+            "box": [
+              153,
+              320.5,
+              207,
+              364.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 44,
+            "box": [
+              224.8,
+              320.5,
+              288.3,
+              364.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 44,
+            "box": [
+              306.2,
+              320.5,
+              352.3,
+              364.5
+            ],
+            "disabled": true
+          }
+        ],
+        "under44": []
+      },
+      "pickerDay600": {
+        "viewport": "600x1024",
+        "surface": "dark",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 44,
+          "h": 44,
+          "box": [
+            477,
+            311.5,
+            521,
+            355.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          491,
+          325.5,
+          16,
+          16
+        ],
+        "back": {
+          "label": "back",
+          "text": "Back",
+          "w": 44,
+          "h": 44,
+          "box": [
+            97,
+            325.5,
+            141,
+            369.5
+          ],
+          "disabled": false
+        },
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "6 yrs",
+            "w": 54,
+            "h": 44,
+            "box": [
+              153,
+              325.5,
+              207,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Jan",
+            "w": 44.7,
+            "h": 44,
+            "box": [
+              224.8,
+              325.5,
+              269.5,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 44,
+            "box": [
+              287.3,
+              325.5,
+              333.5,
+              369.5
+            ],
+            "disabled": false
+          }
+        ],
+        "under44": []
+      },
+      "pickerConfirm600": {
+        "viewport": "600x1024",
+        "surface": "dark",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 44,
+          "h": 44,
+          "box": [
+            477,
+            329.5,
+            521,
+            373.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          491,
+          343.5,
+          16,
+          16
+        ],
+        "back": {
+          "label": "back",
+          "text": "Back",
+          "w": 44,
+          "h": 44,
+          "box": [
+            97,
+            343.5,
+            141,
+            387.5
+          ],
+          "disabled": false
+        },
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "6 yrs",
+            "w": 54,
+            "h": 44,
+            "box": [
+              153,
+              343.5,
+              207,
+              387.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Jan",
+            "w": 44.7,
+            "h": 44,
+            "box": [
+              224.8,
+              343.5,
+              269.5,
+              387.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "1",
+            "w": 44,
+            "h": 44,
+            "box": [
+              287.3,
+              343.5,
+              331.3,
+              387.5
+            ],
+            "disabled": false
+          }
+        ],
+        "under44": []
+      },
+      "state": {
+        "shown": true,
+        "step": "1. Your children",
+        "childName": "Zz Test Aya",
+        "allergies": null,
+        "guardian": null,
+        "keysOpen": 0,
+        "reconnecting": null
+      },
+      "mirror": {
+        "shown": true,
+        "childName": "Zz Test Aya",
+        "allergies": null,
+        "dietary": null,
+        "guardian": null,
+        "text": "The customer is filling this in PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age 6 yrs Drop-off supervision needed Required for this age — ฿225 one-time Ask the team Continue"
+      },
+      "care": {
+        "shown": true,
+        "step": "2. Care details",
+        "childName": null,
+        "allergies": "",
+        "guardian": null,
+        "keysOpen": 0,
+        "reconnecting": null
+      }
+    },
+    "p1offlineThai": {
+      "before": {
+        "line": null,
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langText": "English",
+        "langAria": "Change language",
+        "headingTop": 64,
+        "heading": "Tell us about your child",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [],
+        "paused": false,
+        "pills": [
+          "1. Your children",
+          "2. Care details",
+          "3. Agreements"
+        ]
+      },
+      "lineSeenMs": 215,
+      "lineSeen": {
+        "line": {
+          "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+          "rect": [
+            0,
+            0,
+            600,
+            57
+          ]
+        },
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langText": "English",
+        "langAria": "Change language",
+        "headingTop": 64,
+        "heading": "Tell us about your child",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [
+          "Reconnecting… what you enter is sent by itself when the connection returns."
+        ],
+        "paused": false,
+        "pills": [
+          "1. Your children",
+          "2. Care details",
+          "3. Agreements"
+        ]
+      },
+      "thaiChosenMs": 702,
+      "atOnce": {
+        "line": {
+          "text": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+          "rect": [
+            0,
+            0,
+            600,
+            37
+          ]
+        },
+        "lang": [
+          513.4,
+          16,
+          584,
+          60
+        ],
+        "langText": "ไทย",
+        "langAria": "เปลี่ยนภาษา",
+        "headingTop": 64,
+        "heading": "บอกเราเกี่ยวกับลูกของคุณ",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [
+          "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา"
+        ],
+        "paused": false,
+        "pills": [
+          "1. ลูก ๆ ของคุณ",
+          "2. ข้อมูลการดูแล",
+          "3. ข้อตกลง"
+        ],
+        "state": {
+          "shown": true,
+          "step": "2. ข้อมูลการดูแล",
+          "childName": null,
+          "allergies": "",
+          "guardian": null,
+          "keysOpen": 0,
+          "reconnecting": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา"
+        }
+      },
+      "atOnceShotMs": 1010,
+      "allergiesTap": "took the tap",
+      "keysOpen": 1,
+      "spaceKey": [
+        "ลบตัวอักษร",
+        "เว้นวรรค",
+        "ซ่อน"
+      ],
+      "typedMs": 1311,
+      "typedValue": "Zz Test Nuts",
+      "whileTyped": {
+        "line": {
+          "text": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+          "rect": [
+            0,
+            0,
+            600,
+            37
+          ]
+        },
+        "lang": [
+          513.4,
+          16,
+          584,
+          60
+        ],
+        "langText": "ไทย",
+        "langAria": "เปลี่ยนภาษา",
+        "headingTop": 64,
+        "heading": "บอกเราเกี่ยวกับลูกของคุณ",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [
+          "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา"
+        ],
+        "paused": false,
+        "pills": [
+          "1. ลูก ๆ ของคุณ",
+          "2. ข้อมูลการดูแล",
+          "3. ข้อตกลง"
+        ]
+      },
+      "placingTyped": {
+        "fieldInView": true,
+        "keysInView": true,
+        "keysBelowField": true,
+        "keysOverField": false,
+        "clearOfBar": true,
+        "viewport": "600x1024",
+        "scrollTop": 217,
+        "field": [
+          637,
+          725
+        ],
+        "keys": [
+          737,
+          947
+        ],
+        "bar": [
+          947,
+          1024
+        ]
+      },
+      "tillCopyWhileOffline": "",
+      "offlineBeforeRestoreMs": 1757,
+      "offlineMs": 8001,
+      "beforeRestore": {
+        "line": {
+          "text": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+          "rect": [
+            0,
+            0,
+            600,
+            37
+          ]
+        },
+        "lang": [
+          513.4,
+          16,
+          584,
+          60
+        ],
+        "langText": "ไทย",
+        "langAria": "เปลี่ยนภาษา",
+        "headingTop": 64,
+        "heading": "บอกเราเกี่ยวกับลูกของคุณ",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [
+          "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา"
+        ],
+        "paused": false,
+        "pills": [
+          "1. ลูก ๆ ของคุณ",
+          "2. ข้อมูลการดูแล",
+          "3. ข้อตกลง"
+        ]
+      },
+      "lineGoneMs": 797,
+      "tillHasAllergyMs": 1319,
+      "frames": [
+        {
+          "ms": 269,
+          "line": true,
+          "alert": null,
+          "inert": false,
+          "status": "กำลังเชื่อมต่อใหม่… ข้อมูลที่คุณกรอกจะถูกส่งเองเมื่อการเชื่อมต่อกลับมา",
+          "tillAllergies": ""
+        },
+        {
+          "ms": 797,
+          "line": false,
+          "alert": null,
+          "inert": false,
+          "status": "",
+          "tillAllergies": ""
+        },
+        {
+          "ms": 1319,
+          "line": false,
+          "alert": null,
+          "inert": false,
+          "status": "",
+          "tillAllergies": "Zz Test Nuts"
+        },
+        {
+          "ms": 2638,
+          "line": false,
+          "alert": null,
+          "inert": false,
+          "status": "",
+          "tillAllergies": "Zz Test Nuts"
+        }
+      ],
+      "after": {
+        "line": null,
+        "lang": [
+          513.4,
+          16,
+          584,
+          60
+        ],
+        "langText": "ไทย",
+        "langAria": "เปลี่ยนภาษา",
+        "headingTop": 64,
+        "heading": "บอกเราเกี่ยวกับลูกของคุณ",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [],
+        "paused": false,
+        "pills": [
+          "1. ลูก ๆ ของคุณ",
+          "2. ข้อมูลการดูแล",
+          "3. ข้อตกลง"
+        ]
+      },
+      "afterState": {
+        "shown": true,
+        "step": "2. ข้อมูลการดูแล",
+        "childName": null,
+        "allergies": "Zz Test Nuts",
+        "guardian": null,
+        "keysOpen": 1,
+        "reconnecting": null
+      },
+      "mirror": {
+        "shown": true,
+        "childName": null,
+        "allergies": "Zz Test Nuts",
+        "dietary": "",
+        "guardian": null,
+        "text": "The customer is filling this in PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. Zz Test Aya Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No photo yet Allergies / medical D"
+      },
+      "tillLanguage": {
+        "thaiInMirror": false,
+        "heading": "Tell us about your child",
+        "langButtons": [],
+        "languageWords": null
+      },
+      "noWaitLine": {
+        "atOnce": true,
+        "whileTyped": true,
+        "after": true
+      }
+    },
+    "p1tillAfter": {
+      "sessionDoc": {
+        "status": 200,
+        "keys": [
+          "view",
+          "source",
+          "document",
+          "leaseHeartbeatSeconds",
+          "leaseTtlSeconds",
+          "serverTime"
+        ],
+        "language": "th",
+        "stage": "input"
+      },
+      "mirror": {
+        "shown": true,
+        "childName": null,
+        "allergies": "Zz Test Nuts",
+        "dietary": "",
+        "guardian": null,
+        "text": "The customer is filling this in PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 2 of 3 · The team sees what you fill in and can help. Zz Test Aya Photo of child with parent / guardian One photo with both of you in the shot — we use it to verify pickup. No photo yet Allergies / medical D"
+      },
+      "mirrorAllergyBox": {
+        "value": "Zz Test Nuts",
+        "readOnly": false,
+        "box": [
+          897,
+          742,
+          1623,
+          830
+        ]
+      }
+    },
+    "p2list": {
+      "themeAtStart": "dark",
+      "dark": {
+        "list": {
+          "pill": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4,
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+            "color": "rgb(248, 250, 252)"
+          },
+          "open": true,
+          "listBg": "oklch(0.208 0.042 265.755)",
+          "listBox": [
+            424,
+            68,
+            584,
+            290
+          ],
+          "choices": [
+            {
+              "text": "English",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(60, 131, 246)",
+              "bg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+              "chosenClass": true
+            },
+            {
+              "text": "中文",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "ไทย",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Русский",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Français",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            }
+          ]
+        },
+        "ink": {
+          "chosen": {
+            "text": "English",
+            "color": "rgb(60, 131, 246)",
+            "ownBg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+            "inkHex": "#3c83f6",
+            "bgHex": "#16284a",
+            "ratio": 4.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "other": {
+            "text": "中文",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "thai": {
+            "text": "ไทย",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "french": {
+            "text": "Français",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          }
+        }
+      },
+      "toggle": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "themeLight": "light",
+      "light": {
+        "list": {
+          "pill": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4,
+            "bg": "oklab(0.296409 0.0199053 0.0280578 / 0.1)",
+            "color": "rgb(59, 40, 28)"
+          },
+          "open": true,
+          "listBg": "rgb(254, 253, 251)",
+          "listBox": [
+            424,
+            68,
+            584,
+            290
+          ],
+          "choices": [
+            {
+              "text": "English",
+              "h": 44,
+              "w": 158,
+              "color": "oklch(0.47 0.157 37.304)",
+              "bg": "oklab(0.664944 0.151089 0.120689 / 0.15)",
+              "chosenClass": true
+            },
+            {
+              "text": "中文",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "ไทย",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Русский",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Français",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            }
+          ]
+        },
+        "ink": {
+          "chosen": {
+            "text": "English",
+            "color": "oklch(0.47 0.157 37.304)",
+            "ownBg": "oklab(0.664944 0.151089 0.120689 / 0.15)",
+            "inkHex": "#9f2d00",
+            "bgHex": "#fce5dc",
+            "ratio": 6.11,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          },
+          "other": {
+            "text": "中文",
+            "color": "rgb(59, 40, 28)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#3b281c",
+            "bgHex": "#fefdfb",
+            "ratio": 13.71,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          },
+          "thai": {
+            "text": "ไทย",
+            "color": "rgb(59, 40, 28)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#3b281c",
+            "bgHex": "#fefdfb",
+            "ratio": 13.71,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          },
+          "french": {
+            "text": "Français",
+            "color": "rgb(59, 40, 28)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#3b281c",
+            "bgHex": "#fefdfb",
+            "ratio": 13.71,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          }
+        }
+      },
+      "themeBack": "dark",
+      "darkAgain": {
+        "list": {
+          "pill": {
+            "text": "English",
+            "h": 44,
+            "w": 97.4,
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.1)",
+            "color": "rgb(248, 250, 252)"
+          },
+          "open": true,
+          "listBg": "oklch(0.208 0.042 265.755)",
+          "listBox": [
+            424,
+            68,
+            584,
+            290
+          ],
+          "choices": [
+            {
+              "text": "English",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(60, 131, 246)",
+              "bg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+              "chosenClass": true
+            },
+            {
+              "text": "中文",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "ไทย",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Русский",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Français",
+              "h": 44,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            }
+          ]
+        },
+        "ink": {
+          "chosen": {
+            "text": "English",
+            "color": "rgb(60, 131, 246)",
+            "ownBg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+            "inkHex": "#3c83f6",
+            "bgHex": "#16284a",
+            "ratio": 4.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "other": {
+            "text": "中文",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "thai": {
+            "text": "ไทย",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "french": {
+            "text": "Français",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "display-consent: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          }
+        }
+      }
+    },
+    "p4sizes": {
+      "photo": "The team has this photo.",
+      "600x1024": {
+        "channels": [
+          {
+            "text": "WhatsApp",
+            "w": 127.1,
+            "h": 44,
+            "box": [
+              57,
+              843,
+              184.1,
+              887
+            ]
+          },
+          {
+            "text": "Telegram",
+            "w": 119.2,
+            "h": 44,
+            "box": [
+              190.1,
+              843,
+              309.3,
+              887
+            ]
+          },
+          {
+            "text": "LINE",
+            "w": 86.9,
+            "h": 44,
+            "box": [
+              315.3,
+              843,
+              402.2,
+              887
+            ]
+          }
+        ],
+        "language": {
+          "pill": 44,
+          "choices": [
+            {
+              "text": "English",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "中文",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "ไทย",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "Русский",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "Français",
+              "h": 44,
+              "w": 158
+            }
+          ]
+        },
+        "guardianPlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 0,
+          "field": [
+            329,
+            385
+          ],
+          "keys": [
+            397,
+            607
+          ],
+          "bar": [
+            887,
+            1024
+          ]
+        },
+        "allergiesPlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 0,
+          "field": [
+            473,
+            561
+          ],
+          "keys": [
+            573,
+            783
+          ],
+          "bar": [
+            947,
+            1024
+          ]
+        },
+        "namePlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "600x1024",
+          "scrollTop": 0,
+          "field": [
+            329,
+            385
+          ],
+          "keys": [
+            397,
+            607
+          ],
+          "bar": [
+            947,
+            1024
+          ]
+        },
+        "pickerOpened": {
+          "viewport": "600x1024",
+          "surface": "dark",
+          "close": {
+            "label": "close",
+            "text": "Close",
+            "w": 44,
+            "h": 44,
+            "box": [
+              477,
+              306.5,
+              521,
+              350.5
+            ],
+            "disabled": false
+          },
+          "closeIcon": [
+            491,
+            320.5,
+            16,
+            16
+          ],
+          "back": null,
+          "crumbs": [
+            {
+              "label": "crumb",
+              "text": "6 yrs",
+              "w": 54,
+              "h": 44,
+              "box": [
+                97,
+                320.5,
+                151,
+                364.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "Jan",
+              "w": 44.7,
+              "h": 44,
+              "box": [
+                168.8,
+                320.5,
+                213.5,
+                364.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "1",
+              "w": 44,
+              "h": 44,
+              "box": [
+                231.3,
+                320.5,
+                275.3,
+                364.5
+              ],
+              "disabled": false
+            }
+          ],
+          "under44": []
+        },
+        "pickerNext": {
+          "viewport": "600x1024",
+          "surface": "dark",
+          "close": {
+            "label": "close",
+            "text": "Close",
+            "w": 44,
+            "h": 44,
+            "box": [
+              477,
+              306.5,
+              521,
+              350.5
+            ],
+            "disabled": false
+          },
+          "closeIcon": [
+            491,
+            320.5,
+            16,
+            16
+          ],
+          "back": {
+            "label": "back",
+            "text": "Back",
+            "w": 44,
+            "h": 44,
+            "box": [
+              97,
+              320.5,
+              141,
+              364.5
+            ],
+            "disabled": false
+          },
+          "crumbs": [
+            {
+              "label": "crumb",
+              "text": "6 yrs",
+              "w": 54,
+              "h": 44,
+              "box": [
+                153,
+                320.5,
+                207,
+                364.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "Jan",
+              "w": 44.7,
+              "h": 44,
+              "box": [
+                224.8,
+                320.5,
+                269.5,
+                364.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "1",
+              "w": 44,
+              "h": 44,
+              "box": [
+                287.3,
+                320.5,
+                331.3,
+                364.5
+              ],
+              "disabled": false
+            }
+          ],
+          "under44": []
+        },
+        "ageAfter": "6 yrs",
+        "under44": []
+      },
+      "1024x600": {
+        "channels": [
+          {
+            "text": "WhatsApp",
+            "w": 127.1,
+            "h": 44,
+            "box": [
+              57,
+              325,
+              184.1,
+              369
+            ]
+          },
+          {
+            "text": "Telegram",
+            "w": 119.2,
+            "h": 44,
+            "box": [
+              190.1,
+              325,
+              309.3,
+              369
+            ]
+          },
+          {
+            "text": "LINE",
+            "w": 86.9,
+            "h": 44,
+            "box": [
+              315.3,
+              325,
+              402.2,
+              369
+            ]
+          }
+        ],
+        "language": {
+          "pill": 44,
+          "choices": [
+            {
+              "text": "English",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "中文",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "ไทย",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "Русский",
+              "h": 44,
+              "w": 158
+            },
+            {
+              "text": "Français",
+              "h": 44,
+              "w": 158
+            }
+          ]
+        },
+        "guardianPlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 28,
+          "field": [
+            241,
+            297
+          ],
+          "keys": [
+            309,
+            487
+          ],
+          "bar": [
+            487,
+            600
+          ]
+        },
+        "allergiesPlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 168,
+          "field": [
+            245,
+            333
+          ],
+          "keys": [
+            345,
+            523
+          ],
+          "bar": [
+            523,
+            600
+          ]
+        },
+        "namePlacing": {
+          "fieldInView": true,
+          "keysInView": true,
+          "keysBelowField": true,
+          "keysOverField": false,
+          "clearOfBar": true,
+          "viewport": "1024x600",
+          "scrollTop": 0,
+          "field": [
+            269,
+            325
+          ],
+          "keys": [
+            337,
+            515
+          ],
+          "bar": [
+            523,
+            600
+          ]
+        },
+        "pickerOpened": {
+          "viewport": "1024x600",
+          "surface": "dark",
+          "close": {
+            "label": "close",
+            "text": "Close",
+            "w": 44,
+            "h": 44,
+            "box": [
+              689,
+              94.5,
+              733,
+              138.5
+            ],
+            "disabled": false
+          },
+          "closeIcon": [
+            703,
+            108.5,
+            16,
+            16
+          ],
+          "back": null,
+          "crumbs": [
+            {
+              "label": "crumb",
+              "text": "6 yrs",
+              "w": 54,
+              "h": 44,
+              "box": [
+                309,
+                108.5,
+                363,
+                152.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "Jan",
+              "w": 44.7,
+              "h": 44,
+              "box": [
+                380.8,
+                108.5,
+                425.5,
+                152.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "1",
+              "w": 44,
+              "h": 44,
+              "box": [
+                443.3,
+                108.5,
+                487.3,
+                152.5
+              ],
+              "disabled": false
+            }
+          ],
+          "under44": []
+        },
+        "pickerNext": {
+          "viewport": "1024x600",
+          "surface": "dark",
+          "close": {
+            "label": "close",
+            "text": "Close",
+            "w": 44,
+            "h": 44,
+            "box": [
+              689,
+              94.5,
+              733,
+              138.5
+            ],
+            "disabled": false
+          },
+          "closeIcon": [
+            703,
+            108.5,
+            16,
+            16
+          ],
+          "back": {
+            "label": "back",
+            "text": "Back",
+            "w": 44,
+            "h": 44,
+            "box": [
+              309,
+              108.5,
+              353,
+              152.5
+            ],
+            "disabled": false
+          },
+          "crumbs": [
+            {
+              "label": "crumb",
+              "text": "6 yrs",
+              "w": 54,
+              "h": 44,
+              "box": [
+                365,
+                108.5,
+                419,
+                152.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "Jan",
+              "w": 44.7,
+              "h": 44,
+              "box": [
+                436.8,
+                108.5,
+                481.5,
+                152.5
+              ],
+              "disabled": false
+            },
+            {
+              "label": "crumb",
+              "text": "1",
+              "w": 44,
+              "h": 44,
+              "box": [
+                499.3,
+                108.5,
+                543.3,
+                152.5
+              ],
+              "disabled": false
+            }
+          ],
+          "under44": []
+        },
+        "ageAfter": "6 yrs",
+        "under44": []
+      },
+      "mirror": {
+        "shown": true,
+        "childName": "Zz Test Aya",
+        "allergies": null,
+        "dietary": null,
+        "guardian": null,
+        "text": "The customer is filling this in PLAYING WITH US TODAY Tell us about your child Add each child's name and age so our team can keep them safe. 1. Your children 2. Care details 3. Agreements Step 1 of 3 · The team sees what you fill in and can help. Child's name Age 6 yrs Drop-off supervision needed Required for this age — ฿225 one-time Ask the team Continue"
+      }
+    },
+    "huntLanguages": {
+      "th": {
+        "step1": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. ลูก ๆ ของคุณ",
+              "w": 141,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. ข้อมูลการดูแล",
+              "w": 147,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. ข้อตกลง",
+              "w": 111,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "ขอความช่วยเหลือจากทีมงาน",
+              "w": 191.2,
+              "h": 44,
+              "left": 257.4,
+              "right": 448.6
+            },
+            {
+              "t": "ดำเนินการต่อ",
+              "w": 107.4,
+              "h": 44,
+              "left": 460.6,
+              "right": 568
+            }
+          ]
+        },
+        "step2": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. ลูก ๆ ของคุณ",
+              "w": 141,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. ข้อมูลการดูแล",
+              "w": 147,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. ข้อตกลง",
+              "w": 111,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "ขอความช่วยเหลือจากทีมงาน",
+              "w": 191.2,
+              "h": 44,
+              "left": 161.6,
+              "right": 352.8
+            },
+            {
+              "t": "ย้อนกลับ",
+              "w": 83.8,
+              "h": 44,
+              "left": 364.8,
+              "right": 448.6
+            },
+            {
+              "t": "ดำเนินการต่อ",
+              "w": 107.4,
+              "h": 44,
+              "left": 460.6,
+              "right": 568
+            }
+          ]
+        },
+        "step3": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [
+            {
+              "a": "นี่คือหมายเลข WhatsApp ของฉัน — ส่งข้อคว",
+              "b": "ยังต้องกรอกก่อนกด เสร็จสิ้น: การยินยอมขอ",
+              "by": [
+                153.1,
+                19
+              ]
+            }
+          ],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. ลูก ๆ ของคุณ",
+              "w": 141,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. ข้อมูลการดูแล",
+              "w": 147,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. ข้อตกลง",
+              "w": 111,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "WhatsApp",
+              "w": 127.1,
+              "h": 44,
+              "left": 57,
+              "right": 184.1
+            },
+            {
+              "t": "Telegram",
+              "w": 119.2,
+              "h": 44,
+              "left": 190.1,
+              "right": 309.3
+            },
+            {
+              "t": "LINE",
+              "w": 86.9,
+              "h": 44,
+              "left": 315.3,
+              "right": 402.2
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "ขอความช่วยเหลือจากทีมงาน",
+              "w": 191.2,
+              "h": 44,
+              "left": 192.1,
+              "right": 383.3
+            },
+            {
+              "t": "ย้อนกลับ",
+              "w": 83.8,
+              "h": 44,
+              "left": 395.3,
+              "right": 479.1
+            },
+            {
+              "t": "เสร็จสิ้น",
+              "w": 76.9,
+              "h": 44,
+              "left": 491.1,
+              "right": 568
+            }
+          ]
+        }
+      },
+      "zh": {
+        "step1": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. 您的孩子",
+              "w": 114,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. 照护信息",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. 同意事项",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "请工作人员帮助",
+              "w": 132,
+              "h": 44,
+              "left": 362,
+              "right": 494
+            },
+            {
+              "t": "继续",
+              "w": 62,
+              "h": 44,
+              "left": 506,
+              "right": 568
+            }
+          ]
+        },
+        "step2": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. 您的孩子",
+              "w": 114,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. 照护信息",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. 同意事项",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "请工作人员帮助",
+              "w": 132,
+              "h": 44,
+              "left": 288,
+              "right": 420
+            },
+            {
+              "t": "返回",
+              "w": 62,
+              "h": 44,
+              "left": 432,
+              "right": 494
+            },
+            {
+              "t": "继续",
+              "w": 62,
+              "h": 44,
+              "left": 506,
+              "right": 568
+            }
+          ]
+        },
+        "step3": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [
+            {
+              "a": "这是我的 WhatsApp 号码——请将有关我孩子的消息发送到这里。",
+              "b": "点击完成前还需要：您的同意 · 每一项确认 · 确认您的 WhatsApp 号码",
+              "by": [
+                404.3,
+                19
+              ]
+            }
+          ],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. 您的孩子",
+              "w": 114,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "2. 照护信息",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            },
+            {
+              "t": "3. 同意事项",
+              "w": 117,
+              "h": 44,
+              "top": 152
+            }
+          ],
+          "bar": [
+            {
+              "t": "WhatsApp",
+              "w": 127.1,
+              "h": 44,
+              "left": 57,
+              "right": 184.1
+            },
+            {
+              "t": "Telegram",
+              "w": 119.2,
+              "h": 44,
+              "left": 190.1,
+              "right": 309.3
+            },
+            {
+              "t": "LINE",
+              "w": 86.9,
+              "h": 44,
+              "left": 315.3,
+              "right": 402.2
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "请工作人员帮助",
+              "w": 132,
+              "h": 44,
+              "left": 288,
+              "right": 420
+            },
+            {
+              "t": "返回",
+              "w": 62,
+              "h": 44,
+              "left": 432,
+              "right": 494
+            },
+            {
+              "t": "完成",
+              "w": 62,
+              "h": 44,
+              "left": 506,
+              "right": 568
+            }
+          ]
+        }
+      },
+      "ru": {
+        "step1": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Ваши дети",
+              "w": 134,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "2. Сведения об уходе",
+              "w": 206,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "3. Согласия",
+              "w": 128,
+              "h": 44,
+              "top": 220
+            }
+          ],
+          "bar": [
+            {
+              "t": "Обратиться к сотрудникам",
+              "w": 222.8,
+              "h": 44,
+              "left": 211.5,
+              "right": 434.3
+            },
+            {
+              "t": "Продолжить",
+              "w": 121.7,
+              "h": 44,
+              "left": 446.3,
+              "right": 568
+            }
+          ]
+        },
+        "step2": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Ваши дети",
+              "w": 134,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "2. Сведения об уходе",
+              "w": 206,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "3. Согласия",
+              "w": 128,
+              "h": 44,
+              "top": 220
+            }
+          ],
+          "bar": [
+            {
+              "t": "Обратиться к сотрудникам",
+              "w": 222.8,
+              "h": 44,
+              "left": 123.3,
+              "right": 346.2
+            },
+            {
+              "t": "Назад",
+              "w": 76.2,
+              "h": 44,
+              "left": 358.2,
+              "right": 434.3
+            },
+            {
+              "t": "Продолжить",
+              "w": 121.7,
+              "h": 44,
+              "left": 446.3,
+              "right": 568
+            }
+          ]
+        },
+        "step3": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [
+            {
+              "a": "WhatsApp",
+              "b": "Чтобы нажать «Готово», осталось: ваше со",
+              "by": [
+                69,
+                12
+              ]
+            },
+            {
+              "a": "Telegram",
+              "b": "Чтобы нажать «Готово», осталось: ваше со",
+              "by": [
+                63.2,
+                12
+              ]
+            },
+            {
+              "a": "LINE",
+              "b": "Чтобы нажать «Готово», осталось: ваше со",
+              "by": [
+                30.9,
+                12
+              ]
+            }
+          ],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Ваши дети",
+              "w": 134,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "2. Сведения об уходе",
+              "w": 206,
+              "h": 44,
+              "top": 220
+            },
+            {
+              "t": "3. Согласия",
+              "w": 128,
+              "h": 44,
+              "top": 220
+            }
+          ],
+          "bar": [
+            {
+              "t": "Очистить",
+              "w": 141.3,
+              "h": 80,
+              "left": 76,
+              "right": 217.3
+            },
+            {
+              "t": "0",
+              "w": 141.3,
+              "h": 80,
+              "left": 229.3,
+              "right": 370.7
+            },
+            {
+              "t": "",
+              "w": 141.3,
+              "h": 80,
+              "left": 382.7,
+              "right": 524
+            },
+            {
+              "t": "WhatsApp",
+              "w": 127.1,
+              "h": 44,
+              "left": 57,
+              "right": 184.1
+            },
+            {
+              "t": "Telegram",
+              "w": 119.2,
+              "h": 44,
+              "left": 190.1,
+              "right": 309.3
+            },
+            {
+              "t": "LINE",
+              "w": 86.9,
+              "h": 44,
+              "left": 315.3,
+              "right": 402.2
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "Обратиться к сотрудникам",
+              "w": 222.8,
+              "h": 44,
+              "left": 164.2,
+              "right": 387
+            },
+            {
+              "t": "Назад",
+              "w": 76.2,
+              "h": 44,
+              "left": 399,
+              "right": 475.2
+            },
+            {
+              "t": "Готово",
+              "w": 80.8,
+              "h": 44,
+              "left": 487.2,
+              "right": 568
+            }
+          ]
+        }
+      },
+      "fr": {
+        "step1": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Vos enfants",
+              "w": 141,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "2. Informations de soin",
+              "w": 211,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "3. Accords",
+              "w": 117,
+              "h": 44,
+              "top": 180
+            }
+          ],
+          "bar": [
+            {
+              "t": "Demander à l'équipe",
+              "w": 172.2,
+              "h": 44,
+              "left": 283.8,
+              "right": 456.1
+            },
+            {
+              "t": "Continuer",
+              "w": 99.9,
+              "h": 44,
+              "left": 468.1,
+              "right": 568
+            }
+          ]
+        },
+        "step2": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Vos enfants",
+              "w": 141,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "2. Informations de soin",
+              "w": 211,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "3. Accords",
+              "w": 117,
+              "h": 44,
+              "top": 180
+            }
+          ],
+          "bar": [
+            {
+              "t": "Demander à l'équipe",
+              "w": 172.2,
+              "h": 44,
+              "left": 193.8,
+              "right": 366
+            },
+            {
+              "t": "Retour",
+              "w": 78,
+              "h": 44,
+              "left": 378,
+              "right": 456.1
+            },
+            {
+              "t": "Continuer",
+              "w": 99.9,
+              "h": 44,
+              "left": 468.1,
+              "right": 568
+            }
+          ]
+        },
+        "step3": {
+          "problems": true,
+          "truncated": [],
+          "spill": [],
+          "outside": [],
+          "pastRight": [],
+          "overlaps": [
+            {
+              "a": "WhatsApp",
+              "b": "Encore nécessaire avant Terminé : votre ",
+              "by": [
+                71.1,
+                9
+              ]
+            },
+            {
+              "a": "Telegram",
+              "b": "Encore nécessaire avant Terminé : votre ",
+              "by": [
+                63.2,
+                9
+              ]
+            },
+            {
+              "a": "LINE",
+              "b": "Encore nécessaire avant Terminé : votre ",
+              "by": [
+                30.9,
+                9
+              ]
+            },
+            {
+              "a": "C'est mon numéro WhatsApp — envoyez les ",
+              "b": "Demander à l'équipe",
+              "by": [
+                138.2,
+                10.3
+              ]
+            }
+          ],
+          "sideways": false,
+          "pills": [
+            {
+              "t": "1. Vos enfants",
+              "w": 141,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "2. Informations de soin",
+              "w": 211,
+              "h": 44,
+              "top": 180
+            },
+            {
+              "t": "3. Accords",
+              "w": 117,
+              "h": 44,
+              "top": 180
+            }
+          ],
+          "bar": [
+            {
+              "t": "WhatsApp",
+              "w": 127.1,
+              "h": 44,
+              "left": 57,
+              "right": 184.1
+            },
+            {
+              "t": "Telegram",
+              "w": 119.2,
+              "h": 44,
+              "left": 190.1,
+              "right": 309.3
+            },
+            {
+              "t": "LINE",
+              "w": 86.9,
+              "h": 44,
+              "left": 315.3,
+              "right": 402.2
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "",
+              "w": 24,
+              "h": 24,
+              "left": 74,
+              "right": 98
+            },
+            {
+              "t": "Demander à l'équipe",
+              "w": 172.2,
+              "h": 44,
+              "left": 205.3,
+              "right": 377.5
+            },
+            {
+              "t": "Retour",
+              "w": 78,
+              "h": 44,
+              "left": 389.5,
+              "right": 467.5
+            },
+            {
+              "t": "Terminé",
+              "w": 88.5,
+              "h": 44,
+              "left": 479.5,
+              "right": 568
+            }
+          ]
+        }
+      }
+    },
+    "p1control": {
+      "before": {
+        "line": null,
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langText": "English",
+        "langAria": "Change language",
+        "headingTop": 64,
+        "heading": "Tell us about your child",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [],
+        "paused": false,
+        "pills": [
+          "1. Your children",
+          "2. Care details",
+          "3. Agreements"
+        ]
+      },
+      "tillLineBefore": "The family is filling in the form on the display; it appears here as they go. Help with the details here if they ask.",
+      "lineSeenMs": 207,
+      "pressedMs": 227,
+      "offlineFrames": [
+        {
+          "ms": 532,
+          "inert": true,
+          "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+          "status": "Reconnecting… what you enter is sent by itself when the connection returns. | The team is coming to help you. | Please wait for the team to confirm this change.",
+          "headingTop": 120
+        },
+        {
+          "ms": 3326,
+          "inert": true,
+          "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+          "status": "Reconnecting… what you enter is sent by itself when the connection returns. | The team is coming to help you. | Please wait for the team to confirm this change.",
+          "headingTop": 120
+        }
+      ],
+      "locked": {
+        "line": {
+          "text": "Reconnecting… what you enter is sent by itself when the connection returns.",
+          "rect": [
+            0,
+            56,
+            600,
+            113
+          ]
+        },
+        "lang": [
+          486.6,
+          72,
+          584,
+          116
+        ],
+        "langText": "English",
+        "langAria": "Change language",
+        "headingTop": 120,
+        "heading": "Tell us about your child",
+        "formTop": 56,
+        "formInert": true,
+        "alert": {
+          "text": "Connection interrupted. Please retry when the connection returns. Retry",
+          "rect": [
+            0,
+            0,
+            600,
+            56
+          ]
+        },
+        "status": [
+          "Reconnecting… what you enter is sent by itself when the connection returns.",
+          "The team is coming to help you.",
+          "Please wait for the team to confirm this change."
+        ],
+        "paused": false,
+        "pills": [
+          "1. Your children",
+          "2. Care details",
+          "3. Agreements"
+        ]
+      },
+      "typingRefused": "refused: locator.tap: Timeout 2000ms exceeded.",
+      "offlineMs": 7502,
+      "backFrames": [
+        {
+          "ms": 312,
+          "inert": true,
+          "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+          "status": "Reconnecting… what you enter is sent by itself when the connection returns. | The team is coming to help you. | Please wait for the team to confirm this change."
+        },
+        {
+          "ms": 936,
+          "inert": true,
+          "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+          "status": "The team is coming to help you. | Please wait for the team to confirm this change."
+        },
+        {
+          "ms": 12431,
+          "inert": true,
+          "alert": "Connection interrupted. Please retry when the connection returns. Retry",
+          "status": "The team is coming to help you. | Please wait for the team to confirm this change."
+        }
+      ],
+      "wentByItselfMs": null,
+      "retryPressed": true,
+      "afterRetryMs": 12758,
+      "after": {
+        "line": null,
+        "lang": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "langText": "English",
+        "langAria": "Change language",
+        "headingTop": 64,
+        "heading": "Tell us about your child",
+        "formTop": 0,
+        "formInert": false,
+        "alert": null,
+        "status": [
+          "The team is coming to help you."
+        ],
+        "paused": false,
+        "pills": [
+          "1. Your children",
+          "2. Care details",
+          "3. Agreements"
+        ]
+      },
+      "afterButtons": [
+        {
+          "t": "WhatsApp",
+          "disabled": false
+        },
+        {
+          "t": "Telegram",
+          "disabled": false
+        },
+        {
+          "t": "LINE",
+          "disabled": false
+        },
+        {
+          "t": "",
+          "disabled": false
+        },
+        {
+          "t": "",
+          "disabled": false
+        },
+        {
+          "t": "",
+          "disabled": false
+        },
+        {
+          "t": "",
+          "disabled": false
+        },
+        {
+          "t": "",
+          "disabled": false
+        },
+        {
+          "t": "Ask the team",
+          "disabled": true
+        },
+        {
+          "t": "Back",
+          "disabled": false
+        },
+        {
+          "t": "Done",
+          "disabled": true
+        }
+      ],
+      "tillLineAfter": "The family asked for help: fill the form here with them. The agreement ticks stay theirs, on the display.",
+      "tillText": "asked for help: fill the form here with them"
+    },
+    "p7door": {
+      "missing": null,
+      "doneEnabled": true,
+      "reg": {
+        "status": 200,
+        "id": "01a1d235-0b98-7861-a122-b9069bd2d430"
+      },
+      "amountDue": "฿915",
+      "door": {
+        "first": {
+          "at": 1794528057826,
+          "line": "Receipt Z96301-000001 • ฿915 • Cash",
+          "lineAfterPicture": "Receipt Z96301-000001 • ฿915 • Cash",
+          "pictureTookMs": 138
+        },
+        "second": {
+          "line": "Receipt Z96301-000001 • ฿915 • Cash",
+          "msAfterFirst": 1004
+        },
+        "observed": {
+          "t0": 514813.1999999881,
+          "seen": [
+            {
+              "ms": 0,
+              "text": "Receipt Z96301-000001 • ฿915 • Cash"
+            }
+          ]
+        },
+        "title": "Check in the drop-off child?",
+        "buttons": [
+          "Leave as booked",
+          "Check in now"
+        ]
+      },
+      "after": {
+        "children": [
+          "Zz Test Aya: in_park, allergies Zz Test Nuts"
+        ],
+        "guardian": "Zz Test Parent A",
+        "language": null,
+        "sale": "Z96301-000001 finalised 915"
+      }
+    },
+    "p3review": {
+      "member": {
+        "name": "Zz Test Parent A | ",
+        "children": [
+          "Zz Test Aya 2020-01-01"
+        ]
+      },
+      "tillDialog": [
+        "Who's visiting today? Zz Test Parent A's saved children. Confirm who's here and double-check allergies — nothing is applied without your confirmation. Zz Test A"
+      ],
+      "theme1": "dark",
+      "darkCheck": {
+        "css": {
+          "text": "Saved — still correct?",
+          "color": "oklch(0.879 0.169 91.605)",
+          "ownBg": "rgba(0, 0, 0, 0)",
+          "inkHex": "#ffd230",
+          "bgHex": "#1b2334",
+          "ratio": 10.87,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+          ]
+        },
+        "drawn": {
+          "ground": "#11273c",
+          "ink": "#ffd235",
+          "ratio": 10.53,
+          "size": [
+            215,
+            38
+          ]
+        }
+      },
+      "theme2": "light",
+      "lightCheck": {
+        "css": {
+          "text": "Saved — still correct?",
+          "color": "oklch(0.473 0.137 46.201)",
+          "ownBg": "rgba(0, 0, 0, 0)",
+          "inkHex": "#973c00",
+          "bgHex": "#f1eae4",
+          "ratio": 5.97,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+          ]
+        },
+        "drawn": {
+          "ground": "#f5e9dc",
+          "ink": "#963c00",
+          "ratio": 5.97,
+          "size": [
+            215,
+            38
+          ]
+        }
+      },
+      "lightDone": {
+        "css": {
+          "text": "Confirmed",
+          "color": "oklch(0.432 0.095 166.913)",
+          "ownBg": "oklab(0.696 -0.162114 0.0511766 / 0.2)",
+          "inkHex": "#006045",
+          "bgHex": "#bfe7d3",
+          "ratio": 5.66,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+          ]
+        },
+        "drawn": {
+          "ground": "#c2e6cd",
+          "ink": "#006045",
+          "ratio": 5.62,
+          "size": [
+            130,
+            38
+          ]
+        }
+      },
+      "theme3": "light",
+      "darkDone": {
+        "css": {
+          "text": "Confirmed",
+          "color": "oklch(0.432 0.095 166.913)",
+          "ownBg": "oklab(0.696 -0.162114 0.0511766 / 0.2)",
+          "inkHex": "#006045",
+          "bgHex": "#bfe7d3",
+          "ratio": 5.66,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+          ]
+        },
+        "drawn": {
+          "ground": "#c2e6cd",
+          "ink": "#006045",
+          "ratio": 5.62,
+          "size": [
+            130,
+            38
+          ]
+        }
+      },
+      "reviewText": "ZZ TEST SCRUM-963 desk till 1794527542269 · ZZ TEST SCRUM-963 display main WELCOME BACK Is this still your child? Choose a saved child for each place, check their name and age, then confirm. Child 1 Confirmed Child's name Age 6 yrs Zz Test Aya (age 6) + A new child — ask the team Ask the team to remove a child Edits stay on this display until you press Confirm. Wait for the member's record to be c",
+      "fit": {
+        "viewport": [
+          600,
+          1024
+        ],
+        "pageSideways": false,
+        "truncated": [],
+        "spill": [],
+        "outsideViewport": [],
+        "sidewaysScrollers": [],
+        "pastRightEdge": [],
+        "overlaps": [],
+        "problems": true
+      }
+    },
+    "p3reviewDark": {
+      "themeNow": "light",
+      "menu": [
+        {
+          "t": "Staff",
+          "pressed": null
+        },
+        {
+          "t": "Staff",
+          "pressed": null
+        },
+        {
+          "t": "Display",
+          "pressed": null
+        },
+        {
+          "t": "Display",
+          "pressed": null
+        }
+      ],
+      "toggle0": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "toggle1": "Theme Staff Display Staff follows your account. Display: this till's customer screen, and a paired display keeps it.",
+      "themeAfter": "dark",
+      "darkDone": {
+        "css": {
+          "text": "Confirmed",
+          "color": "oklch(0.845 0.143 164.978)",
+          "ownBg": "oklab(0.696 -0.162114 0.0511766 / 0.2)",
+          "inkHex": "#5ee9b5",
+          "bgHex": "#0b3f3d",
+          "ratio": 7.73,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+          ]
+        },
+        "drawn": {
+          "ground": "#044343",
+          "ink": "#5ee9b5",
+          "ratio": 7.3,
+          "size": [
+            130,
+            38
+          ]
+        }
+      }
+    },
+    "p4half": {
+      "revoke": {
+        "label": "main",
+        "revoked": true
+      },
+      "staffTheme": "light",
+      "halfTheme": "light",
+      "halfSizes": {
+        "lang": 34,
+        "done": 38,
+        "continue": null,
+        "askTeam": null,
+        "pills": []
+      },
+      "halfPickerAge": {
+        "viewport": "1680x1050",
+        "surface": "light",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 16,
+          "h": 16,
+          "box": [
+            1031,
+            341.5,
+            1047,
+            357.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          1031,
+          341.5,
+          16,
+          16
+        ],
+        "back": null,
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "Age",
+            "w": 47,
+            "h": 28,
+            "box": [
+              637,
+              341.5,
+              684,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 28,
+            "box": [
+              701.8,
+              341.5,
+              765.4,
+              369.5
+            ],
+            "disabled": true
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 28,
+            "box": [
+              783.2,
+              341.5,
+              829.4,
+              369.5
+            ],
+            "disabled": true
+          }
+        ],
+        "under44": [
+          {
+            "label": "close",
+            "text": "Close",
+            "w": 16,
+            "h": 16,
+            "box": [
+              1031,
+              341.5,
+              1047,
+              357.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Age",
+            "w": 47,
+            "h": 28,
+            "box": [
+              637,
+              341.5,
+              684,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 28,
+            "box": [
+              701.8,
+              341.5,
+              765.4,
+              369.5
+            ],
+            "disabled": true
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 28,
+            "box": [
+              783.2,
+              341.5,
+              829.4,
+              369.5
+            ],
+            "disabled": true
+          }
+        ]
+      },
+      "halfPickerMonth": {
+        "viewport": "1680x1050",
+        "surface": "light",
+        "close": {
+          "label": "close",
+          "text": "Close",
+          "w": 16,
+          "h": 16,
+          "box": [
+            1031,
+            337.5,
+            1047,
+            353.5
+          ],
+          "disabled": false
+        },
+        "closeIcon": [
+          1031,
+          337.5,
+          16,
+          16
+        ],
+        "back": {
+          "label": "back",
+          "text": "Back",
+          "w": 36,
+          "h": 36,
+          "box": [
+            637,
+            337.5,
+            673,
+            373.5
+          ],
+          "disabled": false
+        },
+        "crumbs": [
+          {
+            "label": "crumb",
+            "text": "6 yrs",
+            "w": 54,
+            "h": 28,
+            "box": [
+              685,
+              341.5,
+              739,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 28,
+            "box": [
+              756.8,
+              341.5,
+              820.3,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 28,
+            "box": [
+              838.2,
+              341.5,
+              884.3,
+              369.5
+            ],
+            "disabled": true
+          }
+        ],
+        "under44": [
+          {
+            "label": "close",
+            "text": "Close",
+            "w": 16,
+            "h": 16,
+            "box": [
+              1031,
+              337.5,
+              1047,
+              353.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "back",
+            "text": "Back",
+            "w": 36,
+            "h": 36,
+            "box": [
+              637,
+              337.5,
+              673,
+              373.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "6 yrs",
+            "w": 54,
+            "h": 28,
+            "box": [
+              685,
+              341.5,
+              739,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Month",
+            "w": 63.5,
+            "h": 28,
+            "box": [
+              756.8,
+              341.5,
+              820.3,
+              369.5
+            ],
+            "disabled": false
+          },
+          {
+            "label": "crumb",
+            "text": "Day",
+            "w": 46.2,
+            "h": 28,
+            "box": [
+              838.2,
+              341.5,
+              884.3,
+              369.5
+            ],
+            "disabled": true
+          }
+        ]
+      },
+      "listHalfLight": {
+        "list": {
+          "pill": {
+            "text": "English",
+            "h": 34,
+            "w": 97.4,
+            "bg": "oklab(0.296409 0.0199053 0.0280578 / 0.15)",
+            "color": "rgb(59, 40, 28)"
+          },
+          "open": true,
+          "listBg": "rgb(254, 253, 251)",
+          "listBox": [
+            1504,
+            264,
+            1664,
+            466
+          ],
+          "choices": [
+            {
+              "text": "English",
+              "h": 40,
+              "w": 158,
+              "color": "oklch(0.47 0.157 37.304)",
+              "bg": "oklab(0.664944 0.151089 0.120689 / 0.15)",
+              "chosenClass": true
+            },
+            {
+              "text": "中文",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "ไทย",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Русский",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Français",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(59, 40, 28)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            }
+          ]
+        },
+        "ink": {
+          "chosen": {
+            "text": "English",
+            "color": "oklch(0.47 0.157 37.304)",
+            "ownBg": "oklab(0.664944 0.151089 0.120689 / 0.15)",
+            "inkHex": "#9f2d00",
+            "bgHex": "#fce5dc",
+            "ratio": 6.11,
+            "gradientsUnder": [
+              "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          },
+          "other": {
+            "text": "中文",
+            "color": "rgb(59, 40, 28)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#3b281c",
+            "bgHex": "#fefdfb",
+            "ratio": 13.71,
+            "gradientsUnder": [
+              "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+            ]
+          }
+        }
+      },
+      "halfThemeDark": "dark",
+      "listHalfDark": {
+        "list": {
+          "pill": {
+            "text": "English",
+            "h": 34,
+            "w": 97.4,
+            "bg": "oklab(0.983828 -0.00126734 -0.00320476 / 0.15)",
+            "color": "rgb(248, 250, 252)"
+          },
+          "open": true,
+          "listBg": "oklch(0.208 0.042 265.755)",
+          "listBox": [
+            1504,
+            264,
+            1664,
+            466
+          ],
+          "choices": [
+            {
+              "text": "English",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(60, 131, 246)",
+              "bg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+              "chosenClass": true
+            },
+            {
+              "text": "中文",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "ไทย",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Русский",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            },
+            {
+              "text": "Français",
+              "h": 40,
+              "w": 158,
+              "color": "rgb(248, 250, 252)",
+              "bg": "rgba(0, 0, 0, 0)",
+              "chosenClass": false
+            }
+          ]
+        },
+        "ink": {
+          "chosen": {
+            "text": "English",
+            "color": "rgb(60, 131, 246)",
+            "ownBg": "oklab(0.626117 -0.0335546 -0.182861 / 0.15)",
+            "inkHex": "#3c83f6",
+            "bgHex": "#16284a",
+            "ratio": 4.04,
+            "gradientsUnder": [
+              "DIV: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          },
+          "other": {
+            "text": "中文",
+            "color": "rgb(248, 250, 252)",
+            "ownBg": "rgba(0, 0, 0, 0)",
+            "inkHex": "#f8fafc",
+            "bgHex": "#0f172b",
+            "ratio": 17.04,
+            "gradientsUnder": [
+              "DIV: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+            ]
+          }
+        }
+      },
+      "halfThemeEnd": "light",
+      "cancel": null,
+      "unknownSales": [],
+      "registrationsWritten": 0
+    },
+    "p6phone": {
+      "gate390": {
+        "viewport": "390x844",
+        "docScrollWidth": 390,
+        "input": {
+          "box": [
+            65,
+            250,
+            353,
+            298
+          ],
+          "value": "ZZ TEST PHONE P",
+          "scrollWidth": 262,
+          "clientWidth": 262,
+          "wholeNameShows": true
+        },
+        "age": {
+          "box": [
+            33,
+            310,
+            353,
+            366
+          ],
+          "text": "Tap to set age",
+          "underTheName": true,
+          "width": 320
+        },
+        "card": {
+          "box": [
+            16,
+            233,
+            370,
+            383
+          ],
+          "height": 150,
+          "wholeInView": true
+        },
+        "gateScroll": {
+          "box": [
+            16,
+            125,
+            374,
+            645
+          ],
+          "display": "flex",
+          "overflowY": "auto",
+          "scrollHeight": 520,
+          "clientHeight": 520
+        },
+        "back": {
+          "box": [
+            16,
+            661,
+            124.5,
+            717
+          ],
+          "fromFoot": 127
+        },
+        "continue": {
+          "box": [
+            136.5,
+            661,
+            374,
+            717
+          ],
+          "fromFoot": 127,
+          "rightMargin": 16,
+          "enabled": true
+        },
+        "buttonsBelowScroll": true
+      },
+      "gate360": {
+        "viewport": "360x740",
+        "docScrollWidth": 360,
+        "input": {
+          "box": [
+            65,
+            250,
+            323,
+            298
+          ],
+          "value": "ZZ TEST PHONE P",
+          "scrollWidth": 232,
+          "clientWidth": 232,
+          "wholeNameShows": true
+        },
+        "age": {
+          "box": [
+            33,
+            310,
+            323,
+            366
+          ],
+          "text": "Tap to set age",
+          "underTheName": true,
+          "width": 290
+        },
+        "card": {
+          "box": [
+            16,
+            233,
+            340,
+            383
+          ],
+          "height": 150,
+          "wholeInView": true
+        },
+        "gateScroll": {
+          "box": [
+            16,
+            125,
+            344,
+            541
+          ],
+          "display": "flex",
+          "overflowY": "auto",
+          "scrollHeight": 416,
+          "clientHeight": 416
+        },
+        "back": {
+          "box": [
+            16,
+            557,
+            124.5,
+            613
+          ],
+          "fromFoot": 127
+        },
+        "continue": {
+          "box": [
+            136.5,
+            557,
+            344,
+            613
+          ],
+          "fromFoot": 127,
+          "rightMargin": 16,
+          "enabled": true
+        },
+        "buttonsBelowScroll": true
+      },
+      "gateAged": {
+        "viewport": "390x844",
+        "docScrollWidth": 390,
+        "input": {
+          "box": [
+            65,
+            250,
+            353,
+            298
+          ],
+          "value": "ZZ TEST PHONE P",
+          "scrollWidth": 262,
+          "clientWidth": 262,
+          "wholeNameShows": true
+        },
+        "age": {
+          "box": [
+            33,
+            310,
+            353,
+            366
+          ],
+          "text": "6 yrs",
+          "underTheName": true,
+          "width": 320
+        },
+        "card": {
+          "box": [
+            16,
+            233,
+            370,
+            425
+          ],
+          "height": 192,
+          "wholeInView": true
+        },
+        "gateScroll": {
+          "box": [
+            16,
+            125,
+            374,
+            645
+          ],
+          "display": "flex",
+          "overflowY": "auto",
+          "scrollHeight": 570,
+          "clientHeight": 520
+        },
+        "back": {
+          "box": [
+            16,
+            661,
+            124.5,
+            717
+          ],
+          "fromFoot": 127
+        },
+        "continue": {
+          "box": [
+            136.5,
+            661,
+            374,
+            717
+          ],
+          "fromFoot": 127,
+          "rightMargin": 16,
+          "enabled": true
+        },
+        "buttonsBelowScroll": true
+      },
+      "sideTop": {
+        "viewport": "844x390",
+        "heading": {
+          "text": "Membership Check",
+          "topBottom": [
+            286,
+            358
+          ]
+        },
+        "headingInsideScroller": false,
+        "scroller": null,
+        "language": null,
+        "bar": null,
+        "formShare": null,
+        "docScrollWidth": 844
+      },
+      "sideScrolled": {
+        "viewport": "844x390",
+        "heading": {
+          "text": "Membership Check",
+          "topBottom": [
+            286,
+            358
+          ]
+        },
+        "headingInsideScroller": false,
+        "scroller": null,
+        "language": null,
+        "bar": null,
+        "formShare": null,
+        "docScrollWidth": 844
+      },
+      "headingGone": null,
+      "registrationsWritten": 0
+    },
+    "p6sideways": {
+      "at844": "Test harness — staff till and customer display share one live sale. Hide customer display 1 no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Weekday pricing [staff] 4 out of s",
+      "back390": "1 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard ",
+      "formBack390": 0,
+      "at740": "1 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard ",
+      "form740": 0,
+      "final390": "1 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard ",
+      "sales": []
+    },
+    "p6sideways2": {
+      "formUpright": 1,
+      "form740": 1,
+      "side740Top": {
+        "viewport": "740x360",
+        "heading": {
+          "text": "Tell us about your child",
+          "topBottom": [
+            -1072,
+            -1032
+          ]
+        },
+        "headingInsideScroller": true,
+        "scroller": {
+          "testid": "consent-form-body",
+          "scrollTop": 1136,
+          "scrollHeight": 2356,
+          "clientHeight": 140,
+          "topBottom": [
+            0,
+            140
+          ]
+        },
+        "language": [
+          -1120,
+          -1086
+        ],
+        "bar": [
+          140,
+          271
+        ],
+        "formShare": 38.9,
+        "docScrollWidth": 740
+      },
+      "side740Scrolled": {
+        "viewport": "740x360",
+        "heading": {
+          "text": "Tell us about your child",
+          "topBottom": [
+            -196,
+            -156
+          ]
+        },
+        "headingInsideScroller": true,
+        "scroller": {
+          "testid": "consent-form-body",
+          "scrollTop": 260,
+          "scrollHeight": 2356,
+          "clientHeight": 140,
+          "topBottom": [
+            0,
+            140
+          ]
+        },
+        "language": [
+          -244,
+          -210
+        ],
+        "bar": [
+          140,
+          271
+        ],
+        "formShare": 38.9,
+        "docScrollWidth": 740
+      },
+      "headingGone740": true,
+      "guardianAt740": "ZZ TEST PARENT P",
+      "form844": 0,
+      "text844": "Test harness — staff till and customer display share one live sale. Hide customer display 1 no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Chec",
+      "formAfter": 0,
+      "textAfter": "1 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Touris",
+      "sales": [],
+      "registrationsWritten": 0
+    },
+    "p8-fnb": {
+      "pics": [
+        "08a-1440x900-split-fnb-row-at-the-start.png",
+        "08b-1440x900-split-fnb-wheel-moved-the-row-both-arrows.png",
+        "08b2-1440x900-split-fnb-row-close-up-both-arrows.png",
+        "08c-1440x900-split-fnb-rolled-to-the-last-right-arrow-gone.png",
+        "08c2-1440x900-split-fnb-row-close-up-at-the-end.png",
+        "08d-1440x900-split-fnb-left-arrow-moved-back-a-row-width.png",
+        "08e-1440x900-split-fnb-far-category-chosen-row-rolled-back-to-start.png",
+        "08f-1440x900-split-fnb-search-typed.png",
+        "08g-1440x900-split-fnb-search-cleared-chosen-category-back-in-view.png",
+        "08g2-1440x900-split-fnb-row-close-up-chosen-in-view.png"
+      ],
+      "start": {
+        "row": true,
+        "box": [
+          16,
+          226,
+          322,
+          274
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 3362,
+        "scrollLeft": 0,
+        "end": 3056,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 24,
+        "earlier": null,
+        "more": {
+          "box": [
+            274,
+            230,
+            314,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "Breakfast",
+          "box": [
+            24,
+            226,
+            167.1,
+            274
+          ],
+          "whole": true
+        },
+        "last": {
+          "text": "Free Drinks Menu",
+          "whole": false
+        },
+        "seen": [
+          "Breakfast",
+          "Sides"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "afterFirstRoll": {
+        "row": true,
+        "box": [
+          16,
+          226,
+          322,
+          274
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 3362,
+        "scrollLeft": 100,
+        "end": 3056,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 24,
+        "earlier": {
+          "box": [
+            24,
+            230,
+            64,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "more": {
+          "box": [
+            274,
+            230,
+            314,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "Breakfast",
+          "box": [
+            -76,
+            226,
+            67.1,
+            274
+          ],
+          "whole": false
+        },
+        "last": {
+          "text": "Free Drinks Menu",
+          "whole": false
+        },
+        "seen": [
+          "Sides"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "rollsToTheEnd": 31,
+      "steps": [
+        {
+          "roll": 1,
+          "scrollLeft": 100,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 2,
+          "scrollLeft": 200,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 3,
+          "scrollLeft": 300,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 30,
+          "scrollLeft": 3000,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 31,
+          "scrollLeft": 3056,
+          "earlier": true,
+          "more": false,
+          "prevented": [
+            true
+          ]
+        }
+      ],
+      "atEnd": {
+        "row": true,
+        "box": [
+          16,
+          226,
+          322,
+          274
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 3362,
+        "scrollLeft": 3056,
+        "end": 3056,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 24,
+        "earlier": {
+          "box": [
+            24,
+            230,
+            64,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "more": null,
+        "chosen": {
+          "text": "Breakfast",
+          "box": [
+            -3032,
+            226,
+            -2888.9,
+            274
+          ],
+          "whole": false
+        },
+        "last": {
+          "text": "Free Drinks Menu",
+          "whole": true
+        },
+        "seen": [
+          "Free Drinks Menu"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "pastTheEnd": {
+        "events": [
+          {
+            "prevented": false,
+            "dx": 0,
+            "dy": 100
+          },
+          {
+            "prevented": false,
+            "dx": 0,
+            "dy": 100
+          }
+        ],
+        "rowScrollLeft": [
+          3056,
+          3056
+        ],
+        "pageScroller": [
+          {
+            "tag": "document",
+            "scrollTop": 0
+          },
+          {
+            "tag": "document",
+            "scrollTop": 0
+          }
+        ],
+        "winScrollY": [
+          0,
+          0
+        ]
+      },
+      "leftArrow": {
+        "before": 3056,
+        "after": 2846,
+        "moved": 210,
+        "rowWidth": 306,
+        "share": 0.69,
+        "arrows": {
+          "earlier": true,
+          "more": true
+        }
+      },
+      "farChosen": {
+        "text": "Specials",
+        "box": [
+          65.7,
+          226,
+          200.1,
+          274
+        ],
+        "whole": true
+      },
+      "backAtStart": {
+        "scrollLeft": 0,
+        "chosen": {
+          "text": "Specials",
+          "box": [
+            3020.7,
+            226,
+            3155.1,
+            274
+          ],
+          "whole": false
+        },
+        "earlier": false,
+        "more": true
+      },
+      "whileSearching": {
+        "row": false
+      },
+      "afterClear": {
+        "row": true,
+        "box": [
+          16,
+          226,
+          322,
+          274
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 3362,
+        "scrollLeft": 2881,
+        "end": 3056,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 24,
+        "earlier": {
+          "box": [
+            24,
+            230,
+            64,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "more": {
+          "box": [
+            274,
+            230,
+            314,
+            270
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "Specials",
+          "box": [
+            139.7,
+            226,
+            274.1,
+            274
+          ],
+          "whole": true
+        },
+        "last": {
+          "text": "Free Drinks Menu",
+          "whole": false
+        },
+        "seen": [
+          "Beer",
+          "Specials"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      }
+    },
+    "p8-shop": {
+      "pics": [
+        "08sa-1440x900-split-shop-row-at-the-start.png",
+        "08sb-1440x900-split-shop-wheel-moved-the-row-both-arrows.png",
+        "08sb2-1440x900-split-shop-row-close-up-both-arrows.png",
+        "08sc-1440x900-split-shop-rolled-to-the-last-right-arrow-gone.png",
+        "08sc2-1440x900-split-shop-row-close-up-at-the-end.png",
+        "08sd-1440x900-split-shop-left-arrow-moved-back-a-row-width.png",
+        "08se-1440x900-split-shop-far-category-chosen-row-rolled-back-to-start.png"
+      ],
+      "start": {
+        "row": true,
+        "box": [
+          16,
+          170,
+          322,
+          218
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 658,
+        "scrollLeft": 0,
+        "end": 352,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 5,
+        "earlier": null,
+        "more": {
+          "box": [
+            274,
+            174,
+            314,
+            214
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "All",
+          "box": [
+            24,
+            170,
+            84.6,
+            218
+          ],
+          "whole": true
+        },
+        "last": {
+          "text": "Workshop",
+          "whole": false
+        },
+        "seen": [
+          "All",
+          "Tickets & passes"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "afterFirstRoll": {
+        "row": true,
+        "box": [
+          16,
+          170,
+          322,
+          218
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 658,
+        "scrollLeft": 100,
+        "end": 352,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 5,
+        "earlier": {
+          "box": [
+            24,
+            174,
+            64,
+            214
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "more": {
+          "box": [
+            274,
+            174,
+            314,
+            214
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "All",
+          "box": [
+            -76,
+            170,
+            -15.4,
+            218
+          ],
+          "whole": false
+        },
+        "last": {
+          "text": "Workshop",
+          "whole": false
+        },
+        "seen": [
+          "Balloons"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "rollsToTheEnd": 4,
+      "steps": [
+        {
+          "roll": 1,
+          "scrollLeft": 100,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 2,
+          "scrollLeft": 200,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 3,
+          "scrollLeft": 300,
+          "earlier": true,
+          "more": true,
+          "prevented": [
+            true
+          ]
+        },
+        {
+          "roll": 4,
+          "scrollLeft": 352,
+          "earlier": true,
+          "more": false,
+          "prevented": [
+            true
+          ]
+        }
+      ],
+      "atEnd": {
+        "row": true,
+        "box": [
+          16,
+          170,
+          322,
+          218
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 658,
+        "scrollLeft": 352,
+        "end": 352,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 5,
+        "earlier": {
+          "box": [
+            24,
+            174,
+            64,
+            214
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "more": null,
+        "chosen": {
+          "text": "All",
+          "box": [
+            -328,
+            170,
+            -267.4,
+            218
+          ],
+          "whole": false
+        },
+        "last": {
+          "text": "Workshop",
+          "whole": true
+        },
+        "seen": [
+          "Merchandise",
+          "Workshop"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      },
+      "pastTheEnd": {
+        "events": [
+          {
+            "prevented": false,
+            "dx": 0,
+            "dy": 100
+          },
+          {
+            "prevented": false,
+            "dx": 0,
+            "dy": 100
+          }
+        ],
+        "rowScrollLeft": [
+          352,
+          352
+        ],
+        "pageScroller": [
+          {
+            "tag": "document",
+            "scrollTop": 0
+          },
+          {
+            "tag": "document",
+            "scrollTop": 0
+          }
+        ],
+        "winScrollY": [
+          0,
+          0
+        ]
+      },
+      "leftArrow": {
+        "before": 352,
+        "after": 142,
+        "moved": 210,
+        "rowWidth": 306,
+        "share": 0.69,
+        "arrows": {
+          "earlier": true,
+          "more": true
+        }
+      },
+      "farChosen": {
+        "text": "Workshop",
+        "box": [
+          193.7,
+          170,
+          314.2,
+          218
+        ],
+        "whole": true
+      },
+      "backAtStart": {
+        "scrollLeft": 0,
+        "chosen": {
+          "text": "Workshop",
+          "box": [
+            545.7,
+            170,
+            666.2,
+            218
+          ],
+          "whole": false
+        },
+        "earlier": false,
+        "more": true
+      },
+      "searchBoxes": 0,
+      "whileSearching": {
+        "row": "no search box on this counter"
+      },
+      "afterClear": {
+        "row": true,
+        "box": [
+          16,
+          170,
+          322,
+          218
+        ],
+        "clientWidth": 306,
+        "scrollWidth": 658,
+        "scrollLeft": 0,
+        "end": 352,
+        "wrap": "nowrap",
+        "lines": 1,
+        "count": 5,
+        "earlier": null,
+        "more": {
+          "box": [
+            274,
+            174,
+            314,
+            214
+          ],
+          "w": 40,
+          "h": 40
+        },
+        "chosen": {
+          "text": "Workshop",
+          "box": [
+            545.7,
+            170,
+            666.2,
+            218
+          ],
+          "whole": false
+        },
+        "last": {
+          "text": "Workshop",
+          "whole": false
+        },
+        "seen": [
+          "All",
+          "Tickets & passes"
+        ],
+        "pageScroller": {
+          "tag": "document",
+          "scrollTop": 0
+        },
+        "winScrollY": 0
+      }
+    },
+    "p8full": {
+      "toggle": "Show customer display",
+      "fnb": {
+        "wrap": "wrap",
+        "lines": 4,
+        "count": 24,
+        "box": [
+          24,
+          226,
+          1035,
+          442
+        ],
+        "scrollWidth": 1011,
+        "clientWidth": 1011,
+        "earlier": null,
+        "more": null,
+        "seenAll": true,
+        "wheel": [
+          false,
+          false
+        ],
+        "scrollLeftAfterWheel": 0,
+        "arrowButtons": 0
+      },
+      "shop": {
+        "wrap": "wrap",
+        "lines": 1,
+        "count": 5,
+        "box": [
+          24,
+          170,
+          1035,
+          218
+        ],
+        "scrollWidth": 1011,
+        "clientWidth": 1011,
+        "earlier": null,
+        "more": null,
+        "seenAll": true,
+        "wheel": [
+          false,
+          false
+        ],
+        "scrollLeftAfterWheel": 0,
+        "arrowButtons": 0
+      },
+      "dishDialog": {
+        "dialogs": 1,
+        "rowScrollLeft": [
+          0,
+          0
+        ],
+        "wheelEvents": [
+          {
+            "prevented": true,
+            "target": "DIV"
+          },
+          {
+            "prevented": true,
+            "target": "DIV"
+          },
+          {
+            "prevented": true,
+            "target": "DIV"
+          }
+        ],
+        "topmostAtRow": "DIV.fixed inset-0 z-50 bg-black/80 data-[state=open]:a"
+      },
+      "dialogsAfterEscape": 0,
+      "cartAfter": "Charge ฿0"
+    },
+    "p9-shop": {
+      "pics": [
+        "09a-1440x900-split-shop-partial-payment-50-cash.png",
+        "09b-1440x900-split-shop-save-as-partly-paid-dialog-words.png",
+        "09c-1440x900-split-shop-dialog-close-up.png",
+        "09d-1440x900-split-shop-saved-counter-starts-a-new-sale.png"
+      ],
+      "charge": "Charge ฿100",
+      "sale": {
+        "status": "tendering",
+        "gross": 100,
+        "partPaid": {
+          "paidSatang": 5000,
+          "balanceSatang": 5000
+        }
+      },
+      "dialog": {
+        "title": "Save as partly paid",
+        "words": "฿50 paid, balance ฿50. The sale is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new sale.",
+        "buttons": [
+          "Back",
+          "Save as partly paid",
+          "Close"
+        ]
+      },
+      "toast": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+      "saleAfter": {
+        "status": "tendering",
+        "gross": 100,
+        "receipt": null
+      },
+      "wordSale": true,
+      "wordOrder": false
+    },
+    "p9-fnb": {
+      "pics": [
+        "09fa-1440x900-split-fnb-partial-payment-50-cash.png",
+        "09fb-1440x900-split-fnb-save-as-partly-paid-dialog-words.png",
+        "09fc-1440x900-split-fnb-dialog-close-up.png",
+        "09fd-1440x900-split-fnb-saved-counter-starts-a-new-order.png"
+      ],
+      "charge": "Charge ฿175",
+      "sale": {
+        "status": "tendering",
+        "gross": 175,
+        "partPaid": {
+          "paidSatang": 5000,
+          "balanceSatang": 12500
+        }
+      },
+      "dialog": {
+        "title": "Save as partly paid",
+        "words": "฿50 paid, balance ฿125. The order is left as it is: History lists it as Partly paid with its balance, and a manager can refund what was paid from there. Nothing is printed for it, and this screen starts a new order.",
+        "buttons": [
+          "Back",
+          "Save as partly paid",
+          "Close"
+        ]
+      },
+      "toast": "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+      "saleAfter": {
+        "status": "tendering",
+        "gross": 175,
+        "receipt": null
+      },
+      "wordSale": false,
+      "wordOrder": true
+    }
+  },
+  "odd": [],
+  "hunt": [
+    {
+      "what": "first screen: a language chosen offline",
+      "before": {
+        "h2": "What's your phone number?",
+        "alert": null,
+        "status": [],
+        "inert": false,
+        "paused": false,
+        "lang": "English"
+      },
+      "lineSeen": {
+        "h2": "What's your phone number?",
+        "alert": null,
+        "status": [
+          "Reconnecting"
+        ],
+        "inert": false,
+        "paused": false,
+        "lang": "English"
+      },
+      "lineAfterMs": 255,
+      "chosenAtMs": 1333,
+      "justAfter": {
+        "h2": "เบอร์โทรศัพท์ของคุณคืออะไร?",
+        "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+        "status": [
+          "กำลังเชื่อมต่อใหม่"
+        ],
+        "inert": true,
+        "paused": false,
+        "lang": "ไทย"
+      },
+      "keypadPress": "refused: locator.tap: Timeout 2500ms exceeded.",
+      "offlineMs": 7015,
+      "beforeRestore": {
+        "h2": "เบอร์โทรศัพท์ของคุณคืออะไร?",
+        "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+        "status": [
+          "กำลังเชื่อมต่อใหม่"
+        ],
+        "inert": true,
+        "paused": false,
+        "lang": "ไทย"
+      },
+      "freeAfterMs": 1522,
+      "frames": [
+        {
+          "ms": 509,
+          "alert": "กรุณาลองอีกครั้ง ลองอีกครั้ง",
+          "status": "กำลังเชื่อมต่อใหม่",
+          "inert": true,
+          "paused": false
+        },
+        {
+          "ms": 1522,
+          "alert": null,
+          "status": "",
+          "inert": false,
+          "paused": false
+        }
+      ],
+      "after": {
+        "h2": "เบอร์โทรศัพท์ของคุณคืออะไร?",
+        "alert": null,
+        "status": [],
+        "inert": false,
+        "paused": false,
+        "lang": "ไทย"
+      },
+      "numberBoxAfter": "8X XXX XXXX",
+      "english": {
+        "h2": "What's your phone number?",
+        "alert": null,
+        "status": [],
+        "inert": false,
+        "paused": false,
+        "lang": "English"
+      }
+    },
+    {
+      "what": "the form eyebrow line against the language button at 600 wide",
+      "fr": {
+        "eyebrow": "En train de jouer chez nous aujourd'hui",
+        "words": {
+          "left": 93.7,
+          "right": 506.3,
+          "top": 32,
+          "bottom": 56
+        },
+        "language": [
+          478.4,
+          16,
+          584,
+          60
+        ],
+        "overlapPx": [
+          27.9,
+          24
+        ]
+      },
+      "ru": {
+        "eyebrow": "Играем у нас сегодня",
+        "words": {
+          "left": 180.9,
+          "right": 419.1,
+          "top": 32,
+          "bottom": 56
+        },
+        "language": [
+          477.6,
+          16,
+          584,
+          60
+        ],
+        "overlapPx": 0
+      },
+      "zh": {
+        "eyebrow": "今天来玩",
+        "words": {
+          "left": 253.2,
+          "right": 346.8,
+          "top": 32,
+          "bottom": 56
+        },
+        "language": [
+          508,
+          16,
+          584,
+          60
+        ],
+        "overlapPx": 0
+      },
+      "th": {
+        "eyebrow": "มาเล่นกับเราวันนี้",
+        "words": {
+          "left": 225.8,
+          "right": 374.2,
+          "top": 32,
+          "bottom": 56
+        },
+        "language": [
+          513.4,
+          16,
+          584,
+          60
+        ],
+        "overlapPx": 0
+      },
+      "en": {
+        "eyebrow": "Playing with us today",
+        "words": {
+          "left": 180.3,
+          "right": 419.8,
+          "top": 32,
+          "bottom": 56
+        },
+        "language": [
+          486.6,
+          16,
+          584,
+          60
+        ],
+        "overlapPx": 0
+      }
+    },
+    {
+      "what": "returning review: display offline more than 15 s (paused page), then back",
+      "whileOff": {
+        "body": "Connection paused, your order is safe",
+        "langButtons": 0
+      },
+      "frames": [
+        {
+          "ms": 509,
+          "body": "ZZ TEST SCRUM-963 desk till 1794527542269 · ZZ TEST SCRUM-963 display main WELCOME BACK Is this still your child? Choose",
+          "alert": 0
+        }
+      ],
+      "backMs": 509,
+      "langButtonsOnReview": 0
+    },
+    {
+      "what": "review: red remove link contrast",
+      "dark": {
+        "css": {
+          "text": "Ask the team to remove a child",
+          "color": "rgb(127, 29, 29)",
+          "ownBg": "rgba(0, 0, 0, 0)",
+          "inkHex": "#7f1d1d",
+          "bgHex": "#0e1f2d",
+          "ratio": 1.68,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(8, 47, 73) 0%, rgb(2, 6, 23) 50%, rgb(2, 6, 23) 100%)"
+          ]
+        },
+        "drawn": {
+          "ground": "#020f1c",
+          "ink": "#7f1d1d",
+          "ratio": 1.93,
+          "size": [
+            301,
+            48
+          ]
+        }
+      },
+      "light": {
+        "css": {
+          "text": "Ask the team to remove a child",
+          "color": "rgb(206, 34, 34)",
+          "ownBg": "rgba(0, 0, 0, 0)",
+          "inkHex": "#ce2222",
+          "bgHex": "#eef2e9",
+          "ratio": 4.76,
+          "gradientsUnder": [
+            "DIV: linear-gradient(rgb(255, 247, 237) 0%, rgb(255, 238, 222) 55%, rgb(255, 226, 204"
+          ]
+        },
+        "drawn": {
+          "ground": "#f2ebd9",
+          "ink": "#ce2222",
+          "ratio": 4.56,
+          "size": [
+            301,
+            48
+          ]
+        }
+      }
+    },
+    {
+      "what": "category arrows with a finger (touch context)",
+      "touch": 1,
+      "width": 1440,
+      "toggle": "Hide customer display",
+      "start": {
+        "row": true,
+        "wrap": "nowrap",
+        "scrollLeft": 0,
+        "more": true,
+        "earlier": false,
+        "chosen": "Breakfast"
+      },
+      "afterTapMore": {
+        "scrollLeft": 210,
+        "more": true,
+        "earlier": true,
+        "chosen": "Breakfast"
+      },
+      "afterSecondTap": {
+        "scrollLeft": 420,
+        "chosen": "Breakfast"
+      },
+      "afterTapEarlier": {
+        "scrollLeft": 210,
+        "more": true,
+        "earlier": true,
+        "chosen": "Breakfast"
+      },
+      "afterSwipe": {
+        "scrollLeft": 363,
+        "chosen": "Breakfast"
+      }
+    }
+  ],
+  "pageErrors": [
+    {
+      "page": "till",
+      "at": "setup: numbers, own desk till, sign in the desk till (reception, 1680x1050), the lane in the bundle",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "setup: numbers, own desk till, sign in the desk till (reception, 1680x1050), the lane in the bundle",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "1 (control): the display cut off again, \"Ask the team\" pressed: the form locks and offers Retry as before; restored, it goes through",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "display-main",
+      "at": "hunt: the returning family's review, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed); a dim red link in dark",
+      "kind": "console.error",
+      "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+    },
+    {
+      "page": "phone",
+      "at": "6: the phone till 390x844 and 360x740: one child no adult, the supervision gate with a long name; sideways form 844x390 scrolls its heading away",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "6: the phone till 390x844 and 360x740: one child no adult, the supervision gate with a long name; sideways form 844x390 scrolls its heading away",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "http",
+      "text": "GET /api/merch/items 404"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "http",
+      "text": "GET /api/menu/merch 404"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "http",
+      "text": "GET /api/retail/items 404"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "http",
+      "text": "GET /api/catalog/merch 404"
+    },
+    {
+      "page": "till",
+      "at": "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "9: the manager refunds what was paid on the two part-paid sales from History (1440x900)",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "9: the manager refunds what was paid on the two part-paid sales from History (1440x900)",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "till",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "till",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "mgr",
+      "at": "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/stations/:id/displays/claim",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/credentials/:id/revoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/files",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/files/:id/content",
+      "status": 204
+    },
+    {
+      "method": "POST",
+      "path": "/checkin/pickups/stays/:id/release",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/registrations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/end-of-day",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/checkin/board",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/members/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/stations/:id/displays",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "registrationsPosted": [
+    {
+      "till": "till",
+      "at": "7: family A ticks and Done on the display; cash on the till; the door check-in dialog's success line read at the first picture and a second later",
+      "status": 200,
+      "id": "01a1d235-0b98-7861-a122-b9069bd2d430",
+      "finishedAt": "2026-11-13T00:00:54.343Z"
+    }
+  ],
+  "cleanup": {
+    "displays": [
+      {
+        "label": "main",
+        "id": "01a1d22d-da8c-7cd6-952a-1f5bb47179f2",
+        "revoked": true
+      }
+    ],
+    "partPaidRefunds": [
+      {
+        "id": "c6fb6b",
+        "hhmm": "07:17",
+        "gross": 175,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      },
+      {
+        "id": "996373",
+        "hhmm": "07:16",
+        "gross": 100,
+        "label": "Refund ฿50",
+        "status": 200,
+        "saleAfter": "voided",
+        "refundStatus": "refunded"
+      }
+    ],
+    "familyA": {
+      "guardian": "Zz Test Parent A",
+      "children": [
+        "Zz Test Aya: out"
+      ]
+    },
+    "release": [
+      {
+        "child": "Zz Test Aya",
+        "status": 200
+      }
+    ],
+    "refunds": [
+      {
+        "receipt": "Z96301-000001",
+        "gross": 915,
+        "status": 200,
+        "refundStatus": "refunded",
+        "code": null
+      }
+    ],
+    "voided": [],
+    "sales": {
+      "Z96301": [
+        {
+          "receipt": null,
+          "status": "voided",
+          "gross": 175,
+          "refunded": 50
+        },
+        {
+          "receipt": null,
+          "status": "voided",
+          "gross": 100,
+          "refunded": 50
+        },
+        {
+          "receipt": "Z96301-000001",
+          "status": "refunded",
+          "gross": 915,
+          "refunded": 915
+        }
+      ],
+      "Z96302": []
+    },
+    "signOuts": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "endOfDay": {
+      "date": "2026-11-13",
+      "status": 200,
+      "openSalesOfOwnTills": 0
+    },
+    "boardOwn": [
+      {
+        "guardian": "Zz Test Parent A",
+        "children": [
+          "out"
+        ]
+      }
+    ],
+    "members": [
+      {
+        "phone": "10",
+        "archived": 200,
+        "lookupAfter": "gone"
+      },
+      {
+        "phone": "11",
+        "member": null
+      },
+      {
+        "phone": "12",
+        "member": null
+      }
+    ],
+    "signOutsFinal": {
+      "till": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "phone": {
+        "signOut": 200,
+        "meAfter": 401
+      },
+      "mgr": {
+        "signOut": 200,
+        "meAfter": 401
+      }
+    },
+    "displaysReadBack": {
+      "Z96301": [],
+      "Z96302": []
+    },
+    "stations": {
+      "Z96301": {
+        "devicesCleared": 200,
+        "retired": 200,
+        "archived": true,
+        "devices": 0
+      },
+      "Z96302": {
+        "devicesCleared": 200,
+        "retired": 200,
+        "archived": true,
+        "devices": 0
+      }
+    },
+    "adminMe": 401
+  },
+  "checks": {
+    "numbersCheckedUnused": 20,
+    "first": "0898963010",
+    "last": "0898963029"
+  },
+  "pageErrorsGrouped": {
+    "till | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "setup: numbers, own desk till, sign in the desk till (reception, 1680x1050), the lane in the bundle",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "setup: numbers, own desk till, sign in the desk till (reception, 1680x1050), the lane in the bundle",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    },
+    "display-main | console.error | Failed to load resource: net::ERR_INTERNET_DISCONNECTED": {
+      "n": 65,
+      "at": [
+        "hunt: the display first screen, a language chosen while the connection is cut (lock, Retry, free on reconnect: timed)",
+        "1: HIGH — Care details, the display cut off, ไทย chosen: no Retry, nothing pushed down, still typing; back after about 8 s, nothing pressed"
+      ]
+    },
+    "phone | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "6: the phone till 390x844 and 360x740: one child no adult, the supervision gate with a long name; sideways form 844x390 scrolls its heading away",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    },
+    "phone | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "6: the phone till 390x844 and 360x740: one child no adult, the supervision gate with a long name; sideways form 844x390 scrolls its heading away",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    },
+    "till | http | GET /api/merch/items 404": {
+      "n": 1,
+      "at": [
+        "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)"
+      ]
+    },
+    "till | console.error | Failed to load resource: the server responded with a status of 404 ()": {
+      "n": 4,
+      "at": [
+        "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)"
+      ]
+    },
+    "till | http | GET /api/menu/merch 404": {
+      "n": 1,
+      "at": [
+        "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)"
+      ]
+    },
+    "till | http | GET /api/retail/items 404": {
+      "n": 1,
+      "at": [
+        "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)"
+      ]
+    },
+    "till | http | GET /api/catalog/merch 404": {
+      "n": 1,
+      "at": [
+        "9: the Shop's items (looking for a ZZ TEST one, or one that is not stock-counted)"
+      ]
+    },
+    "mgr | http | GET /api/me 401": {
+      "n": 2,
+      "at": [
+        "9: the manager refunds what was paid on the two part-paid sales from History (1440x900)",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    },
+    "mgr | console.error | Failed to load resource: the server responded with a status of 401 ()": {
+      "n": 2,
+      "at": [
+        "9: the manager refunds what was paid on the two part-paid sales from History (1440x900)",
+        "clean up: End of Day check, members on the own numbers archived, sessions signed out, the two own tills retired, displays read back, the admin signed out"
+      ]
+    }
+  },
+  "finishedAt": "2026-11-13T00:19:55.416Z",
+  "findings": [
+    {
+      "rank": 1,
+      "what": "Phone till held sideways at 844x390 (an ordinary phone in landscape) is 768 px wide or more, so the app swaps the phone till for the desk till: the family form handed to the parent disappears and, turned upright again, the phone is back at Select Customer Type with the sale gone (nothing written). The lane's sideways rule (PHONE_SCROLL under 520 px of height) never gets to act at that size.",
+      "pictures": [
+        "06c-phone-844x390-sideways-family-form-top.png",
+        "06e-phone-390x844-after-turning-back-upright.png",
+        "06h-phone-844x390-sideways-desk-layout-form-gone.png",
+        "06i-phone-360x740-upright-again-sale-gone.png"
+      ],
+      "where": "apps/pos/src/hooks/use-mobile.tsx:3 (MOBILE_BREAKPOINT 768) and apps/pos/src/App.tsx:74-81 (phoneTicketTill = isMobile && location === \"/\")"
+    },
+    {
+      "rank": 2,
+      "what": "At 740x360 sideways the form keeps the phone layout and the heading scrolls away, but the scrolling part is 140 px of 360 (39 %); the Still-needed line with Done (131 px) and Return phone to staff (89 px) take the rest.",
+      "pictures": [
+        "06f-phone-740x360-sideways-family-form-top.png",
+        "06g-phone-740x360-sideways-scrolled-heading-gone.png"
+      ],
+      "where": "apps/pos/src/components/till/consentFormLayout.ts (PHONE_SCROLL), the bar in ConsentCapture.tsx"
+    },
+    {
+      "rank": 3,
+      "what": "Returning review on a dark display: \"Ask the team to remove a child\" is text-destructive = #7f1d1d on navy, 1.9:1 (light display 4.6:1).",
+      "pictures": [
+        "94-hunt-600-dark-review-remove-link-dim-red.png",
+        "03a-600-dark-returning-review-saved-still-correct.png"
+      ],
+      "where": "apps/pos/src/components/shared/SavedChildrenReview.tsx:280"
+    },
+    {
+      "rank": 4,
+      "what": "French form at 600 wide: the eyebrow \"EN TRAIN DE JOUER CHEZ NOUS AUJOURD'HUI\" runs 28 px under the language button (other languages clear).",
+      "pictures": [
+        "92fr-hunt-600-form-eyebrow-under-language-button-fr.png",
+        "91fr-3-hunt-600-form-fr-step3-check.png"
+      ],
+      "where": "apps/pos/src/components/till/PublicConsentCapture.tsx:595 (absolute top-4 right-4 button) and :599 (the centred eyebrow)"
+    },
+    {
+      "rank": 5,
+      "what": "\"Ask the team\" pressed while the display is cut off does not go by itself on the reconnect: still locked under the Retry bar 12.4 s after the connection came back; Retry pressed freed it (the brief calls this the old behaviour). The Retry bar and the status lines push the form down 56 px while locked.",
+      "pictures": [
+        "01h-600-control-ask-the-team-offline-form-locked-retry.png",
+        "01i-control-restored-ask-the-team-went-through-till-takes-over.png"
+      ],
+      "where": "apps/pos/src/pages/Display.tsx (resend effects only for display.set_language and a fill; lib/displaySendQueue.ts goesAgainByItself)"
+    },
+    {
+      "rank": 6,
+      "what": "The returning family's review has no language button, so a language cannot be chosen there at all (offline or not).",
+      "pictures": [
+        "03a-600-dark-returning-review-saved-still-correct.png"
+      ],
+      "where": "apps/pos/src/components/shared/PublicSavedChildrenReview.tsx (Shell without the language button)"
+    },
+    {
+      "rank": 7,
+      "what": "The first screen with ไทย chosen offline locks (inert) under a Retry bar and the reconnecting line, which push the screen down so the heading is cut; it frees itself 1.5 s after the connection returns (as expected).",
+      "pictures": [
+        "90a-hunt-600-first-screen-thai-chosen-offline.png",
+        "90b-hunt-600-first-screen-after-reconnect.png"
+      ]
+    },
+    {
+      "rank": 8,
+      "what": "The category arrows sit 8 px inside the row's ends, so an 8 px sliver of the next category shows outside each arrow (e.g. the orange chosen tile left of \"Earlier categories\").",
+      "pictures": [
+        "08b-1440x900-split-fnb-wheel-moved-the-row-both-arrows.png",
+        "08sb2-1440x900-split-shop-row-close-up-both-arrows.png"
+      ],
+      "where": "apps/pos/src/components/shared/CategoryRow.tsx:95-98 (arrows at left-0/right-0 of the wrapper, the row wider than it)"
+    },
+    {
+      "rank": 9,
+      "what": "In English the reconnecting notice wraps to two lines at 600 wide (57 px) and covers the eyebrow line; in Thai one line (37 px).",
+      "pictures": [
+        "01c-600-care-offline-reconnecting-line-english.png",
+        "01d-600-care-offline-thai-at-once-no-retry-not-pushed-down.png"
+      ]
+    },
+    {
+      "rank": 10,
+      "what": "An open display page cannot learn of a newer build: /display renders outside the staff tree, where ServiceWorkerUpdater is mounted, so it neither registers nor applies a new build; nothing on the page showed any sign of one (there was none to find).",
+      "where": "apps/pos/src/App.tsx:221 (/display route) against App.tsx:207 (ServiceWorkerUpdater in the staff tree)"
+    },
+    {
+      "rank": 11,
+      "what": "Checked and fine: a wheel over the row with a dish dialog open is caught by the dialog overlay (row does not move); the arrows work with a finger tap (210 px each) and a touch swipe moves the row; the till half's language list on a light staff theme reads (13.7:1 light, 17.0:1 dark); Thai, Chinese and Russian forms at 600 wide showed no cut or spilling words."
+    }
+  ]
+}
