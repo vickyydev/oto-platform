@@ -348,3 +348,19 @@ It starts when keptsale964 has landed (one till lane builds at a time). Tickets 
 2. SCRUM-975, the points that need no answer: "Ask the team to remove a child" readable on a dark display; the French form's line clear of the language button; "Ask the team" pressed while cut off goes by itself when the connection is back; the category arrows at the row's ends; the English reconnecting notice on one line at 600 wide; a lost photo answer without the Retry bar; a time limit on display messages; the open display page takes a new build by itself when no family is on the form.
 3. SCRUM-953, the party-page points still open (3 and the parts of 6), and point 6 of SCRUM-967 (a dish added on the till that the set menu already holds).
 Not in it (the owner's answers first): the first screen's pills at 44 pixels, the first screen and the review staying open offline (SCRUM-975 points 1 and 2), SCRUM-892 (the whole order line above the QR on the phone).
+
+## The refused card payment lane landed (13 November 08:46, main 0e8e2badf)
+Ticket: SCRUM-972 (a card payment the box refuses before it reaches the terminal no longer stays in progress for ever). Service: the platform only; no migration; no box release. Left and ticketed: SCRUM-979 (its point 1, the till showing the true reason, goes into the next till lane).
+The rule: a refusal the box's code proves sent nothing (eight refusals, listed beside the code in apps/api/src/services/payments/terminal.ts) ends the payment as not taken; anything else goes to a person; a sale or a void is never sent to the terminal twice.
+
+### Questions for the owner from this lane
+1. A card payment the box never sent now ends as "declined", the word the platform already uses for a payment that did not happen. Until the till shows the reason it reads "Payment declined. Choose a payment method." Would you rather it read "Card not started" (or other words) for this case?
+2. A refusal the box cannot prove sent nothing (the terminal unreachable, the port dying mid-write, an unreadable answer) now goes to "Staff review required", where a person reads the terminal and answers "Money taken" or "No money taken". Right, also for a real terminal that was simply switched off?
+3. A card command the box never picked up within its hour now ends the payment as not taken, with "This counter's box did not pick up the card payment in time, so the terminal was never asked. Try again, or take another way to pay." Right?
+4. An inquiry the box could not run now hands the payment to "Staff review required", with "Ask the terminal" still offered where the terminal supports it. Right?
+5. Preventing the early press: should the platform refuse Card while the box has not reported its new set-up, or send the box its set-up ahead of the card command, or leave it (the press now ends within about 5 seconds with the plain reason)?
+6. Should opening a sale in History also free a held card payment, so a manager can void it from History without reopening the till?
+7. When the box cannot send a refund's card void and nothing reached the terminal, that part of the refund now becomes "hand it back in cash" (as when the terminal refuses a void). Right?
+8. A partial approval whose rescue void the box could not send: should staff hand the partial charge back in cash and a manager mark it settled, or should a manager be able to send the void again once the box is fixed? Until then the sale stays held.
+9. A refund void that may have reached the terminal stays "Void sent to the terminal" with no way forward. Should a manager get a way to settle it after reading the terminal's slip?
+10. The staging virtual box has no void password for the Digio terminal, so every Digio void on staging is refused by the box. Give it a test password, or leave it?
