@@ -1671,7 +1671,10 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false, aut
       package: snapshot ? { templateId: snapshot.templateId ?? null, name: snapshot.packageName ?? "" } : null,
       packageItems: (snapshot?.items ?? []).map((i) => i.label ?? "").filter(Boolean),
       setMenuTemplateId: setMenuTemplateId || null,
-      menuLines: [...kidsMenu, ...adultsMenu, ...barItems].map((m) => ({ itemName: m.itemName, quantity: m.quantity, productCode: m.productCode ?? null, groupId: m.groupId ?? null })),
+      // SCRUM-978: each line with its list, so a kids' choice is compared with the kids' lines only.
+      menuLines: ([["kids", kidsMenu], ["adults", adultsMenu], ["bar", barItems]] as const).flatMap(([menu, lines]) =>
+        lines.map((m) => ({ itemName: m.itemName, quantity: m.quantity, productCode: m.productCode ?? null, groupId: m.groupId ?? null, menu })),
+      ),
       entertainment: (Array.isArray(selections) ? selections : []).map((s) => ({ templateId: s.templateId ?? null, name: s.name ?? "" })),
     };
     return { fill: body.fill, review: body.review ?? null, chatMark: body.chat?.newestMessageId ?? body.source?.messageId ?? null, held };

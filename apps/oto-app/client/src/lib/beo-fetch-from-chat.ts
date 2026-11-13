@@ -121,8 +121,11 @@ export interface FetchHeldCatalogue {
   /** The applied package's lines' labels, its add-ons among them. */
   packageItems: string[];
   setMenuTemplateId: string | null;
-  /** The kitchen plan's and the bar's lines; a set menu's chosen option carries its group's id. */
-  menuLines: Array<{ itemName: string; quantity: number; productCode: string | null; groupId: string | null }>;
+  /**
+   * The kitchen plan's and the bar's lines; a set menu's chosen option carries its group's id.
+   * SCRUM-978: and which list a line is on (absent from a caller of before: read as the kids').
+   */
+  menuLines: Array<{ itemName: string; quantity: number; productCode: string | null; groupId: string | null; menu?: BeoAiMenu }>;
   entertainment: Array<{ templateId: string | null; name: string }>;
 }
 
@@ -488,7 +491,10 @@ export function fetchCatalogueChangesOf(
       list("setMenu", "Set menu", was, menu?.name ?? "another set menu", p.setMenu.from);
     }
     for (const c of p.setMenu.choices) {
-      const chosen = held.menuLines.filter((l) => l.groupId === c.itemId).map((l) => l.itemName);
+      // SCRUM-978 (SCRUM-968 point 7): the kids' choice against the kids' choice only. The adults'
+      // own dish in the group (another option, "Different for adults") neither hides the chat's
+      // choice for the kids nor stands as what the kids hold.
+      const chosen = held.menuLines.filter((l) => l.groupId === c.itemId && (l.menu ?? "kids") === "kids").map((l) => l.itemName);
       if (known(chosen, c.option)) continue;
       const group = menu?.items.find((i) => i.id === c.itemId);
       list("choice", group ? `Set menu · ${group.label}` : "Set menu choice", chosen.length > 0 ? chosen.join(", ") : NONE, c.option, c.from);

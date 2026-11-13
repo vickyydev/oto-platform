@@ -18,6 +18,12 @@ interface EditableTextProps {
   onTab?: () => void;
   onEnter?: () => void;
   autoFocus?: boolean;
+  /**
+   * SCRUM-978 (SCRUM-968 point 7): read-only. The BEO editor passed `disabled` to its text boxes
+   * (a read-only BEO's bar lines, its acts' names) and the box ignored it: a click still opened it
+   * for typing. Disabled, it shows its value and never opens.
+   */
+  disabled?: boolean;
   "data-testid"?: string;
 }
 
@@ -33,9 +39,13 @@ export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(({
   onTab,
   onEnter,
   autoFocus = false,
+  disabled = false,
   "data-testid": testId,
 }, ref) => {
-  const [editing, setEditing] = useState(autoFocus);
+  const [editingState, setEditingState] = useState(autoFocus);
+  // Disabled, the box never opens for typing (nor stays open once disabled).
+  const editing = editingState && !disabled;
+  const setEditing = useCallback((next: boolean) => setEditingState(next && !disabled), [disabled]);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -141,14 +151,16 @@ export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(({
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled || undefined}
       onClick={() => setEditing(true)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") setEditing(true);
       }}
       className={cn(
-        "w-full rounded-md px-3 py-1.5 text-sm cursor-text transition-colors min-h-[32px] flex items-center",
-        "hover:bg-accent/50 border border-transparent hover:border-border",
+        "w-full rounded-md px-3 py-1.5 text-sm transition-colors min-h-[32px] flex items-center",
+        disabled ? "cursor-default" : "cursor-text hover:bg-accent/50 hover:border-border",
+        "border border-transparent",
         isEmpty && "text-muted-foreground/50",
         multiline && "items-start min-h-[60px] whitespace-pre-wrap",
         displayClassName,
