@@ -183,6 +183,22 @@ export function StationProvider({ children }: { children: ReactNode }) {
    */
   const [askAfterUnlock, setAskAfterUnlock] = useState<'resolve' | 'list' | null>(null);
   const [resumeAfterUnlock, setResumeAfterUnlock] = useState(0);
+  /**
+   * SCRUM-964 — the station a new session carrying on the screen asked for
+   * again (`reseat` below), refused because the session was locked (423): it
+   * is asked for again after the unlock, never assumed kept for the session.
+   */
+  const reseatAtUnlock = useRef(false);
+  const [reseatAgain, setReseatAgain] = useState(0);
+  const lockedBefore = useRef(locked);
+  useEffect(() => {
+    const unlocked = lockedBefore.current && !locked;
+    lockedBefore.current = locked;
+    if (unlocked && reseatAtUnlock.current) {
+      reseatAtUnlock.current = false;
+      setReseatAgain((n) => n + 1);
+    }
+  }, [locked]);
 
   // The prototype's own station profiles, keyed by branch, for a deployment
   // whose API has no fleet routes yet. In-memory by design, as before: they
@@ -427,8 +443,12 @@ export function StationProvider({ children }: { children: ReactNode }) {
         // change (the whole question is asked again once it is replaced), or
         // is locked (SCRUM-744). The station stays this device's and nothing
         // is said, as for no answer at all above.
-        if (refusedWhileLocked(err)
-          || (err instanceof ApiError && err.status === 403 && err.code === 'MUST_CHANGE_PASSWORD')) return;
+        // SCRUM-964 — locked: the same station is asked for again after the unlock.
+        if (refusedWhileLocked(err)) {
+          reseatAtUnlock.current = true;
+          return;
+        }
+        if (err instanceof ApiError && err.status === 403 && err.code === 'MUST_CHANGE_PASSWORD') return;
         if (err instanceof ApiError && (err.status === 403 || err.status === 404
           || ['STATION_NOT_READY', 'STATION_HAS_NO_BOX'].includes(err.code))) {
           forgetRemembered(branch.id);
@@ -445,9 +465,10 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-    // Only a new session that carries the screen on asks; the station is read from refs.
+    // Only a new session that carries the screen on asks (and asks again after
+    // an unlock its lock refused, SCRUM-964); the station is read from refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reseat]);
+  }, [reseat, reseatAgain]);
 
   // The unlock itself (SCRUM-744): ask again whatever the lock refused.
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { bridgeApi } from '@/api/bridge';
 
 /**
@@ -69,14 +69,27 @@ export function lockedFamilyFormLine(state: LockedFamilyForm): string | null {
  * The till's side, called while it stays mounted under the lock: `formOpen` is
  * whether its family form is open on the paired display (as it was when the
  * till locked: a locked till takes no answers, so it does not move).
+ *
+ * SCRUM-964 — `ended`: the lock is a session that ended (the sign-in form),
+ * not a staff lock. The family is still at the display, but the till's own
+ * picture of it goes stale as the ended session's calls are refused, so what
+ * it knew at the end stands — the form open on the display, as the till last
+ * saw it signed in — until somebody signs in (the till then shows the form
+ * itself) or the sale is dropped (its screen goes, and the line with it).
  */
-export function useLockedFamilyFormWatch({ locked, formOpen, stationId }: {
+export function useLockedFamilyFormWatch({ locked, formOpen, stationId, ended = false }: {
   locked: boolean;
   formOpen: boolean;
   stationId: string | null;
+  ended?: boolean;
 }): void {
+  /** Whether the form was open on the display as the till last knew it signed in. */
+  const lastOpen = useRef(false);
   useEffect(() => {
-    if (!locked || !formOpen) {
+    if (!locked) lastOpen.current = formOpen;
+    else if (formOpen) lastOpen.current = true;
+    const open = formOpen || (locked && ended && lastOpen.current);
+    if (!locked || !open) {
       lockedFamilyForm.set(null);
       return;
     }
@@ -103,5 +116,5 @@ export function useLockedFamilyFormWatch({ locked, formOpen, stationId }: {
       clearTimeout(timer);
       lockedFamilyForm.set(null);
     };
-  }, [locked, formOpen, stationId]);
+  }, [locked, formOpen, stationId, ended]);
 }

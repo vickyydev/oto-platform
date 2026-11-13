@@ -68,6 +68,9 @@ const operatorValue: OperatorValue = {
   discardKept: noop,
   tillSeat: null,
   reseat: 0,
+  // SCRUM-964 — nor is a kept sale waiting to be opened again after a reload.
+  keptResume: null,
+  takeKeptResume: noop,
 };
 
 const branchValue: BranchValue = {

@@ -32,7 +32,7 @@ import { consentFormPhone, contactConfirmationStands, messagingPhoneProblem, sta
 import { consentSlotPhoto, contactChangeWithdraws, staffCameraLine } from '@/lib/consentForm';
 import { useLockedFamilyFormWatch } from '@/lib/lockedFamilyForm';
 import { familyDoneDecision } from '@/lib/consentFinish';
-import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
+import { rungUpSaleOf, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { refreshSellableStock } from '@/api/stock';
 import { cartStockShortfalls } from '@/lib/stockPrecheck';
@@ -191,7 +191,7 @@ function reviewDate() {
 }
 
 export default function Till() {
-  const { operator, locked, offlineUnlock, can } = useOperator();
+  const { operator, locked, offlineUnlock, can, sessionEnded, keptResume, takeKeptResume } = useOperator();
   // The customer's half of the counter only: this page's own staff half stays in English.
   const { lang: customerLang, t: customerT } = useLanguage();
   const staffLocked = useRef(locked);
@@ -367,6 +367,12 @@ export default function Till() {
     setSaleAtStake('till', saleAtStake);
     return () => setSaleAtStake('till', false);
   }, [saleAtStake]);
+  // SCRUM-964 — and which sale is rung up on it now, for the kept sale's offer.
+  const rungUpNow = rungUpSaleOf(saleWriter.state);
+  useEffect(() => {
+    setSaleRungUp('till', rungUpNow);
+    return () => setSaleRungUp('till', null);
+  }, [rungUpNow]);
   /**
    * SCRUM-774 — which way this till is working: Held sales need the platform.
    * SCRUM-897 — the way the sale on screen works: the platform while the
@@ -1077,6 +1083,14 @@ export default function Till() {
     void resumeSale(saleId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per sale the platform names; resumeSale is redefined every render
   }, [leftBehind.resumeId, locked]);
+  // SCRUM-964 — a kept sale carried on after this tab reloaded at the sign-in
+  // form: no screen held it, so it is opened again from the platform, as above.
+  useEffect(() => {
+    if (!keptResume || locked || resumed || step !== 1 || lines.length > 0 || saleWriter.state.kind !== 'idle') return;
+    takeKeptResume();
+    void resumeSale(keptResume);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per kept sale; resumeSale is redefined every render
+  }, [keptResume, locked]);
 
   // Which sale is on this screen's payment step, for the reload that may come:
   // remembered while it is rung up and unpaid, forgotten once it is closed
@@ -3968,7 +3982,7 @@ export default function Till() {
   // SCRUM-942 — while this till is locked with the family's form open on its
   // paired display, the lock screen says so, and says when they press Done.
   useLockedFamilyFormWatch({ locked, stationId: station?.stationId ?? null,
-    formOpen: consentMirror && !consentCandidate.completed && !consentFinishing });
+    formOpen: consentMirror && !consentCandidate.completed && !consentFinishing, ended: !!sessionEnded });
 
   // Retain the same visitor through a staff lock, but unmount every child
   // surface and portal so no member details or staff controls remain visible.

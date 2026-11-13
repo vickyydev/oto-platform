@@ -31,7 +31,7 @@ import { buildItemCartPayload, offLedgerOnly, type ApiSale, type ItemCartIdentit
 import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
-import { setPaymentContextLocked } from '@/pwa/openSale';
+import { rungUpSaleOf, setPaymentContextLocked, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { PriceSourceNote } from '@/components/till/SaleWriteStatus';
 import { toast } from '@/hooks/use-toast';
 
@@ -67,7 +67,9 @@ let orderCounter = 100; // separate counter so mobile orders don't collide with 
 let lineCounter = 100;
 
 export function MobileOrderStation() {
-  const { operator } = useOperator();
+  // SCRUM-964 — the phone's F&B keeps its order under a lock, as the phone's
+  // till and shop do (`App.tsx`): while locked it asks nothing and draws nothing.
+  const { operator, locked } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   const { t } = useLanguage();
@@ -131,7 +133,7 @@ export function MobileOrderStation() {
       bandHolder: bandHolderOf(wristband, foodOverride),
     };
   }, [branch.id, station?.stationId, operator, pickupCode, wristband, foodOverride]);
-  const orderQuote = useItemCartQuote({ kind: 'fnb', lines, manualDiscounts, identity: orderIdentity, enabled: stage !== 'confirmation' });
+  const orderQuote = useItemCartQuote({ kind: 'fnb', lines, manualDiscounts, identity: orderIdentity, enabled: !locked && stage !== 'confirmation' });
   const { total, manualAmounts } = orderQuote.totals;
   const displayLines = useMemo(() => lines.map((line) => orderQuote.quote.lineTotals?.[line.id] === undefined
     ? line : { ...line, lineTotal: orderQuote.quote.lineTotals[line.id] }), [lines, orderQuote.quote.lineTotals]);
@@ -434,7 +436,7 @@ export function MobileOrderStation() {
   }
   const paymentStage = usePaymentStage({
     scope: paymentScope, isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
-    active: stage === 'payment', totalSatang: Math.round(total * 100),
+    active: stage === 'payment', paused: locked, totalSatang: Math.round(total * 100),
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
@@ -466,7 +468,29 @@ export function MobileOrderStation() {
     && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) ? paymentStage.state.attempt?.id : null;
   useEffect(() => { if (qrAttemptId) setHandoffMode('qr'); }, [qrAttemptId]);
 
+  // SCRUM-964 — as the counter's F&B says (`pages/OrderStation.tsx`): an order
+  // on screen holds off a shell update, and one with something to lose is kept
+  // for the next sign-in when a staff session ends mid-order, rung up or not.
+  const orderOnScreen = cart.length > 0 || completedOrder !== null;
+  useEffect(() => {
+    setSaleOpen('mobile-fnb', orderOnScreen);
+    return () => setSaleOpen('mobile-fnb', false);
+  }, [orderOnScreen]);
+  const orderAtStake = completedOrder === null && cart.length > 0;
+  useEffect(() => {
+    setSaleAtStake('mobile-fnb', orderAtStake);
+    return () => setSaleAtStake('mobile-fnb', false);
+  }, [orderAtStake]);
+  const rungUpNow = rungUpSaleOf(saleWriter.state);
+  useEffect(() => {
+    setSaleRungUp('mobile-fnb', rungUpNow);
+    return () => setSaleRungUp('mobile-fnb', null);
+  }, [rungUpNow]);
+
   const balance = wristband?.creditBalanceTHB ?? 0;
+
+  // Kept under the lock, it draws nothing: no member, order or payment shows through.
+  if (locked) return null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

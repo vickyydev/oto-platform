@@ -4,7 +4,7 @@ import { StationHeader } from '@/components/shared/StationHeader';
 import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
-import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
+import { rungUpSaleOf, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { codeDiscountTotal } from '@/lib/customerDisplayCopy';
@@ -205,6 +205,12 @@ export default function OrderStation() {
     setSaleAtStake('order-station', orderAtStake);
     return () => setSaleAtStake('order-station', false);
   }, [orderAtStake]);
+  // SCRUM-964 — an order rung up (a QR or card payment may be waiting) is offered Continue only, as the till's is.
+  const rungUpNow = rungUpSaleOf(saleWriter.state);
+  useEffect(() => {
+    setSaleRungUp('order-station', rungUpNow);
+    return () => setSaleRungUp('order-station', null);
+  }, [rungUpNow]);
   const [pickupCode, setPickupCode] = useState('');
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();

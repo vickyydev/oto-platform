@@ -35,7 +35,88 @@
  * the browser's storage, with no token, password or session value beside it.
  * A reload loses an unwritten cart as it always has; a sale already rung up
  * comes back through the left-behind path (`lib/leftBehindSale.ts`), as before.
+ *
+ * SCRUM-964 — A RELOAD AT THE SIGN-IN FORM. What survives it is what this tab
+ * keeps of the END, never of the sale: the form's line (whose session ended,
+ * how, and whether a sale is kept) and who may have the kept screen (the
+ * person, park, operator, station and trading day, `KeptTill`), in this tab's
+ * `sessionStorage` (`saveSessionEnd`). An unwritten cart cannot survive: its
+ * lines, member, tier, codes and the customer's number lived in the page's
+ * memory only and are gone, so after a reload the line no longer says a sale
+ * is kept. A sale the counter till had already rung up is the platform's, and
+ * is still offered to the next sign-in: the till opens it again from the
+ * platform by its id once it is checked still open at this station.
  */
+
+/** SCRUM-964 — where this tab keeps the end of a session through a reload (`sessionStorage`). */
+export const SESSION_END_KEY = 'oto.till.sessionEnded';
+
+/** What this tab keeps of an ended session through a reload: the form's line and who may have the screen. */
+export interface SavedSessionEnd {
+  ended: SessionEnded;
+  kept: KeptTill | null;
+}
+
+function tabStore(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null {
+  try {
+    return (globalThis as unknown as { sessionStorage?: Storage }).sessionStorage ?? null;
+  } catch {
+    return null; // Blocked site data: the end lives for this page only.
+  }
+}
+
+/** SCRUM-964 — keep the end of a session for a reload of this tab. Best effort. */
+export function saveSessionEnd(saved: SavedSessionEnd): void {
+  try {
+    tabStore()?.setItem(SESSION_END_KEY, JSON.stringify(saved));
+  } catch {
+    // Storage refused the write: the form still says it until a reload.
+  }
+}
+
+/** SCRUM-964 — nothing ended is kept any more: a sign-in took it, a sign-out dropped it. */
+export function forgetSessionEnd(): void {
+  try {
+    tabStore()?.removeItem(SESSION_END_KEY);
+  } catch {
+    // Nothing to forget here.
+  }
+}
+
+/**
+ * SCRUM-964 — the end of a session this tab kept before it reloaded, as the
+ * form can still say it. Only a sale the counter till rang up is still kept:
+ * anything else on screen was in the page's memory and is gone.
+ */
+export function readSessionEnd(): SavedSessionEnd | null {
+  let raw: string | null = null;
+  try {
+    raw = tabStore()?.getItem(SESSION_END_KEY) ?? null;
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const saved = JSON.parse(raw) as Partial<SavedSessionEnd> | null;
+    const ended = saved?.ended;
+    if (!ended || typeof ended.name !== 'string' || typeof ended.expired !== 'boolean') return null;
+    const kept = saved.kept && typeof saved.kept.accountId === 'string' && typeof saved.kept.tradingDate === 'string'
+      ? saved.kept : null;
+    const survives = kept?.rungUpSaleId && kept.rungUpSurface === 'till' && kept.saleSince !== null ? kept.rungUpSaleId : null;
+    let back: KeptTill | null = null;
+    if (kept) {
+      const { rungUpSaleId: _sale, rungUpSurface: _surface, ...rest } = kept;
+      back = { ...rest, saleSince: survives ? kept.saleSince : null, fromReload: true,
+        ...(survives ? { rungUpSaleId: survives, rungUpSurface: 'till' } : {}) };
+    }
+    return {
+      ended: { name: ended.name, expired: ended.expired, afterHours: ended.afterHours ?? null, saleKept: survives !== null },
+      kept: back,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /** A refusal this close to the end the platform gave counts as the end (clock drift, a slow answer). */
 export const SESSION_END_SLACK_MS = 60_000;
@@ -72,6 +153,13 @@ export interface KeptTill {
    * Absent when the sale on screen was still a cart.
    */
   rungUpSaleId?: string;
+  /**
+   * SCRUM-964 — the selling surface that rang it up (`setSaleRungUp`): only
+   * the counter till's ('till') can open a sale again by its id after a reload.
+   */
+  rungUpSurface?: string;
+  /** SCRUM-964 — read back from this tab's storage after a reload: no screen holds the sale. */
+  fromReload?: boolean;
 }
 
 /** The offer a different person sees after signing in over a kept sale. */

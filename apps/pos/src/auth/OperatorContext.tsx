@@ -21,13 +21,17 @@ import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffTo
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, platformNeedsUnlock, platformUnlocked, refreshLane } from '@/lib/lane';
 import { loadCatalogFromApi, restorePreparedCatalog } from '@/api/catalogBridge';
 import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
+import { signedInAccount } from '@/lib/displayAccount';
 import { branchTradingDate } from '@/lib/pricingMode';
-import { saleOpenSince } from '@/pwa/openSale';
-import { saleOnScreen } from '@/lib/saleOnScreen';
+import { saleOpenSince, saleRungUp } from '@/pwa/openSale';
+import { getSale } from '@/api/history';
 import { forgetOfflinePreparation, prepareOfflineOperator, readOfflinePreparation, type OfflinePreparation } from './offlinePreparation';
 import {
   afterSignIn,
   endedByExpiry,
+  forgetSessionEnd,
+  readSessionEnd,
+  saveSessionEnd,
   sessionDeadline,
   type KeptSaleOffer,
   type KeptTill,
@@ -123,6 +127,14 @@ interface OperatorContextValue {
   tillSeat: string | null;
   /** SCRUM-878 — counts new sessions that carry on the screen: the station is taken again for each. */
   reseat: number;
+  /**
+   * SCRUM-964 — a sale the counter till had rung up when its session ended,
+   * carried on after this tab reloaded at the sign-in form: no screen holds
+   * it, so the till opens it again from the platform by this id. Null
+   * otherwise, and once the till has taken it (`takeKeptResume`).
+   */
+  keptResume: string | null;
+  takeKeptResume: () => void;
 }
 
 const OperatorContext = createContext<OperatorContextValue | null>(null);
@@ -228,6 +240,22 @@ const refusedWhileLocked = (err: unknown): boolean =>
 const sessionGone = (err: unknown): boolean =>
   err instanceof ApiError && err.status === 401 && err.code === 'UNAUTHORIZED';
 
+/**
+ * SCRUM-964 — whether the platform still holds a sale open (rung up, not
+ * paid, closed or voided) at the station a kept sale was on. A sale kept
+ * through a reload is the platform's, so it is offered only while it is. No
+ * answer at all counts as open: the till's own resume reads it again, and says
+ * so in the platform's words when it is not.
+ */
+async function stillOpenAt(saleId: string, stationId: string | null): Promise<boolean> {
+  try {
+    const { sale } = await getSale(saleId);
+    return sale.status === 'tendering' && (stationId === null || sale.stationId === stationId);
+  } catch (err) {
+    return !(err instanceof ApiError && err.status >= 400 && err.status < 500);
+  }
+}
+
 /** Map the API session to the prototype's Operator shape the whole UI reads. */
 function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boolean): Operator {
   return {
@@ -244,6 +272,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setBridgeStaffName(operator?.name ?? null);
   }, [operator?.name]);
+  // SCRUM-964 — whose lease the customer display's publisher holds (`lib/displayAccount.ts`).
+  useEffect(() => {
+    signedInAccount.set(operator?.id ?? null);
+  }, [operator?.id]);
   const [held, setHeld] = useState<ReadonlySet<string>>(() => new Set());
   const [locked, setLocked] = useState(false);
   const [offlineUnlock, setOfflineUnlock] = useState<
@@ -270,6 +302,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   keptOfferRef.current = keptOffer;
   const [tillSeat, setTillSeatState] = useState<string | null>(null);
   const [reseat, setReseat] = useState(0);
+  const [keptResume, setKeptResume] = useState<string | null>(null);
+  const takeKeptResume = useCallback(() => setKeptResume(null), []);
   const operatorRef = useRef(operator);
   operatorRef.current = operator;
   const viewAsRef = useRef(viewAs);
@@ -350,6 +384,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setSessionEnded(null);
     setKeptOffer(null);
     setKeptOfferAsleep(false);
+    setKeptResume(null);
+    forgetSessionEnd();
     setTillSeat(null);
     // The next person's theme arrives with their sign-in; nothing is written
     // to this one's account after the shift ends.
@@ -436,8 +472,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setViewAs(null);
     setKeptOffer(null);
     setKeptOfferAsleep(false);
+    setKeptResume(null);
     if (nothingToKeep) {
       keptTill.current = null;
+      forgetSessionEnd();
       setSessionEnded(null);
       setTillSeat(null);
       setLocked(false);
@@ -453,18 +491,23 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // That person carries on with it at their next sign-in here; anyone
       // else who may sell, this person included, is offered it again.
       keptTill.current = offered;
-      setSessionEnded({
+      const ended: SessionEnded = {
         name: op.name,
         expired: endedByExpiry(sessionEnds.current.deadline, now),
         afterHours: sessionEnds.current.afterHours,
-        saleKept: saleSince !== null,
-      });
+        saleKept: saleSince !== null || offered.fromReload === true,
+      };
+      setSessionEnded(ended);
+      saveSessionEnd({ ended, kept: offered });
       setLocked(true);
       return;
     }
     // Rung up (Pay pressed, not yet closed): a QR or card payment may be
     // waiting on the customer display, so the next person is told so.
-    const rungUpSaleId = saleSince !== null && station ? saleOnScreen(station) : null;
+    // SCRUM-964 — the sale the selling surface has rung up NOW, as it says
+    // from its own writer (the counter till, F&B and the shop, desk and
+    // phone), never a mark remembered from an earlier sale or page.
+    const rungUp = saleSince !== null ? saleRungUp() : null;
     keptTill.current = {
       accountId: op.id,
       name: op.name,
@@ -474,14 +517,17 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       tradingDate: branchTradingDate(new Date(now)),
       saleSince,
       endedAt: now,
-      ...(rungUpSaleId ? { rungUpSaleId } : {}),
+      ...(rungUp ? { rungUpSaleId: rungUp.saleId, rungUpSurface: rungUp.surface } : {}),
     };
-    setSessionEnded({
+    const ended: SessionEnded = {
       name: op.name,
       expired: endedByExpiry(sessionEnds.current.deadline, now),
       afterHours: sessionEnds.current.afterHours,
       saleKept: saleSince !== null,
-    });
+    };
+    setSessionEnded(ended);
+    // SCRUM-964 — and for a reload of this tab at the sign-in form.
+    saveSessionEnd({ ended, kept: keptTill.current });
     setLocked(true);
   }, [clearTimers, setTillSeat]);
 
@@ -576,6 +622,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       keptTill.current = null;
       offeredTill.current = null;
       setKeptOfferAsleep(false);
+      setKeptResume(null);
+      forgetSessionEnd();
       if (owesPasswordChange) {
         // A temporary password (issuing one ends every session, which is how
         // this till got here) opens the change-password form and nothing else:
@@ -590,7 +638,11 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         return op;
       }
       // A screen left since (another page opened from the sign-in form) holds no sale any more.
-      const kept = ended && ended.saleSince !== null && saleOpenSince() === null ? { ...ended, saleSince: null } : ended;
+      // SCRUM-964 — after a reload no screen holds it: a sale the counter till
+      // rang up is the platform's, and is kept only while it is still open there.
+      const kept = ended?.fromReload
+        ? (ended.rungUpSaleId && await stillOpenAt(ended.rungUpSaleId, ended.stationId) ? ended : { ...ended, saleSince: null })
+        : ended && ended.saleSince !== null && saleOpenSince() === null ? { ...ended, saleSince: null } : ended;
       setSessionEnded(null);
       const outcome = afterSignIn(kept, {
         accountId: op.id,
@@ -611,6 +663,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setKeptOffer(null);
       if (outcome === 'continue') setReseat((n) => n + 1);
       else if (screenBefore !== null) freshSeat(op.id);
+      // SCRUM-964 — the same person after a reload: the till opens the sale again.
+      if (outcome === 'continue' && kept?.fromReload && kept.saleSince !== null && kept.rungUpSaleId) {
+        setKeptResume(kept.rungUpSaleId);
+      }
       setLocked(false);
       return op;
     },
@@ -619,6 +675,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
   /** SCRUM-878 — the person now signed in carries on the kept sale: it is theirs from the next press. */
   const continueKept = useCallback(() => {
+    // SCRUM-964 — after a reload no screen holds it: the till opens it again from the platform.
+    const offered = offeredTill.current;
+    if (offered?.fromReload && offered.rungUpSaleId) setKeptResume(offered.rungUpSaleId);
     // Theirs from here: a session that ends now keeps the sale as theirs.
     offeredTill.current = null;
     setKeptOffer(null);
@@ -630,6 +689,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const discardKept = useCallback(() => {
     const op = operatorRef.current;
     offeredTill.current = null;
+    setKeptResume(null);
     setKeptOffer(null);
     setKeptOfferAsleep(false);
     if (op) freshSeat(op.id);
@@ -797,6 +857,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         // A reload inside a locked session comes back locked.
         setLocked(sessionLocked);
+        // SCRUM-964 — a live session here: nothing ended is waiting for a sign-in.
+        forgetSessionEnd();
       } catch (error) {
         // Not signed in. When a refused hand-off is the reason, the lock
         // screen says so rather than leaving the operator to guess.
@@ -816,6 +878,17 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         } else {
           // An authoritative refusal cannot be turned into an offline session.
           forgetOfflinePreparation();
+          // SCRUM-964 — reloaded at the sign-in form an ended session left:
+          // the form still says so, and the next sign-in is offered what of
+          // the kept sale this tab could keep (`readSessionEnd`).
+          const saved = sessionGone(error) ? readSessionEnd() : null;
+          if (saved) {
+            keptTill.current = saved.kept;
+            setSessionEnded(saved.ended);
+            setLocked(true);
+          } else {
+            forgetSessionEnd();
+          }
         }
       } finally {
         if (!cancelled) setSessionResolved(true);
@@ -903,6 +976,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         discardKept,
         tillSeat,
         reseat,
+        keptResume,
+        takeKeptResume,
       }}
     >
       {children}

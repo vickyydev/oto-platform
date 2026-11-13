@@ -77,6 +77,43 @@ export function saleOpenSince(): number | null {
   return since;
 }
 
+/**
+ * SCRUM-964 — WHICH SALE A SELLING SURFACE HAS RUNG UP AND NOT YET CLOSED, by
+ * surface: what makes a kept sale "rung up" (a QR or card payment may be
+ * waiting on the customer display, so another person is offered Continue
+ * only). Every selling surface says it from its own sale writer — the counter
+ * till, the F&B and shop counters, the phone's till and F&B — so the mark is
+ * the sale on screen now: gone when that sale is finished, voided, thrown away
+ * or replaced, and never carried through a reload, because nothing here is.
+ */
+const rungUp = new Map<string, string>();
+
+/** SCRUM-964 — say which sale `surface` has rung up and not closed, or null. Idempotent. */
+export function setSaleRungUp(surface: string, saleId: string | null): void {
+  if (saleId) rungUp.set(surface, saleId);
+  else rungUp.delete(surface);
+}
+
+/** SCRUM-964 — the sale a surface with a sale at stake has rung up, and which surface, or null when none has. */
+export function saleRungUp(): { surface: string; saleId: string } | null {
+  for (const [surface, saleId] of rungUp) {
+    if (atStakeSince.has(surface)) return { surface, saleId };
+  }
+  return null;
+}
+
+/**
+ * SCRUM-964 — the sale a writer state names while it is rung up and not
+ * closed: being written, committed (Pay pressed, money may be waiting), being
+ * finalised, or failed at the money press with the sale still open. The
+ * counter till's own rule for "rung up" (`rungUpUnpaid`, `pages/Till.tsx`).
+ */
+export function rungUpSaleOf(state: { kind: string; saleId?: string; stage?: string }): string | null {
+  const open = state.kind === 'writing' || state.kind === 'committed' || state.kind === 'finalising'
+    || (state.kind === 'failed' && state.stage === 'finalise');
+  return open && state.saleId ? state.saleId : null;
+}
+
 export function subscribeSaleOpen(listener: () => void): () => void {
   listeners.add(listener);
   return () => {

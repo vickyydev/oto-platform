@@ -79,7 +79,7 @@ import {
   type PhoneHandoffMode,
   type PhoneTillStep,
 } from '@/lib/phoneTillDisplay';
-import { setPaymentContextLocked, setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
+import { rungUpSaleOf, setPaymentContextLocked, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
@@ -652,6 +652,12 @@ export default function MobileTill() {
    * screen.
    */
   const saleWriter = useSaleWriter();
+  // SCRUM-964 — a sale rung up (a QR or card payment may be waiting) is offered Continue only, as the counter's is.
+  const rungUpNow = rungUpSaleOf(saleWriter.state);
+  useEffect(() => {
+    setSaleRungUp('mobile-till', rungUpNow);
+    return () => setSaleRungUp('mobile-till', null);
+  }, [rungUpNow]);
   /**
    * SCRUM-774 — A SALE TAKEN BACK FROM HELD SALES, as the counter's till
    * resumes one (`pages/Till.tsx`): the platform's row is the sale, its lines

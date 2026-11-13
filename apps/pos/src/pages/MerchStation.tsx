@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { setSaleAtStake, setSaleOpen } from '@/pwa/openSale';
+import { rungUpSaleOf, setSaleAtStake, setSaleOpen, setSaleRungUp } from '@/pwa/openSale';
 import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { codeDiscountTotal } from '@/lib/customerDisplayCopy';
@@ -126,6 +126,12 @@ export default function MerchStation() {
     setSaleAtStake('merch-station', saleAtStake);
     return () => setSaleAtStake('merch-station', false);
   }, [saleAtStake]);
+  // SCRUM-964 — a sale rung up (a QR or card payment may be waiting) is offered Continue only, as the till's is.
+  const rungUpNow = rungUpSaleOf(saleWriter.state);
+  useEffect(() => {
+    setSaleRungUp('merch-station', rungUpNow);
+    return () => setSaleRungUp('merch-station', null);
+  }, [rungUpNow]);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
 
