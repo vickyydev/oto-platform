@@ -1,0 +1,35 @@
+hunt: three clicks on "Start card payment" within 160 ms (in the page), 0 s after assigning the terminal
+POST /api/payments/attempts answers: [
+ {
+  "status": 200,
+  "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+  "attemptStatus": "sent_to_terminal",
+  "replay": null,
+  "code": null
+ }
+]
+the sale's attempts: [{"id":"01a1d2a5-e95e-7877-b158-8f6773b6c94b","status":"declined"}]
+terminal commands per attempt: [
+ {
+  "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+  "kind": "terminal_sale",
+  "mode": "sale",
+  "state": "failed",
+  "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+ }
+]
+timeline: [
+ {
+  "s": 0,
+  "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale A payment is in progress — finish or cancel it first. Back Waiting for the payment answer…"
+ },
+ {
+  "s": 0.3,
+  "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+ },
+ {
+  "s": 3.4,
+  "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+ }
+]
+then Back + Cancel: void {"status":200,"saleIsOurs":true}; sale voided

@@ -1,0 +1,11 @@
+ZZ TEST 972 sale 01a1d2a3-1695-77bc-8513-2e6a5c9ab73d, card attempt 01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9
+terminal assigned at 2026-11-13T02:01:06.433Z; "Start card payment" pressed 0 s later; "Payment declined" 1.8 s after the press
+POST /api/payments/attempts -> {"status":200,"route":"card_terminal","attemptStatus":"sent_to_terminal","code":null}
+
+the till: Back enabled true; Back pressed, then Cancel pressed
+POST /api/sales/<id>/void (the till's own Cancel, reception session) -> {"status":200,"code":null,"message":null,"saleStatus":"voided","saleIsOurs":true}
+  (before the fix this answered 409 PAYMENT_IN_FLIGHT: SCRUM-952 proof, 02e)
+
+GET /api/sales/<id>: status voided; attempts [{"id":"01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9","status":"declined"}]
+box commands for the attempt (1): [{"kind":"terminal_sale","mode":"sale","state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX"}]
+audit for the attempt: [{"at":"2026-11-13T02:01:07.574Z","action":"payment.attempt.not_sent","after":{"status":"declined","errorCode":"TERMINAL_NOT_ON_THIS_BOX"}},{"at":"2026-11-13T02:01:06.564Z","action":"payment.tender.start","after":{"status":"sent_to_terminal","errorCode":null}}]

@@ -1,0 +1,3935 @@
+{
+  "tickets": [
+    "SCRUM-972"
+  ],
+  "sha": "0e8e2badfafc4f7fc51929b3f7aefecc2702328f",
+  "startedAt": "2026-11-13T01:53:48.186Z",
+  "deploysStart": [
+    "read 2026-11-13T01:52:05Z with: node scripts/agent/render.mjs status",
+    "oto-pos-web-staging        live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-inbox-staging          live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-qa-worker-staging      live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-radar-staging          live           608b1fd1  fix(inbox): the theme hook types the preference wr",
+    "oto-booth-staging          live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-app-staging            live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-console-staging        live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-launcher-staging       live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-pos-staging            live           97600c13  fix(oto-app): \"for them\" is whom the sentence name",
+    "oto-api-staging            live           0e8e2bad  test(api): prove a terminal void the box never sen"
+  ],
+  "numbers": {
+    "p2": "0898972010",
+    "p4": "0898972011",
+    "h2": "0898972012",
+    "h3": "0898972013",
+    "h4": "0898972014",
+    "p5": "0898972015"
+  },
+  "created": [
+    {
+      "kind": "device",
+      "key": "receipt",
+      "id": "6f84eeec-bc22-4598-9869-96f49f11b2e3",
+      "label": "ZZ TEST 972 receipt printer"
+    },
+    {
+      "kind": "device",
+      "key": "band",
+      "id": "588f58bd-50f9-4235-87c6-efa247745817",
+      "label": "ZZ TEST 972 band printer"
+    },
+    {
+      "kind": "device",
+      "key": "card",
+      "id": "dd29c9dc-66a0-41ab-b571-610d50366079",
+      "label": "ZZ TEST 972 card terminal",
+      "transport": "simulated"
+    },
+    {
+      "kind": "station",
+      "id": "01a1d29d-630c-7fcb-b2e6-fe0ca5fd1134",
+      "name": "ZZ TEST 972 till",
+      "prefix": "Z97201"
+    },
+    {
+      "kind": "p2-refused-then-cash",
+      "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b"
+    },
+    {
+      "kind": "sale-cash",
+      "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+      "receipt": "Z97201-000001"
+    },
+    {
+      "kind": "p4-refused-then-voided",
+      "id": "01a1d2a3-1695-77bc-8513-2e6a5c9ab73d"
+    },
+    {
+      "kind": "h2-double-press",
+      "id": "01a1d2a5-e6cd-7016-9757-5f9e1b45fcbd"
+    },
+    {
+      "kind": "h3-reload",
+      "id": "01a1d2a7-83ab-753f-8271-fef12272c0b9"
+    },
+    {
+      "kind": "h4-phone-refused",
+      "id": "01a1d2ab-4859-7bef-be88-b6c6b1bf6224"
+    },
+    {
+      "kind": "p5-card-sale",
+      "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4"
+    },
+    {
+      "kind": "sale-card",
+      "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4",
+      "receipt": "Z97201-000002"
+    }
+  ],
+  "points": {
+    "1": {
+      "verdict": "PASS",
+      "pictures": [
+        "01a-api-held-sale-before.png",
+        "01b-api-held-attempt-read-declined.png",
+        "01c-api-held-sale-voided.png"
+      ],
+      "seen": {
+        "before": "sale tendering, attempt sent_to_terminal, command failed TERMINAL_NOT_ON_THIS_BOX (result with outcome null)",
+        "read": {
+          "status": 200,
+          "attemptStatus": "declined",
+          "route": "card_terminal",
+          "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+          "outstanding": 1040,
+          "code": null,
+          "keys": [
+            "route",
+            "attempt",
+            "qrPayload",
+            "qrImageUrl",
+            "expiresAt",
+            "expiryTimerMs",
+            "deviceLabel",
+            "responseText",
+            "outstandingSatang"
+          ]
+        },
+        "void": {
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleStatus": "voided",
+          "voidReason": "ZZ TEST SCRUM-972 held card"
+        }
+      }
+    },
+    "2": {
+      "verdict": "PASS",
+      "pictures": [
+        "02a-till-payment-requested.png",
+        "02b-till-payment-declined-no-reload.png",
+        "02c-api-refused-attempt-declined-command-audit.png",
+        "04c-till-after-back.png"
+      ],
+      "seen": {
+        "secondsPressToDeclined": 3.4,
+        "words": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received",
+        "plainReasonOnScreen": false,
+        "read": {
+          "status": 200,
+          "attemptStatus": "declined",
+          "route": "card_terminal",
+          "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+          "outstanding": 1040,
+          "deviceLabel": "ZZ TEST 972 card terminal"
+        },
+        "command": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+          }
+        ],
+        "notSentAuditRows": 1,
+        "backAndOtherWays": "Cash chosen and paid on the same sale (point 3); Back pressed on the second refusal went back to Customer Details (point 4)"
+      }
+    },
+    "3": {
+      "verdict": "PASS",
+      "pictures": [
+        "03a-till-cash-chosen-after-refusal.png",
+        "03b-till-cash-payment-successful.png",
+        "03c-api-cash-sale-one-receipt.png"
+      ],
+      "seen": {
+        "paid": {
+          "receipt": "Z97201-000001",
+          "status": "finalised",
+          "gross": 1040,
+          "attempts": [
+            {
+              "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+              "method": "card",
+              "status": "declined",
+              "amount": 1040
+            },
+            {
+              "id": "01a1d2a0-49d8-7a20-91a6-e488a94a5683",
+              "method": "cash",
+              "status": "approved",
+              "amount": 1040
+            }
+          ]
+        },
+        "any409": false,
+        "receiptJobs": 1,
+        "printouts": 1,
+        "refund": {
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040,
+          "refundStatus": null,
+          "keys": [
+            "printing",
+            "replay",
+            "refund",
+            "sale",
+            "refundStatus",
+            "refundableSatang",
+            "requestedSatang",
+            "clamped"
+          ],
+          "slices": null
+        },
+        "after": {
+          "status": "refunded",
+          "refunded": 1040,
+          "refundStatus": "refunded",
+          "refunds": [
+            {
+              "amount": 1040,
+              "mode": "whole"
+            }
+          ]
+        }
+      }
+    },
+    "4": {
+      "verdict": "PASS",
+      "pictures": [
+        "04a-till-payment-requested.png",
+        "04b-till-second-refusal-declined.png",
+        "04c-till-after-back.png",
+        "04d-till-after-cancel-voided.png",
+        "04e-api-second-refusal-voided.png"
+      ],
+      "seen": {
+        "void": {
+          "status": 200,
+          "code": null,
+          "message": null,
+          "saleStatus": "voided",
+          "saleIsOurs": true
+        },
+        "secondsPressToDeclined": 1.8
+      }
+    },
+    "5": {
+      "verdict": "PASS",
+      "pictures": [
+        "05a-till-card-paid-simulator.png",
+        "05b-api-card-once-and-simulator-void.png",
+        "05c-till-history-card-sale-refund-voided-on-terminal.png"
+      ],
+      "seen": {
+        "secondsToPaid": 3.5,
+        "saleCommandsPerAttempt": {
+          "p5": [
+            {
+              "state": "succeeded",
+              "errorCode": null,
+              "outcome": "approved"
+            }
+          ],
+          "p2": [
+            {
+              "state": "failed",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "outcome": null
+            }
+          ],
+          "p4": [
+            {
+              "state": "failed",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "outcome": null
+            }
+          ],
+          "h2": [
+            {
+              "state": "failed",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "outcome": null
+            }
+          ],
+          "h3": [
+            {
+              "state": "failed",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "outcome": null
+            }
+          ],
+          "h4": [
+            {
+              "state": "failed",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "outcome": null
+            }
+          ]
+        },
+        "refund": [
+          {
+            "number": "Z97201-R-000002",
+            "amount": 1040,
+            "pending": false,
+            "tenderAllocation": [
+              {
+                "route": "terminal_void",
+                "detail": "Voided on the terminal",
+                "method": "card",
+                "status": "done",
+                "actionId": "01a1d2ae-786d-70d4-b6e0-d2699cb49bf9",
+                "provider": "simulator",
+                "respCode": "00",
+                "attemptId": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+                "settledAt": "2026-11-13T02:13:32.766Z",
+                "methodCode": "card",
+                "amountSatang": 104000
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "pictures": [
+        "06a-console-health-top.png",
+        "06b-console-health-tenders-with-no-outcome.png",
+        "06c-api-health-pending-alert-after-run.png"
+      ],
+      "seen": {
+        "alert": "1 payment attempt at this branch (was 2 at the SCRUM-952 proof)",
+        "remaining": [
+          {
+            "sale": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+            "occurredAt": "2026-09-29T10:32:18.536Z",
+            "station": "01a0ecb8-9096-7d88-8987-50c0958e8412",
+            "attempts": [
+              {
+                "id": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
+                "status": "sent_to_terminal",
+                "method": "card",
+                "provider": "simulator",
+                "createdAt": "2026-09-29T10:32:20.319Z"
+              }
+            ],
+            "stationName": "Native payment shop-partial-refused 0d008153",
+            "stationRetired": false
+          }
+        ]
+      }
+    }
+  },
+  "reads": {
+    "p1before": {
+      "readAt": "2026-11-13T01:54:09.268Z",
+      "sale": {
+        "id": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+        "status": "tendering",
+        "receipt": null,
+        "gross": 1040,
+        "occurredAt": "2026-11-12T22:51:24.159Z",
+        "stationId": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5"
+      },
+      "attempts": [
+        {
+          "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+          "status": "sent_to_terminal",
+          "method": "card",
+          "provider": "simulator",
+          "amount": 1040,
+          "deviceId": null,
+          "responseText": null
+        }
+      ],
+      "station": {
+        "name": "ZZ TEST 952 till B",
+        "archived": true,
+        "devices": 0
+      },
+      "terminal": "(not found on Virtual box 1)",
+      "commands": [
+        {
+          "id": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "failed",
+          "createdAt": "2026-11-12T22:51:40.949Z",
+          "claimedAt": "2026-11-12T22:51:43.384Z",
+          "finishedAt": "2026-11-12T22:51:43.395Z",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+          "errorMessage": "this box has no card_terminal for <station id>",
+          "result": {
+            "mode": "sale",
+            "outcome": null,
+            "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+            "terminalRef": null,
+            "responseCode": null
+          }
+        }
+      ]
+    },
+    "p1read": {
+      "terminalOfCommand": {
+        "label": "ZZ TEST 952 card terminal",
+        "archived": true,
+        "transport": "simulated"
+      },
+      "readAt": "2026-11-13T01:54:24.320Z",
+      "read": {
+        "status": 200,
+        "attemptStatus": "declined",
+        "route": "card_terminal",
+        "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+        "outstanding": 1040,
+        "code": null,
+        "keys": [
+          "route",
+          "attempt",
+          "qrPayload",
+          "qrImageUrl",
+          "expiresAt",
+          "expiryTimerMs",
+          "deviceLabel",
+          "responseText",
+          "outstandingSatang"
+        ]
+      },
+      "saleAfterRead": {
+        "status": "tendering",
+        "attempts": [
+          {
+            "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+            "status": "declined",
+            "responseText": null
+          }
+        ]
+      },
+      "audit": {
+        "status": 200,
+        "entries": [
+          {
+            "at": "2026-11-13T01:54:24.370Z",
+            "action": "payment.attempt.not_sent",
+            "before": {
+              "status": "sent_to_terminal"
+            },
+            "after": {
+              "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+              "status": "declined",
+              "commandId": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+              "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+              "amountSatang": 104000,
+              "commandState": "failed"
+            }
+          },
+          {
+            "at": "2026-11-12T22:51:40.949Z",
+            "action": "payment.tender.start",
+            "before": null,
+            "after": {
+              "method": "card",
+              "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+              "status": "sent_to_terminal",
+              "tender": "card",
+              "deviceId": "8cbb95de-6635-492a-a4f0-ee91cddf15e7",
+              "stationId": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+              "methodCode": "card",
+              "amountSatang": 104000
+            }
+          }
+        ]
+      }
+    },
+    "p1void": {
+      "at": "2026-11-13T01:54:37.401Z",
+      "void": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "saleStatus": "voided",
+        "voidReason": "ZZ TEST SCRUM-972 held card"
+      },
+      "after": {
+        "status": "voided",
+        "attempts": [
+          "declined"
+        ],
+        "refundStatus": "none"
+      },
+      "saleAudit": [
+        {
+          "at": "2026-11-13T01:54:37.458Z",
+          "action": "sale.void"
+        },
+        {
+          "at": "2026-11-12T22:51:25.285Z",
+          "action": "sale.create"
+        }
+      ]
+    },
+    "setup": {
+      "box": "Virtual box 1",
+      "boxStatus": "online",
+      "boxKeys": [
+        "id",
+        "branchId",
+        "name",
+        "slot",
+        "role",
+        "status",
+        "hostname",
+        "bridgeOrigin",
+        "bridgeWarning",
+        "agentVersion",
+        "currentEpoch",
+        "registeredAt",
+        "lastHeartbeatAt",
+        "heartbeatAgeSeconds",
+        "lastStatus",
+        "deviceCount",
+        "stationCount",
+        "claimCodeOutstanding",
+        "claimCodeExpiresAt",
+        "archived"
+      ],
+      "prefix": "Z97201",
+      "numbersFree": 20,
+      "configVersion": 1,
+      "roles": {
+        "adult_band": "ZZ TEST 972 band printer",
+        "dropoff_band": "ZZ TEST 972 band printer",
+        "kids_band": "ZZ TEST 972 band printer",
+        "receipt": "ZZ TEST 972 receipt printer"
+      },
+      "paymentRouting": {
+        "qr": "none",
+        "card": "manual"
+      },
+      "terminal": {
+        "label": "ZZ TEST 972 card terminal",
+        "transport": "simulated",
+        "protocol": "ghl_linkpos"
+      },
+      "boxNow": {
+        "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+        "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+        "name": "Virtual box 1",
+        "slot": "virtual-1",
+        "role": "virtual",
+        "status": "online",
+        "hostname": "virtual-staging",
+        "bridgeOrigin": null,
+        "bridgeWarning": null,
+        "agentVersion": "0.1.0",
+        "currentEpoch": 1,
+        "registeredAt": "2026-11-13T01:52:36.785Z",
+        "lastHeartbeatAt": "2026-11-13T01:54:37.501Z",
+        "heartbeatAgeSeconds": 15,
+        "lastStatus": {
+          "booth": {
+            "today": null,
+            "rostered": false,
+            "lastSpinAt": null,
+            "paperStatus": "unknown",
+            "pendingUnit": "vouchers",
+            "configVersion": null,
+            "staffSignedIn": false,
+            "pointerPresent": null,
+            "vouchersPending": 0,
+            "dailyCapsReached": [],
+            "printerReachable": "unknown"
+          },
+          "cache": {
+            "scopes": 14,
+            "appliedAt": "2026-11-13T01:52:37.275Z",
+            "checkedAt": "2026-11-13T01:53:37.627Z"
+          },
+          "tempC": null,
+          "errors": [],
+          "leases": [
+            {
+              "holder": "86cbf634-2b15-4990-99e0-b778f014c50e",
+              "expiresAt": "2026-10-06T20:22:57.699Z",
+              "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a"
+            }
+          ],
+          "devices": [
+            {
+              "id": "01a0ecb6-1010-7ab1-a3a0-0709287b53dc",
+              "kind": "terminal",
+              "label": "Native payment shop-inquiry-confirm 0d008153 terminal",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            },
+            {
+              "id": "01a0ecb6-0c16-79dd-b6d3-07d6ebd161c3",
+              "kind": "receipt_printer",
+              "label": "Native payment shop-inquiry-confirm 0d008153 printer",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0ecb8-8cd6-77b3-a999-e41386a6cba1",
+              "kind": "terminal",
+              "label": "Native payment shop-partial-refused 0d008153 terminal",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            },
+            {
+              "id": "01a0ecb8-8b13-7e89-a9a5-b9ae6aaa9f13",
+              "kind": "receipt_printer",
+              "label": "Native payment shop-partial-refused 0d008153 printer",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0be8c-89b2-7f21-84e0-74c754838f5b",
+              "kind": "band_printer",
+              "label": "Band Printer (adults)",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0be8c-89b8-7153-bd24-678c65024de8",
+              "kind": "terminal",
+              "label": "EDC 1",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            },
+            {
+              "id": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b",
+              "kind": "band_printer",
+              "label": "Band Printer (kids)",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0be8c-89a9-7c0b-a630-a16c81fdea52",
+              "kind": "kitchen_printer",
+              "label": "Kitchen Printer",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0be8c-89bb-7f43-b557-b0e8e876ccac",
+              "kind": "terminal",
+              "label": "EDC 3",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            },
+            {
+              "id": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+              "kind": "receipt_printer",
+              "label": "Receipt Printer 1",
+              "lastError": null,
+              "paperStatus": "ok",
+              "reachability": "reachable"
+            },
+            {
+              "id": "01a0be8c-89b5-7058-805e-0d66c670753b",
+              "kind": "scanner",
+              "label": "Scanner 1",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            },
+            {
+              "id": "01a199dd-cf6c-7962-a74d-872b990ef805",
+              "kind": "terminal",
+              "label": "ZZ TEST setup traps terminal 20261102",
+              "lastError": null,
+              "paperStatus": "unknown",
+              "reachability": "unknown"
+            }
+          ],
+          "offline": false,
+          "uptimeS": 120,
+          "discovered": [],
+          "receivedAt": "2026-11-13T01:54:37.501Z",
+          "reportedAt": "2026-11-13T01:54:37.477Z",
+          "outboxDepth": 0,
+          "agentVersion": "0.1.0",
+          "clockOffsetMs": 12,
+          "configVersion": "fd26c8bc357cc866",
+          "clockMeasuredAt": "2026-11-13T01:53:37.509Z",
+          "clockMeasuredBy": "box",
+          "oldestUnackedAgeS": null
+        },
+        "deviceCount": 16,
+        "stationCount": 6,
+        "claimCodeOutstanding": false,
+        "claimCodeExpiresAt": null,
+        "archived": false
+      },
+      "wait": {
+        "beats": 2,
+        "waitedS": 107
+      }
+    },
+    "p2": {
+      "sale": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 972 band printer",
+          "card_terminal": "ZZ TEST 972 card terminal",
+          "dropoff_band": "ZZ TEST 972 band printer",
+          "kids_band": "ZZ TEST 972 band printer",
+          "receipt": "ZZ TEST 972 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 2,
+        "at": "2026-11-13T01:57:09.484Z"
+      },
+      "secondsAssignToPress": 0,
+      "start": {
+        "status": 200,
+        "route": "card_terminal",
+        "attemptStatus": "sent_to_terminal",
+        "code": null
+      },
+      "attempt": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+      "timeline": [
+        {
+          "s": 0.1,
+          "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+        },
+        {
+          "s": 3.4,
+          "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+        }
+      ],
+      "secondsPressToEnd": 3.4,
+      "shotRequested": true,
+      "boxHashBeforeAssign": "db17b2d01d585fec",
+      "boxHashRightAfter": "db17b2d01d585fec",
+      "stepText": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received",
+      "alerts": [
+        "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+        "Payment declined. Choose a payment method."
+      ],
+      "buttons": [
+        {
+          "text": "Hold sale",
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "disabled": false
+        },
+        {
+          "text": "Confirm Payment Received",
+          "disabled": true
+        }
+      ],
+      "cardTiles": [
+        {
+          "text": "Cash",
+          "ariaDisabled": "false"
+        },
+        {
+          "text": "Card",
+          "ariaDisabled": "false"
+        },
+        {
+          "text": "PromptPay",
+          "ariaDisabled": "false"
+        }
+      ],
+      "plainReasonOnScreen": false
+    },
+    "p2api": {
+      "namesHadVat": true,
+      "read": {
+        "status": 200,
+        "attemptStatus": "declined",
+        "route": "card_terminal",
+        "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+        "outstanding": 1040,
+        "deviceLabel": "ZZ TEST 972 card terminal"
+      },
+      "commands": [
+        {
+          "id": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "failed",
+          "createdAt": "2026-11-13T01:57:09.613Z",
+          "claimedAt": "2026-11-13T01:57:12.532Z",
+          "finishedAt": "2026-11-13T01:57:12.545Z",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+          "errorMessage": "this box has no card_terminal for <station id>",
+          "result": {
+            "mode": "sale",
+            "outcome": null,
+            "attemptId": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+            "terminalRef": null,
+            "responseCode": null
+          }
+        }
+      ],
+      "audit": [
+        {
+          "at": "2026-11-13T01:57:12.545Z",
+          "action": "payment.attempt.not_sent",
+          "before": {
+            "status": "sent_to_terminal"
+          },
+          "after": {
+            "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+            "status": "declined",
+            "commandId": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "amountSatang": 104000,
+            "commandState": "failed"
+          }
+        },
+        {
+          "at": "2026-11-13T01:57:09.613Z",
+          "action": "payment.tender.start",
+          "before": null,
+          "after": {
+            "method": "card",
+            "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+            "status": "sent_to_terminal",
+            "tender": "card",
+            "deviceId": "dd29c9dc-66a0-41ab-b571-610d50366079",
+            "stationId": "01a1d29d-630c-7fcb-b2e6-fe0ca5fd1134",
+            "methodCode": "card",
+            "amountSatang": 104000
+          }
+        }
+      ],
+      "notSentRows": 1,
+      "sale": {
+        "status": "tendering",
+        "attempts": [
+          {
+            "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+            "status": "declined"
+          }
+        ]
+      }
+    },
+    "p3": {
+      "afterCash": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Partial payment Cash received Change ฿0.00 Hold sale Back Confirm Payment Received",
+      "paymentSuccessful": true,
+      "secondsToPaid": 0.4,
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/api/sales/:id/finalise",
+          "status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/box/v1/station/:id/intents",
+          "status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/me/station/heartbeat",
+          "status": 200
+        }
+      ],
+      "any409": false,
+      "sale": {
+        "receipt": "Z97201-000001",
+        "status": "finalised",
+        "gross": 1040,
+        "attempts": [
+          {
+            "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+            "method": "card",
+            "status": "declined",
+            "amount": 1040
+          },
+          {
+            "id": "01a1d2a0-49d8-7a20-91a6-e488a94a5683",
+            "method": "cash",
+            "status": "approved",
+            "amount": 1040
+          }
+        ]
+      },
+      "printJobs": [
+        {
+          "kind": "adult_wristband",
+          "role": "adult_band",
+          "status": "printed",
+          "error": null,
+          "onZzPrinter": true
+        },
+        {
+          "kind": "kids_wristband",
+          "role": "kids_band",
+          "status": "printed",
+          "error": null,
+          "onZzPrinter": true
+        },
+        {
+          "kind": "receipt",
+          "role": "receipt",
+          "status": "printed",
+          "error": null,
+          "onZzPrinter": true
+        }
+      ],
+      "receiptJobs": 1,
+      "newPrintouts": [
+        {
+          "seq": 1,
+          "at": "2026-11-13T01:58:07.935Z",
+          "heightDots": 1088,
+          "truncated": false
+        }
+      ]
+    },
+    "p3refund": {
+      "signIn": 200,
+      "refund": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "amount": 1040,
+        "refundStatus": null,
+        "keys": [
+          "printing",
+          "replay",
+          "refund",
+          "sale",
+          "refundStatus",
+          "refundableSatang",
+          "requestedSatang",
+          "clamped"
+        ],
+        "slices": null
+      },
+      "signOut": {
+        "status": 200,
+        "me": 401
+      },
+      "after": {
+        "status": "refunded",
+        "refunded": 1040,
+        "refundStatus": "refunded",
+        "refunds": [
+          {
+            "amount": 1040,
+            "mode": "whole"
+          }
+        ]
+      }
+    },
+    "resets": [
+      {
+        "unassign": {
+          "status": 200,
+          "code": null,
+          "roles": {
+            "adult_band": "ZZ TEST 972 band printer",
+            "dropoff_band": "ZZ TEST 972 band printer",
+            "kids_band": "ZZ TEST 972 band printer",
+            "receipt": "ZZ TEST 972 receipt printer"
+          },
+          "paymentRouting": {
+            "qr": "none",
+            "card": "manual"
+          },
+          "configVersion": 3,
+          "at": "2026-11-13T01:58:52.323Z"
+        },
+        "wait": {
+          "beats": 2,
+          "waitedS": 107
+        },
+        "hashBefore": "3fbb8401917bde1a",
+        "hashNow": "b706e9a8213eca1c",
+        "reportedAt": "2026-11-13T02:00:37.480Z"
+      },
+      {
+        "unassign": {
+          "status": 200,
+          "code": null,
+          "roles": {
+            "adult_band": "ZZ TEST 972 band printer",
+            "dropoff_band": "ZZ TEST 972 band printer",
+            "kids_band": "ZZ TEST 972 band printer",
+            "receipt": "ZZ TEST 972 receipt printer"
+          },
+          "paymentRouting": {
+            "qr": "none",
+            "card": "manual"
+          },
+          "configVersion": 5,
+          "at": "2026-11-13T02:02:30.324Z"
+        },
+        "wait": {
+          "beats": 2,
+          "waitedS": 71
+        },
+        "hashBefore": "b706e9a8213eca1c",
+        "hashNow": "5cb41d280fa57ecc",
+        "reportedAt": "2026-11-13T02:03:37.473Z"
+      },
+      {
+        "unassign": {
+          "status": 200,
+          "code": null,
+          "roles": {
+            "adult_band": "ZZ TEST 972 band printer",
+            "dropoff_band": "ZZ TEST 972 band printer",
+            "kids_band": "ZZ TEST 972 band printer",
+            "receipt": "ZZ TEST 972 receipt printer"
+          },
+          "paymentRouting": {
+            "qr": "none",
+            "card": "manual"
+          },
+          "configVersion": 7,
+          "at": "2026-11-13T02:04:23.117Z"
+        },
+        "wait": {
+          "beats": 2,
+          "waitedS": 76
+        },
+        "hashBefore": "5cb41d280fa57ecc",
+        "hashNow": "2a4b3dd84b216ec5",
+        "reportedAt": "2026-11-13T02:05:37.478Z"
+      },
+      {
+        "unassign": {
+          "status": 200,
+          "code": null,
+          "roles": {
+            "adult_band": "ZZ TEST 972 band printer",
+            "dropoff_band": "ZZ TEST 972 band printer",
+            "kids_band": "ZZ TEST 972 band printer",
+            "receipt": "ZZ TEST 972 receipt printer"
+          },
+          "paymentRouting": {
+            "qr": "none",
+            "card": "manual"
+          },
+          "configVersion": 9,
+          "at": "2026-11-13T02:07:09.836Z"
+        },
+        "wait": {
+          "beats": 2,
+          "waitedS": 92
+        },
+        "hashBefore": "2a4b3dd84b216ec5",
+        "hashNow": "93be220aa5e643c2",
+        "reportedAt": "2026-11-13T02:08:37.470Z"
+      }
+    ],
+    "p4": {
+      "refusal": {
+        "sale": "01a1d2a3-1695-77bc-8513-2e6a5c9ab73d",
+        "assign": {
+          "status": 200,
+          "code": null,
+          "roles": {
+            "adult_band": "ZZ TEST 972 band printer",
+            "card_terminal": "ZZ TEST 972 card terminal",
+            "dropoff_band": "ZZ TEST 972 band printer",
+            "kids_band": "ZZ TEST 972 band printer",
+            "receipt": "ZZ TEST 972 receipt printer"
+          },
+          "paymentRouting": {
+            "qr": "none",
+            "card": "card_terminal"
+          },
+          "configVersion": 4,
+          "at": "2026-11-13T02:01:06.433Z"
+        },
+        "secondsAssignToPress": 0,
+        "start": {
+          "status": 200,
+          "route": "card_terminal",
+          "attemptStatus": "sent_to_terminal",
+          "code": null
+        },
+        "attempt": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+        "timeline": [
+          {
+            "s": 0.1,
+            "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+          },
+          {
+            "s": 1.8,
+            "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+          }
+        ],
+        "secondsPressToEnd": 1.8,
+        "shotRequested": true
+      },
+      "boxHashBeforeAssign": "b706e9a8213eca1c",
+      "boxHashAfter": "b706e9a8213eca1c",
+      "declinedText": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received",
+      "backEnabled": true,
+      "afterBack": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone +66 89 897 2011 Nickname — Back Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 English YOUR TURN Enter your details For membership & so we can reach you Phone number +66 89 897 2011 We will use the number you gave at the ",
+      "dialog": null,
+      "void": {
+        "status": 200,
+        "code": null,
+        "message": null,
+        "saleStatus": "voided",
+        "saleIsOurs": true
+      },
+      "afterCancel": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A pho",
+      "sale": {
+        "status": "voided",
+        "attempts": [
+          {
+            "id": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+            "status": "declined"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "id": "01a1d2a3-1918-7b01-baba-79a98b60a6f5",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "failed",
+          "createdAt": "2026-11-13T02:01:06.564Z",
+          "claimedAt": "2026-11-13T02:01:07.560Z",
+          "finishedAt": "2026-11-13T02:01:07.574Z",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+          "errorMessage": "this box has no card_terminal for <station id>",
+          "result": {
+            "mode": "sale",
+            "outcome": null,
+            "attemptId": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+            "terminalRef": null,
+            "responseCode": null
+          }
+        }
+      ],
+      "audit": [
+        {
+          "at": "2026-11-13T02:01:07.574Z",
+          "action": "payment.attempt.not_sent",
+          "after": {
+            "status": "declined",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+          }
+        },
+        {
+          "at": "2026-11-13T02:01:06.564Z",
+          "action": "payment.tender.start",
+          "after": {
+            "status": "sent_to_terminal",
+            "errorCode": null
+          }
+        }
+      ]
+    },
+    "p5setup": {
+      "phoneClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 972 band printer",
+          "card_terminal": "ZZ TEST 972 card terminal",
+          "dropoff_band": "ZZ TEST 972 band printer",
+          "kids_band": "ZZ TEST 972 band printer",
+          "receipt": "ZZ TEST 972 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 10,
+        "at": "2026-11-13T02:10:44.902Z"
+      },
+      "wait": {
+        "beats": 2,
+        "waitedS": 117
+      },
+      "hashBefore": "93be220aa5e643c2",
+      "hashNow": "4833842767908561",
+      "zzReported": [
+        {
+          "label": "ZZ TEST 972 band printer",
+          "kind": "band_printer",
+          "reachability": "reachable"
+        },
+        {
+          "label": "ZZ TEST 972 card terminal",
+          "kind": "terminal",
+          "reachability": "unknown"
+        },
+        {
+          "label": "ZZ TEST 972 receipt printer",
+          "kind": "receipt_printer",
+          "reachability": "reachable"
+        }
+      ]
+    },
+    "p5": {
+      "start": {
+        "status": 200,
+        "route": "card_terminal",
+        "attempt": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+        "attemptStatus": "sent_to_terminal"
+      },
+      "paymentSuccessful": true,
+      "secondsToPaid": 3.5,
+      "sale": {
+        "receipt": "Z97201-000002",
+        "status": "finalised",
+        "gross": 1040,
+        "attempts": [
+          {
+            "id": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+            "method": "card",
+            "status": "approved",
+            "provider": "simulator"
+          }
+        ]
+      },
+      "printJobs": [
+        {
+          "kind": "adult_wristband",
+          "status": "printed"
+        },
+        {
+          "kind": "kids_wristband",
+          "status": "printed"
+        },
+        {
+          "kind": "receipt",
+          "status": "printed"
+        }
+      ],
+      "newReceiptPrintouts": 1,
+      "saleCommandsPerAttempt": {
+        "p5": [
+          {
+            "state": "succeeded",
+            "errorCode": null,
+            "outcome": "approved"
+          }
+        ],
+        "p2": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "outcome": null
+          }
+        ],
+        "p4": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "outcome": null
+          }
+        ],
+        "h2": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "outcome": null
+          }
+        ],
+        "h3": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "outcome": null
+          }
+        ],
+        "h4": [
+          {
+            "state": "failed",
+            "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+            "outcome": null
+          }
+        ]
+      },
+      "commandsListed": 9
+    },
+    "p5refund": {
+      "refund": {
+        "signIn": 200,
+        "refund": {
+          "status": 200,
+          "code": null,
+          "message": null,
+          "amount": 1040,
+          "refundStatus": null,
+          "keys": [
+            "printing",
+            "replay",
+            "refund",
+            "sale",
+            "refundStatus",
+            "refundableSatang",
+            "requestedSatang",
+            "clamped"
+          ],
+          "slices": null
+        },
+        "signOut": {
+          "status": 200,
+          "me": 401
+        }
+      },
+      "after": {
+        "status": "refunded",
+        "refunded": 1040,
+        "refundStatus": "refunded",
+        "refunds": [
+          {
+            "status": null,
+            "amount": 1040,
+            "mode": "whole",
+            "keys": [
+              "id",
+              "saleId",
+              "stationId",
+              "number",
+              "amountSatang",
+              "mode",
+              "reason",
+              "note",
+              "lines",
+              "tenderAllocation",
+              "approvedBy",
+              "createdBy",
+              "pending",
+              "createdAt"
+            ],
+            "tenders": [
+              {
+                "label": "Kids",
+                "restock": false,
+                "quantity": 1,
+                "saleLineId": "01a1d2ae-0e3c-740d-9c0f-f42ab7e3cc4b",
+                "grossSatang": 69000
+              },
+              {
+                "label": "Adults",
+                "restock": false,
+                "quantity": 1,
+                "saleLineId": "01a1d2ae-0e3c-792a-a047-92f2f9b6da2d",
+                "grossSatang": 35000
+              }
+            ]
+          }
+        ]
+      },
+      "commandsForAttempt": [
+        {
+          "kind": "terminal_sale",
+          "mode": "void",
+          "state": "queued",
+          "errorCode": null,
+          "outcome": null,
+          "createdAt": "2026-11-13T02:13:31.825Z"
+        },
+        {
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "succeeded",
+          "errorCode": null,
+          "outcome": "approved",
+          "createdAt": "2026-11-13T02:13:05.146Z"
+        }
+      ],
+      "attemptAudit": [
+        {
+          "at": "2026-11-13T02:13:05.146Z",
+          "action": "payment.tender.start",
+          "after": {
+            "status": "sent_to_terminal",
+            "voidStatus": null
+          }
+        }
+      ],
+      "saleAudit": [
+        {
+          "at": "2026-11-13T02:13:31.825Z",
+          "action": "sale.refund"
+        },
+        {
+          "at": "2026-11-13T02:13:08.413Z",
+          "action": "sale.print"
+        },
+        {
+          "at": "2026-11-13T02:13:08.413Z",
+          "action": "sale.finalise"
+        },
+        {
+          "at": "2026-11-13T02:13:04.771Z",
+          "action": "sale.create"
+        }
+      ],
+      "secondsToRefunded": 1.2
+    },
+    "p5void": {
+      "voidCommands": [
+        {
+          "state": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "outcome": "approved",
+          "responseCode": "00",
+          "createdAt": "2026-11-13T02:13:31.825Z",
+          "claimedAt": "2026-11-13T02:13:32.744Z",
+          "finishedAt": "2026-11-13T02:13:32.784Z"
+        }
+      ],
+      "saleCommands": 1,
+      "attempt": {
+        "status": "approved",
+        "reversal": null,
+        "responseText": "Approved",
+        "keys": [
+          "id",
+          "saleId",
+          "method",
+          "provider",
+          "status",
+          "amountSatang",
+          "tenderedSatang",
+          "changeSatang",
+          "terminalRef",
+          "inquirySupported",
+          "tid",
+          "approvalCode",
+          "last4",
+          "invoiceNo",
+          "tranRef",
+          "actionId",
+          "offline",
+          "paidAt",
+          "createdAt"
+        ]
+      },
+      "sale": {
+        "status": "refunded",
+        "refundStatus": "refunded",
+        "refunded": 1040
+      },
+      "refundTender": [
+        {
+          "number": "Z97201-R-000002",
+          "amount": 1040,
+          "pending": false,
+          "tenderAllocation": [
+            {
+              "route": "terminal_void",
+              "detail": "Voided on the terminal",
+              "method": "card",
+              "status": "done",
+              "actionId": "01a1d2ae-786d-70d4-b6e0-d2699cb49bf9",
+              "provider": "simulator",
+              "respCode": "00",
+              "attemptId": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+              "settledAt": "2026-11-13T02:13:32.766Z",
+              "methodCode": "card",
+              "amountSatang": 104000
+            }
+          ]
+        }
+      ],
+      "attemptAudit": [
+        {
+          "at": "2026-11-13T02:13:05.146Z",
+          "action": "payment.tender.start"
+        }
+      ],
+      "saleAudit": [
+        {
+          "at": "2026-11-13T02:13:31.825Z",
+          "action": "sale.refund"
+        },
+        {
+          "at": "2026-11-13T02:13:08.413Z",
+          "action": "sale.print"
+        },
+        {
+          "at": "2026-11-13T02:13:08.413Z",
+          "action": "sale.finalise"
+        },
+        {
+          "at": "2026-11-13T02:13:04.771Z",
+          "action": "sale.create"
+        }
+      ]
+    },
+    "p5history": {
+      "detail": "Back to history Refunded Ticket sale Z97201-000002 Walk-in 13 Nov, 09:13 · sold by [staff] ZZ TEST 972 till · trading day 2026-11-13 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Refunded −฿1040 Payment Card · Approved 13 Nov, 09:13 · •••• 4242 · Approval R00001 · 261113180001 ฿1040 REFUND HISTORY −฿1040 13 Nov, 09:13 ZZ TEST SCRUM-972 proof: card after the box took its set-up · Z97201-R-000002 Card — Voided on the terminal ฿1040 by [staff] · manager approval Reprint Fully refunded — nothing left to refund. Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+    },
+    "p6api": {
+      "closedTill": {
+        "signOut": 200,
+        "me": 401
+      },
+      "healthStatus": 200,
+      "healthKeys": [
+        "status",
+        "checks",
+        "jobs",
+        "boxes",
+        "alerts",
+        "watchdogAgeSeconds",
+        "generatedAt",
+        "reach",
+        "rollups",
+        "evidence"
+      ],
+      "mentionsPending": true,
+      "ourIdsInHealth": [],
+      "pendingAlerts": [
+        {
+          "path": ".alerts[2]",
+          "key": "payments.pending:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+          "subject": "1 payment attempt at this branch has been waiting for an answer for more than 10 minutes.",
+          "summary": null,
+          "status": null,
+          "branch": null,
+          "detail": "Tenders with no outcome",
+          "openedAt": "2026-09-29T10:43:01.338Z",
+          "resolvedAt": null
+        }
+      ],
+      "platformAlertsStatus": 200,
+      "platformAlerts": [],
+      "runs": []
+    },
+    "p6console": {
+      "url": "https://oto-console-staging.onrender.com/watch/health",
+      "hasNoOutcome": true,
+      "around": "on Failures > Quarantine ×72753 open since 23 Sept, 16:52 taken 43d 12h ago Evidence box 361 (evidence-361) warning 1 event(s) from FortuneWheelBox (booth-1) could not be applied and are waiting on Failures > Quarantine ×34030 open since 20 Oct, 16:13 Acknowledge FortuneWheelBox (booth-1) warning 1 payment attempt at this branch has been waiting for an answer for more than 10 minutes. ×64086 open since 29 Sept, 17:43 taken 43d 12h ago Tenders with no outcome critical Demo counter box (virtual-1) has not called home for 772 hours while Demo Branch 2 is open — the stations on it cannot sell ×117 open since 9 Nov, 10:00 Acknowledge Demo counter box (virtual-1) warning ZZ TEST SCRUM-736 mw22ag5p (zz-test-s736-mw22ag5p): the drive is nearly full: free space or replace it before the counter stop",
+      "top": "O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print templates Staff benefits DEVICES & PLACES Devices Booths CHANNELS & ASSISTANT Teams & routing Assistant settings STAFF & HR REPORTS Analytics & sources Money oversight Sales Profitability Discounts & comps Tax & VAT Wallet & promo Wallets Booth report Bookings WATCH Health 18 18 open alerts Failures",
+      "cardText": "warning 1 payment attempt at this branch has been waiting for an answer for more than 10 minutes. ×64086",
+      "ourIdsOnPage": [],
+      "zzOnPage": true
+    },
+    "p6remaining": {
+      "listStatus": 200,
+      "tenderingSales": 20,
+      "candidates": [
+        {
+          "sale": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+          "occurredAt": "2026-09-29T10:32:18.536Z",
+          "station": "01a0ecb8-9096-7d88-8987-50c0958e8412",
+          "attempts": [
+            {
+              "id": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
+              "status": "sent_to_terminal",
+              "method": "card",
+              "provider": "simulator",
+              "createdAt": "2026-09-29T10:32:20.319Z"
+            }
+          ],
+          "stationName": "Native payment shop-partial-refused 0d008153",
+          "stationRetired": false
+        }
+      ]
+    }
+  },
+  "hunt": {
+    "history": {
+      "list": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Find by phone Scan bracelet All Tickets F&B 9 sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. No receipt number 13 Nov, 09:01 [staff] Voided ฿1040 Z97201-000001 13 Nov, 08:57 [staff] Refunded ฿1040 No receipt number 13 Nov, 07:17 [staff] Voided ฿175 No receipt number 13 Nov, 07:16 [staff] Voided ฿100 Z96301-000001 · Zz Test Parent A 13 Nov, 07:00 [staff] Refunded ฿915 Z95202-000001 13 Nov, 06:02 [staff] Refunded ฿1040 No receipt number 13 Nov, 05:51 [staff] Voided ฿1040 Z95201-000002 13 Nov, 05:50 [staff] Refunded ฿1040 Z95201-000001 13 Nov, 05:50 [staff] Refunded ฿1040",
+      "rowVisible": true,
+      "detail": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to history Refunded Ticket sale Z97201-000001 Walk-in 13 Nov, 08:57 · sold by [staff] ZZ TEST 972 till · trading day 2026-11-13 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Refunded −฿1040 Payments Card · Declined 13 Nov, 08:57 ฿1040 Cash · Approved 13 Nov, 08:58 ฿1040 REFUND HISTORY −฿1040 13 Nov, 08:58 ZZ TEST SCRUM-972 proof: cash after a refused card · Z97201-R-000001 Cash — hand it back in cash ฿1040 by [staff] · manager approval Reprint Fully refunded — nothing left to refund. Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+    },
+    "doublePress": {
+      "sale": "01a1d2a5-e6cd-7016-9757-5f9e1b45fcbd",
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 972 band printer",
+          "card_terminal": "ZZ TEST 972 card terminal",
+          "dropoff_band": "ZZ TEST 972 band printer",
+          "kids_band": "ZZ TEST 972 band printer",
+          "receipt": "ZZ TEST 972 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 6,
+        "at": "2026-11-13T02:04:10.834Z"
+      },
+      "secondsAssignToPress": 0,
+      "timeline": [
+        {
+          "s": 0,
+          "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale A payment is in progress — finish or cancel it first. Back Waiting for the payment answer…"
+        },
+        {
+          "s": 0.3,
+          "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+        },
+        {
+          "s": 3.4,
+          "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+        }
+      ],
+      "startCalls": [
+        {
+          "status": 200,
+          "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+          "attemptStatus": "sent_to_terminal",
+          "replay": null,
+          "code": null
+        }
+      ],
+      "attempts": [
+        {
+          "id": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+          "status": "declined"
+        }
+      ],
+      "commands": [
+        {
+          "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+          "kind": "terminal_sale",
+          "mode": "sale",
+          "state": "failed",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+        }
+      ],
+      "void": {
+        "status": 200,
+        "saleIsOurs": true
+      },
+      "saleAfter": "voided"
+    },
+    "reload": {
+      "sale": "01a1d2a7-83ab-753f-8271-fef12272c0b9",
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 972 band printer",
+          "card_terminal": "ZZ TEST 972 card terminal",
+          "dropoff_band": "ZZ TEST 972 band printer",
+          "kids_band": "ZZ TEST 972 band printer",
+          "receipt": "ZZ TEST 972 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 8,
+        "at": "2026-11-13T02:05:56.494Z"
+      },
+      "start": {
+        "status": 200,
+        "attempt": "01a1d2a7-8620-77ff-ae8b-88d96b68ffb8",
+        "attemptStatus": "sent_to_terminal",
+        "sAfterPress": 0.2
+      },
+      "reloadedAtS": 0.2,
+      "attemptStatusRightAfterReload": "sent_to_terminal",
+      "timeline": [
+        {
+          "s": 0.9,
+          "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park stale Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and up"
+        },
+        {
+          "s": 1.3,
+          "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due — Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale A payment is in progress — finish or cancel it first. Back Waiting for the payment answer… Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks "
+        },
+        {
+          "s": 1.6,
+          "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual disco"
+        }
+      ],
+      "final": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040 to our staff",
+      "buttons": [
+        {
+          "text": "Hold sale",
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "disabled": false
+        },
+        {
+          "text": "Confirm Payment Received",
+          "disabled": true
+        }
+      ],
+      "attempts": [
+        {
+          "id": "01a1d2a7-8620-77ff-ae8b-88d96b68ffb8",
+          "status": "declined"
+        }
+      ],
+      "commands": [
+        {
+          "kind": "terminal_sale",
+          "state": "failed",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+          "finishedAt": "2026-11-13T02:05:57.655Z"
+        }
+      ],
+      "cancel": {
+        "void": {
+          "status": 200,
+          "saleIsOurs": true
+        },
+        "saleAfter": "voided"
+      }
+    },
+    "phone": {
+      "sale": "01a1d2ab-4859-7bef-be88-b6c6b1bf6224",
+      "payScreen": "0 no gate Oto Play Park, Central Floresta [staff] Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages",
+      "assign": {
+        "status": 200,
+        "code": null,
+        "roles": {
+          "adult_band": "ZZ TEST 972 band printer",
+          "card_terminal": "ZZ TEST 972 card terminal",
+          "dropoff_band": "ZZ TEST 972 band printer",
+          "kids_band": "ZZ TEST 972 band printer",
+          "receipt": "ZZ TEST 972 receipt printer"
+        },
+        "paymentRouting": {
+          "qr": "none",
+          "card": "card_terminal"
+        },
+        "configVersion": 10,
+        "at": "2026-11-13T02:10:04.324Z"
+      },
+      "secondsAssignToPress": 0.1,
+      "start": {
+        "status": 200,
+        "route": "card_terminal",
+        "attempt": "01a1d2ab-4e7d-79cd-afb7-4f3cc5829286",
+        "attemptStatus": "sent_to_terminal"
+      },
+      "timeline": [
+        {
+          "s": 0.2,
+          "text": "0 no gate Oto Play Park, Central Floresta [staff] Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment Tickets F&B Shop Check-in Events History Today 7 Messages"
+        },
+        {
+          "s": 0.6,
+          "text": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment Tickets F&B Shop Check-in Events History Today 7 Messages"
+        },
+        {
+          "s": 3.5,
+          "text": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages"
+        }
+      ],
+      "secondsPressToEnd": 3.5,
+      "final": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages",
+      "buttons": [
+        {
+          "text": "0 no gate",
+          "disabled": false
+        },
+        {
+          "text": "Hold sale",
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "disabled": false
+        },
+        {
+          "text": "Confirm Payment Received",
+          "disabled": true
+        },
+        {
+          "text": "Tickets",
+          "disabled": false
+        },
+        {
+          "text": "F&B",
+          "disabled": false
+        },
+        {
+          "text": "Shop",
+          "disabled": false
+        },
+        {
+          "text": "Check-in",
+          "disabled": false
+        },
+        {
+          "text": "Events",
+          "disabled": false
+        },
+        {
+          "text": "History",
+          "disabled": false
+        },
+        {
+          "text": "Today",
+          "disabled": false
+        },
+        {
+          "text": "7 Messages",
+          "disabled": false
+        }
+      ],
+      "attempts": [
+        {
+          "id": "01a1d2ab-4e7d-79cd-afb7-4f3cc5829286",
+          "status": "declined"
+        }
+      ],
+      "commands": [
+        {
+          "kind": "terminal_sale",
+          "state": "failed",
+          "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+        }
+      ],
+      "cancel": {
+        "afterBack": "0 no gate Oto Play Park, Central Floresta ███ Review Order Tourist Cancel Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 Tickets F&B Shop Check-in Events History Today 7 Messages",
+        "dialog": null,
+        "void": {
+          "status": 200,
+          "saleIsOurs": true
+        },
+        "after": "0 no gate Oto Play Park, Central Floresta ███ Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local pricing Pr",
+        "saleAfter": "voided"
+      }
+    }
+  },
+  "odd": [],
+  "pageErrors": [
+    {
+      "page": "rec",
+      "at": "2: reception signs in at the ZZ TEST 972 till; the box set-up it holds now",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec",
+      "at": "2: reception signs in at the ZZ TEST 972 till; the box set-up it holds now",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "rec",
+      "at": "hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start",
+      "kind": "http",
+      "text": "GET /api/branches/:id/occupancy 401"
+    },
+    {
+      "page": "rec",
+      "at": "hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "phone",
+      "at": "hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "phone",
+      "at": "hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "rec5",
+      "at": "5: the terminal assigned and the box given time to take its set-up",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "rec5",
+      "at": "5: the terminal assigned and the box given time to take its set-up",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "console",
+      "at": "6: the Console Health page after the sweeps",
+      "kind": "http",
+      "text": "GET /api/me 401"
+    },
+    {
+      "page": "console",
+      "at": "6: the Console Health page after the sweeps",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    }
+  ],
+  "requests": [
+    {
+      "at": "2026-11-13T01:53:48.737Z",
+      "method": "GET",
+      "path": "/branches",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:09.389Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:09.531Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:09.620Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:09.710Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:09.792Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:24.247Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:24.320Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:24.401Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:24.489Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:24.562Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:37.400Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:37.500Z",
+      "method": "POST",
+      "path": "/sales/:id/void",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:37.599Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:37.735Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.190Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.263Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.336Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.446Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.513Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.581Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.721Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.787Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.852Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.919Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:50.984Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.049Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.122Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.192Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.259Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.324Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.389Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.454Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.522Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.595Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.672Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.860Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:51.945Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.036Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.132Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.227Z",
+      "method": "POST",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.343Z",
+      "method": "POST",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.421Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:52.503Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:54:57.575Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:02.715Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:07.799Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:12.885Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:17.966Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:23.055Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:28.132Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:33.235Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:38.313Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:43.390Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:48.471Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:53.563Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:55:58.638Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:03.726Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:08.811Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:13.898Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:18.979Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:24.064Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:29.152Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:34.240Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:39.333Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:56:54.197Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:05.821Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:09.094Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:09.271Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:09.392Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:09.484Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:12.957Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:40.240Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:40.316Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:40.391Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:57:40.474Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:02.249Z",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:05.351Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:08.449Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:14.550Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:14.623Z",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:36.887Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:37.208Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:52.088Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:52.220Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:52.323Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:52.392Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:58:57.473Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:02.568Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:07.649Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:12.720Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:17.792Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:22.882Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:27.966Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:33.046Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:38.118Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:43.186Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:48.265Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:53.349Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T01:59:58.432Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:03.522Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:08.599Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:13.691Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:18.766Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:23.856Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:28.955Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:34.041Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:39.120Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:00:39.191Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:02.819Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:06.028Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:06.203Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:06.335Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:06.433Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:08.333Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:14.051Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:14.131Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:01:14.206Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:30.096Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:30.224Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:30.324Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:30.416Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:35.497Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:40.581Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:45.666Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:50.752Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:02:55.825Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:00.893Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:05.975Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:11.100Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:16.177Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:21.257Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:26.334Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:31.414Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:36.495Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:41.574Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:03:41.643Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:10.407Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:10.592Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:10.720Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:10.834Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:15.990Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:16.063Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:17.518Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:22.905Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:23.026Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:23.117Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:23.183Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:28.271Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:33.386Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:38.470Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:43.540Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:48.619Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:53.698Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:04:58.773Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:03.866Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:08.942Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:14.038Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:19.123Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:24.198Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:29.277Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:34.360Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:39.440Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:39.511Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:56.094Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:56.276Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:56.403Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:56.494Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:05:56.845Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:06:43.218Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:06:43.296Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:01.049Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:09.611Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:09.740Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:09.836Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:09.906Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:14.990Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:20.080Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:25.152Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:30.228Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:35.306Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:40.382Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:45.466Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:50.546Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:07:55.623Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:00.700Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:05.785Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:10.875Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:15.948Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:21.022Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:26.111Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:31.192Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:36.274Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:41.348Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:08:41.414Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:03.056Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:03.251Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:04.217Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:04.324Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:09.102Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:09.185Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:35.065Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:44.681Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:44.813Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:44.901Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:44.975Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:50.053Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:10:55.139Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:00.217Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:05.305Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:10.385Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:15.470Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:20.552Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:25.701Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:30.773Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:35.888Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:40.972Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:46.050Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:51.136Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:11:56.219Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:01.296Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:06.388Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:11.471Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:16.542Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:21.619Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:26.727Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:31.808Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:36.895Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:41.971Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:12:42.044Z",
+      "method": "GET",
+      "path": "/branches/:id/boxes",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:01.474Z",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:04.796Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:04.978Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:11.235Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:14.331Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:18.437Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:18.509Z",
+      "method": "GET",
+      "path": "/devices/:id/printouts",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:18.616Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:31.730Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:32.231Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:32.321Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:32.395Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:32.485Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:32.596Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:44.755Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:44.830Z",
+      "method": "GET",
+      "path": "/boxes/:id/commands",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:47.916Z",
+      "method": "GET",
+      "path": "/payments/attempts/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:48.004Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:48.078Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:13:48.166Z",
+      "method": "GET",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:14:31.717Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:14:31.934Z",
+      "method": "GET",
+      "path": "/platform/alerts",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:14:32.005Z",
+      "method": "GET",
+      "path": "/ops/runs",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:14:42.468Z",
+      "method": "GET",
+      "path": "/ops/health",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:55.603Z",
+      "method": "GET",
+      "path": "/sales",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:55.688Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:55.766Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:55.843Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:55.923Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.001Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.079Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.159Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.238Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.317Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.393Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.471Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.548Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.684Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.761Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.835Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.909Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:56.987Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:57.065Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:57.149Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:57.325Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:15:57.447Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:14.948Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.030Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.112Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.192Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.271Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.350Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.439Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.525Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.605Z",
+      "method": "GET",
+      "path": "/sales/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.671Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.737Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.804Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.871Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:15.935Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.001Z",
+      "method": "GET",
+      "path": "/members/lookup",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.114Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.245Z",
+      "method": "PATCH",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.320Z",
+      "method": "DELETE",
+      "path": "/stations/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.410Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.483Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.560Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.700Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.775Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.843Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.917Z",
+      "method": "DELETE",
+      "path": "/devices/:id",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:16.988Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:17.057Z",
+      "method": "GET",
+      "path": "/boxes/:id/devices",
+      "status": 200
+    },
+    {
+      "at": "2026-11-13T02:17:17.149Z",
+      "method": "GET",
+      "path": "/branches/:id/stations",
+      "status": 200
+    }
+  ],
+  "cleanup": {
+    "records": {
+      "consoleClosed": {
+        "signOut": 200,
+        "me": 401
+      },
+      "sales": [
+        {
+          "kind": "p2-refused-then-cash",
+          "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+          "receipt": "Z97201-000001",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "attempts": [
+            "card:declined",
+            "cash:approved"
+          ]
+        },
+        {
+          "kind": "sale-cash",
+          "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+          "receipt": "Z97201-000001",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "attempts": [
+            "card:declined",
+            "cash:approved"
+          ]
+        },
+        {
+          "kind": "p4-refused-then-voided",
+          "id": "01a1d2a3-1695-77bc-8513-2e6a5c9ab73d",
+          "receipt": null,
+          "status": "voided",
+          "refundStatus": "none",
+          "attempts": [
+            "card:declined"
+          ]
+        },
+        {
+          "kind": "h2-double-press",
+          "id": "01a1d2a5-e6cd-7016-9757-5f9e1b45fcbd",
+          "receipt": null,
+          "status": "voided",
+          "refundStatus": "none",
+          "attempts": [
+            "card:declined"
+          ]
+        },
+        {
+          "kind": "h3-reload",
+          "id": "01a1d2a7-83ab-753f-8271-fef12272c0b9",
+          "receipt": null,
+          "status": "voided",
+          "refundStatus": "none",
+          "attempts": [
+            "card:declined"
+          ]
+        },
+        {
+          "kind": "h4-phone-refused",
+          "id": "01a1d2ab-4859-7bef-be88-b6c6b1bf6224",
+          "receipt": null,
+          "status": "voided",
+          "refundStatus": "none",
+          "attempts": [
+            "card:declined"
+          ]
+        },
+        {
+          "kind": "p5-card-sale",
+          "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4",
+          "receipt": "Z97201-000002",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "attempts": [
+            "card:approved"
+          ]
+        },
+        {
+          "kind": "sale-card",
+          "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4",
+          "receipt": "Z97201-000002",
+          "status": "refunded",
+          "refundStatus": "refunded",
+          "attempts": [
+            "card:approved"
+          ]
+        }
+      ],
+      "members": [
+        {
+          "key": "p2",
+          "member": "none"
+        },
+        {
+          "key": "p4",
+          "member": "none"
+        },
+        {
+          "key": "h2",
+          "member": "none"
+        },
+        {
+          "key": "h3",
+          "member": "none"
+        },
+        {
+          "key": "h4",
+          "member": "none"
+        },
+        {
+          "key": "p5",
+          "member": "none"
+        }
+      ],
+      "heldSale": {
+        "status": "voided",
+        "attempts": [
+          "declined"
+        ]
+      },
+      "station": {
+        "name": "ZZ TEST 972 till",
+        "devicesCleared": 200,
+        "clearCode": null,
+        "retired": 200,
+        "retireCode": null
+      },
+      "stationReadBack": {
+        "archived": true,
+        "devices": 0
+      },
+      "devices": [
+        {
+          "key": "receipt",
+          "label": "ZZ TEST 972 receipt printer",
+          "archive": 200,
+          "code": null,
+          "stillAssignedTo": 0
+        },
+        {
+          "key": "band",
+          "label": "ZZ TEST 972 band printer",
+          "archive": 200,
+          "code": null,
+          "stillAssignedTo": 0
+        },
+        {
+          "key": "card",
+          "label": "ZZ TEST 972 card terminal",
+          "archive": 200,
+          "code": null,
+          "stillAssignedTo": 0
+        }
+      ],
+      "devicesReadBack": [
+        {
+          "label": "ZZ TEST 972 band printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 972 receipt printer",
+          "archived": true
+        },
+        {
+          "label": "ZZ TEST 972 card terminal",
+          "archived": true
+        }
+      ],
+      "zzLiveOnBox": [],
+      "zz972StationsLive": [],
+      "openPages": []
+    },
+    "adminMe": 401
+  },
+  "restarts": [],
+  "sessions": [
+    {
+      "label": "rec",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:08:50.301Z"
+    },
+    {
+      "label": "phone",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:10:44.576Z"
+    },
+    {
+      "label": "rec5",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:14:31.611Z"
+    },
+    {
+      "label": "console",
+      "signOut": 200,
+      "me": 401,
+      "at": "2026-11-13T02:17:14.767Z"
+    }
+  ],
+  "finishedAt": "2026-11-13T02:17:22.587Z"
+}

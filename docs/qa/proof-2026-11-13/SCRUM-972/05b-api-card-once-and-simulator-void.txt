@@ -1,0 +1,39 @@
+ZZ TEST 972 sale 01a1d2ae-0e3c-7b27-86b8-3be498c938f4 (Z97201-000002); the ZZ TEST 972 card terminal assigned at 2026-11-13T02:10:44.902Z and the box given two heartbeats (117 s)
+POST /api/payments/attempts -> {"status":200,"route":"card_terminal","attempt":"01a1d2ae-100c-7c1d-a5da-62573a5e28e5","attemptStatus":"sent_to_terminal"}
+"Payment Successful" 3.5 s after "Start card payment"; sale finalised; attempts [{"id":"01a1d2ae-100c-7c1d-a5da-62573a5e28e5","method":"card","status":"approved","provider":"simulator"}]
+print jobs [{"kind":"adult_wristband","status":"printed"},{"kind":"kids_wristband","status":"printed"},{"kind":"receipt","status":"printed"}]; new printouts on the ZZ receipt printer: 1
+
+GET /api/boxes/<Virtual box 1>/commands -> terminal_sale commands with mode "sale", per attempt (never a SALE sent twice):
+  point 5 paid card: 1 [{"state":"succeeded","errorCode":null,"outcome":"approved"}]
+  point 2 refused: 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX","outcome":null}]
+  point 4 refused: 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX","outcome":null}]
+  hunt double press: 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX","outcome":null}]
+  hunt reload: 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX","outcome":null}]
+  hunt phone: 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX","outcome":null}]
+  point 1 held attempt (SCRUM-952): 1 [{"state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX"}]
+
+THE MANAGER'S REFUND: POST /api/sales/<id>/refunds { mode: "whole" } -> HTTP 200 ฿1040
+the simulator's void: [{"state":"succeeded","errorCode":null,"errorMessage":null,"outcome":"approved","responseCode":"00","createdAt":"2026-11-13T02:13:31.825Z","claimedAt":"2026-11-13T02:13:32.744Z","finishedAt":"2026-11-13T02:13:32.784Z"}]
+the refund's tender allocation: [
+ {
+  "number": "Z97201-R-000002",
+  "amount": 1040,
+  "pending": false,
+  "tenderAllocation": [
+   {
+    "route": "terminal_void",
+    "detail": "Voided on the terminal",
+    "method": "card",
+    "status": "done",
+    "actionId": "01a1d2ae-786d-70d4-b6e0-d2699cb49bf9",
+    "provider": "simulator",
+    "respCode": "00",
+    "attemptId": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+    "settledAt": "2026-11-13T02:13:32.766Z",
+    "methodCode": "card",
+    "amountSatang": 104000
+   }
+  ]
+ }
+]
+sale after: {"status":"refunded","refundStatus":"refunded","refunded":1040}; the attempt read: {"status":"approved","responseText":"Approved"}

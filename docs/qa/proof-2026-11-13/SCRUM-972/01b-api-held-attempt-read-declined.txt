@@ -1,0 +1,45 @@
+GET /api/payments/attempts/01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3   (the till's ordinary read; signed-in admin session)   read 2026-11-13T01:54:24.320Z
+  -> HTTP 200
+  attempt.status: declined
+  route: card_terminal
+  responseText: "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay."
+  outstanding: ฿1040
+
+GET /api/sales/01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0 right after
+  sale.status: tendering; attempts: [{"id":"01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3","status":"declined","responseText":null}]
+
+GET /api/audit?entityType=payment_attempt&entityId=01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3 -> HTTP 200
+[
+ {
+  "at": "2026-11-13T01:54:24.370Z",
+  "action": "payment.attempt.not_sent",
+  "before": {
+   "status": "sent_to_terminal"
+  },
+  "after": {
+   "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+   "status": "declined",
+   "commandId": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+   "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+   "amountSatang": 104000,
+   "commandState": "failed"
+  }
+ },
+ {
+  "at": "2026-11-12T22:51:40.949Z",
+  "action": "payment.tender.start",
+  "before": null,
+  "after": {
+   "method": "card",
+   "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+   "status": "sent_to_terminal",
+   "tender": "card",
+   "deviceId": "8cbb95de-6635-492a-a4f0-ee91cddf15e7",
+   "stationId": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+   "methodCode": "card",
+   "amountSatang": 104000
+  }
+ }
+]
+
+the command's terminal (payload.deviceId) on Virtual box 1: {"label":"ZZ TEST 952 card terminal","archived":true,"transport":"simulated"}

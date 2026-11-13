@@ -1,0 +1,11 @@
+read 2026-11-13T02:17:22Z with: node scripts/agent/render.mjs status
+oto-pos-web-staging        live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-inbox-staging          live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-qa-worker-staging      live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-radar-staging          live           608b1fd1  fix(inbox): the theme hook types the preference wr
+oto-booth-staging          live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-app-staging            live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-console-staging        build_in_progress 1b9885a3  fix(print): fit a band's test page to its print wi
+oto-launcher-staging       live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-pos-staging            live           97600c13  fix(oto-app): "for them" is whom the sentence name
+oto-api-staging            live           0e8e2bad  test(api): prove a terminal void the box never sen

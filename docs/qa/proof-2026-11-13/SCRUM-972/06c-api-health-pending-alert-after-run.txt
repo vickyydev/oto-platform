@@ -1,0 +1,27 @@
+Point 6, read 2026-11-13T02:15:57.447Z; job:payments.pending runs every 60 s (last run seen ok), the held attempt was freed at 01:54:24Z, the run's own attempts declined within 2-4 s
+
+GET /api/ops/health -> alert payments.pending:<Central Floresta>:
+  "1 payment attempt at this branch has been waiting for an answer for more than 10 minutes."  ×64086, open since 29 Sept, acknowledged
+  (the SCRUM-952 proof's Health picture 04a0, 12 Nov 23:05Z, read "2 payment attempts at this branch")
+  attempt ids of this run or of point 1 in the health answer: []
+the Console Health page: "warning 1 payment attempt at this branch has been waiting for an answer for more than 10 minutes. ×64086"; ids of this run on the page: []
+
+GET /api/sales?branchId=<Central Floresta>&status=tendering -> 200, 20 tendering sales; those holding an attempt in sent_to_terminal / unknown / inquiring:
+[
+ {
+  "sale": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+  "occurredAt": "2026-09-29T10:32:18.536Z",
+  "station": "01a0ecb8-9096-7d88-8987-50c0958e8412",
+  "attempts": [
+   {
+    "id": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
+    "status": "sent_to_terminal",
+    "method": "card",
+    "provider": "simulator",
+    "createdAt": "2026-09-29T10:32:20.319Z"
+   }
+  ],
+  "stationName": "Native payment shop-partial-refused 0d008153",
+  "stationRetired": false
+ }
+]

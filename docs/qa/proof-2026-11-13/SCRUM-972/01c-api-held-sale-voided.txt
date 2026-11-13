@@ -1,0 +1,18 @@
+POST /api/sales/01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0/void  { reason: "ZZ TEST SCRUM-972 held card" }   (admin session)  2026-11-13T01:54:37.401Z
+  -> HTTP 200
+  sale.status in the answer: voided; void.reason: ZZ TEST SCRUM-972 held card
+
+  (the SCRUM-952 proof, 12 Nov 23:13 UTC, the same call: 409 PAYMENT_IN_FLIGHT "A payment on this sale is still in progress — finish or cancel it before voiding the sale")
+
+GET /api/sales/01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0 after: sale.status voided; attempts ["declined"]
+
+GET /api/audit?entityId=<sale> -> [
+ {
+  "at": "2026-11-13T01:54:37.458Z",
+  "action": "sale.void"
+ },
+ {
+  "at": "2026-11-12T22:51:25.285Z",
+  "action": "sale.create"
+ }
+]

@@ -1,0 +1,66 @@
+ZZ TEST 972 sale 01a1d29f-791a-76c8-b3b4-3df4dbdf349b, card attempt 01a1d29f-7b81-72c3-bf4d-36efbcd475ff
+assigned the ZZ TEST 972 card terminal to the ZZ TEST 972 till at 2026-11-13T01:57:09.484Z; pressed "Start card payment" 0 s later
+the till left "Payment requested" for "Payment declined" 3.4 s after the press, no reload
+
+GET /api/payments/attempts/01a1d29f-7b81-72c3-bf4d-36efbcd475ff -> HTTP 200
+  attempt.status: declined   route: card_terminal   deviceLabel: ZZ TEST 972 card terminal
+  responseText: "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay."
+  outstanding: ฿1040
+
+GET /api/boxes/<Virtual box 1>/commands?limit=100 -> terminal commands for this attempt (1):
+[
+ {
+  "id": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+  "kind": "terminal_sale",
+  "mode": "sale",
+  "state": "failed",
+  "createdAt": "2026-11-13T01:57:09.613Z",
+  "claimedAt": "2026-11-13T01:57:12.532Z",
+  "finishedAt": "2026-11-13T01:57:12.545Z",
+  "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+  "errorMessage": "this box has no card_terminal for <station id>",
+  "result": {
+   "mode": "sale",
+   "outcome": null,
+   "attemptId": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+   "terminalRef": null,
+   "responseCode": null
+  }
+ }
+]
+
+GET /api/audit?entityType=payment_attempt&entityId=01a1d29f-7b81-72c3-bf4d-36efbcd475ff (admin) -> 2 rows:
+[
+ {
+  "at": "2026-11-13T01:57:12.545Z",
+  "action": "payment.attempt.not_sent",
+  "before": {
+   "status": "sent_to_terminal"
+  },
+  "after": {
+   "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+   "status": "declined",
+   "commandId": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+   "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+   "amountSatang": 104000,
+   "commandState": "failed"
+  }
+ },
+ {
+  "at": "2026-11-13T01:57:09.613Z",
+  "action": "payment.tender.start",
+  "before": null,
+  "after": {
+   "method": "card",
+   "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+   "status": "sent_to_terminal",
+   "tender": "card",
+   "deviceId": "dd29c9dc-66a0-41ab-b571-610d50366079",
+   "stationId": "01a1d29d-630c-7fcb-b2e6-fe0ca5fd1134",
+   "methodCode": "card",
+   "amountSatang": 104000
+  }
+ }
+]
+
+GET /api/sales/<id>: sale.status tendering; attempts [{"id":"01a1d29f-7b81-72c3-bf4d-36efbcd475ff","status":"declined"}]

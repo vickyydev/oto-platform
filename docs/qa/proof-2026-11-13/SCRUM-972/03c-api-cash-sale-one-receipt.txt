@@ -1,0 +1,48 @@
+ZZ TEST 972 sale 01a1d29f-791a-76c8-b3b4-3df4dbdf349b — the card the box refused (attempt 01a1d29f-7b81-72c3-bf4d-36efbcd475ff, declined), then Cash on the same sale
+
+the till's own writes from the Cash press: [{"method":"POST","path":"/api/sales/:id/finalise","status":200},{"method":"POST","path":"/api/box/v1/station/:id/intents","status":200},{"method":"POST","path":"/api/me/station/heartbeat","status":200}]
+any 409: false
+
+GET /api/sales/<id>: status finalised  receipt Z97201-000001  gross ฿1040
+  attempts: [
+ {
+  "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+  "method": "card",
+  "status": "declined",
+  "amount": 1040
+ },
+ {
+  "id": "01a1d2a0-49d8-7a20-91a6-e488a94a5683",
+  "method": "cash",
+  "status": "approved",
+  "amount": 1040
+ }
+]
+  printJobs: [
+ {
+  "kind": "adult_wristband",
+  "role": "adult_band",
+  "status": "printed",
+  "error": null,
+  "onZzPrinter": true
+ },
+ {
+  "kind": "kids_wristband",
+  "role": "kids_band",
+  "status": "printed",
+  "error": null,
+  "onZzPrinter": true
+ },
+ {
+  "kind": "receipt",
+  "role": "receipt",
+  "status": "printed",
+  "error": null,
+  "onZzPrinter": true
+ }
+]
+
+GET /api/devices/<ZZ TEST 972 receipt printer>/printouts -> new printouts since the press: [{"seq":1,"at":"2026-11-13T01:58:07.935Z","heightDots":1088,"truncated":false}]
+
+THE MANAGER'S REFUND (POST /api/sales/<id>/refunds { mode: "whole" }, manager session): HTTP 200 amount ฿1040
+GET /api/sales/<id> after: {"status":"refunded","refunded":1040,"refundStatus":"refunded","refunds":[{"amount":1040,"mode":"whole"}]}

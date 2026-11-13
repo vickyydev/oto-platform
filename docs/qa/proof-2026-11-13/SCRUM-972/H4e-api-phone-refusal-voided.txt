@@ -1,0 +1,7 @@
+hunt: the phone till (390 by 844), ZZ TEST 972 till; sale 01a1d2ab-4859-7bef-be88-b6c6b1bf6224
+terminal assigned 2026-11-13T02:10:04.324Z; "Start card payment" 0.1 s later; POST /api/payments/attempts -> {"status":200,"route":"card_terminal","attempt":"01a1d2ab-4e7d-79cd-afb7-4f3cc5829286","attemptStatus":"sent_to_terminal"}
+"Payment declined" 3.5 s after the press, no reload
+the phone's words at the end: … Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received …
+attempts: [{"id":"01a1d2ab-4e7d-79cd-afb7-4f3cc5829286","status":"declined"}]; command: [{"kind":"terminal_sale","state":"failed","errorCode":"TERMINAL_NOT_ON_THIS_BOX"}]
+
+Back, then Cancel: dialog null; POST /api/sales/<id>/void -> {"status":200,"saleIsOurs":true}; sale voided

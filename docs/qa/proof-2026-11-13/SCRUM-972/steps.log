@@ -1,0 +1,2978 @@
+
+=== 2026-11-13T01:54:09.267Z 1a: the held ZZ TEST sale of the SCRUM-952 proof, read before anything else
+S.phase = '1a: the held ZZ TEST sale of the SCRUM-952 proof, read before anything else';
+const r = { readAt: new Date().toISOString() };
+const s = await S.sale(S.HELD_SALE);
+S.walkNames(s);
+r.sale = { id: s.sale.id, status: s.sale.status, receipt: s.sale.receiptNumber ?? null, gross: s.sale.totals.grossSatang / 100, occurredAt: s.sale.occurredAt ?? s.sale.createdAt ?? null, stationId: s.sale.stationId };
+r.attempts = (s.attempts ?? []).map(a => ({ id: a.id, status: a.status, method: a.method, provider: a.provider ?? null, amount: a.amountSatang / 100, deviceId: a.deviceId ?? null, responseText: a.responseText ?? null }));
+const st = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations.find(x => x.id === s.sale.stationId);
+r.station = st ? { name: st.name, archived: Boolean(st.archived), devices: st.devices.length } : null;
+const box = (await S.call('GET', `/branches/${S.branchId}/boxes`)).body.boxes.find(b => b.role === 'virtual' && b.slot === 'virtual-1' && !b.archived);
+S.box = { id: box.id, name: box.name, status: box.status };
+const devs = await S.devicesOnBox(box.id);
+const term = devs.find(d => d.id === r.attempts[0]?.deviceId);
+r.terminal = term ? { label: term.label, archived: Boolean(term.archived), transport: term.transport, boxIsVb1: true } : '(not found on Virtual box 1)';
+r.commands = await S.termCommandsFor(S.HELD_ATTEMPT);
+S.receipt.reads.p1before = r;
+const text = [
+  `ZZ TEST sale ${S.HELD_SALE} (made by the SCRUM-952 proof) read ${r.readAt}, BEFORE any read of its attempt`,
+  '',
+  `GET /api/sales/${S.HELD_SALE}`,
+  `  sale.status: ${r.sale.status}   receipt: ${r.sale.receipt}   gross: ฿${r.sale.gross}`,
+  `  station: ${r.station?.name} (retired: ${r.station?.archived})`,
+  `  attempts: ${JSON.stringify(r.attempts, null, 1)}`,
+  '',
+  `the attempt's terminal on Virtual box 1: ${JSON.stringify(r.terminal)}`,
+  '',
+  `GET /api/boxes/<Virtual box 1>/commands?limit=100 -> terminal commands for attempt ${S.HELD_ATTEMPT}:`,
+  JSON.stringify(r.commands, null, 1),
+].join('\n');
+await S.txtShot(text, '01a-api-held-sale-before.png', 'Point 1: the held ZZ TEST sale before any read of its attempt');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "readAt": "2026-11-13T01:54:09.268Z",
+  "sale": {
+   "id": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+   "status": "tendering",
+   "receipt": null,
+   "gross": 1040,
+   "occurredAt": "2026-11-12T22:51:24.159Z",
+   "stationId": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5"
+  },
+  "attempts": [
+   {
+    "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+    "status": "sent_to_terminal",
+    "method": "card",
+    "provider": "simulator",
+    "amount": 1040,
+    "deviceId": null,
+    "responseText": null
+   }
+  ],
+  "station": {
+   "name": "ZZ TEST 952 till B",
+   "archived": true,
+   "devices": 0
+  },
+  "terminal": "(not found on Virtual box 1)",
+  "commands": [
+   {
+    "id": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "failed",
+    "createdAt": "2026-11-12T22:51:40.949Z",
+    "claimedAt": "2026-11-12T22:51:43.384Z",
+    "finishedAt": "2026-11-12T22:51:43.395Z",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "errorMessage": "this box has no card_terminal for <station id>",
+    "result": {
+     "mode": "sale",
+     "outcome": null,
+     "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+     "terminalRef": null,
+     "responseCode": null
+    }
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T01:54:24.164Z 1b: the ordinary read of the held attempt; then the void of the held sale
+S.phase = '1b: the ordinary read of the held attempt; then the void of the held sale';
+const r = {};
+const cmds0 = (await S.commands(S.box.id, 100)).filter(c => c.payload?.attemptId === S.HELD_ATTEMPT);
+const devId = cmds0[0]?.payload?.deviceId ?? null;
+const devs = await S.devicesOnBox(S.box.id);
+const term = devs.find(d => d.id === devId);
+r.terminalOfCommand = term ? { label: term.label, archived: Boolean(term.archived), transport: term.transport } : '(not on Virtual box 1)';
+r.readAt = new Date().toISOString();
+const a = await S.attempt(S.HELD_ATTEMPT);
+r.read = { status: a.status, attemptStatus: a.body?.attempt?.status ?? null, route: a.body?.route ?? null, responseText: a.body?.responseText ?? null, outstanding: a.body?.outstandingSatang != null ? a.body.outstandingSatang / 100 : null, code: a.body?.error?.code ?? null, keys: a.body ? Object.keys(a.body) : null };
+const s = await S.sale(S.HELD_SALE);
+r.saleAfterRead = { status: s.sale.status, attempts: (s.attempts ?? []).map(x => ({ id: x.id, status: x.status, responseText: x.responseText ?? null })) };
+const au = await S.audit(S.HELD_ATTEMPT);
+r.audit = { status: au.status, entries: (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action, before: e.before ?? null, after: e.after ?? null })) };
+S.receipt.reads.p1read = r;
+const text = [
+  `GET /api/payments/attempts/${S.HELD_ATTEMPT}   (the till's ordinary read; signed-in admin session)   read ${r.readAt}`,
+  `  -> HTTP ${r.read.status}`,
+  `  attempt.status: ${r.read.attemptStatus}`,
+  `  route: ${r.read.route}`,
+  `  responseText: ${JSON.stringify(r.read.responseText)}`,
+  `  outstanding: ฿${r.read.outstanding}`,
+  '',
+  `GET /api/sales/${S.HELD_SALE} right after`,
+  `  sale.status: ${r.saleAfterRead.status}; attempts: ${JSON.stringify(r.saleAfterRead.attempts)}`,
+  '',
+  `GET /api/audit?entityType=payment_attempt&entityId=${S.HELD_ATTEMPT} -> HTTP ${r.audit.status}`,
+  JSON.stringify(r.audit.entries, null, 1),
+  '',
+  `the command's terminal (payload.deviceId) on Virtual box 1: ${JSON.stringify(r.terminalOfCommand)}`,
+].join('\n');
+await S.txtShot(text, '01b-api-held-attempt-read-declined.png', 'Point 1: the ordinary read of the held attempt');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "terminalOfCommand": {
+   "label": "ZZ TEST 952 card terminal",
+   "archived": true,
+   "transport": "simulated"
+  },
+  "readAt": "2026-11-13T01:54:24.320Z",
+  "read": {
+   "status": 200,
+   "attemptStatus": "declined",
+   "route": "card_terminal",
+   "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+   "outstanding": 1040,
+   "code": null,
+   "keys": [
+    "route",
+    "attempt",
+    "qrPayload",
+    "qrImageUrl",
+    "expiresAt",
+    "expiryTimerMs",
+    "deviceLabel",
+    "responseText",
+    "outstandingSatang"
+   ]
+  },
+  "saleAfterRead": {
+   "status": "tendering",
+   "attempts": [
+    {
+     "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+     "status": "declined",
+     "responseText": null
+    }
+   ]
+  },
+  "audit": {
+   "status": 200,
+   "entries": [
+    {
+     "at": "2026-11-13T01:54:24.370Z",
+     "action": "payment.attempt.not_sent",
+     "before": {
+      "status": "sent_to_terminal"
+     },
+     "after": {
+      "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+      "status": "declined",
+      "commandId": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+      "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+      "amountSatang": 104000,
+      "commandState": "failed"
+     }
+    },
+    {
+     "at": "2026-11-12T22:51:40.949Z",
+     "action": "payment.tender.start",
+     "before": null,
+     "after": {
+      "method": "card",
+      "saleId": "01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0",
+      "status": "sent_to_terminal",
+      "tender": "card",
+      "deviceId": "8cbb95de-6635-492a-a4f0-ee91cddf15e7",
+      "stationId": "01a1d1f1-a041-77ff-9b63-c7ea4abad1c5",
+      "methodCode": "card",
+      "amountSatang": 104000
+     }
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-13T01:54:37.303Z 1c: void the held ZZ TEST sale (it answered 409 PAYMENT_IN_FLIGHT before the fix)
+S.phase = '1c: void the held ZZ TEST sale (it answered 409 PAYMENT_IN_FLIGHT before the fix)';
+const r = {};
+const s0 = await S.sale(S.HELD_SALE);
+S.assert.equal(s0.sale.id, S.HELD_SALE);
+S.assert.equal(s0.sale.status, 'tendering', 'still unpaid');
+S.assert.ok((s0.attempts ?? []).every(a => a.status === 'declined'), 'no money on it');
+r.at = new Date().toISOString();
+const v = await S.call('POST', `/sales/${S.HELD_SALE}/void`, { reason: 'ZZ TEST SCRUM-972 held card' });
+r.void = { status: v.status, code: v.body?.error?.code ?? null, message: v.body?.error?.message ?? null, saleStatus: v.body?.sale?.status ?? null, voidReason: v.body?.void?.reason ?? null };
+const s = await S.sale(S.HELD_SALE);
+r.after = { status: s.sale.status, attempts: (s.attempts ?? []).map(x => x.status), refundStatus: s.refundStatus ?? null };
+const au = await S.call('GET', `/audit?entityId=${S.HELD_SALE}&limit=20`);
+r.saleAudit = (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action }));
+S.receipt.reads.p1void = r;
+const text = [
+  `POST /api/sales/${S.HELD_SALE}/void  { reason: "ZZ TEST SCRUM-972 held card" }   (admin session)  ${r.at}`,
+  `  -> HTTP ${r.void.status}${r.void.code ? ' ' + r.void.code + ' ' + r.void.message : ''}`,
+  `  sale.status in the answer: ${r.void.saleStatus}; void.reason: ${r.void.voidReason}`,
+  '',
+  '  (the SCRUM-952 proof, 12 Nov 23:13 UTC, the same call: 409 PAYMENT_IN_FLIGHT "A payment on this sale is still in progress — finish or cancel it before voiding the sale")',
+  '',
+  `GET /api/sales/${S.HELD_SALE} after: sale.status ${r.after.status}; attempts ${JSON.stringify(r.after.attempts)}`,
+  '',
+  `GET /api/audit?entityId=<sale> -> ${JSON.stringify(r.saleAudit, null, 1)}`,
+].join('\n');
+await S.txtShot(text, '01c-api-held-sale-voided.png', 'Point 1: the held ZZ TEST sale voided');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "at": "2026-11-13T01:54:37.401Z",
+  "void": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "saleStatus": "voided",
+   "voidReason": "ZZ TEST SCRUM-972 held card"
+  },
+  "after": {
+   "status": "voided",
+   "attempts": [
+    "declined"
+   ],
+   "refundStatus": "none"
+  },
+  "saleAudit": [
+   {
+    "at": "2026-11-13T01:54:37.458Z",
+    "action": "sale.void"
+   },
+   {
+    "at": "2026-11-12T22:51:25.285Z",
+    "action": "sale.create"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T01:54:50.111Z setup: ZZ TEST 972 printers, a ZZ TEST 972 simulated card terminal (NOT assigned) and the ZZ TEST 972 till on Virtual box 1
+S.phase = 'setup: ZZ TEST 972 printers, a ZZ TEST 972 simulated card terminal (NOT assigned) and the ZZ TEST 972 till on Virtual box 1';
+S.point('1', 'PASS', ['01a-api-held-sale-before.png', '01b-api-held-attempt-read-declined.png', '01c-api-held-sale-voided.png'], {
+  before: 'sale tendering, attempt sent_to_terminal, command failed TERMINAL_NOT_ON_THIS_BOX (result with outcome null)',
+  read: S.receipt.reads.p1read?.read, void: S.receipt.reads.p1void?.void });
+const r = await S.setup();
+const box = await S.box1();
+r.boxNow = Object.fromEntries(Object.entries(box).filter(([k]) => !/key|secret|token|password/i.test(k)));
+r.wait = await S.heartbeats(S.createdStationAt, 2);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "box": "Virtual box 1",
+  "boxStatus": "online",
+  "boxKeys": [
+   "id",
+   "branchId",
+   "name",
+   "slot",
+   "role",
+   "status",
+   "hostname",
+   "bridgeOrigin",
+   "bridgeWarning",
+   "agentVersion",
+   "currentEpoch",
+   "registeredAt",
+   "lastHeartbeatAt",
+   "heartbeatAgeSeconds",
+   "lastStatus",
+   "deviceCount",
+   "stationCount",
+   "claimCodeOutstanding",
+   "claimCodeExpiresAt",
+   "archived"
+  ],
+  "prefix": "Z97201",
+  "numbersFree": 20,
+  "configVersion": 1,
+  "roles": {
+   "adult_band": "ZZ TEST 972 band printer",
+   "dropoff_band": "ZZ TEST 972 band printer",
+   "kids_band": "ZZ TEST 972 band printer",
+   "receipt": "ZZ TEST 972 receipt printer"
+  },
+  "paymentRouting": {
+   "qr": "none",
+   "card": "manual"
+  },
+  "terminal": {
+   "label": "ZZ TEST 972 card terminal",
+   "transport": "simulated",
+   "protocol": "ghl_linkpos"
+  },
+  "boxNow": {
+   "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+   "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+   "name": "Virtual box 1",
+   "slot": "virtual-1",
+   "role": "virtual",
+   "status": "online",
+   "hostname": "virtual-staging",
+   "bridgeOrigin": null,
+   "bridgeWarning": null,
+   "agentVersion": "0.1.0",
+   "currentEpoch": 1,
+   "registeredAt": "2026-11-13T01:52:36.785Z",
+   "lastHeartbeatAt": "2026-11-13T01:54:37.501Z",
+   "heartbeatAgeSeconds": 15,
+   "lastStatus": {
+    "booth": {
+     "today": null,
+     "rostered": false,
+     "lastSpinAt": null,
+     "paperStatus": "unknown",
+     "pendingUnit": "vouchers",
+     "configVersion": null,
+     "staffSignedIn": false,
+     "pointerPresent": null,
+     "vouchersPending": 0,
+     "dailyCapsReached": [],
+     "printerReachable": "unknown"
+    },
+    "cache": {
+     "scopes": 14,
+     "appliedAt": "2026-11-13T01:52:37.275Z",
+     "checkedAt": "2026-11-13T01:53:37.627Z"
+    },
+    "tempC": null,
+    "errors": [],
+    "leases": [
+     {
+      "holder": "86cbf634-2b15-4990-99e0-b778f014c50e",
+      "expiresAt": "2026-10-06T20:22:57.699Z",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a"
+     }
+    ],
+    "devices": [
+     {
+      "id": "01a0ecb6-1010-7ab1-a3a0-0709287b53dc",
+      "kind": "terminal",
+      "label": "Native payment shop-inquiry-confirm 0d008153 terminal",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     },
+     {
+      "id": "01a0ecb6-0c16-79dd-b6d3-07d6ebd161c3",
+      "kind": "receipt_printer",
+      "label": "Native payment shop-inquiry-confirm 0d008153 printer",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0ecb8-8cd6-77b3-a999-e41386a6cba1",
+      "kind": "terminal",
+      "label": "Native payment shop-partial-refused 0d008153 terminal",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     },
+     {
+      "id": "01a0ecb8-8b13-7e89-a9a5-b9ae6aaa9f13",
+      "kind": "receipt_printer",
+      "label": "Native payment shop-partial-refused 0d008153 printer",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0be8c-89b2-7f21-84e0-74c754838f5b",
+      "kind": "band_printer",
+      "label": "Band Printer (adults)",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0be8c-89b8-7153-bd24-678c65024de8",
+      "kind": "terminal",
+      "label": "EDC 1",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     },
+     {
+      "id": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b",
+      "kind": "band_printer",
+      "label": "Band Printer (kids)",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0be8c-89a9-7c0b-a630-a16c81fdea52",
+      "kind": "kitchen_printer",
+      "label": "Kitchen Printer",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0be8c-89bb-7f43-b557-b0e8e876ccac",
+      "kind": "terminal",
+      "label": "EDC 3",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     },
+     {
+      "id": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+      "kind": "receipt_printer",
+      "label": "Receipt Printer 1",
+      "lastError": null,
+      "paperStatus": "ok",
+      "reachability": "reachable"
+     },
+     {
+      "id": "01a0be8c-89b5-7058-805e-0d66c670753b",
+      "kind": "scanner",
+      "label": "Scanner 1",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     },
+     {
+      "id": "01a199dd-cf6c-7962-a74d-872b990ef805",
+      "kind": "terminal",
+      "label": "ZZ TEST setup traps terminal 20261102",
+      "lastError": null,
+      "paperStatus": "unknown",
+      "reachability": "unknown"
+     }
+    ],
+    "offline": false,
+    "uptimeS": 120,
+    "discovered": [],
+    "receivedAt": "2026-11-13T01:54:37.501Z",
+    "reportedAt": "2026-11-13T01:54:37.477Z",
+    "outboxDepth": 0,
+    "agentVersion": "0.1.0",
+    "clockOffsetMs": 12,
+    "configVersion": "fd26c8bc357cc866",
+    "clockMeasuredAt": "2026-11-13T01:53:37.509Z",
+    "clockMeasuredBy": "box",
+    "oldestUnackedAgeS": null
+   },
+   "deviceCount": 16,
+   "stationCount": 6,
+   "claimCodeOutstanding": false,
+   "claimCodeExpiresAt": null,
+   "archived": false
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 107
+  }
+ }
+}
+
+=== 2026-11-13T01:56:50.866Z 2: reception signs in at the ZZ TEST 972 till; the box set-up it holds now
+S.phase = '2: reception signs in at the ZZ TEST 972 till; the box set-up it holds now';
+const r = {};
+const till = await S.signIn('rec', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.till = till;
+const b = await S.box1();
+r.boxHolds = { configVersion: b.lastStatus?.configVersion ?? null, reportedAt: b.lastStatus?.reportedAt ?? null, zzDevicesReported: (b.lastStatus?.devices ?? []).filter(d => /^ZZ TEST 972/.test(d.label)).map(d => d.label) };
+r.home = S.flat(await till.locator('body').innerText()).slice(0, 300);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "boxHolds": {
+   "configVersion": "db17b2d01d585fec",
+   "reportedAt": "2026-11-13T01:56:37.479Z",
+   "zzDevicesReported": [
+    "ZZ TEST 972 band printer",
+    "ZZ TEST 972 receipt printer"
+   ]
+  },
+  "home": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cu"
+ }
+}
+
+=== 2026-11-13T01:57:05.746Z 2: a card the box refuses on purpose: ring the sale, assign the terminal, press Card at once; time it, no reload
+S.phase = '2: a card the box refuses on purpose: ring the sale, assign the terminal, press Card at once; time it, no reload';
+const till = S.till;
+await S.unlock('rec');
+const hashBefore = (await S.box1()).lastStatus?.configVersion ?? null;
+S.receipt.numbers.p2 = S.free[0];
+const r = await S.refuse(till, { number: S.free[0], kind: 'p2-refused-then-cash', shotPrefix: '02' });
+S.p2 = r;
+r.boxHashBeforeAssign = hashBefore;
+r.boxHashRightAfter = (await S.box1()).lastStatus?.configVersion ?? null;
+await till.waitForTimeout(800);
+const step = S.paymentStep(till);
+r.stepText = S.flat(await step.innerText());
+r.alerts = (await till.locator('[role="alert"], [role="status"]').allInnerTexts().catch(() => [])).map(S.flat).filter(Boolean).slice(0, 8);
+r.buttons = await step.getByRole('button').evaluateAll(els => els.map(e => ({ text: (e.innerText || '').replace(/\s+/g, ' ').trim(), disabled: e.disabled })));
+r.cardTiles = await step.locator('[aria-disabled]').evaluateAll(els => els.map(e => ({ text: (e.innerText || '').replace(/\s+/g, ' ').trim(), ariaDisabled: e.getAttribute('aria-disabled') })));
+r.plainReasonOnScreen = r.stepText.includes('not ready on this counter');
+await S.shot(till, '02b-till-payment-declined-no-reload.png');
+S.receipt.reads.p2 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+  "assign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "card_terminal": "ZZ TEST 972 card terminal",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "configVersion": 2,
+   "at": "2026-11-13T01:57:09.484Z"
+  },
+  "secondsAssignToPress": 0,
+  "start": {
+   "status": 200,
+   "route": "card_terminal",
+   "attemptStatus": "sent_to_terminal",
+   "code": null
+  },
+  "attempt": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+  "timeline": [
+   {
+    "s": 0.1,
+    "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+   },
+   {
+    "s": 3.4,
+    "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+   }
+  ],
+  "secondsPressToEnd": 3.4,
+  "shotRequested": true,
+  "boxHashBeforeAssign": "db17b2d01d585fec",
+  "boxHashRightAfter": "db17b2d01d585fec",
+  "stepText": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received",
+  "alerts": [
+   "4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks",
+   "Payment declined. Choose a payment method."
+  ],
+  "buttons": [
+   {
+    "text": "Hold sale",
+    "disabled": false
+   },
+   {
+    "text": "Back",
+    "disabled": false
+   },
+   {
+    "text": "Confirm Payment Received",
+    "disabled": true
+   }
+  ],
+  "cardTiles": [
+   {
+    "text": "Cash",
+    "ariaDisabled": "false"
+   },
+   {
+    "text": "Card",
+    "ariaDisabled": "false"
+   },
+   {
+    "text": "PromptPay",
+    "ariaDisabled": "false"
+   }
+  ],
+  "plainReasonOnScreen": false
+ }
+}
+
+=== 2026-11-13T01:57:40.098Z 2: the platform answers for the refused attempt: the read, the box command history, the audit log
+S.phase = '2: the platform answers for the refused attempt: the read, the box command history, the audit log';
+const r = { namesHadVat: S.names.has('VAT') };
+for (const n of ['VAT', 'Service', 'Charge']) S.names.delete(n);
+const id = S.p2.attempt;
+const a = await S.attempt(id);
+r.read = { status: a.status, attemptStatus: a.body?.attempt?.status ?? null, route: a.body?.route ?? null, responseText: a.body?.responseText ?? null, outstanding: a.body?.outstandingSatang != null ? a.body.outstandingSatang / 100 : null, deviceLabel: a.body?.deviceLabel ?? null };
+r.commands = await S.termCommandsFor(id);
+const au = await S.audit(id);
+r.audit = (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action, before: e.before ?? null, after: e.after ?? null }));
+r.notSentRows = r.audit.filter(e => e.action === 'payment.attempt.not_sent').length;
+const s = await S.sale(S.p2.sale);
+r.sale = { status: s.sale.status, attempts: (s.attempts ?? []).map(x => ({ id: x.id, status: x.status })) };
+S.receipt.reads.p2api = r;
+const text = [
+  `ZZ TEST 972 sale ${S.p2.sale}, card attempt ${id}`,
+  `assigned the ZZ TEST 972 card terminal to the ZZ TEST 972 till at ${S.p2.assign.at}; pressed "Start card payment" ${S.p2.secondsAssignToPress} s later`,
+  `the till left "Payment requested" for "Payment declined" ${S.p2.secondsPressToEnd} s after the press, no reload`,
+  '',
+  `GET /api/payments/attempts/${id} -> HTTP ${r.read.status}`,
+  `  attempt.status: ${r.read.attemptStatus}   route: ${r.read.route}   deviceLabel: ${r.read.deviceLabel}`,
+  `  responseText: ${JSON.stringify(r.read.responseText)}`,
+  `  outstanding: ฿${r.read.outstanding}`,
+  '',
+  `GET /api/boxes/<Virtual box 1>/commands?limit=100 -> terminal commands for this attempt (${r.commands.length}):`,
+  JSON.stringify(r.commands, null, 1),
+  '',
+  `GET /api/audit?entityType=payment_attempt&entityId=${id} (admin) -> ${r.audit.length} rows:`,
+  JSON.stringify(r.audit, null, 1),
+  '',
+  `GET /api/sales/<id>: sale.status ${r.sale.status}; attempts ${JSON.stringify(r.sale.attempts)}`,
+].join('\n');
+await S.txtShot(text, '02c-api-refused-attempt-declined-command-audit.png', 'Point 2: the platform answers for the attempt the box refused');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "namesHadVat": true,
+  "read": {
+   "status": 200,
+   "attemptStatus": "declined",
+   "route": "card_terminal",
+   "responseText": "The card terminal is not ready on this counter yet. Try again in a moment, or take another way to pay.",
+   "outstanding": 1040,
+   "deviceLabel": "ZZ TEST 972 card terminal"
+  },
+  "commands": [
+   {
+    "id": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "failed",
+    "createdAt": "2026-11-13T01:57:09.613Z",
+    "claimedAt": "2026-11-13T01:57:12.532Z",
+    "finishedAt": "2026-11-13T01:57:12.545Z",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "errorMessage": "this box has no card_terminal for <station id>",
+    "result": {
+     "mode": "sale",
+     "outcome": null,
+     "attemptId": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+     "terminalRef": null,
+     "responseCode": null
+    }
+   }
+  ],
+  "audit": [
+   {
+    "at": "2026-11-13T01:57:12.545Z",
+    "action": "payment.attempt.not_sent",
+    "before": {
+     "status": "sent_to_terminal"
+    },
+    "after": {
+     "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+     "status": "declined",
+     "commandId": "01a1d29f-7b84-7fe1-8dcd-43433be68989",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "amountSatang": 104000,
+     "commandState": "failed"
+    }
+   },
+   {
+    "at": "2026-11-13T01:57:09.613Z",
+    "action": "payment.tender.start",
+    "before": null,
+    "after": {
+     "method": "card",
+     "saleId": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+     "status": "sent_to_terminal",
+     "tender": "card",
+     "deviceId": "dd29c9dc-66a0-41ab-b571-610d50366079",
+     "stationId": "01a1d29d-630c-7fcb-b2e6-fe0ca5fd1134",
+     "methodCode": "card",
+     "amountSatang": 104000
+    }
+   }
+  ],
+  "notSentRows": 1,
+  "sale": {
+   "status": "tendering",
+   "attempts": [
+    {
+     "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+     "status": "declined"
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-13T01:58:02.172Z 3: the same sale paid by cash after the refusal; no 409; one receipt
+S.phase = '3: the same sale paid by cash after the refusal; no 409; one receipt';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+const before = await S.printoutsFull(S.dev.receipt.id);
+const seenKeys = before.printouts.map(S.keyOf);
+const calls = [];
+const onResp = rr => { const u = new URL(rr.url()); if (/\/api\//.test(u.pathname) && rr.request().method() !== 'GET') calls.push({ method: rr.request().method(), path: u.pathname.replace(S.ID, ':id'), status: rr.status() }); };
+till.on('response', onResp);
+const t0 = Date.now();
+await till.getByRole('heading', { name: 'Cash', exact: true }).first().click();
+const confirm = till.getByRole('button', { name: 'Confirm Payment Received', exact: true });
+await expect(confirm).toBeEnabled({ timeout: 20000 });
+r.afterCash = S.flat(await S.paymentStep(till).innerText()).slice(0, 500);
+await S.shot(till, '03a-till-cash-chosen-after-refusal.png');
+await confirm.click();
+r.paymentSuccessful = await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 45000 }).then(() => true).catch(() => false);
+r.secondsToPaid = Math.round((Date.now() - t0) / 100) / 10;
+await till.waitForTimeout(2500);
+await S.shot(till, '03b-till-cash-payment-successful.png', [till.locator('span.font-mono')]);
+await expect.poll(async () => { const j = (await S.sale(S.p2.sale)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+await S.sleep(6000);
+till.off('response', onResp);
+r.calls = calls;
+r.any409 = calls.some(c => c.status === 409);
+const s = await S.sale(S.p2.sale);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, attempts: (s.attempts ?? []).map(a => ({ id: a.id, method: a.method, status: a.status, amount: a.amountSatang / 100 })) };
+r.printJobs = (s.printJobs ?? []).map(j => ({ kind: j.kind, role: j.role, status: j.status, error: j.errorCode ?? null, onZzPrinter: [S.dev.receipt.id, S.dev.band.id].includes(j.deviceId) }));
+r.receiptJobs = r.printJobs.filter(j => j.kind === 'receipt').length;
+const after = await S.printoutsFull(S.dev.receipt.id);
+r.newPrintouts = after.printouts.filter(p => !seenKeys.includes(S.keyOf(p))).map(p => ({ seq: p.seq, at: p.at, heightDots: p.heightDots, truncated: p.truncated }));
+S.receipt.created.push({ kind: 'sale-cash', id: S.p2.sale, receipt: s.sale.receiptNumber }); S.save();
+S.receipt.reads.p3 = r;
+const text = [
+  `ZZ TEST 972 sale ${S.p2.sale} — the card the box refused (attempt ${S.p2.attempt}, declined), then Cash on the same sale`,
+  '',
+  `the till's own writes from the Cash press: ${JSON.stringify(r.calls)}`,
+  `any 409: ${r.any409}`,
+  '',
+  `GET /api/sales/<id>: status ${r.sale.status}  receipt ${r.sale.receipt}  gross ฿${r.sale.gross}`,
+  `  attempts: ${JSON.stringify(r.sale.attempts, null, 1)}`,
+  `  printJobs: ${JSON.stringify(r.printJobs, null, 1)}`,
+  '',
+  `GET /api/devices/<ZZ TEST 972 receipt printer>/printouts -> new printouts since the press: ${JSON.stringify(r.newPrintouts)}`,
+].join('\n');
+await S.txtShot(text, '03c-api-cash-sale-one-receipt.png', 'Point 3: the same sale paid by cash, no refusal, one receipt');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "afterCash": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Partial payment Cash received Change ฿0.00 Hold sale Back Confirm Payment Received",
+  "paymentSuccessful": true,
+  "secondsToPaid": 0.4,
+  "calls": [
+   {
+    "method": "POST",
+    "path": "/api/sales/:id/finalise",
+    "status": 200
+   },
+   {
+    "method": "POST",
+    "path": "/api/box/v1/station/:id/intents",
+    "status": 200
+   },
+   {
+    "method": "POST",
+    "path": "/api/me/station/heartbeat",
+    "status": 200
+   }
+  ],
+  "any409": false,
+  "sale": {
+   "receipt": "Z97201-000001",
+   "status": "finalised",
+   "gross": 1040,
+   "attempts": [
+    {
+     "id": "01a1d29f-7b81-72c3-bf4d-36efbcd475ff",
+     "method": "card",
+     "status": "declined",
+     "amount": 1040
+    },
+    {
+     "id": "01a1d2a0-49d8-7a20-91a6-e488a94a5683",
+     "method": "cash",
+     "status": "approved",
+     "amount": 1040
+    }
+   ]
+  },
+  "printJobs": [
+   {
+    "kind": "adult_wristband",
+    "role": "adult_band",
+    "status": "printed",
+    "error": null,
+    "onZzPrinter": true
+   },
+   {
+    "kind": "kids_wristband",
+    "role": "kids_band",
+    "status": "printed",
+    "error": null,
+    "onZzPrinter": true
+   },
+   {
+    "kind": "receipt",
+    "role": "receipt",
+    "status": "printed",
+    "error": null,
+    "onZzPrinter": true
+   }
+  ],
+  "receiptJobs": 1,
+  "newPrintouts": [
+   {
+    "seq": 1,
+    "at": "2026-11-13T01:58:07.935Z",
+    "heightDots": 1088,
+    "truncated": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T01:58:36.598Z 3: the manager refunds the cash sale (whole)
+S.phase = '3: the manager refunds the cash sale (whole)';
+S.mgrRefund = async (saleId, reason) => {
+  const mgr = await S.pw.request.newContext({ baseURL: S.pos });
+  const out = {};
+  try {
+    out.signIn = (await mgr.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } })).status();
+    const s = await S.sale(saleId);
+    S.assert.equal(s.sale.stationId, S.station.id, 'own ZZ TEST 972 till');
+    S.assert.ok(String(s.sale.receiptNumber).startsWith('Z972'), 'own ZZ receipt series');
+    const res = await mgr.post(`/api/sales/${saleId}/refunds`, { headers: { 'idempotency-key': S.randomUUID() }, data: { mode: 'whole', reason } });
+    const b = await res.json().catch(() => null);
+    out.refund = { status: res.status(), code: b?.error?.code ?? null, message: res.status() >= 400 ? (b?.error?.message ?? null) : null, amount: b?.refund?.amountSatang != null ? b.refund.amountSatang / 100 : null, refundStatus: b?.refund?.status ?? null, keys: b ? Object.keys(b) : null, slices: b?.refund?.slices ?? b?.refund?.tenders ?? b?.slices ?? null };
+  } finally {
+    const so = await mgr.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } });
+    out.signOut = { status: so.status(), me: (await mgr.get('/api/me')).status() };
+    await mgr.dispose();
+  }
+  return out;
+};
+const r = await S.mgrRefund(S.p2.sale, 'ZZ TEST SCRUM-972 proof: cash after a refused card');
+const s = await S.sale(S.p2.sale);
+r.after = { status: s.sale.status, refunded: (s.sale.totals.refundedSatang ?? 0) / 100, refundStatus: s.refundStatus ?? null, refunds: (s.refunds ?? []).map(x => ({ status: x.status, amount: (x.amountSatang ?? 0) / 100, mode: x.mode ?? null })) };
+S.receipt.reads.p3refund = r;
+const verdict = S.receipt.reads.p3.paymentSuccessful && !S.receipt.reads.p3.any409 && S.receipt.reads.p3.receiptJobs === 1 && S.receipt.reads.p3.newPrintouts.length === 1 && r.refund.status === 200;
+S.point('3', verdict ? 'PASS' : 'FAIL', ['03a-till-cash-chosen-after-refusal.png', '03b-till-cash-payment-successful.png', '03c-api-cash-sale-one-receipt.png'], { paid: S.receipt.reads.p3.sale, any409: S.receipt.reads.p3.any409, receiptJobs: S.receipt.reads.p3.receiptJobs, printouts: S.receipt.reads.p3.newPrintouts.length, refund: r.refund, after: r.after });
+const t = S.readFileSync(S.resolve(S.out, '03c-api-cash-sale-one-receipt.txt'), 'utf8').trim();
+await S.txtShot(t + `\n\nTHE MANAGER'S REFUND (POST /api/sales/<id>/refunds { mode: "whole" }, manager session): HTTP ${r.refund.status} amount ฿${r.refund.amount}\nGET /api/sales/<id> after: ${JSON.stringify(r.after)}`, '03c-api-cash-sale-one-receipt.png', 'Point 3: the same sale paid by cash, no refusal, one receipt; refunded by the manager');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "signIn": 200,
+  "refund": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "amount": 1040,
+   "refundStatus": null,
+   "keys": [
+    "printing",
+    "replay",
+    "refund",
+    "sale",
+    "refundStatus",
+    "refundableSatang",
+    "requestedSatang",
+    "clamped"
+   ],
+   "slices": null
+  },
+  "signOut": {
+   "status": 200,
+   "me": 401
+  },
+  "after": {
+   "status": "refunded",
+   "refunded": 1040,
+   "refundStatus": "refunded",
+   "refunds": [
+    {
+     "amount": 1040,
+     "mode": "whole"
+    }
+   ]
+  }
+ }
+}
+
+=== 2026-11-13T01:58:52.012Z reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up
+S.phase = 'reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up';
+const r = {};
+const h0 = (await S.box1()).lastStatus?.configVersion ?? null;
+r.unassign = await S.unassignTerminal();
+const since = Date.now();
+r.wait = await S.heartbeats(since, 2, 300000);
+const b = await S.box1();
+r.hashBefore = h0;
+r.hashNow = b.lastStatus?.configVersion ?? null;
+r.reportedAt = b.lastStatus?.reportedAt ?? null;
+(S.receipt.reads.resets ??= []).push(r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "unassign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "manual"
+   },
+   "configVersion": 3,
+   "at": "2026-11-13T01:58:52.323Z"
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 107
+  },
+  "hashBefore": "3fbb8401917bde1a",
+  "hashNow": "b706e9a8213eca1c",
+  "reportedAt": "2026-11-13T02:00:37.480Z"
+ }
+}
+
+=== 2026-11-13T02:00:59.584Z 4: a second refused sale; Back, then Cancel on the till voids it
+S.phase = '4: a second refused sale; Back, then Cancel on the till voids it';
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+await till.goto('/');
+S.receipt.numbers.p4 = S.free[1];
+const hashBefore = (await S.box1()).lastStatus?.configVersion ?? null;
+const ref = await S.refuse(till, { number: S.free[1], kind: 'p4-refused-then-voided', shotPrefix: '04' });
+S.p4 = ref;
+r.refusal = ref;
+r.boxHashBeforeAssign = hashBefore;
+r.boxHashAfter = (await S.box1()).lastStatus?.configVersion ?? null;
+await till.waitForTimeout(800);
+r.declinedText = S.flat(await S.paymentStep(till).innerText());
+await S.shot(till, '04b-till-second-refusal-declined.png');
+// Back
+const back = S.paymentStep(till).getByRole('button', { name: 'Back', exact: true });
+r.backEnabled = await back.isEnabled();
+await back.click();
+await till.waitForTimeout(1500);
+r.afterBack = S.flat(await till.locator('body').innerText()).slice(0, 900);
+await S.shot(till, '04c-till-after-back.png');
+// Cancel (the till's void of a sale it rang up)
+const voidResp = till.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 20000 }).catch(() => null);
+await till.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await till.waitForTimeout(1000);
+const dlg = till.getByRole('dialog');
+r.dialog = await dlg.isVisible().catch(() => false) ? S.flat(await dlg.innerText()).slice(0, 400) : null;
+if (r.dialog) await S.shot(till, '04d0-till-cancel-dialog.png');
+const vr = await voidResp;
+if (vr) { const b = await vr.json().catch(() => null); r.void = { status: vr.status(), code: b?.error?.code ?? null, message: b?.error?.message ?? null, saleStatus: b?.sale?.status ?? null, saleIsOurs: b?.sale?.id === ref.sale }; }
+await till.waitForTimeout(2000);
+r.afterCancel = S.flat(await till.locator('body').innerText()).slice(0, 500);
+await S.shot(till, '04d-till-after-cancel-voided.png');
+const s = await S.sale(ref.sale);
+r.sale = { status: s.sale.status, attempts: (s.attempts ?? []).map(a => ({ id: a.id, status: a.status })) };
+r.commands = await S.termCommandsFor(ref.attempt);
+const au = await S.audit(ref.attempt);
+r.audit = (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action, after: e.after ? { status: e.after.status, errorCode: e.after.errorCode ?? null } : null }));
+S.receipt.reads.p4 = r;
+const text = [
+  `ZZ TEST 972 sale ${ref.sale}, card attempt ${ref.attempt}`,
+  `terminal assigned at ${ref.assign.at}; "Start card payment" pressed ${ref.secondsAssignToPress} s later; "Payment declined" ${ref.secondsPressToEnd} s after the press`,
+  `POST /api/payments/attempts -> ${JSON.stringify(ref.start)}`,
+  '',
+  `the till: Back enabled ${r.backEnabled}; Back pressed, then Cancel pressed`,
+  `POST /api/sales/<id>/void (the till's own Cancel, reception session) -> ${JSON.stringify(r.void ?? '(no void call seen)')}`,
+  '  (before the fix this answered 409 PAYMENT_IN_FLIGHT: SCRUM-952 proof, 02e)',
+  '',
+  `GET /api/sales/<id>: status ${r.sale.status}; attempts ${JSON.stringify(r.sale.attempts)}`,
+  `box commands for the attempt (${r.commands.length}): ${JSON.stringify(r.commands.map(c => ({ kind: c.kind, mode: c.mode, state: c.state, errorCode: c.errorCode })))}`,
+  `audit for the attempt: ${JSON.stringify(r.audit)}`,
+].join('\n');
+await S.txtShot(text, '04e-api-second-refusal-voided.png', 'Point 4: a second refused sale voided from the till');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "refusal": {
+   "sale": "01a1d2a3-1695-77bc-8513-2e6a5c9ab73d",
+   "assign": {
+    "status": 200,
+    "code": null,
+    "roles": {
+     "adult_band": "ZZ TEST 972 band printer",
+     "card_terminal": "ZZ TEST 972 card terminal",
+     "dropoff_band": "ZZ TEST 972 band printer",
+     "kids_band": "ZZ TEST 972 band printer",
+     "receipt": "ZZ TEST 972 receipt printer"
+    },
+    "paymentRouting": {
+     "qr": "none",
+     "card": "card_terminal"
+    },
+    "configVersion": 4,
+    "at": "2026-11-13T02:01:06.433Z"
+   },
+   "secondsAssignToPress": 0,
+   "start": {
+    "status": 200,
+    "route": "card_terminal",
+    "attemptStatus": "sent_to_terminal",
+    "code": null
+   },
+   "attempt": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+   "timeline": [
+    {
+     "s": 0.1,
+     "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+    },
+    {
+     "s": 1.8,
+     "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+    }
+   ],
+   "secondsPressToEnd": 1.8,
+   "shotRequested": true
+  },
+  "boxHashBeforeAssign": "b706e9a8213eca1c",
+  "boxHashAfter": "b706e9a8213eca1c",
+  "declinedText": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received",
+  "backEnabled": true,
+  "afterBack": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Customer Details Ask the customer to enter their details on their display. Waiting for the customer… The customer display is now their turn to enter a phone & nickname. Phone +66 89 897 2011 Nickname — Back Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 English YOUR TURN Enter your details For membership & so we can reach you Phone number +66 89 897 2011 We will use the number you gave at the ",
+  "dialog": null,
+  "void": {
+   "status": 200,
+   "code": null,
+   "message": null,
+   "saleStatus": "voided",
+   "saleIsOurs": true
+  },
+  "afterCancel": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A pho",
+  "sale": {
+   "status": "voided",
+   "attempts": [
+    {
+     "id": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+     "status": "declined"
+    }
+   ]
+  },
+  "commands": [
+   {
+    "id": "01a1d2a3-1918-7b01-baba-79a98b60a6f5",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "failed",
+    "createdAt": "2026-11-13T02:01:06.564Z",
+    "claimedAt": "2026-11-13T02:01:07.560Z",
+    "finishedAt": "2026-11-13T02:01:07.574Z",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "errorMessage": "this box has no card_terminal for <station id>",
+    "result": {
+     "mode": "sale",
+     "outcome": null,
+     "attemptId": "01a1d2a3-1915-7ff7-b41f-bd56ef39a6b9",
+     "terminalRef": null,
+     "responseCode": null
+    }
+   }
+  ],
+  "audit": [
+   {
+    "at": "2026-11-13T02:01:07.574Z",
+    "action": "payment.attempt.not_sent",
+    "after": {
+     "status": "declined",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+    }
+   },
+   {
+    "at": "2026-11-13T02:01:06.564Z",
+    "action": "payment.tender.start",
+    "after": {
+     "status": "sent_to_terminal",
+     "errorCode": null
+    }
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:01:33.829Z hunt: what History shows for the refused card attempt (sale Z97201-000001: card declined, then cash, refunded)
+S.phase = 'hunt: what History shows for the refused card attempt (sale Z97201-000001: card declined, then cash, refunded)';
+S.point('2', 'PASS', ['02a-till-payment-requested.png', '02b-till-payment-declined-no-reload.png', '02c-api-refused-attempt-declined-command-audit.png', '04c-till-after-back.png'], {
+  secondsPressToDeclined: S.p2.secondsPressToEnd, words: S.receipt.reads.p2.stepText, plainReasonOnScreen: S.receipt.reads.p2.plainReasonOnScreen,
+  read: S.receipt.reads.p2api.read, command: S.receipt.reads.p2api.commands.map(c => ({ state: c.state, errorCode: c.errorCode })), notSentAuditRows: S.receipt.reads.p2api.notSentRows,
+  backAndOtherWays: 'Cash chosen and paid on the same sale (point 3); Back pressed on the second refusal went back to Customer Details (point 4)' });
+S.point('4', S.receipt.reads.p4.void?.status === 200 ? 'PASS' : 'FAIL', ['04a-till-payment-requested.png', '04b-till-second-refusal-declined.png', '04c-till-after-back.png', '04d-till-after-cancel-voided.png', '04e-api-second-refusal-voided.png'], { void: S.receipt.reads.p4.void, secondsPressToDeclined: S.p4.secondsPressToEnd });
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+await till.goto('/history');
+await till.waitForTimeout(4000);
+r.list = S.flat(await till.locator('main, body').first().innerText()).slice(0, 1500);
+await S.shot(till, 'H1a-till-history-list.png');
+const row = till.getByText('Z97201-000001', { exact: false }).first();
+r.rowVisible = await row.isVisible().catch(() => false);
+if (r.rowVisible) {
+  await row.click();
+  await till.waitForTimeout(2500);
+  const d = till.getByRole('dialog').first();
+  const scope = (await d.isVisible().catch(() => false)) ? d : till.locator('body');
+  r.detail = S.flat(await scope.innerText()).slice(0, 2500);
+  await S.shot(till, 'H1b-till-history-sale-declined-card-then-cash.png');
+  const sc = scope.locator('[class*="overflow-y-auto"]').first();
+  if (await sc.isVisible().catch(() => false)) { await sc.evaluate(e => { e.scrollTop = e.scrollHeight; }); await till.waitForTimeout(800); await S.shot(till, 'H1c-till-history-sale-detail-lower.png'); }
+}
+S.receipt.hunt.history = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "list": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Find by phone Scan bracelet All Tickets F&B 9 sales recorded at Oto Play Park, Central Floresta Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online. No receipt number 13 Nov, 09:01 [staff] Voided ฿1040 Z97201-000001 13 Nov, 08:57 [staff] Refunded ฿1040 No receipt number 13 Nov, 07:17 [staff] Voided ฿175 No receipt number 13 Nov, 07:16 [staff] Voided ฿100 Z96301-000001 · Zz Test Parent A 13 Nov, 07:00 [staff] Refunded ฿915 Z95202-000001 13 Nov, 06:02 [staff] Refunded ฿1040 No receipt number 13 Nov, 05:51 [staff] Voided ฿1040 Z95201-000002 13 Nov, 05:50 [staff] Refunded ฿1040 Z95201-000001 13 Nov, 05:50 [staff] Refunded ฿1040",
+  "rowVisible": true,
+  "detail": "0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till ███ 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Back to history Refunded Ticket sale Z97201-000001 Walk-in 13 Nov, 08:57 · sold by [staff] ZZ TEST 972 till · trading day 2026-11-13 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Refunded −฿1040 Payments Card · Declined 13 Nov, 08:57 ฿1040 Cash · Approved 13 Nov, 08:58 ฿1040 REFUND HISTORY −฿1040 13 Nov, 08:58 ZZ TEST SCRUM-972 proof: cash after a refused card · Z97201-R-000001 Cash — hand it back in cash ฿1040 by [staff] · manager approval Reprint Fully refunded — nothing left to refund. Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+ }
+}
+
+=== 2026-11-13T02:01:55.517Z scrub: the manager name the History detail carried; re-scrub the log and the receipt
+S.phase = 'scrub: the manager name the History detail carried; re-scrub the log and the receipt';
+const mgr = await S.pw.request.newContext({ baseURL: S.pos });
+const r = {};
+try {
+  r.signIn = (await mgr.post('/api/auth/sign-in', { data: { phone: S.need('STAGING_MANAGER_PHONE'), password: S.need('STAGING_MANAGER_PASSWORD') } })).status();
+  const me = await (await mgr.get('/api/me')).json().catch(() => null);
+  const before = S.names.size;
+  S.walkNames(me);
+  r.namesAdded = S.names.size - before;
+} finally {
+  r.signOut = (await mgr.post('/api/auth/sign-out', { headers: { 'idempotency-key': S.randomUUID() } })).status();
+  r.me = (await mgr.get('/api/me')).status();
+  await mgr.dispose();
+}
+for (const n of ['VAT', 'Service', 'Charge']) S.names.delete(n);
+const logPath = S.resolve(S.out, 'steps.log');
+const raw = S.readFileSync(logPath, 'utf8');
+const clean = S.scrub(raw);
+S.writeFileSync(logPath, clean);
+r.logChanged = raw !== clean;
+S.save();
+const rc = S.readFileSync(S.resolve(S.out, 'receipt.json'), 'utf8');
+r.receiptStillHasDetail = /by \[staff\]/.test(rc);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "signIn": 200,
+  "namesAdded": 4,
+  "signOut": 200,
+  "me": 401,
+  "logChanged": true,
+  "receiptStillHasDetail": true
+ }
+}
+
+=== 2026-11-13T02:02:09.150Z hunt: History detail re-taken with the manager name masked
+S.phase = 'hunt: History detail re-taken with the manager name masked';
+const till = S.till;
+await S.unlock('rec');
+const visible = await till.getByText('REFUND HISTORY', { exact: false }).first().isVisible().catch(() => false);
+await S.shot(till, 'H1b-till-history-sale-declined-card-then-cash.png');
+const leftover = await till.evaluate(() => document.body.innerText.includes('by [staff]'));
+return { visible, leftover };
+--> {
+ "ok": true,
+ "value": {
+  "visible": true,
+  "leftover": false
+ }
+}
+
+=== 2026-11-13T02:02:30.020Z reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up
+S.phase = 'reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up';
+const r = {};
+const h0 = (await S.box1()).lastStatus?.configVersion ?? null;
+r.unassign = await S.unassignTerminal();
+const since = Date.now();
+r.wait = await S.heartbeats(since, 2, 300000);
+const b = await S.box1();
+r.hashBefore = h0;
+r.hashNow = b.lastStatus?.configVersion ?? null;
+r.reportedAt = b.lastStatus?.reportedAt ?? null;
+(S.receipt.reads.resets ??= []).push(r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "unassign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "manual"
+   },
+   "configVersion": 5,
+   "at": "2026-11-13T02:02:30.324Z"
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 71
+  },
+  "hashBefore": "b706e9a8213eca1c",
+  "hashNow": "5cb41d280fa57ecc",
+  "reportedAt": "2026-11-13T02:03:37.473Z"
+ }
+}
+
+=== 2026-11-13T02:04:03.971Z hunt: "Start card payment" pressed twice quickly while the box will refuse; then Back and Cancel
+S.phase = 'hunt: "Start card payment" pressed twice quickly while the box will refuse; then Back and Cancel';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+await till.goto('/');
+S.receipt.numbers.h2 = S.free[2];
+await S.walkIn(till, S.free[2]);
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('h2-double-press');
+r.sale = sale.id;
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+r.assign = await S.assignTerminal();
+await till.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const starts = [];
+const onResp = rr => { const u = new URL(rr.url()); if (rr.request().method() === 'POST' && u.pathname === '/api/payments/attempts') starts.push(rr); };
+till.on('response', onResp);
+const t0 = Date.now();
+await S.paymentStep(till).getByRole('button', { name: 'Start card payment', exact: true }).evaluate(el => { el.click(); setTimeout(() => el.click(), 60); setTimeout(() => el.click(), 160); });
+r.secondsAssignToPress = Math.round((t0 - S.lastAssignAt) / 100) / 10;
+r.timeline = [];
+let last = '';
+while (Date.now() - t0 < 30000) {
+  const txt = S.flat(await S.paymentStep(till).innerText().catch(() => ''));
+  if (txt !== last) { r.timeline.push({ s: Math.round((Date.now() - t0) / 100) / 10, text: txt.slice(0, 300) }); last = txt; }
+  if (/Payment declined|Staff review required|Payment result unknown/.test(txt)) break;
+  await till.waitForTimeout(250);
+}
+await till.waitForTimeout(1500);
+till.off('response', onResp);
+r.startCalls = [];
+for (const s of starts) { const b = await s.json().catch(() => null); r.startCalls.push({ status: s.status(), attempt: b?.attempt?.id ?? null, attemptStatus: b?.attempt?.status ?? null, replay: s.headers()['idempotent-replay'] ?? s.headers()['idempotency-replayed'] ?? null, code: b?.error?.code ?? null }); }
+await S.shot(till, 'H2a-till-double-press-declined.png');
+const sd = await S.sale(sale.id);
+r.attempts = (sd.attempts ?? []).map(a => ({ id: a.id, status: a.status }));
+r.commands = [];
+for (const a of r.attempts) r.commands.push(...(await S.termCommandsFor(a.id)).map(c => ({ attempt: a.id, kind: c.kind, mode: c.mode, state: c.state, errorCode: c.errorCode })));
+// clean up this sale from the till: Back, Cancel
+await S.paymentStep(till).getByRole('button', { name: 'Back', exact: true }).click();
+await till.waitForTimeout(1200);
+const voidResp = till.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 20000 }).catch(() => null);
+await till.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+const vr = await voidResp;
+r.void = vr ? { status: vr.status(), saleIsOurs: (await vr.json().catch(() => null))?.sale?.id === sale.id } : null;
+r.saleAfter = (await S.sale(sale.id)).sale.status;
+S.receipt.hunt.doublePress = r;
+const text = [
+  `hunt: three clicks on "Start card payment" within 160 ms (in the page), ${r.secondsAssignToPress} s after assigning the terminal`,
+  `POST /api/payments/attempts answers: ${JSON.stringify(r.startCalls, null, 1)}`,
+  `the sale's attempts: ${JSON.stringify(r.attempts)}`,
+  `terminal commands per attempt: ${JSON.stringify(r.commands, null, 1)}`,
+  `timeline: ${JSON.stringify(r.timeline, null, 1)}`,
+  `then Back + Cancel: void ${JSON.stringify(r.void)}; sale ${r.saleAfter}`,
+].join('\n');
+await S.txtShot(text, 'H2b-api-double-press-one-attempt.png', 'Hunt: Start card payment pressed twice quickly');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d2a5-e6cd-7016-9757-5f9e1b45fcbd",
+  "assign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "card_terminal": "ZZ TEST 972 card terminal",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "configVersion": 6,
+   "at": "2026-11-13T02:04:10.834Z"
+  },
+  "secondsAssignToPress": 0,
+  "timeline": [
+   {
+    "s": 0,
+    "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale A payment is in progress — finish or cancel it first. Back Waiting for the payment answer…"
+   },
+   {
+    "s": 0.3,
+    "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment"
+   },
+   {
+    "s": 3.4,
+    "text": "Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received"
+   }
+  ],
+  "startCalls": [
+   {
+    "status": 200,
+    "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+    "attemptStatus": "sent_to_terminal",
+    "replay": null,
+    "code": null
+   }
+  ],
+  "attempts": [
+   {
+    "id": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+    "status": "declined"
+   }
+  ],
+  "commands": [
+   {
+    "attempt": "01a1d2a5-e95e-7877-b158-8f6773b6c94b",
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "failed",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+   }
+  ],
+  "void": {
+   "status": 200,
+   "saleIsOurs": true
+  },
+  "saleAfter": "voided"
+ }
+}
+
+=== 2026-11-13T02:04:22.835Z reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up
+S.phase = 'reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up';
+const r = {};
+const h0 = (await S.box1()).lastStatus?.configVersion ?? null;
+r.unassign = await S.unassignTerminal();
+const since = Date.now();
+r.wait = await S.heartbeats(since, 2, 300000);
+const b = await S.box1();
+r.hashBefore = h0;
+r.hashNow = b.lastStatus?.configVersion ?? null;
+r.reportedAt = b.lastStatus?.reportedAt ?? null;
+(S.receipt.reads.resets ??= []).push(r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "unassign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "manual"
+   },
+   "configVersion": 7,
+   "at": "2026-11-13T02:04:23.117Z"
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 76
+  },
+  "hashBefore": "5cb41d280fa57ecc",
+  "hashNow": "2a4b3dd84b216ec5",
+  "reportedAt": "2026-11-13T02:05:37.478Z"
+ }
+}
+
+=== 2026-11-13T02:05:52.956Z hunt: the till reloaded in the second between the press and the refusal
+S.phase = 'hunt: the till reloaded in the second between the press and the refusal';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('rec');
+await till.goto('/');
+S.receipt.numbers.h3 = S.free[3];
+await S.walkIn(till, S.free[3]);
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('h3-reload');
+r.sale = sale.id;
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+r.assign = await S.assignTerminal();
+await till.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const startResp = till.waitForResponse(rr => rr.request().method() === 'POST' && new URL(rr.url()).pathname === '/api/payments/attempts', { timeout: 30000 });
+const t0 = Date.now();
+await till.getByRole('button', { name: 'Start card payment', exact: true }).click();
+const sr = await startResp;
+const sb = await sr.json().catch(() => null);
+r.start = { status: sr.status(), attempt: sb?.attempt?.id ?? null, attemptStatus: sb?.attempt?.status ?? null, sAfterPress: Math.round((Date.now() - t0) / 100) / 10 };
+await till.reload();
+r.reloadedAtS = Math.round((Date.now() - t0) / 100) / 10;
+const attemptAtReload = await S.attempt(r.start.attempt).catch(() => null);
+r.attemptStatusRightAfterReload = attemptAtReload?.body?.attempt?.status ?? null;
+r.timeline = [];
+let last = '';
+while (Date.now() - t0 < 45000) {
+  const txt = S.flat(await till.locator('body').innerText().catch(() => ''));
+  const key = txt.replace(/\d+ in park/, '');
+  if (key !== last) { r.timeline.push({ s: Math.round((Date.now() - t0) / 100) / 10, text: txt.slice(0, 700) }); last = key; }
+  if (/Payment declined|Staff review required|Payment result unknown|Choose a payment method/.test(txt) && Date.now() - t0 > 4000) break;
+  await till.waitForTimeout(300);
+}
+await till.waitForTimeout(1500);
+r.final = S.flat(await till.locator('body').innerText()).slice(0, 1200);
+r.buttons = await S.paymentStep(till).getByRole('button').evaluateAll(els => els.map(e => ({ text: (e.innerText || '').replace(/\s+/g, ' ').trim(), disabled: e.disabled }))).catch(() => null);
+await S.shot(till, 'H3a-till-reloaded-during-refusal.png');
+const sd = await S.sale(sale.id);
+r.attempts = (sd.attempts ?? []).map(a => ({ id: a.id, status: a.status }));
+r.commands = (await S.termCommandsFor(r.start.attempt)).map(c => ({ kind: c.kind, state: c.state, errorCode: c.errorCode, finishedAt: c.finishedAt }));
+S.receipt.hunt.reload = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d2a7-83ab-753f-8271-fef12272c0b9",
+  "assign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "card_terminal": "ZZ TEST 972 card terminal",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "configVersion": 8,
+   "at": "2026-11-13T02:05:56.494Z"
+  },
+  "start": {
+   "status": 200,
+   "attempt": "01a1d2a7-8620-77ff-ae8b-88d96b68ffb8",
+   "attemptStatus": "sent_to_terminal",
+   "sAfterPress": 0.2
+  },
+  "reloadedAtS": 0.2,
+  "attemptStatusRightAfterReload": "sent_to_terminal",
+  "timeline": [
+   {
+    "s": 0.9,
+    "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park stale Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks Membership Check The customer is entering their phone on their display to apply any verified rate. Waiting for the customer… Enter phone to look up membership A phone number is required for every visit — it is how the team reaches the family about their child’s safety. Phone — Nickname — EVENT PASSES Flat day entry — no membership needed No active events Today's camp sessions and up"
+   },
+   {
+    "s": 1.3,
+    "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due — Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale A payment is in progress — finish or cancel it first. Back Waiting for the payment answer… Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks "
+   },
+   {
+    "s": 1.6,
+    "text": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual disco"
+   }
+  ],
+  "final": "Test harness — staff till and customer display share one live sale. Hide customer display 0 in park no gate Oto Play Park, Central Floresta Tickets F&B Shop Events Check-in History Today 7 Messages Cash Weekday pricing ZZ TEST 972 till [staff] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks 7 overdue Review → Amount Due ฿1040 Select Payment Method Cash Card PromptPay Resumed after a reload: this sale was rung up at this till 13 Nov 2026 09:05. Take the payment, or Cancel to void it. Hold sale Back Confirm Payment Received Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Redeem Issue a voucher… Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 O Oto Play Park Your Order English 1 Hour Play ฿1040 Kids1 × ฿690 ฿690 Adults1 × ฿350 ฿350 VAT included ฿68.04 Total ฿1040 Please pay ฿1040 to our staff",
+  "buttons": [
+   {
+    "text": "Hold sale",
+    "disabled": false
+   },
+   {
+    "text": "Back",
+    "disabled": false
+   },
+   {
+    "text": "Confirm Payment Received",
+    "disabled": true
+   }
+  ],
+  "attempts": [
+   {
+    "id": "01a1d2a7-8620-77ff-ae8b-88d96b68ffb8",
+    "status": "declined"
+   }
+  ],
+  "commands": [
+   {
+    "kind": "terminal_sale",
+    "state": "failed",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+    "finishedAt": "2026-11-13T02:05:57.655Z"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:07:00.829Z hunt: the reloaded, refused sale cancelled on the till
+S.phase = 'hunt: the reloaded, refused sale cancelled on the till';
+const till = S.till;
+await S.unlock('rec');
+const saleId = S.receipt.hunt.reload.sale;
+const voidResp = till.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 20000 }).catch(() => null);
+await till.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+const vr = await voidResp;
+const r = { void: vr ? { status: vr.status(), saleIsOurs: (await vr.json().catch(() => null))?.sale?.id === saleId } : null };
+r.saleAfter = (await S.sale(saleId)).sale.status;
+S.receipt.hunt.reload.cancel = r;
+const h = S.receipt.hunt.reload;
+const text = [
+  `hunt: the till reloaded ${h.reloadedAtS} s after "Start card payment" (attempt ${h.start.attempt}, still ${h.attemptStatusRightAfterReload} at the reload)`,
+  `box command: ${JSON.stringify(h.commands)}`,
+  `the reloaded till, by time from the press:`,
+  ...h.timeline.map(x => `  ${x.s} s: ${x.text.replace(/^.*?Weekday pricing ZZ TEST 972 till \[staff\] 4 out of stock Glow Band, Locker Rental, Refillable Drink Cup, Regular Socks /, '… ').slice(0, 330)}`),
+  `buttons at the end: ${JSON.stringify(h.buttons)}`,
+  `the sale's attempts: ${JSON.stringify(h.attempts)}`,
+  '',
+  `then the till's Cancel: POST /api/sales/<id>/void -> ${JSON.stringify(r.void)}; sale ${r.saleAfter}`,
+  '',
+  'Seen: after the reload the sale is resumed and freed (Cash, Card, PromptPay selectable, Back enabled), but nothing on the till says the card was declined or why.',
+].join('\n');
+await S.txtShot(text, 'H3b-api-reload-during-refusal.png', 'Hunt: reload between the press and the refusal');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "void": {
+   "status": 200,
+   "saleIsOurs": true
+  },
+  "saleAfter": "voided"
+ }
+}
+
+=== 2026-11-13T02:07:09.541Z reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up
+S.phase = 'reset: the terminal taken off the ZZ TEST 972 till; wait until the box holds that set-up';
+const r = {};
+const h0 = (await S.box1()).lastStatus?.configVersion ?? null;
+r.unassign = await S.unassignTerminal();
+const since = Date.now();
+r.wait = await S.heartbeats(since, 2, 300000);
+const b = await S.box1();
+r.hashBefore = h0;
+r.hashNow = b.lastStatus?.configVersion ?? null;
+r.reportedAt = b.lastStatus?.reportedAt ?? null;
+(S.receipt.reads.resets ??= []).push(r);
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "unassign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "manual"
+   },
+   "configVersion": 9,
+   "at": "2026-11-13T02:07:09.836Z"
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 92
+  },
+  "hashBefore": "2a4b3dd84b216ec5",
+  "hashNow": "93be220aa5e643c2",
+  "reportedAt": "2026-11-13T02:08:37.470Z"
+ }
+}
+
+=== 2026-11-13T02:08:49.946Z hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start
+S.phase = 'hunt: the phone till (390 by 844): close the desktop till, sign in on a phone-sized context, look at the start';
+const r = { recClosed: await S.close('rec') };
+const phone = await S.signIn('phone', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD', { width: 390, height: 844 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+S.phone = phone;
+await phone.goto('/');
+await phone.waitForTimeout(3000);
+r.home = S.flat(await phone.locator('body').innerText()).slice(0, 900);
+r.buttons = (await phone.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 40);
+r.testids = await phone.locator('[data-testid]').evaluateAll(els => els.map(e => e.getAttribute('data-testid')).slice(0, 60));
+await phone.screenshot({ path: S.resolve(S.scratch, 'raw', 'phone-home.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "recClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "home": "0 no gate Oto Play Park, Central Floresta [staff] Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local pricing Proof required — verify now Redeem Online Booking No items yet ฿0 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "0 no gate",
+   "Redeem Online Booking",
+   "No items yet ฿0",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "testids": []
+ }
+}
+
+=== 2026-11-13T02:09:09.050Z hunt: phone till: Tourist, 1 Hour Play
+S.phase = 'hunt: phone till: Tourist, 1 Hour Play';
+const phone = S.phone;
+const r = {};
+await phone.getByRole('heading', { name: 'Tourist', exact: true }).first().click();
+await phone.waitForTimeout(1500);
+r.afterTourist = S.flat(await phone.locator('body').innerText()).slice(0, 700);
+await phone.getByRole('heading', { name: '1 Hour Play', exact: true }).first().click().catch(e => { r.pkgErr = String(e.message).slice(0, 200); });
+await phone.waitForTimeout(1500);
+r.afterPkg = S.flat(await phone.locator('body').innerText()).slice(0, 900);
+r.buttons = (await phone.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 50);
+await phone.screenshot({ path: S.resolve(S.scratch, 'raw', 'phone-pkg.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "afterTourist": "0 no gate Oto Play Park, Central Floresta [staff] Add to Sale Tourist Add to Sale Add drop-off child Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person No items yet ฿0 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "afterPkg": "0 no gate Oto Play Park, Central Floresta [staff] Configure Ticket Tourist Cancel Configure: 1 Hour Play Back to tickets Participants Kids Requires adult supervision 1 Adults Receives F&B credit 1 Extras & Add-ons Free Socks +฿0 Out of stock 0 Regular Socks +฿60 Out of stock 0 Grip Socks +฿80 Sizes Locker Rental +฿100 Out of stock 0 Refillable Drink Cup +฿150 Out of stock 0 Glow Band +฿60 Out of stock 0 Add Another Ticket Continue 1 1 item ฿1040 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "0 no gate",
+   "Cancel",
+   "Back to tickets",
+   "Sizes",
+   "Add Another Ticket",
+   "Continue",
+   "1 1 item ฿1040",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ]
+ }
+}
+
+=== 2026-11-13T02:09:19.797Z hunt: phone till: Continue, see what comes before payment
+S.phase = 'hunt: phone till: Continue, see what comes before payment';
+const phone = S.phone;
+const r = {};
+await phone.getByRole('button', { name: 'Continue', exact: true }).first().click();
+await phone.waitForTimeout(2500);
+r.after = S.flat(await phone.locator('body').innerText()).slice(0, 1200);
+r.buttons = (await phone.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 50);
+r.inputs = await phone.locator('input').evaluateAll(els => els.map(e => ({ type: e.type, mode: e.inputMode, ph: e.placeholder })));
+await phone.screenshot({ path: S.resolve(S.scratch, 'raw', 'phone-after-continue.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "after": "0 no gate Oto Play Park, Central Floresta [staff] Configure Ticket Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 1 1 item ฿1040 Hand the phone to the customer They'll enter their phone number and nickname. Point the screen toward them Customer is ready Cancel Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "0 no gate",
+   "Cancel",
+   "Add drop-off child",
+   "Done Adding",
+   "1 1 item ฿1040",
+   "Customer is ready",
+   "Cancel",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "inputs": []
+ }
+}
+
+=== 2026-11-13T02:09:30.139Z hunt: phone till: Customer is ready; the customer enters a ZZ number
+S.phase = 'hunt: phone till: Customer is ready; the customer enters a ZZ number';
+const phone = S.phone;
+const r = {};
+await phone.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+await phone.waitForTimeout(2000);
+r.after = S.flat(await phone.locator('body').innerText()).slice(0, 1200);
+r.buttons = (await phone.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 60);
+r.inputs = await phone.locator('input').evaluateAll(els => els.map(e => ({ type: e.type, mode: e.inputMode, ph: e.placeholder })));
+await phone.screenshot({ path: S.resolve(S.scratch, 'raw', 'phone-customer.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "after": "0 no gate Oto Play Park, Central Floresta [staff] Configure Ticket Tourist Cancel Add to Sale Add drop-off child Done Adding Add ticket — select a play ticket for kids and adults 1 Hour Play 1 Hour ฿690 per person 2 Hours Play 2 Hours ฿890 per person Full Day Pass All Day ฿1090 per person Eat & Play Kids Pass All Day + Meal ฿1300 per person 1 Kid + 1 Adult (1 hour) 1 Hour ฿500 per person 1 1 item ฿1040 English YOUR TURN Enter your details For membership & so we can reach you Phone Number 🇹🇭 +66 8X XXX XXXX 1 2 3 4 5 6 7 8 9 Clear 0 WhatsApp Telegram LINE Nickname Done Done — return phone to staff Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "0 no gate",
+   "Cancel",
+   "Add drop-off child",
+   "Done Adding",
+   "1 1 item ฿1040",
+   "English",
+   "🇹🇭 +66",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8",
+   "9",
+   "Clear",
+   "0",
+   "WhatsApp",
+   "Telegram",
+   "LINE",
+   "Done",
+   "Done — return phone to staff",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "inputs": [
+   {
+    "type": "text",
+    "mode": "",
+    "ph": "e.g. Mama, John"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:09:43.685Z hunt: phone till: the customer types a ZZ number and returns the phone
+S.phase = 'hunt: phone till: the customer types a ZZ number and returns the phone';
+const phone = S.phone;
+const r = {};
+S.receipt.numbers.h4 = S.free[4];
+const digits = S.free[4].slice(1);
+for (const d of digits) await phone.getByRole('button', { name: d, exact: true }).last().click();
+await phone.waitForTimeout(500);
+r.typed = S.flat(await phone.locator('body').innerText()).match(/\+66[^A-Za-z]{0,20}/)?.[0] ?? null;
+await phone.getByRole('button', { name: 'Done — return phone to staff', exact: true }).click();
+await phone.waitForTimeout(2500);
+r.after = S.flat(await phone.locator('body').innerText()).slice(0, 1200);
+r.buttons = (await phone.getByRole('button').allInnerTexts()).map(S.flat).filter(Boolean).slice(0, 60);
+r.dialog = await phone.getByRole('dialog').first().isVisible().catch(() => false) ? S.flat(await phone.getByRole('dialog').first().innerText()).slice(0, 500) : null;
+await phone.screenshot({ path: S.resolve(S.scratch, 'raw', 'phone-after-customer.png') });
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "typed": "+66 +66 898972014 1 2 3",
+  "after": "0 no gate Oto Play Park, Central Floresta [staff] Review Order Tourist Cancel Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   "0 no gate",
+   "Cancel",
+   "Apply",
+   "Add manual discount",
+   "Cancel",
+   "Pay ฿1040",
+   "Tickets",
+   "F&B",
+   "Shop",
+   "Check-in",
+   "Events",
+   "History",
+   "Today",
+   "7 Messages"
+  ],
+  "dialog": null
+ }
+}
+
+=== 2026-11-13T02:10:02.947Z hunt: phone till (390 by 844): the same refusal; what it shows and whether it is freed
+S.phase = 'hunt: phone till (390 by 844): the same refusal; what it shows and whether it is freed';
+const { expect } = S;
+const phone = S.phone;
+const r = {};
+await phone.getByRole('button', { name: 'Pay ฿1040', exact: true }).click();
+const sale = await S.saleWritten('h4-phone-refused');
+r.sale = sale.id;
+await phone.getByRole('heading', { name: 'Card', exact: true }).first().waitFor({ timeout: 30000 });
+await phone.waitForTimeout(800);
+r.payScreen = S.flat(await phone.locator('body').innerText()).slice(0, 600);
+r.assign = await S.assignTerminal();
+await phone.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const startBtn = phone.getByRole('button', { name: 'Start card payment', exact: true }).first();
+const startResp = phone.waitForResponse(rr => rr.request().method() === 'POST' && new URL(rr.url()).pathname === '/api/payments/attempts', { timeout: 30000 });
+await startBtn.scrollIntoViewIfNeeded();
+const t0 = Date.now();
+await startBtn.click();
+r.secondsAssignToPress = Math.round((t0 - S.lastAssignAt) / 100) / 10;
+const sr = await startResp; const sb = await sr.json().catch(() => null);
+r.start = { status: sr.status(), route: sb?.route ?? null, attempt: sb?.attempt?.id ?? null, attemptStatus: sb?.attempt?.status ?? null };
+r.timeline = [];
+let last = ''; let shot = false;
+while (Date.now() - t0 < 45000) {
+  const txt = S.flat(await phone.locator('body').innerText().catch(() => ''));
+  if (txt !== last) { r.timeline.push({ s: Math.round((Date.now() - t0) / 100) / 10, text: txt.slice(0, 600) }); last = txt; }
+  if (!shot && /Payment requested/.test(txt)) { shot = true; await S.shot(phone, 'H4a-phone-payment-requested.png'); }
+  if (/Payment declined|Staff review required|Payment result unknown/.test(txt)) break;
+  await phone.waitForTimeout(250);
+}
+r.secondsPressToEnd = Math.round((Date.now() - t0) / 100) / 10;
+await phone.waitForTimeout(1000);
+r.final = S.flat(await phone.locator('body').innerText()).slice(0, 900);
+r.buttons = await phone.getByRole('button').evaluateAll(els => els.map(e => ({ text: (e.innerText || '').replace(/\s+/g, ' ').trim(), disabled: e.disabled })).filter(b => b.text && b.text.length < 40));
+await S.shot(phone, 'H4b-phone-payment-declined.png');
+await S.shot(phone, 'H4c-phone-payment-declined-full.png', [], { fullPage: true });
+const sd = await S.sale(sale.id);
+r.attempts = (sd.attempts ?? []).map(a => ({ id: a.id, status: a.status }));
+r.commands = (await S.termCommandsFor(r.start.attempt)).map(c => ({ kind: c.kind, state: c.state, errorCode: c.errorCode }));
+S.receipt.hunt.phone = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "sale": "01a1d2ab-4859-7bef-be88-b6c6b1bf6224",
+  "payScreen": "0 no gate Oto Play Park, Central Floresta [staff] Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "assign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "card_terminal": "ZZ TEST 972 card terminal",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "configVersion": 10,
+   "at": "2026-11-13T02:10:04.324Z"
+  },
+  "secondsAssignToPress": 0.1,
+  "start": {
+   "status": 200,
+   "route": "card_terminal",
+   "attempt": "01a1d2ab-4e7d-79cd-afb7-4f3cc5829286",
+   "attemptStatus": "sent_to_terminal"
+  },
+  "timeline": [
+   {
+    "s": 0.2,
+    "text": "0 no gate Oto Play Park, Central Floresta [staff] Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment Tickets F&B Shop Check-in Events History Today 7 Messages"
+   },
+   {
+    "s": 0.6,
+    "text": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment requested simulator · ฿1040.00 Hold sale A payment is in progress — finish or cancel it first. Back Start card payment Tickets F&B Shop Check-in Events History Today 7 Messages"
+   },
+   {
+    "s": 3.5,
+    "text": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages"
+   }
+  ],
+  "secondsPressToEnd": 3.5,
+  "final": "0 no gate Oto Play Park, Central Floresta ███ Payment Tourist Amount Due ฿1040 Select Payment Method Cash Card PromptPay Payment declined simulator · ฿1040.00 Payment declined. Choose a payment method. Hold sale Back Confirm Payment Received Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "buttons": [
+   {
+    "text": "0 no gate",
+    "disabled": false
+   },
+   {
+    "text": "Hold sale",
+    "disabled": false
+   },
+   {
+    "text": "Back",
+    "disabled": false
+   },
+   {
+    "text": "Confirm Payment Received",
+    "disabled": true
+   },
+   {
+    "text": "Tickets",
+    "disabled": false
+   },
+   {
+    "text": "F&B",
+    "disabled": false
+   },
+   {
+    "text": "Shop",
+    "disabled": false
+   },
+   {
+    "text": "Check-in",
+    "disabled": false
+   },
+   {
+    "text": "Events",
+    "disabled": false
+   },
+   {
+    "text": "History",
+    "disabled": false
+   },
+   {
+    "text": "Today",
+    "disabled": false
+   },
+   {
+    "text": "7 Messages",
+    "disabled": false
+   }
+  ],
+  "attempts": [
+   {
+    "id": "01a1d2ab-4e7d-79cd-afb7-4f3cc5829286",
+    "status": "declined"
+   }
+  ],
+  "commands": [
+   {
+    "kind": "terminal_sale",
+    "state": "failed",
+    "errorCode": "TERMINAL_NOT_ON_THIS_BOX"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:10:26.336Z hunt: phone till: Back, then Cancel voids the refused sale
+S.phase = 'hunt: phone till: Back, then Cancel voids the refused sale';
+const phone = S.phone;
+const r = {};
+const saleId = S.receipt.hunt.phone.sale;
+await phone.getByRole('button', { name: 'Back', exact: true }).click();
+await phone.waitForTimeout(1500);
+r.afterBack = S.flat(await phone.locator('body').innerText()).slice(0, 500);
+const voidResp = phone.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 20000 }).catch(() => null);
+await phone.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await phone.waitForTimeout(1000);
+r.dialog = await phone.getByRole('dialog').first().isVisible().catch(() => false) ? S.flat(await phone.getByRole('dialog').first().innerText()).slice(0, 400) : null;
+const vr = await voidResp;
+r.void = vr ? { status: vr.status(), saleIsOurs: (await vr.json().catch(() => null))?.sale?.id === saleId } : null;
+await phone.waitForTimeout(1500);
+r.after = S.flat(await phone.locator('body').innerText()).slice(0, 300);
+await S.shot(phone, 'H4d-phone-after-cancel.png');
+r.saleAfter = (await S.sale(saleId)).sale.status;
+S.receipt.hunt.phone.cancel = r;
+const h = S.receipt.hunt.phone;
+const text = [
+  `hunt: the phone till (390 by 844), ZZ TEST 972 till; sale ${saleId}`,
+  `terminal assigned ${h.assign.at}; "Start card payment" ${h.secondsAssignToPress} s later; POST /api/payments/attempts -> ${JSON.stringify(h.start)}`,
+  `"Payment declined" ${h.secondsPressToEnd} s after the press, no reload`,
+  `the phone's words at the end: ${h.final.replace(/^.*?Payment Tourist /, '… ').replace(/ Tickets F&B.*$/, ' …')}`,
+  `attempts: ${JSON.stringify(h.attempts)}; command: ${JSON.stringify(h.commands)}`,
+  '',
+  `Back, then Cancel: dialog ${JSON.stringify(r.dialog)}; POST /api/sales/<id>/void -> ${JSON.stringify(r.void)}; sale ${r.saleAfter}`,
+].join('\n');
+await S.txtShot(text, 'H4e-api-phone-refusal-voided.png', 'Hunt: the phone till with the same refusal');
+return r;
+--> {
+ "ok": false,
+ "error": "Error: locator.click: Error: strict mode violation: getByRole('button', { name: 'Back', exact: true }) resolved to 2 elements: |     1) <button type=\"button\" aria-label=\"Back\" class=\"w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0\">…</button> aka getByLabel('Back') |     2) <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover-elevate active-elevate-2 border [border-color:var(--button-outline)] shadow-xs active:shadow-none min-h-10 rounded-md px-8 w-full sm:w-24 @xl:w-32 shrink-0 h-16\">Back</button> aka getByTestId('payment-step').getByRole('button', { name: 'Back' }) |  | Call log:"
+}
+
+=== 2026-11-13T02:10:30.710Z hunt: phone till: Back, then Cancel voids the refused sale
+S.phase = 'hunt: phone till: Back, then Cancel voids the refused sale';
+const phone = S.phone;
+const r = {};
+const saleId = S.receipt.hunt.phone.sale;
+await S.paymentStep(phone).getByRole('button', { name: 'Back', exact: true }).click();
+await phone.waitForTimeout(1500);
+r.afterBack = S.flat(await phone.locator('body').innerText()).slice(0, 500);
+const voidResp = phone.waitForResponse(rr => rr.request().method() === 'POST' && /\/api\/sales\/[^/]+\/void$/.test(new URL(rr.url()).pathname), { timeout: 20000 }).catch(() => null);
+await phone.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+await phone.waitForTimeout(1000);
+r.dialog = await phone.getByRole('dialog').first().isVisible().catch(() => false) ? S.flat(await phone.getByRole('dialog').first().innerText()).slice(0, 400) : null;
+const vr = await voidResp;
+r.void = vr ? { status: vr.status(), saleIsOurs: (await vr.json().catch(() => null))?.sale?.id === saleId } : null;
+await phone.waitForTimeout(1500);
+r.after = S.flat(await phone.locator('body').innerText()).slice(0, 300);
+await S.shot(phone, 'H4d-phone-after-cancel.png');
+r.saleAfter = (await S.sale(saleId)).sale.status;
+S.receipt.hunt.phone.cancel = r;
+const h = S.receipt.hunt.phone;
+const text = [
+  `hunt: the phone till (390 by 844), ZZ TEST 972 till; sale ${saleId}`,
+  `terminal assigned ${h.assign.at}; "Start card payment" ${h.secondsAssignToPress} s later; POST /api/payments/attempts -> ${JSON.stringify(h.start)}`,
+  `"Payment declined" ${h.secondsPressToEnd} s after the press, no reload`,
+  `the phone's words at the end: ${h.final.replace(/^.*?Payment Tourist /, '… ').replace(/ Tickets F&B.*$/, ' …')}`,
+  `attempts: ${JSON.stringify(h.attempts)}; command: ${JSON.stringify(h.commands)}`,
+  '',
+  `Back, then Cancel: dialog ${JSON.stringify(r.dialog)}; POST /api/sales/<id>/void -> ${JSON.stringify(r.void)}; sale ${r.saleAfter}`,
+].join('\n');
+await S.txtShot(text, 'H4e-api-phone-refusal-voided.png', 'Hunt: the phone till with the same refusal');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "afterBack": "0 no gate Oto Play Park, Central Floresta ███ Review Order Tourist Cancel Current Order TOURIST 1 Hour Play ฿1040 Kids ฿690 each 1 Adults ฿350 each 1 Regular Socks ฿60 each 0 Apply Add manual discount Subtotal ฿1040 VAT included ฿68.04 Total ฿1040 Cancel Pay ฿1040 Tickets F&B Shop Check-in Events History Today 7 Messages",
+  "dialog": null,
+  "void": {
+   "status": 200,
+   "saleIsOurs": true
+  },
+  "after": "0 no gate Oto Play Park, Central Floresta ███ Customer Type Select Customer Type Choose the pricing tier to start the sale. Walk-in (no member) · default Tourist rate. Verify to apply a discounted tier. Tourist Standard pricing Expat Resident pricing Proof required — verify now Thai Local pricing Pr",
+  "saleAfter": "voided"
+ }
+}
+
+=== 2026-11-13T02:10:44.297Z 5: the terminal assigned and the box given time to take its set-up
+S.phase = '5: the terminal assigned and the box given time to take its set-up';
+const r = { phoneClosed: await S.close('phone') };
+const h0 = (await S.box1()).lastStatus?.configVersion ?? null;
+r.assign = await S.assignTerminal();
+r.wait = await S.heartbeats(S.lastAssignAt, 2, 300000);
+const b = await S.box1();
+r.hashBefore = h0;
+r.hashNow = b.lastStatus?.configVersion ?? null;
+r.zzReported = (b.lastStatus?.devices ?? []).filter(d => /^ZZ TEST 972/.test(d.label)).map(d => ({ label: d.label, kind: d.kind, reachability: d.reachability }));
+const till = await S.signIn('rec5', 'STAGING_RECEPTION_PHONE', 'STAGING_RECEPTION_PASSWORD');
+S.till = till;
+S.receipt.reads.p5setup = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "phoneClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "assign": {
+   "status": 200,
+   "code": null,
+   "roles": {
+    "adult_band": "ZZ TEST 972 band printer",
+    "card_terminal": "ZZ TEST 972 card terminal",
+    "dropoff_band": "ZZ TEST 972 band printer",
+    "kids_band": "ZZ TEST 972 band printer",
+    "receipt": "ZZ TEST 972 receipt printer"
+   },
+   "paymentRouting": {
+    "qr": "none",
+    "card": "card_terminal"
+   },
+   "configVersion": 10,
+   "at": "2026-11-13T02:10:44.902Z"
+  },
+  "wait": {
+   "beats": 2,
+   "waitedS": 117
+  },
+  "hashBefore": "93be220aa5e643c2",
+  "hashNow": "4833842767908561",
+  "zzReported": [
+   {
+    "label": "ZZ TEST 972 band printer",
+    "kind": "band_printer",
+    "reachability": "reachable"
+   },
+   {
+    "label": "ZZ TEST 972 card terminal",
+    "kind": "terminal",
+    "reachability": "unknown"
+   },
+   {
+    "label": "ZZ TEST 972 receipt printer",
+    "kind": "receipt_printer",
+    "reachability": "reachable"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:13:01.391Z 5: card still works, once: a ZZ TEST sale paid by the simulated terminal after the box took its set-up
+S.phase = '5: card still works, once: a ZZ TEST sale paid by the simulated terminal after the box took its set-up';
+const { expect } = S;
+const r = {};
+const till = S.till;
+await S.unlock('rec5');
+S.receipt.numbers.p5 = S.free[5];
+const before = await S.printoutsFull(S.dev.receipt.id);
+const seenKeys = before.printouts.map(S.keyOf);
+await S.walkIn(till, S.free[5]);
+await S.ticket(till, 1, 1);
+const sale = await S.saleWritten('p5-card-sale');
+S.p5 = { sale: sale.id };
+await expect(S.paymentStep(till)).toBeVisible({ timeout: 30000 });
+await till.getByRole('heading', { name: 'Card', exact: true }).first().click();
+const startResp = till.waitForResponse(rr => rr.request().method() === 'POST' && new URL(rr.url()).pathname === '/api/payments/attempts', { timeout: 30000 });
+const t0 = Date.now();
+await till.getByRole('button', { name: 'Start card payment', exact: true }).click();
+const sr = await startResp; const sb = await sr.json().catch(() => null);
+r.start = { status: sr.status(), route: sb?.route ?? null, attempt: sb?.attempt?.id ?? null, attemptStatus: sb?.attempt?.status ?? null };
+S.p5.attempt = r.start.attempt;
+r.paymentSuccessful = await till.getByText('Payment Successful', { exact: true }).waitFor({ timeout: 120000 }).then(() => true).catch(() => false);
+r.secondsToPaid = Math.round((Date.now() - t0) / 100) / 10;
+await till.waitForTimeout(2500);
+await S.shot(till, '05a-till-card-paid-simulator.png', [till.locator('span.font-mono'), till.locator('img')]);
+await expect.poll(async () => { const j = (await S.sale(sale.id)).printJobs ?? []; return j.length > 0 && j.every(x => ['printed', 'failed', 'skipped'].includes(x.status)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+await S.sleep(4000);
+const s = await S.sale(sale.id);
+r.sale = { receipt: s.sale.receiptNumber, status: s.sale.status, gross: s.sale.totals.grossSatang / 100, attempts: (s.attempts ?? []).map(a => ({ id: a.id, method: a.method, status: a.status, provider: a.provider ?? null })) };
+r.printJobs = (s.printJobs ?? []).map(j => ({ kind: j.kind, status: j.status }));
+const after = await S.printoutsFull(S.dev.receipt.id);
+r.newReceiptPrintouts = after.printouts.filter(p => !seenKeys.includes(S.keyOf(p))).length;
+// exactly one terminal_sale per attempt, the paid one and every refused one
+const all = (await S.commands(S.box.id, 200)).filter(c => c.kind === 'terminal_sale');
+const ids = { p5: S.p5.attempt, p2: S.p2.attempt, p4: S.p4.attempt, h2: S.receipt.hunt.doublePress.attempts[0]?.id, h3: S.receipt.hunt.reload.start.attempt, h4: S.receipt.hunt.phone.start.attempt };
+r.saleCommandsPerAttempt = Object.fromEntries(Object.entries(ids).map(([k, id]) => [k, all.filter(c => c.payload?.attemptId === id && (c.payload?.mode ?? 'sale') === 'sale').map(c => ({ state: c.state, errorCode: c.errorCode ?? null, outcome: c.result?.outcome ?? null }))]));
+r.commandsListed = all.length;
+S.receipt.created.push({ kind: 'sale-card', id: sale.id, receipt: s.sale.receiptNumber }); S.save();
+S.receipt.reads.p5 = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "start": {
+   "status": 200,
+   "route": "card_terminal",
+   "attempt": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+   "attemptStatus": "sent_to_terminal"
+  },
+  "paymentSuccessful": true,
+  "secondsToPaid": 3.5,
+  "sale": {
+   "receipt": "Z97201-000002",
+   "status": "finalised",
+   "gross": 1040,
+   "attempts": [
+    {
+     "id": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+     "method": "card",
+     "status": "approved",
+     "provider": "simulator"
+    }
+   ]
+  },
+  "printJobs": [
+   {
+    "kind": "adult_wristband",
+    "status": "printed"
+   },
+   {
+    "kind": "kids_wristband",
+    "status": "printed"
+   },
+   {
+    "kind": "receipt",
+    "status": "printed"
+   }
+  ],
+  "newReceiptPrintouts": 1,
+  "saleCommandsPerAttempt": {
+   "p5": [
+    {
+     "state": "succeeded",
+     "errorCode": null,
+     "outcome": "approved"
+    }
+   ],
+   "p2": [
+    {
+     "state": "failed",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "outcome": null
+    }
+   ],
+   "p4": [
+    {
+     "state": "failed",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "outcome": null
+    }
+   ],
+   "h2": [
+    {
+     "state": "failed",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "outcome": null
+    }
+   ],
+   "h3": [
+    {
+     "state": "failed",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "outcome": null
+    }
+   ],
+   "h4": [
+    {
+     "state": "failed",
+     "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+     "outcome": null
+    }
+   ]
+  },
+  "commandsListed": 9
+ }
+}
+
+=== 2026-11-13T02:13:31.433Z 5: the manager refunds the card sale through the product refund (the simulator void)
+S.phase = '5: the manager refunds the card sale through the product refund (the simulator void)';
+const { expect } = S;
+const r = {};
+const t0 = Date.now();
+r.refund = await S.mgrRefund(S.p5.sale, 'ZZ TEST SCRUM-972 proof: card after the box took its set-up');
+let s;
+await expect.poll(async () => { s = await S.sale(S.p5.sale); return s.refundStatus; }, { timeout: 120000, intervals: [3000] }).toBe('refunded').catch(() => {});
+s = await S.sale(S.p5.sale);
+r.after = { status: s.sale.status, refunded: (s.sale.totals.refundedSatang ?? 0) / 100, refundStatus: s.refundStatus ?? null,
+  refunds: (s.refunds ?? []).map(x => ({ status: x.status ?? null, amount: (x.amountSatang ?? 0) / 100, mode: x.mode ?? null, keys: Object.keys(x), tenders: x.tenders ?? x.slices ?? x.lines ?? null })) };
+const cmds = (await S.commands(S.box.id, 60)).filter(c => /^terminal_/.test(c.kind) && c.payload?.attemptId === S.p5.attempt);
+r.commandsForAttempt = cmds.map(c => ({ kind: c.kind, mode: c.payload?.mode ?? null, state: c.state, errorCode: c.errorCode ?? null, outcome: c.result?.outcome ?? null, createdAt: c.createdAt }));
+const au = await S.audit(S.p5.attempt);
+r.attemptAudit = (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action, after: e.after ? { status: e.after.status ?? null, voidStatus: e.after.voidStatus ?? e.after.void ?? null } : null }));
+const sa = await S.call('GET', `/audit?entityId=${S.p5.sale}&limit=20`);
+r.saleAudit = (sa.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action }));
+r.secondsToRefunded = Math.round((Date.now() - t0) / 100) / 10;
+S.receipt.reads.p5refund = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "refund": {
+   "signIn": 200,
+   "refund": {
+    "status": 200,
+    "code": null,
+    "message": null,
+    "amount": 1040,
+    "refundStatus": null,
+    "keys": [
+     "printing",
+     "replay",
+     "refund",
+     "sale",
+     "refundStatus",
+     "refundableSatang",
+     "requestedSatang",
+     "clamped"
+    ],
+    "slices": null
+   },
+   "signOut": {
+    "status": 200,
+    "me": 401
+   }
+  },
+  "after": {
+   "status": "refunded",
+   "refunded": 1040,
+   "refundStatus": "refunded",
+   "refunds": [
+    {
+     "status": null,
+     "amount": 1040,
+     "mode": "whole",
+     "keys": [
+      "id",
+      "saleId",
+      "stationId",
+      "number",
+      "amountSatang",
+      "mode",
+      "reason",
+      "note",
+      "lines",
+      "tenderAllocation",
+      "approvedBy",
+      "createdBy",
+      "pending",
+      "createdAt"
+     ],
+     "tenders": [
+      {
+       "label": "Kids",
+       "restock": false,
+       "quantity": 1,
+       "saleLineId": "01a1d2ae-0e3c-740d-9c0f-f42ab7e3cc4b",
+       "grossSatang": 69000
+      },
+      {
+       "label": "Adults",
+       "restock": false,
+       "quantity": 1,
+       "saleLineId": "01a1d2ae-0e3c-792a-a047-92f2f9b6da2d",
+       "grossSatang": 35000
+      }
+     ]
+    }
+   ]
+  },
+  "commandsForAttempt": [
+   {
+    "kind": "terminal_sale",
+    "mode": "void",
+    "state": "queued",
+    "errorCode": null,
+    "outcome": null,
+    "createdAt": "2026-11-13T02:13:31.825Z"
+   },
+   {
+    "kind": "terminal_sale",
+    "mode": "sale",
+    "state": "succeeded",
+    "errorCode": null,
+    "outcome": "approved",
+    "createdAt": "2026-11-13T02:13:05.146Z"
+   }
+  ],
+  "attemptAudit": [
+   {
+    "at": "2026-11-13T02:13:05.146Z",
+    "action": "payment.tender.start",
+    "after": {
+     "status": "sent_to_terminal",
+     "voidStatus": null
+    }
+   }
+  ],
+  "saleAudit": [
+   {
+    "at": "2026-11-13T02:13:31.825Z",
+    "action": "sale.refund"
+   },
+   {
+    "at": "2026-11-13T02:13:08.413Z",
+    "action": "sale.print"
+   },
+   {
+    "at": "2026-11-13T02:13:08.413Z",
+    "action": "sale.finalise"
+   },
+   {
+    "at": "2026-11-13T02:13:04.771Z",
+    "action": "sale.create"
+   }
+  ],
+  "secondsToRefunded": 1.2
+ }
+}
+
+=== 2026-11-13T02:13:44.677Z 5: the simulator void after the refund: the command, the attempt, the refund history
+S.phase = '5: the simulator void after the refund: the command, the attempt, the refund history';
+const { expect } = S;
+const r = {};
+let cmds = [];
+await expect.poll(async () => { cmds = (await S.commands(S.box.id, 60)).filter(c => c.kind === 'terminal_sale' && c.payload?.attemptId === S.p5.attempt && c.payload?.mode === 'void'); return cmds.every(c => !['queued', 'running'].includes(c.state)); }, { timeout: 120000, intervals: [3000] }).toBe(true).catch(() => {});
+r.voidCommands = cmds.map(c => ({ state: c.state, errorCode: c.errorCode ?? null, errorMessage: c.errorMessage ?? null, outcome: c.result?.outcome ?? null, responseCode: c.result?.responseCode ?? null, createdAt: c.createdAt, claimedAt: c.claimedAt, finishedAt: c.finishedAt }));
+r.saleCommands = (await S.commands(S.box.id, 60)).filter(c => c.kind === 'terminal_sale' && c.payload?.attemptId === S.p5.attempt && c.payload?.mode === 'sale').length;
+await S.sleep(3000);
+const a = await S.attempt(S.p5.attempt);
+r.attempt = { status: a.body?.attempt?.status ?? null, reversal: a.body?.attempt?.reversal ?? a.body?.attempt?.voidStatus ?? null, responseText: a.body?.responseText ?? null, keys: Object.keys(a.body?.attempt ?? {}) };
+const s = await S.sale(S.p5.sale);
+r.sale = { status: s.sale.status, refundStatus: s.refundStatus, refunded: (s.sale.totals.refundedSatang ?? 0) / 100 };
+r.refundTender = (s.refunds ?? []).map(x => ({ number: x.number, amount: x.amountSatang / 100, pending: x.pending ?? null, tenderAllocation: x.tenderAllocation ?? null }));
+const au = await S.audit(S.p5.attempt);
+r.attemptAudit = (au.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action }));
+const sa = await S.call('GET', `/audit?entityId=${S.p5.sale}&limit=20`);
+r.saleAudit = (sa.body?.entries ?? []).map(e => ({ at: e.createdAt, action: e.action }));
+S.receipt.reads.p5void = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "voidCommands": [
+   {
+    "state": "succeeded",
+    "errorCode": null,
+    "errorMessage": null,
+    "outcome": "approved",
+    "responseCode": "00",
+    "createdAt": "2026-11-13T02:13:31.825Z",
+    "claimedAt": "2026-11-13T02:13:32.744Z",
+    "finishedAt": "2026-11-13T02:13:32.784Z"
+   }
+  ],
+  "saleCommands": 1,
+  "attempt": {
+   "status": "approved",
+   "reversal": null,
+   "responseText": "Approved",
+   "keys": [
+    "id",
+    "saleId",
+    "method",
+    "provider",
+    "status",
+    "amountSatang",
+    "tenderedSatang",
+    "changeSatang",
+    "terminalRef",
+    "inquirySupported",
+    "tid",
+    "approvalCode",
+    "last4",
+    "invoiceNo",
+    "tranRef",
+    "actionId",
+    "offline",
+    "paidAt",
+    "createdAt"
+   ]
+  },
+  "sale": {
+   "status": "refunded",
+   "refundStatus": "refunded",
+   "refunded": 1040
+  },
+  "refundTender": [
+   {
+    "number": "Z97201-R-000002",
+    "amount": 1040,
+    "pending": false,
+    "tenderAllocation": [
+     {
+      "route": "terminal_void",
+      "detail": "Voided on the terminal",
+      "method": "card",
+      "status": "done",
+      "actionId": "01a1d2ae-786d-70d4-b6e0-d2699cb49bf9",
+      "provider": "simulator",
+      "respCode": "00",
+      "attemptId": "01a1d2ae-100c-7c1d-a5da-62573a5e28e5",
+      "settledAt": "2026-11-13T02:13:32.766Z",
+      "methodCode": "card",
+      "amountSatang": 104000
+     }
+    ]
+   }
+  ],
+  "attemptAudit": [
+   {
+    "at": "2026-11-13T02:13:05.146Z",
+    "action": "payment.tender.start"
+   }
+  ],
+  "saleAudit": [
+   {
+    "at": "2026-11-13T02:13:31.825Z",
+    "action": "sale.refund"
+   },
+   {
+    "at": "2026-11-13T02:13:08.413Z",
+    "action": "sale.print"
+   },
+   {
+    "at": "2026-11-13T02:13:08.413Z",
+    "action": "sale.finalise"
+   },
+   {
+    "at": "2026-11-13T02:13:04.771Z",
+    "action": "sale.create"
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:14:02.540Z 5: History shows the card sale and its refund history; the platform answers as a picture
+S.phase = '5: History shows the card sale and its refund history; the platform answers as a picture';
+const r = {};
+const till = S.till;
+await S.unlock('rec5');
+await till.goto('/history');
+await till.waitForTimeout(4000);
+await till.getByText('Z97201-000002', { exact: false }).first().click();
+await till.waitForTimeout(3000);
+r.detail = S.flat(await till.locator('body').innerText()).replace(/^.*?Back to history/, 'Back to history').slice(0, 1600);
+await S.shot(till, '05c-till-history-card-sale-refund-voided-on-terminal.png');
+S.receipt.reads.p5history = r;
+const p5 = S.receipt.reads.p5, v = S.receipt.reads.p5void;
+const text = [
+  `ZZ TEST 972 sale ${S.p5.sale} (${p5.sale.receipt}); the ZZ TEST 972 card terminal assigned at ${S.receipt.reads.p5setup.assign.at} and the box given two heartbeats (${S.receipt.reads.p5setup.wait.waitedS} s)`,
+  `POST /api/payments/attempts -> ${JSON.stringify(p5.start)}`,
+  `"Payment Successful" ${p5.secondsToPaid} s after "Start card payment"; sale ${p5.sale.status}; attempts ${JSON.stringify(p5.sale.attempts)}`,
+  `print jobs ${JSON.stringify(p5.printJobs)}; new printouts on the ZZ receipt printer: ${p5.newReceiptPrintouts}`,
+  '',
+  `GET /api/boxes/<Virtual box 1>/commands -> terminal_sale commands with mode "sale", per attempt (never a SALE sent twice):`,
+  ...Object.entries(p5.saleCommandsPerAttempt).map(([k, list]) => `  ${({ p5: 'point 5 paid card', p2: 'point 2 refused', p4: 'point 4 refused', h2: 'hunt double press', h3: 'hunt reload', h4: 'hunt phone' })[k]}: ${list.length} ${JSON.stringify(list)}`),
+  `  point 1 held attempt (SCRUM-952): ${S.receipt.reads.p1before.commands.length} ${JSON.stringify(S.receipt.reads.p1before.commands.map(c => ({ state: c.state, errorCode: c.errorCode })))}`,
+  '',
+  `THE MANAGER'S REFUND: POST /api/sales/<id>/refunds { mode: "whole" } -> HTTP ${S.receipt.reads.p5refund.refund.refund.status} ฿${S.receipt.reads.p5refund.refund.refund.amount}`,
+  `the simulator's void: ${JSON.stringify(v.voidCommands)}`,
+  `the refund's tender allocation: ${JSON.stringify(v.refundTender, null, 1)}`,
+  `sale after: ${JSON.stringify(v.sale)}; the attempt read: ${JSON.stringify({ status: v.attempt.status, responseText: v.attempt.responseText })}`,
+].join('\n');
+await S.txtShot(text, '05b-api-card-once-and-simulator-void.png', 'Point 5: card still works, once; the refund voids it on the simulated terminal');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "detail": "Back to history Refunded Ticket sale Z97201-000002 Walk-in 13 Nov, 09:13 · sold by [staff] ZZ TEST 972 till · trading day 2026-11-13 · Tourist · Weekday pricing 1 Hour Play · Tourist ฿1040 Kids 1× ฿690 ฿690 Adults 1× ฿350 ฿350 Subtotal ฿1040 VAT (included) ฿68.04 Total paid ฿1040 Refunded −฿1040 Payment Card · Approved 13 Nov, 09:13 · •••• 4242 · Approval R00001 · 261113180001 ฿1040 REFUND HISTORY −฿1040 13 Nov, 09:13 ZZ TEST SCRUM-972 proof: card after the box took its set-up · Z97201-R-000002 Card — Voided on the terminal ฿1040 by [staff] · manager approval Reprint Fully refunded — nothing left to refund. Add time, refunds, voids and reprints need the platform: with the station offline, a refund can only be noted as requested, for a manager to make once it is back online."
+ }
+}
+
+=== 2026-11-13T02:14:31.327Z 6: what the platform health read and the alerts hold about payments with no outcome
+S.phase = '6: what the platform health read and the alerts hold about payments with no outcome';
+const r = { closedTill: await S.close('rec5') };
+const h = await S.call('GET', '/ops/health');
+r.healthStatus = h.status;
+r.healthKeys = h.body ? Object.keys(h.body) : null;
+const str = JSON.stringify(h.body ?? {});
+r.mentionsPending = /payments\.pending|no outcome/i.test(str);
+const ids = [S.HELD_ATTEMPT, S.p2.attempt, S.p4.attempt, S.receipt.hunt.doublePress.attempts[0]?.id, S.receipt.hunt.reload.start.attempt, S.receipt.hunt.phone.start.attempt, S.p5.attempt].filter(Boolean);
+r.ourIdsInHealth = ids.filter(id => str.includes(id));
+const find = (o, path = '') => { const hits = []; const walk = (v, p) => { if (!v || typeof v !== 'object') return; if (Array.isArray(v)) { v.forEach((x, i) => walk(x, `${p}[${i}]`)); return; } if (typeof v.category === 'string' && /payments/.test(v.category)) hits.push({ path: p, v }); if (typeof v.key === 'string' && /payments\.pending/.test(v.key)) hits.push({ path: p, v }); for (const [k, x] of Object.entries(v)) walk(x, `${p}.${k}`); }; walk(o, path); return hits; };
+r.pendingAlerts = find(h.body).map(x => ({ path: x.path, key: x.v.key ?? null, subject: x.v.subject ?? x.v.title ?? null, summary: x.v.summary ?? null, status: x.v.status ?? x.v.state ?? null, branch: x.v.branchName ?? x.v.branchId ?? null, detail: x.v.detail ?? null, openedAt: x.v.openedAt ?? x.v.createdAt ?? null, resolvedAt: x.v.resolvedAt ?? null }));
+const pa = await S.call('GET', '/platform/alerts');
+r.platformAlertsStatus = pa.status;
+r.platformAlerts = (pa.body?.alerts ?? pa.body?.items ?? []).filter(a => /payments/.test(a.category ?? a.key ?? '')).map(a => ({ key: a.key, subject: a.subject, summary: a.summary, status: a.status ?? a.state ?? null, detail: a.detail ?? null, openedAt: a.openedAt ?? a.createdAt ?? null, resolvedAt: a.resolvedAt ?? null, lastSeenAt: a.lastSeenAt ?? null }));
+const runs = await S.call('GET', '/ops/runs?fingerprint=job:payments.pending&limit=5');
+r.runs = runs.status === 200 ? (runs.body?.runs ?? []).map(x => ({ at: x.startedAt ?? x.at ?? x.createdAt, status: x.status ?? x.outcome ?? null, detail: x.detail ?? null })) : { status: runs.status, code: runs.body?.error?.code ?? null };
+S.receipt.reads.p6api = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "closedTill": {
+   "signOut": 200,
+   "me": 401
+  },
+  "healthStatus": 200,
+  "healthKeys": [
+   "status",
+   "checks",
+   "jobs",
+   "boxes",
+   "alerts",
+   "watchdogAgeSeconds",
+   "generatedAt",
+   "reach",
+   "rollups",
+   "evidence"
+  ],
+  "mentionsPending": true,
+  "ourIdsInHealth": [],
+  "pendingAlerts": [
+   {
+    "path": ".alerts[2]",
+    "key": "payments.pending:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "subject": "1 payment attempt at this branch has been waiting for an answer for more than 10 minutes.",
+    "summary": null,
+    "status": null,
+    "branch": null,
+    "detail": "Tenders with no outcome",
+    "openedAt": "2026-09-29T10:43:01.338Z",
+    "resolvedAt": null
+   }
+  ],
+  "platformAlertsStatus": 200,
+  "platformAlerts": [],
+  "runs": []
+ }
+}
+
+=== 2026-11-13T02:14:42.366Z 6: the full payments alert as the health read gives it
+S.phase = '6: the full payments alert as the health read gives it';
+const h = await S.call('GET', '/ops/health');
+const a = (h.body?.alerts ?? []).find(x => /payments\.pending/.test(x.key ?? ''));
+const jobs = (h.body?.jobs ?? []).filter(j => /payments/.test(JSON.stringify(j)));
+return { alert: a ?? null, alertCount: (h.body?.alerts ?? []).length, alertKeys: (h.body?.alerts ?? []).map(x => x.key), jobs: jobs.map(j => Object.fromEntries(Object.entries(j).filter(([k]) => !/secret|token|key$/i.test(k)))) };
+--> {
+ "ok": true,
+ "value": {
+  "alert": {
+   "id": "01a0ecc2-c05d-7ee9-8cd5-c62958942631",
+   "key": "payments.pending:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+   "severity": "warning",
+   "title": "1 payment attempt at this branch has been waiting for an answer for more than 10 minutes.",
+   "detail": "Tenders with no outcome",
+   "openedAt": "2026-09-29T10:43:01.338Z",
+   "acknowledgedAt": "2026-09-30T13:25:19.669Z",
+   "resolvedAt": null,
+   "count": 64086
+  },
+  "alertCount": 23,
+  "alertKeys": [
+   "sync.quarantine:01a0cdac-e880-7ffd-85eb-43b5fadab8cb",
+   "sync.quarantine:01a0e704-2721-70eb-a677-5bcdf62b3d34",
+   "payments.pending:01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+   "box.offline:c0c919c4-dae1-43df-a2b7-47e323e87836",
+   "box.storage_low:01a1a66c-adf6-72b4-8f18-a6de105d6e19",
+   "box.cache_incomplete:01a1a2cb-fe65-751f-9ebf-698aba639cb6",
+   "box.storage_low:01a1a2cb-fe65-751f-9ebf-698aba639cb6",
+   "box.storage_low:01a1a20c-f096-7bb0-bb24-8f89e0416633",
+   "console.impersonation.start:01a19e75-496c-70b7-96c4-25a6cf56caec",
+   "console.impersonation.start:01a19e75-3dc8-788c-b3b6-6f0fc7a2bf75",
+   "box.storage_low:01a19e60-0acd-7922-8ea6-a090fc37bd3c",
+   "box.storage_low:01a19df9-6357-7986-b077-93000c3ab9ef",
+   "box.storage_low:01a19c23-a08b-72fa-889b-df3075f23a51",
+   "box.storage_low:01a19c1a-72bd-73ca-a3e1-7b5688465d7f",
+   "console.impersonation.start:01a182e0-a50e-7c1a-8112-82b42230dab6",
+   "console.impersonation.start:01a182dc-55d5-7009-a11d-cabea925b776",
+   "console.impersonation.start:01a182b5-e4c3-711a-b5f0-b89c97f1551d",
+   "box.awaiting_reset:01a10dbf-8cfb-7ee4-ab6f-5fb89bd659d1",
+   "booth.unattributed:01a10b7a-9f15-7825-99df-338282db0995",
+   "box.offline:01a10b6d-0e5a-7972-a114-49e15d548986",
+   "booth.unattributed:01a0eb8c-9a93-773b-9c95-5eee17a0f673",
+   "redemption.probing:01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+   "ops.test:alert"
+  ],
+  "jobs": [
+   {
+    "name": "job:payments.inquiry",
+    "status": "ok",
+    "lastRunAt": "2026-11-13T02:14:41.922Z",
+    "lastOutcome": "ok",
+    "expectedEverySeconds": 10,
+    "ageSeconds": 1,
+    "lastError": null,
+    "waitingOn": []
+   },
+   {
+    "name": "job:payments.pending",
+    "status": "ok",
+    "lastRunAt": "2026-11-13T02:14:31.820Z",
+    "lastOutcome": "ok",
+    "expectedEverySeconds": 60,
+    "ageSeconds": 11,
+    "lastError": null,
+    "waitingOn": []
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:15:18.099Z 6: the Console Health page after the sweeps
+S.phase = '6: the Console Health page after the sweeps';
+const r = {};
+const c = await S.consoleIn('console');
+await c.goto('/watch/health');
+await c.waitForTimeout(6000);
+r.url = c.url();
+const body = S.flat(await c.locator('body').innerText());
+r.hasNoOutcome = /no outcome/i.test(body);
+const idx = body.search(/Tenders with no outcome|payment attempts? at this branch/i);
+r.around = idx >= 0 ? body.slice(Math.max(0, idx - 300), idx + 500) : null;
+r.top = body.slice(0, 700);
+await S.shot(c, '06a-console-health-top.png');
+const el = c.getByText(/Tenders with no outcome|payment attempts? at this branch/i).first();
+if (await el.isVisible().catch(() => false)) {
+  await el.scrollIntoViewIfNeeded();
+  await c.waitForTimeout(800);
+  await S.shot(c, '06b-console-health-tenders-with-no-outcome.png');
+  const card = el.locator('xpath=ancestor::*[self::li or self::article or self::section or self::div][1]');
+  r.cardText = S.flat(await card.innerText().catch(() => '')).slice(0, 600);
+}
+const ours = [S.HELD_ATTEMPT, S.p2.attempt, S.p4.attempt, S.receipt.hunt.doublePress.attempts[0]?.id, S.receipt.hunt.reload.start.attempt, S.receipt.hunt.phone.start.attempt, S.p5.attempt].filter(Boolean);
+r.ourIdsOnPage = ours.filter(id => body.includes(id) || body.includes(id.slice(0, 8)));
+r.zzOnPage = /ZZ TEST 97|ZZ TEST 952/.test(body);
+S.receipt.reads.p6console = r;
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "url": "https://oto-console-staging.onrender.com/watch/health",
+  "hasNoOutcome": true,
+  "around": "on Failures > Quarantine ×72753 open since 23 Sept, 16:52 taken 43d 12h ago Evidence box 361 (evidence-361) warning 1 event(s) from FortuneWheelBox (booth-1) could not be applied and are waiting on Failures > Quarantine ×34030 open since 20 Oct, 16:13 Acknowledge FortuneWheelBox (booth-1) warning 1 payment attempt at this branch has been waiting for an answer for more than 10 minutes. ×64086 open since 29 Sept, 17:43 taken 43d 12h ago Tenders with no outcome critical Demo counter box (virtual-1) has not called home for 772 hours while Demo Branch 2 is open — the stations on it cannot sell ×117 open since 9 Nov, 10:00 Acknowledge Demo counter box (virtual-1) warning ZZ TEST SCRUM-736 mw22ag5p (zz-test-s736-mw22ag5p): the drive is nearly full: free space or replace it before the counter stop",
+  "top": "O OTO Admin Central Floresta OVERVIEW PEOPLE & ACCESS Accounts Roles & scopes App access Employees Departments Access review ORGANISATION Operators Branches Holidays Configuration Apps CATALOGUE & MONEY Tickets Tiers Add-ons Menu Categories Modifiers Merch Inventory Members Tier verifications Discounts Tenders Tax Voucher types Voucher campaigns Vouchers Event pricing Drop-off & supervision Print templates Staff benefits DEVICES & PLACES Devices Booths CHANNELS & ASSISTANT Teams & routing Assistant settings STAFF & HR REPORTS Analytics & sources Money oversight Sales Profitability Discounts & comps Tax & VAT Wallet & promo Wallets Booth report Bookings WATCH Health 18 18 open alerts Failures",
+  "cardText": "warning 1 payment attempt at this branch has been waiting for an answer for more than 10 minutes. ×64086",
+  "ourIdsOnPage": [],
+  "zzOnPage": true
+ }
+}
+
+=== 2026-11-13T02:15:55.459Z 6: which attempt the remaining Central Floresta alert counts (read only)
+S.phase = '6: which attempt the remaining Central Floresta alert counts (read only)';
+const r = {};
+const q = await S.call('GET', `/sales?branchId=${S.branchId}&status=tendering&limit=100`);
+r.listStatus = q.status;
+const sales = (q.body?.sales ?? []).filter(s => s.status === 'tendering');
+r.tenderingSales = sales.length;
+r.candidates = [];
+for (const s of sales.slice(0, 40)) {
+  const d = await S.sale(s.id);
+  const stuck = (d.attempts ?? []).filter(a => ['sent_to_terminal', 'unknown', 'inquiring'].includes(a.status));
+  if (stuck.length) r.candidates.push({ sale: s.id, occurredAt: d.sale.occurredAt ?? d.sale.createdAt, station: d.sale.stationId, attempts: stuck.map(a => ({ id: a.id, status: a.status, method: a.method, provider: a.provider ?? null, createdAt: a.createdAt })) });
+}
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+for (const c of r.candidates) { const st = stations.find(x => x.id === c.station); c.stationName = st?.name ?? null; c.stationRetired = Boolean(st?.archived); }
+S.receipt.reads.p6remaining = r;
+const ph = S.receipt.reads.p6console;
+const text = [
+  `Point 6, read ${new Date().toISOString()}; job:payments.pending runs every 60 s (last run ${S.receipt.reads.p6api ? 'seen ok' : '?'}), the held attempt was freed at 01:54:24Z, the run's own attempts declined within 2-4 s`,
+  '',
+  'GET /api/ops/health -> alert payments.pending:<Central Floresta>:',
+  '  "1 payment attempt at this branch has been waiting for an answer for more than 10 minutes."  ×64086, open since 29 Sept, acknowledged',
+  '  (the SCRUM-952 proof\'s Health picture 04a0, 12 Nov 23:05Z, read "2 payment attempts at this branch")',
+  `  attempt ids of this run or of point 1 in the health answer: ${JSON.stringify(S.receipt.reads.p6api.ourIdsInHealth)}`,
+  `the Console Health page: ${JSON.stringify(ph.cardText)}; ids of this run on the page: ${JSON.stringify(ph.ourIdsOnPage)}`,
+  '',
+  `GET /api/sales?branchId=<Central Floresta>&status=tendering -> ${r.listStatus}, ${r.tenderingSales} tendering sales; those holding an attempt in sent_to_terminal / unknown / inquiring:`,
+  JSON.stringify(r.candidates, null, 1),
+].join('\n');
+await S.txtShot(text, '06c-api-health-pending-alert-after-run.png', 'Point 6: the payments-with-no-outcome alert after the sweeps');
+return r;
+--> {
+ "ok": true,
+ "value": {
+  "listStatus": 200,
+  "tenderingSales": 20,
+  "candidates": [
+   {
+    "sale": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+    "occurredAt": "2026-09-29T10:32:18.536Z",
+    "station": "01a0ecb8-9096-7d88-8987-50c0958e8412",
+    "attempts": [
+     {
+      "id": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
+      "status": "sent_to_terminal",
+      "method": "card",
+      "provider": "simulator",
+      "createdAt": "2026-09-29T10:32:20.319Z"
+     }
+    ],
+    "stationName": "Native payment shop-partial-refused 0d008153",
+    "stationRetired": false
+   }
+  ]
+ }
+}
+
+=== 2026-11-13T02:17:13.129Z clean up: every ZZ sale read back; the ZZ TEST 972 till retired; the ZZ TEST 972 devices archived; members checked
+S.phase = 'clean up: every ZZ sale read back; the ZZ TEST 972 till retired; the ZZ TEST 972 devices archived; members checked';
+S.point('5', (S.receipt.reads.p5.paymentSuccessful && Object.values(S.receipt.reads.p5.saleCommandsPerAttempt).every(l => l.length === 1) && S.receipt.reads.p5void.refundTender[0]?.tenderAllocation?.[0]?.status === 'done') ? 'PASS' : 'FAIL',
+  ['05a-till-card-paid-simulator.png', '05b-api-card-once-and-simulator-void.png', '05c-till-history-card-sale-refund-voided-on-terminal.png'],
+  { secondsToPaid: S.receipt.reads.p5.secondsToPaid, saleCommandsPerAttempt: S.receipt.reads.p5.saleCommandsPerAttempt, refund: S.receipt.reads.p5void.refundTender });
+S.point('6', S.receipt.reads.p6api.ourIdsInHealth.length === 0 ? 'PASS' : 'FAIL', ['06a-console-health-top.png', '06b-console-health-tenders-with-no-outcome.png', '06c-api-health-pending-alert-after-run.png'],
+  { alert: '1 payment attempt at this branch (was 2 at the SCRUM-952 proof)', remaining: S.receipt.reads.p6remaining.candidates });
+const out = { consoleClosed: await S.close('console'), sales: [], members: [] };
+for (const c of S.receipt.created.filter(x => x.id && !['device', 'station'].includes(x.kind))) {
+  const s = await S.sale(c.id);
+  out.sales.push({ kind: c.kind, id: c.id, receipt: s.sale.receiptNumber ?? null, status: s.sale.status, refundStatus: s.refundStatus ?? null, attempts: (s.attempts ?? []).map(a => `${a.method}:${a.status}`) });
+}
+const held = await S.sale(S.HELD_SALE);
+out.heldSale = { status: held.sale.status, attempts: (held.attempts ?? []).map(a => a.status) };
+for (const [key, phone] of Object.entries(S.receipt.numbers)) {
+  const m = (await S.call('GET', `/members/lookup?phone=${encodeURIComponent(phone)}`)).body?.member ?? null;
+  out.members.push({ key, member: m ? { id: m.id, zzNamed: `${m.nickname ?? ''} ${m.name ?? ''}`.includes('ZZ') } : 'none' });
+}
+const row = await S.stationRow();
+S.assert.ok(row.name === 'ZZ TEST 972 till', 'own station');
+const cleared = await S.call('PATCH', `/stations/${S.station.id}`, { devices: [], paymentRouting: { card: 'manual', qr: 'none' } });
+const del = await S.call('DELETE', `/stations/${S.station.id}`);
+out.station = { name: row.name, devicesCleared: cleared.status, clearCode: cleared.body?.error?.code ?? null, retired: del.status, retireCode: del.body?.error?.code ?? null };
+const rb = await S.stationRow();
+out.stationReadBack = { archived: Boolean(rb.archived), devices: rb.devices.length };
+out.devices = [];
+for (const [key, d] of Object.entries(S.dev)) {
+  const now = (await S.devicesOnBox()).find(x => x.id === d.id);
+  S.assert.ok(now.label.startsWith('ZZ TEST 972 '), 'own device');
+  const dd = now.archived ? { status: 'already' } : await S.call('DELETE', `/devices/${d.id}`);
+  out.devices.push({ key, label: now.label, archive: dd.status, code: dd.body?.error?.code ?? null, stillAssignedTo: (dd.body?.stillAssignedTo ?? []).length });
+}
+out.devicesReadBack = (await S.devicesOnBox()).filter(x => Object.values(S.dev).some(d => d.id === x.id)).map(x => ({ label: x.label, archived: Boolean(x.archived) }));
+out.zzLiveOnBox = (await S.devicesOnBox()).filter(x => !x.archived && /^ZZ TEST 972/.test(x.label)).map(x => x.label);
+const stations = (await S.call('GET', `/branches/${S.branchId}/stations?includeArchived=true`)).body.stations;
+out.zz972StationsLive = stations.filter(s => /^ZZ TEST 972/.test(s.name) && !s.archived).map(s => s.name);
+out.openPages = Object.keys(S.pages);
+S.receipt.cleanup.records = out; S.save();
+return out;
+--> {
+ "ok": true,
+ "value": {
+  "consoleClosed": {
+   "signOut": 200,
+   "me": 401
+  },
+  "sales": [
+   {
+    "kind": "p2-refused-then-cash",
+    "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+    "receipt": "Z97201-000001",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "attempts": [
+     "card:declined",
+     "cash:approved"
+    ]
+   },
+   {
+    "kind": "sale-cash",
+    "id": "01a1d29f-791a-76c8-b3b4-3df4dbdf349b",
+    "receipt": "Z97201-000001",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "attempts": [
+     "card:declined",
+     "cash:approved"
+    ]
+   },
+   {
+    "kind": "p4-refused-then-voided",
+    "id": "01a1d2a3-1695-77bc-8513-2e6a5c9ab73d",
+    "receipt": null,
+    "status": "voided",
+    "refundStatus": "none",
+    "attempts": [
+     "card:declined"
+    ]
+   },
+   {
+    "kind": "h2-double-press",
+    "id": "01a1d2a5-e6cd-7016-9757-5f9e1b45fcbd",
+    "receipt": null,
+    "status": "voided",
+    "refundStatus": "none",
+    "attempts": [
+     "card:declined"
+    ]
+   },
+   {
+    "kind": "h3-reload",
+    "id": "01a1d2a7-83ab-753f-8271-fef12272c0b9",
+    "receipt": null,
+    "status": "voided",
+    "refundStatus": "none",
+    "attempts": [
+     "card:declined"
+    ]
+   },
+   {
+    "kind": "h4-phone-refused",
+    "id": "01a1d2ab-4859-7bef-be88-b6c6b1bf6224",
+    "receipt": null,
+    "status": "voided",
+    "refundStatus": "none",
+    "attempts": [
+     "card:declined"
+    ]
+   },
+   {
+    "kind": "p5-card-sale",
+    "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4",
+    "receipt": "Z97201-000002",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "attempts": [
+     "card:approved"
+    ]
+   },
+   {
+    "kind": "sale-card",
+    "id": "01a1d2ae-0e3c-7b27-86b8-3be498c938f4",
+    "receipt": "Z97201-000002",
+    "status": "refunded",
+    "refundStatus": "refunded",
+    "attempts": [
+     "card:approved"
+    ]
+   }
+  ],
+  "members": [
+   {
+    "key": "p2",
+    "member": "none"
+   },
+   {
+    "key": "p4",
+    "member": "none"
+   },
+   {
+    "key": "h2",
+    "member": "none"
+   },
+   {
+    "key": "h3",
+    "member": "none"
+   },
+   {
+    "key": "h4",
+    "member": "none"
+   },
+   {
+    "key": "p5",
+    "member": "none"
+   }
+  ],
+  "heldSale": {
+   "status": "voided",
+   "attempts": [
+    "declined"
+   ]
+  },
+  "station": {
+   "name": "ZZ TEST 972 till",
+   "devicesCleared": 200,
+   "clearCode": null,
+   "retired": 200,
+   "retireCode": null
+  },
+  "stationReadBack": {
+   "archived": true,
+   "devices": 0
+  },
+  "devices": [
+   {
+    "key": "receipt",
+    "label": "ZZ TEST 972 receipt printer",
+    "archive": 200,
+    "code": null,
+    "stillAssignedTo": 0
+   },
+   {
+    "key": "band",
+    "label": "ZZ TEST 972 band printer",
+    "archive": 200,
+    "code": null,
+    "stillAssignedTo": 0
+   },
+   {
+    "key": "card",
+    "label": "ZZ TEST 972 card terminal",
+    "archive": 200,
+    "code": null,
+    "stillAssignedTo": 0
+   }
+  ],
+  "devicesReadBack": [
+   {
+    "label": "ZZ TEST 972 band printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 972 receipt printer",
+    "archived": true
+   },
+   {
+    "label": "ZZ TEST 972 card terminal",
+    "archived": true
+   }
+  ],
+  "zzLiveOnBox": [],
+  "zz972StationsLive": [],
+  "openPages": []
+ }
+}

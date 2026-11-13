@@ -1,0 +1,40 @@
+ZZ TEST sale 01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0 (made by the SCRUM-952 proof) read 2026-11-13T01:54:09.268Z, BEFORE any read of its attempt
+
+GET /api/sales/01a1d1f5-6a7f-773a-b4ec-4f48be97a8b0
+  sale.status: tendering   receipt: null   gross: ฿1040
+  station: ZZ TEST 952 till B (retired: true)
+  attempts: [
+ {
+  "id": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+  "status": "sent_to_terminal",
+  "method": "card",
+  "provider": "simulator",
+  "amount": 1040,
+  "deviceId": null,
+  "responseText": null
+ }
+]
+
+the attempt's terminal on Virtual box 1: "(not found on Virtual box 1)"
+
+GET /api/boxes/<Virtual box 1>/commands?limit=100 -> terminal commands for attempt 01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3:
+[
+ {
+  "id": "01a1d1f5-ac31-7e0a-886c-2d2ab1eb7a0d",
+  "kind": "terminal_sale",
+  "mode": "sale",
+  "state": "failed",
+  "createdAt": "2026-11-12T22:51:40.949Z",
+  "claimedAt": "2026-11-12T22:51:43.384Z",
+  "finishedAt": "2026-11-12T22:51:43.395Z",
+  "errorCode": "TERMINAL_NOT_ON_THIS_BOX",
+  "errorMessage": "this box has no card_terminal for <station id>",
+  "result": {
+   "mode": "sale",
+   "outcome": null,
+   "attemptId": "01a1d1f5-ac2c-795d-b7a9-1a3bf2d327f3",
+   "terminalRef": null,
+   "responseCode": null
+  }
+ }
+]
