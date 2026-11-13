@@ -205,7 +205,8 @@ export function MobilePartyDetail({
               ) : (
                 <>
                   <InfoRow
-                    label={party.packageName ?? 'Base package'}
+                    // SCRUM-953 — the package the plan names, as the counter's page reads it.
+                    label={planRead?.plan?.package.name ?? party.packageName ?? 'Base package'}
                     value={unpriced ? '—' : planned ? `฿${satangText(planned.packageSatang)}` : `฿${bahtText(party.basePrice)}`}
                   />
                   {planned && planned.totalSatang > planned.packageSatang && (
@@ -344,7 +345,8 @@ export function MobilePartyDetail({
                 </div>
                 )}
               </div>
-            ) : (
+            ) : planRead === undefined ? null : (
+              // SCRUM-953 — not said while the plan is still being read: it may bring one.
               <p className="text-xs text-muted-foreground">No kitchen service for this party.</p>
             )}
           </SectionCard>

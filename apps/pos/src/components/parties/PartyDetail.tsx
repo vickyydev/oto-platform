@@ -150,6 +150,14 @@ type WriteKey = 'payment' | 'fnb' | 'ticket' | 'edit' | 'kitchen';
 const listOf = (items: string[]) =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
+/**
+ * SCRUM-953 — the party page's button row (Message parent, Edit party,
+ * Settle or Resume settlement, Cancel settlement, Add F&B, Take balance): the
+ * prototype's one row, wrapping inside its column when it does not fit, as it
+ * did not at 1440 or 1024 with a settlement open. A row that fits is as before.
+ */
+export const PARTY_ACTIONS_ROW = 'flex flex-wrap items-center gap-3 shrink-0 max-w-full';
+
 export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
   const { operator, locked: operatorLocked, can } = useOperator();
   const { station } = useStation();
@@ -721,7 +729,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             </div>
           </div>
         </div>
-      ) : (
+      ) : planRead === undefined ? null : (
+        // SCRUM-953 — not said while the plan is still being read: it may bring one.
         <p className="text-sm text-muted-foreground">No kitchen service for this party.</p>
       )}
     </SectionCard>
@@ -897,7 +906,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          {/* SCRUM-953 — the row wraps inside its column (six buttons with a settlement open overflowed it). */}
+          <div className={PARTY_ACTIONS_ROW}>
             {messageCtx && (
               <Button
                 variant="outline"
