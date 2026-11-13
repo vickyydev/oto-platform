@@ -33,8 +33,6 @@ function requireFixture(): void {
   test.skip(process.env.PAYMENTS_SIMULATOR !== 'on', 'Set PAYMENTS_SIMULATOR=on: the family pays through the simulated gateway');
 }
 
-const bangkokToday = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
-
 async function shot(page: Page, name: string): Promise<void> {
   if (!SHOTS) return;
   await mkdir(SHOTS, { recursive: true });
@@ -43,6 +41,16 @@ async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: resolve(SHOTS, `${name}.png`) });
 }
 
+/**
+ * A booking made and paid online for the park's TRADING day: the day the till's
+ * Add drop-off picker, its board and its cash day are on (the branch's
+ * `business_day_start`, 05:00 at the park). Sent with no visit date, the
+ * platform books it for exactly that day (`bookingToday`, the booking site's
+ * own rule). SCRUM-973 — this booked the Bangkok CALENDAR date, which between
+ * midnight and 05:00 is the next trading day: the picker rightly lists only
+ * today's stays, so the paid child was not offered and the check failed on
+ * every night run between 00:00 and 05:00 at the park.
+ */
 async function paidBooking(request: APIRequestContext, parentName: string, child: Record<string, unknown>) {
   const catalog = await (await request.get(`/api/public/branches/${BRANCH_CODE}/catalog`)).json();
   const pkg = catalog.packages.find((p: { name: string }) => p.name === '1 Hour Play');
@@ -55,7 +63,6 @@ async function paidBooking(request: APIRequestContext, parentName: string, child
       phone: '0812345678',
       parentName,
       tier: 'thai',
-      visitDate: bangkokToday(),
       consentAck: true,
       acknowledgedConfirmationIds: required,
       lines: [{ packageId: pkg.id, kids: 1, adults: 0, supervision: child }],
