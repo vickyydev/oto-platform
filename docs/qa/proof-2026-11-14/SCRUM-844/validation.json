@@ -1,6 +1,10 @@
 {
   "baseSha": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
-  "rootReview": "pending",
+  "rootReview": {
+    "status": "approved",
+    "reviewedCommit": "d4c873ff4d2be64daf0baa831d88dd5e698ae629",
+    "blockingFindings": 0
+  },
   "landing": "not pushed",
   "staging": "not deployed or tested",
   "checks": {
@@ -100,5 +104,15 @@
   ],
   "allFocusedLocalGatesPassed": true,
   "sourceSha256VerifiedAfterGates": true,
-  "capturedLogs": "UTF8/LF display output, trailing whitespace removed; diagnostic text and command outcomes retained"
+  "capturedLogs": "UTF8/LF display output, trailing whitespace removed; diagnostic text and command outcomes retained",
+  "mainGate": {
+    "head": "f7df3150f9405dd6aa3480d11c6ab166abf345b2",
+    "headCheckRuns": 0,
+    "latestProductSource": "3e29803bf0d2c935a9a0c23f76c60c4182bcc104",
+    "sourceCiRun": 43489637902,
+    "conclusion": "success",
+    "jobs": 6,
+    "appStepsPathSkipped": 113,
+    "note": "Documentation-only main head has no run; prior actual product source is six-job green, not fresh app coverage"
+  }
 }
