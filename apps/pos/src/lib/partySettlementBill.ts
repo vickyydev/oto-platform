@@ -179,9 +179,18 @@ export function usePlannedSettleQuote(
   const [answer, setAnswer] = useState<{ key: string; outcome: PartySettlePreviewOutcome } | null>(null);
   const plan = planRead?.plan ?? null;
   const settling = party !== null && !partySettlementLive(party.settlement);
+  /**
+   * SCRUM-967 — the plan itself is in the key, the kitchen plan with it: the
+   * platform prices each kitchen extra from the plan it reads, so a kitchen
+   * change (saved on the till's Edit form, or in the OTO App and read at the
+   * page's next read of the plan) moves the quote though the form's counts
+   * stay as they were. While the new quote is read the bill and Take balance
+   * wait (`reading`), never showing the figure from before the change.
+   */
   const key =
     party && settling && plan
-      ? JSON.stringify([party.id, party.settlement?.id ?? null, party.settlement?.state ?? null, partySettleFormDefaults(plan, party)])
+      ? JSON.stringify([party.id, party.settlement?.id ?? null, party.settlement?.state ?? null,
+        partySettleFormDefaults(plan, party), plan, planRead?.kitchenPlan ?? null])
       : null;
   useEffect(() => {
     if (!key || !plan || !party) return;

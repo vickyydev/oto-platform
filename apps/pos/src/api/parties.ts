@@ -499,6 +499,8 @@ export type PartyKitchenEditOutcome =
        * made there): the party is read again before the form opens on it once more.
        */
       readAgain?: true;
+      /** SCRUM-967 — which of those refusals it was, so the till can say it in its own words. */
+      code?: string;
     };
 
 /** The OTO App's refusals that ask the till to read the party again (the app's `line_not_found`, `choice_already_made`). */
@@ -529,7 +531,7 @@ export async function editPartyKitchenOnPlatform(args: {
     return { ok: true, party: toOtoEvent(answer.event, args.party.branchId) as unknown as PartyBooking, answer };
   } catch (err) {
     const failure = failureOf(err);
-    return err instanceof ApiError && KITCHEN_READ_AGAIN.has(err.code) ? { ...failure, readAgain: true } : failure;
+    return err instanceof ApiError && KITCHEN_READ_AGAIN.has(err.code) ? { ...failure, readAgain: true, code: err.code } : failure;
   }
 }
 

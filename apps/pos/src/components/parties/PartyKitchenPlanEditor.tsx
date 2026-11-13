@@ -47,14 +47,22 @@ interface Props {
   menu: readonly KitchenMenuPick[];
 }
 
-/** A line as the party page names it: the dish, the chosen option, and the slip's marks. */
+/** A read-only line's name box: the dish and its chosen option, as the party page names them. */
 function lineLabel(l: KitchenDraftLine): string {
+  return [l.name, l.chosenOption].filter((x): x is string => !!x).join(' · ');
+}
+
+/**
+ * SCRUM-967 — the slip's marks for a read-only line, said whole on a line of
+ * their own under its name box, in the box's hint style: a one-line box cut a
+ * long dish's "adults" or "not on the till menu" off at its edge.
+ */
+function lineMarks(l: KitchenDraftLine): string | null {
   const marks = [
-    l.chosenOption,
     l.audience === 'kids' ? 'kids only' : l.audience === 'adults' ? 'adults' : null,
     l.onTillMenu === false && !(l.choiceGroup && !l.chosenOption) ? PARTY_NOT_ON_TILL_MENU : null,
   ].filter((x): x is string => !!x);
-  return [l.name, ...marks].join(' · ');
+  return marks.length > 0 ? marks.join(' · ') : null;
 }
 
 /** The name box of a line added here: typed, or picked from the till's menu (its name and code). */
@@ -123,6 +131,7 @@ function LineRows({
         {lines.map((l) => {
           const group = !readOnly && kitchenLineChoosable(l) ? groupOf(l) : undefined;
           const editable = !readOnly && kitchenLineEditable(l);
+          const marks = !group && !(l.added && !readOnly) ? lineMarks(l) : null;
           return (
             <div key={l.key} className="space-y-1">
               <div className="flex items-center gap-2">
@@ -170,6 +179,7 @@ function LineRows({
                   </Button>
                 )}
               </div>
+              {marks && <div className="text-xs text-muted-foreground" data-testid="kitchen-line-marks">{marks}</div>}
               {l.added && !readOnly && (
                 <div className="text-xs text-muted-foreground">{l.productCode ? `Till item ${l.productCode}` : PARTY_NOT_ON_TILL_MENU}</div>
               )}

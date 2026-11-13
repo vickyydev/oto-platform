@@ -18,10 +18,12 @@ import type { PartyBooking } from '@/types';
 /** How often an open party page reads the plan again, besides on focus. */
 export const PARTY_PLAN_REFRESH_MS = 60_000;
 
-/** A food line as the party page names it: the dish, the chosen option, and the slip's marks. */
+/** A food line as the party page names it: the dish, the chosen option, its note, and the slip's marks. */
 export function partyMenuLineLabel(m: PartyPlanMenuItem): string {
   const marks = [
     m.chosenOption ? m.chosenOption : null,
+    // SCRUM-967: the line's note ("no sauce"), as the bar's label carries its own.
+    m.note?.trim() || null,
     // SCRUM-829: a line the BEO marks as the kids' only, the adults' own, or the adults' with another note.
     m.audience === 'kids' ? 'kids only' : m.audience === 'adults' ? 'adults' : null,
     m.adultsNote === undefined ? null : partyAdultsNoteMark(m.adultsNote),

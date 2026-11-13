@@ -239,3 +239,30 @@ export function kitchenMenuMatches<T extends KitchenMenuPick>(items: readonly T[
     .slice(0, limit)
     .map((r) => r.it);
 }
+
+/** SCRUM-967 — the one thing to do when the BEO moved under the Edit form. */
+export const KITCHEN_READ_AGAIN_ASK = 'Close this form and open it again to see the latest plan.';
+
+/**
+ * SCRUM-967 — THE OTO APP'S REFUSAL WHEN THE BEO MOVED UNDER THE FORM, IN THE
+ * TILL'S WORDS. The app names the line it no longer finds by its internal id
+ * ("… since the till read it (menu_17…). Read the party again and make the
+ * change once more.", `line_not_found`), and the till added an instruction of
+ * its own. The till's copy of the plan knows that line: it says the dish, and
+ * one thing to do. A line it does not know is said as a line of the kitchen
+ * plan, never by its id. Any other such refusal (a choice made in the BEO) keeps
+ * the app's own first sentence, with the same one thing to do.
+ */
+export function kitchenReadAgainSaid(
+  refusal: { code?: string; message: string },
+  plan: Pick<PartyKitchenPlan, 'setMenu' | 'barItems'> | null,
+): string {
+  if (refusal.code === 'OTOAPP_LINE_NOT_FOUND') {
+    const lines: Array<{ lineId?: string | null; name: string }> = [...(plan?.setMenu ?? []), ...(plan?.barItems ?? [])];
+    const known = lines.find((l) => !!l.lineId && refusal.message.includes(`(${l.lineId})`));
+    const what = known?.name.trim() ? known.name.trim() : 'A line of the kitchen plan';
+    return `${what} was changed in the BEO since this form opened. ${KITCHEN_READ_AGAIN_ASK}`;
+  }
+  const first = refusal.message.split(/(?<=\.)\s+/)[0]?.trim() || refusal.message;
+  return `${first} ${KITCHEN_READ_AGAIN_ASK}`;
+}

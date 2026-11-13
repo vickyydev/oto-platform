@@ -48,6 +48,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { usePartyPlanReadState } from '@/hooks/usePartyPlanRead';
 import { partyBarLineLabel, partyCakeLabel, partyCakeOf, partyMenuLineLabel } from '@/lib/partyKitchen';
+import { kitchenReadAgainSaid } from '@/lib/partyKitchenEdit';
 import { PartyBalanceModal } from './PartyBalanceModal';
 import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { PartyFnbModal } from './PartyFnbModal';
@@ -208,6 +209,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   const unpriced = partyBillUnpriced(party, plannedQuote);
   const bill = partyBillShown(party, planned);
   const takesSettlement = bill.settlementOwed > 0;
+  // SCRUM-967 — the plan moved (a kitchen change) and its price is being read
+  // again: Take balance waits for the new figure, never pressed at the old one.
+  const requoting = plannedQuote.state === 'reading' && plan !== null;
 
   /**
    * S2-20 E4 — THE PARTY TAB IS THE PLATFORM'S. What the till can know is
@@ -427,8 +431,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
           }
           toast({
             title: kitchen.retryable ? 'Kitchen plan not confirmed' : 'Kitchen plan not saved',
+            // SCRUM-967 — the dish by its name, never the BEO's line id, and one thing to do.
             description: kitchen.readAgain
-              ? `${kitchen.message} Press Cancel, then Edit party: it opens on the plan read again.`
+              ? kitchenReadAgainSaid({ message: kitchen.message, ...(kitchen.code ? { code: kitchen.code } : {}) }, kitchenPlan)
               : kitchen.message,
             variant: 'destructive',
           });
@@ -959,7 +964,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
             <Button
               size="lg"
               className="gap-2 h-12"
-              disabled={unpriced !== null || bill.outstanding <= 0 || (takesSettlement && !plan)}
+              disabled={unpriced !== null || requoting || bill.outstanding <= 0 || (takesSettlement && !plan)}
               onClick={() =>
                 takesSettlement
                   ? openUnlessBlocked(() => setShowSettle(true), true)
@@ -967,7 +972,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
               }
             >
               <Wallet className="w-5 h-5" />
-              {unpriced
+              {unpriced || requoting
                 ? 'Take balance —'
                 : bill.outstanding > 0
                   ? `Take balance ฿${bahtText(takesSettlement ? bill.settlementOwed : outstanding)}`
