@@ -2,7 +2,6 @@ import { Switch, Route, Redirect, useLocation, useParams } from "wouter";
 import { Suspense, lazy, useState } from "react";
 import * as _Sentry from "@sentry/react";
 import { queryClient } from "./lib/queryClient";
-import { authDiag } from "./lib/auth-diag";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -358,7 +357,6 @@ function ProtectedRoute({
   const [location] = useLocation();
 
   if (isLoading) {
-    authDiag(`[auth-diag] ProtectedRoute ${path}: isLoading=true`);
     return (
       <Route path={path}>
         <div className="flex items-center justify-center min-h-screen bg-background">
@@ -369,14 +367,12 @@ function ProtectedRoute({
   }
 
   if (!user) {
-    authDiag(`[auth-diag] ProtectedRoute ${path}: user=null -> redirecting to /auth`);
     return (
       <Route path={path}>
         <Redirect to="/auth" />
       </Route>
     );
   }
-  authDiag(`[auth-diag] ProtectedRoute ${path}: user=${user.id} role=${user.role}`);
 
   if (user.mustChangePassword && location !== "/change-password") {
     return (
